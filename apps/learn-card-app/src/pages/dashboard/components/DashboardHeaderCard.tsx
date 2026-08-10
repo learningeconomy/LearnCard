@@ -123,7 +123,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                                 type="button"
                                 onClick={onAvatarClick}
                                 aria-label={m['dashboard.header.avatarAria']({ brand: brandName })}
-                                className="rounded-full active:scale-[0.97] transition-transform"
+                                className="rounded-full active:scale-[0.97] transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 {avatar}
                             </button>
@@ -142,7 +142,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                                               count: unreadCount > 99 ? '99+' : unreadCount,
                                           })
                                 }
-                                className="absolute top-0 right-0 flex items-center justify-center active:scale-90 transition-transform"
+                                className="absolute top-0 right-0 flex items-center justify-center rounded-full active:scale-90 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <span className="absolute inline-flex h-3.5 w-3.5 rounded-full bg-red-500 opacity-60 animate-ping" />
                                 <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-red-500 border-2 border-white shadow-soft-bottom" />
@@ -151,7 +151,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm text-grayscale-500 leading-tight">{greeting}</p>
+                        <p className="text-sm text-grayscale-600 leading-tight">{greeting}</p>
                         <h1 className="text-xl font-semibold text-grayscale-900 leading-tight truncate">
                             {displayName || m['dashboard.header.welcome']()}
                         </h1>

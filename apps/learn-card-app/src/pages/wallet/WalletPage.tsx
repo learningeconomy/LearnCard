@@ -211,11 +211,11 @@ const WalletPage: React.FC = () => {
                             <IonRow>
                                 <div className="flex justify-between items-center w-full gap-[10px]">
                                     <div className="flex items-center gap-[8px] min-w-0">
-                                        <h2
+                                        <h1
                                             className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
                                         >
                                             {m['sidemenu.links.passport']()}
-                                        </h2>
+                                        </h1>
 
                                         <WalletPageViewModeSelector />
                                     </div>
@@ -237,7 +237,8 @@ const WalletPage: React.FC = () => {
 
                                         {Capacitor.isNativePlatform() && (
                                             <button
-                                                className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
+                                                type="button"
+                                                className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                                 aria-label={m['passport.wallet.scanQrCode']()}
                                                 onClick={() =>
                                                     QRCodeScannerStore.set.showScanner(true)
@@ -247,7 +248,8 @@ const WalletPage: React.FC = () => {
                                             </button>
                                         )}
                                         <button
-                                            className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
+                                            type="button"
+                                            className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                             aria-label={m['passport.wallet.addToPassport']()}
                                             onClick={() => {
                                                 newModal(

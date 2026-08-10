@@ -50,7 +50,7 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
         >
             <div className="flex items-center justify-between mb-4">
                 <div className="flex flex-col">
-                    <p className="text-[11px] font-medium tracking-[0.14em] text-grayscale-500 uppercase">
+                    <p className="text-[11px] font-medium tracking-[0.14em] text-grayscale-600 uppercase">
                         {m['dashboard.skillProfile.eyebrow']({ brand: brandName })}
                     </p>
                     <h2 className="mt-0.5 text-lg desktop:text-xl font-semibold text-grayscale-900 leading-tight">
@@ -61,7 +61,7 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
                     type="button"
                     onClick={onClose}
                     aria-label={m['common.close']()}
-                    className="shrink-0 w-8 h-8 rounded-full hover:bg-grayscale-100 transition-colors flex items-center justify-center text-grayscale-500 hover:text-grayscale-700"
+                    className="shrink-0 w-8 h-8 rounded-full hover:bg-grayscale-100 transition-colors flex items-center justify-center text-grayscale-600 hover:text-grayscale-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <X className="h-5 w-5" />
                 </button>
@@ -84,7 +84,7 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
                     <button
                         type="button"
                         onClick={() => setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS))}
-                        className="ml-auto text-grayscale-600 font-poppins font-bold text-[14px] leading-[18px] hover:text-grayscale-900 transition-colors"
+                        className="ml-auto text-grayscale-600 font-poppins font-bold text-[14px] leading-[18px] hover:text-grayscale-900 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {m['dashboard.skillProfile.skip']()}
                     </button>

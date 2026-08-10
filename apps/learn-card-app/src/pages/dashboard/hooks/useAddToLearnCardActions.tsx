@@ -8,6 +8,7 @@ import { ModalTypes, QRCodeScannerStore, useModal, getLogger } from 'learn-card-
 
 import IssueManagedBoostSelector from '../../launchPad/LaunchPadHeader/IssueManagedBoostSelector';
 import useBoostRecoveryCheck from '../../../hooks/useBoostRecoveryCheck';
+import * as m from '../../../paraglide/messages.js';
 
 const log = getLogger('dashboard');
 
@@ -20,7 +21,12 @@ const PasteOrUploadClaimModalFallback: React.FC = () => (
     <IonPage>
         <IonContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
+                <IonSpinner
+                    name="crescent"
+                    role="status"
+                    aria-label={m['common.loading']()}
+                    className="text-grayscale-700"
+                />
             </div>
         </IonContent>
     </IonPage>

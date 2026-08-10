@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { formatLocaleDate } from '../../../i18n/formatters';
 import { useHistory } from 'react-router-dom';
 import { IonIcon } from '@ionic/react';
@@ -14,6 +14,8 @@ export const ActivityDetailOverlay: React.FC<{
     onClose: () => void;
 }> = ({ item, onClose }) => {
     const history = useHistory();
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const titleId = useId();
 
     const viewInPassport = () => {
         const route =
@@ -24,11 +26,50 @@ export const ActivityDetailOverlay: React.FC<{
     };
 
     useEffect(() => {
+        const previouslyFocused = document.activeElement as HTMLElement | null;
+        const dialog = dialogRef.current;
+        const getFocusableElements = (): HTMLElement[] =>
+            dialog
+                ? Array.from(
+                      dialog.querySelectorAll<HTMLElement>(
+                          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                      )
+                  )
+                : [];
+
+        (getFocusableElements()[0] ?? dialog)?.focus();
+
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                onClose();
+                return;
+            }
+
+            if (e.key !== 'Tab') return;
+
+            const focusableElements = getFocusableElements();
+            if (focusableElements.length === 0) {
+                e.preventDefault();
+                dialog?.focus();
+                return;
+            }
+
+            const first = focusableElements[0];
+            const last = focusableElements[focusableElements.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
         };
         document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            previouslyFocused?.focus();
+        };
     }, [onClose]);
 
     useEffect(() => {
@@ -87,19 +128,28 @@ export const ActivityDetailOverlay: React.FC<{
     };
 
     return (
-        <div
-            className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in-up font-poppins p-0 sm:p-4"
-            onClick={onClose}
-        >
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in-up font-poppins p-0 sm:p-4">
+            <button
+                type="button"
+                tabIndex={-1}
+                aria-label={m['common.close']()}
+                onClick={onClose}
+                className="absolute inset-0 cursor-default"
+            />
             <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                tabIndex={-1}
                 className="bg-white rounded-t-[24px] sm:rounded-[24px] w-full sm:max-w-[480px] shadow-2xl relative flex flex-col"
                 style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-                onClick={e => e.stopPropagation()}
             >
                 <button
+                    type="button"
                     onClick={onClose}
                     aria-label={m['common.close']()}
-                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-grayscale-100 hover:bg-grayscale-200 rounded-full text-grayscale-700 transition-colors"
+                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-grayscale-100 hover:bg-grayscale-200 rounded-full text-grayscale-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <IonIcon icon={closeOutline} className="text-xl" />
                 </button>
@@ -125,7 +175,10 @@ export const ActivityDetailOverlay: React.FC<{
                             </>
                         )}
                     </div>
-                    <h2 className="text-xl font-semibold text-grayscale-900 text-center mb-1">
+                    <h2
+                        id={titleId}
+                        className="text-xl font-semibold text-grayscale-900 text-center mb-1"
+                    >
                         {item.title}
                     </h2>
                     <p className="text-sm text-grayscale-600 text-center">{subText}</p>
@@ -134,7 +187,7 @@ export const ActivityDetailOverlay: React.FC<{
                 <div className="px-6 pb-2 flex flex-col space-y-3">
                     {item.credentialType && (
                         <div className="flex items-center justify-between border-b border-grayscale-100 pb-3">
-                            <span className="text-xs font-medium text-grayscale-500 uppercase tracking-[0.5px]">
+                            <span className="text-xs font-medium text-grayscale-600 uppercase tracking-[0.5px]">
                                 {m['passport.activity.what']()}
                             </span>
                             <span className="text-sm text-grayscale-900 font-medium text-right">
@@ -143,7 +196,7 @@ export const ActivityDetailOverlay: React.FC<{
                         </div>
                     )}
                     <div className="flex items-center justify-between border-b border-grayscale-100 pb-3">
-                        <span className="text-xs font-medium text-grayscale-500 uppercase tracking-[0.5px]">
+                        <span className="text-xs font-medium text-grayscale-600 uppercase tracking-[0.5px]">
                             {m['passport.activity.type']()}
                         </span>
                         <span className="text-sm text-grayscale-900 font-medium text-right">
@@ -151,19 +204,19 @@ export const ActivityDetailOverlay: React.FC<{
                         </span>
                     </div>
                     <div className="flex items-center justify-between border-b border-grayscale-100 pb-3">
-                        <span className="text-xs font-medium text-grayscale-500 uppercase tracking-[0.5px]">
+                        <span className="text-xs font-medium text-grayscale-600 uppercase tracking-[0.5px]">
                             {m['passport.activity.date']()}
                         </span>
                         <span className="text-sm text-grayscale-900 font-medium text-right flex items-center gap-1.5 justify-end">
                             <IonIcon
                                 icon={calendarOutline}
-                                className="text-grayscale-500 text-sm"
+                                className="text-grayscale-600 text-sm"
                             />
                             {formattedDate}
                         </span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-grayscale-500 uppercase tracking-[0.5px]">
+                        <span className="text-xs font-medium text-grayscale-600 uppercase tracking-[0.5px]">
                             {m['common.status']()}
                         </span>
                         <span
@@ -179,15 +232,17 @@ export const ActivityDetailOverlay: React.FC<{
                 <div className="p-6 pt-4 flex flex-col gap-3">
                     {item.isSelf && (
                         <button
+                            type="button"
                             onClick={viewInPassport}
-                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                         >
                             {m['passport.activity.viewInPass']()}
                         </button>
                     )}
                     <button
+                        type="button"
                         onClick={onClose}
-                        className={`w-full py-3 px-4 rounded-[20px] font-medium text-sm transition-colors ${
+                        className={`w-full py-3 px-4 rounded-[20px] font-medium text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                             item.isSelf
                                 ? 'border border-grayscale-300 text-grayscale-700 hover:bg-grayscale-10'
                                 : 'bg-grayscale-900 text-white hover:opacity-90 transition-opacity'
