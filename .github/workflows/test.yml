@@ -94,6 +94,12 @@ jobs:
                       ./scripts/sync-repo.sh ${{ github.head_ref || github.event.inputs.branch }}
                       ./scripts/run-tests.sh
 
+                      # The runner script owns the existing Playwright suite. Run the
+                      # Axe-backed core-flow checks explicitly so accessibility remains
+                      # part of the same real-backend E2E gate.
+                      cd workspace/LearnCard/apps/learn-card-app
+                      bun run test:a11y
+
             - name: Download Playwright report from EC2
               if: always()
               continue-on-error: true
