@@ -431,25 +431,13 @@ export const LoginContent: React.FC = () => {
             ) : (
                 <>
                     <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                        <div
-                            className={`w-full p-3 rounded-[20px] border ${
-                                isNewUserSetup
-                                    ? 'bg-emerald-50 border-emerald-100'
-                                    : 'bg-black/10 border-white/20 backdrop-blur-sm'
-                            }`}
-                        >
-                            <p
-                                className={`text-sm font-medium ${
-                                    isNewUserSetup ? 'text-emerald-800' : 'text-grayscale-900'
-                                }`}
-                            >
-                                {isNewUserSetup
-                                    ? m['login.prompt.newUser']()
-                                    : isReturningUser
-                                    ? m['login.prompt.returning']()
-                                    : m['login.prompt.default']()}
-                            </p>
-                        </div>
+                        <p className="w-full text-center text-sm font-medium text-white">
+                            {isNewUserSetup
+                                ? m['login.prompt.newUser']()
+                                : isReturningUser
+                                ? m['login.prompt.returning']()
+                                : m['login.prompt.default']()}
+                        </p>
                     </IonRow>
 
                     {showLinkedBanner && (
@@ -461,7 +449,7 @@ export const LoginContent: React.FC = () => {
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     stroke="currentColor"
-                                    className="text-grayscale-900 shrink-0"
+                                    className="text-white shrink-0"
                                     strokeWidth="2.5"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -469,7 +457,7 @@ export const LoginContent: React.FC = () => {
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
 
-                                <span className="text-sm text-grayscale-900 font-medium">
+                                <span className="text-sm text-white font-medium">
                                     {accountHint ? (
                                         <TransP
                                             m={m['login.linkedBanner.withHint']}
@@ -496,7 +484,7 @@ export const LoginContent: React.FC = () => {
                                         className="w-6 h-6 rounded-md object-cover shrink-0"
                                     />
                                 )}
-                                <span className="text-sm text-grayscale-900 font-medium">
+                                <span className="text-sm text-white font-medium">
                                     <TransP
                                         m={m['login.installIntent.banner']}
                                         values={{
@@ -522,7 +510,7 @@ export const LoginContent: React.FC = () => {
                                     strokeWidth={2}
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    className="w-5 h-5 text-grayscale-900 shrink-0 mt-0.5"
+                                    className="w-5 h-5 text-white shrink-0 mt-0.5"
                                     aria-hidden="true"
                                 >
                                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -530,7 +518,7 @@ export const LoginContent: React.FC = () => {
                                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                                 </svg>
-                                <span className="text-sm text-grayscale-900 leading-relaxed">
+                                <span className="text-sm text-white leading-relaxed">
                                     Sign in as a parent or guardian to create a family account and
                                     add your child.
                                 </span>
@@ -590,15 +578,7 @@ export const LoginContent: React.FC = () => {
                                         log.warn('Failed to set Firebase persistence', e);
                                     }
                                 }}
-                                className={`
-                                    flex items-center gap-2.5 px-4 py-2 rounded-full
-                                    transition-all duration-200 select-none
-                                    ${
-                                        isPublicMode
-                                            ? 'bg-black/15 ring-1 ring-white/50'
-                                            : 'bg-black/10 hover:bg-black/15'
-                                    }
-                                `}
+                                className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <div
                                     className={`
@@ -622,11 +602,7 @@ export const LoginContent: React.FC = () => {
                                 <span
                                     className={`
                                     text-sm transition-colors duration-200
-                                    ${
-                                        isPublicMode
-                                            ? 'text-grayscale-900 font-medium'
-                                            : 'text-grayscale-900'
-                                    }
+                                    ${isPublicMode ? 'text-white font-medium' : 'text-white'}
                                 `}
                                 >
                                     {m['login.sharedComputer']()}
@@ -639,7 +615,7 @@ export const LoginContent: React.FC = () => {
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
                             <button
                                 onClick={() => setShowQrLogin(true)}
-                                className="text-sm text-grayscale-900 hover:text-grayscale-900 underline transition-colors"
+                                className="text-sm text-white hover:text-white underline transition-colors"
                             >
                                 {m['login.signInFromAnotherDevice']()}
                             </button>
@@ -661,7 +637,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     const { desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const loginBgColor =
-        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#047857';
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#058760';
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,

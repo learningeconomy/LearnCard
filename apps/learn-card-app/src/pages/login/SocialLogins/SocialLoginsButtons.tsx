@@ -44,7 +44,7 @@ export const SocialLoginsButtons: React.FC<{
     const { colors, theme } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
     const loginBgColor =
-        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#047857';
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#058760';
     const socialLogins = useSocialLogins(branding);
     const socialLoginInFlightRef = useRef(false);
     const [activeSocialLogin, setActiveSocialLogin] = useState<SocialLoginTypes | null>(null);
@@ -145,9 +145,9 @@ export const SocialLoginsButtons: React.FC<{
                         </button>
                     </div>
                     {showSocialLogins && (
-                        <p className="border-b-[1px] border-solid border-[#EFF0F5] leading-[0.1em] w-full text-center my-[40px]">
+                        <p className="border-b-[1px] border-solid border-white leading-[0.1em] w-full text-center my-[40px]">
                             <span
-                                className="py-0 px-[10px] text-grayscale-900"
+                                className="py-0 px-[10px] text-white"
                                 style={{ backgroundColor: loginBgColor }}
                             >
                                 {m['login.social.or']()}
