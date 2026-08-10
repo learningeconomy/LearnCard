@@ -1,2 +1,2 @@
-export { deriveLifecycleStatus } from 'learn-card-base';
-export type { CredentialLifecycleStatus } from 'learn-card-base';
+export { deriveLifecycleStatus } from 'learn-card-base/hooks/deriveLifecycleStatus';
+export type { CredentialLifecycleStatus } from 'learn-card-base/hooks/deriveLifecycleStatus';
