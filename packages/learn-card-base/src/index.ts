@@ -264,6 +264,7 @@ export * from './react-query/queries/vcQueries';
 export * from './react-query/queries/notifications';
 export * from './react-query/queries/aiPassport-queries';
 export * from './react-query/mutations/mutations';
+export * from './react-query/mutations/revokeBoostRecipientGroup';
 export * from './react-query/mutations/notifications';
 export * from './react-query/mutations/boosts';
 export * from './react-query/mutations/mutation.helpers';
