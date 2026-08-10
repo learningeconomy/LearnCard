@@ -213,60 +213,67 @@ export interface CredentialStatusForBoostAndProfile {
     status: 'pending' | 'claimed' | 'revoked' | 'suspended';
 }
 
-export const getCredentialStatusForBoostAndProfile = async (
+export const getCredentialStatusesForBoostAndProfile = async (
     boostId: string,
     profileId: string
-): Promise<CredentialStatusForBoostAndProfile | null> => {
+): Promise<CredentialStatusForBoostAndProfile[]> => {
     const result = await neogma.queryRunner.run(
         `MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
          MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential)
          WHERE (sender:Profile OR sender:AppStoreListing)
          OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(:Profile {profileId: $profileId})
          RETURN credential, sent, received
-         ORDER BY coalesce(received.date, sent.date) DESC
-         LIMIT 1`,
+         ORDER BY coalesce(received.date, sent.date) DESC, credential.id DESC`,
         { boostId, profileId }
     );
 
-    const record = result.records[0];
-    if (!record) {
-        return null;
-    }
+    const statuses = await Promise.all(
+        result.records.map(async record => {
+            const credentialNode = record.get('credential') as {
+                properties?: Record<string, unknown>;
+            };
+            const credentialProps = inflateObject<CredentialType>(
+                (credentialNode?.properties ?? {}) as CredentialType
+            );
+            const credential = await Credential.findOne({ where: { id: credentialProps.id } });
+            if (!credential) return null;
 
-    const credentialProps = inflateObject<CredentialType>(
-        ((record.get('credential') as { properties?: Record<string, unknown> })?.properties ??
-            {}) as CredentialType
+            const sentNode = record.get('sent') as { properties?: Record<string, unknown> };
+            const receivedNode = record.get('received') as {
+                properties?: Record<string, unknown>;
+            } | null;
+            const sentProps = inflateRelationshipProperties(sentNode?.properties ?? {});
+            const receivedProps = receivedNode?.properties
+                ? inflateRelationshipProperties(receivedNode.properties)
+                : undefined;
+            const rawStatus = sentProps.status ?? receivedProps?.status;
+
+            return {
+                credential,
+                sentDate: sentProps.date as string | undefined,
+                receivedDate: receivedProps?.date as string | undefined,
+                status:
+                    rawStatus === 'revoked'
+                        ? ('revoked' as const)
+                        : rawStatus === 'suspended'
+                        ? ('suspended' as const)
+                        : receivedProps
+                        ? ('claimed' as const)
+                        : ('pending' as const),
+            };
+        })
     );
-    const credential = await Credential.findOne({ where: { id: credentialProps.id } });
-    if (!credential) {
-        return null;
-    }
 
-    const sentProps = inflateRelationshipProperties(
-        (record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {}
+    return statuses.filter(
+        (status): status is CredentialStatusForBoostAndProfile => status !== null
     );
-    const receivedNode = record.get('received') as { properties?: Record<string, unknown> } | null;
-    const receivedProps = receivedNode?.properties
-        ? inflateRelationshipProperties(receivedNode.properties)
-        : undefined;
-
-    const rawStatus = sentProps.status ?? receivedProps?.status;
-    const status =
-        rawStatus === 'revoked'
-            ? 'revoked'
-            : rawStatus === 'suspended'
-            ? 'suspended'
-            : receivedProps
-            ? 'claimed'
-            : 'pending';
-
-    return {
-        credential,
-        sentDate: sentProps.date as string | undefined,
-        receivedDate: receivedProps?.date as string | undefined,
-        status,
-    };
 };
+
+export const getCredentialStatusForBoostAndProfile = async (
+    boostId: string,
+    profileId: string
+): Promise<CredentialStatusForBoostAndProfile | null> =>
+    (await getCredentialStatusesForBoostAndProfile(boostId, profileId))[0] ?? null;
 
 /**
  * Returns the authoritative lifecycle status ('active' | 'revoked' | 'suspended') for a
