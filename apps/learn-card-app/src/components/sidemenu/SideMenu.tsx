@@ -191,15 +191,17 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                         <NewAiSessionButton type={NewAiSessionButtonEnum.sideMenu} />
                                     )} */}
 
-                                    <IonMenuToggle
-                                        role="button"
-                                        autoHide={false}
+                                    <button
+                                        type="button"
                                         onClick={handleBoost}
-                                        className={`text-[17px] flex items-center justify-center gap-[10px] font-semibold py-[5px] rounded-full w-full max-w-[90%] h-[45px] max-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
+                                        className={`text-[17px] flex items-center justify-center gap-[10px] font-semibold py-[5px] rounded-full w-full max-w-[90%] h-[45px] max-h-[45px] shadow-soft-bottom focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${colors.secondaryButtonColor}`}
                                     >
                                         {m['issue.title']()}
-                                        <GearPlusIcon className="w-[30px] h-[30px] text-grayscale-800" />
-                                    </IonMenuToggle>
+                                        <GearPlusIcon
+                                            className="w-[30px] h-[30px] text-grayscale-800"
+                                            aria-hidden="true"
+                                        />
+                                    </button>
                                 </div>
                             </div>
                         </div>

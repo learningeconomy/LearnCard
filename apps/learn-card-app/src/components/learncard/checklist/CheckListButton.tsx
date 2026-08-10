@@ -64,7 +64,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
             <button
                 type="button"
                 onClick={handleCheckListButton}
-                className={`w-full text-left flex items-center gap-[10px] rounded-[15px] border-[3px] border-solid border-white p-[10px] shadow-[0_2px_1.5px_rgba(0,0,0,0.25)] bg-${family}-50 ${className}`}
+                className={`w-full text-left flex items-center gap-[10px] rounded-[15px] border-[3px] border-solid border-white p-[10px] shadow-[0_2px_1.5px_rgba(0,0,0,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 bg-${family}-50 ${className}`}
             >
                 <div className="shrink-0 w-[40px] h-[40px] rounded-[10px] overflow-hidden flex items-center justify-center">
                     {isParsing ? (
