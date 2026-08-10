@@ -139,10 +139,14 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                         }
                         customDescription={customDescription}
                         titleOverride={cardTitle}
-                        qrCodeOnClick={() => {
-                            closePreviewModal();
-                            presentShareBoostLink();
-                        }}
+                        qrCodeOnClick={
+                            canShare
+                                ? () => {
+                                      closePreviewModal();
+                                      presentShareBoostLink();
+                                  }
+                                : undefined
+                        }
                         customBodyCardComponent={undefined as any}
                         customFooterComponent={undefined as any}
                         customIssueHistoryComponent={undefined as any}
@@ -205,7 +209,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         credentialSubject = {},
     } = mappedInputs;
 
-    const { handlePresentBoostMenuModal } = useBoostMenu(
+    const { handlePresentBoostMenuModal, canShare } = useBoostMenu(
         credential as any,
         (uri || '') as string,
         credential as any,
@@ -293,12 +297,14 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     const credentialComponentDisplay = isBoost ? BoostPreview : VCDisplayCardWrapper;
 
     const presentShareBoostLink = () => {
-        if (!credential) return;
+        if (!credential || !canShare) return;
 
         newPreviewModal(
             <ShareTroopIdModal
-                credential={(credential as any).boostCredential ?? credential}
-                uri={(credential as any).boostId ?? uri}
+                credential={
+                    (credential as VC & { boostCredential?: VC }).boostCredential ?? credential
+                }
+                uri={(credential as VC & { boostId?: string }).boostId ?? uri ?? ''}
             />,
             { sectionClassName: '!bg-transparent !shadow-none !max-w-[355px]' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -363,10 +369,14 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
             <IdDisplayContainer
                 showQRCode
-                handleQRCodeClick={() => {
-                    closePreviewModal();
-                    presentShareBoostLink();
-                }}
+                handleQRCodeClick={
+                    canShare
+                        ? () => {
+                              closePreviewModal();
+                              presentShareBoostLink();
+                          }
+                        : undefined
+                }
                 achievementType={cred?.credentialSubject?.achievement?.achievementType}
                 title={cardTitle}
                 subtitle={subtitle}
@@ -393,6 +403,8 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                 idSleeveFooterClass={idSleeveFooterClass}
                 issueeThumbnail={issueeThumbnail}
                 cred={credential}
+                credentialUri={uri}
+                canShare={canShare}
                 boostPageViewMode={boostPageViewMode}
                 loading={showSkeleton}
             />

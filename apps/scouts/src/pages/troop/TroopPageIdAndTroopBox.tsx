@@ -8,7 +8,7 @@ import TroopID from './TroopID';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import TroopIdStatusButton, { useTroopIDStatus } from './TroopIdStatusButton';
-import { isCredentialActionRestricted } from './troopIdStatus.helpers';
+import { isCredentialActionRestricted, type TroopIdIssuanceState } from './troopIdStatus.helpers';
 import TroopIdBoxQRCodeFrame from '../../components/svgs/TroopIdBoxQRCodeFrame';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { VC } from '@learncard/types';
@@ -19,6 +19,8 @@ type TroopPageIdAndTroopBoxProps = {
     credential: VC;
     ownsCurrentId: boolean;
     boostUri: string;
+    credentialUri?: string;
+    issuanceState?: TroopIdIssuanceState;
     handleShare: () => void;
     handleShowIdDetails: () => void;
 };
@@ -27,6 +29,8 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
     credential: credentialNoEdits,
     ownsCurrentId,
     boostUri,
+    credentialUri,
+    issuanceState,
     handleShare,
     handleShowIdDetails,
 }) => {
@@ -40,8 +44,12 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
     );
     const credential = credentialWithEdits ?? credentialNoEdits;
 
-    const { status: credentialStatus } = useTroopIDStatus({ credential: credentialNoEdits });
-    const isRevokedOrPending = isCredentialActionRestricted(credentialStatus);
+    const { status: credentialStatus, isLoading: lifecycleLoading } = useTroopIDStatus({
+        credential: credentialNoEdits,
+        credentialUri,
+        issuanceState,
+    });
+    const isRestricted = lifecycleLoading || isCredentialActionRestricted(credentialStatus);
 
     const { network: networkData } = useGetTroopNetwork({ credential });
 
@@ -74,11 +82,12 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
                     <div className="flex justify-center relative pb-[10px]">
                         <button
                             onClick={() => {
-                                if (isRevokedOrPending) return;
+                                if (isRestricted) return;
 
                                 handleShare();
                             }}
-                            className="bg-white rounded-full p-[10px] h-[50px] w-[50px] shadow-box-bottom"
+                            disabled={isRestricted}
+                            className="bg-white rounded-full p-[10px] h-[50px] w-[50px] shadow-box-bottom disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             <QRCodeScanner className="text-grayscale-900" />
                         </button>
@@ -95,6 +104,8 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
                 {ownsCurrentId && (
                     <TroopIdStatusButton
                         credential={credentialNoEdits}
+                        credentialUri={credentialUri}
+                        issuanceState={issuanceState}
                         onClick={handleShowIdDetails}
                         skeletonStyles={{
                             padding: '8px 14px 8px 14px',
