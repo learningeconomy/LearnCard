@@ -388,25 +388,33 @@ export const setStatusListEntryBit = async (
     });
 };
 
+export type CredentialBitstringStatusUpdateResult = 'updated' | 'missing-entry' | 'failed';
+
+export const setCredentialBitstringStatusWithResult = async (
+    credentialId: string,
+    statusPurpose: BitstringStatusPurpose,
+    value: boolean
+): Promise<CredentialBitstringStatusUpdateResult> => {
+    const credential = await Credential.findOne({ where: { id: credentialId } });
+    if (!credential) return 'failed';
+
+    const entries = getBitstringStatusListEntries(JSON.parse(credential.credential)).filter(
+        entry => entry.statusPurpose === statusPurpose
+    );
+
+    if (entries.length === 0) return 'missing-entry';
+
+    const results = await Promise.all(entries.map(entry => setStatusListEntryBit(entry, value)));
+    return results.every(Boolean) ? 'updated' : 'failed';
+};
+
 export const setCredentialBitstringStatus = async (
     credentialId: string,
     statusPurpose: BitstringStatusPurpose,
     value: boolean
-): Promise<boolean> => {
-    const credential = await Credential.findOne({ where: { id: credentialId } });
-    if (!credential) return false;
-
-    const parsedCredential = JSON.parse(credential.credential);
-    const entries = getBitstringStatusListEntries(parsedCredential).filter(
-        entry => entry.statusPurpose === statusPurpose
-    );
-
-    if (entries.length === 0) return false;
-
-    await Promise.all(entries.map(entry => setStatusListEntryBit(entry, value)));
-
-    return true;
-};
+): Promise<boolean> =>
+    (await setCredentialBitstringStatusWithResult(credentialId, statusPurpose, value)) ===
+    'updated';
 
 export const getSignedStatusListCredential = async (id: string): Promise<VC | null> => {
     const list = await getStatusListById(id);

@@ -2,6 +2,53 @@ import { QueryBuilder, BindParam } from 'neogma';
 
 import { Credential } from '@models';
 import { setCredentialBitstringStatus } from '@helpers/status-list.helpers';
+import { neogma } from '@instance';
+import {
+    setCredentialBitstringStatusWithResult,
+    type CredentialBitstringStatusUpdateResult,
+} from '@helpers/status-list.helpers';
+
+export interface RevokeCredentialForProfileResult {
+    found: boolean;
+    wasAlreadyRevoked: boolean;
+    statusList: CredentialBitstringStatusUpdateResult;
+}
+
+export const revokeCredentialForProfile = async (
+    credentialId: string,
+    profileId: string
+): Promise<RevokeCredentialForProfileResult> => {
+    const revokedAt = new Date().toISOString();
+    const result = await neogma.queryRunner.run(
+        `MATCH (credential:Credential {id: $credentialId})
+         MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential)
+         WHERE sender:Profile OR sender:AppStoreListing
+         WITH sent, sent.status AS previousStatus
+         SET sent.status = "revoked", sent.revokedAt = $revokedAt
+         RETURN previousStatus`,
+        { credentialId, profileId, revokedAt }
+    );
+
+    if (result.records.length === 0) {
+        return { found: false, wasAlreadyRevoked: false, statusList: 'failed' };
+    }
+
+    let statusList: CredentialBitstringStatusUpdateResult = 'failed';
+    try {
+        statusList = await setCredentialBitstringStatusWithResult(credentialId, 'revocation', true);
+    } catch (error) {
+        console.error('[revokeCredentialForProfile] status-list update failed', {
+            credentialId,
+            error,
+        });
+    }
+
+    return {
+        found: true,
+        wasAlreadyRevoked: result.records[0]?.get('previousStatus') === 'revoked',
+        statusList,
+    };
+};
 
 /**
  * Revoke a credential by setting its issuer-controlled status on the CREDENTIAL_SENT relationship.
@@ -11,33 +58,15 @@ export const revokeCredentialReceived = async (
     credentialId: string,
     profileId: string
 ): Promise<boolean> => {
-    const revokedAt = new Date().toISOString();
-
-    const result = await new QueryBuilder(new BindParam({ profileId, revokedAt }))
-        .match({ identifier: 'credential', model: Credential, where: { id: credentialId } })
-        .raw(
-            `MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential)
-             WHERE sender:Profile OR sender:AppStoreListing
-             SET sent.status = "revoked",
-                 sent.revokedAt = $revokedAt
-             RETURN sent`
-        )
-        .run();
-
-    if (result.records.length > 0) {
-        const bitSet = await setCredentialBitstringStatus(credentialId, 'revocation', true);
-        if (!bitSet) {
-            // The relationship is marked revoked but the credential has no 'revocation'
-            // status-list entry, so the verifiable bit was NOT set. Holders relying purely
-            // on verifyCredential can't see the revocation. Surface it instead of failing
-            // silently (the authoritative relationship status still drives the UI).
-            console.warn(
-                `[revokeCredentialReceived] credential ${credentialId} has no verifiable 'revocation' status entry; bitstring bit not set`
-            );
-        }
+    const result = await revokeCredentialForProfile(credentialId, profileId);
+    if (result.found && result.statusList !== 'updated') {
+        console.warn('[revokeCredentialReceived] verifiable revocation unavailable', {
+            credentialId,
+            reason: result.statusList,
+        });
     }
 
-    return result.records.length > 0;
+    return result.found;
 };
 
 /**
