@@ -53,8 +53,6 @@ export const revokeCredentialForProfile = async (
         statusList,
     };
 };
->>>>>>> f87537716 (feat: revoke all ScoutPass group credentials)
-
 /**
  * Revoke a credential by setting its issuer-controlled status on the CREDENTIAL_SENT relationship.
  * This applies to both pending and claimed credentials without creating a received relationship.
