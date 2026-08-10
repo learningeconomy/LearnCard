@@ -76,6 +76,14 @@ const assertNoHighImpactViolations = async (
 ): Promise<void> => {
     await expect(page.locator('body')).toBeVisible();
 
+    // Preserve a visual record for each journey checkpoint. The report makes
+    // review of default-state visual regressions possible without changing the
+    // page or requiring screenshot assertions to update on product content.
+    await testInfo.attach(`${axeAttachmentName(checkpoint).replace(/\.json$/, '')}.png`, {
+        body: await page.screenshot({ fullPage: true }),
+        contentType: 'image/png',
+    });
+
     // Avoid sampling text mid-way through the app's short opacity entrance,
     // when composited colors can produce a false transient contrast failure.
     await page.evaluate(async () => {
@@ -802,7 +810,7 @@ test.describe('Credential lifecycle accessibility', () => {
             await recipientPage.goto('/wallet');
             const badgesCategory = recipientPage.getByRole('button', { name: /Badges/i });
             await expect(badgesCategory).toBeVisible({ timeout: 30_000 });
-            await badgesCategory.click();
+            await activateWithKeyboard(recipientPage, badgesCategory, 'Space');
             await recipientPage.waitForURL(/\/socialBadges/, { timeout: 30_000 });
 
             const earnedCredentialCard = recipientPage.getByRole('button', {
