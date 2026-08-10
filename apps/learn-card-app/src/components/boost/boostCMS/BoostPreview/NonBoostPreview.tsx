@@ -326,7 +326,6 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 enableLightbox
                 titleOverride={titleOverride}
                 handleClose={isCertificate ? handleCloseModal : undefined}
-                onDotsClick={onDotsClick}
                 hideNavButtons
                 setIsFrontOverride={setIsFront}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}

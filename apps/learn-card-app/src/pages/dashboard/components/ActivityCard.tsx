@@ -334,37 +334,38 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
             {hasPassive && (
                 <div className="flex flex-col gap-1.5">
-                    {showSkeleton &&
-                        Array.from({ length: MAX_PASSIVE }).map((_, i) => (
-                            <SkeletonRow key={`skeleton-${i}`} index={i} />
-                        ))}
-                    {!showSkeleton &&
-                        visiblePassive.map((record, i) => {
-                            const category = resolveCategory(record.category);
-                            return (
-                                <div
-                                    key={record.id ?? record.uri}
-                                    className="animate-fade-in-up"
-                                    style={{
-                                        animationDelay: `${(visibleActionable.length + i) * 60}ms`,
-                                    }}
-                                >
-                                    <BoostEarnedCard
-                                        record={record}
-                                        categoryType={category}
-                                        defaultImg={
-                                            categoryMetadata[category as CredentialCategoryEnum]
-                                                ?.defaultImageSrc
-                                        }
-                                        boostPageViewMode={BoostPageViewMode.List}
-                                        useWrapper={false}
-                                        hideOptionsMenu
-                                        relativeDate
-                                        compact
-                                    />
-                                </div>
-                            );
-                        })}
+                    {showSkeleton
+                        ? Array.from({ length: MAX_PASSIVE }).map((_, i) => (
+                              <SkeletonRow key={`skeleton-${i}`} index={i} />
+                          ))
+                        : visiblePassive.map((record, i) => {
+                              const category = resolveCategory(record.category);
+                              return (
+                                  <div
+                                      key={record.id ?? record.uri}
+                                      className="animate-fade-in-up"
+                                      style={{
+                                          animationDelay: `${
+                                              (visibleActionable.length + i) * 60
+                                          }ms`,
+                                      }}
+                                  >
+                                      <BoostEarnedCard
+                                          record={record}
+                                          categoryType={category}
+                                          defaultImg={
+                                              categoryMetadata[category as CredentialCategoryEnum]
+                                                  ?.defaultImageSrc
+                                          }
+                                          boostPageViewMode={BoostPageViewMode.List}
+                                          useWrapper={false}
+                                          hideCardOptionsMenu
+                                          relativeDate
+                                          compact
+                                      />
+                                  </div>
+                              );
+                          })}
                     <button
                         type="button"
                         onClick={() => history.push('/wallet')}

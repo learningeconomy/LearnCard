@@ -1,9 +1,6 @@
-import { toastStore } from 'learn-card-base/stores/toastStore';
+import { toastStore } from '../stores/toastStore';
 
-export enum ToastTypeEnum {
-    Success = 'success',
-    Error = 'error',
-}
+export { ToastTypeEnum } from '../stores/toastStore';
 
 export const useToast = () => {
     const presentToast = toastStore.set.presentToast;
