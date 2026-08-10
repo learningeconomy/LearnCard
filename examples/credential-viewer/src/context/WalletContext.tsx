@@ -225,31 +225,41 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             // 2. No registered SAs — check managed SAs or create one
             let sa: { name: string; endpoint: string; did: string } | undefined;
 
-            if (lc.invoke.getSigningAuthorities) {
-                const managed = await lc.invoke.getSigningAuthorities();
+            try {
+                if (lc.invoke.getSigningAuthorities) {
+                    const managed = await lc.invoke.getSigningAuthorities();
 
-                sa = managed?.find((s: { name: string }) => s?.name === DEFAULT_SA_NAME);
-            }
-
-            if (!sa && lc.invoke.createSigningAuthority) {
-                sa = await lc.invoke.createSigningAuthority(DEFAULT_SA_NAME);
-            }
-
-            if (!sa || !sa.endpoint) {
-                const hasPlugin = !!lc.invoke.createSigningAuthority;
-
-                if (hasPlugin) {
-                    throw new Error(
-                        'Signing authority was created but has no endpoint. Is the LCA API running?'
-                    );
+                    sa = managed?.find((s: { name: string }) => s?.name === DEFAULT_SA_NAME);
                 }
 
+                if (!sa && lc.invoke.createSigningAuthority) {
+                    sa = await lc.invoke.createSigningAuthority(DEFAULT_SA_NAME);
+                }
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+
+                throw new Error(`LCA API request failed at ${envConfigRef.current.lcaApi}: ${msg}`);
+            }
+
+            if (!sa) {
                 if (lcaPluginErrorRef.current) {
-                    throw new Error(`LCA API plugin failed to load: ${lcaPluginErrorRef.current}`);
+                    throw new Error(lcaPluginErrorRef.current);
+                }
+
+                if (lc.invoke.createSigningAuthority) {
+                    throw new Error(
+                        `Could not create a signing authority through the LCA API at ${envConfigRef.current.lcaApi}.`
+                    );
                 }
 
                 throw new Error(
                     'No LCA API plugin available. Make sure the environment has an lcaApi URL configured.'
+                );
+            }
+
+            if (!sa.endpoint) {
+                throw new Error(
+                    'Signing authority was created but has no endpoint. Is the LCA API running?'
                 );
             }
 
@@ -328,17 +338,24 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             if (cfg.lcaApi) {
                 try {
-                    const lcaApiLearnCard = await lc.addPlugin(await getLCAPlugin(lc, cfg.lcaApi));
+                    const lcaPlugin = await getLCAPlugin(lc, cfg.lcaApi);
+
+                    if (lcaPlugin.displayName?.endsWith(' (Offline)')) {
+                        throw new Error('The LCA API plugin initialized in offline mode.');
+                    }
+
+                    const lcaApiLearnCard = await lc.addPlugin(lcaPlugin);
 
                     // The context intentionally erases the plugin tuple behind WalletInstance.
                     lc = lcaApiLearnCard as unknown as typeof lc;
                 } catch (err) {
                     const msg = err instanceof Error ? err.message : String(err);
+                    const lcaPluginError = `Could not reach LCA API at ${cfg.lcaApi}: ${msg}`;
 
-                    lcaPluginErrorRef.current = msg;
+                    lcaPluginErrorRef.current = lcaPluginError;
 
                     console.warn('Could not load LCA API plugin:', err);
-                    setSaError(`Could not reach LCA API at ${cfg.lcaApi}: ${msg}`);
+                    setSaError(lcaPluginError);
                 }
             }
 
