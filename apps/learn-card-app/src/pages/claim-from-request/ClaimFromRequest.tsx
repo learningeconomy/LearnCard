@@ -342,7 +342,7 @@ const ExchangeErrorDisplay: React.FC<{
                         {friendlyError.title}
                     </h1>
 
-                    <p className="text-grayscale-500 text-sm">We couldn't complete your request</p>
+                    <p className="text-grayscale-600 text-sm">We couldn't complete your request</p>
                 </div>
 
                 {/* Content */}
@@ -366,7 +366,7 @@ const ExchangeErrorDisplay: React.FC<{
                         {/* Technical details (collapsed by default feeling) */}
                         {errorData && rawErrorMessage !== friendlyError.description && (
                             <details className="group">
-                                <summary className="text-xs text-grayscale-400 cursor-pointer hover:text-grayscale-600 transition-colors">
+                                <summary className="text-xs text-grayscale-600 cursor-pointer hover:text-grayscale-900 transition-colors">
                                     Show technical details
                                 </summary>
 
@@ -382,6 +382,7 @@ const ExchangeErrorDisplay: React.FC<{
                     {/* Action buttons */}
                     <div className="space-y-3">
                         <button
+                            type="button"
                             onClick={() => onRetry()}
                             className="w-full py-3 px-4 bg-grayscale-900 text-white font-medium text-sm rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                         >
@@ -390,6 +391,7 @@ const ExchangeErrorDisplay: React.FC<{
                         </button>
 
                         <button
+                            type="button"
                             onClick={onCancel}
                             className="w-full py-3 px-4 text-sm text-grayscale-600 font-medium rounded-[20px] hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                         >
