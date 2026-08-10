@@ -82,16 +82,23 @@ export const signingAuthorityRouter = t.router({
         .output(SigningAuthorityResponseValidator.array())
         .query(async ({ ctx }) => {
             const signingAuthorities = await getSigningAuthoritiesForDid(ctx.user.did);
-            return signingAuthorities
-                .filter(
-                    (
-                        signingAuthority
-                    ): signingAuthority is MongoSigningAuthorityType & { did: string } =>
-                        Boolean(signingAuthority.did)
-                )
-                .map(signingAuthority =>
-                    getSigningAuthorityWithEndpoint(signingAuthority, ctx.domain)
-                );
+            const validSigningAuthorities = signingAuthorities.filter(
+                (
+                    signingAuthority
+                ): signingAuthority is MongoSigningAuthorityType & { did: string } =>
+                    Boolean(signingAuthority.did)
+            );
+
+            if (validSigningAuthorities.length !== signingAuthorities.length) {
+                console.warn('[LCA signing-authority/get] Ignoring legacy records without a DID', {
+                    ownerDid: ctx.user.did,
+                    count: signingAuthorities.length - validSigningAuthorities.length,
+                });
+            }
+
+            return validSigningAuthorities.map(signingAuthority =>
+                getSigningAuthorityWithEndpoint(signingAuthority, ctx.domain)
+            );
         }),
     authorizeSigningAuthority: didAndChallengeRoute
         .meta({
