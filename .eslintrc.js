@@ -14,6 +14,7 @@ const jsxA11yRecommendedRules = Object.fromEntries(
 );
 
 const JSX_A11Y_ZERO_VIOLATION_RULES = [
+    'jsx-a11y/anchor-ambiguous-text',
     'jsx-a11y/anchor-has-content',
     'jsx-a11y/anchor-is-valid',
     'jsx-a11y/aria-activedescendant-has-tabindex',

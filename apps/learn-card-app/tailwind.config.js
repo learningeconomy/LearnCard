@@ -24,6 +24,10 @@ module.exports = {
         'bg-sand-50',
         'bg-vp-red-50',
         'bg-baltic-blue-500',
+        // `defaults.primaryButtonColor` comes from theme JSON; the 600 steps are
+        // the AA-passing white-on-button values (the 500s fall below 4.5:1).
+        'bg-baltic-blue-600',
+        'bg-indigo-600',
         // LC-1921 side-menu Build-My-LearnCard card + theme toggle: tints built
         // via `bg-${family}-{50,200,500}` from the active theme primary color.
         'bg-indigo-50',

@@ -27,6 +27,7 @@ body.scanner-active > * {
 @import './assets/sass/sidemenu.scss';
 @import './assets/sass/credential-storage.scss';
 @import './assets/sass/delete-user-prompt.scss';
+
 @import './assets//sass/user-profle.scss';
 @import './assets/sass/boost-cms.scss';
 @import './assets/sass/qr-code-scanner.scss';
@@ -116,4 +117,69 @@ textarea[class*='border-gray']:-webkit-autofill:active {
     -webkit-text-fill-color: #374151 !important;
     caret-color: #374151 !important;
     transition: background-color 5000s ease-in-out 0s;
+}
+
+// Keyboard focus is intentionally invisible for pointer interaction and appears
+// only for keyboard-style focus. This covers native controls and the small
+// number of composite widgets used by the core app flows.
+#app-router,
+#modal-mid-root {
+    :where(
+            button,
+            a[href],
+            input,
+            select,
+            textarea,
+            [role='button'],
+            [role='tab'],
+            [role='option'],
+            [tabindex]:not([tabindex='-1'])
+        ):focus-visible {
+        @apply outline-none ring-2 ring-emerald-500 ring-offset-2;
+    }
+}
+
+@keyframes accessible-opacity-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+// The claim screen is white/light-surface content. Shared credential renderers
+// use grayscale-500 for metadata, which falls below body-text contrast here.
+// Scope the token correction to this app-owned surface so disabled and
+// placeholder styling elsewhere remains unchanged.
+.claim-boost-a11y-surface .text-grayscale-500 {
+    @apply text-grayscale-600;
+}
+
+// The shared credential renderer uses orange-500 for an unknown issuer. On
+// the white claim view that does not meet text contrast, so use the existing
+// darker amber token only for that state on this app-owned surface.
+.claim-boost-a11y-surface .claim-boost-verification-status.text-orange-500 {
+    @apply text-amber-800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #app-router *,
+    #app-router *::before,
+    #app-router *::after,
+    #modal-mid-root *,
+    #modal-mid-root *::before,
+    #modal-mid-root *::after {
+        animation: none !important;
+        scroll-behavior: auto !important;
+        transition-property: color, background-color, border-color, text-decoration-color, fill,
+            stroke, opacity, box-shadow !important;
+    }
+
+    // Preserve a subtle opacity entrance while removing fade-in-up's translate.
+    #app-router .animate-fade-in-up,
+    #modal-mid-root .animate-fade-in-up {
+        animation: accessible-opacity-in 150ms ease-out both !important;
+    }
 }
