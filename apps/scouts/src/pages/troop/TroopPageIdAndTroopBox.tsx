@@ -8,6 +8,7 @@ import TroopID from './TroopID';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import TroopIdStatusButton, { useTroopIDStatus } from './TroopIdStatusButton';
+import { isCredentialActionRestricted } from './troopIdStatus.helpers';
 import TroopIdBoxQRCodeFrame from '../../components/svgs/TroopIdBoxQRCodeFrame';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { VC } from '@learncard/types';
@@ -39,8 +40,8 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
     );
     const credential = credentialWithEdits ?? credentialNoEdits;
 
-    const credentialStatus = useTroopIDStatus(credentialNoEdits, undefined, boostUri);
-    const isRevokedOrPending = credentialStatus === 'revoked' || credentialStatus === 'pending';
+    const { status: credentialStatus } = useTroopIDStatus({ credential: credentialNoEdits });
+    const isRevokedOrPending = isCredentialActionRestricted(credentialStatus);
 
     const { network: networkData } = useGetTroopNetwork({ credential });
 

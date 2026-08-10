@@ -12,6 +12,7 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { useTroopIDStatus } from '../../../pages/troop/TroopIdStatusButton';
+import { isCredentialActionRestricted } from '../../../pages/troop/troopIdStatus.helpers';
 
 import { isTroopCategory } from '../../../helpers/troop.helpers';
 
@@ -32,8 +33,8 @@ const useBoostMenu = (
     onDelete?: () => void
 ) => {
     const { isLoading } = useGetBoost(boost?.boostId);
-    const credentialStatus = useTroopIDStatus(boost, undefined, boost?.boostId);
-    const isRevokedOrPending = credentialStatus === 'revoked' || credentialStatus === 'pending';
+    const { status: credentialStatus } = useTroopIDStatus({ credential: boost });
+    const isRevokedOrPending = isCredentialActionRestricted(credentialStatus);
     const isTroopID = isTroopCategory(categoryType as BoostCategoryOptionsEnum);
 
     const showDeleteButton = (!isLoading && isRevokedOrPending && isTroopID) || !isTroopID;

@@ -26,6 +26,7 @@ import {
 } from 'learn-card-base';
 import { VC, VerificationItem, Boost } from '@learncard/types';
 import { useTroopIDStatus } from './TroopIdStatusButton';
+import { isCredentialActionRestricted } from './troopIdStatus.helpers';
 
 type TroopPageProps = {
     credential: VC;
@@ -54,8 +55,8 @@ const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri
     // Calculate if user has parent admin access (can view child troop details)
     // canEditChildren is a string: "*" means full access, "" means none
     const hasParentAdminAccess = useMemo(() => {
-        const hasParentEdit = 
-            parentPermissions?.canEdit === true || 
+        const hasParentEdit =
+            parentPermissions?.canEdit === true ||
             (parentPermissions?.canEditChildren && parentPermissions.canEditChildren !== '');
 
         return hasParentEdit || myTroopIds?.isScoutGlobalAdmin || myTroopIds?.isNationalAdmin;
@@ -101,10 +102,11 @@ const TroopPage: React.FC<TroopPageProps> = ({ credential, handleShare, boostUri
     }, [credentialWithEdits]);
 
     // Check credential status (valid, pending, revoked)
-    const credentialStatus = useTroopIDStatus(_credential, undefined, _boostUri);
+    const { status: credentialStatus } = useTroopIDStatus({ credential: _credential });
     // Parent admins should always see content regardless of credential status
     // (The old revocation logic is being deprecated and may incorrectly mark credentials)
-    const isRevokedOrPending = !hasParentAdminAccess && (credentialStatus === 'revoked' || credentialStatus === 'pending');
+    const isRevokedOrPending =
+        !hasParentAdminAccess && isCredentialActionRestricted(credentialStatus);
 
     const getScoutIdTypeFromBoost = (vc: VC) => {
         return vc?.credentialSubject?.achievement?.achievementType;

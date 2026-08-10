@@ -140,7 +140,6 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                             right: '-10px',
                         }}
                         isHidden={!isAlreadyClaimed}
-                        otherUserProfileID={otherUserProfileID}
                     />
 
                     <div className="flex flex-col items-center gap-[7px]">
