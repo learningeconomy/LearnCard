@@ -58,13 +58,13 @@ describe('deriveLifecycleStatus', () => {
         ).toBe('active');
     });
 
-    it('falls back to errors text when structured status is absent', () => {
+    it('fails open when structured status is absent, regardless of error text', () => {
         expect(
             deriveLifecycleStatus({ checks: [], warnings: [], errors: ['credential is revoked'] })
-        ).toBe('revoked');
+        ).toBe('active');
         expect(
             deriveLifecycleStatus({ checks: [], warnings: [], errors: ['credential is suspended'] })
-        ).toBe('suspended');
+        ).toBe('active');
     });
 
     it('returns active for an empty/undefined check (fail-open)', () => {

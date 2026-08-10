@@ -38,4 +38,11 @@ describe('deriveLifecycleStatus', () => {
         expect(deriveLifecycleStatus(undefined)).toBe('active');
         expect(deriveLifecycleStatus({ errors: ['proof could not be loaded'] })).toBe('active');
     });
+
+    it.each(['credential is revoked', 'credential is suspended'])(
+        'fails open when a verification error says "%s"',
+        error => {
+            expect(deriveLifecycleStatus({ errors: [error] })).toBe('active');
+        }
+    );
 });

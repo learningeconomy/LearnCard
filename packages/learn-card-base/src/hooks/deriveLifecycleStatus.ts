@@ -13,9 +13,5 @@ export const deriveLifecycleStatus = (
         return 'suspended';
     }
 
-    const errors = check?.errors ?? [];
-    if (errors.some(error => /revok/i.test(error))) return 'revoked';
-    if (errors.some(error => /suspend/i.test(error))) return 'suspended';
-
     return 'active';
 };
