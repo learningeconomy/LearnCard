@@ -264,9 +264,7 @@ export const getCredentialStatusesForBoostAndProfile = async (
         })
     );
 
-    return statuses.filter(
-        (status): status is CredentialStatusForBoostAndProfile => status !== null
-    );
+    return statuses.filter((status): status is NonNullable<typeof status> => status !== null);
 };
 
 export const getCredentialStatusForBoostAndProfile = async (
