@@ -242,7 +242,9 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                             <LanguagePicker />
 
                             <GenericErrorBoundary>
-                                <CheckListButton mode="sidemenu" className="mx-4 my-1" />
+                                <div className="mx-4 my-1">
+                                    <CheckListButton mode="sidemenu" />
+                                </div>
                             </GenericErrorBoundary>
 
                             <GenericErrorBoundary>
