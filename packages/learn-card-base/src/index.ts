@@ -73,6 +73,8 @@ export * from './constants/LCNWebhookEndpoints';
 export * from './constants/Networks';
 
 export * from './hooks/useWallet';
+export * from './hooks/deriveLifecycleStatus';
+export * from './hooks/useCredentialStatus';
 export * from './hooks/useContract';
 export * from './hooks/useGetContracts';
 export * from './hooks/useGetCredentialsFromContract';
