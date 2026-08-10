@@ -15,15 +15,14 @@ bun run dev              # Start frontend
 bun run docker-start     # Start backend services (Neo4j, brain-service)
 ```
 
-## Troop Credential Status
+## Troop credential lifecycle
 
-The `useTroopIDStatus` hook determines credential status:
-
-| Status      | Meaning                                        |
-| ----------- | ---------------------------------------------- |
-| `'valid'`   | User is in the claimed recipients list         |
-| `'pending'` | User is in all recipients but not claimed list |
-| `'revoked'` | User is not in either list                     |
+-   `learn-card-base/useCredentialStatus` is the shared authoritative holder lifecycle hook.
+-   `TroopIdStatusButton.tsx` adapts lifecycle plus explicit acceptance metadata for ScoutPass presentation.
+-   Earned views must pass a credential-record URI; managed views must not pass a Boost URI as a credential URI.
+-   Missing/query-error recipient data must never be interpreted as revocation.
+-   Administrator group removal uses `useRevokeBoostRecipientGroup`; the existing singular mutation remains per-instance.
+-   Revoked credentials remain visible. Do not mount deletion-based revoked-credential synchronization in ScoutPass.
 
 ## Key Files
 
@@ -44,12 +43,6 @@ The `useTroopIDStatus` hook determines credential status:
 -   **Troop-filtered**: `getPaginatedBoostRecipientsWithChildren()` → boost recipients
 
 ## ScoutPass-Specific Permissions
-
-### National Admin Troop View Access
-
-National admins may see "ID Revoked" when viewing troops they manage but don't own (because `useTroopIDStatus` checks the _current user_ as recipient).
-
-**Workaround**: `TroopPage.tsx` uses `hasParentAdminAccess` to bypass the `isRevokedOrPending` check. If a user has `canEditChildren` on the parent network boost, they see full troop details regardless.
 
 ### Network Admin Scout ID Issuance
 
