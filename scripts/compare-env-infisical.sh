@@ -19,7 +19,6 @@ SERVICE_KEYS=(
   cloud
   app
   lca-api
-  signing
 )
 
 INFISICAL_PATHS=(
@@ -27,7 +26,6 @@ INFISICAL_PATHS=(
   "/LearnCard/cloud-service"
   "/learn-card-app"
   "/LearnCard/lca-api"
-  "/LearnCard/simple-signing-service"
 )
 
 LOCAL_ENV_FILES=(
@@ -35,7 +33,6 @@ LOCAL_ENV_FILES=(
   "services/learn-card-network/learn-cloud-service/.env"
   "apps/learn-card-app/.env"
   "services/learn-card-network/lca-api/.env"
-  "services/learn-card-network/simple-signing-service/.env"
 )
 
 SERVICE_LABELS=(
@@ -43,7 +40,6 @@ SERVICE_LABELS=(
   "LearnCloud Service"
   "LearnCard App"
   "LCA API"
-  "Simple Signing Service"
 )
 
 ENV_SLUG="dev"
