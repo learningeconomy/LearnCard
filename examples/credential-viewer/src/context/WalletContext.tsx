@@ -340,7 +340,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 try {
                     const lcaPlugin = await getLCAPlugin(lc, cfg.lcaApi);
 
-                    if (lcaPlugin.displayName?.endsWith(' (Offline)')) {
+                    if (lcaPlugin.isOffline) {
                         throw new Error('The LCA API plugin initialized in offline mode.');
                     }
 

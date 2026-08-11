@@ -396,4 +396,7 @@ export type LCAPlugin = Plugin<
     LCAPluginMethods,
     'id',
     LCAPluginDependentMethods
->;
+> & {
+    /** Whether the plugin fell back because its initial LCA API setup failed. */
+    isOffline: boolean;
+};
