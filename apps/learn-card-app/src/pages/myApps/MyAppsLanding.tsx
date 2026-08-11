@@ -60,8 +60,6 @@ const MyAppsLanding: React.FC = () => {
     const [searchInput, setSearchInput] = useState('');
     const pathwaysEnabled = usePathwaysEnabled();
 
-    const openBoostAFriend = useMemo(() => () => history.push('/boost-a-friend'), [history]);
-
     const shortcuts = useMemo(
         () =>
             pathwaysEnabled
@@ -81,10 +79,7 @@ const MyAppsLanding: React.FC = () => {
         if (hasDeepLink) history.replace(`/launchpad/browse${search}`);
     }, [hasDeepLink, search, history]);
 
-    const helpers = useMemo(
-        () => ({ push: (path: string) => history.push(path), openBoost, openBoostAFriend }),
-        [history, openBoost, openBoostAFriend]
-    );
+    const helpers = useMemo(() => ({ push: (path: string) => history.push(path) }), [history]);
 
     const query = searchInput.trim().toLowerCase();
     const isSearching = query.length > 0;
