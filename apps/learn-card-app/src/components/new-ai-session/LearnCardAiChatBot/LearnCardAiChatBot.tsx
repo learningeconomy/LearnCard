@@ -361,10 +361,16 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         ) {
             return;
         }
-        if (aiError.event === 'ai_error') {
-            const { title, body } = getAiErrorCopy(aiError.code);
+        if (mode !== AiSessionMode.insights) {
+            const shouldPresentError = aiError.event === 'ai_error' || !aiError.presented;
 
-            showErrorModal(title, body);
+            if (shouldPresentError) {
+                const { title, body } = getAiErrorCopy(
+                    aiError.event === 'ai_error' ? aiError.code : 'ai_unknown_error'
+                );
+
+                showErrorModal(title, body);
+            }
         }
 
         const response = aiResponseQueueRef.current[0];
@@ -384,7 +390,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         }
         aiResponseQueueRef.current.shift();
         aiHandledErrorAtRef.current = aiError.at;
-    }, [aiError, streaming, track]);
+    }, [aiError, mode, streaming, track]);
 
     useEffect(() => {
         const userCount = messagesToShow.filter(m => m.role === 'user').length;

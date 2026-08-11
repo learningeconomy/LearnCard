@@ -30,8 +30,6 @@ import {
     useExistingAiInsightCredential,
     useGetCredentialsForSkills,
     aiInsightRefreshStore,
-    useToast,
-    ToastTypeEnum,
 } from 'learn-card-base';
 import { AiServiceError, type AiErrorCode } from 'learn-card-base/helpers/aiErrors';
 import { useLoadingLine } from '../../stores/loadingStore';
@@ -64,7 +62,6 @@ const AiInsights: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
-    const { presentToast } = useToast();
     const location = useLocation();
     const globalSkillFrameworks = useGlobalSkillFrameworks();
     const globalSkillFrameworkIds = useMemo(
@@ -148,22 +145,18 @@ const AiInsights: React.FC = () => {
         if (!canGenerateAiInsights) {
             return;
         }
+        setAiInsightErrorCode(null);
 
         createAiInsightCredential(undefined, {
             onSuccess: () => setAiInsightErrorCode(null),
             onError: error => {
                 const code =
                     error instanceof AiServiceError ? error.payload.code : 'ai_unknown_error';
-                const { body } = getAiErrorCopy(code);
 
                 setAiInsightErrorCode(code);
-                presentToast(body, {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
             },
         });
-    }, [canGenerateAiInsights, createAiInsightCredential, presentToast]);
+    }, [canGenerateAiInsights, createAiInsightCredential]);
     const canAutoGenerateAiInsights =
         selectedTab === AiInsightsTabsEnum.MyInsights &&
         isAiEnabled &&
@@ -284,7 +277,7 @@ const AiInsights: React.FC = () => {
             <ShareInsightsCard />
 
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
-            {aiInsightErrorCopy && !aiInsightCredentialToDisplay && (
+            {aiInsightErrorCopy && (
                 <div
                     className="w-full rounded-[15px] border border-current p-4 text-start"
                     role="status"

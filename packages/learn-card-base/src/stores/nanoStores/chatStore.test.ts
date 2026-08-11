@@ -70,6 +70,7 @@ globalThis.fetch = mocks.fetch as typeof fetch;
 // The store must capture the fake browser WebSocket during module initialization.
 const {
     connectWebSocket,
+    continuePlan,
     credentialContextReadiness,
     currentThreadId,
     disconnectWebSocket,
@@ -707,6 +708,36 @@ describe('chat session startup', () => {
 
         reconnectedSocket?.receive({ done: true, threadId: 'thread-insights' });
         expect(isTyping.get()).toBe(false);
+    });
+
+    it('ends a silent plan continuation after 32 seconds', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-continuation');
+        planReady.set(true);
+        planReadyThread.set('thread-continuation');
+
+        continuePlan();
+
+        expect(socket.sent.map(payload => JSON.parse(payload))).toContainEqual({
+            action: 'continue_plan',
+            threadId: 'thread-continuation',
+        });
+        expect(isTyping.get()).toBe(true);
+
+        await vi.advanceTimersByTimeAsync(31_999);
+        expect(isTyping.get()).toBe(true);
+
+        await vi.advanceTimersByTimeAsync(1);
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            code: 'response_timeout',
+            presented: true,
+        });
+        expect(mocks.showErrorModal).toHaveBeenCalledWith(
+            'Something went wrong',
+            'Please try starting the session response again.'
+        );
     });
 
     it('does not time out an Insights response after its first content frame', async () => {
