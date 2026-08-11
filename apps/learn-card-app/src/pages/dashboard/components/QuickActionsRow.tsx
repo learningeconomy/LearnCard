@@ -34,10 +34,10 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ slots }) => {
                             <Icon className="w-[30px] h-[30px]" />
                         </span>
                         <span className="flex flex-col min-w-0">
-                            <span className="text-[12px] font-semibold text-grayscale-900 whitespace-normal">
+                            <span className="text-xs font-semibold text-grayscale-900 break-words">
                                 {action.label}
                             </span>
-                            <span className="text-[12px] text-grayscale-500 leading-4 whitespace-normal">
+                            <span className="text-xs text-grayscale-500 leading-4 line-clamp-2 break-words">
                                 {action.caption}
                             </span>
                         </span>
