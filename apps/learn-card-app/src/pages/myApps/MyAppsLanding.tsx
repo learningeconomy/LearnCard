@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
@@ -18,7 +17,6 @@ import {
     JOURNEYS_SHORTCUT,
     LearnCardAppShortcut,
 } from './learnCardAppShortcuts';
-import useOpenBoostTemplateSelector from './useOpenBoostTemplateSelector';
 import useMoreApps from './useMoreApps';
 import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 
@@ -58,19 +56,11 @@ const MyAppsLanding: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
     const { isMobile } = useDeviceTypeByWidth();
-    const openBoost = useOpenBoostTemplateSelector();
     const { apps: moreApps, isSuggested, isLoading: isLoadingMore } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
     const pathwaysEnabled = usePathwaysEnabled();
-    const flags = useFlags();
 
-    const openBoostAFriend = useMemo(
-        () => () => {
-            if (flags?.boostAFriendV2 === true) history.push('/boost-a-friend');
-            else openBoost();
-        },
-        [flags?.boostAFriendV2, history, openBoost]
-    );
+    const openBoostAFriend = useMemo(() => () => history.push('/boost-a-friend'), [history]);
 
     const shortcuts = useMemo(
         () =>

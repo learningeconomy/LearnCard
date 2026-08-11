@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     IonCol,
     IonContent,
@@ -44,7 +43,6 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     useCMSModal,
     returnToParentAfterSave = false,
 }) => {
-    const flags = useFlags();
     const { data: stylePack, isLoading: stylePackLoading } = useScoutPassStylesPackRegistry();
     const { data: myBoosts } = useGetPaginatedManagedBoostsQuery();
     const [search, setSearch] = useState('');
@@ -151,16 +149,14 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                         handleCloseModal={handleCloseModal}
                     />
                 ))}
-                {!flags.disableCmsCustomization && (
-                    <NewBoostSelectMenuCustomTypeButton
-                        category={category}
-                        useCMSModal={useCMSModal}
-                        overrideCustomize
-                        parentUri={parentUri}
-                        returnToParentAfterSave={returnToParentAfterSave}
-                        handleCloseModal={handleCloseModal}
-                    />
-                )}
+                <NewBoostSelectMenuCustomTypeButton
+                    category={category}
+                    useCMSModal={useCMSModal}
+                    overrideCustomize
+                    parentUri={parentUri}
+                    returnToParentAfterSave={returnToParentAfterSave}
+                    handleCloseModal={handleCloseModal}
+                />
             </>
         );
     };

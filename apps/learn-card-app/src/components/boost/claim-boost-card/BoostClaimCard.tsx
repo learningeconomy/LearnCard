@@ -6,7 +6,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-claim-card');
 
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
-import { useRenderMethodEnabled } from '../../../hooks/useRenderMethodEnabled';
+
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
 
@@ -132,7 +132,6 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         isSuccess: acceptCredentialSuccess,
     } = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
-    const enableRenderMethod = useRenderMethodEnabled();
 
     const [presentAlert, dismissAlert] = useIonAlert();
     const { presentToast } = useToast();
@@ -151,7 +150,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
             return undefined;
         }
     })();
-    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
+    const renderMethod = getSvgMustacheRenderMethod(credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(credential as VC) as VC;
 
@@ -412,11 +411,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            enableRenderMethod && renderMethod
-                ? BoostPreviewDisplayViewEnum.Issuer
-                : BoostPreviewDisplayViewEnum.Default
+            renderMethod ? BoostPreviewDisplayViewEnum.Issuer : BoostPreviewDisplayViewEnum.Default
         );
-    }, [credential?.id, renderMethod?.template, enableRenderMethod]);
+    }, [credential?.id, renderMethod?.template]);
 
     useEffect(() => {
         if (!isFront) {
@@ -428,9 +425,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }, [isFront]);
 
     const isIssuerViewSelected =
-        enableRenderMethod &&
-        Boolean(renderMethod) &&
-        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
     const shouldUseHostCardPadding =
         !credential ||
         isIssuerViewSelected ||

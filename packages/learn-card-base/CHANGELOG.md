@@ -140,7 +140,7 @@
 
 -   [#1355](https://github.com/learningeconomy/LearnCard/pull/1355) [`b1e554a65413116c36e6f2162410d7b7aefa1174`](https://github.com/learningeconomy/LearnCard/commit/b1e554a65413116c36e6f2162410d7b7aefa1174) Thanks [@Custard7](https://github.com/Custard7)! - fix: Tanstack Resolution
 
--   [#1295](https://github.com/learningeconomy/LearnCard/pull/1295) [`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba) Thanks [@Custard7](https://github.com/Custard7)! - Add a streamlined "Create Credential" flow (simple send), gated behind the `enableSimpleSend` flag.
+-   [#1295](https://github.com/learningeconomy/LearnCard/pull/1295) [`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba) Thanks [@Custard7](https://github.com/Custard7)! - Add a streamlined "Create Credential" flow.
 
     A new `/issue` page lets users issue a standards-pure OBv3 credential from one screen — from scratch, from an imported source (link, file, JSON, or Credential Engine ID), or by resending a credential they already manage — with a live card preview and self / specific-people / claim-link recipients.
 
@@ -324,7 +324,7 @@
     -   `attachRenderMethod` is **opt-in**: calling it without a config returns the VC unchanged. Pass `{ templateId: DEFAULT_TEMPLATE_ID }` or a custom `{ templateId | templateValue }` to actually attach a render method. This avoids polluting every issued credential's `@context` with the render-method JSON-LD context URL.
     -   `templateId` must be an `http://` or `https://` URL. Empty values, `javascript:`, `file:`, `data:` and other schemes are rejected at the plugin boundary.
     -   `templateValue` is URL-encoded into a `data:image/svg+xml,` URI. Empty or whitespace-only values are rejected.
-    -   The `useRenderMethodEnabled` LaunchDarkly flag gates display only (the `RenderMethodDisplay` component, the `BoostDisplayStyleSelector`, the `getSvgMustacheRenderMethod` lookup). It does not gate the write path.
+    -   LearnCard App renders credentials with supported render methods across previews, claim surfaces, and the display-style selector.
 
     Known risk:
 

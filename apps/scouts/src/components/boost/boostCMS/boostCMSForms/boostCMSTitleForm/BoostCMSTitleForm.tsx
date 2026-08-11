@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonTextarea } from '@ionic/react';
 
@@ -16,7 +15,6 @@ const BoostCMSTitleForm: React.FC<{
 }> = ({ state, setState, showTitle, disabled = false, overrideCustomize }) => {
     const { logAnalyticsEvent } = useFirebaseAnalytics();
 
-    const flags = useFlags();
     const basicInfo = state?.basicInfo;
 
     const [charCount, setCharCount] = useState<number>(0);
@@ -53,7 +51,7 @@ const BoostCMSTitleForm: React.FC<{
 
     const placeHolder = 'Title';
 
-    const _disabled = (disabled || flags?.disableCmsCustomization) && !overrideCustomize;
+    const _disabled = disabled && !overrideCustomize;
 
     return (
         <div className="max-w-[600px] flex flex-col items-start justify-center w-full mt-2">

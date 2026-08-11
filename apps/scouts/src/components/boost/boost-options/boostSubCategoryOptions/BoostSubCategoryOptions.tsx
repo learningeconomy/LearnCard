@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonHeader, IonContent, IonRow, IonCol, IonGrid, IonToolbar, IonInput } from '@ionic/react';
 import CaretLeft from '../../../svgs/CaretLeft';
@@ -50,7 +49,6 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
     showCloseButton,
     history,
 }) => {
-    const flags = useFlags();
     const [customBoostType, setCustomBoostType] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [charCount, setCharCount] = useState<number>(0);
@@ -169,59 +167,47 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                 </IonHeader>
                 <IonGrid>
                     <IonRow className="w-full flex items-center justify-center pb-6">
-                        {/* 
-                           Disables customization for ScoutPass MVP
-                        */}
-                        {!flags?.disableCmsCustomization && (
-                            <>
-                                <div className="max-w-[95%] w-full ion-padding rounded-tr-[20px] rounded-tl-[20px] mb-0 relative">
-                                    <IonInput
-                                        autocapitalize="on"
-                                        value={customBoostType}
-                                        onIonInput={e => {
-                                            setCustomBoostType(e.detail.value);
-                                            setErrors({});
-                                        }}
-                                        placeholder="Custom Type..."
-                                        type="text"
-                                        className={`bg-white text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
-                                            errors?.customType ? 'border-red-500 border-2' : ''
-                                        }`}
-                                        maxlength={22}
-                                    />
+                        <div className="max-w-[95%] w-full ion-padding rounded-tr-[20px] rounded-tl-[20px] mb-0 relative">
+                            <IonInput
+                                autocapitalize="on"
+                                value={customBoostType}
+                                onIonInput={e => {
+                                    setCustomBoostType(e.detail.value);
+                                    setErrors({});
+                                }}
+                                placeholder="Custom Type..."
+                                type="text"
+                                className={`bg-white text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
+                                    errors?.customType ? 'border-red-500 border-2' : ''
+                                }`}
+                                maxlength={22}
+                            />
 
-                                    <div className="flex items-center justify-center absolute top-[24px] right-[15px] z-50">
-                                        <p className="mr-4 font-bold text-gray-500 text-xs ">
-                                            {charCount}
-                                        </p>
-                                        <button
-                                            slot="end"
-                                            className={`bg-emerald-700 rounded-full min-h-[40px] min-w-[40px] flex items-center justify-center shadow-3xl mr-4`}
-                                            onClick={handleCustomBoostType}
-                                        >
-                                            <Checkmark
-                                                className="text-white w-[30px]"
-                                                strokeWidth="3"
-                                            />
-                                        </button>
-                                    </div>
+                            <div className="flex items-center justify-center absolute top-[24px] right-[15px] z-50">
+                                <p className="mr-4 font-bold text-gray-500 text-xs ">{charCount}</p>
+                                <button
+                                    slot="end"
+                                    className={`bg-emerald-700 rounded-full min-h-[40px] min-w-[40px] flex items-center justify-center shadow-3xl mr-4`}
+                                    onClick={handleCustomBoostType}
+                                >
+                                    <Checkmark className="text-white w-[30px]" strokeWidth="3" />
+                                </button>
+                            </div>
 
-                                    <div className="w-full text-left">
-                                        <p className="text-sm text-red-600 mt-2 ml-2 font-medium">
-                                            {errors?.customType}{' '}
-                                        </p>
-                                    </div>
-                                </div>
+                            <div className="w-full text-left">
+                                <p className="text-sm text-red-600 mt-2 ml-2 font-medium">
+                                    {errors?.customType}{' '}
+                                </p>
+                            </div>
+                        </div>
 
-                                <div className="flex items-center justify-center w-full">
-                                    <div className="flex items-center justify-center w-full px-5 max-w-[95%]">
-                                        <h2 className="divider-with-text-dynamic border-white border-solid border-b-[1px]">
-                                            <span className={`bg-${subColor} text-white`}>or</span>
-                                        </h2>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                        <div className="flex items-center justify-center w-full">
+                            <div className="flex items-center justify-center w-full px-5 max-w-[95%]">
+                                <h2 className="divider-with-text-dynamic border-white border-solid border-b-[1px]">
+                                    <span className={`bg-${subColor} text-white`}>or</span>
+                                </h2>
+                            </div>
+                        </div>
                         <IonCol className="w-full flex flex-col items-center justify-center">
                             {boostOptionsItemList}
                         </IonCol>

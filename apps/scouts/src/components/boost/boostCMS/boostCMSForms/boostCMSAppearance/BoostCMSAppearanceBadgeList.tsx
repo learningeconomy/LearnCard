@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import {
     useImageUpload,
@@ -31,7 +30,6 @@ import BoostVCTypeOptionButton from '../../../boost-options/boostVCTypeOptions/B
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
 import { SetState } from '@learncard/helpers';
-import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
 import { StylePackCategoryModal } from './StylePackCategoryModal';
 
 export enum StylePackCategories {
@@ -74,15 +72,6 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     setActiveForm: SetState<BoostCMSActiveAppearanceForm>;
 }> = ({ state, setState, handleCloseModal, disabled = false, boostUserType, setActiveForm }) => {
     const { newModal } = useModal();
-    const flags = useFlags();
-    const { credentials } = useHighlightedCredentials();
-
-    // Check if user is Global Admin or National Admin
-    const isAdmin = credentials.some(cred => {
-        const subject = cred?.credentialSubject;
-        if (!subject || Array.isArray(subject)) return false;
-        return ['ext:GlobalID', 'ext:NetworkID'].includes(subject?.achievement?.achievementType);
-    });
 
     const { data: boostAppearanceBadgeList, isLoading } = useScoutPassStylesPackRegistry();
 
@@ -90,8 +79,6 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
         boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     const { CategoryImage } = categoryMetadata || {};
     const isDefaultImage = state?.appearance?.badgeThumbnail === CategoryImage;
-    const type = state?.basicInfo?.type;
-    const targetType = type === 'Social Badge' ? 'Boost' : type;
 
     const [activeStylePackCategory, setActiveStylePackCategory] = useState<StylePackCategories>(
         StylePackCategories.all
@@ -146,7 +133,6 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                 activeStylePackCategory={activeStylePackCategory}
                 setActiveStylePackCategory={setActiveStylePackCategory}
                 boostUserType={boostUserType}
-                targetType={targetType}
             />,
             {},
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -199,13 +185,10 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                             </p>
                             {categoryButton}
                         </div>
-                        {/* Allow admins to upload custom images even when CMS customization is disabled */}
-                        {(!flags?.disableCmsCustomization || isAdmin) && (
-                            <button onClick={handleImageSelect} className="boost-cms-badge">
-                                <Camera className="boost-cms-camera-icon text-white" />
-                                <span className="upload-text">Upload</span>
-                            </button>
-                        )}
+                        <button onClick={handleImageSelect} className="boost-cms-badge">
+                            <Camera className="boost-cms-camera-icon text-white" />
+                            <span className="upload-text">Upload</span>
+                        </button>
                         {photo && !isDefaultImage && (
                             <div className="boost-cms-badge">
                                 <img

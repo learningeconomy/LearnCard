@@ -1,9 +1,8 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Info, Plus, X, Video, Shield, Smartphone, Palette, Users } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
 import { mDynamic } from '../../../i18n/mDynamic';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import type { AppStoreListingCreate, AgeRating } from '../types';
 import { CATEGORY_OPTIONS, AGE_RATING_OPTIONS } from '../types';
@@ -16,18 +15,6 @@ interface AppDetailsStepProps {
 }
 
 export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, errors }) => {
-    const flags = useFlags();
-
-    // Filter category options based on pluginVisibility flag
-    const visibleCategoryOptions = useMemo(() => {
-        return CATEGORY_OPTIONS.filter(cat => {
-            if (cat.value === 'plugin' && !flags?.pluginVisibility) {
-                return false;
-            }
-            return true;
-        });
-    }, [flags?.pluginVisibility]);
-
     const handleChange = (field: keyof AppStoreListingCreate, value: string) => {
         onChange({ [field]: value });
     };
@@ -229,7 +216,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         {m['developerPortal.components.appDetailsStep.selectCategory']()}
                     </option>
 
-                    {visibleCategoryOptions.map(cat => (
+                    {CATEGORY_OPTIONS.map(cat => (
                         <option key={cat.value} value={cat.value}>
                             {mDynamic(cat.labelKey)}
                         </option>

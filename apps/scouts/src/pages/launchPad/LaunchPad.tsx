@@ -4,7 +4,6 @@ import { useHistory, useLocation, Link, useParams } from 'react-router-dom';
 import { BrandingEnum, ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { IonContent, IonPage } from '@ionic/react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
@@ -34,7 +33,6 @@ type CapacitorBundle = {
 const LaunchPad: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
-    const flags = useFlags();
     const { connectTo, challenge } = queryString.parse(search);
     const { frameworkId, skillId } = useParams<{ frameworkId?: string; skillId?: string }>();
 
@@ -178,19 +176,15 @@ const LaunchPad: React.FC = () => {
                             </Link>
                         ))}
 
-                        {!flags?.hideSchoolsButton && (
-                            <button
-                                onClick={() => openExternalLink(MV_TYPEFORM)}
-                                className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 mr-3"
-                                aria-label="Manage schools"
-                            >
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-emerald-50 rounded-full" />
-                                <img src={MiniPack} alt="Schools icon" className="z-50 h-15" />
-                                <p className="text-medium font-medium text-grayscale-900">
-                                    Schools
-                                </p>
-                            </button>
-                        )}
+                        <button
+                            onClick={() => openExternalLink(MV_TYPEFORM)}
+                            className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 mr-3"
+                            aria-label="Manage schools"
+                        >
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 bg-emerald-50 rounded-full" />
+                            <img src={MiniPack} alt="Schools icon" className="z-50 h-15" />
+                            <p className="text-medium font-medium text-grayscale-900">Schools</p>
+                        </button>
                     </div>
                 </section>
 

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonRow, IonGrid, IonInput } from '@ionic/react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
@@ -44,7 +43,6 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
     customTypes,
     setCustomTypes,
 }) => {
-    const flags = useFlags();
     const { color, subColor, CategoryImage } = boostCategoryOptions[activeCategoryType];
 
     const [_customTypes, _setCustomTypes] = useState<any>(setCustomTypes);
@@ -152,14 +150,12 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                                 No results found for{' '}
                                 <span className="text-black italic">{search}</span>
                             </p>
-                            {!flags?.disableCmsCustomization && (
-                                <button
-                                    onClick={handleCustomType}
-                                    className="text-indigo-600 text-base font-bold text-left font-notoSans"
-                                >
-                                    Use "{search}" anyways!
-                                </button>
-                            )}
+                            <button
+                                onClick={handleCustomType}
+                                className="text-indigo-600 text-base font-bold text-left font-notoSans"
+                            >
+                                Use "{search}" anyways!
+                            </button>
                         </div>
                     )}
                     {search.length > 0 &&

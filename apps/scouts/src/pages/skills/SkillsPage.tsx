@@ -45,9 +45,6 @@ const SkillsPage: React.FC = () => {
     const [selectedTab, setSelectedTab] = useState<TabEnum>(TabEnum.MY_HUB);
     const [frameworkToBrowse, setFrameworkToBrowse] = useState<ApiFrameworkInfo | null>(null);
 
-    // const flags = useFlags();
-    // const showAiInsights = flags?.showAiInsights;
-
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
 
     useLoadingLine(credentialsBackgroundFetching);
@@ -115,7 +112,6 @@ const SkillsPage: React.FC = () => {
                 <IonContent fullscreen className="skills-page" color="violet-200">
                     <div className="flex relative justify-center items-center w-full pb-[30px]">
                         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] px-[20px]">
-                            {/* {showAiInsights && <SkillsInsightCard />} */}
                             {/* <TotalSkillsCount total={total} /> */}
 
                             {visibleTabs.length > 1 && (
