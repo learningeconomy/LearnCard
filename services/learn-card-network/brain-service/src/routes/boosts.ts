@@ -30,6 +30,8 @@ import {
     SendBoostResponseValidator,
     AllocateCredentialStatusInputValidator,
     AllocatedBitstringStatusListEntryValidator,
+    RevokeBoostRecipientGroupResultValidator,
+    RevokeBoostRecipientGroupResult,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 import {
@@ -145,6 +147,7 @@ import {
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getDidWeb, getManagedDidWeb, getProfileIdFromString } from '@helpers/did.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import * as revokeHooks from '@helpers/revoke-hooks.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import {
@@ -2029,6 +2032,137 @@ export const boostsRouter = t.router({
             }
 
             return true;
+        }),
+
+    revokeBoostRecipientGroup: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/recipients/revoke-group',
+                tags: ['Boosts'],
+                summary: 'Revoke every credential for a boost recipient',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(z.object({ boostUri: z.string(), recipientProfileId: z.string() }))
+        .output(RevokeBoostRecipientGroupResultValidator)
+        .mutation(async ({ ctx, input }) => {
+            const resolvedRecipientProfileId = await getProfileIdFromString(
+                input.recipientProfileId,
+                ctx.domain
+            );
+            if (!resolvedRecipientProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const boost = await getBoostByUri(decodeURIComponent(input.boostUri));
+            if (!boost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            }
+
+            const permissions = await getBoostPermissions(boost, ctx.user.profile);
+            if (!permissions.canRevoke) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message:
+                        'Profile does not have permission to revoke credentials for this boost',
+                });
+            }
+
+            const recipientProfile = await getProfileByProfileId(resolvedRecipientProfileId);
+            if (!recipientProfile) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
+            }
+
+            const { getCredentialStatusesForBoostAndProfile } = await import(
+                '@accesslayer/credential/read'
+            );
+            const { revokeCredentialForProfile } = await import(
+                '@accesslayer/credential/relationships/update'
+            );
+            const instances = await getCredentialStatusesForBoostAndProfile(
+                boost.id,
+                resolvedRecipientProfileId
+            );
+            const result: RevokeBoostRecipientGroupResult = {
+                revokedCredentialUris: [],
+                alreadyRevokedCredentialUris: [],
+                failedCredentialUris: [],
+            };
+            const newlyRevokedCredentialUris: string[] = [];
+
+            for (const instance of instances) {
+                const uri = constructUri('credential', instance.credential.id, ctx.domain);
+
+                try {
+                    const revocation = await revokeCredentialForProfile(
+                        instance.credential.id,
+                        resolvedRecipientProfileId
+                    );
+                    if (revocation.found && !revocation.wasAlreadyRevoked) {
+                        newlyRevokedCredentialUris.push(uri);
+                    }
+                    const hookResult = await Promise.allSettled([
+                        revokeHooks.processRevokeHooksStrict(recipientProfile, instance.credential),
+                    ]);
+                    const hooksFailed = hookResult.some(item => item.status === 'rejected');
+
+                    if (revocation.statusList === 'missing-entry') {
+                        console.warn('[revokeBoostRecipientGroup] migration-gap', {
+                            credentialId: instance.credential.id,
+                            reason: 'missing-entry',
+                        });
+                    }
+
+                    if (!revocation.found || revocation.statusList === 'failed' || hooksFailed) {
+                        result.failedCredentialUris.push(uri);
+                    } else if (revocation.wasAlreadyRevoked) {
+                        result.alreadyRevokedCredentialUris.push(uri);
+                    } else {
+                        result.revokedCredentialUris.push(uri);
+                    }
+                } catch (error) {
+                    console.error('[revokeBoostRecipientGroup] credential failed', {
+                        credentialId: instance.credential.id,
+                        error,
+                    });
+                    result.failedCredentialUris.push(uri);
+                }
+            }
+
+            if (newlyRevokedCredentialUris.length > 0) {
+                try {
+                    await addNotificationToQueue({
+                        type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REVOKED,
+                        to: {
+                            did: getDidWeb(ctx.domain, resolvedRecipientProfileId),
+                            profileId: resolvedRecipientProfileId,
+                            ...(recipientProfile.notificationsWebhook && {
+                                notificationsWebhook: recipientProfile.notificationsWebhook,
+                            }),
+                        },
+                        from: {
+                            did: getDidWeb(ctx.domain, ctx.user.profile.profileId),
+                            profileId: ctx.user.profile.profileId,
+                            displayName: ctx.user.profile.displayName,
+                        },
+                        message: getNotificationMessage(
+                            boost.name ? 'credentialRevokedNamed' : 'credentialRevokedUnnamed',
+                            resolveRecipientLocale(recipientProfile),
+                            {
+                                credentialName: boost.name ?? undefined,
+                                issuer: ctx.user.profile.displayName ?? ctx.user.profile.profileId,
+                            }
+                        ),
+                        data: { vcUris: newlyRevokedCredentialUris },
+                    });
+                } catch (error) {
+                    console.error('Failed to queue group CREDENTIAL_REVOKED notification', error);
+                }
+            }
+
+            return result;
         }),
 
     suspendBoostRecipient: profileRoute

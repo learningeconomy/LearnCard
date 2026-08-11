@@ -119,9 +119,7 @@ const processAdminRevokeHooks = async (
         })
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
         .match({
-            related: [
-                { identifier: 'adminRole', model: Role, where: { role: 'admin' } },
-            ],
+            related: [{ identifier: 'adminRole', model: Role, where: { role: 'admin' } }],
         })
         .match({
             optional: false,
@@ -155,7 +153,7 @@ const processConnectionRevoke = async (
     credential: CredentialInstance
 ): Promise<void> => {
     const { neogma } = await import('@instance');
-    
+
     // Get all boost IDs that could have created connections for this credential
     // This mirrors the logic in ensureConnectionsForCredentialAcceptance
     const boostIdsQuery = `
@@ -169,19 +167,27 @@ const processConnectionRevoke = async (
         RETURN directIds + parentIds + hookIds as boostIds
     `;
 
-    const boostIdsResult = await neogma.queryRunner.run(boostIdsQuery, { 
-        credentialId: credential.id 
+    const boostIdsResult = await neogma.queryRunner.run(boostIdsQuery, {
+        credentialId: credential.id,
     });
-    
+
     const boostIds: string[] = boostIdsResult.records[0]?.get('boostIds') || [];
-    
+
     if (boostIds.length === 0) {
-        console.log('[processConnectionRevoke] No eligible boosts found for credential', credential.id);
+        console.log(
+            '[processConnectionRevoke] No eligible boosts found for credential',
+            credential.id
+        );
         return;
     }
 
     const sourceKeys = boostIds.map(id => getBoostConnectionSourceKey(id));
-    console.log('[processConnectionRevoke] Removing connections for profile', profile.profileId, 'with sourceKeys', sourceKeys);
+    console.log(
+        '[processConnectionRevoke] Removing connections for profile',
+        profile.profileId,
+        'with sourceKeys',
+        sourceKeys
+    );
 
     // First, check what connections exist for this profile with any of these source keys
     const debugQuery = `
@@ -189,13 +195,22 @@ const processConnectionRevoke = async (
         WHERE r.sources IS NOT NULL AND ANY(key IN $sourceKeys WHERE key IN r.sources)
         RETURN other.profileId as otherProfileId, r.sources as sources
     `;
-    const debugResult = await neogma.queryRunner.run(debugQuery, { 
+    const debugResult = await neogma.queryRunner.run(debugQuery, {
         profileId: profile.profileId,
-        sourceKeys 
+        sourceKeys,
     });
-    console.log('[processConnectionRevoke] Found', debugResult.records.length, 'connections with matching sourceKeys');
+    console.log(
+        '[processConnectionRevoke] Found',
+        debugResult.records.length,
+        'connections with matching sourceKeys'
+    );
     debugResult.records.forEach(r => {
-        console.log('[processConnectionRevoke] - Connection to:', r.get('otherProfileId'), 'sources:', r.get('sources'));
+        console.log(
+            '[processConnectionRevoke] - Connection to:',
+            r.get('otherProfileId'),
+            'sources:',
+            r.get('sources')
+        );
     });
 
     // Now remove all matching source keys and delete connections that become empty
@@ -209,13 +224,33 @@ const processConnectionRevoke = async (
         RETURN count(r) as deletedCount
     `;
 
-    const result = await neogma.queryRunner.run(cypher, { 
+    const result = await neogma.queryRunner.run(cypher, {
         profileId: profile.profileId,
-        sourceKeys 
+        sourceKeys,
     });
-    
+
     const deletedCount = result.records[0]?.get('deletedCount');
-    console.log('[processConnectionRevoke] Deleted', deletedCount, 'connection(s) that had only these sources');
+    console.log(
+        '[processConnectionRevoke] Deleted',
+        deletedCount,
+        'connection(s) that had only these sources'
+    );
+};
+
+export const processRevokeHooksStrict = async (
+    profile: ProfileType,
+    credential: CredentialInstance
+): Promise<void> => {
+    await Promise.all([
+        processPermissionsRevokeHooks(profile, credential),
+        processAdminRevokeHooks(profile, credential),
+        processAutoConnectRevokeHooks(profile, credential),
+        processConnectionRevoke(profile, credential),
+    ]);
+
+    const boostId = await getBoostIdForCredentialInstance(credential);
+
+    if (boostId) await clearDidWebCacheForChildProfileManagers(boostId);
 };
 
 export const processRevokeHooks = async (
@@ -226,7 +261,7 @@ export const processRevokeHooks = async (
         processPermissionsRevokeHooks(profile, credential),
         processAdminRevokeHooks(profile, credential),
         processAutoConnectRevokeHooks(profile, credential),
-        processConnectionRevoke(profile, credential)
+        processConnectionRevoke(profile, credential),
     ]);
 
     try {

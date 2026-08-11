@@ -32,7 +32,7 @@ type TroopPageFooterProps = {
     showIdDetails?: boolean;
     handleDetails?: () => void;
     ownsCurrentId?: boolean;
-    isRevoked?: boolean;
+    isRestricted?: boolean;
 };
 
 const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
@@ -43,7 +43,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
     showIdDetails,
     handleDetails,
     ownsCurrentId,
-    isRevoked,
+    isRestricted,
 }) => {
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
@@ -183,7 +183,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
         );
     };
 
-    const showEditButton = role !== ScoutsRoleEnum.scout && canEdit;
+    const showEditButton = !isRestricted && role !== ScoutsRoleEnum.scout && canEdit;
 
     if (showEditButton) {
         return (
@@ -228,7 +228,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                             Back
                         </button>
 
-                        {!isRevoked && (
+                        {!isRestricted && (
                             <button
                                 onClick={handleOptions}
                                 className="bg-white rounded-full text-grayscale-80 py-[10px] px-[12px] shadow-button-bottom"
@@ -249,7 +249,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                             Back
                         </button>
 
-                        {!isRevoked && (
+                        {!isRestricted && (
                             <button
                                 onClick={handleOptions}
                                 className="bg-white rounded-full text-grayscale-80 py-[10px] px-[12px] shadow-button-bottom"

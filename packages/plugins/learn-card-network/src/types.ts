@@ -109,6 +109,7 @@ import {
     CredentialActivityStats,
     BitstringCredentialStatusPurpose,
     BitstringCredentialStatusEntry,
+    RevokeBoostRecipientGroupResult,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -410,6 +411,10 @@ export type LearnCardNetworkPluginMethods = {
         recipientProfileId: string,
         credentialUri?: string
     ) => Promise<boolean>;
+    revokeBoostRecipientGroup: (
+        boostUri: string,
+        recipientProfileId: string
+    ) => Promise<RevokeBoostRecipientGroupResult>;
     suspendBoostRecipient: (
         boostUri: string,
         recipientProfileId: string,

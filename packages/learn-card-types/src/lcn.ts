@@ -354,6 +354,16 @@ export const BoostRecipientValidator = z.object({
 });
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
 
+export const RevokeBoostRecipientGroupResultValidator = z.object({
+    revokedCredentialUris: z.array(z.string()),
+    alreadyRevokedCredentialUris: z.array(z.string()),
+    failedCredentialUris: z.array(z.string()),
+});
+
+export type RevokeBoostRecipientGroupResult = z.infer<
+    typeof RevokeBoostRecipientGroupResultValidator
+>;
+
 export const PaginatedBoostRecipientsValidator = PaginationResponseValidator.extend({
     records: BoostRecipientValidator.array(),
 });
