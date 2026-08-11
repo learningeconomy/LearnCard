@@ -118,7 +118,7 @@ export const DIDAuthModal = () => {
                             <DIDAuthMessage
                                 title={'Verification Code'}
                                 subtitle={
-                                    'Copy and paste this verification code in the app you are verifying your identity with, e.g. run the /finish-connect-id command if interacting with the Discord bot.'
+                                    'Copy and paste this verification code in the app you are verifying your identity with.'
                                 }
                                 text={`${displayVerificationCode}`}
                                 image={
