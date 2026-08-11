@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
-import moment from 'moment';
 import { VC } from '@learncard/types';
 import { useGetCredentialWithEdits } from 'learn-card-base';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import troopPageStore from '../../stores/troopPageStore';
 import useGetTroopNetwork from '../../hooks/useGetTroopNetwork';
+import * as m from '../../paraglide/messages.js';
+import { formatLocaleDate } from '../../i18n/formatters';
 import {
     getDefaultBadgeThumbForCredential,
     getIdBackgroundStyles,
@@ -74,7 +75,7 @@ const TroopID: React.FC<TroopIDProps> = ({
     const role = getRoleFromCred(credential);
     const thumbSrc = initialThumbSrc || credential?.boostID?.idThumbnail;
     const issueDate = useMemo(
-        () => moment(credential?.issuanceDate).format('MM/D/YYYY'),
+        () => formatLocaleDate(credential?.issuanceDate, { dateStyle: 'short' }),
         [credential?.issuanceDate]
     );
 
@@ -124,7 +125,9 @@ const TroopID: React.FC<TroopIDProps> = ({
                 </span>
                 {issuedDateOverride || (
                     <span className="font-notoSans font-[600] text-[12px]">
-                        Issued {issueDate || 'Unknown'}
+                        {issueDate
+                            ? m['troops.id.issued']({ date: issueDate })
+                            : m['common.unknown']()}
                     </span>
                 )}
             </div>

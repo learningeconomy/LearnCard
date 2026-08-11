@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../../../paraglide/messages.js';
 import { BoostMediaOptionsEnum } from '../../../boost';
 import Pencil from '../../../../svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
@@ -78,7 +79,7 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 showCloseButton={false}
                 title={
                     <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                        Media Attachment
+                        {m['boostCMS.mediaAttachment']()}
                     </p>
                 }
             />

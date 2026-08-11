@@ -14,6 +14,7 @@ import TroopIdDetails from './TroopIdDetails/TroopIdDetails';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import X from 'learn-card-base/svgs/X';
+import * as m from '../../paraglide/messages.js';
 
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
@@ -158,14 +159,14 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
                                 onClick={() => setShowDetails(!showDetails)}
                                 className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                             >
-                                {showDetails ? 'Back' : 'Details'}
+                                {showDetails ? m['common.back']() : m['common.details']()}
                             </button>
                             {handleShare && (
                                 <button
                                     onClick={handleShare}
                                     className="bg-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] justify-center"
                                 >
-                                    Share
+                                    {m['common.share']()}
                                     <ReplyIcon />
                                 </button>
                             )}
@@ -180,13 +181,13 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
                                 onClick={handleClose}
                                 className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                             >
-                                Close
+                                {m['common.close']()}
                             </button>
                             <button
                                 onClick={() => setShowDetails(!showDetails)}
                                 className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                             >
-                                {showDetails ? 'Back' : 'Details'}
+                                {showDetails ? m['common.back']() : m['common.details']()}
                             </button>
                         </>
                     )}

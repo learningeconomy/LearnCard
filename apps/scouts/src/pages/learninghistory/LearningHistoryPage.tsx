@@ -8,7 +8,6 @@ import BoostManagedCard from '../../components/boost/boost-managed-card/BoostMan
 
 import {
     CurvedBackdropEl,
-    EarnedAndManagedTabs,
     CredentialListTabEnum,
     CredentialCategoryEnum,
     useGetCredentials,
@@ -19,8 +18,10 @@ import {
     categoryMetadata,
     CredentialListSkeleton,
 } from 'learn-card-base';
+import EarnedAndManagedTabs from '../../components/earned-and-managed-tabs/ScoutPassEarnedAndManagedTabs';
 
 import { usePathQuery } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
@@ -142,7 +143,7 @@ const LearningHistoryPage: React.FC = () => {
                                     alt="learning history"
                                     className="w-[250px] h-[250px] m-auto"
                                 />
-                                <strong>No learning history yet</strong>
+                                <strong>{m['learningHistory.noHistory']()}</strong>
                             </section>
                         )}
 
@@ -172,7 +173,7 @@ const LearningHistoryPage: React.FC = () => {
                                     alt="learning history"
                                     className="w-[250px] h-[250px] m-auto"
                                 />
-                                <strong>No boosts to manage yet</strong>
+                                <strong>{m['achievements.noBoosts']()}</strong>
                             </section>
                         )}
 

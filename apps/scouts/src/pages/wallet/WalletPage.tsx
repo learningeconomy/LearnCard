@@ -22,64 +22,18 @@ import {
     ModalTypes,
     categoryMetadata,
     walletSubtypeToCredentialCategory,
+    BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as m from '../../paraglide/messages.js';
 import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
 import MeritBadgesIcon from 'learn-card-base/svgs/MeritBadgesIcon';
 import ScoutsPledge2 from 'learn-card-base/svgs/ScoutsPledge2';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
+import { getScoutPassCategoryCopy } from '../../components/category-descriptor/scoutPassCategoryCopy';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('wallet-page');
-
-const walletPageData: {
-    id: number;
-    title: string;
-    subtype: WalletCategoryTypes;
-    description: string;
-    count: string;
-    bgColor: string;
-    iconSrc: React.FC;
-    iconCircleClass: string;
-}[] = [
-    {
-        id: 1,
-        title: 'Social Boosts',
-        subtype: WalletCategoryTypes.socialBadges,
-        description: 'Showcase your social milestones',
-        count: '0',
-        iconSrc: (
-            <BoostOutline2
-                outsideStar="#FFFFFF"
-                insideStar="#82E6DE"
-                outlineStar="#03748D"
-                inlineStar="#03748D"
-            />
-        ),
-        bgColor: 'bg-sp-blue-ocean',
-        iconCircleClass: 'border-2 border-cyan-300',
-    },
-    {
-        id: 3,
-        title: 'Merit Badges',
-        subtype: WalletCategoryTypes.meritBadges,
-        description: 'Collect your scouting achievements',
-        count: '0',
-        bgColor: 'bg-sp-purple-base',
-        iconSrc: <MeritBadgesIcon badgeOutline="#4D006E" mountain="#FF8DFF" />,
-        iconCircleClass: 'border-2 border-spice-300',
-    },
-    {
-        id: 4,
-        title: 'Troops',
-        subtype: WalletCategoryTypes.membership,
-        description: 'Access your troop affiliations',
-        count: '0',
-        bgColor: 'bg-sp-green-forest',
-        iconSrc: <ScoutsPledge2 ribbon="#9FED8F" pledgeOutline="#0F631D" />,
-        iconCircleClass: 'border-2 border-emerald-300',
-    },
-];
 
 const WalletPage: React.FC = () => {
     const { newModal, closeModal } = useModal({
@@ -95,6 +49,49 @@ const WalletPage: React.FC = () => {
     const [viewCredsIsOpen, setViewCredsIsOpen] = useState(false);
     const flags = useFlags();
     const pathName = location?.pathname?.replace('/', '');
+    const socialBoostsCopy = getScoutPassCategoryCopy(m, BoostCategoryOptionsEnum.socialBadge);
+    const meritBadgesCopy = getScoutPassCategoryCopy(m, BoostCategoryOptionsEnum.meritBadge);
+    const troopsCopy = getScoutPassCategoryCopy(m, BoostCategoryOptionsEnum.membership);
+
+    const walletPageData = [
+        {
+            id: 1,
+            title: socialBoostsCopy?.titleOther ?? '',
+            subtype: WalletCategoryTypes.socialBadges,
+            description: socialBoostsCopy?.walletDescription ?? '',
+            count: '0',
+            iconSrc: (
+                <BoostOutline2
+                    outsideStar="#FFFFFF"
+                    insideStar="#82E6DE"
+                    outlineStar="#03748D"
+                    inlineStar="#03748D"
+                />
+            ),
+            bgColor: 'bg-sp-blue-ocean',
+            iconCircleClass: 'border-2 border-cyan-300',
+        },
+        {
+            id: 3,
+            title: meritBadgesCopy?.titleOther ?? '',
+            subtype: WalletCategoryTypes.meritBadges,
+            description: meritBadgesCopy?.walletDescription ?? '',
+            count: '0',
+            iconSrc: <MeritBadgesIcon badgeOutline="#4D006E" mountain="#FF8DFF" />,
+            bgColor: 'bg-sp-purple-base',
+            iconCircleClass: 'border-2 border-spice-300',
+        },
+        {
+            id: 4,
+            title: troopsCopy?.titleOther ?? '',
+            subtype: WalletCategoryTypes.membership,
+            description: troopsCopy?.walletDescription ?? '',
+            count: '0',
+            iconSrc: <ScoutsPledge2 ribbon="#9FED8F" pledgeOutline="#0F631D" />,
+            bgColor: 'bg-sp-green-forest',
+            iconCircleClass: 'border-2 border-emerald-300',
+        },
+    ];
 
     useEffect(() => {
         CapacitorUpdater.addListener('updateAvailable', async res => {
@@ -108,7 +105,7 @@ const WalletPage: React.FC = () => {
                         />,
                         {
                             sectionClassName: '!max-w-[400px]',
-                            cancelButtonTextOverride: 'Maybe Later',
+                            cancelButtonTextOverride: m['launchPad.maybeLater'](),
                         }
                     );
                 }
@@ -180,7 +177,7 @@ const WalletPage: React.FC = () => {
                 <IonRow className="px-[20px] flex items-center justify-center">
                     <div className="w-full max-w-[380px] mx-auto">
                         <h2 className="text-grayscale-900 font-medium text-2xl tracking-[0.01rem]">
-                            Wallet
+                            {m['wallet.title']()}
                         </h2>
                         {/* <div className="wallet-header-menu-options items-center flex">
                             {flags?.boostBundleMenu && (

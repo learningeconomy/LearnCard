@@ -7,7 +7,6 @@ import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarne
 
 import {
     CurvedBackdropEl,
-    EarnedAndManagedTabs,
     CredentialListTabEnum,
     CredentialCategoryEnum,
     useGetBoosts,
@@ -18,8 +17,10 @@ import {
     categoryMetadata,
     CredentialListSkeleton,
 } from 'learn-card-base';
+import EarnedAndManagedTabs from '../../components/earned-and-managed-tabs/ScoutPassEarnedAndManagedTabs';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
+import * as m from '../../paraglide/messages.js';
 import { usePathQuery } from 'learn-card-base';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
@@ -144,7 +145,7 @@ const WorkHistoryPage: React.FC = () => {
                                     className="relative w-[250px] h-[250px] m-auto z-[1000]"
                                 />
                                 <div className="bg-filler bg-rose-300 absolute h-full w-full mt-[200px]" />
-                                <strong className="relative">No work history yet</strong>
+                                <strong className="relative">{m['workHistory.noHistory']()}</strong>
                             </section>
                         )}
 
@@ -176,7 +177,7 @@ const WorkHistoryPage: React.FC = () => {
                                     alt="work history"
                                     className="w-[250px] h-[250px] m-auto"
                                 />
-                                <strong>No boosts to manage yet</strong>
+                                <strong>{m['achievements.noBoosts']()}</strong>
                             </section>
                         )}
                     {boostError && <BoostErrorsDisplay refetch={handleRefetch} />}

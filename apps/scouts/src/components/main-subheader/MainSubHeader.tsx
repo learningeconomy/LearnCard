@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as m from '../../paraglide/messages.js';
 
 import useBoostModal from '../boost/hooks/useBoostModal';
 import modalStateStore from 'learn-card-base/stores/modalStateStore';
@@ -21,6 +22,11 @@ import { ACHIEVEMENT_CATEGORIES } from '../../../../../packages/learn-card-base/
 import { SubheaderTypeEnum, SubheaderContentType } from './MainSubHeader.types';
 import { BoostCategoryOptionsEnum, useModal, ModalTypes } from 'learn-card-base';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import { getScoutPassCategoryCopy } from '../category-descriptor/scoutPassCategoryCopy';
+import {
+    getScoutPassSubheaderDisplayCopy,
+    isScoutPassCategorySubheader,
+} from './scoutPassSubheaderCopy';
 
 const formatCount = (count: number | string): string => {
     if (typeof count === 'string') return count;
@@ -114,31 +120,37 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
         setShareCredsIsOpen(false);
     };
 
-    let _titleOverride = title;
-    let IconComponentOverride = IconComponent;
-    if (subheaderType === SubheaderTypeEnum.MeritBadge && branding === BrandingEnum.scoutPass) {
-        _titleOverride = 'Merit Badges';
-        IconComponentOverride = PurpleMeritBadgesIcon;
-    } else if (
-        subheaderType === SubheaderTypeEnum.SocialBadge &&
-        branding === BrandingEnum.scoutPass
-    ) {
-        _titleOverride = 'Social Boosts';
-        IconComponentOverride = BlueBoostOutline2;
-    } else if (
-        subheaderType === SubheaderTypeEnum.Membership &&
-        branding === BrandingEnum.scoutPass
-    ) {
-        _titleOverride = 'Troops';
-        IconComponentOverride = GreenScoutsPledge2;
-    }
+    const categoryCopy = isScoutPassCategorySubheader(subheaderType)
+        ? getScoutPassCategoryCopy(m, category)
+        : undefined;
+    const subheaderCopy = getScoutPassSubheaderDisplayCopy({
+        isScoutPass: branding === BrandingEnum.scoutPass,
+        subheaderType,
+        count,
+        fallback: { title, helperText, helperTextClickable },
+        categoryCopy,
+    });
 
-    if (count !== undefined) {
-        _titleOverride = `${formatCount(count)} ${_titleOverride}`;
-        if (count === 1 && _titleOverride.endsWith('s')) {
-            _titleOverride = _titleOverride.substring(0, _titleOverride.length - 1);
+    let _titleOverride = subheaderCopy.title;
+    let _helperText = subheaderCopy.helperText;
+    let _helperTextClickable = subheaderCopy.helperTextClickable;
+    let IconComponentOverride = IconComponent;
+
+    if (branding === BrandingEnum.scoutPass && categoryCopy) {
+        _titleOverride = count === 1 ? categoryCopy.titleOne : categoryCopy.titleOther;
+        _helperText = categoryCopy.helperPrefix;
+        _helperTextClickable = categoryCopy.helperAction;
+
+        if (subheaderType === SubheaderTypeEnum.MeritBadge) {
+            IconComponentOverride = PurpleMeritBadgesIcon;
+        } else if (subheaderType === SubheaderTypeEnum.SocialBadge) {
+            IconComponentOverride = BlueBoostOutline2;
+        } else if (subheaderType === SubheaderTypeEnum.Membership) {
+            IconComponentOverride = GreenScoutsPledge2;
         }
     }
+
+    if (count !== undefined) _titleOverride = `${formatCount(count)} ${_titleOverride}`;
 
     const { newModal: newDescriptorModal, closeModal: closeDescriptorModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -147,10 +159,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
 
     const presentCategoryDescriptorModal = () => {
         newDescriptorModal(
-            <CategoryDescriptorModal
-                handleCloseModal={closeDescriptorModal}
-                title={title}
-            />
+            <CategoryDescriptorModal handleCloseModal={closeDescriptorModal} category={category} />
         );
     };
 
@@ -176,12 +185,12 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                         {_titleOverride}
                     </span>
                     <span className="font-notoSans text-[12px]">
-                        <span className="font-[600] opacity-75 font-notoSans">{helperText}</span>{' '}
+                        <span className="font-[600] opacity-75 font-notoSans">{_helperText}</span>{' '}
                         <button
                             className="font-[700] underline"
                             onClick={() => presentCategoryDescriptorModal()}
                         >
-                            {helperTextClickable}
+                            {_helperTextClickable}
                         </button>
                     </span>
                 </h2>

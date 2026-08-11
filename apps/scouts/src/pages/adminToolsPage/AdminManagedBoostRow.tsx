@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 import useManagedBoost from '../../hooks/useManagedBoost';
 
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
@@ -53,7 +54,7 @@ const AdminManagedBoostRow: React.FC<AdminManagedBoostRowProps> = ({ category, b
                         }}
                         className="bg-white px-[10px] py-[3px] rounded-full shadow-box-bottom"
                     >
-                        Edit
+                        {m['common.edit']()}
                     </button>
                 )}
                 {isLive && (
@@ -64,7 +65,7 @@ const AdminManagedBoostRow: React.FC<AdminManagedBoostRowProps> = ({ category, b
                         }}
                         className="bg-white px-[10px] py-[3px] rounded-full shadow-box-bottom"
                     >
-                        Issue
+                        {m['adminTools.issue']()}
                     </button>
                 )}
 

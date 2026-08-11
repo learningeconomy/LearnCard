@@ -17,9 +17,9 @@ import {
     useGetPaginatedFamilialBoosts,
     BrandingEnum,
     searchManagedBoostsFromCache,
-    pluralize,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 import { BoostQuery } from '@learncard/types';
 
 import NewBoostSelectMenuCustomTypeButton from '../boost-select-menu/NewBoostSelectMenuCustomTypeButton';
@@ -176,10 +176,15 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                 {noSearchResults && `No managed ${category} titled "${searchString}"`}
                 {searchResultsCount > 0 &&
                     searchString?.trim?.() !== '' &&
-                    `Found ${searchResultsCount} ${pluralize(
-                        'result',
-                        searchResultsCount
-                    )} for "${searchString}" `}
+                    (searchResultsCount === 1
+                        ? m['common.searchResults.foundOne']({
+                              count: searchResultsCount,
+                              query: searchString,
+                          })
+                        : m['common.searchResults.foundOther']({
+                              count: searchResultsCount,
+                              query: searchString,
+                          }))}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>
