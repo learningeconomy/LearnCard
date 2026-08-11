@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll } from 'vitest';
 
-import { getLearnCardWithLCA, LearnCardWithLCA } from './helpers/learncard.helpers';
+import { getLearnCard, type LearnCard } from './helpers/learncard.helpers';
 
 const createMockAuthToken = (userId: string, email: string) => {
     const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
@@ -17,7 +17,7 @@ const createMockAuthToken = (userId: string, email: string) => {
 };
 
 describe('SSS Key Management via LearnCard Plugin', () => {
-    let learnCard: LearnCardWithLCA;
+    let learnCard: LearnCard;
 
     const testUserId = `lc-invoke-user-${Date.now()}`;
     const testEmail = `lc-invoke-${Date.now()}@example.com`;
@@ -27,7 +27,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
     let vpDid: string;
 
     beforeAll(async () => {
-        learnCard = await getLearnCardWithLCA('a'.repeat(64));
+        learnCard = await getLearnCard('a'.repeat(64));
         mockAuthToken = createMockAuthToken(testUserId, testEmail);
         vpDid = learnCard.id.did();
     });
@@ -313,11 +313,7 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 shareWithSalt
             );
 
-            const result = await learnCard.invoke.getRecoveryShare(
-                saltToken,
-                'firebase',
-                'phrase'
-            );
+            const result = await learnCard.invoke.getRecoveryShare(saltToken, 'firebase', 'phrase');
 
             expect(result?.encryptedShare?.encryptedData).toBe('salted-share-lc');
             expect(result?.encryptedShare?.salt).toBe('random-salt-abc123');
@@ -542,12 +538,10 @@ describe('SSS Key Management via LearnCard Plugin', () => {
             );
 
             await expect(
-                learnCard.invoke.addRecoveryMethod(
-                    noSetupToken,
-                    'firebase',
-                    'phrase',
-                    { encryptedData: 'test', iv: 'test' }
-                )
+                learnCard.invoke.addRecoveryMethod(noSetupToken, 'firebase', 'phrase', {
+                    encryptedData: 'test',
+                    iv: 'test',
+                })
             ).rejects.toThrow();
         });
     });
@@ -609,12 +603,10 @@ describe('SSS Key Management via LearnCard Plugin', () => {
                 'did:key:z6MkPersistInitial'
             );
 
-            await learnCard.invoke.addRecoveryMethod(
-                persistToken,
-                'firebase',
-                'phrase',
-                { encryptedData: 'phrase-share', iv: 'phrase-iv' }
-            );
+            await learnCard.invoke.addRecoveryMethod(persistToken, 'firebase', 'phrase', {
+                encryptedData: 'phrase-share',
+                iv: 'phrase-iv',
+            });
 
             await learnCard.invoke.storeAuthShare(
                 persistToken,

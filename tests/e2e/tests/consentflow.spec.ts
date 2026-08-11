@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getLearnCardForUser, getLearnCard, LearnCard, USERS } from './helpers/learncard.helpers';
+import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
 import crypto from 'crypto';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 
@@ -404,9 +404,11 @@ describe('ConsentFlow E2E Tests', () => {
         it('should allow writing a credential via signing authority HTTP route', async () => {
             const sa = await a.invoke.createSigningAuthority('test-sa');
             expect(sa).toBeDefined();
+            if (!sa) throw new Error('Could not create signing authority.');
             await a.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
             const saResult = await a.invoke.getRegisteredSigningAuthority(sa.endpoint, sa.name);
             expect(saResult).toBeDefined();
+            if (!saResult) throw new Error('Could not register signing authority.');
             const signingAuthority = {
                 endpoint: saResult.signingAuthority.endpoint,
                 name: saResult.relationship.name,
