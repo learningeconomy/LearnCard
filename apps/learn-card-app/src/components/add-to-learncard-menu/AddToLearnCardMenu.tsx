@@ -72,6 +72,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     const { isDesktop } = useDeviceTypeByWidth();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { gate } = useLCNGatedAction();
+    const { checkAndPromptRecovery } = useBoostRecoveryCheck();
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
     const existingTopics = topics?.pages?.[0]?.records || [];
