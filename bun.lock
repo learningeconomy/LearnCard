@@ -64,7 +64,7 @@
     },
     "apps/learn-card-app": {
       "name": "learn-card-app",
-      "version": "1.98.0",
+      "version": "1.98.1",
       "dependencies": {
         "@capacitor-community/in-app-review": "^8.0.0",
         "@capacitor-community/media": "9.1.0",
@@ -249,7 +249,7 @@
     },
     "apps/scouts": {
       "name": "scoutpass-app",
-      "version": "1.90.25",
+      "version": "1.90.26",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",
         "@capacitor-firebase/analytics": "8.2.0",
@@ -368,7 +368,7 @@
     },
     "examples/app-store-apps/1-basic-launchpad-app": {
       "name": "@learncard/app-store-demo-basic-launchpad",
-      "version": "0.0.36",
+      "version": "0.0.37",
       "dependencies": {
         "@astrojs/netlify": "^7.0.13",
         "@learncard/init": "workspace:*",
@@ -383,7 +383,7 @@
     },
     "examples/app-store-apps/2-lore-card-app": {
       "name": "@learncard/app-store-demo-lore-card",
-      "version": "0.0.37",
+      "version": "0.0.38",
       "dependencies": {
         "@astrojs/netlify": "^7.0.13",
         "@learncard/init": "workspace:*",
@@ -396,7 +396,7 @@
     },
     "examples/app-store-apps/3-mozilla-social-badges-app": {
       "name": "@learncard/app-store-demo-mozilla-social-badges",
-      "version": "0.0.37",
+      "version": "0.0.38",
       "dependencies": {
         "@astrojs/netlify": "^7.0.13",
         "@learncard/init": "workspace:*",
@@ -409,7 +409,7 @@
     },
     "examples/app-store-apps/4-request-learner-context-app": {
       "name": "@learncard/app-store-demo-request-learner-context",
-      "version": "1.0.15",
+      "version": "1.0.16",
       "dependencies": {
         "@learncard/partner-connect": "workspace:*",
         "astro": "^6.4.8",
@@ -421,7 +421,7 @@
     },
     "examples/app-store-apps/5-northstar-learning": {
       "name": "@learncard/app-store-demo-northstar-learning",
-      "version": "0.0.14",
+      "version": "0.0.15",
       "dependencies": {
         "@astrojs/netlify": "^7.0.13",
         "@learncard/init": "workspace:*",
@@ -434,7 +434,7 @@
     },
     "examples/app-store-apps/6-basic-sync-app": {
       "name": "@learncard/app-store-demo-basic-sync",
-      "version": "1.0.6",
+      "version": "1.0.7",
       "dependencies": {
         "@astrojs/netlify": "^7.0.13",
         "@learncard/init": "workspace:*",
@@ -448,7 +448,7 @@
     },
     "examples/consent-flow-test": {
       "name": "consent-flow-test",
-      "version": "1.0.25",
+      "version": "1.0.26",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "@learncard/network-brain-client": "workspace:*",
@@ -457,7 +457,7 @@
     },
     "examples/credential-viewer": {
       "name": "@learncard/credential-viewer",
-      "version": "0.0.19",
+      "version": "0.0.20",
       "dependencies": {
         "@learncard/credential-library": "workspace:*",
         "@learncard/init": "workspace:*",
@@ -515,7 +515,7 @@
     },
     "packages/credential-library": {
       "name": "@learncard/credential-library",
-      "version": "1.0.14",
+      "version": "1.0.15",
       "dependencies": {
         "@learncard/types": "workspace:*",
         "zod": "4.1.13",
@@ -547,7 +547,7 @@
     },
     "packages/holder-continuity-bundle": {
       "name": "@learncard/holder-continuity",
-      "version": "0.2.11",
+      "version": "0.2.12",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
@@ -582,7 +582,7 @@
     },
     "packages/learn-card-base": {
       "name": "learn-card-base",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",
         "@capacitor/app": "^8.1.0",
@@ -654,7 +654,7 @@
     },
     "packages/learn-card-bridge-http": {
       "name": "@learncard/create-http-bridge",
-      "version": "1.1.248",
+      "version": "1.1.249",
       "bin": "dist/index.js",
       "dependencies": {
         "@learncard/init": "workspace:*",
@@ -699,7 +699,7 @@
     },
     "packages/learn-card-cli": {
       "name": "@learncard/cli",
-      "version": "3.4.11",
+      "version": "3.4.12",
       "bin": "dist/index.js",
       "dependencies": {
         "@learncard/core": "workspace:*",
@@ -733,7 +733,7 @@
     },
     "packages/learn-card-core": {
       "name": "@learncard/core",
-      "version": "9.4.28",
+      "version": "9.4.29",
       "dependencies": {
         "@learncard/helpers": "workspace:*",
         "abort-controller": "^3.0.0",
@@ -773,12 +773,12 @@
     },
     "packages/learn-card-helpers": {
       "name": "@learncard/helpers",
-      "version": "1.3.10",
+      "version": "1.3.11",
       "dependencies": {
         "@learncard/types": "workspace:*",
         "@noble/hashes": "^1.8.0",
         "@sd-jwt/decode": "^0.19.0",
-        "@trpc/server": "11.7.1",
+        "@trpc/server": "11.8.0",
         "immer": "^10.0.3",
         "use-immer": "^0.9.0",
         "zod": "4.1.13",
@@ -800,7 +800,7 @@
     },
     "packages/learn-card-init": {
       "name": "@learncard/init",
-      "version": "2.4.9",
+      "version": "2.4.10",
       "dependencies": {
         "@learncard/chapi-plugin": "workspace:*",
         "@learncard/core": "workspace:*",
@@ -844,7 +844,7 @@
     },
     "packages/learn-card-network/brain-client": {
       "name": "@learncard/network-brain-client",
-      "version": "2.5.48",
+      "version": "2.5.49",
       "dependencies": {
         "@learncard/network-brain-service": "workspace:*",
         "@trpc/client": "11.3.0",
@@ -859,7 +859,7 @@
     },
     "packages/learn-card-network/cloud-client": {
       "name": "@learncard/learn-cloud-client",
-      "version": "1.6.34",
+      "version": "1.6.35",
       "dependencies": {
         "@learncard/learn-cloud-service": "workspace:*",
         "@trpc/client": "^11.7.1",
@@ -873,7 +873,7 @@
     },
     "packages/learn-card-partner-connect-sdk": {
       "name": "@learncard/partner-connect",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "dependencies": {
         "@learncard/types": "workspace:*",
       },
@@ -889,7 +889,7 @@
     },
     "packages/learn-card-types": {
       "name": "@learncard/types",
-      "version": "5.18.0",
+      "version": "5.18.1",
       "dependencies": {
         "zod": "^4.1.13",
       },
@@ -908,7 +908,7 @@
     },
     "packages/plugins/ceramic": {
       "name": "@learncard/ceramic-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@ceramicnetwork/common": "2.13.0",
         "@ceramicnetwork/http-client": "2.7.0",
@@ -939,7 +939,7 @@
     },
     "packages/plugins/chapi": {
       "name": "@learncard/chapi-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -961,7 +961,7 @@
     },
     "packages/plugins/claimable-boosts": {
       "name": "@learncard/claimable-boosts-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -980,7 +980,7 @@
     },
     "packages/plugins/crypto": {
       "name": "@learncard/crypto-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "isomorphic-webcrypto": "^2.3.8",
@@ -999,7 +999,7 @@
     },
     "packages/plugins/did-web-plugin": {
       "name": "@learncard/did-web-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
       },
@@ -1019,7 +1019,7 @@
     },
     "packages/plugins/didkey": {
       "name": "@learncard/didkey-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/helpers": "workspace:^",
@@ -1040,7 +1040,7 @@
     },
     "packages/plugins/didkit": {
       "name": "@learncard/didkit-plugin",
-      "version": "1.9.8",
+      "version": "1.9.9",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1060,7 +1060,7 @@
     },
     "packages/plugins/didkit-plugin-node": {
       "name": "@learncard/didkit-plugin-node",
-      "version": "0.2.26",
+      "version": "0.2.27",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1073,7 +1073,7 @@
     },
     "packages/plugins/dynamic-loader": {
       "name": "@learncard/dynamic-loader-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
       },
@@ -1091,7 +1091,7 @@
     },
     "packages/plugins/encryption": {
       "name": "@learncard/encryption-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1110,7 +1110,7 @@
     },
     "packages/plugins/ethereum": {
       "name": "@learncard/ethereum-plugin",
-      "version": "1.1.29",
+      "version": "1.1.30",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@uniswap/default-token-list": "^4.1.0",
@@ -1130,7 +1130,7 @@
     },
     "packages/plugins/expiration": {
       "name": "@learncard/expiration-plugin",
-      "version": "1.2.28",
+      "version": "1.2.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/vc-plugin": "workspace:^",
@@ -1150,7 +1150,7 @@
     },
     "packages/plugins/idx": {
       "name": "@learncard/idx-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@ceramicnetwork/http-client": "2.7.0",
         "@ceramicnetwork/streamid": "2.7.0",
@@ -1174,7 +1174,7 @@
     },
     "packages/plugins/lca-api-plugin": {
       "name": "@learncard/lca-api-plugin",
-      "version": "1.2.22",
+      "version": "1.2.23",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1201,7 +1201,7 @@
     },
     "packages/plugins/learn-card": {
       "name": "@learncard/learn-card-plugin",
-      "version": "1.2.28",
+      "version": "1.2.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1222,7 +1222,7 @@
     },
     "packages/plugins/learn-card-network": {
       "name": "@learncard/network-plugin",
-      "version": "2.13.11",
+      "version": "2.13.12",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/helpers": "workspace:*",
@@ -1248,7 +1248,7 @@
     },
     "packages/plugins/learn-cloud": {
       "name": "@learncard/learn-cloud-plugin",
-      "version": "2.3.34",
+      "version": "2.3.35",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1275,7 +1275,7 @@
     },
     "packages/plugins/ler-rs": {
       "name": "@learncard/ler-rs-plugin",
-      "version": "0.1.19",
+      "version": "0.1.20",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1296,7 +1296,7 @@
     },
     "packages/plugins/linked-claims": {
       "name": "@learncard/linked-claims-plugin",
-      "version": "0.2.28",
+      "version": "0.2.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1317,7 +1317,7 @@
     },
     "packages/plugins/open-badge-v2": {
       "name": "@learncard/open-badge-v2-plugin",
-      "version": "1.1.29",
+      "version": "1.1.30",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/crypto-plugin": "workspace:*",
@@ -1338,7 +1338,7 @@
     },
     "packages/plugins/openid4vc": {
       "name": "@learncard/openid4vc-plugin",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1364,7 +1364,7 @@
     },
     "packages/plugins/render-method": {
       "name": "@learncard/render-method-plugin",
-      "version": "4.0.0",
+      "version": "4.0.1",
       "dependencies": {
         "@learncard/helpers": "workspace:*",
       },
@@ -1391,7 +1391,7 @@
     },
     "packages/plugins/sd-jwt-vc": {
       "name": "@learncard/sd-jwt-vc-plugin",
-      "version": "0.2.6",
+      "version": "0.2.7",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1416,7 +1416,7 @@
     },
     "packages/plugins/vc": {
       "name": "@learncard/vc-plugin",
-      "version": "1.5.8",
+      "version": "1.5.9",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1437,7 +1437,7 @@
     },
     "packages/plugins/vc-api": {
       "name": "@learncard/vc-api-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1456,7 +1456,7 @@
     },
     "packages/plugins/vc-templates": {
       "name": "@learncard/vc-templates-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*",
@@ -1475,7 +1475,7 @@
     },
     "packages/plugins/vpqr": {
       "name": "@learncard/vpqr-plugin",
-      "version": "1.1.28",
+      "version": "1.1.29",
       "dependencies": {
         "@digitalbazaar/vpqr": "^3.0.0",
         "@learncard/core": "workspace:*",
@@ -1495,7 +1495,7 @@
     },
     "packages/react-learn-card": {
       "name": "@learncard/react",
-      "version": "2.11.0",
+      "version": "2.12.0",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "date-fns": "^2.28.0",
@@ -1558,7 +1558,7 @@
     },
     "packages/sss-key-manager": {
       "name": "@learncard/sss-key-manager",
-      "version": "0.1.18",
+      "version": "0.1.19",
       "dependencies": {
         "@learncard/types": "workspace:*",
         "@noble/ed25519": "^2.0.0",
@@ -1623,7 +1623,7 @@
     },
     "services/learn-card-network/brain-service": {
       "name": "@learncard/network-brain-service",
-      "version": "3.16.11",
+      "version": "3.16.12",
       "dependencies": {
         "@aws-sdk/client-sqs": "^3.379.1",
         "@digitalcredentials/issuer-registry-client": "^3.2.0-beta.5",
@@ -1646,13 +1646,13 @@
         "@learncard/vc-templates-plugin": "workspace:*",
         "@sentry/esbuild-plugin": "2.16.0",
         "@sentry/serverless": "7.61.0",
-        "@trpc/server": "11.7.1",
+        "@trpc/server": "11.8.0",
         "@types/lodash": "^4.14.191",
         "base64url": "^3.0.1",
         "cors": "^2.8.5",
         "dotenv": "^16.0.3",
         "express": "^4.18.2",
-        "fastify": "^5.7.2",
+        "fastify": "^5.8.5",
         "fastify-plugin": "^5.1.0",
         "ioredis": "^5.2.2",
         "ioredis-mock": "^8.2.2",
@@ -1702,10 +1702,10 @@
     },
     "services/learn-card-network/lca-api": {
       "name": "@learncard/lca-api-service",
-      "version": "1.2.22",
+      "version": "1.2.23",
       "dependencies": {
         "@fastify/cors": "^11.2.0",
-        "@fastify/static": "^9.0.0",
+        "@fastify/static": "^10.1.1",
         "@learncard/core": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1715,14 +1715,14 @@
         "@learncard/types": "workspace:*",
         "@sentry/esbuild-plugin": "^2.5.0",
         "@sentry/serverless": "^7.61.0",
-        "@trpc/server": "11.7.1",
+        "@trpc/server": "11.8.0",
         "@types/jsonwebtoken": "^9.0.8",
         "@types/lodash": "^4.14.191",
         "@types/node-forge": "^1.3.11",
         "axios": "^0.31.0",
         "dotenv": "^16.0.3",
         "express": "^4.18.2",
-        "fastify": "^5.7.2",
+        "fastify": "^5.8.5",
         "filestack-js": "^3.24.0",
         "firebase-admin": "13.4.0",
         "ioredis": "^5.2.2",
@@ -1760,10 +1760,10 @@
     },
     "services/learn-card-network/learn-cloud-service": {
       "name": "@learncard/learn-cloud-service",
-      "version": "2.5.26",
+      "version": "2.5.27",
       "dependencies": {
         "@fastify/cors": "^11.2.0",
-        "@fastify/static": "^9.0.0",
+        "@fastify/static": "^10.1.1",
         "@learncard/core": "workspace:*",
         "@learncard/crypto-plugin": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
@@ -1779,7 +1779,7 @@
         "@learncard/vc-templates-plugin": "workspace:*",
         "@sentry/esbuild-plugin": "2.5.0",
         "@sentry/serverless": "7.61.0",
-        "@trpc/server": "11.7.1",
+        "@trpc/server": "11.8.0",
         "@types/lodash": "^4.14.191",
         "@xapi/xapi": "^3.0.0",
         "async": "^3.2.6",
@@ -1787,7 +1787,7 @@
         "cors": "^2.8.5",
         "dotenv": "^16.0.3",
         "express": "^4.18.2",
-        "fastify": "^5.7.2",
+        "fastify": "^5.8.5",
         "ioredis": "^5.2.2",
         "ioredis-mock": "^8.2.2",
         "json-stringify-deterministic": "^1.0.8",
@@ -1837,7 +1837,7 @@
       "name": "@shared/delete-service",
       "version": "1.0.0",
       "dependencies": {
-        "fastify": "5.7.2",
+        "fastify": "^5.8.5",
         "ioredis": "^5.2.2",
         "mongodb": "^6.2.0",
         "neo4j-driver": "^4.4.5",
@@ -1980,7 +1980,7 @@
     "esbuild@>=0.27.3 <0.28.1": "0.28.1",
     "fast-xml-parser@4": "5.8.0",
     "fast-xml-parser@5": "5.8.0",
-    "fastify": "5.7.2",
+    "fastify": "^5.8.5",
     "handlebars": "4.7.9",
     "history": "4.10.1",
     "jsonpath-plus": "10.3.0",
@@ -2960,7 +2960,7 @@
 
     "@fastify/send": ["@fastify/send@4.1.0", "", { "dependencies": { "@lukeed/ms": "^2.0.2", "escape-html": "~1.0.3", "fast-decode-uri-component": "^1.0.1", "http-errors": "^2.0.0", "mime": "^3" } }, "sha512-TMYeQLCBSy2TOFmV95hQWkiTYgC/SEx7vMdV+wnZVX4tt8VBLKzmH8vV9OzJehV0+XBfg+WxPMt5wp+JBUKsVw=="],
 
-    "@fastify/static": ["@fastify/static@9.1.3", "", { "dependencies": { "@fastify/accept-negotiator": "^2.0.0", "@fastify/send": "^4.0.0", "content-disposition": "^1.0.1", "fastify-plugin": "^5.0.0", "fastq": "^1.17.1", "glob": "^13.0.0" } }, "sha512-aXrYtsiryLhRxRNaxNqsn7FUISeb7rB9q4eHUPIot5aeQBLNahnz1m6thzm7JWC1poSGXS9XrX8DvuMivp2hkQ=="],
+    "@fastify/static": ["@fastify/static@10.1.3", "", { "dependencies": { "@fastify/accept-negotiator": "^2.0.0", "@fastify/error": "^4.0.0", "@fastify/send": "^4.0.0", "content-disposition": "^2.0.1", "fastify-plugin": "^6.0.0", "fastq": "^1.17.1", "glob": "^13.0.0" } }, "sha512-W6jqajYS974XjPjB5hQWoxPM8NKM4+p8YmQT6G5IbCa4uhdWSVadZUv75siy1wEA/3ty8RYdpBydfWeu9AqAqQ=="],
 
     "@filestack/loader": ["@filestack/loader@1.0.9", "", {}, "sha512-zvXbZSgeybT1p3ds5NZ5GQYPVnKacgb2YGWe7psdPs/JE1v3SL1j2SXYaHA/f/Qwc8Y1fjzz53maKP0vwDHrvA=="],
 
@@ -4516,7 +4516,7 @@
 
     "@trpc/client": ["@trpc/client@11.3.0", "", { "peerDependencies": { "@trpc/server": "11.3.0", "typescript": ">=5.7.2" } }, "sha512-O8fih4Tj+mGqN7bPM1inXJ7/3SFYI3/0D/AKYDc/G6Bq7GNNX+1st0YMMdtFk+Vv3e8K95h6233ZOwRX0qiwOg=="],
 
-    "@trpc/server": ["@trpc/server@11.7.1", "", { "peerDependencies": { "typescript": ">=5.7.2" } }, "sha512-N3U8LNLIP4g9C7LJ/sLkjuPHwqlvE3bnspzC4DEFVdvx2+usbn70P80E3wj5cjOTLhmhRiwJCSXhlB+MHfGeCw=="],
+    "@trpc/server": ["@trpc/server@11.8.0", "", { "peerDependencies": { "typescript": ">=5.7.2" } }, "sha512-DphyQnLuyX2nwJCQGWQ9zYz4hZGvRhSBqDhQ0SH3tDhQ3PU4u68xofA0pJ741Ir4InEAFD+TtJVLAQy+wVOkiQ=="],
 
     "@tsconfig/docusaurus": ["@tsconfig/docusaurus@1.0.7", "", {}, "sha512-ffTXxGIP/IRMCjuzHd6M4/HdIrw1bMfC7Bv8hMkTadnePkpe0lG0oDSdbRpSDZb2rQMAgpbWiR10BvxvNYwYrg=="],
 
@@ -6526,7 +6526,7 @@
 
     "fast-json-stable-stringify": ["fast-json-stable-stringify@2.1.0", "", {}, "sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw=="],
 
-    "fast-json-stringify": ["fast-json-stringify@6.4.0", "", { "dependencies": { "@fastify/merge-json-schemas": "^0.2.0", "ajv": "^8.12.0", "ajv-formats": "^3.0.1", "fast-uri": "^3.0.0", "json-schema-ref-resolver": "^3.0.0", "rfdc": "^1.2.0" } }, "sha512-ibRCQ0GZKJIQ+P3Et1h0LhPgp3PMTYk0MH8O+kW3lNYsvmaQww5Nn3f1jf73Q0jR1Yz3a1CDP4/NZD3vOajWJQ=="],
+    "fast-json-stringify": ["fast-json-stringify@7.0.1", "", { "dependencies": { "@fastify/merge-json-schemas": "^0.2.0", "ajv": "^8.12.0", "ajv-formats": "^3.0.1", "fast-uri": "^4.0.0", "json-schema-ref-resolver": "^3.0.0", "rfdc": "^1.2.0" } }, "sha512-eRSayARSbbwlBjpP4vnTTIRD5QPcIrmihPxDeN1DtKnHPg66UuJLx+8hlK1kaFdjvzyQ/dzALoi4vwAQ+T+iZA=="],
 
     "fast-levenshtein": ["fast-levenshtein@2.0.6", "", {}, "sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw=="],
 
@@ -6554,7 +6554,7 @@
 
     "fastest-levenshtein": ["fastest-levenshtein@1.0.16", "", {}, "sha512-eRnCtTTtGZFpQCwhJiUOuxPQWRXVKYDn0b2PeHfXL6/Zi53SLAzAHfVhVWK2AryC/WH05kGfxhFIPvTF0SXQzg=="],
 
-    "fastify": ["fastify@5.7.2", "", { "dependencies": { "@fastify/ajv-compiler": "^4.0.5", "@fastify/error": "^4.0.0", "@fastify/fast-json-stringify-compiler": "^5.0.0", "@fastify/proxy-addr": "^5.0.0", "abstract-logging": "^2.0.1", "avvio": "^9.0.0", "fast-json-stringify": "^6.0.0", "find-my-way": "^9.0.0", "light-my-request": "^6.0.0", "pino": "^10.1.0", "process-warning": "^5.0.0", "rfdc": "^1.3.1", "secure-json-parse": "^4.0.0", "semver": "^7.6.0", "toad-cache": "^3.7.0" } }, "sha512-dBJolW+hm6N/yJVf6J5E1BxOBNkuXNl405nrfeR8SpvGWG3aCC2XDHyiFBdow8Win1kj7sjawQc257JlYY6M/A=="],
+    "fastify": ["fastify@5.11.3", "", { "dependencies": { "@fastify/ajv-compiler": "^4.0.5", "@fastify/error": "^4.0.0", "@fastify/fast-json-stringify-compiler": "^5.0.0", "@fastify/proxy-addr": "^5.0.0", "abstract-logging": "^2.0.1", "avvio": "^9.0.0", "fast-json-stringify": "^7.0.0", "find-my-way": "^9.6.0", "light-my-request": "^6.0.0", "pino": "^9.14.0 || ^10.1.0", "process-warning": "^5.0.0", "rfdc": "^1.3.1", "secure-json-parse": "^4.0.0", "semver": "^7.6.0", "toad-cache": "^3.7.0" } }, "sha512-W6hzDP8s0iSeL7LGwY6Oc/ZxuXWOvFEMs6p2L0Si415YRo27W5pBKdOTXxhemBDeSTAcpYf5evRA9onF2OYhPA=="],
 
     "fastify-plugin": ["fastify-plugin@5.1.0", "", {}, "sha512-FAIDA8eovSt5qcDgcBvDuX/v0Cjz0ohGhENZ/wpc3y+oZCY2afZ9Baqql3g/lC+OHRnciQol4ww7tuthOb9idw=="],
 
@@ -10528,11 +10528,15 @@
 
     "@fastify/ajv-compiler/ajv-formats": ["ajv-formats@3.0.1", "", { "dependencies": { "ajv": "^8.0.0" } }, "sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ=="],
 
+    "@fastify/fast-json-stringify-compiler/fast-json-stringify": ["fast-json-stringify@6.4.0", "", { "dependencies": { "@fastify/merge-json-schemas": "^0.2.0", "ajv": "^8.12.0", "ajv-formats": "^3.0.1", "fast-uri": "^3.0.0", "json-schema-ref-resolver": "^3.0.0", "rfdc": "^1.2.0" } }, "sha512-ibRCQ0GZKJIQ+P3Et1h0LhPgp3PMTYk0MH8O+kW3lNYsvmaQww5Nn3f1jf73Q0jR1Yz3a1CDP4/NZD3vOajWJQ=="],
+
     "@fastify/proxy-addr/ipaddr.js": ["ipaddr.js@2.4.0", "", {}, "sha512-9VGk3HGanVE6JoZXHiCpnGy5X0jYDnN4EA4lntFPj+1vIWlFhIylq2CrrCOJH9EAhc5CYhq18F2Av2tgoAPsYQ=="],
 
     "@fastify/send/mime": ["mime@3.0.0", "", { "bin": { "mime": "cli.js" } }, "sha512-jSCU7/VB1loIWBZe14aEYHU/+1UMEHoaO7qxCOVJOw9GgH72VAWppxNcjU+x9a2k3GSIBXNKxXQFqRvvZ7vr3A=="],
 
-    "@fastify/static/content-disposition": ["content-disposition@1.1.0", "", {}, "sha512-5jRCH9Z/+DRP7rkvY83B+yGIGX96OYdJmzngqnw2SBSxqCFPd0w2km3s5iawpGX8krnwSGmF0FW5Nhr0Hfai3g=="],
+    "@fastify/static/content-disposition": ["content-disposition@2.0.1", "", {}, "sha512-e+H0ZXHSWYrENhQzw1LPuP4oF5MzVKmDU6d3hxlvaPEYLLg62MxtQNPRx4SYSuYJSBUgnQIG4HIN2tEtNv7Dog=="],
+
+    "@fastify/static/fastify-plugin": ["fastify-plugin@6.0.0", "", {}, "sha512-fZOty7z3O7vOliF6d8bHE3wiEh1KcNnKEQensSgTk9C1DvN6nRLS++XVd86v33Hw/8u9Un8A1zDrQ8ujcQDHEg=="],
 
     "@fastify/static/glob": ["glob@13.0.6", "", { "dependencies": { "minimatch": "^10.2.2", "minipass": "^7.1.3", "path-scurry": "^2.0.2" } }, "sha512-Wjlyrolmm8uDpm/ogGyXZXb1Z+Ca2B8NbJwqBVg0axK9GbBeoS7yGV6vjXnYdGm6X53iehEuxxbyiKp8QmN4Vw=="],
 
@@ -11288,6 +11292,8 @@
 
     "@trendyol/jest-testcontainers/testcontainers": ["testcontainers@4.7.0", "", { "dependencies": { "@types/dockerode": "^2.5.34", "byline": "^5.0.0", "debug": "^4.1.1", "docker-compose": "^0.23.5", "dockerode": "^3.2.1", "get-port": "^5.1.1", "glob": "^7.1.6", "node-duration": "^1.0.4", "slash": "^3.0.0", "stream-to-array": "^2.3.0", "tar-fs": "^2.1.0" } }, "sha512-5SrG9RMfDRRZig34fDZeMcGD5i3lHCOJzn0kjouyK4TiEWjZB3h7kCk8524lwNRHROFE1j6DGjceonv/5hl5ag=="],
 
+    "@trpc/client/@trpc/server": ["@trpc/server@11.7.1", "", { "peerDependencies": { "typescript": ">=5.7.2" } }, "sha512-N3U8LNLIP4g9C7LJ/sLkjuPHwqlvE3bnspzC4DEFVdvx2+usbn70P80E3wj5cjOTLhmhRiwJCSXhlB+MHfGeCw=="],
+
     "@types/babel__core/@babel/parser": ["@babel/parser@7.29.7", "", { "dependencies": { "@babel/types": "^7.29.7" }, "bin": "./bin/babel-parser.js" }, "sha512-hnORnjP/1P/zFEndoeX+n+t1RwWRJiJpM/jO7FW32Kn9r5+sJB2JWOdYo4L6k78j15eCwY3Gm/7364B1EMwtNg=="],
 
     "@types/babel__template/@babel/parser": ["@babel/parser@7.29.7", "", { "dependencies": { "@babel/types": "^7.29.7" }, "bin": "./bin/babel-parser.js" }, "sha512-hnORnjP/1P/zFEndoeX+n+t1RwWRJiJpM/jO7FW32Kn9r5+sJB2JWOdYo4L6k78j15eCwY3Gm/7364B1EMwtNg=="],
@@ -11951,6 +11957,8 @@
     "fast-json-stringify/ajv": ["ajv@8.20.0", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA=="],
 
     "fast-json-stringify/ajv-formats": ["ajv-formats@3.0.1", "", { "dependencies": { "ajv": "^8.0.0" } }, "sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ=="],
+
+    "fast-json-stringify/fast-uri": ["fast-uri@4.1.2", "", {}, "sha512-TyGmBcbDTZXcb2cj5MV89DrF42DKvb3y5DDUNh95iO+IMeAzMkVSxK1PZRrRIpc9yg8U2GhGdbofNa0LS/a4Bw=="],
 
     "fast-png/pako": ["pako@2.2.0", "", {}, "sha512-zJq6RP/5q+TO2OpFV3FHzlPnFjmkb7Nc99a5SNjJE+uu/PkpChs+NIZSSzbBoD+6kjiISXjfYdwj1ZRQ81dz/w=="],
 
@@ -13512,6 +13520,10 @@
 
     "@fastify/ajv-compiler/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 
+    "@fastify/fast-json-stringify-compiler/fast-json-stringify/ajv": ["ajv@8.20.0", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA=="],
+
+    "@fastify/fast-json-stringify-compiler/fast-json-stringify/ajv-formats": ["ajv-formats@3.0.1", "", { "dependencies": { "ajv": "^8.0.0" } }, "sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ=="],
+
     "@fastify/static/glob/minimatch": ["minimatch@10.2.5", "", { "dependencies": { "brace-expansion": "^5.0.5" } }, "sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg=="],
 
     "@fastify/static/glob/path-scurry": ["path-scurry@2.0.2", "", { "dependencies": { "lru-cache": "^11.0.0", "minipass": "^7.1.2" } }, "sha512-3O/iVVsJAPsOnpwWIeD+d6z/7PmqApyQePUtCndjatj/9I5LylHvt5qluFaBT3I5h3r1ejfR056c+FCv+NnNXg=="],
@@ -13679,6 +13691,8 @@
     "@learncard/lca-api-service/serverless-esbuild/esbuild": ["esbuild@0.25.12", "", { "optionalDependencies": { "@esbuild/aix-ppc64": "0.25.12", "@esbuild/android-arm": "0.25.12", "@esbuild/android-arm64": "0.25.12", "@esbuild/android-x64": "0.25.12", "@esbuild/darwin-arm64": "0.25.12", "@esbuild/darwin-x64": "0.25.12", "@esbuild/freebsd-arm64": "0.25.12", "@esbuild/freebsd-x64": "0.25.12", "@esbuild/linux-arm": "0.25.12", "@esbuild/linux-arm64": "0.25.12", "@esbuild/linux-ia32": "0.25.12", "@esbuild/linux-loong64": "0.25.12", "@esbuild/linux-mips64el": "0.25.12", "@esbuild/linux-ppc64": "0.25.12", "@esbuild/linux-riscv64": "0.25.12", "@esbuild/linux-s390x": "0.25.12", "@esbuild/linux-x64": "0.25.12", "@esbuild/netbsd-arm64": "0.25.12", "@esbuild/netbsd-x64": "0.25.12", "@esbuild/openbsd-arm64": "0.25.12", "@esbuild/openbsd-x64": "0.25.12", "@esbuild/openharmony-arm64": "0.25.12", "@esbuild/sunos-x64": "0.25.12", "@esbuild/win32-arm64": "0.25.12", "@esbuild/win32-ia32": "0.25.12", "@esbuild/win32-x64": "0.25.12" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-bbPBYYrtZbkt6Os6FiTLCTFxvq4tt3JKall1vRwshA3fdVztsLAatFaZobhkBC8/BrPetoa0oksYoKXoG4ryJg=="],
 
     "@learncard/lca-api-service/serverless-esbuild/fs-extra": ["fs-extra@11.3.6", "", { "dependencies": { "graceful-fs": "^4.2.0", "jsonfile": "^6.0.1", "universalify": "^2.0.0" } }, "sha512-w8ZNZr2mKIc7qeNaQ9AVPT1+iFaI+Avd4xudVOvdDJ8VytREi1Ft5Ih7hd9jjehod8vAM5GMsfQ/TpPf4EyoEA=="],
+
+    "@learncard/learn-cloud-client/@trpc/client/@trpc/server": ["@trpc/server@11.7.1", "", { "peerDependencies": { "typescript": ">=5.7.2" } }, "sha512-N3U8LNLIP4g9C7LJ/sLkjuPHwqlvE3bnspzC4DEFVdvx2+usbn70P80E3wj5cjOTLhmhRiwJCSXhlB+MHfGeCw=="],
 
     "@learncard/learn-cloud-service/@sentry/esbuild-plugin/@sentry/bundler-plugin-core": ["@sentry/bundler-plugin-core@2.5.0", "", { "dependencies": { "@sentry/cli": "^2.17.0", "@sentry/node": "^7.60.0", "@sentry/utils": "^7.60.0", "dotenv": "^16.3.1", "find-up": "5.0.0", "glob": "9.3.2", "magic-string": "0.27.0", "unplugin": "1.0.1" } }, "sha512-UNjeTSf0Irt/RsC1Xsfxa+RC92mBvjzuWQnvHJ5c+mXwUt+jLcFgGMCSVK/FCDZO+gAeKzmU1+G2UexbsNAP8w=="],
 
@@ -14900,6 +14914,8 @@
 
     "fast-glob/micromatch/picomatch": ["picomatch@2.3.2", "", {}, "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA=="],
 
+    "fast-json-stringify/ajv/fast-uri": ["fast-uri@3.1.3", "", {}, "sha512-i70LwGWUduXqzicKXWshooq+sWL1K3WUU5rKZNG/0i3a1OSoX3HqhH5WbWwTmqWfor4urUakGPiRQcleRZTwOg=="],
+
     "fast-json-stringify/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 
     "file-loader/schema-utils/ajv-keywords": ["ajv-keywords@3.5.2", "", { "peerDependencies": { "ajv": "^6.9.1" } }, "sha512-5p6WTN0DdTGVQk6VjcEju19IgaHudalcfabD7yhDGeA6bcQnmL+CpveLJq/3hvfwd1aof6L386Ougkx6RfyMIQ=="],
@@ -15915,6 +15931,8 @@
     "@expo/package-manager/ora/cli-cursor/restore-cursor": ["restore-cursor@2.0.0", "", { "dependencies": { "onetime": "^2.0.0", "signal-exit": "^3.0.2" } }, "sha512-6IzJLuGi4+R14vwagDHX+JrXmPVtPpn4mffDJ1UdR7/Edm87fl6yi8mMBIVvFtJaNTUvjughmW4hwLhRG7gC1Q=="],
 
     "@expo/package-manager/ora/strip-ansi/ansi-regex": ["ansi-regex@4.1.1", "", {}, "sha512-ILlv4k/3f6vfQ4OoP2AGvirOktlQ98ZEL1k9FaQjxa3L1abBgbuTDAdPOpvbGncC0BTVQrl+OM8xZGK6tWXt7g=="],
+
+    "@fastify/fast-json-stringify-compiler/fast-json-stringify/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 
     "@fastify/static/glob/minimatch/brace-expansion": ["brace-expansion@5.0.7", "", { "dependencies": { "balanced-match": "^4.0.2" } }, "sha512-7oFy703dxfY3/NLxC1fh2SUCQ0H9rmAY+5EpDVfXjUTTs+HEwR2nYaqLv+GWcTsumwxPfiz6CzCNkwXwBUwqCA=="],
 
