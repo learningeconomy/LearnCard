@@ -566,7 +566,7 @@
       "name": "@learncard/lca-api-client",
       "version": "1.2.3",
       "dependencies": {
-        "@trpc/client": "11.3.0",
+        "@trpc/client": "11.8.0",
       },
       "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.1.4",
@@ -847,7 +847,7 @@
       "version": "2.5.49",
       "dependencies": {
         "@learncard/network-brain-service": "workspace:*",
-        "@trpc/client": "11.3.0",
+        "@trpc/client": "11.8.0",
       },
       "devDependencies": {
         "@learncard/helpers": "workspace:*",
@@ -862,7 +862,7 @@
       "version": "1.6.35",
       "dependencies": {
         "@learncard/learn-cloud-service": "workspace:*",
-        "@trpc/client": "^11.7.1",
+        "@trpc/client": "11.8.0",
       },
       "devDependencies": {
         "@learncard/types": "workspace:*",
@@ -4514,7 +4514,7 @@
 
     "@trendyol/jest-testcontainers": ["@trendyol/jest-testcontainers@2.1.1", "", { "dependencies": { "cwd": "^0.10.0", "node-duration": "^1.0.4", "testcontainers": "4.7.0" }, "peerDependencies": { "jest-environment-node": ">=25" } }, "sha512-4iAc2pMsev4BTUzoA7jO1VvbTOU2N3juQUYa8TwiSPXPuQtxKwV9WB9ZEP+JQ+Pj15YqfGOXp5H0WNMPtapjiA=="],
 
-    "@trpc/client": ["@trpc/client@11.3.0", "", { "peerDependencies": { "@trpc/server": "11.3.0", "typescript": ">=5.7.2" } }, "sha512-O8fih4Tj+mGqN7bPM1inXJ7/3SFYI3/0D/AKYDc/G6Bq7GNNX+1st0YMMdtFk+Vv3e8K95h6233ZOwRX0qiwOg=="],
+    "@trpc/client": ["@trpc/client@11.8.0", "", { "peerDependencies": { "@trpc/server": "11.8.0", "typescript": ">=5.7.2" } }, "sha512-imJQeESX1hAapDaC4JB91yvXg41AZfBuTh/scnEiN/hAubZa5s/ikp0n+w29q2GCf+hREkr3WptUFKFJoDAIug=="],
 
     "@trpc/server": ["@trpc/server@11.8.0", "", { "peerDependencies": { "typescript": ">=5.7.2" } }, "sha512-DphyQnLuyX2nwJCQGWQ9zYz4hZGvRhSBqDhQ0SH3tDhQ3PU4u68xofA0pJ741Ir4InEAFD+TtJVLAQy+wVOkiQ=="],
 
@@ -10728,8 +10728,6 @@
 
     "@learncard/learn-card-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
 
-    "@learncard/learn-cloud-client/@trpc/client": ["@trpc/client@11.18.0", "", { "peerDependencies": { "@trpc/server": "11.18.0", "typescript": ">=5.7.2" }, "bin": { "intent": "bin/intent.js" } }, "sha512-wOqeg3Fvl25V1ZisQhUD3K8G60ZJDlSGJNSyeXrLH24xAo5w6GSR2Kzb1cSNY9Y+IQ2YZvYGZstBU+V/ulo/ow=="],
-
     "@learncard/learn-cloud-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
 
     "@learncard/learn-cloud-service/@sentry/esbuild-plugin": ["@sentry/esbuild-plugin@2.5.0", "", { "dependencies": { "@sentry/bundler-plugin-core": "2.5.0", "unplugin": "1.0.1", "uuid": "^9.0.0" } }, "sha512-7408Z9FqQn/679gwxH7hijM167q/xWCMLJQiUGX4p8lVLy4yZZyne3KcYJ5NypbEQxM/2hwwApBdbettRCwbBQ=="],
@@ -11291,8 +11289,6 @@
     "@trapezedev/project/env-paths": ["env-paths@3.0.0", "", {}, "sha512-dtJUTepzMW3Lm/NPxRf3wP4642UWhjL2sQxc+ym2YMj1m/H2zDNQOlezafzkHwn6sMstjHTwG6iQQsctDW/b1A=="],
 
     "@trendyol/jest-testcontainers/testcontainers": ["testcontainers@4.7.0", "", { "dependencies": { "@types/dockerode": "^2.5.34", "byline": "^5.0.0", "debug": "^4.1.1", "docker-compose": "^0.23.5", "dockerode": "^3.2.1", "get-port": "^5.1.1", "glob": "^7.1.6", "node-duration": "^1.0.4", "slash": "^3.0.0", "stream-to-array": "^2.3.0", "tar-fs": "^2.1.0" } }, "sha512-5SrG9RMfDRRZig34fDZeMcGD5i3lHCOJzn0kjouyK4TiEWjZB3h7kCk8524lwNRHROFE1j6DGjceonv/5hl5ag=="],
-
-    "@trpc/client/@trpc/server": ["@trpc/server@11.7.1", "", { "peerDependencies": { "typescript": ">=5.7.2" } }, "sha512-N3U8LNLIP4g9C7LJ/sLkjuPHwqlvE3bnspzC4DEFVdvx2+usbn70P80E3wj5cjOTLhmhRiwJCSXhlB+MHfGeCw=="],
 
     "@types/babel__core/@babel/parser": ["@babel/parser@7.29.7", "", { "dependencies": { "@babel/types": "^7.29.7" }, "bin": "./bin/babel-parser.js" }, "sha512-hnORnjP/1P/zFEndoeX+n+t1RwWRJiJpM/jO7FW32Kn9r5+sJB2JWOdYo4L6k78j15eCwY3Gm/7364B1EMwtNg=="],
 
@@ -13691,8 +13687,6 @@
     "@learncard/lca-api-service/serverless-esbuild/esbuild": ["esbuild@0.25.12", "", { "optionalDependencies": { "@esbuild/aix-ppc64": "0.25.12", "@esbuild/android-arm": "0.25.12", "@esbuild/android-arm64": "0.25.12", "@esbuild/android-x64": "0.25.12", "@esbuild/darwin-arm64": "0.25.12", "@esbuild/darwin-x64": "0.25.12", "@esbuild/freebsd-arm64": "0.25.12", "@esbuild/freebsd-x64": "0.25.12", "@esbuild/linux-arm": "0.25.12", "@esbuild/linux-arm64": "0.25.12", "@esbuild/linux-ia32": "0.25.12", "@esbuild/linux-loong64": "0.25.12", "@esbuild/linux-mips64el": "0.25.12", "@esbuild/linux-ppc64": "0.25.12", "@esbuild/linux-riscv64": "0.25.12", "@esbuild/linux-s390x": "0.25.12", "@esbuild/linux-x64": "0.25.12", "@esbuild/netbsd-arm64": "0.25.12", "@esbuild/netbsd-x64": "0.25.12", "@esbuild/openbsd-arm64": "0.25.12", "@esbuild/openbsd-x64": "0.25.12", "@esbuild/openharmony-arm64": "0.25.12", "@esbuild/sunos-x64": "0.25.12", "@esbuild/win32-arm64": "0.25.12", "@esbuild/win32-ia32": "0.25.12", "@esbuild/win32-x64": "0.25.12" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-bbPBYYrtZbkt6Os6FiTLCTFxvq4tt3JKall1vRwshA3fdVztsLAatFaZobhkBC8/BrPetoa0oksYoKXoG4ryJg=="],
 
     "@learncard/lca-api-service/serverless-esbuild/fs-extra": ["fs-extra@11.3.6", "", { "dependencies": { "graceful-fs": "^4.2.0", "jsonfile": "^6.0.1", "universalify": "^2.0.0" } }, "sha512-w8ZNZr2mKIc7qeNaQ9AVPT1+iFaI+Avd4xudVOvdDJ8VytREi1Ft5Ih7hd9jjehod8vAM5GMsfQ/TpPf4EyoEA=="],
-
-    "@learncard/learn-cloud-client/@trpc/client/@trpc/server": ["@trpc/server@11.7.1", "", { "peerDependencies": { "typescript": ">=5.7.2" } }, "sha512-N3U8LNLIP4g9C7LJ/sLkjuPHwqlvE3bnspzC4DEFVdvx2+usbn70P80E3wj5cjOTLhmhRiwJCSXhlB+MHfGeCw=="],
 
     "@learncard/learn-cloud-service/@sentry/esbuild-plugin/@sentry/bundler-plugin-core": ["@sentry/bundler-plugin-core@2.5.0", "", { "dependencies": { "@sentry/cli": "^2.17.0", "@sentry/node": "^7.60.0", "@sentry/utils": "^7.60.0", "dotenv": "^16.3.1", "find-up": "5.0.0", "glob": "9.3.2", "magic-string": "0.27.0", "unplugin": "1.0.1" } }, "sha512-UNjeTSf0Irt/RsC1Xsfxa+RC92mBvjzuWQnvHJ5c+mXwUt+jLcFgGMCSVK/FCDZO+gAeKzmU1+G2UexbsNAP8w=="],
 
