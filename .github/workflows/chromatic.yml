@@ -5,6 +5,10 @@
 name: 'Chromatic'
 
 on:
+    # Keep a current baseline build for every main commit. Without this, Chromatic
+    # cannot compare a PR once its merge base advances past the last published build.
+    push:
+        branches: [main]
     pull_request:
         types: [opened, synchronize, reopened]
 
@@ -21,6 +25,7 @@ env:
 
 jobs:
     chromatic-deployment:
+        if: github.event_name == 'pull_request'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
@@ -64,7 +69,7 @@ jobs:
             - name: Checkout Repo
               uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event.pull_request.head.sha }}
+                  ref: ${{ github.event.pull_request.head.sha || github.sha }}
                   # Chromatic needs full git history to compare against the baseline.
                   fetch-depth: 0
 
@@ -88,14 +93,14 @@ jobs:
             # from the nx graph at runtime (rather than hardcoded) so new dependencies are covered
             # automatically. run-many skips any project in the closure that has no build target.
             - name: Build workspace dependencies
-              if: contains(env.AFFECTED, 'learn-card-app')
+              if: github.event_name == 'push' || contains(env.AFFECTED, 'learn-card-app')
               run: |
                   bunx nx graph --focus=learn-card-app --file=dep-graph.json
                   PROJECTS=$(bun -e "const g=require('./dep-graph.json');const deps=g.graph.dependencies;const seen=new Set();const q=['learn-card-app'];while(q.length){const n=q.pop();for(const d of (deps[n]||[])){if(d.target.startsWith('npm:'))continue;if(!seen.has(d.target)){seen.add(d.target);q.push(d.target);}}}process.stdout.write([...seen].join(','));")
                   bunx nx run-many -t build --projects="$PROJECTS"
 
             - name: Publish to Chromatic
-              if: contains(env.AFFECTED, 'learn-card-app')
+              if: github.event_name == 'push' || contains(env.AFFECTED, 'learn-card-app')
               uses: chromaui/action@latest
               with:
                   projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN_LCA }}

@@ -11,6 +11,7 @@ import type {
 
 import PassportIcon from 'learn-card-base/svgs/PassportIcon';
 import AiInsightsTwoTonedIcon from 'learn-card-base/svgs/SideNav/AiInsightsTwoTonedIcon';
+import SkillsTwoTonedIcon from 'learn-card-base/svgs/SideNav/SkillsTwoTonedIcon';
 import CompassTwoTonedIcon from 'learn-card-base/svgs/SideNav/CompassTwoTonedIcon';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
@@ -86,11 +87,12 @@ const makeAction = (
     slot: SlotName,
     id: string,
     label: string,
-    caption: string
+    caption: string,
+    Icon: QuickActionIcon = SLOT_ICON[slot]
 ): ResolvedAction => ({
     id,
     slot,
-    Icon: SLOT_ICON[slot],
+    Icon,
     label,
     caption,
     onClick: noop,
@@ -272,7 +274,8 @@ export const brandNewUser: DashboardViewModel = {
             'understand',
             'understand-new',
             'Create Skill Profile',
-            'Tell us about your skills'
+            'Tell us about your skills',
+            SkillsTwoTonedIcon
         ),
         navigate: makeAction('navigate', 'navigate-new', 'Set a Goal', 'Get a personal path'),
     },
