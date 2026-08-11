@@ -78,6 +78,8 @@ export const credentialsRouter = t.router({
                     .catch(async (error: unknown) => {
                         const errorMessage = error instanceof Error ? error.message : String(error);
 
+                        // DIDKit does not expose a structured code for this resolver failure,
+                        // so this targeted retry is coupled to its current error message.
                         if (
                             !verificationMethod ||
                             !errorMessage.includes('Missing verification relationship.')
