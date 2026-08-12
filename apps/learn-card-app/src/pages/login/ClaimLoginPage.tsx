@@ -57,7 +57,7 @@ const ClaimLoginPage: React.FC<{
                                         src={desktopLoginBg}
                                         alt=""
                                         aria-hidden="true"
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-contain"
                                         onError={e => {
                                             (e.target as HTMLImageElement).style.display = 'none';
                                         }}
