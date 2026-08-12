@@ -147,7 +147,10 @@ describe('findDuplicateCredential', () => {
 
         await expect(
             findDuplicateCredential(wallet, credential, { compareByContent: true })
-        ).rejects.toThrow('Duplicate credential scan received an invalid pagination cursor');
+        ).rejects.toMatchObject({
+            name: 'DuplicateCredentialScanSafetyError',
+            message: 'Duplicate credential scan received an invalid pagination cursor',
+        });
         expect(getPage).toHaveBeenCalledTimes(1);
     });
 
@@ -162,11 +165,14 @@ describe('findDuplicateCredential', () => {
 
         await expect(
             findDuplicateCredential(wallet, credential, { compareByContent: true })
-        ).rejects.toThrow('Duplicate credential scan received an invalid pagination cursor');
+        ).rejects.toMatchObject({
+            name: 'DuplicateCredentialScanSafetyError',
+            message: 'Duplicate credential scan received an invalid pagination cursor',
+        });
         expect(getPage).toHaveBeenCalledTimes(2);
     });
 
-    it('rejects rather than allowing a claim after the safety page limit', async () => {
+    it('reports an incomplete scan after the page limit', async () => {
         const wallet = createWallet();
         let pageCount = 0;
         const getPage = vi.fn().mockImplementation(async () => {
@@ -181,7 +187,11 @@ describe('findDuplicateCredential', () => {
 
         await expect(
             findDuplicateCredential(wallet, credential, { compareByContent: true })
-        ).rejects.toThrow('Duplicate credential scan exceeded 20 pages');
+        ).rejects.toMatchObject({
+            name: 'DuplicateCredentialScanIncompleteError',
+            reason: 'page-limit',
+            message: 'Duplicate credential scan exceeded 20 pages',
+        });
         expect(getPage).toHaveBeenCalledTimes(20);
     });
 
@@ -223,9 +233,11 @@ describe('findDuplicateCredential', () => {
             const result = findDuplicateCredential(wallet, credential, {
                 compareByContent: true,
             });
-            const rejection = expect(result).rejects.toThrow(
-                'Duplicate credential scan exceeded 3000ms'
-            );
+            const rejection = expect(result).rejects.toMatchObject({
+                name: 'DuplicateCredentialScanIncompleteError',
+                reason: 'timeout',
+                message: 'Duplicate credential scan exceeded 3000ms',
+            });
 
             await vi.advanceTimersByTimeAsync(3000);
             await rejection;

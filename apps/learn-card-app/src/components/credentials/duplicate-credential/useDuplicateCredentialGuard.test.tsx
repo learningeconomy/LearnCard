@@ -171,8 +171,25 @@ describe('useDuplicateCredentialGuard', () => {
         );
     });
 
+    it('continues the claim when legacy duplicate scanning reaches an operating limit', async () => {
+        const error = new Error('Duplicate credential scan exceeded 3000ms');
+        error.name = 'DuplicateCredentialScanIncompleteError';
+        mocks.findDuplicateCredential.mockRejectedValue(error);
+        render(<Harness />);
+
+        await expect(requestImmediateResolution()).resolves.toEqual({
+            action: 'save',
+            isDuplicate: false,
+        });
+        expect(mocks.warn).toHaveBeenCalledWith(
+            'Duplicate credential scan incomplete; continuing claim',
+            error
+        );
+        expect(mocks.presentToast).not.toHaveBeenCalled();
+    });
+
     it('cancels rather than allowing a claim when the duplicate scan stops for safety', async () => {
-        const error = new Error('Duplicate credential scan exceeded 1000 pages');
+        const error = new Error('Duplicate credential scan received an invalid pagination cursor');
         error.name = 'DuplicateCredentialScanSafetyError';
         mocks.findDuplicateCredential.mockRejectedValue(error);
         render(<Harness />);

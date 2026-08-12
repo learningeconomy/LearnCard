@@ -86,6 +86,14 @@ export const useDuplicateCredentialGuard = () => {
                     if (mountedRef.current) setIsCheckingDuplicate(false);
                     if (
                         error instanceof Error &&
+                        error.name === 'DuplicateCredentialScanIncompleteError'
+                    ) {
+                        log.warn('Duplicate credential scan incomplete; continuing claim', error);
+                        return CONTINUE_WITH_NEW_CREDENTIAL;
+                    }
+
+                    if (
+                        error instanceof Error &&
                         error.name === 'DuplicateCredentialScanSafetyError'
                     ) {
                         log.warn('Duplicate credential scan stopped at its safety boundary', error);

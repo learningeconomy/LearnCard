@@ -44,12 +44,34 @@ type ResolveCredential = (uri: string) => Promise<VC | undefined>;
 const MAX_CATEGORY_PAGES = 20;
 const DUPLICATE_SCAN_TIME_BUDGET_MS = 3000;
 
+type DuplicateCredentialScanIncompleteReason = 'timeout' | 'page-limit';
+
+export class DuplicateCredentialScanIncompleteError extends Error {
+    public constructor(
+        public readonly reason: DuplicateCredentialScanIncompleteReason,
+        message: string
+    ) {
+        super(message);
+        this.name = 'DuplicateCredentialScanIncompleteError';
+    }
+}
+
 export class DuplicateCredentialScanSafetyError extends Error {
     public constructor(message: string) {
         super(message);
         this.name = 'DuplicateCredentialScanSafetyError';
     }
 }
+
+const createIncompleteScanError = (
+    reason: DuplicateCredentialScanIncompleteReason
+): DuplicateCredentialScanIncompleteError =>
+    new DuplicateCredentialScanIncompleteError(
+        reason,
+        reason === 'timeout'
+            ? `Duplicate credential scan exceeded ${DUPLICATE_SCAN_TIME_BUDGET_MS}ms`
+            : `Duplicate credential scan exceeded ${MAX_CATEGORY_PAGES} pages`
+    );
 
 const runWithinDuplicateScanBudget = async <T>(
     operation: () => Promise<T>,
@@ -58,20 +80,16 @@ const runWithinDuplicateScanBudget = async <T>(
     const remainingMs = deadline - Date.now();
 
     if (remainingMs <= 0) {
-        throw new DuplicateCredentialScanSafetyError(
-            `Duplicate credential scan exceeded ${DUPLICATE_SCAN_TIME_BUDGET_MS}ms`
-        );
+        throw createIncompleteScanError('timeout');
     }
 
     const { promise: timeout, reject } = Promise.withResolvers<never>();
     const timeoutId = setTimeout(() => {
-        reject(
-            new DuplicateCredentialScanSafetyError(
-                `Duplicate credential scan exceeded ${DUPLICATE_SCAN_TIME_BUDGET_MS}ms`
-            )
-        );
+        reject(createIncompleteScanError('timeout'));
     }, remainingMs);
 
+    // These wallet APIs do not expose cancellation. A timed-out operation may finish in the
+    // background, and cached credential reads can make a retry faster, but the claim stops waiting.
     try {
         return await Promise.race([operation(), timeout]);
     } finally {
@@ -129,8 +147,9 @@ const resolveMatchingRecord = async (
  * reserved for legacy records that predate those index fields; callers opt into that slower scan
  * with `compareByContent`.
  *
- * Every lookup shares a three-second deadline. Legacy content scans also stop after 20 pages so
- * duplicate detection cannot leave the primary claim flow waiting on an unusually large wallet.
+ * Every lookup shares a three-second deadline, and legacy content scans stop after 20 pages. Those
+ * operating limits report an incomplete scan so the guard can continue the claim; malformed
+ * pagination remains a safety error that blocks the write.
  */
 export const findDuplicateCredential = async (
     wallet: BespokeLearnCard,
@@ -237,7 +256,5 @@ export const findDuplicateCredential = async (
         cursor = page.cursor;
     }
 
-    throw new DuplicateCredentialScanSafetyError(
-        `Duplicate credential scan exceeded ${MAX_CATEGORY_PAGES} pages`
-    );
+    throw createIncompleteScanError('page-limit');
 };
