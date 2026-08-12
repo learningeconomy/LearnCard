@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { VC } from '@learncard/types';
+import { useQueryClient } from '@tanstack/react-query';
 import { getLogger, useWallet } from 'learn-card-base';
+import { getOrFetchResolvedCredential } from 'learn-card-base/react-query/queries/vcQueries';
 
 import {
     DuplicateCredentialPrompt,
@@ -26,6 +28,7 @@ const CONTINUE_WITH_NEW_CREDENTIAL: DuplicateCredentialResolution = {
 
 export const useDuplicateCredentialGuard = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const [existing, setExisting] = useState<ExistingCredentialMatch | null>(null);
     const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
     const mountedRef = useRef(true);
@@ -63,14 +66,15 @@ export const useDuplicateCredentialGuard = () => {
             const request = (async () => {
                 try {
                     const wallet = await initWallet();
-                    const match = await findDuplicateCredential(wallet, credential, lookup);
-                    if (mountedRef.current) setIsCheckingDuplicate(false);
-
-                    if (!match || !mountedRef.current) {
-                        return match
-                            ? { action: 'cancel' as const, isDuplicate: true }
-                            : CONTINUE_WITH_NEW_CREDENTIAL;
+                    const match = await findDuplicateCredential(wallet, credential, lookup, uri =>
+                        getOrFetchResolvedCredential(uri, initWallet, queryClient)
+                    );
+                    if (!mountedRef.current) {
+                        return { action: 'cancel' as const, isDuplicate: Boolean(match) };
                     }
+
+                    setIsCheckingDuplicate(false);
+                    if (!match) return CONTINUE_WITH_NEW_CREDENTIAL;
 
                     setExisting(match);
                     return await new Promise<DuplicateCredentialResolution>(resolve => {
@@ -92,7 +96,7 @@ export const useDuplicateCredentialGuard = () => {
 
             return request;
         },
-        [initWallet]
+        [initWallet, queryClient]
     );
 
     return {

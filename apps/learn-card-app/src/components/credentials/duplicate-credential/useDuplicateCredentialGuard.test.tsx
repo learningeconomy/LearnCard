@@ -13,9 +13,17 @@ const mocks = vi.hoisted(() => ({
     warn: vi.fn(),
 }));
 
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => ({}),
+}));
+
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ warn: mocks.warn }),
     useWallet: () => ({ initWallet: mocks.initWallet }),
+}));
+
+vi.mock('learn-card-base/react-query/queries/vcQueries', () => ({
+    getOrFetchResolvedCredential: vi.fn(),
 }));
 
 vi.mock('./findDuplicateCredential', () => ({
@@ -106,7 +114,8 @@ describe('useDuplicateCredentialGuard', () => {
         expect(mocks.findDuplicateCredential).toHaveBeenCalledWith(
             expect.any(Object),
             incomingCredential,
-            { boostUri: 'lc:network:example.org/trpc:boost:boost-id' }
+            { boostUri: 'lc:network:example.org/trpc:boost:boost-id' },
+            expect.any(Function)
         );
     });
 
@@ -168,5 +177,19 @@ describe('useDuplicateCredentialGuard', () => {
         unmount();
 
         await expect(resolution).resolves.toEqual({ action: 'cancel', isDuplicate: true });
+    });
+
+    it('cancels when the claim surface unmounts during the wallet check', async () => {
+        const { promise: check, resolve: resolveCheck } = Promise.withResolvers<
+            typeof existingMatch | null
+        >();
+        mocks.findDuplicateCredential.mockReturnValue(check);
+        const { unmount } = render(<Harness />);
+
+        const resolution = requestResolution();
+        unmount();
+        await act(async () => resolveCheck(null));
+
+        await expect(resolution).resolves.toEqual({ action: 'cancel', isDuplicate: false });
     });
 });

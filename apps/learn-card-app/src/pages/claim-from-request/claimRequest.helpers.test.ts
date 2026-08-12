@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { getClaimInteractionBoostUri } from './claimRequest.helpers';
+import {
+    getClaimInteractionBoostUri,
+    getClaimInteractionDuplicateLookup,
+} from './claimRequest.helpers';
 
 const exchangeId =
     'eyJib29zdFVyaSI6ImxjOm5ldHdvcms6bG9jYWxob3N0JTNBNDAwMC90cnBjOmJvb3N0OjYyNDAyNmJlLWQ3ZTktNDQwYS1hOGFkLWZjMDk5OTAzMmMzNiIsImNoYWxsZW5nZSI6IjZlOGI3ZGQzLTI3OTYtNDlmMS1iZjRkLTA2OTgxYTgxZjc4NyJ9';
@@ -21,5 +24,17 @@ describe('getClaimInteractionBoostUri', () => {
             )
         ).toBeUndefined();
         expect(getClaimInteractionBoostUri('not a valid claim URL')).toBeUndefined();
+    });
+
+    it('builds the same legacy-aware duplicate lookup for every claim interaction path', () => {
+        const boostUri = getClaimInteractionBoostUri(
+            `http://localhost:4000/api/workflows/claim/exchanges/${exchangeId}`
+        );
+
+        expect(getClaimInteractionDuplicateLookup(boostUri)).toEqual({
+            boostUri,
+            compareByContent: true,
+        });
+        expect(getClaimInteractionDuplicateLookup(undefined)).toBeUndefined();
     });
 });

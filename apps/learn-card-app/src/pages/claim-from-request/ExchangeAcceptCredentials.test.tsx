@@ -186,6 +186,7 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
         await waitFor(() => {
             expect(mocks.requestDuplicateResolution).toHaveBeenCalledWith(credential, {
                 boostUri: sourceBoostUri,
+                compareByContent: true,
             });
         });
         expect(mocks.storeAndAddVCToWallet).not.toHaveBeenCalled();
@@ -279,6 +280,7 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
         await waitFor(() => {
             expect(mocks.requestDuplicateResolution).toHaveBeenCalledWith(credential, {
                 boostUri: sourceBoostUri,
+                compareByContent: true,
             });
         });
         expect(mocks.storeAndAddVCToWallet).not.toHaveBeenCalled();

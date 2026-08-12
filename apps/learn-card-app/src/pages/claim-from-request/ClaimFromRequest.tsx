@@ -58,7 +58,10 @@ import { AlertCircle, RefreshCw, Home, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import * as m from '../../paraglide/messages.js';
-import { getClaimInteractionBoostUri } from './claimRequest.helpers';
+import {
+    getClaimInteractionBoostUri,
+    getClaimInteractionDuplicateLookup,
+} from './claimRequest.helpers';
 
 export type RequestMetadata = {
     credentialName: string;
@@ -729,7 +732,10 @@ const ClaimFromRequest: React.FC = () => {
     const handleClaimCredential = async () => {
         try {
             if (!credential) return;
-            const duplicateResolution = await requestDuplicateResolution(credential);
+            const duplicateResolution = await requestDuplicateResolution(
+                credential,
+                getClaimInteractionDuplicateLookup(claimInteractionBoostUri)
+            );
             if (duplicateResolution.action === 'cancel') return;
             if (duplicateResolution.action === 'skip') {
                 void handleAfterCredentialClaim(credential);

@@ -291,10 +291,13 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 : await requestDuplicateResolution(credential as VC, duplicateLookup);
             if (duplicateResolution.action === 'cancel') return;
 
-            beginClaimAttempt();
+            const tracksClaimAttempt = _isEndorsement || duplicateResolution.action === 'save';
+            if (tracksClaimAttempt) {
+                beginClaimAttempt();
+                // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+                capture();
+            }
             setIsClaimLoading(true);
-            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
-            capture();
             try {
                 mutate(
                     { uri: credentialUri, metadata: notification?.data?.metadata },
@@ -317,50 +320,60 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                         throw new Error('Credential was not added to LearnCard');
                                     }
                                 }
-
-                                if (credential) {
-                                    track(AnalyticsEvents.CLAIM_BOOST, {
-                                        category: category,
-                                        boostType: achievementType,
-                                        method: 'Notification',
-                                        msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                            } catch (error) {
+                                if (tracksClaimAttempt) {
+                                    completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                                        error_code: getClaimErrorCode(error),
                                     });
-                                    completeClaimAttempt(
-                                        AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
-                                    );
-
-                                    if (_isEndorsement || duplicateResolution.action === 'save') {
-                                        const now = Date.now();
-                                        const sessionStart = Number(
-                                            localStorage.getItem(SESSION_START_KEY) ?? now
-                                        );
-                                        const accountCreatedAt = Number(
-                                            localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
-                                        );
-                                        track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
-                                            method: ProfileBuildMethod.Notification,
-                                            itemType: 'credential',
-                                            itemCount: 1,
-                                            totalItemsAfter:
-                                                snapshotRef.current.credentialCount + 1,
-                                            msSinceAccountCreated: now - accountCreatedAt,
-                                            msSinceSessionStart: now - sessionStart,
-                                        });
-                                    }
                                 }
-
-                                setIsClaimed(true);
-                                presentToast(
-                                    duplicateResolution.action === 'skip'
-                                        ? m['claim.duplicate.skippedToast']()
-                                        : m['toasts.credentialClaimed'](),
-                                    {
-                                        duration: 3000,
-                                        type: ToastTypeEnum.Success,
-                                    }
-                                );
-
                                 setIsClaimLoading(false);
+                                log.error('Unable to save accepted credential', error);
+                                presentToast(m['toasts.claimOops'](), {
+                                    duration: 4000,
+                                    type: ToastTypeEnum.Error,
+                                });
+                                return;
+                            }
+
+                            if (credential && tracksClaimAttempt) {
+                                track(AnalyticsEvents.CLAIM_BOOST, {
+                                    category: category,
+                                    boostType: achievementType,
+                                    method: 'Notification',
+                                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                                });
+
+                                const now = Date.now();
+                                const sessionStart = Number(
+                                    localStorage.getItem(SESSION_START_KEY) ?? now
+                                );
+                                const accountCreatedAt = Number(
+                                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                                );
+                                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                                    method: ProfileBuildMethod.Notification,
+                                    itemType: 'credential',
+                                    itemCount: 1,
+                                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                                    msSinceAccountCreated: now - accountCreatedAt,
+                                    msSinceSessionStart: now - sessionStart,
+                                });
+                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
+                            }
+
+                            setIsClaimed(true);
+                            presentToast(
+                                duplicateResolution.action === 'skip'
+                                    ? m['claim.duplicate.skippedToast']()
+                                    : m['toasts.credentialClaimed'](),
+                                {
+                                    duration: 3000,
+                                    type: ToastTypeEnum.Success,
+                                }
+                            );
+                            setIsClaimLoading(false);
+
+                            try {
                                 await successCallback?.();
 
                                 if (category === CredentialCategoryEnum.family) {
@@ -371,25 +384,22 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
                                 closeModal();
                             } catch (error) {
-                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
-                                    error_code: getClaimErrorCode(error),
-                                });
-                                setIsClaimLoading(false);
-                                log.error('Unable to save accepted credential', error);
-                                presentToast(m['toasts.claimOops'](), {
-                                    duration: 4000,
-                                    type: ToastTypeEnum.Error,
-                                });
+                                log.error('Unable to finish accepted credential flow', error);
                             }
                         },
-                        onError(err: any) {
-                            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
-                                error_code: getClaimErrorCode(err),
-                            });
+                        onError(err) {
+                            if (tracksClaimAttempt) {
+                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                                    error_code: getClaimErrorCode(err),
+                                });
+                            }
                             setIsClaimLoading(false);
                             presentToast(
                                 m['claim.failedToClaim']({
-                                    message: err?.message ?? m['claim.pleaseTryAgain'](),
+                                    message:
+                                        err instanceof Error
+                                            ? err.message
+                                            : m['claim.pleaseTryAgain'](),
                                 }),
                                 { duration: 4000, type: ToastTypeEnum.Error }
                             );
@@ -397,14 +407,18 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     }
                 );
             } catch (err) {
-                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
-                    error_code: getClaimErrorCode(err),
-                });
-                log.info('acceptCredential::error', err?.message);
+                if (tracksClaimAttempt) {
+                    completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                        error_code: getClaimErrorCode(err),
+                    });
+                }
+                log.info('acceptCredential::error', err);
                 presentAlert({
                     backdropDismiss: false,
                     cssClass: 'boost-confirmation-alert',
-                    header: m['claim.errorWithMessage']({ message: err?.message ?? '' }),
+                    header: m['claim.errorWithMessage']({
+                        message: err instanceof Error ? err.message : '',
+                    }),
                     buttons: [
                         {
                             text: m['contacts.okay'](),
