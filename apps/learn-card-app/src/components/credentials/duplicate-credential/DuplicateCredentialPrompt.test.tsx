@@ -49,4 +49,14 @@ describe('DuplicateCredentialPrompt', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(onChoose).toHaveBeenLastCalledWith('cancel');
     });
+
+    it('escapes the claim screen stacking context', () => {
+        render(
+            <div data-testid="claim-screen" style={{ transform: 'translateZ(0)' }}>
+                <DuplicateCredentialPrompt existing={existing} onChoose={vi.fn()} />
+            </div>
+        );
+
+        expect(screen.getByTestId('claim-screen').contains(screen.getByRole('dialog'))).toBe(false);
+    });
 });

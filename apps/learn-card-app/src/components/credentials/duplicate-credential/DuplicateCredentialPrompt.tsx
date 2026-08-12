@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { IonIcon } from '@ionic/react';
 import { closeOutline, documentsOutline } from 'ionicons/icons';
 import { Overlay } from 'learn-card-base';
@@ -41,7 +42,7 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
             : undefined;
     const imageUrl = getImageUrlFromCredential(existing.credential, existing.record.category);
 
-    return (
+    return createPortal(
         <Overlay>
             <div
                 role="dialog"
@@ -113,6 +114,7 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
                     </button>
                 </div>
             </div>
-        </Overlay>
+        </Overlay>,
+        document.body
     );
 };
