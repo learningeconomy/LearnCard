@@ -181,8 +181,37 @@ describe('findDuplicateCredential', () => {
 
         await expect(
             findDuplicateCredential(wallet, credential, { compareByContent: true })
-        ).rejects.toThrow('Duplicate credential scan exceeded 1000 pages');
-        expect(getPage).toHaveBeenCalledTimes(1000);
+        ).rejects.toThrow('Duplicate credential scan exceeded 20 pages');
+        expect(getPage).toHaveBeenCalledTimes(20);
+    });
+
+    it('stops the entire duplicate check after three seconds', async () => {
+        vi.useFakeTimers();
+
+        try {
+            const wallet = createWallet();
+            const { promise: delayedExactRecords, resolve: resolveExactRecords } =
+                Promise.withResolvers<never[]>();
+            setTimeout(() => resolveExactRecords([]), 2000);
+            vi.mocked(wallet.index.LearnCloud.get).mockReturnValueOnce(delayedExactRecords);
+
+            const { promise: stalledPage } = Promise.withResolvers<never>();
+            const getPage = vi.fn().mockReturnValue(stalledPage);
+            wallet.index.LearnCloud.getPage = getPage;
+
+            const result = findDuplicateCredential(wallet, credential, {
+                compareByContent: true,
+            });
+            const rejection = expect(result).rejects.toThrow(
+                'Duplicate credential scan exceeded 3000ms'
+            );
+
+            await vi.advanceTimersByTimeAsync(3000);
+            await rejection;
+            expect(getPage).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
     });
     it('matches a repeated claim link by boost URI when issuance creates a new credential ID', async () => {
         const boostUri = 'lc:network:example.org/trpc:boost:boost-id';
