@@ -75,12 +75,33 @@ export const getActiveLocale = (): string => {
     }
     return 'en';
 };
+// NOTE: the `document.documentElement.lang` step above is not a vestigial
+// fallback — it is what covers every case where the user never *chose* a
+// language (browser autodetect, tenant default, profile restore), since those
+// don't write `i18n.language`. It stays correct only because `LocaleProvider`
+// syncs `<html lang>` on each locale change (apps/learn-card-app/src/i18n/
+// index.tsx). Drop that effect and AI responses silently revert to English for
+// autodetected users, with no test failing.
 
-/** Add the active UI locale to an AI service URL without unsafe string interpolation. */
+/**
+ * Add the active UI locale to an AI service URL without unsafe string interpolation.
+ *
+ * Returns the URL untouched if it can't be parsed. `new URL()` throws a
+ * `TypeError` on a relative or empty base, and `aiServiceUrl` is tenant-supplied
+ * (`apis.aiService`) and read at call time, so it isn't guaranteed absolute. Some
+ * call sites sit inside handlers where a throw does collateral damage — the
+ * `visibilitychange` beacon in `LearnCardAiChatBot` would lose its hidden-timer
+ * bookkeeping, not just one request. Locale enrichment is an enhancement; it must
+ * never be the reason a request fails to go out.
+ */
 export const addActiveLocaleToUrl = (url: string): string => {
-    const parsedUrl = new URL(url);
-    parsedUrl.searchParams.set('locale', getActiveLocale());
-    return parsedUrl.toString();
+    try {
+        const parsedUrl = new URL(url);
+        parsedUrl.searchParams.set('locale', getActiveLocale());
+        return parsedUrl.toString();
+    } catch {
+        return url;
+    }
 };
 
 /** Add the active UI locale to a WebSocket payload without mutating the input. */

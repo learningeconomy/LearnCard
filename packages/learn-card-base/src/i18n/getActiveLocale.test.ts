@@ -62,6 +62,32 @@ describe('addActiveLocaleToUrl', () => {
             'https://ai.example/threads/visibility?did=did%3Akey%3A123&locale=ar'
         );
     });
+
+    // `aiServiceUrl` is tenant-supplied and read at call time, so it isn't
+    // guaranteed absolute. Some callers (the visibilitychange beacon) would lose
+    // more than one request if this threw — locale enrichment must degrade, not
+    // break.
+    it.each(['/threads?did=did:key:123', '', 'not a url'])(
+        'returns %o unchanged rather than throwing',
+        input => {
+            store['i18n.language'] = 'es';
+
+            expect(() => addActiveLocaleToUrl(input)).not.toThrow();
+            expect(addActiveLocaleToUrl(input)).toBe(input);
+        }
+    );
+
+    // The AI-Passport WS upgrade gate is a literal `req.url.includes('?did=')`
+    // substring test, so the rewrite must not reorder `did` out of first place.
+    it('keeps did as the first query param so the WS upgrade gate still matches', () => {
+        store['i18n.language'] = 'es';
+
+        const out = addActiveLocaleToUrl('ws://ai.example?did=did:key:123&threadId=abc');
+
+        expect(out).toContain('?did=');
+        expect(new URL(out).searchParams.get('did')).toBe('did:key:123');
+        expect(new URL(out).searchParams.get('locale')).toBe('es');
+    });
 });
 
 describe('addActiveLocaleToPayload', () => {

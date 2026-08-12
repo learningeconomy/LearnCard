@@ -1439,12 +1439,12 @@ export function disconnectWebSocket() {
 // Send a payload as soon as the socket is open. Avoids polling setTimeout loops
 // for the "send right after connect" race that can otherwise add up to 100ms of
 // idle wait per first message.
-function sendWhenReady(payload: unknown) {
-    const json = JSON.stringify(
-        typeof payload === 'object' && payload !== null
-            ? addActiveLocaleToPayload(payload)
-            : payload
-    );
+// `Record<string, unknown>` rather than `unknown`: the old runtime `typeof
+// payload === 'object'` guard also accepted arrays, which would have spread into
+// `{0: …, 1: …}`. Every caller passes an object literal, so the type makes that
+// structurally impossible instead of relying on the check.
+function sendWhenReady(payload: Record<string, unknown>) {
+    const json = JSON.stringify(addActiveLocaleToPayload(payload));
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(json);
         return;

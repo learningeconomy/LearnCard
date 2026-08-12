@@ -119,6 +119,12 @@ serve `[]`.
     `Session Reflection`, `Next Steps`, `Assessment Question {n}`, and
     `Skills You Can Earn` duplicated across three preview components. Surfaces
     once a user _finishes_ a session, so it isn't hit by the chat-flow QA.
+-   **`ChatBotQA.answer` strings** — `'New Topic'`, `'Revisit Topic'`,
+    `` `New Session for ${title}` `` (`useNewSessionForTopic.tsx`,
+    `AiInsightsPromptBox.tsx`). Hidden in the tutor flow but rendered in the
+    insights one. They live in the same **persisted** `chatBotStore` as the
+    questions, so localizing them needs an `answerKey` — gotcha 8 — not
+    `m[...]()`.
 -   Keep this list current as surfaces are swept.
 
 To enumerate what's left on any surface, point the existing AST config at it

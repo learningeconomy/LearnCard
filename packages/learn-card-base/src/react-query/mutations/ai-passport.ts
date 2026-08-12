@@ -179,7 +179,12 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
         }) => {
             try {
                 const response = await fetch(
-                    `${networkStore.get.aiServiceUrl()}/credentials/parse-file?did=${did}`,
+                    // parse-file runs the uploaded document through the AI to draft
+                    // credential prose, so it needs the locale like the other
+                    // generative routes.
+                    addActiveLocaleToUrl(
+                        `${networkStore.get.aiServiceUrl()}/credentials/parse-file?did=${did}`
+                    ),
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
