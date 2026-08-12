@@ -12,12 +12,6 @@ type EnhancedCard = {
     previousAriaLabel: string | null;
 };
 
-type DemotedCard = {
-    previousRole: string | null;
-    previousTabIndex: string | null;
-    previousAriaLabel: string | null;
-};
-
 /**
  * Supplies the keyboard contract missing from shared credential renderers while
  * keeping this rollout app-local. The shared package can absorb this behavior
@@ -25,32 +19,14 @@ type DemotedCard = {
  */
 const AccessibleCredentialCard: React.FC<AccessibleCredentialCardProps> = ({ children, label }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const primaryCardRef = useRef<HTMLElement | null>(null);
 
     useLayoutEffect(() => {
         const container = containerRef.current;
         if (!container) return undefined;
 
         const enhancedCards = new Map<HTMLElement, EnhancedCard>();
-        const demotedCards = new Map<HTMLElement, DemotedCard>();
 
         const enhanceCards = (): void => {
-            if (!primaryCardRef.current?.isConnected) {
-                const primaryCard = container.querySelector<HTMLElement>(CARD_SELECTOR);
-
-                if (primaryCard) {
-                    primaryCardRef.current = primaryCard;
-                    demotedCards.set(primaryCard, {
-                        previousRole: primaryCard.getAttribute('role'),
-                        previousTabIndex: primaryCard.getAttribute('tabindex'),
-                        previousAriaLabel: primaryCard.getAttribute('aria-label'),
-                    });
-                    primaryCard.setAttribute('role', 'group');
-                    primaryCard.removeAttribute('tabindex');
-                    primaryCard.setAttribute('aria-label', label);
-                }
-            }
-
             container.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(card => {
                 if (enhancedCards.has(card)) return;
 
@@ -89,18 +65,6 @@ const AccessibleCredentialCard: React.FC<AccessibleCredentialCardProps> = ({ chi
 
         return () => {
             observer.disconnect();
-            primaryCardRef.current = null;
-
-            demotedCards.forEach(({ previousRole, previousTabIndex, previousAriaLabel }, card) => {
-                if (previousRole === null) card.removeAttribute('role');
-                else card.setAttribute('role', previousRole);
-
-                if (previousTabIndex === null) card.removeAttribute('tabindex');
-                else card.setAttribute('tabindex', previousTabIndex);
-
-                if (previousAriaLabel === null) card.removeAttribute('aria-label');
-                else card.setAttribute('aria-label', previousAriaLabel);
-            });
 
             enhancedCards.forEach(({ handler, previousTabIndex, previousAriaLabel }, card) => {
                 card.removeEventListener('keydown', handler);
