@@ -185,6 +185,27 @@ describe('findDuplicateCredential', () => {
         expect(getPage).toHaveBeenCalledTimes(20);
     });
 
+    it('allows a completed scan on the twentieth page', async () => {
+        const wallet = createWallet();
+        let pageCount = 0;
+        const getPage = vi.fn().mockImplementation(async () => {
+            pageCount += 1;
+            const hasMore = pageCount < 20;
+
+            return {
+                records: [],
+                hasMore,
+                ...(hasMore ? { cursor: `page-${pageCount}` } : {}),
+            };
+        });
+        wallet.index.LearnCloud.getPage = getPage;
+
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).resolves.toBeNull();
+        expect(getPage).toHaveBeenCalledTimes(20);
+    });
+
     it('stops the entire duplicate check after three seconds', async () => {
         vi.useFakeTimers();
 
