@@ -140,4 +140,66 @@ describe('reviewed catalog copy', () => {
         expect(en.networkPrompts.settings.nameDesc).toContain('will never be displayed');
         expect(en.addressBook.toasts.unableToConnect).toContain('occurred');
     });
+
+    it('keeps the credential sender unambiguous in Spanish', () => {
+        const es = loadCatalog('es');
+
+        expect(es.credentialStorage.wouldLikeToSend).toContain(
+            '{{origin}} quiere enviarte una credencial'
+        );
+        expect(es.credentialStorage.wouldLikeToSend).not.toContain('te gustaría');
+    });
+
+    it('uses self-custody terminology in French', () => {
+        const fr = loadCatalog('fr');
+
+        expect(fr.login.selfCustodial).toContain('auto-garde');
+        expect(fr.login.selfCustodial).not.toContain('auto-hébergée');
+    });
+
+    it('preserves the literal recovery-email delimiters in every catalog', () => {
+        for (const locale of ['en', 'es', 'fr', 'ar']) {
+            const catalog = loadCatalog(locale);
+
+            expect(catalog.recovery.email.step2).toContain('"RECOVERY KEY"');
+            expect(catalog.recovery.email.step2).toContain('"END RECOVERY KEY"');
+        }
+    });
+
+    it('uses Spanish sharing and ownership terminology', () => {
+        const es = loadCatalog('es');
+
+        expect(es.consentFlow.selectiveSharing).toMatch(/compartid[oa]/i);
+        expect(es.consentFlow.switchToSel).toMatch(/compartid[oa]/i);
+        expect(es.consentFlow.switchDesc).toMatch(/compartid[oa]/i);
+        expect(es.credsBundle.footerTagline).toContain('Tus datos te pertenecen');
+    });
+
+    it('uses Tropa consistently throughout the Spanish catalog', () => {
+        const es = loadCatalog('es');
+        const spanishCopy = catalogStrings(es).join('\n');
+
+        expect(spanishCopy).not.toMatch(/\bTroops?\b/i);
+        expect(es.troops.troopNumber).toContain('Tropa');
+        expect(es.troops.template.joinTroop).toContain('Tropa');
+    });
+
+    it('uses explicit Arabic hierarchy and Campfire terminology', () => {
+        const ar = loadCatalog('ar');
+
+        expect(ar.adminTools.bulkImport.assignParentTitle).toContain('الأب');
+        expect(ar.adminTools.bulkImport.selectParentOptional).toContain('الأب');
+        expect(ar.adminTools.bulkImport.assignParentTitle).not.toContain('أصلي');
+        expect(ar.navigation.campfire).toBe('نار المخيم');
+        expect(ar.sidemenu.links.campfire).toBe('نار المخيم');
+        expect(ar.boostCMS.whatFor).toContain('الغرض');
+    });
+
+    it('provides all ten loading messages in every locale', () => {
+        for (const locale of ['en', 'es', 'fr', 'ar']) {
+            const catalog = loadCatalog(locale);
+            expect(Object.values(catalog.login.loadingMessages)).toHaveLength(10);
+            expect(Object.values(catalog.login.loadingMessages).every(Boolean)).toBe(true);
+        }
+    });
 });

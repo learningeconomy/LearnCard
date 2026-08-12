@@ -111,6 +111,24 @@ describe('ScoutPass locale integration', () => {
         expect(emailFormSource).toContain(`aria-label={${messageCall('login.emailPlaceholder')}}`);
     });
 
+    it('localizes both ScoutPass typewriter loading surfaces', () => {
+        const sourceRoot = fileURLToPath(new URL('../', import.meta.url));
+        const paths = [
+            'components/auth/LoginOverlay.tsx',
+            'pages/login/LoginPageLoader/LoginLoader.tsx',
+        ];
+
+        for (const path of paths) {
+            const source = readFileSync(join(sourceRoot, path), 'utf8');
+
+            expect(source).toContain(messageCall('login.loadingMessages.badgesComing'));
+            expect(source).toContain(messageCall('login.loadingMessages.boostSpark'));
+            expect(source).not.toContain('Badges coming right up!');
+            expect(source).not.toContain('Get ready for boost spark!');
+            expect(source).toContain('alt=""');
+        }
+    });
+
     it('localizes reviewed search and loading feedback', () => {
         const sourceRoot = fileURLToPath(new URL('../', import.meta.url));
         const paths = [

@@ -325,6 +325,18 @@
         "signInFromDevice": "Sign in from another device",
         "worldScoutsAccount": "Login with your <0>World Scouts Account</0>",
         "verificationSentToast": "A verification code has been sent",
+        "loadingMessages": {
+            "badgesComing": "Badges coming right up!",
+            "magicBoostWand": "Waving a magic Boost wand!",
+            "badgeBrilliance": "Fetching your badge brilliance!",
+            "secretStardust": "Unlocking your secret stardust!",
+            "digitalDelights": "Brewing your digital delights!",
+            "boostSuperpowers": "Summoning your Boost superpowers!",
+            "digitalTreasure": "Your digital treasure is near!",
+            "badgeBonanza": "Preparing your badge bonanza!",
+            "badgesPizzazz": "Badges loading with pizzazz!",
+            "boostSpark": "Get ready for Boost spark!"
+        },
         "accessibility": {
             "worldScoutsLogin": "Sign in with World Scouts",
             "emailLogin": "Sign in with email",

@@ -259,8 +259,8 @@
         "swipeToContinue": "Desliza hacia la derecha para Continuar",
         "earnBadges": "Gana y Envía Insignias",
         "badgesDesc": "Las insignias ayudan a reconocer valores, talentos, participación y contribuciones.",
-        "organizeTroops": "Organízate en Troops",
-        "organizeTroopsDesc": "Pronto los troops locales podrán organizarse y emitir insignias scout oficiales."
+        "organizeTroops": "Organízate en Tropas",
+        "organizeTroopsDesc": "Pronto las tropas locales podrán organizarse y emitir insignias scout oficiales."
     },
     "socialLogins": {
         "or": "O",
@@ -325,6 +325,18 @@
         "signInFromDevice": "Iniciar sesión desde otro dispositivo",
         "worldScoutsAccount": "Inicia sesión con tu <0>Cuenta de World Scouts</0>",
         "verificationSentToast": "Se ha enviado un código de verificación",
+        "loadingMessages": {
+            "badgesComing": "¡Tus insignias están por llegar!",
+            "magicBoostWand": "¡Agitando una varita mágica de Boost!",
+            "badgeBrilliance": "¡Buscando el brillo de tus insignias!",
+            "secretStardust": "¡Desbloqueando tu polvo de estrellas secreto!",
+            "digitalDelights": "¡Preparando tus delicias digitales!",
+            "boostSuperpowers": "¡Invocando tus superpoderes de Boost!",
+            "digitalTreasure": "¡Tu tesoro digital está cerca!",
+            "badgeBonanza": "¡Preparando una fiesta de insignias!",
+            "badgesPizzazz": "¡Cargando insignias con estilo!",
+            "boostSpark": "¡Prepárate para la chispa de Boost!"
+        },
         "accessibility": {
             "worldScoutsLogin": "Iniciar sesión con Scouts Mundial",
             "emailLogin": "Iniciar sesión con correo electrónico",
@@ -631,8 +643,8 @@
         "hexCode": "Código Hex de Color"
     },
     "ids": {
-        "noTroops": "Aún no hay troops",
-        "noTroopsMng": "Aún no hay troops que gestionar"
+        "noTroops": "Aún no hay tropas",
+        "noTroopsMng": "Aún no hay tropas que gestionar"
     },
     "boost": {
         "somethingWentWrong": "Algo salió mal",
@@ -665,7 +677,7 @@
         "byIssuer": "por {{name}} {{date}}",
         "noSearchResults": "Sin resultados",
         "noConnectionsYet": "Aún sin conexiones",
-        "noTroopMembers": "Sin miembros del troop",
+        "noTroopMembers": "Sin miembros de la tropa",
         "noNetworkMembers": "Sin miembros de la red",
         "searchPlaceholder": "Buscar...",
         "searchScoutPass": "Buscar en la Red ScoutPass...",
@@ -793,7 +805,7 @@
         "adminsDesc": "Los admins tienen permiso para enviar y editar este Boost.",
         "issueLog": "Registro de Emisión",
         "noConnections": "Aún sin conexiones",
-        "noTroopMembers": "Sin miembros del troop",
+        "noTroopMembers": "Sin miembros de la tropa",
         "noNetworkMembers": "Sin miembros de la red",
         "contact": "Contacto",
         "contacts": "Contactos",
@@ -865,7 +877,7 @@
             "linkCopied": "Enlace de currículum verificado copiado al portapapeles",
             "linkCopyFail": "No se pudo copiar el enlace de currículum verificado"
         },
-        "footerTagline": "IMPULSADO POR CONSENT FLOW • Tú controlas tus datos • Todas las conexiones están <0>cifradas</0>",
+        "footerTagline": "IMPULSADO POR CONSENT FLOW • Tus datos te pertenecen • Todas las conexiones están <0>cifradas</0>",
         "getLearnCard": "Obtener LearnCard",
         "getScoutPass": "Obtener ScoutPass",
         "authenticBoost": "Boost Auténtico:",
@@ -901,8 +913,8 @@
         "country": "País",
         "worldScoutingRegion": "Región Mundial del Escultismo",
         "networkType": "Tipo de Red",
-        "troopNumber": "Número de Troop",
-        "invalidTroopNumber": "Número de Troop inválido",
+        "troopNumber": "Número de Tropa",
+        "invalidTroopNumber": "Número de Tropa inválido",
         "useNetworkDescription": "Usar descripción de la red",
         "useSourcedDescription": "Usar descripción de {{source}}",
         "namePlaceholder": "Nombre de {{mode}}",
@@ -971,18 +983,18 @@
             "errorEditingBoost": "Error al editar boost",
             "boostFail": "Error al procesar boost",
             "linkGenFail": "Error al generar enlace de reclamo",
-            "linkCopied": "Enlace de Troop copiado al portapapeles",
-            "linkCopy": "No se pudo copiar el enlace de Troop",
+            "linkCopied": "Enlace de Tropa copiado al portapapeles",
+            "linkCopy": "No se pudo copiar el enlace de Tropa",
             "shareCopied": "¡Enlace copiado al portapapeles!",
             "shareFail": "Error al copiar enlace al portapapeles"
         },
         "selectNetworkType": "Seleccionar Tipo de Red",
         "invite": {
             "title": "¿A quién te gustaría invitar?",
-            "lLeader": "Invitar Líder de Troop",
-            "lDesc": "Añadir un líder scout a este troop",
+            "lLeader": "Invitar Líder de Tropa",
+            "lDesc": "Añadir un líder scout a esta tropa",
             "lScout": "Invitar Scout",
-            "sDesc": "Añadir un nuevo scout a este troop"
+            "sDesc": "Añadir un nuevo scout a esta tropa"
         },
         "connect": {
             "failed": "Error al generar enlace",
@@ -1061,15 +1073,15 @@
         "template": {
             "issuedTo": "Emitido a {{name}}",
             "by": "por {{issuer}}",
-            "joinAuto": "Unirse a este troop añadirá automáticamente a todos sus miembros a tus contactos.",
+            "joinAuto": "Unirse a esta tropa añadirá automáticamente a todos sus miembros a tus contactos.",
             "joinBtn": "Unirse",
             "joining": "Uniéndose",
             "joined": "Unido",
-            "joinTroop": "Unirse al Troop",
+            "joinTroop": "Unirse a la Tropa",
             "joiningTroop": "Uniéndose"
         },
         "actions": {
-            "viewTroopId": "Ver ID de Troop",
+            "viewTroopId": "Ver ID de Tropa",
             "shareId": "Compartir ID",
             "viewJson": "Ver JSON de ID",
             "leave": "Salir de {{name}}",
@@ -1086,7 +1098,7 @@
         "membersList": {
             "issuedSub": "Emitido a {{count}} {{person}}",
             "startPlaceholder": "Buscar títulos de red...",
-            "troopPlaceholder": "Buscar Títulos de Troop...",
+            "troopPlaceholder": "Buscar títulos de Tropa...",
             "searchPlaceholder": "Buscar..."
         },
         "footer": {
@@ -1320,7 +1332,7 @@
         "selectAdmins": "Seleccionar Admins",
         "adminComingSoon": "Selección de admins próximamente...",
         "addNetworks": "Añadir Redes",
-        "noNetworksFoundTroops": "No se encontraron redes. Crea una red Global o Nacional desde la página de Troops.",
+        "noNetworksFoundTroops": "No se encontraron redes. Crea una red Global o Nacional desde la página de Tropas.",
         "globalNetwork": "Red Global",
         "nationalNetwork": "Red Nacional",
         "compOne": "1 competencia",
@@ -1433,7 +1445,7 @@
     "membership": {
         "joinWait": "Unirse a Lista de Espera",
         "troops": "Tropas",
-        "empty": "Aún no tienes Troops."
+        "empty": "Aún no tienes Tropas."
     },
     "achievements": {
         "none": "Aún no hay logros",
@@ -1471,14 +1483,14 @@
         "liveSyncing": "Sincronización en Vivo",
         "contShareAll": "Comparte continuamente todos los {{plural}}.",
         "setExpDate": "¿Establecer una fecha de expiración?",
-        "selectiveSharing": "Uso Selectivo",
+        "selectiveSharing": "Uso compartido selectivo",
         "onlyShareSel": "Comparte solo los {{plural}} seleccionados.",
         "notSharing": "No Compartiendo",
         "dontShare": "No compartas ningún {{plural}}.",
         "sharingCount": "Compartiendo {{count}}/{{total}}",
         "liveSyncingAll": "Sincronizando Todo en Vivo",
-        "switchToSel": "¿Cambiar a Uso Selectivo?",
-        "switchDesc": "Deseleccionar datos desactiva la Sincronización en Vivo y activa el Uso Selectivo, dándote control total sobre qué credenciales compartes. Puedes volver fácilmente a la Sincronización en Vivo en cualquier momento.",
+        "switchToSel": "¿Cambiar al uso compartido selectivo?",
+        "switchDesc": "Deseleccionar datos desactiva la Sincronización en Vivo y activa el uso compartido selectivo, dándote control total sobre qué credenciales compartes. Puedes volver fácilmente a la Sincronización en Vivo en cualquier momento.",
         "alreadyConsented": "Ya Consentido",
         "alreadyConsentedDesc": "Ya has dado tu consentimiento para esta conexión. ¡Las nuevas credenciales se sincronizarán pronto!",
         "takeMeHome": "Llévame al Inicio",
@@ -1510,7 +1522,7 @@
         "accepting": "Aceptando...",
         "accept": "Aceptar",
         "reject": "Rechazar",
-        "wouldLikeToSend": "{{origin}} te gustaría enviarte una credencial",
+        "wouldLikeToSend": "{{origin}} quiere enviarte una credencial",
         "noCredsToShare": "No hay credenciales para compartir.",
         "sharing": "Compartiendo...",
         "share": "Compartir",

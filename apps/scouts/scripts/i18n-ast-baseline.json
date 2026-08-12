@@ -1,7 +1,5 @@
 [
     "src/components/auth/LoggingOutModal.tsx::i18next/no-literal-string::disallow literal string: {`\n                        ion-spinner {\n                            --stroke-width: 2px !important;\n                        }\n                        ion-spinner svg, ion-spinner circle {\n                            stroke-width: 2px !important;\n                        }\n                    `}::{`",
-    "src/components/auth/LoginOverlay.tsx::i18next/no-literal-string::disallow literal string: alt=\"ScoutPass logo\"::<img src={ScoutPassLogo} alt=\"ScoutPass logo\" className=\"w-[55px]\" />",
-    "src/components/auth/LoginOverlay.tsx::i18next/no-literal-string::disallow literal string: alt=\"ScoutPass text logo\"::<img src={ScoutPassTextLogo} alt=\"ScoutPass text logo\" className=\"mt-4\" />",
     "src/components/boost/boost-earned-card/BoostEarnedIDList.tsx::i18next/no-literal-string::disallow literal string: alt=\"ids\"::<img src={defaultImg} alt=\"ids\" className=\"w-[200px] h-[200px] m-auto\" />",
     "src/components/boost/boost-earned-card/BoostEarnedIDListAlternative.tsx::i18next/no-literal-string::disallow literal string: alt=\"ids\"::<img src={defaultImg} alt=\"ids\" className=\"w-[200px] h-[200px] m-auto\" />",
     "src/components/boost/boost-earned-card/BoostProfileImage.tsx::i18next/no-literal-string::disallow literal string: alt=\"profile\"::return <img className=\"h-full w-full object-cover select-none\" src={imageUrl} alt=\"profile\" />;",
@@ -995,8 +993,6 @@
     "src/pages/loadingPage/LoadingPage.tsx::i18next/no-literal-string::disallow literal string: alt=\"ScoutPass text logo\"::<img src={ScoutPassTextLogo} alt=\"ScoutPass text logo\" className=\"mt-4\" />",
     "src/pages/login/LoginPage.tsx::i18next/no-literal-string::disallow literal string: alt=\"ScoutPass logo\"::<img src={ScoutPassLogo} alt=\"ScoutPass logo\" className=\"w-[55px]\" />",
     "src/pages/login/LoginPage.tsx::i18next/no-literal-string::disallow literal string: alt=\"ScoutPass text logo\"::alt=\"ScoutPass text logo\"",
-    "src/pages/login/LoginPageLoader/LoginLoader.tsx::i18next/no-literal-string::disallow literal string: alt=\"ScoutPass logo\"::<img src={ScoutPassLogo} alt=\"ScoutPass logo\" className=\"w-[55px]\" />",
-    "src/pages/login/LoginPageLoader/LoginLoader.tsx::i18next/no-literal-string::disallow literal string: alt=\"ScoutPass text logo\"::<img src={ScoutPassTextLogo} alt=\"ScoutPass text logo\" className=\"mt-4\" />",
     "src/pages/membership/MembershipPage.tsx::i18next/no-literal-string::disallow literal string: aria-label=\"plus-button\"::aria-label=\"plus-button\"",
     "src/pages/skills/BoostGroupedBySkillsModal/BoostGroupedBySkillsModalHeader.tsx::i18next/no-literal-string::disallow literal string: alt=\"category icon\"::alt=\"category icon\"",
     "src/pages/troop/InviteSelectionModal.tsx::i18next/no-literal-string::disallow literal string: alt=\"Troop Leader\"::alt=\"Troop Leader\"",

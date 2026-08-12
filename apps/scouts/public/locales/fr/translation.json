@@ -304,7 +304,7 @@
         "adminTools": "Outils d'administration"
     },
     "login": {
-        "selfCustodial": "Connexion auto-hébergée.",
+        "selfCustodial": "Connexion en auto-garde.",
         "learnMoreScoutPass": "En savoir plus sur ScoutPass",
         "termsOfService": "Conditions d'utilisation",
         "privacyPolicy": "Politique de confidentialité",
@@ -325,6 +325,18 @@
         "signInFromDevice": "Connectez-vous depuis un autre appareil",
         "worldScoutsAccount": "Connectez-vous avec votre <0>Compte World Scouts</0>",
         "verificationSentToast": "Un code de vérification a été envoyé",
+        "loadingMessages": {
+            "badgesComing": "Vos badges arrivent tout de suite !",
+            "magicBoostWand": "Un coup de baguette magique Boost !",
+            "badgeBrilliance": "Nous récupérons l'éclat de vos badges !",
+            "secretStardust": "Nous libérons votre poussière d'étoiles secrète !",
+            "digitalDelights": "Nous préparons vos délices numériques !",
+            "boostSuperpowers": "Nous invoquons vos super-pouvoirs Boost !",
+            "digitalTreasure": "Votre trésor numérique est tout proche !",
+            "badgeBonanza": "Nous préparons une fête de badges !",
+            "badgesPizzazz": "Vos badges se chargent avec panache !",
+            "boostSpark": "Préparez-vous à l'étincelle Boost !"
+        },
         "accessibility": {
             "worldScoutsLogin": "Se connecter avec Scouts du Monde",
             "emailLogin": "Se connecter par e-mail",
@@ -421,7 +433,7 @@
             "descWithoutEmail": "Nous avons précédemment envoyé un e-mail de récupération à votre adresse de récupération. Ouvrez cet e-mail et suivez les étapes ci-dessous.",
             "findKey": "Comment trouver votre clé de récupération",
             "step1": "Cherchez dans votre boîte de réception un e-mail avec l'objet <0>« Votre clé de récupération ScoutPass »</0>",
-            "step2": "Trouvez la longue chaîne de caractères entre <0>« CLÉ DE RÉCUPÉRATION »</0> et <1>« FIN DE LA CLÉ DE RÉCUPÉRATION »</1>",
+            "step2": "Trouvez la longue chaîne de caractères entre <0>\"RECOVERY KEY\"</0> et <1>\"END RECOVERY KEY\"</1>",
             "step3": "Copiez cette chaîne entière et collez-la ci-dessous",
             "keyLabel": "Clé de récupération",
             "keyPlaceholder": "Collez votre clé de récupération ici — elle ressemble à une longue chaîne de lettres et de chiffres",
