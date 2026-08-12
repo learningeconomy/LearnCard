@@ -19,6 +19,9 @@ const UI_PROPERTIES = new Set([
     'text',
     'title',
 ]);
+const NON_COPY_PROPERTIES = new Set(['role']);
+const isNonCopyProperty = name =>
+    NON_COPY_PROPERTIES.has(name) || /(?:className|cssClass)$/i.test(String(name ?? ''));
 
 const hasVisibleCopy = value => {
     const text = String(value ?? '').trim();
@@ -34,7 +37,11 @@ const isUserFacingScope = (context, node) => {
 
     while (current && current.type !== 'Program') {
         if (current.type === 'JSXElement' || current.type === 'JSXFragment') return false;
-        if (current.type === 'Property' && UI_PROPERTIES.has(propertyName(current))) return true;
+        if (current.type === 'Property') {
+            const name = propertyName(current);
+            if (isNonCopyProperty(name)) return false;
+            if (UI_PROPERTIES.has(name)) return true;
+        }
         if (current.type === 'CallExpression') {
             return UI_CALLEES.test(source.getText(current.callee));
         }

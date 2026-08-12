@@ -147,7 +147,9 @@ const VprQueryByExample: React.FC = ({ event, currentUser }) => {
                                             className="bg-emerald-700 rounded-full text-white font-bold border px-4 py-2 mr-2 w-full max-w-[200px]"
                                             onClick={accept}
                                         >
-                                            {isLoading ? 'Sharing...' : 'Share'}
+                                            {isLoading
+                                                ? m['credentialStorage.sharing']()
+                                                : m['credentialStorage.share']()}
                                         </button>
                                         <button
                                             type="button"

@@ -265,7 +265,7 @@ const EmailForm: React.FC = () => {
         activeStep = (
             <div className="w-full flex items-center justify-center">
                 <input
-                    aria-label="Email"
+                    aria-label={m['login.emailPlaceholder']()}
                     autoCapitalize="on"
                     className={`w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium font-notoSans tracking-widest text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                         emailError ? 'border-red-300' : 'border-grayscale-200'

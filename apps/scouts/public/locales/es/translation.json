@@ -49,7 +49,15 @@
             "noResults": "No se encontraron resultados",
             "noResultsFor": "No se encontraron resultados para <0>{{query}}</0>",
             "foundOne": "Se encontró {{count}} resultado para \"{{query}}\"",
-            "foundOther": "Se encontraron {{count}} resultados para \"{{query}}\""
+            "foundOther": "Se encontraron {{count}} resultados para \"{{query}}\"",
+            "earnedCountOne": "Buscar {{count}} Boost obtenido",
+            "earnedCountOther": "Buscar {{count}} Boosts obtenidos",
+            "managedCountOne": "Buscar {{count}} Boost administrado",
+            "managedCountOther": "Buscar {{count}} Boosts administrados",
+            "noEarned": "No hay {{category}} obtenidos con el título \"{{query}}\"",
+            "noManaged": "No hay {{category}} administrados con el título \"{{query}}\"",
+            "loadingEarned": "Cargando {{category}} obtenidos",
+            "loadingManaged": "Cargando {{category}} administrados"
         },
         "countLabels": {
             "meritBadgeOne": "Insignia de mérito",
@@ -570,12 +578,12 @@
             "recvReq": "Recibir solicitudes de conexión.",
             "recvReqDesc": "ScoutPass actúa como una puerta de enlace que recibe solicitudes cifradas en tu nombre.",
             "showName": "Mostrar nombre en las listas de contactos de tus conexiones.",
-            "nameDesc": "Tu nombre aparecerá en la lista de contactos, pero nunca se mostrará públicamente sin tu permiso.",
+            "nameDesc": "Tu nombre aparecerá en la lista de contactos, pero nunca se mostrará públicamente ni se compartirá de otra manera sin tu permiso expreso.",
             "showPhoto": "Mostrar foto de perfil en las listas de contactos de tus conexiones.",
-            "photoDesc": "Tu foto aparecerá en la lista de contactos, pero nunca se mostrará públicamente sin tu permiso."
+            "photoDesc": "Tu foto aparecerá en la lista de contactos, pero nunca se mostrará públicamente ni se compartirá de otra manera sin tu permiso expreso."
         },
         "toasts": {
-            "lostConn": "¡Vaya! Parece que perdiste la conexión. La app puede no funcionar correctamente."
+            "lostConn": "¡Vaya! Parece que perdiste la conexión. La app puede no funcionar correctamente y no podrás enviar Boosts."
         }
     },
     "notifications": {
@@ -598,9 +606,9 @@
         "notYet": "Ahora no",
         "editSettings": "Editar Configuración de Notificaciones",
         "settingConnectionRequests": "Nuevas Solicitudes de Conexión",
-        "settingConnectionRequestsDesc": "Cuando alguien escanea tu código o hace clic en tus enlaces, iniciará una solicitud de red.",
+        "settingConnectionRequestsDesc": "Cuando alguien escanea tu código o hace clic en tus enlaces, iniciará una solicitud de red que podrás aceptar o rechazar.",
         "settingNewBoosts": "Nuevos Boosts",
-        "settingNewBoostsDesc": "Los Boosts incluyen todo tipo de credenciales: Habilidades, IDs, Logros, Historial de Aprendizaje, etc.",
+        "settingNewBoostsDesc": "Los Boosts incluyen todo tipo de credenciales: Habilidades, IDs, Logros, Historial de Aprendizaje, Historial Laboral, Moneda e Insignias.",
         "toasts": {
             "successfullyClaimed": "¡Credencial reclamada exitosamente!"
         },
@@ -834,7 +842,7 @@
         "aboutChapi": "Acerca de Chapi",
         "chapiDesc1": "La API de Gestor de Credenciales (CHAPI) es una solución de código abierto para comunicar Credenciales Verificables en la Web.",
         "chapiDesc2": "Piénsalo como una paloma mensajera de confianza y confidencial, pero para Credenciales Verificables.",
-        "chapiDesc3": "Permite que tu wallet digital envíe o reciba Credenciales Verificables de un verificador o emisor externo.",
+        "chapiDesc3": "Permite que tu wallet digital envíe o reciba Credenciales Verificables de un verificador o emisor externo de una forma que establece confianza y preserva la privacidad.",
         "connectHandler": "Conectar Gestor",
         "selectBoostsToShare": "Seleccionar Boosts Obtenidos para Compartir",
         "createBundleDesc": "Esto creará un paquete de boosts compartido que se podrá compartir y ver.",
@@ -1344,7 +1352,9 @@
         "comingSoon": "Próximamente...",
         "count": "Habilidades",
         "listTitle": "Impulsos",
-        "emptyBoosts": "Aún no tienes Boosts."
+        "emptyBoosts": "Aún no tienes Boosts.",
+        "loading": "Cargando habilidades...",
+        "empty": "Aún no hay habilidades."
     },
     "adminTools": {
         "issue": "Emitir",
@@ -1447,7 +1457,7 @@
         "active": "Activo",
         "off": "Apagado",
         "liveSyncAll": "Sincronización en Vivo Total",
-        "liveSyncDesc": "Activar la sincronización en vivo compartirá continuamente tus credenciales a medida que las obtengas.",
+        "liveSyncDesc": "Activar la sincronización en vivo compartirá continuamente tus credenciales a medida que las obtengas. Esto se puede activar o desactivar por categoría en cualquier momento.",
         "noReadData": "Este contrato no está leyendo datos de tu LearnCard",
         "allowDataToLC": "Permitir que se Añadan Datos a Tu LearnCard",
         "allowAll": "Permitir Todo",
@@ -1468,7 +1478,7 @@
         "sharingCount": "Compartiendo {{count}}/{{total}}",
         "liveSyncingAll": "Sincronizando Todo en Vivo",
         "switchToSel": "¿Cambiar a Uso Selectivo?",
-        "switchDesc": "Deseleccionar datos desactiva la Sincronización en Vivo y activa el Uso Selectivo, dándote control total.",
+        "switchDesc": "Deseleccionar datos desactiva la Sincronización en Vivo y activa el Uso Selectivo, dándote control total sobre qué credenciales compartes. Puedes volver fácilmente a la Sincronización en Vivo en cualquier momento.",
         "alreadyConsented": "Ya Consentido",
         "alreadyConsentedDesc": "Ya has dado tu consentimiento para esta conexión. ¡Las nuevas credenciales se sincronizarán pronto!",
         "takeMeHome": "Llévame al Inicio",
@@ -1544,7 +1554,7 @@
             "walletDescription": "Reúne tus logros scouts",
             "helperPrefix": "Reúne tus",
             "helperAction": "logros scouts",
-            "descriptor": "Los scouts obtienen Insignias de mérito para reconocer el dominio de valores, la finalización de tareas o los logros en distintas áreas de interés. Representan el crecimiento personal, el aprendizaje práctico y la búsqueda de conocimientos, desde la supervivencia al aire libre hasta el servicio comunitario."
+            "descriptor": "Los scouts obtienen Insignias de mérito para reconocer el dominio de valores, la finalización de tareas o los logros en distintas áreas de interés. Representan el crecimiento personal, el aprendizaje práctico y la búsqueda de conocimientos, desde la supervivencia al aire libre hasta el servicio comunitario. Las Insignias de mérito simbolizan la dedicación de un scout al desarrollo personal y marcan hitos en su trayectoria scout."
         },
         "troops": {
             "titleOne": "Tropa",
@@ -1552,7 +1562,7 @@
             "walletDescription": "Accede a tus afiliaciones de tropa",
             "helperPrefix": "Accede a tus",
             "helperAction": "afiliaciones de tropa",
-            "descriptor": "Las Tropas son las unidades fundamentales de la experiencia scout y representan la afiliación de cada scout a su grupo. Cada identificación de tropa incluye datos como la función del scout y sus vínculos con otros miembros. Las Tropas fomentan la comunidad, la colaboración y la responsabilidad compartida."
+            "descriptor": "Las Tropas son las unidades fundamentales de la experiencia scout y representan la afiliación de cada scout a su grupo. Cada identificación de tropa incluye datos como la función del scout y sus vínculos con otros miembros. Las Tropas fomentan la comunidad, la colaboración y la responsabilidad compartida mientras los scouts trabajan para alcanzar objetivos y participan juntos en actividades."
         },
         "competencies": {
             "titleOne": "Competencia",

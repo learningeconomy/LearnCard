@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 const SINGLE_QUOTE = String.fromCharCode(39);
 const messageCall = (key: string) => `m[${SINGLE_QUOTE}${key}${SINGLE_QUOTE}]()`;
+const messageInvocation = (key: string) => messageCall(key).slice(0, -1);
 
 describe('ScoutPass locale integration', () => {
     const readSourceTree = (directory: string): Array<{ path: string; source: string }> =>
@@ -98,6 +99,69 @@ describe('ScoutPass locale integration', () => {
         expect(loginPageSource).not.toMatch(/alt=['"](?:world scouts|email|phone) icon['"]/);
         expect(loginPageSource).toContain(messageCall('login.accessibility.googleLogin'));
         expect(loginPageSource).toContain(messageCall('login.accessibility.appleLogin'));
+    });
+
+    it('uses a translated accessible name for the email field', () => {
+        const emailFormPath = fileURLToPath(
+            new URL('../pages/login/forms/EmailForm.tsx', import.meta.url)
+        );
+        const emailFormSource = readFileSync(emailFormPath, 'utf8');
+
+        expect(emailFormSource).not.toContain('aria-label="Email"');
+        expect(emailFormSource).toContain(`aria-label={${messageCall('login.emailPlaceholder')}}`);
+    });
+
+    it('localizes reviewed search and loading feedback', () => {
+        const sourceRoot = fileURLToPath(new URL('../', import.meta.url));
+        const paths = [
+            'components/boost/boost-earned-card/BoostEarnedList.tsx',
+            'components/boost/boost-managed-card/BoostManagedChildrenList.tsx',
+            'components/boost/boost-managed-card/BoostManagedIDList.tsx',
+            'components/boost/boost-managed-card/BoostManagedList.tsx',
+        ];
+
+        for (const path of paths) {
+            const source = readFileSync(join(sourceRoot, path), 'utf8');
+            expect(source).not.toMatch(
+                /`Search \$\{searchResultsCount\} (?:earned|managed) boosts`/
+            );
+            expect(source).not.toMatch(/`No (?:earned|managed) \$\{category\} titled/);
+        }
+
+        const earnedSource = readFileSync(join(sourceRoot, paths[0]), 'utf8');
+        expect(earnedSource).toContain(messageInvocation('common.searchResults.earnedCountOne'));
+        expect(earnedSource).toContain(messageInvocation('common.searchResults.loadingEarned'));
+
+        for (const path of paths.slice(1)) {
+            const source = readFileSync(join(sourceRoot, path), 'utf8');
+            expect(source).toContain(messageInvocation('common.searchResults.managedCountOne'));
+        }
+    });
+
+    it('localizes the named remaining shipping-surface literals', () => {
+        const sourceRoot = fileURLToPath(new URL('../', import.meta.url));
+        const vprSource = readFileSync(
+            join(sourceRoot, 'pages/credentialStorage/vpr/VprQueryByExample.tsx'),
+            'utf8'
+        );
+        const skillsSource = readFileSync(
+            join(sourceRoot, 'pages/skills/SkillsEmptyPlaceholder.tsx'),
+            'utf8'
+        );
+        const troopSource = readFileSync(
+            join(sourceRoot, 'pages/troop/TroopPageIdAndTroopBox.tsx'),
+            'utf8'
+        );
+
+        expect(vprSource).toContain(messageCall('credentialStorage.sharing'));
+        expect(vprSource).toContain(messageCall('credentialStorage.share'));
+        expect(vprSource).not.toMatch(/'Sharing\.\.\.'|'Share'/);
+        expect(skillsSource).toContain(messageCall('skills.loading'));
+        expect(skillsSource).toContain(messageCall('skills.empty'));
+        expect(skillsSource).not.toMatch(/Loading Skills|No Skills yet/);
+        expect(troopSource).toContain(messageCall('troops.showMore'));
+        expect(troopSource).toContain(messageCall('troops.showLess'));
+        expect(troopSource).not.toMatch(/'Read more'|'Show less'/);
     });
 
     it('runs the broadened untranslated-literal guard as an error', () => {

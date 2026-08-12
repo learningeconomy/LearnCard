@@ -39,4 +39,18 @@ describe('no-untranslated-ui-literal', () => {
     it('ignores non-copy configuration values', () => {
         expect(lint("const request = { method: 'POST', url: '/api/boosts' }")).toHaveLength(0);
     });
+
+    it('ignores structural metadata inside user-facing calls', () => {
+        const messages = lint(`
+            showConfirmationAlert({
+                text: ${messageCall('common.delete')},
+                buttons: [{
+                    role: 'cancel',
+                    confirmButtonClassName: 'bg-grayscale-900 text-white',
+                }],
+            });
+        `);
+
+        expect(messages).toHaveLength(0);
+    });
 });

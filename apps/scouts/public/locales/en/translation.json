@@ -49,7 +49,15 @@
             "noResults": "No results found",
             "noResultsFor": "No results found for <0>{{query}}</0>",
             "foundOne": "Found {{count}} result for \"{{query}}\"",
-            "foundOther": "Found {{count}} results for \"{{query}}\""
+            "foundOther": "Found {{count}} results for \"{{query}}\"",
+            "earnedCountOne": "Search {{count}} earned Boost",
+            "earnedCountOther": "Search {{count}} earned Boosts",
+            "managedCountOne": "Search {{count}} managed Boost",
+            "managedCountOther": "Search {{count}} managed Boosts",
+            "noEarned": "No earned {{category}} titled \"{{query}}\"",
+            "noManaged": "No managed {{category}} titled \"{{query}}\"",
+            "loadingEarned": "Loading earned {{category}}",
+            "loadingManaged": "Loading managed {{category}}"
         },
         "countLabels": {
             "meritBadgeOne": "Merit Badge",
@@ -570,9 +578,9 @@
             "recvReq": "Receive connection requests.",
             "recvReqDesc": "ScoutPass acts as a gateway that receives encrypted connection requests on your behalf.",
             "showName": "Display name in your connections’ contact lists.",
-            "nameDesc": "Your name will appear in your connection’s contact list, but it is never be displayed publicly or shared otherwise without your express permission.",
+            "nameDesc": "Your name will appear in your connection’s contact list, but it will never be displayed publicly or shared otherwise without your express permission.",
             "showPhoto": "Display profile photo in your connections’ contact lists.",
-            "photoDesc": "Your profile photo will appear in your connection’s contact list, but it is never be displayed publicly or shared otherwise without your express permission."
+            "photoDesc": "Your profile photo will appear in your connection’s contact list, but it will never be displayed publicly or shared otherwise without your express permission."
         },
         "toasts": {
             "lostConn": "Oops! It seems you’ve lost your connection. The app may not function properly and you will not be able to send boosts."
@@ -1129,8 +1137,8 @@
             "connectionRequestSent": "Connection Request sent",
             "connectedSuccessfully": "Connected Successfully!",
             "inviteLinkExpired": "Invite link has expired!",
-            "unableToConnect": "An error ocurred, unable to connect!",
-            "unableToSendConnectionRequest": "An error ocurred, unable to send connection request.",
+            "unableToConnect": "An error occurred, unable to connect!",
+            "unableToSendConnectionRequest": "An error occurred, unable to send connection request.",
             "unableToAcceptRequest": "An error occurred, unable to accept request",
             "didCopied": "DID copied to clipboard",
             "unableToCopyDid": "Unable to copy DID to clipboard",
@@ -1344,7 +1352,9 @@
         "comingSoon": "Coming Soon...",
         "count": "Skills",
         "listTitle": "Boosts",
-        "emptyBoosts": "You don't have any Boosts yet."
+        "emptyBoosts": "You don't have any Boosts yet.",
+        "loading": "Loading Skills...",
+        "empty": "No Skills yet."
     },
     "adminTools": {
         "issue": "Issue",
@@ -1447,7 +1457,7 @@
         "active": "Active",
         "off": "Off",
         "liveSyncAll": "Live Sync All",
-        "liveSyncDesc": "Turning on live syncing will continuosly share your credentials as you get them. This can be enabled/disabled per category at any time.",
+        "liveSyncDesc": "Turning on live syncing will continuously share your credentials as you get them. This can be enabled/disabled per category at any time.",
         "noReadData": "This contract is not reading any data from your LearnCard",
         "allowDataToLC": "Allow Data to be Added to Your LearnCard",
         "allowAll": "Allow All",

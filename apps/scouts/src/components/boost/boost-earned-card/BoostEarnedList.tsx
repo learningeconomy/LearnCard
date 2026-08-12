@@ -75,7 +75,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     const searchString = credentialSearchStore.use.searchString() || '';
     const searchResults = searchCredentialsFromCache(records);
     const noSearchResults = searchResults?.length === 0;
-    const searchResultsCount = searchResults?.length;
+    const searchResultsCount = searchResults?.length ?? 0;
 
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
@@ -129,23 +129,27 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     };
 
     const isCardView = viewMode === BoostPageViewMode.Card;
+    const searchResultsText =
+        searchString.trim() === ''
+            ? searchResultsCount === 1
+                ? m['common.searchResults.earnedCountOne']({ count: searchResultsCount })
+                : m['common.searchResults.earnedCountOther']({ count: searchResultsCount })
+            : noSearchResults
+            ? m['common.searchResults.noEarned']({ category, query: searchString })
+            : searchResultsCount === 1
+            ? m['common.searchResults.foundOne']({
+                  count: searchResultsCount,
+                  query: searchString,
+              })
+            : m['common.searchResults.foundOther']({
+                  count: searchResultsCount,
+                  query: searchString,
+              });
 
     const searchResultsElement = (
         <div className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[15px]' : ''}`}>
             <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
-                {searchString?.trim?.() === '' && `Search ${searchResultsCount} earned boosts`}
-                {noSearchResults && `No earned ${category} titled "${searchString}"`}
-                {searchResultsCount > 0 &&
-                    searchString?.trim?.() !== '' &&
-                    (searchResultsCount === 1
-                        ? m['common.searchResults.foundOne']({
-                              count: searchResultsCount,
-                              query: searchString,
-                          })
-                        : m['common.searchResults.foundOther']({
-                              count: searchResultsCount,
-                              query: searchString,
-                          }))}
+                {searchResultsText}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>
@@ -157,7 +161,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                 <IonCol
                     className="flex m-auto items-center flex-wrap w-full achievements-list-container"
                     role="status"
-                    aria-label={`Loading earned ${category}`}
+                    aria-label={m['common.searchResults.loadingEarned']({ category })}
                 >
                     {isCardView ? (
                         <IonGrid className="max-w-[600px] pt-[25px]">

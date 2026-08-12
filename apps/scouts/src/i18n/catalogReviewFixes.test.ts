@@ -68,4 +68,76 @@ describe('reviewed catalog copy', () => {
             );
         }
     });
+
+    it('preserves Spanish privacy and connection behavior', () => {
+        const es = loadCatalog('es');
+
+        expect(es.networkPrompts.settings.nameDesc).toContain('ni se compartirá');
+        expect(es.networkPrompts.settings.photoDesc).toContain('ni se compartirá');
+        expect(es.networkPrompts.toasts.lostConn).toContain('no podrás enviar');
+        expect(es.notifications.settingConnectionRequestsDesc).toMatch(/aceptar o rechazar/i);
+        expect(es.notifications.settingNewBoostsDesc).toMatch(/Historial Laboral/i);
+        expect(es.notifications.settingNewBoostsDesc).toMatch(/Insignias/i);
+        expect(es.notifications.settingNewBoostsDesc).not.toMatch(/etc\./i);
+    });
+
+    it('keeps the complete credential-category list in Arabic', () => {
+        const ar = loadCatalog('ar');
+
+        expect(ar.notifications.settingNewBoostsDesc).toContain('الشارات');
+    });
+
+    it('preserves trust and privacy in Spanish and Arabic CHAPI copy', () => {
+        const es = loadCatalog('es');
+        const ar = loadCatalog('ar');
+
+        expect(es.credsBundle.chapiDesc3).toMatch(/confianza/i);
+        expect(es.credsBundle.chapiDesc3).toMatch(/privacidad/i);
+        expect(ar.credsBundle.chapiDesc3).toContain('الثقة');
+        expect(ar.credsBundle.chapiDesc3).toContain('الخصوصية');
+    });
+
+    it('preserves per-category and reversible consent controls', () => {
+        const es = loadCatalog('es');
+        const ar = loadCatalog('ar');
+
+        expect(es.consentFlow.liveSyncDesc).toMatch(/por categoría/i);
+        expect(es.consentFlow.liveSyncDesc).toMatch(/en cualquier momento/i);
+        expect(es.consentFlow.switchDesc).toMatch(/volver.*Sincronización en Vivo/i);
+        expect(ar.consentFlow.liveSyncDesc).toContain('في أي وقت');
+        expect(ar.consentFlow.switchDesc).toContain('في أي وقت');
+    });
+
+    it('preserves the complete Merit Badge and Troop descriptions', () => {
+        const expectedFinalMeaning = {
+            es: {
+                meritBadges: /dedicación.*hitos/i,
+                troops: /objetivos.*juntos/i,
+            },
+            fr: {
+                meritBadges: /engagement.*étapes/i,
+                troops: /objectifs.*ensemble/i,
+            },
+            ar: {
+                meritBadges: /تفاني.*محطات/,
+                troops: /أهدافهم.*معًا/,
+            },
+        };
+
+        for (const [locale, patterns] of Object.entries(expectedFinalMeaning)) {
+            const catalog = loadCatalog(locale);
+            expect(catalog.scoutCategories.meritBadges.descriptor).toMatch(patterns.meritBadges);
+            expect(catalog.scoutCategories.troops.descriptor).toMatch(patterns.troops);
+        }
+    });
+
+    it('keeps the English source catalog proofread', () => {
+        const en = loadCatalog('en');
+        const sourceCopy = catalogStrings(en).join('\n');
+
+        expect(sourceCopy).not.toMatch(/continuosly|it is never be|ocurred/);
+        expect(en.consentFlow.liveSyncDesc).toContain('continuously');
+        expect(en.networkPrompts.settings.nameDesc).toContain('will never be displayed');
+        expect(en.addressBook.toasts.unableToConnect).toContain('occurred');
+    });
 });

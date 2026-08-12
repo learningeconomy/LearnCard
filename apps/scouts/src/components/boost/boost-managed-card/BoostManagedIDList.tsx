@@ -59,7 +59,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
     const searchString = credentialSearchStore.use.searchString() || '';
     const searchResults = searchManagedBoostsFromCache(managedBoosts);
     const noSearchResults = searchResults?.length === 0;
-    const searchResultsCount = searchResults?.length;
+    const searchResultsCount = searchResults?.length ?? 0;
 
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
@@ -115,23 +115,27 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
     };
 
     const isCardView = viewMode === BoostPageViewMode.Card;
+    const searchResultsText =
+        searchString.trim() === ''
+            ? searchResultsCount === 1
+                ? m['common.searchResults.managedCountOne']({ count: searchResultsCount })
+                : m['common.searchResults.managedCountOther']({ count: searchResultsCount })
+            : noSearchResults
+            ? m['common.searchResults.noManaged']({ category, query: searchString })
+            : searchResultsCount === 1
+            ? m['common.searchResults.foundOne']({
+                  count: searchResultsCount,
+                  query: searchString,
+              })
+            : m['common.searchResults.foundOther']({
+                  count: searchResultsCount,
+                  query: searchString,
+              });
 
     const searchResultsElement = (
         <div className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[12px]' : ''}`}>
             <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
-                {searchString?.trim?.() === '' && `Search ${searchResultsCount} managed boosts`}
-                {noSearchResults && `No managed ${category} titled "${searchString}"`}
-                {searchResultsCount > 0 &&
-                    searchString?.trim?.() !== '' &&
-                    (searchResultsCount === 1
-                        ? m['common.searchResults.foundOne']({
-                              count: searchResultsCount,
-                              query: searchString,
-                          })
-                        : m['common.searchResults.foundOther']({
-                              count: searchResultsCount,
-                              query: searchString,
-                          }))}
+                {searchResultsText}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>
