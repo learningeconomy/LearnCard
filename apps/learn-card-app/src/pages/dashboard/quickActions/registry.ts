@@ -53,7 +53,7 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         eligible: state => !state.hasSkillProfile,
         weight: () => 100,
         build: (_state, { handlers, icons }) => ({
-            Icon: icons.understand,
+            Icon: icons.skills,
             label: m['dashboard.quickActions.understandNewLabel'](),
             caption: m['dashboard.quickActions.understandNewCaption'](),
             onClick: handlers.openSkillProfile,
@@ -73,7 +73,7 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
                       onClick: handlers.goToInsights,
                   }
                 : {
-                      Icon: icons.understand,
+                      Icon: icons.skills,
                       label: m['dashboard.quickActions.skillsLabel'](),
                       caption: m['dashboard.quickActions.skillsCaption'](),
                       onClick: handlers.goToSkills,
