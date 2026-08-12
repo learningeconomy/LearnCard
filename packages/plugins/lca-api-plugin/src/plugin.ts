@@ -114,6 +114,7 @@ export const getLCAPlugin = async (
 
         return {
             name: 'LearnCard App',
+            isOffline: false,
             displayName: 'LearnCard App Plugin',
             description: 'Adds bespoke logic to the LearnCard App.',
             methods: {
@@ -548,6 +549,7 @@ export const getLCAPlugin = async (
         );
         return {
             name: 'LearnCard App',
+            isOffline: true,
             displayName: 'LearnCard App Plugin (Offline)',
             description: 'Adds bespoke logic to the LearnCard App. (Unable to connect to LCA API)',
             methods: {

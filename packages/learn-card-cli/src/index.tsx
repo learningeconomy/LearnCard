@@ -6,7 +6,7 @@ import { inspect } from 'node:util';
 
 import { getTestCache } from '@learncard/core';
 import { initLearnCard, emptyLearnCard, learnCardFromSeed } from '@learncard/init';
-import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
+import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
 import * as types from '@learncard/types';
 import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
@@ -366,11 +366,11 @@ program
             didkit,
         });
 
-        const simpleSigningLc = await _learnCard.addPlugin(
-            await getSimpleSigningPlugin(_learnCard as any, 'https://api.learncard.app/trpc')
+        const lcaApiLc = await _learnCard.addPlugin(
+            await getLCAPlugin(_learnCard, 'https://api.learncard.app/trpc')
         );
 
-        cliGlobals.learnCard = await simpleSigningLc.addPlugin(getLerRsPlugin(simpleSigningLc));
+        cliGlobals.learnCard = await lcaApiLc.addPlugin(getLerRsPlugin(lcaApiLc));
         // Add LinkedClaims plugin so endorse/verify/store/getEndorsements are available in the CLI
         cliGlobals.learnCard = await cliGlobals.learnCard.addPlugin(
             getLinkedClaimsPlugin(cliGlobals.learnCard)
