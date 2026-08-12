@@ -382,7 +382,10 @@ const ClaimBoost: React.FC<{
             capture();
 
             const claimedBoostUri = await wallet.invoke.claimBoostWithLink(boostUri, challenge);
-            const addedToWallet = await addVCtoWallet({ uri: claimedBoostUri });
+            const addedToWallet = await addVCtoWallet({
+                uri: claimedBoostUri,
+                boostUri,
+            });
             if (!addedToWallet) throw new Error('Credential was not added to LearnCard');
 
             const category = getDefaultCategoryForCredential(boost);

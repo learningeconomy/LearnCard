@@ -42,6 +42,12 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
             const firstElement = focusableElements[0];
             const lastElement = focusableElements[focusableElements.length - 1];
 
+            if (!dialogRef.current?.contains(document.activeElement)) {
+                event.preventDefault();
+                (event.shiftKey ? lastElement : firstElement).focus();
+                return;
+            }
+
             if (event.shiftKey && document.activeElement === firstElement) {
                 event.preventDefault();
                 lastElement.focus();

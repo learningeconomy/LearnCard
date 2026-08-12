@@ -57,7 +57,13 @@ describe('DuplicateCredentialPrompt', () => {
     });
 
     it('keeps keyboard focus inside the duplicate decision', async () => {
-        render(<DuplicateCredentialPrompt existing={existing} onChoose={vi.fn()} />);
+        render(
+            <>
+                <button type="button">Outside action</button>
+                <DuplicateCredentialPrompt existing={existing} onChoose={vi.fn()} />
+            </>
+        );
+        const outsideButton = screen.getByRole('button', { name: 'Outside action' });
         const cancelButton = screen.getByRole('button', { name: 'Cancel' });
         const saveButton = screen.getByRole('button', { name: 'Save Another Copy' });
 
@@ -67,6 +73,10 @@ describe('DuplicateCredentialPrompt', () => {
 
         fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
         expect(saveButton).toHaveFocus();
+
+        outsideButton.focus();
+        fireEvent.keyDown(window, { key: 'Tab' });
+        expect(cancelButton).toHaveFocus();
     });
 
     it('escapes the claim screen stacking context', () => {

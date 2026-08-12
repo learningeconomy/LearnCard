@@ -761,6 +761,7 @@ const ClaimFromRequest: React.FC = () => {
             const storeResult = await storeAndAddVCToWallet(credential, {
                 title: name,
                 allowDuplicate: duplicateResolution.isDuplicate,
+                boostUri: claimInteractionBoostUri,
             });
             if (!storeResult.result) throw new Error('Credential was not added to LearnCard');
 
@@ -800,6 +801,18 @@ const ClaimFromRequest: React.FC = () => {
 
             presentClaimSuccessToast();
         } catch (e) {
+            if (e instanceof Error && e.message.includes('exists')) {
+                completeClaimAttempt(credential, AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                setClaimingCredential(false);
+                log.warn('Credential already exists in wallet index', e);
+                void handleAfterCredentialClaim(credential);
+                presentToast(m['toasts.alreadyClaimed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
             completeClaimAttempt(
                 credential,
                 AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,

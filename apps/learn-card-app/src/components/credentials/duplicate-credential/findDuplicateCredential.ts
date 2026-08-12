@@ -41,6 +41,7 @@ const getCredentialContentKey = (credential: VC): string => {
 };
 
 type ResolveCredential = (uri: string) => Promise<VC | undefined>;
+const MAX_CATEGORY_PAGES = 1000;
 
 const resolveMatchingRecord = async (
     records: LCR[],
@@ -147,9 +148,11 @@ export const findDuplicateCredential = async (
     }
 
     let cursor: string | undefined;
+    let pageCount = 0;
     const seenCursors = new Set<string>();
 
-    while (true) {
+    while (pageCount < MAX_CATEGORY_PAGES) {
+        pageCount += 1;
         // Sequential pages avoid loading the user's entire wallet into memory at once.
         // eslint-disable-next-line no-await-in-loop
         const page = await getPage<CredentialMetadata>({ category }, { cursor, limit: 50 });

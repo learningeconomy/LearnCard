@@ -123,6 +123,25 @@ describe('findDuplicateCredential', () => {
             { cursor: 'next-page', limit: 50 }
         );
     });
+
+    it('stops legacy scanning after the safety page limit', async () => {
+        const wallet = createWallet();
+        let pageCount = 0;
+        const getPage = vi.fn().mockImplementation(async () => {
+            pageCount += 1;
+            return {
+                records: [],
+                hasMore: true,
+                cursor: `page-${pageCount}`,
+            };
+        });
+        wallet.index.LearnCloud.getPage = getPage;
+
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).resolves.toBeNull();
+        expect(getPage).toHaveBeenCalledTimes(1000);
+    });
     it('matches a repeated claim link by boost URI when issuance creates a new credential ID', async () => {
         const boostUri = 'lc:network:example.org/trpc:boost:boost-id';
         const previewCredential = {
