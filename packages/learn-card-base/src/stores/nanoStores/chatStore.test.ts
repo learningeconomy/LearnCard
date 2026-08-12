@@ -67,6 +67,19 @@ class FakeWebSocket {
 globalThis.WebSocket = FakeWebSocket as unknown as typeof WebSocket;
 globalThis.fetch = mocks.fetch as typeof fetch;
 
+if (!Promise.withResolvers) {
+    Promise.withResolvers = <T>() => {
+        let resolve!: PromiseWithResolvers<T>['resolve'];
+        let reject!: PromiseWithResolvers<T>['reject'];
+        const promise = new Promise<T>((promiseResolve, promiseReject) => {
+            resolve = promiseResolve;
+            reject = promiseReject;
+        });
+
+        return { promise, resolve, reject };
+    };
+}
+
 // The store must capture the fake browser WebSocket during module initialization.
 const {
     connectWebSocket,
@@ -333,6 +346,27 @@ describe('chat session startup', () => {
         expect(mocks.showErrorModal).not.toHaveBeenCalled();
     });
 
+    it('terminates startup for unknown typed error codes', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-future' });
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_future_failure',
+            message: 'Safe public message',
+            retryable: false,
+            requestId: 'request-future',
+        });
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            code: 'ai_unknown_error',
+            rawCode: 'ai_provider_future_failure',
+        });
+    });
+
     it('stops pending response indicators immediately when the WebSocket errors', async () => {
         const start = startTopic('Algebra');
         const socket = await openLatestSocket();
@@ -376,6 +410,26 @@ describe('chat session startup', () => {
         });
     });
 
+    it('preserves a partial assistant response when a legacy error interrupts streaming', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-legacy-stream');
+        messages.set([{ role: 'user', content: 'My question' }]);
+
+        socket.receive('Partial answer');
+        socket.receive({ error: 'provider failed' });
+
+        expect(messages.get().map(message => message.content)).toEqual([
+            'My question',
+            'Partial answer',
+        ]);
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            code: 'provider failed',
+            presented: false,
+        });
+    });
+
     it('does not resurrect typing when a responding frame arrives after a quota error', async () => {
         connectWebSocket();
         const socket = await openLatestSocket();
@@ -394,6 +448,10 @@ describe('chat session startup', () => {
             event: 'thread_updated',
             threadId: 'thread-quota',
             phase: 'responding',
+        });
+        socket.receive({
+            event: 'assistant_typing',
+            threadId: 'thread-quota',
         });
 
         expect(lastAiError.get()).toMatchObject({
@@ -708,6 +766,35 @@ describe('chat session startup', () => {
 
         reconnectedSocket?.receive({ done: true, threadId: 'thread-insights' });
         expect(isTyping.get()).toBe(false);
+    });
+
+    it('accepts a continuation error carrying the startup request ID', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-continuation' });
+        socket.receive({
+            event: 'plan_ready',
+            requestId: 'request-continuation',
+            threadId: 'thread-continuation',
+            title: 'Algebra',
+        });
+
+        continuePlan();
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+            requestId: 'request-continuation',
+            threadId: 'thread-continuation',
+        });
+
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            code: 'ai_provider_quota_exhausted',
+            requestId: 'request-continuation',
+        });
     });
 
     it('ends a silent plan continuation after 32 seconds', async () => {

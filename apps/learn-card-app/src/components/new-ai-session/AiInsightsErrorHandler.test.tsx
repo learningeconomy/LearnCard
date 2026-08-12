@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
               message: string;
               retryable: boolean;
           }
-        | { at: number; code?: string }
+        | { at: number; code?: string; presented?: boolean }
         | null,
 }));
 
@@ -63,6 +63,36 @@ describe('AiInsightsErrorHandler', () => {
         expect(screen.getByRole('alert')).toHaveTextContent(
             'LearnCard AI has reached its current usage limit. Please try again later.'
         );
+    });
+
+    it('dismisses the banner when an explicit retry clears the error', () => {
+        const { rerender } = render(
+            <AiInsightsErrorHandler active mode={AiSessionMode.insights} />
+        );
+
+        mocks.aiError = {
+            at: 1_001,
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+        };
+        rerender(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
+
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+
+        mocks.aiError = null;
+        rerender(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
+
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('does not duplicate a legacy error already presented by the store', () => {
+        mocks.aiError = { at: 1_001, code: 'server_error', presented: true };
+
+        render(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
+
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('ignores errors from before the Insights chat became active', () => {

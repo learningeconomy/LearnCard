@@ -25,10 +25,26 @@ describe('AI service errors', () => {
     it.each([
         null,
         { event: 'error', code: 'ai_provider_quota_exhausted', message: 'x', retryable: false },
-        { event: 'ai_error', code: 'provider-secret', message: 'x', retryable: false },
         { event: 'ai_error', code: 'ai_unknown_error', message: 'x', retryable: 'no' },
-    ])('rejects malformed or unknown payloads', value => {
+    ])('rejects malformed payloads', value => {
         expect(parseAiErrorPayload(value)).toBeUndefined();
+    });
+
+    it('normalizes unknown provider codes without dropping terminal errors', () => {
+        expect(
+            parseAiErrorPayload({
+                event: 'ai_error',
+                code: 'provider-secret',
+                message: 'Safe message',
+                retryable: false,
+            })
+        ).toEqual({
+            event: 'ai_error',
+            code: 'ai_unknown_error',
+            rawCode: 'provider-secret',
+            message: 'Safe message',
+            retryable: false,
+        });
     });
 
     it('creates a typed error from a failed HTTP response', async () => {

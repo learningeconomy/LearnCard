@@ -21,7 +21,7 @@ describe('getAiErrorCopy', () => {
         ['ai_provider_rate_limited', 'Rate title', 'Rate body'],
         ['ai_provider_unavailable', 'Unavailable title', 'Unavailable body'],
         ['ai_request_timeout', 'Timeout title', 'Timeout body'],
-        ['ai_provider_invalid_response', 'Unknown title', 'Unknown body'],
+        ['ai_unknown_error', 'Unknown title', 'Unknown body'],
     ] as const)('maps %s to localized copy', (code, title, body) => {
         expect(getAiErrorCopy(code)).toEqual({ title, body });
     });

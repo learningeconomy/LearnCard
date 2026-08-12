@@ -223,7 +223,7 @@ const clearSessionStartWatchdog = () => {
 
 const beginSessionStartWatchdog = (kind: PendingResponseKind = 'startup') => {
     clearSessionStartWatchdog();
-    currentSessionStartRequestId = null;
+    if (kind === 'startup') currentSessionStartRequestId = null;
 
     startupWatchdog = window.setTimeout(() => {
         startupWatchdog = undefined;
@@ -809,10 +809,13 @@ export function connectWebSocket() {
 
             if (data.event === 'session_start_error') {
                 if (!isCurrentSessionStartFrame(data.requestId)) return;
-                clearSessionStartWatchdog();
-                isLoading.set(false);
-                isTyping.set(false);
-                planStreamActive.set(false);
+
+                stopPendingAiResponse();
+                lastAiError.set({
+                    at: Date.now(),
+                    code: typeof data.code === 'string' ? data.code : 'session_start_error',
+                    presented: true,
+                });
                 showErrorModal('Something went wrong', 'Please try starting the session again.');
                 return;
             }
@@ -824,17 +827,15 @@ export function connectWebSocket() {
                 )
                     return;
                 const isResponsePending = startupWatchdog !== undefined;
-                clearSessionStartWatchdog();
-                log.error('Error:', data.error);
-                isLoading.set(false);
-                isTyping.set(false);
                 const presented = isResponsePending || typeof data.requestId === 'string';
+
+                log.error('Error:', data.error);
+                stopPendingAiResponse();
                 lastAiError.set({
                     at: Date.now(),
                     code: typeof data.error === 'string' ? data.error : 'server_error',
                     presented,
                 });
-                planStreamActive.set(false);
                 if (presented) {
                     showErrorModal(
                         'Something went wrong',
@@ -847,7 +848,7 @@ export function connectWebSocket() {
             if (data.event === 'assistant_typing') {
                 if (data.threadId && !isCurrentThreadFrame(data.threadId)) return;
                 isLoading.set(false);
-                isTyping.set(true);
+                if (!lastAiError.get()) isTyping.set(true);
                 return;
             }
 
@@ -904,17 +905,7 @@ export function connectWebSocket() {
 
             if (data.done) {
                 clearSessionStartWatchdog();
-                // Flush any pending streaming tokens before committing
-                if (streamRaf != null) {
-                    cancelAnimationFrame(streamRaf);
-                    flushStream();
-                }
-                const pending = streamingMessage.get();
-                if (pending) {
-                    messages.set([...messages.get(), pending]);
-                    streamingMessage.set(null);
-                }
-                streamingId = null;
+                preservePartialStreamingMessage();
 
                 isTyping.set(false);
 
@@ -996,17 +987,7 @@ export function connectWebSocket() {
     ws.onclose = () => {
         if (ws !== socket) return;
 
-        // Flush any partial streaming message so interrupted streams aren't lost
-        if (streamRaf != null) {
-            cancelAnimationFrame(streamRaf);
-            flushStream();
-        }
-        const pending = streamingMessage.get();
-        if (pending) {
-            messages.set([...messages.get(), pending]);
-            streamingMessage.set(null);
-        }
-        streamingId = null;
+        preservePartialStreamingMessage();
 
         ws = null;
 

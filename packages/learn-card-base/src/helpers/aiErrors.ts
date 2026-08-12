@@ -11,6 +11,7 @@ export type AiErrorCode = keyof typeof AI_ERROR_CODES;
 export type AiErrorPayload = {
     event: 'ai_error';
     code: AiErrorCode;
+    rawCode?: string;
     message: string;
     retryable: boolean;
     operation?: string;
@@ -39,15 +40,19 @@ export const parseAiErrorPayload = (value: unknown): AiErrorPayload | undefined 
     if (
         data.event !== 'ai_error' ||
         typeof data.code !== 'string' ||
-        !Object.hasOwn(AI_ERROR_CODES, data.code) ||
         typeof data.message !== 'string' ||
         typeof data.retryable !== 'boolean'
     )
         return;
 
+    const code = Object.hasOwn(AI_ERROR_CODES, data.code)
+        ? (data.code as AiErrorCode)
+        : 'ai_unknown_error';
+
     return {
         event: 'ai_error',
-        code: data.code as AiErrorCode,
+        code,
+        ...(code === 'ai_unknown_error' && data.code !== code ? { rawCode: data.code } : {}),
         message: data.message,
         retryable: data.retryable,
         ...(typeof data.operation === 'string' ? { operation: data.operation } : {}),

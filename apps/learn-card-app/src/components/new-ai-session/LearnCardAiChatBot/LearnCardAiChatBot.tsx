@@ -382,7 +382,8 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             flow_id: aiFlowIdRef.current,
             surface: 'ai_chat',
             message_index: response.messageIndex,
-            error_code: aiError.code,
+            error_code:
+                aiError.event === 'ai_error' ? aiError.rawCode ?? aiError.code : aiError.code,
             duration_ms: response.lifecycle.durationMs(),
         });
         if (streaming) {

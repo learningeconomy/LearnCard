@@ -103,13 +103,16 @@ export const NewAiSessionContainer: React.FC<{
             break;
     }
 
+    const aiInsightsErrorHandlerActive =
+        startInternalAiChatBot || activeStep === NewAiSessionStepEnum.revisitTopic;
+
     const containerStyles = isDesktop ? 'w-full pb-[50px]' : 'w-full';
 
     return (
         <div
             className={`h-full bg-transparent relative flex items-center flex-col justify-end ${containerStyles}`}
         >
-            <AiInsightsErrorHandler active={startInternalAiChatBot} mode={mode} />
+            <AiInsightsErrorHandler active={aiInsightsErrorHandlerActive} mode={mode} />
             {step}
         </div>
     );

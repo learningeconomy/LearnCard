@@ -148,7 +148,6 @@ const AiInsights: React.FC = () => {
         setAiInsightErrorCode(null);
 
         createAiInsightCredential(undefined, {
-            onSuccess: () => setAiInsightErrorCode(null),
             onError: error => {
                 const code =
                     error instanceof AiServiceError ? error.payload.code : 'ai_unknown_error';
@@ -166,6 +165,7 @@ const AiInsights: React.FC = () => {
         !consentedContractsLoading &&
         !existingAiInsightCredentialLoading &&
         !createAiInsightCredentialLoading &&
+        !aiInsightErrorCode &&
         !aiInsightCredentialToDisplay &&
         hasWalletCredentials &&
         !autoGenerateAiInsightsAttemptedRef.current;
@@ -279,9 +279,8 @@ const AiInsights: React.FC = () => {
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
             {aiInsightErrorCopy && (
                 <div
-                    className="w-full rounded-[15px] border border-current p-4 text-start"
-                    role="status"
-                    aria-live="polite"
+                    className="w-full rounded-[15px] border border-red-100 bg-red-50 p-4 text-start text-red-700"
+                    role="alert"
                 >
                     <h2 className="font-semibold">{aiInsightErrorCopy.title}</h2>
                     <p>{aiInsightErrorCopy.body}</p>

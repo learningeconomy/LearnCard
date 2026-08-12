@@ -4,6 +4,7 @@ import { alertCircleOutline } from 'ionicons/icons';
 import { useStore } from '@nanostores/react';
 
 import { lastAiError } from 'learn-card-base/stores/nanoStores/chatStore';
+import type { AiErrorCode } from 'learn-card-base/helpers/aiErrors';
 
 import { AiSessionMode } from './newAiSession.helpers';
 import { getAiErrorCopy } from '../../helpers/aiError.helpers';
@@ -14,7 +15,9 @@ export const AiInsightsErrorHandler: React.FC<{
 }> = ({ active, mode }) => {
     const aiError = useStore(lastAiError);
     const activeSinceRef = useRef<number | null>(null);
-    const [visibleErrorAt, setVisibleErrorAt] = useState<number | null>(null);
+    const [visibleError, setVisibleError] = useState<{ at: number; code: AiErrorCode } | null>(
+        null
+    );
 
     useEffect(() => {
         if (active && mode === AiSessionMode.insights) {
@@ -23,31 +26,40 @@ export const AiInsightsErrorHandler: React.FC<{
         }
 
         activeSinceRef.current = null;
-        setVisibleErrorAt(null);
+        setVisibleError(null);
     }, [active, mode]);
 
     useEffect(() => {
+        if (!aiError) {
+            setVisibleError(null);
+            return;
+        }
+
+        if (aiError.event !== 'ai_error' && aiError.presented) {
+            setVisibleError(null);
+            return;
+        }
+
         const activeSince = activeSinceRef.current;
 
         if (
             !active ||
             mode !== AiSessionMode.insights ||
-            !aiError ||
             activeSince === null ||
             aiError.at < activeSince ||
-            aiError.at === visibleErrorAt
-        ) {
+            aiError.at === visibleError?.at
+        )
             return;
-        }
 
-        setVisibleErrorAt(aiError.at);
-    }, [active, aiError, mode, visibleErrorAt]);
+        setVisibleError({
+            at: aiError.at,
+            code: aiError.event === 'ai_error' ? aiError.code : 'ai_unknown_error',
+        });
+    }, [active, aiError, mode, visibleError?.at]);
 
-    if (visibleErrorAt === null) return null;
+    if (!visibleError) return null;
 
-    const { title, body } = getAiErrorCopy(
-        aiError?.event === 'ai_error' ? aiError.code : 'ai_unknown_error'
-    );
+    const { title, body } = getAiErrorCopy(visibleError.code);
 
     return (
         <div className="absolute inset-x-4 top-[calc(80px+env(safe-area-inset-top))] z-[100]">
