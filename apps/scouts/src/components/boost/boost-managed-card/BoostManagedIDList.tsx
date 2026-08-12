@@ -200,7 +200,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                 managedBoostsList &&
                 managedBoostsList?.length === 0 && (
                     <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center mt-[20px]">
-                        <img src={defaultImg} alt="ids" className="w-[200px] h-[200px] m-auto" />
+                        <img src={defaultImg} alt="" className="w-[200px] h-[200px] m-auto" />
                         <p
                             className={`absolute inset-0 flex items-center justify-center font-bold text-center w-[133px] m-auto text-[16px] ${emptyMessageStyle}`}
                         >

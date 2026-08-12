@@ -54,7 +54,7 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
                 <button
                     onClick={closeModal}
                     className="flex items-center mr-3 mt-1"
-                    aria-label="Close modal"
+                    aria-label={m['boost.closeModal']()}
                 >
                     <CaretLeft className="rtl-mirror text-grayscale-900 h-4 w-auto" />
                 </button>

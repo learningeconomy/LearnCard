@@ -124,7 +124,7 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
             >
                 <div className="relative w-full flex items-center justify-center p-2 h-[72%]">
                     <IonTextarea
-                        aria-label={`Create new ${title}`}
+                        aria-label={m['boost.createTitleNew']({ title: title ?? '' })}
                         onIonInput={e => handleInputChange(e.detail.value?.trim() || '')}
                         placeholder={m['boost.newTitle']({ title })}
                         className="bg-white rounded-lg px-2 h-full"

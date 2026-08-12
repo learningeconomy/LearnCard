@@ -192,8 +192,8 @@ const ClaimBoostLoggedOutPromptDesktop: React.FC<{
 
             <div className="flex min-h-0 min-w-0 flex-col items-center justify-center border-l border-white/15 px-[50px] py-[22px] text-center">
                 <div className="mb-[16px] flex w-full items-center justify-center gap-2">
-                    <img src={logo} alt="ScoutPass logo" className="w-[55px]" />
-                    <img src={textLogo} alt="ScoutPass text logo" className="max-w-[200px]" />
+                    <img src={logo} alt="" className="w-[55px]" />
+                    <img src={textLogo} alt="" className="max-w-[200px]" />
                 </div>
 
                 <h1 className="max-w-[310px] text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
@@ -226,14 +226,14 @@ const ScoutsLoginColumn: React.FC = () => {
         {
             id: 1,
             src: GoogleIcon,
-            alt: 'google',
+            alt: m['login.accessibility.googleLogin'](),
             onClick: googleLogin,
             type: SocialLoginTypes.google,
         },
         {
             id: 2,
             src: AppleIcon,
-            alt: 'apple',
+            alt: m['login.accessibility.appleLogin'](),
             onClick: appleLogin,
             type: SocialLoginTypes.apple,
         },
@@ -245,8 +245,8 @@ const ScoutsLoginColumn: React.FC = () => {
         <div className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-white text-grayscale-900">
             <div className="relative flex items-center justify-center bg-sp-purple-base login-page-header !overflow-hidden">
                 <div className="flex flex-col items-center justify-center">
-                    <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
-                    <img src={ScoutPassTextLogo} alt="ScoutPass text logo" className="mt-4" />
+                    <img src={ScoutPassLogo} alt="" className="w-[55px]" />
+                    <img src={ScoutPassTextLogo} alt="" className="mt-4" />
                 </div>
                 <div className="absolute bottom-[-155px] h-[80%] w-[110%] rounded-[100%] bg-white login-page-curve" />
             </div>
@@ -262,10 +262,11 @@ const ScoutsLoginColumn: React.FC = () => {
                                         : 'border-gray-100'
                                 }`}
                                 onClick={() => setActiveLoginType(LoginTypesEnum.scoutsSSO)}
+                                aria-label={m['login.accessibility.worldScoutsLogin']()}
                             >
                                 <img
                                     src={WorldScoutsIcon}
-                                    alt="world scouts icon"
+                                    alt=""
                                     className="w-[50px] h-auto rounded-full"
                                 />
                             </button>
@@ -278,8 +279,9 @@ const ScoutsLoginColumn: React.FC = () => {
                                     : 'border-gray-100'
                             }`}
                             onClick={() => setActiveLoginType(LoginTypesEnum.email)}
+                            aria-label={m['login.accessibility.emailLogin']()}
                         >
-                            <img src={EmailIcon} alt="email icon" className="w-[30px] h-[30px]" />
+                            <img src={EmailIcon} alt="" className="w-[30px] h-[30px]" />
                         </button>
 
                         {enableSmsLogin && (
@@ -290,10 +292,11 @@ const ScoutsLoginColumn: React.FC = () => {
                                         : 'border-gray-100'
                                 }`}
                                 onClick={() => setActiveLoginType(LoginTypesEnum.phone)}
+                                aria-label={m['login.accessibility.phoneLogin']()}
                             >
                                 <img
                                     src={PhoneIcon}
-                                    alt="phone icon"
+                                    alt=""
                                     className="w-[30px] h-[30px]"
                                 />
                             </button>
@@ -336,8 +339,8 @@ const ClaimBoostLoggedOutPromptMobile: React.FC<{
         <div className="relative flex h-full w-full flex-col overflow-hidden text-white">
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-[14px] py-[22px] text-center">
                 <div className="mb-[16px] flex w-full items-center justify-center gap-2">
-                    <img src={logo} alt="ScoutPass logo" className="w-[44px]" />
-                    <img src={textLogo} alt="ScoutPass text logo" className="max-w-[160px]" />
+                    <img src={logo} alt="" className="w-[44px]" />
+                    <img src={textLogo} alt="" className="max-w-[160px]" />
                 </div>
 
                 <h1 className="mb-2 max-w-[310px] text-[20px] font-semibold leading-snug text-white drop-shadow-sm">

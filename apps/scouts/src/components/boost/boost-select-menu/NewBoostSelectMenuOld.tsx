@@ -180,7 +180,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                             <h3 className="text-[22px] text-grayscale-900 font-notoSans">
                                 {m['boost.createTitle']({ title: subTitle ?? title })}
                             </h3>
-                            <button type="button" onClick={handleCloseModal} aria-label="Close">
+                            <button type="button" onClick={handleCloseModal} aria-label={m['common.close']()}>
                                 <X className="text-grayscale-900 h-auto w-[30px]" />
                             </button>
                         </div>

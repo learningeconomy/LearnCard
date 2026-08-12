@@ -84,7 +84,11 @@
         "privacyPolicy": "سياسة الخصوصية",
         "termsOfService": "شروط الخدمة"
     },
-    "navigation": { "boosts": "التعزيزات", "badges": "الشارات", "campfire": "نار المخيم" },
+    "navigation": {
+        "boosts": "التعزيزات",
+        "badges": "الشارات",
+        "campfire": "نار المخيم"
+    },
     "uploadStatus": {
         "success": "أصبحت رحلتك الآن ممثلة في اعتمادات موثوقة وقابلة للنقل.",
         "successTitle": "تمت معالجة {{type}} بنجاح",
@@ -95,7 +99,10 @@
         "generic": "حدث خطأ أثناء تحميل {{type}}.",
         "errorTitle": "خطأ"
     },
-    "errorDebug": { "detailsLabel": "الخطأ:", "viewStackTrace": "عرض تتبع الخطأ" },
+    "errorDebug": {
+        "detailsLabel": "الخطأ:",
+        "viewStackTrace": "عرض تتبع الخطأ"
+    },
     "error": {
         "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
         "network": "مشكلة في الاتصال. يرجى التحقق من الإنترنت والمحاولة مرة أخرى.",
@@ -718,7 +725,12 @@
         },
         "charCount": "{{count}}/{{max}}",
         "noBoostsYetEmpty": "لا توجد تعزيزات بعد",
-        "noResultsFoundFor": "لم يتم العثور على 0 {{title}} لـ <0>{{search}}</0>"
+        "noResultsFoundFor": "لم يتم العثور على 0 {{title}} لـ <0>{{search}}</0>",
+        "closeModal": "إغلاق النافذة",
+        "loadingPacks": "جارٍ تحميل الحزم",
+        "selectTypePack": "اختر حزمة {{type}}",
+        "createTitleNew": "إنشاء {{title}} جديد",
+        "fullSizeAttachment": "مرفق بالحجم الكامل"
     },
     "boostCMS": {
         "quit": "إنهاء",
@@ -847,7 +859,17 @@
             "boostLinkCopied": "تم نسخ رابط التعزيز إلى الحافظة",
             "copyBoostLinkFail": "تعذر نسخ رابط التعزيز إلى الحافظة"
         },
-        "location": "الموقع"
+        "location": "الموقع",
+        "publishedOk": "تم نشر التعزيز بنجاح",
+        "draftSaved": "تم حفظ المسودة بنجاح",
+        "quitCreation": "إنهاء إنشاء التعزيز",
+        "videoCover": "غلاف الفيديو",
+        "mediaType": {
+            "photo": "صورة",
+            "document": "مستند",
+            "video": "فيديو",
+            "link": "رابط"
+        }
     },
     "credsBundle": {
         "aboutTitle": "حول {{title}}",

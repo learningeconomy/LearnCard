@@ -212,12 +212,12 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                 <img
                                     className="absolute left-0 top-0 w-full h-full object-cover z-50"
                                     src={photo}
-                                    alt="badge"
+                                    alt=""
                                 />
                                 <img
                                     className="absolute left-0 top-0 w-full h-full"
                                     src={TransparentGrid}
-                                    alt="transparent grid"
+                                    alt=""
                                 />
                                 {imageUploadLoading && (
                                     <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
@@ -243,7 +243,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                 <img
                                     className="absolute left-0 top-0 w-full h-full"
                                     src={TransparentGrid}
-                                    alt="transparent grid"
+                                    alt=""
                                 />
                                 <div className="absolute flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
                                     <IonSpinner
@@ -268,12 +268,12 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                     <img
                                         className="absolute left-0 top-0 w-full h-full"
                                         src={TransparentGrid}
-                                        alt="transparent grid"
+                                        alt=""
                                     />
                                     <img
                                         className="text-white z-50 w-full h-full object-cover"
                                         src={url}
-                                        alt="badge"
+                                        alt=""
                                     />
                                 </button>
                             );

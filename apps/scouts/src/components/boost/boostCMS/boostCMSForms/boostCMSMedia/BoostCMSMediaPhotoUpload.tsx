@@ -8,7 +8,7 @@ import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import TrashBin from '../../../../svgs/TrashBin';
 import { Updater } from 'use-immer';
 import { produce } from 'immer';
-import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
+import { boostMediaOptions, BoostMediaOptionsEnum, mediaTypeTitle } from '../../../boost';
 import { BoostCMSMediaAttachment } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-cms-media-photo-upload');
@@ -24,7 +24,7 @@ const ThumbListItem: React.FC<ThumbListItemProps> = ({ photoUrl, handleDelete })
             <div
                 className={`relative flex items-center justify-center object-contain overflow-hidden w-[72px] h-[72px] bg-grayscale-800 rounded-[10px] shadow-3xl`}
             >
-                <img alt="badge thumbnail" src={photoUrl} className="h-full w-full object-cover" />
+                <img alt="" src={photoUrl} className="h-full w-full object-cover" />
                 <button
                     onClick={handleDelete}
                     className="absolute flex items-center justify-center right-1 bottom-1 rounded-full bg-white h-[30px] w-[30px]"
@@ -58,7 +58,7 @@ const BoostCMSMediaPhotoUpload: React.FC<{
     initialIndex,
     hideBackButton,
 }) => {
-    const { id, type, title, color, Icon } = boostMediaOptions.find(
+    const { id, type, titleKey, color, Icon } = boostMediaOptions.find(
         ({ type }) => type === activeMediaType
     );
 
@@ -97,7 +97,7 @@ const BoostCMSMediaPhotoUpload: React.FC<{
                                 <CaretLeft className="rtl-mirror h-auto w-3 text-grayscale-800" />
                             </button>
                         )}
-                        {title}
+                        {mediaTypeTitle(titleKey)}
                     </h6>
                     <Icon className={`text-${color} h-[40px] max-h-[40px] max-w-[40px]`} />
                 </IonCol>
@@ -105,7 +105,7 @@ const BoostCMSMediaPhotoUpload: React.FC<{
             <div className="flex flex-col items-center justify-center w-full mb-4">
                 <div className="image-preview max-h-[250px] mb-[20px]">
                     <img
-                        alt="Uploaded Image Preview"
+                        alt=""
                         className="max-h-[250px]"
                         src={photoSrc}
                         onClick={handleImageSelect}

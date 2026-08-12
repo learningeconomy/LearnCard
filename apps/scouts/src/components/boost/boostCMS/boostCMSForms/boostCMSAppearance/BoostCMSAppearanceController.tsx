@@ -128,7 +128,7 @@ const BoostCMSAppearanceController: React.FC<BoostCMSActiveAppearanceControllerP
                         <div
                             className={`relative flex items-center justify-center w-[60%] h-[60%] rounded-full border-white border-solid border-4 bg-${subColor} overflow-hidden object-contain bg-${subColor}`}
                         >
-                            <img src={state?.appearance?.badgeThumbnail} alt="badge thumbnail" />
+                            <img src={state?.appearance?.badgeThumbnail} alt="" />
                         </div>
                         <div className="absolute flex items-center justify-center left-[37%] bottom-[-12%]">
                             <Ribbon />

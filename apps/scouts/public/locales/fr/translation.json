@@ -84,7 +84,11 @@
         "privacyPolicy": "Politique de confidentialité",
         "termsOfService": "Conditions d’utilisation"
     },
-    "navigation": { "boosts": "Boosts", "badges": "Badges", "campfire": "Feu de camp" },
+    "navigation": {
+        "boosts": "Boosts",
+        "badges": "Badges",
+        "campfire": "Feu de camp"
+    },
     "uploadStatus": {
         "success": "Votre parcours est désormais représenté par des justificatifs fiables et transférables.",
         "successTitle": "{{type}} analysé avec succès",
@@ -95,7 +99,10 @@
         "generic": "Une erreur est survenue lors du téléversement de {{type}}.",
         "errorTitle": "Erreur"
     },
-    "errorDebug": { "detailsLabel": "Erreur :", "viewStackTrace": "Afficher la trace d’exécution" },
+    "errorDebug": {
+        "detailsLabel": "Erreur :",
+        "viewStackTrace": "Afficher la trace d’exécution"
+    },
     "error": {
         "generic": "Une erreur est survenue. Veuillez réessayer.",
         "network": "Problème de connexion. Veuillez vérifier votre connexion internet et réessayer.",
@@ -718,7 +725,12 @@
         },
         "charCount": "{{count}}/{{max}}",
         "noBoostsYetEmpty": "Pas encore de boosts",
-        "noResultsFoundFor": "0 {{title}} trouvé pour <0>{{search}}</0>"
+        "noResultsFoundFor": "0 {{title}} trouvé pour <0>{{search}}</0>",
+        "closeModal": "Fermer la fenêtre",
+        "loadingPacks": "Chargement des packs",
+        "selectTypePack": "Sélectionner un pack {{type}}",
+        "createTitleNew": "Créer un nouveau {{title}}",
+        "fullSizeAttachment": "Pièce jointe en pleine taille"
     },
     "boostCMS": {
         "quit": "Quitter",
@@ -847,7 +859,17 @@
             "boostLinkCopied": "Lien Boost copié dans le presse-papiers",
             "copyBoostLinkFail": "Impossible de copier le lien Boost dans le presse-papiers"
         },
-        "location": "Lieu"
+        "location": "Lieu",
+        "publishedOk": "Boost publié avec succès",
+        "draftSaved": "Brouillon sauvegardé avec succès",
+        "quitCreation": "Quitter la création du Boost",
+        "videoCover": "Couverture de la vidéo",
+        "mediaType": {
+            "photo": "Photo",
+            "document": "Document",
+            "video": "Vidéo",
+            "link": "Lien"
+        }
     },
     "credsBundle": {
         "aboutTitle": "À propos de {{title}}",

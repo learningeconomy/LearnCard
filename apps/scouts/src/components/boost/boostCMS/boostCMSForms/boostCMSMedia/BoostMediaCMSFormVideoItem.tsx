@@ -100,7 +100,7 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 >
                     <img
                         src={getCoverImageUrl(media.url || EmptyImage)}
-                        alt={media.title || 'Video Cover'}
+                        alt={media.title || m['boostCMS.videoCover']()}
                         className="h-full w-full object-cover"
                     />
                     <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent z-10"></div>

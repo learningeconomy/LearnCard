@@ -417,7 +417,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                     )}
                     {showNoSearchResults && (
                         <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                            <img src={MiniGhost} alt="ghost" className="max-w-[250px] m-auto" />
+                            <img src={MiniGhost} alt="" className="max-w-[250px] m-auto" />
                             <strong>{m['boostCMS.noSearchResults']()}</strong>
                         </section>
                     )}

@@ -203,7 +203,7 @@ const BoostCMSAppearanceForm: React.FC<{
                                     className={`flex items-center justify-center rounded-full object-contain overflow-hidden w-[72px] h-[72px] bg-${_subColor}`}
                                 >
                                     <img
-                                        alt="badge thumbnail"
+                                        alt=""
                                         src={state?.appearance?.badgeThumbnail}
                                     />
                                 </div>
@@ -245,13 +245,13 @@ const BoostCMSAppearanceForm: React.FC<{
                                 >
                                     {!state?.appearance?.backgroundImage ? (
                                         <img
-                                            alt="badge thumbnail"
+                                            alt=""
                                             src={EmptyImage}
                                             className="w-[43px] h-[47px]"
                                         />
                                     ) : (
                                         <img
-                                            alt="badge thumbnail"
+                                            alt=""
                                             src={state?.appearance?.backgroundImage}
                                             className="w-full h-full object-cover"
                                         />

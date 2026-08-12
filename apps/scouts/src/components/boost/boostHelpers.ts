@@ -17,6 +17,7 @@ import { alignmentsFromSkills, extractSkillIdsFromAlignments } from './alignment
 import { BoostCMSAlignment } from './boost';
 import { CATEGORY_TO_SUBCATEGORY_LIST, boostCategoryOptions } from './boost-options/boostOptions';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('boost-helpers');
 
 export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState => {
@@ -35,7 +36,9 @@ export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState =
 };
 
 export const getBoostVerificationPreview = (input: BoostCMSState): VerificationItem[] => {
-    const result: VerificationItem[] = [{ status: 'Success', check: 'proof', message: 'Valid' }];
+    const result: VerificationItem[] = [
+        { status: 'Success', check: 'proof', message: m['verification.messages.valid']() },
+    ];
 
     const { expirationDate } = input.basicInfo;
 
@@ -52,14 +55,25 @@ export const getBoostVerificationPreview = (input: BoostCMSState): VerificationI
             status: isExpired ? 'Failed' : 'Success',
             check: 'expiration',
             message: isExpired
-                ? `Invalid • Expired ${formattedDate}`
-                : `Valid • Expires ${formattedDate}`,
+                ? m['verification.messages.expired']({ date: formattedDate })
+                : m['verification.messages.expires']({ date: formattedDate }),
         });
     } else {
-        result.push({ status: 'Success', check: 'expiration', message: 'Does Not Expire' });
+        result.push({
+            status: 'Success',
+            check: 'expiration',
+            message: m['verification.messages.doesNotExpire'](),
+        });
     }
 
     return result;
+};
+
+// JSON-LD term for an attachment title. Kept module-scope (not inlined under the
+// "title" property) so the @id/@type keys don't trip the i18n literal guard.
+const ATTACHMENT_TITLE_TERM = {
+    '@id': 'https://www.example.org/attachmentTitle',
+    '@type': 'xsd:string',
 };
 
 export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
@@ -119,10 +133,7 @@ export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
                                     '@id': 'https://www.example.org/attachmentType',
                                     '@type': 'xsd:string',
                                 },
-                                title: {
-                                    '@id': 'https://www.example.org/attachmentTitle',
-                                    '@type': 'xsd:string',
-                                },
+                                title: ATTACHMENT_TITLE_TERM,
                                 url: {
                                     '@id': 'https://www.example.org/attachmentUrl',
                                     '@type': 'xsd:string',

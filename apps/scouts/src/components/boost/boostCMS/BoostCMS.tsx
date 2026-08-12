@@ -401,7 +401,7 @@ const BoostCMS: React.FC<{
 
             if (boostUri) {
                 setIsSaveLoading(false);
-                presentToast('Draft saved successfully', {
+                presentToast(m['boostCMS.draftSaved'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -424,7 +424,7 @@ const BoostCMS: React.FC<{
         } catch (e) {
             setIsSaveLoading(false);
             log.debug('error::savingBoost', e);
-            presentToast('Unable to save boost', {
+            presentToast(m['boostCMS.boostFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -478,7 +478,7 @@ const BoostCMS: React.FC<{
 
                 if (returnToParentAfterSave && handleCloseModal) {
                     setIsPublishLoading(false);
-                    presentToast('Boost published successfully', {
+                    presentToast(m['boostCMS.publishedOk'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -569,7 +569,7 @@ const BoostCMS: React.FC<{
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast('Boost issued successfully', {
+                    presentToast(m['boostCMS.issuedOk'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -583,7 +583,7 @@ const BoostCMS: React.FC<{
 
                 if (boostUri) {
                     setIsSaveLoading(false);
-                    presentToast('Boost saved successfully', {
+                    presentToast(m['boostCMS.boostSaved'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });

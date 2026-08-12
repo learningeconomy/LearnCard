@@ -160,7 +160,7 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                     />
                                     <img
                                         src={CategoryImage}
-                                        alt="category img"
+                                        alt=""
                                         className="z-50 w-[150px] h-[151px] mt-4"
                                     />
                                 </div>

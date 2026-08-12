@@ -326,7 +326,7 @@ const HeaderSection: React.FC<{
         <button
             type="button"
             onClick={handleCloseModal}
-            aria-label="Close modal"
+            aria-label={m['boost.closeModal']()}
             className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-full"
         >
             <X className="text-grayscale-900 h-auto w-[30px]" />

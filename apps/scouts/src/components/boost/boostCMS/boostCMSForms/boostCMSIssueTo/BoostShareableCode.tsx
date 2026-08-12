@@ -221,12 +221,12 @@ export const BoostShareableCode: React.FC<{
             await Clipboard.write({
                 string: boostClaimLink,
             });
-            presentToast('Boost link copied to clipboard', {
+            presentToast(m['boostCMS.toasts.boostLinkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy boost link to clipboard', {
+            presentToast(m['boostCMS.toasts.copyBoostLinkFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

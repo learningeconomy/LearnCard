@@ -100,7 +100,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                                 <button
                                     className="text-white p-0 mr-[1px] z-50"
                                     onClick={handleGoBack}
-                                    aria-label="Quit boost creation"
+                                    aria-label={m['boostCMS.quitCreation']()}
                                 >
                                     <LeftArrow className="rtl-mirror w-7 h-auto text-white" />
                                 </button>

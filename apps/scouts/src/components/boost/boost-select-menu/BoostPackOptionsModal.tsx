@@ -82,7 +82,7 @@ export const BoostPackOptionsModal: React.FC<{
                 <button
                     onClick={closeModal}
                     className="flex items-center mr-3 mt-1"
-                    aria-label="Close modal"
+                    aria-label={m['boost.closeModal']()}
                 >
                     <CaretLeft className="rtl-mirror text-grayscale-900 h-4 w-auto" />
                 </button>
@@ -96,7 +96,7 @@ export const BoostPackOptionsModal: React.FC<{
                     <IonCol className="flex w-full items-center justify-start px-2">
                         <IonInput
                             autocapitalize="on"
-                            placeholder="Search..."
+                            placeholder={m['boost.searchPlaceholder']()}
                             value={search}
                             className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
                             onIonInput={e => setSearch(e.detail.value!)}

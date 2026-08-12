@@ -254,11 +254,11 @@ const ShareBoostLink: React.FC<{
                     <div className="w-full relative">
                         <img
                             src={IDSleeve}
-                            alt="id-sleeve"
+                            alt=""
                             className="w-full object-cover absolute top-0 left-0 blur-[1px]"
                         />
 
-                        <img src={IDSleeve} alt="id-sleeve" className="w-full object-cover" />
+                        <img src={IDSleeve} alt="" className="w-full object-cover" />
 
                         <div className="absolute top-0 left-[50%] translate-x-[-50%]">
                             {isID ? (

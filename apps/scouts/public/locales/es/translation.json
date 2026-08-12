@@ -84,7 +84,11 @@
         "privacyPolicy": "Política de privacidad",
         "termsOfService": "Términos del servicio"
     },
-    "navigation": { "boosts": "Impulsos", "badges": "Insignias", "campfire": "Fogata" },
+    "navigation": {
+        "boosts": "Impulsos",
+        "badges": "Insignias",
+        "campfire": "Fogata"
+    },
     "uploadStatus": {
         "success": "Tu recorrido ahora se refleja en credenciales portátiles y confiables.",
         "successTitle": "{{type}} procesado correctamente",
@@ -95,7 +99,10 @@
         "generic": "Algo salió mal al cargar {{type}}.",
         "errorTitle": "Error"
     },
-    "errorDebug": { "detailsLabel": "Error:", "viewStackTrace": "Ver seguimiento de pila" },
+    "errorDebug": {
+        "detailsLabel": "Error:",
+        "viewStackTrace": "Ver seguimiento de pila"
+    },
     "error": {
         "generic": "Algo salió mal. Inténtalo de nuevo.",
         "network": "Problema de conexión. Verifica tu internet e inténtalo de nuevo.",
@@ -718,7 +725,12 @@
         },
         "charCount": "{{count}}/{{max}}",
         "noBoostsYetEmpty": "Aún no hay boosts",
-        "noResultsFoundFor": "0 {{title}}s encontrados para <0>{{search}}</0>"
+        "noResultsFoundFor": "0 {{title}}s encontrados para <0>{{search}}</0>",
+        "closeModal": "Cerrar ventana",
+        "loadingPacks": "Cargando paquetes",
+        "selectTypePack": "Seleccionar paquete de {{type}}",
+        "createTitleNew": "Crear nuevo {{title}}",
+        "fullSizeAttachment": "Adjunto a tamaño completo"
     },
     "boostCMS": {
         "quit": "Salir",
@@ -847,7 +859,17 @@
             "boostLinkCopied": "Enlace de Boost copiado al portapapeles",
             "copyBoostLinkFail": "No se pudo copiar el enlace de Boost"
         },
-        "location": "Ubicación"
+        "location": "Ubicación",
+        "publishedOk": "Boost publicado exitosamente",
+        "draftSaved": "Borrador guardado exitosamente",
+        "quitCreation": "Salir de la creación del boost",
+        "videoCover": "Portada del video",
+        "mediaType": {
+            "photo": "Foto",
+            "document": "Documento",
+            "video": "Video",
+            "link": "Enlace"
+        }
     },
     "credsBundle": {
         "aboutTitle": "Acerca de {{title}}",

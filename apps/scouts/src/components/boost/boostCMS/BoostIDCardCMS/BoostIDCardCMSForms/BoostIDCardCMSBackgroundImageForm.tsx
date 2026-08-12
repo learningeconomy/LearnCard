@@ -60,13 +60,13 @@ const BoostIDCardCMSBackgroundImageForm: React.FC<{
                     >
                         {!state?.appearance?.idBackgroundImage ? (
                             <img
-                                alt="badge thumbnail"
+                                alt=""
                                 src={EmptyImage}
                                 className="w-[43px] h-[47px]"
                             />
                         ) : (
                             <img
-                                alt="badge thumbnail"
+                                alt=""
                                 src={state?.appearance?.idBackgroundImage}
                                 className="w-full h-full object-cover"
                             />

@@ -5,7 +5,7 @@ import {
     IonRow,
 } from '@ionic/react';
 
-import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
+import { boostMediaOptions, BoostMediaOptionsEnum, mediaTypeTitle } from '../../../boost';
 
 const BOOSTCMSMediaTypeSelector: React.FC<{
     setActiveMediaType: React.Dispatch<React.SetStateAction<BoostMediaOptionsEnum | null>>;
@@ -14,7 +14,7 @@ const BOOSTCMSMediaTypeSelector: React.FC<{
     return (
         <IonRow className="flex w-full">
             <IonCol className="flex items-center justify-center flex-wrap">
-                {boostMediaOptions.map(({ id, type, title, color, Icon }) => {
+                {boostMediaOptions.map(({ id, type, titleKey, color, Icon }) => {
                     return (
                         <button
                             key={id}
@@ -22,7 +22,7 @@ const BOOSTCMSMediaTypeSelector: React.FC<{
                             onClick={() => setActiveMediaType(type)}
                         >
                             <Icon className="h-[40px] text-white max-h-[40px] max-w-[40px]" />
-                            <p className="text-white text-2xl">{title}</p>
+                            <p className="text-white text-2xl">{mediaTypeTitle(titleKey)}</p>
                         </button>
                     );
                 })}

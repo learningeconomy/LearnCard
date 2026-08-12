@@ -47,7 +47,7 @@ const BoostMediaCMSFormPhotoItem: React.FC<BoostMediaCMSFormItemProps> = ({
         >
             <div className="w-2/5 relative overflow-hidden rounded-[20px] shadow-3xl min-h-[120px] max-h-[120px]">
                 <img
-                    alt="media attachment"
+                    alt=""
                     src={media.url || ''}
                     className="h-full w-full object-cover"
                 />

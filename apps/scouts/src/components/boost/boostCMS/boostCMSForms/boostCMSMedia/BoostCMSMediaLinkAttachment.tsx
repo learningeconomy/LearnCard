@@ -5,7 +5,7 @@ import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 import { IonCol, IonRow, IonInput } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { Updater } from 'use-immer';
-import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
+import { boostMediaOptions, BoostMediaOptionsEnum, mediaTypeTitle } from '../../../boost';
 
 const BoostCMSMediaLinkAttachment: React.FC<{
     state: BoostCMSMediaState;
@@ -29,7 +29,7 @@ const BoostCMSMediaLinkAttachment: React.FC<{
     createMode,
     hideBackButton,
 }) => {
-    const { id, type, title, color, Icon } = boostMediaOptions.find(
+    const { id, type, titleKey, color, Icon } = boostMediaOptions.find(
         ({ type }) => type === activeMediaType
     );
 
@@ -53,7 +53,7 @@ const BoostCMSMediaLinkAttachment: React.FC<{
                                 <CaretLeft className="rtl-mirror h-auto w-3 text-grayscale-800" />
                             </button>
                         )}
-                        {title}
+                        {mediaTypeTitle(titleKey)}
                     </h6>
                     <Icon className={`text-${color} h-[40px] max-h-[40px] max-w-[40px]`} />
                 </IonCol>

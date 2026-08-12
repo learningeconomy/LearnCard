@@ -84,7 +84,11 @@
         "privacyPolicy": "Privacy Policy",
         "termsOfService": "Terms of Service"
     },
-    "navigation": { "boosts": "Boosts", "badges": "Badges", "campfire": "Campfire" },
+    "navigation": {
+        "boosts": "Boosts",
+        "badges": "Badges",
+        "campfire": "Campfire"
+    },
     "uploadStatus": {
         "success": "Your journey is now reflected in portable, trusted credentials.",
         "successTitle": "{{type}} successfully parsed",
@@ -95,7 +99,10 @@
         "generic": "Something went wrong uploading your {{type}}.",
         "errorTitle": "Error"
     },
-    "errorDebug": { "detailsLabel": "Error:", "viewStackTrace": "View stack trace" },
+    "errorDebug": {
+        "detailsLabel": "Error:",
+        "viewStackTrace": "View stack trace"
+    },
     "error": {
         "back": "Go Back",
         "generic": "Something went wrong. Please try again.",
@@ -718,7 +725,12 @@
         },
         "charCount": "{{count}}/{{max}}",
         "noBoostsYetEmpty": "No boosts yet",
-        "noResultsFoundFor": "0 {{title}}s found for <0>{{search}}</0>"
+        "noResultsFoundFor": "0 {{title}}s found for <0>{{search}}</0>",
+        "closeModal": "Close modal",
+        "loadingPacks": "Loading packs",
+        "selectTypePack": "Select {{type}} pack",
+        "createTitleNew": "Create new {{title}}",
+        "fullSizeAttachment": "Full size attachment"
     },
     "boostCMS": {
         "quit": "Quit",
@@ -847,7 +859,17 @@
             "boostLinkCopied": "Boost link copied to clipboard",
             "copyBoostLinkFail": "Unable to copy boost link to clipboard"
         },
-        "location": "Location"
+        "location": "Location",
+        "publishedOk": "Boost published successfully",
+        "draftSaved": "Draft saved successfully",
+        "quitCreation": "Quit boost creation",
+        "videoCover": "Video Cover",
+        "mediaType": {
+            "photo": "Photo",
+            "document": "Document",
+            "video": "Video",
+            "link": "Link"
+        }
     },
     "credsBundle": {
         "aboutTitle": "About {{title}}",

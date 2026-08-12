@@ -113,7 +113,7 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
                                             <div className="absolute top-0 left-[%50] w-[170px] h-[170px] bg-indigo-800 rounded-full" />
                                             <img
                                                 src={MiniGhost}
-                                                alt="ghost"
+                                                alt=""
                                                 className="z-50 w-[240px] h-[214px] mt-[-35px]"
                                             />
                                         </div>

@@ -127,7 +127,7 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
             onClick={handlePackSelection}
             disabled={!showMoreOptionsCaret || troopIdDataLoading}
             className="w-full flex items-center justify-between rounded-full px-2 py-2 mt-6 shadow-soft-bottom"
-            aria-label={`Select ${boostPackTypeTitle} pack`}
+            aria-label={m['boost.selectTypePack']({ type: boostPackTypeTitle })}
         >
             <BoostPackListItem
                 loading={troopIdDataLoading}
@@ -165,7 +165,7 @@ const BoostPackListItem: React.FC<BoostPackListItemProps> = ({
                     name="crescent"
                     color="grayscale-900"
                     className="scale-[1]"
-                    aria-label="Loading packs"
+                    aria-label={m['boost.loadingPacks']()}
                 />
             ) : (
                 <WorldScoutIcon className="mr-2" fill={badgePackColor} aria-hidden="true" />

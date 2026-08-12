@@ -468,7 +468,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
             if (updatedBoost) {
                 setIsSaveLoading(false);
-                presentToast('Boost saved successfully', {
+                presentToast(m['boostCMS.boostSaved'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -589,7 +589,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast('Boost issued successfully', {
+                    presentToast(m['boostCMS.issuedOk'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -601,7 +601,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
                 if (_boostUri) {
                     setIsSaveLoading(false);
-                    presentToast('Boost saved successfully', {
+                    presentToast(m['boostCMS.boostSaved'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -622,7 +622,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         } catch (e) {
             setIsLoading(false);
             log.debug('error::boosting::someone', e);
-            presentToast('Error issuing boost', {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
