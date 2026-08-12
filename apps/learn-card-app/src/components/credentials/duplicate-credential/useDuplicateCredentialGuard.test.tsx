@@ -171,9 +171,9 @@ describe('useDuplicateCredentialGuard', () => {
         );
     });
 
-    it('cancels rather than allowing a claim when the safety scan limit is exhausted', async () => {
+    it('cancels rather than allowing a claim when the duplicate scan stops for safety', async () => {
         const error = new Error('Duplicate credential scan exceeded 1000 pages');
-        error.name = 'DuplicateCredentialScanLimitError';
+        error.name = 'DuplicateCredentialScanSafetyError';
         mocks.findDuplicateCredential.mockRejectedValue(error);
         render(<Harness />);
 
@@ -182,7 +182,7 @@ describe('useDuplicateCredentialGuard', () => {
             isDuplicate: false,
         });
         expect(mocks.warn).toHaveBeenCalledWith(
-            'Duplicate credential scan reached its safety limit',
+            'Duplicate credential scan stopped at its safety boundary',
             error
         );
         expect(mocks.presentToast).toHaveBeenCalledWith(expect.any(String), {

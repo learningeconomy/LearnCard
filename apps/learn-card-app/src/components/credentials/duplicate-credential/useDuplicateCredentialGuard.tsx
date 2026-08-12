@@ -86,9 +86,9 @@ export const useDuplicateCredentialGuard = () => {
                     if (mountedRef.current) setIsCheckingDuplicate(false);
                     if (
                         error instanceof Error &&
-                        error.name === 'DuplicateCredentialScanLimitError'
+                        error.name === 'DuplicateCredentialScanSafetyError'
                     ) {
-                        log.warn('Duplicate credential scan reached its safety limit', error);
+                        log.warn('Duplicate credential scan stopped at its safety boundary', error);
                         if (mountedRef.current) {
                             presentToast(m['toasts.claimOops'](), {
                                 duration: 4000,

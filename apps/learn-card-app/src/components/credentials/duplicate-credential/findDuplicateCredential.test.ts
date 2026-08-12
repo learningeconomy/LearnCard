@@ -137,6 +137,34 @@ describe('findDuplicateCredential', () => {
         ).resolves.toBeNull();
         expect(getPage).toHaveBeenCalledTimes(1);
     });
+    it('rejects when more pages are reported without a cursor', async () => {
+        const wallet = createWallet();
+        const getPage = vi.fn().mockResolvedValue({
+            records: [],
+            hasMore: true,
+        });
+        wallet.index.LearnCloud.getPage = getPage;
+
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).rejects.toThrow('Duplicate credential scan received an invalid pagination cursor');
+        expect(getPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects when pagination repeats a cursor', async () => {
+        const wallet = createWallet();
+        const getPage = vi.fn().mockResolvedValue({
+            records: [],
+            hasMore: true,
+            cursor: 'repeated-page',
+        });
+        wallet.index.LearnCloud.getPage = getPage;
+
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).rejects.toThrow('Duplicate credential scan received an invalid pagination cursor');
+        expect(getPage).toHaveBeenCalledTimes(2);
+    });
 
     it('rejects rather than allowing a claim after the safety page limit', async () => {
         const wallet = createWallet();

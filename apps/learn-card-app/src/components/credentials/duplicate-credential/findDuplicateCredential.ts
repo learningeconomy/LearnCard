@@ -42,10 +42,10 @@ const getCredentialContentKey = (credential: VC): string => {
 
 type ResolveCredential = (uri: string) => Promise<VC | undefined>;
 const MAX_CATEGORY_PAGES = 1000;
-export class DuplicateCredentialScanLimitError extends Error {
-    public constructor(maxPages: number) {
-        super(`Duplicate credential scan exceeded ${maxPages} pages`);
-        this.name = 'DuplicateCredentialScanLimitError';
+export class DuplicateCredentialScanSafetyError extends Error {
+    public constructor(message: string) {
+        super(message);
+        this.name = 'DuplicateCredentialScanSafetyError';
     }
 }
 
@@ -175,11 +175,18 @@ export const findDuplicateCredential = async (
         );
         if (match) return match;
 
-        if (!page?.hasMore || !page.cursor || seenCursors.has(page.cursor)) return null;
+        if (!page?.hasMore) return null;
+        if (!page.cursor || seenCursors.has(page.cursor)) {
+            throw new DuplicateCredentialScanSafetyError(
+                'Duplicate credential scan received an invalid pagination cursor'
+            );
+        }
 
         seenCursors.add(page.cursor);
         cursor = page.cursor;
     }
 
-    throw new DuplicateCredentialScanLimitError(MAX_CATEGORY_PAGES);
+    throw new DuplicateCredentialScanSafetyError(
+        `Duplicate credential scan exceeded ${MAX_CATEGORY_PAGES} pages`
+    );
 };
