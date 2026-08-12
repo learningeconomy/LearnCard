@@ -24,7 +24,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
     adminMode?: boolean;
 }> = ({ model, boost, boostUri, adminMode = false }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
-    const issuerLogo = model.header.image?.value;
+    const issuerLogo = model.header.issuerImage?.value ?? model.header.image?.value;
     const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
     const scrollToCourseHistory = () => {
         document.getElementById('course-history')?.scrollIntoView({

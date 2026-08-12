@@ -32,7 +32,7 @@ const ClrTranscriptFullPage: React.FC<{
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const selectedView = selectClrTranscriptView(model, options);
-    const issuerLogo = model.header.image?.value;
+    const issuerLogo = model.header.issuerImage?.value ?? model.header.image?.value;
 
     const handleSelectProgram = (program: ProgramDisplayModel) => {
         newModal(
