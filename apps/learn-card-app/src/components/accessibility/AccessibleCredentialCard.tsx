@@ -5,9 +5,25 @@ type AccessibleCredentialCardProps = React.PropsWithChildren<{
 }>;
 
 const CARD_SELECTOR = '[role="button"]';
+const INTERACTIVE_DESCENDANT_SELECTOR = [
+    'a[href]',
+    'button:not([disabled])',
+    'input:not([disabled]):not([type="hidden"])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    '[contenteditable="true"]',
+    '[tabindex]:not([tabindex="-1"])',
+    '[role="button"]',
+].join(',');
 
 type EnhancedCard = {
     handler: (event: KeyboardEvent) => void;
+    previousTabIndex: string | null;
+    previousAriaLabel: string | null;
+};
+
+type DemotedCard = {
+    previousRole: string | null;
     previousTabIndex: string | null;
     previousAriaLabel: string | null;
 };
@@ -19,14 +35,57 @@ type EnhancedCard = {
  */
 const AccessibleCredentialCard: React.FC<AccessibleCredentialCardProps> = ({ children, label }) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const primaryCardRef = useRef<HTMLElement | null>(null);
 
     useLayoutEffect(() => {
         const container = containerRef.current;
         if (!container) return undefined;
 
         const enhancedCards = new Map<HTMLElement, EnhancedCard>();
+        const demotedCards = new Map<HTMLElement, DemotedCard>();
+
+        const restoreEnhancedCard = (card: HTMLElement): void => {
+            const enhancedCard = enhancedCards.get(card);
+            if (!enhancedCard) return;
+
+            card.removeEventListener('keydown', enhancedCard.handler);
+
+            if (enhancedCard.previousTabIndex === null) card.removeAttribute('tabindex');
+            else card.setAttribute('tabindex', enhancedCard.previousTabIndex);
+
+            if (enhancedCard.previousAriaLabel === null) card.removeAttribute('aria-label');
+            else card.setAttribute('aria-label', enhancedCard.previousAriaLabel);
+
+            enhancedCards.delete(card);
+        };
 
         const enhanceCards = (): void => {
+            if (!primaryCardRef.current?.isConnected) {
+                primaryCardRef.current = container.querySelector<HTMLElement>(CARD_SELECTOR);
+            }
+
+            const primaryCard = primaryCardRef.current;
+
+            // A clickable card cannot also contain focusable controls. Keep the
+            // card's label as a group and let its buttons own keyboard focus.
+            // Cards without interactive descendants retain their click +
+            // Enter/Space behavior below.
+            if (
+                primaryCard &&
+                !demotedCards.has(primaryCard) &&
+                primaryCard.querySelector(INTERACTIVE_DESCENDANT_SELECTOR)
+            ) {
+                restoreEnhancedCard(primaryCard);
+                demotedCards.set(primaryCard, {
+                    previousRole: primaryCard.getAttribute('role'),
+                    previousTabIndex: primaryCard.getAttribute('tabindex'),
+                    previousAriaLabel: primaryCard.getAttribute('aria-label'),
+                });
+                primaryCard.setAttribute('role', 'group');
+                primaryCard.removeAttribute('tabindex');
+                primaryCard.setAttribute('aria-label', label);
+            }
+
             container.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(card => {
                 if (enhancedCards.has(card)) return;
 
@@ -65,9 +124,11 @@ const AccessibleCredentialCard: React.FC<AccessibleCredentialCardProps> = ({ chi
 
         return () => {
             observer.disconnect();
+            primaryCardRef.current = null;
 
-            enhancedCards.forEach(({ handler, previousTabIndex, previousAriaLabel }, card) => {
-                card.removeEventListener('keydown', handler);
+            demotedCards.forEach(({ previousRole, previousTabIndex, previousAriaLabel }, card) => {
+                if (previousRole === null) card.removeAttribute('role');
+                else card.setAttribute('role', previousRole);
 
                 if (previousTabIndex === null) card.removeAttribute('tabindex');
                 else card.setAttribute('tabindex', previousTabIndex);
@@ -75,6 +136,8 @@ const AccessibleCredentialCard: React.FC<AccessibleCredentialCardProps> = ({ chi
                 if (previousAriaLabel === null) card.removeAttribute('aria-label');
                 else card.setAttribute('aria-label', previousAriaLabel);
             });
+
+            Array.from(enhancedCards.keys()).forEach(restoreEnhancedCard);
         };
     }, [label]);
 

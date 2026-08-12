@@ -29,4 +29,34 @@ describe('AccessibleCredentialCard', () => {
 
         expect(onClick).toHaveBeenCalledTimes(2);
     });
+
+    it('exposes a card with interactive descendants as a labeled group', () => {
+        const onCardClick = vi.fn();
+        const onAccept = vi.fn();
+
+        render(
+            <AccessibleCredentialCard label="Applied Data Ethics credential">
+                {/* Mirrors a claim preview whose card contains an Accept button. */}
+                {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus */}
+                <section role="button" onClick={onCardClick}>
+                    Credential card
+                    <button type="button" onClick={onAccept}>
+                        Accept
+                    </button>
+                </section>
+            </AccessibleCredentialCard>
+        );
+
+        const card = screen.getByRole('group', {
+            name: 'Applied Data Ethics credential',
+        });
+        const acceptButton = screen.getByRole('button', { name: 'Accept' });
+
+        expect(card.getAttribute('tabindex')).toBeNull();
+        expect(acceptButton).toBeInTheDocument();
+
+        fireEvent.keyDown(card, { key: 'Enter' });
+
+        expect(onCardClick).not.toHaveBeenCalled();
+    });
 });
