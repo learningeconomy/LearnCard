@@ -265,7 +265,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     if (isStandaloneCourse) {
         previewWrapperPaddingClass = 'px-0';
         previewContentPaddingClass = '!p-0';
-    } else if (isMobile && usesAcademicFullPage) {
+    } else if (isMobile && isClrCredential) {
         previewWrapperPaddingClass = 'px-0';
         previewContentPaddingClass = '!p-0';
     } else if (shouldUseHostCardPadding) {
@@ -336,20 +336,25 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     let credentialContent: React.ReactNode;
     const standaloneCourse = isStandaloneCourse ? clrModel?.courses[0] : undefined;
 
-    if (standaloneCourse && clrModel) {
-        credentialContent = (
-            <div className="w-full max-w-[800px] mx-auto overflow-hidden bg-grayscale-100 shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl">
-                <ClrCourseDetailPanel
-                    course={standaloneCourse}
-                    boost={clrCredential}
-                    showCloseButton={false}
-                    associations={clrModel.associations}
-                    competencies={clrModel.competencies}
-                    issuerName={clrModel.header.issuerName?.value}
-                    issuerLogo={clrModel.header.issuerImage?.value ?? clrModel.header.image?.value}
-                />
-            </div>
-        );
+    if (isStandaloneCourse) {
+        credentialContent =
+            standaloneCourse && clrModel ? (
+                <div className="w-full max-w-[800px] mx-auto overflow-hidden bg-grayscale-100 shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl">
+                    <ClrCourseDetailPanel
+                        course={standaloneCourse}
+                        boost={clrCredential}
+                        showCloseButton={false}
+                        associations={clrModel.associations}
+                        competencies={clrModel.competencies}
+                        issuerName={clrModel.header.issuerName?.value}
+                        issuerLogo={
+                            clrModel.header.issuerImage?.value ?? clrModel.header.image?.value
+                        }
+                    />
+                </div>
+            ) : (
+                credentialDisplay
+            );
     } else if ((isClrCredential || isClrChildCredential) && clrModel) {
         credentialContent = (
             <ClrTranscriptFullPage

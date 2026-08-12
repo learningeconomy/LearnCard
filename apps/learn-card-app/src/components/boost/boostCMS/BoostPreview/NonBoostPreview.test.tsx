@@ -116,7 +116,8 @@ vi.mock('../../../../helpers/clrRenderer.helpers', () => {
 
             return {
                 courses:
-                    achievement?.achievementType === 'Course'
+                    achievement?.achievementType === 'Course' &&
+                    rawCredential.id !== 'urn:credential:course-without-normalized-course'
                         ? [{ name: { value: achievement.name } }]
                         : [],
                 competencies: [],
@@ -225,5 +226,29 @@ describe('NonBoostPreview', () => {
         expect(screen.queryByText('Generic credential preview')).toBeNull();
         expect(screen.queryByText('Generic details sidebar')).toBeNull();
         expect(screen.queryByRole('button', { name: 'Footer details' })).toBeNull();
+    });
+
+    it('falls back to the generic preview when a standalone Course cannot be normalized', () => {
+        render(
+            <NonBoostPreview
+                credential={{
+                    ...courseCredential,
+                    id: 'urn:credential:course-without-normalized-course',
+                }}
+                verificationItems={[]}
+                categoryType={BoostCategoryOptionsEnum.learningHistory}
+                customThumbComponent={null}
+                customBodyCardComponent={null}
+                customFooterComponent={null}
+                customIssueHistoryComponent={null}
+                handleCloseModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                displayType={DisplayTypeEnum.Course}
+                isPreview
+            />
+        );
+
+        expect(screen.getByText('Generic credential preview')).toBeTruthy();
+        expect(screen.queryByText('CLR course detail')).toBeNull();
     });
 });
