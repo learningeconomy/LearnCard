@@ -11,6 +11,7 @@ export type ExistingCredentialMatch = {
 };
 export type DuplicateCredentialLookup = {
     boostUri?: string;
+    compareByContent?: boolean;
 };
 const getCredentialContentKey = (credential: VC): string => {
     const unwrappedCredential = unwrapBoostCredential(credential) ?? credential;
@@ -93,17 +94,17 @@ export const findDuplicateCredential = async (
     credential: VC,
     lookup: DuplicateCredentialLookup = {}
 ): Promise<ExistingCredentialMatch | null> => {
-    const unwrappedCredential = unwrapBoostCredential(credential);
-    const unwrappedCredentialId = unwrappedCredential?.id;
+    const unwrappedCredential = unwrapBoostCredential(credential) ?? credential;
     const credentialId =
-        typeof unwrappedCredentialId === 'string' ? unwrappedCredentialId.trim() : '';
+        typeof unwrappedCredential.id === 'string' ? unwrappedCredential.id.trim() : '';
     const credentialBoostUri = credential?.boostId ?? unwrappedCredential?.boostId;
     const boostUri =
         typeof (lookup.boostUri ?? credentialBoostUri) === 'string'
             ? (lookup.boostUri ?? credentialBoostUri)?.trim() ?? ''
             : '';
-    const credentialContentKey = boostUri ? getCredentialContentKey(credential) : '';
-    if (!credentialId && !boostUri) return null;
+    const credentialContentKey =
+        boostUri || lookup.compareByContent ? getCredentialContentKey(credential) : '';
+    if (!credentialId && !credentialContentKey) return null;
 
     const seenUris = new Set<string>();
 

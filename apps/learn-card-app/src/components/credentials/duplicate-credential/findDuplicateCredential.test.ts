@@ -192,6 +192,38 @@ describe('findDuplicateCredential', () => {
         });
     });
 
+    it('matches repeated notification claims by stable contents without a source Boost URI', async () => {
+        const notificationCredential = {
+            id: 'urn:uuid:new-notification-instance',
+            issuer: 'did:web:localhost%3A4000:users:kai-lef',
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+            validFrom: '2026-08-12T18:00:00.000Z',
+            credentialSubject: {
+                id: 'did:key:learner',
+                type: ['AchievementSubject'],
+                achievement: { type: ['Achievement'], name: 'Notification Duplicate Test' },
+            },
+            proof: { proofValue: 'new-proof' },
+        } as VC;
+        const savedCredential = {
+            ...notificationCredential,
+            id: 'urn:uuid:previous-notification-instance',
+            validFrom: '2026-08-12T17:00:00.000Z',
+            proof: { proofValue: 'previous-proof' },
+        } as VC;
+        const wallet = createWallet({
+            categoryRecords: [{ uri: 'lc:credential:previous-notification' }],
+            credentialsByUri: { 'lc:credential:previous-notification': savedCredential },
+        });
+
+        await expect(
+            findDuplicateCredential(wallet, notificationCredential, { compareByContent: true })
+        ).resolves.toMatchObject({
+            record: { uri: 'lc:credential:previous-notification' },
+            credential: savedCredential,
+        });
+    });
+
     it('does not scan the wallet when the incoming credential has no stable ID', async () => {
         const wallet = createWallet();
 

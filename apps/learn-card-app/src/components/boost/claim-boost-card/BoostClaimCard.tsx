@@ -57,6 +57,7 @@ import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import * as m from '../../../paraglide/messages.js';
 import { useDuplicateCredentialGuard } from '../../credentials/duplicate-credential/useDuplicateCredentialGuard';
+import type { DuplicateCredentialLookup } from '../../credentials/duplicate-credential/findDuplicateCredential';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -70,6 +71,7 @@ type BoostClaimCardProps = {
     successCallback?: () => void;
     onDismiss?: () => void;
     notification?: LCNNotification;
+    duplicateLookup?: DuplicateCredentialLookup;
     hideEndorsementRequestCard?: boolean;
     lifecycleStatus?: 'active' | 'revoked' | 'suspended';
 };
@@ -84,6 +86,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     successCallback,
     onDismiss,
     notification,
+    duplicateLookup,
     hideEndorsementRequestCard,
     lifecycleStatus,
 }) => {
@@ -285,7 +288,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         if (!acceptCredentialLoading && !isClaimLoading && !isCheckingDuplicate && !isClaimed) {
             const duplicateResolution = _isEndorsement
                 ? ({ action: 'save', isDuplicate: false } as const)
-                : await requestDuplicateResolution(credential as VC);
+                : await requestDuplicateResolution(credential as VC, duplicateLookup);
             if (duplicateResolution.action === 'cancel') return;
 
             beginClaimAttempt();
@@ -308,6 +311,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 } else if (duplicateResolution.action === 'save') {
                                     const addedToWallet = await addVCtoWallet({
                                         uri: credentialUri,
+                                        boostUri: duplicateLookup?.boostUri,
                                     });
                                     if (!addedToWallet) {
                                         throw new Error('Credential was not added to LearnCard');

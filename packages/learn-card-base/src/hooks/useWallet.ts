@@ -508,7 +508,7 @@ export const useWallet = () => {
         input: AddVCInput & { skipSync?: boolean },
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud'
     ) => {
-        const { uri, id, title, imgUrl, contractUri, skipSync } = input;
+        const { uri, id, title, imgUrl, contractUri, boostUri: sourceBoostUri, skipSync } = input;
         let _id = id;
         if (!uri) throw new Error('No uri was provided, uri required');
 
@@ -522,7 +522,8 @@ export const useWallet = () => {
             if (!vc) throw new Error('No credential was found at the provided URI');
 
             const category = await getCategoryForCredential(vc as VC, wallet);
-            const boostUri = vc?.boostId ?? unwrapBoostCredential(vc as VC)?.boostId;
+            const boostUri =
+                sourceBoostUri ?? vc?.boostId ?? unwrapBoostCredential(vc as VC)?.boostId;
 
             logWalletSync('Adding credential to wallet', {
                 uri,

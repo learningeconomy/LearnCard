@@ -43,6 +43,7 @@ import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { NOTIFICATION_TYPES } from './NotificationCardContainer';
 import { useGetVCInfo } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { getNotificationDuplicateLookup } from './notificationDuplicateLookup';
 
 type NotificationBoostCardProps = {
     notification: NotificationType;
@@ -94,6 +95,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     const { mutate: updateNotification } = useUpdateNotification();
 
     const boostVc = data;
+    const duplicateLookup = getNotificationDuplicateLookup(boostVc, notification?.data);
 
     let unwrappedCred = data && unwrapBoostCredential(boostVc);
 
@@ -204,6 +206,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                     <BoostClaimCard
                         credential={unwrappedCred}
                         credentialUri={credentialUri}
+                        duplicateLookup={duplicateLookup}
                         showFooter={false}
                         showBoostFooter={true}
                         handleClaimBoostCredential={handleClaimOnClick}
@@ -249,6 +252,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
             <BoostClaimCard
                 credential={unwrappedCred}
                 credentialUri={credentialUri}
+                duplicateLookup={duplicateLookup}
                 showFooter={false}
                 showBoostFooter={true}
                 handleClaimBoostCredential={handleClaimOnClick}
@@ -304,6 +308,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
             <BoostClaimCard
                 credential={unwrappedCred}
                 credentialUri={credentialUri}
+                duplicateLookup={duplicateLookup}
                 showFooter={false}
                 showBoostFooter={true}
                 handleClaimBoostCredential={handleClaimOnClick}
