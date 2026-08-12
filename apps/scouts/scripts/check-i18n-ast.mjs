@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { ESLint } = require('eslint');
+const minimatch = require('minimatch');
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const baselinePath = join(root, 'scripts', 'i18n-ast-baseline.json');
@@ -18,7 +19,25 @@ const eslint = new ESLint({
     rulePaths: [join(root, 'eslint-rules')],
 });
 
-const results = await eslint.lintFiles(['src/**/*.{ts,tsx}']);
+// Only user-facing source counts toward untranslated-literal debt. Test modules
+// and the development-only debug widgets are not shipped copy, so exclude them.
+// (ESLint v8's lintFiles silently ignores `!` negation globs, so the exclude
+// patterns are enforced explicitly below via minimatch.)
+const lintPatterns = [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.test.{ts,tsx}',
+    '!src/components/debug/**/*.{ts,tsx}',
+];
+const includes = lintPatterns.filter(pattern => !pattern.startsWith('!'));
+const excludes = lintPatterns
+    .filter(pattern => pattern.startsWith('!'))
+    .map(pattern => pattern.slice(1));
+const isExcluded = filePath =>
+    excludes.some(pattern => minimatch(relative(root, filePath), pattern));
+
+const results = (await eslint.lintFiles(includes)).filter(
+    result => !isExcluded(result.filePath)
+);
 const sourceLineFor = (result, message) => {
     const source = result.source ?? readFileSync(result.filePath, 'utf8');
     return source.split(/\r?\n/)[message.line - 1]?.trim().replace(/\s+/g, ' ');
