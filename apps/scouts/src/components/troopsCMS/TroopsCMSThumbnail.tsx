@@ -18,7 +18,7 @@ export const TroopsCMSThumbnail: React.FC<TroopsCMSThumbnailProps> = ({ viewMode
                 {thumbnail ? (
                     <img
                         src={thumbnail}
-                        alt="network thumb"
+                        alt=""
                         className="w-full h-full object-cover"
                     />
                 ) : (

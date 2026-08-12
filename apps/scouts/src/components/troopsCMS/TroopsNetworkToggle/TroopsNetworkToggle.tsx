@@ -5,7 +5,12 @@ import * as m from '../../../paraglide/messages.js';
 import CaretDown from '../../svgs/CaretDown';
 import TroopsNetworkList from './TroopsNetworkList';
 
-import { TroopsCMSState, troopsCMSViewModeDefaults, TroopsCMSViewModeEnum } from '../troopCMSState';
+import {
+    TroopsCMSState,
+    troopsCMSViewModeDefaults,
+    viewModeTitle,
+    TroopsCMSViewModeEnum,
+} from '../troopCMSState';
 import { CredentialCategoryEnum, useGetIDs, useModal, ModalTypes } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
@@ -57,7 +62,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
     if (viewMode === TroopsCMSViewModeEnum.network) {
         const globalDefaults = troopsCMSViewModeDefaults?.global;
         const globalNetworkImage = globalDefaults?.image ?? '';
-        const globalNetworkTitle = globalDefaults?.title ?? '';
+        const globalNetworkTitle = viewModeTitle(globalDefaults?.titleKey);
         const globalColor = globalDefaults?.color ?? 'sp-purple-base';
 
         const globalNetwork = state?.parentID;
@@ -79,7 +84,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                                 src={
                                     globalNetwork?.appearance?.badgeThumbnail ?? globalNetworkImage
                                 }
-                                alt="network thumb"
+                                alt=""
                                 className="w-full h-full object-cover"
                             />
                         )}
@@ -129,7 +134,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                     ) : (
                         <img
                             src={network?.appearance?.badgeThumbnail}
-                            alt="network thumb"
+                            alt=""
                             className="w-full h-full object-cover"
                         />
                     )}

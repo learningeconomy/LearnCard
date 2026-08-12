@@ -90,7 +90,7 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({
                         <span className="font-notoSans text-grayscale-900 text-[20px] font-[600]">
                             {issueeProfile?.displayName ??
                                 currentUser.currentLCNUser?.displayName ??
-                                'Unknown'}
+                                m['common.unknown']()}
                         </span>
                         <span className="font-notoSans text-grayscale-700 text-[14px] font-[600]">
                             {getScoutsNounForCred(credential)}

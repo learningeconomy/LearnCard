@@ -109,7 +109,7 @@ const TroopID: React.FC<TroopIDProps> = ({
             {thumbSrc ? (
                 <img
                     src={thumbSrc}
-                    alt={`${name}'s profile`}
+                    alt=""
                     className="rounded-full h-[80px] w-[80px] object-cover"
                 />
             ) : (
@@ -157,7 +157,7 @@ const TroopID: React.FC<TroopIDProps> = ({
                 {credential?.boostID?.issuerThumbnail ? (
                     <img
                         src={credential.boostID.issuerThumbnail}
-                        alt="Issuer thumbnail"
+                        alt=""
                         className="rounded-full h-[50px] w-[50px] object-cover"
                     />
                 ) : (

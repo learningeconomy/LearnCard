@@ -105,14 +105,14 @@ export const TroopCMSWallpaperSelect: React.FC<{
                     (!wallpaper && isInIDMode) ? (
                         <div className="p-[6px]">
                             <img
-                                alt="wallpaper empty state"
+                                alt=""
                                 src={WallpaperEmptyState}
                                 className="w-full h-full object-contain"
                             />
                         </div>
                     ) : (
                         <img
-                            alt="badge thumbnail"
+                            alt=""
                             src={
                                 state?.inheritNetworkStyles && !isInIDMode
                                     ? parentAppearance?.backgroundImage

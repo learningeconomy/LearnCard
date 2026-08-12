@@ -298,7 +298,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                     <div className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-full overflow-hidden relative">
                                         {issuerThumbnail ? (
                                             <img
-                                                alt="issuer thumbnail"
+                                                alt=""
                                                 src={insertParamsToFilestackUrl(
                                                     issuerThumbnail,
                                                     'resize=width:200/quality=value:75/'

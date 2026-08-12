@@ -112,7 +112,7 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
                                 credential?.boostID?.issuerThumbnail,
                                 'resize=width:100/quality=value:75/'
                             )}
-                            alt="logo"
+                            alt=""
                             className="h-[60px] w-[60px] rounded-full object-cover"
                         />
                     ) : (

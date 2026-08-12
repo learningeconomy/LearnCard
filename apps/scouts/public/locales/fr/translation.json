@@ -969,6 +969,7 @@
         "scoutName": "Nom du Scout",
         "network": "Réseau",
         "globalNetworkLabel": "Réseau mondial",
+        "nationalNetworkLabel": "Réseau national",
         "childMenu": {
             "nationalNetworks": "Réseaux nationaux",
             "troops": "Troupes",
@@ -1055,8 +1056,27 @@
             "noTitle": "Pas de titre"
         },
         "perms": {
-            "title": "Autorisations"
+            "title": "Autorisations",
+            "general": "Général",
+            "troopLeaderIds": "Identifiants de chef de troupe",
+            "nationalAdminIds": "Identifiants d'administrateur national",
+            "globalAdminIds": "Identifiants d'administrateur mondial",
+            "scoutIds": "Identifiants de scout",
+            "troopLeaderPermissions": "Autorisations de chef de troupe",
+            "viewAnalytics": "Voir les analyses",
+            "issue": "Émettre",
+            "create": "Créer",
+            "revoke": "Révoquer"
         },
+        "worldScoutingMission": "La mission du Scoutisme est de contribuer à l'éducation des jeunes à travers un système de valeurs basé sur la Promesse et la Loi scoutes. Grâce au Scoutisme, nous construisons un monde meilleur où les personnes s'épanouissent en tant qu'individus et jouent un rôle constructif dans la société. Être le mouvement de jeunesse le plus inspirant et le plus inclusif au monde, en créant des expériences d'apprentissage transformatrices pour chaque jeune, partout.",
+        "bsaMission": "La mission des BSA est d'inculquer les valeurs de la Promesse et de la Loi scoutes, qui incluent être digne de confiance, loyal, serviable et plus encore. Les BSA visent également à créer un environnement accueillant où les jeunes peuvent apprendre les uns des autres et se respecter.",
+        "wallpaperBackgroundColor": "Couleur d'arrière-plan du papier peint",
+        "colorHexPlaceholder": "Code couleur hexadécimal",
+        "inviteMember": "Inviter un membre",
+        "shareMyId": "Partager mon identifiant",
+        "myIdDetails": "Détails de mon identifiant",
+        "deleteNoun": "Supprimer {{noun}}",
+        "inviteContact": "Inviter un contact",
         "details": {
             "title": "Détails",
             "about": "À propos",
@@ -1467,7 +1487,8 @@
     "membership": {
         "joinWait": "Rejoindre la liste d'attente",
         "troops": "Troupes",
-        "empty": "Vous n'avez pas encore de troupes."
+        "empty": "Vous n'avez pas encore de troupes.",
+        "addTroopId": "Ajouter un identifiant de troupe"
     },
     "achievements": {
         "none": "Aucune réalisation pour l'instant",

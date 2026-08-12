@@ -206,7 +206,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
     const handleShare = async () => {
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Invite contact',
+                title: m['troops.inviteContact'](),
                 text: '',
                 url: claimLink,
                 dialogTitle: '',

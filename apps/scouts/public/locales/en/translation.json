@@ -969,6 +969,7 @@
         "scoutName": "Scout Name",
         "network": "Network",
         "globalNetworkLabel": "Global Network",
+        "nationalNetworkLabel": "National Network",
         "childMenu": {
             "nationalNetworks": "National Networks",
             "troops": "Troops",
@@ -976,6 +977,15 @@
             "meritBadges": "Merit Badges",
             "socialBoosts": "Social Boosts"
         },
+        "worldScoutingMission": "Scouting's mission is to contribute to the education of young people through a value system based on the Scout Promise and Law. Through Scouting, we are building a better world where people are self-fulfilled as individuals and play a constructive role in society. To be the world’s most inspiring and inclusive youth movement, creating transformative learning experiences for every young person, everywhere.",
+        "bsaMission": "The BSA's mission is to instill the values of the Scout Oath and Law, which include being trustworthy, loyal, helpful, and more. The BSA also aims to create a welcoming environment where young people can learn from and respect each other.",
+        "wallpaperBackgroundColor": "Wallpaper Background Color",
+        "colorHexPlaceholder": "Color Hex Code",
+        "inviteMember": "Invite Member",
+        "shareMyId": "Share My ID",
+        "myIdDetails": "My ID Details",
+        "deleteNoun": "Delete {{noun}}",
+        "inviteContact": "Invite contact",
         "editor": {
             "newGlobalNetwork": "New <0>Global Network</0>",
             "editGlobalNetwork": "Edit <0>Global Network</0>",
@@ -1055,7 +1065,17 @@
             "noTitle": "No title"
         },
         "perms": {
-            "title": "Permissions"
+            "title": "Permissions",
+            "general": "General",
+            "troopLeaderIds": "Troop Leader IDs",
+            "nationalAdminIds": "National Admin IDs",
+            "globalAdminIds": "Global Admin IDs",
+            "scoutIds": "Scout IDs",
+            "troopLeaderPermissions": "Troop Leader Permissions",
+            "viewAnalytics": "View Analytics",
+            "issue": "Issue",
+            "create": "Create",
+            "revoke": "Revoke"
         },
         "details": {
             "title": "Details",
@@ -1467,7 +1487,8 @@
     "membership": {
         "joinWait": "Join Waiting List",
         "troops": "Troops",
-        "empty": "You don't have any Troops yet."
+        "empty": "You don't have any Troops yet.",
+        "addTroopId": "Add Troop ID"
     },
     "achievements": {
         "none": "No achievements yet",

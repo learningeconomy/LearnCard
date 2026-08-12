@@ -120,7 +120,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                             {m['scoutsId.card']()}
                         </h3>
 
-                        <img src={IDThumbnailSelected} alt="id highlighted" />
+                        <img src={IDThumbnailSelected} alt="" />
                     </div>
                 </>
             )}
@@ -131,7 +131,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                         <div className="h-[40px] w-[40px] rounded-full bg-white mr-[10px] overflow-hidden">
                             <img
                                 src={networkImage}
-                                alt="network thumb"
+                                alt=""
                                 className="w-full h-full object-cover"
                             />
                         </div>
@@ -244,7 +244,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                         {m['scoutsId.wallpaper']()}
                     </h3>
 
-                    {isInIDMode && <img src={IDWallpaperSelected} alt="id highlighted" />}
+                    {isInIDMode && <img src={IDWallpaperSelected} alt="" />}
                 </div>
 
                 {isInIDMode &&
@@ -372,7 +372,7 @@ export const TroopCMSAppearanceForm: React.FC<{
 
             {!isInIDMode && (
                 <TroopsCMSColorPicker
-                    title="Wallpaper Background Color"
+                    title={m['troops.wallpaperBackgroundColor']()}
                     _color={appearance?.backgroundColor}
                     setState={setState}
                     state={state}

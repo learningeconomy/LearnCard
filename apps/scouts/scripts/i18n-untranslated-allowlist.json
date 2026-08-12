@@ -18,6 +18,7 @@
     "es:boostCMS.scouts",
     "es:troops.scoutOne",
     "es:troops.scoutOther",
+    "es:troops.perms.general",
     "es:troops.members.scoutTab",
     "es:troops.members.scoutLabel",
     "es:addressBook.troopStatusScout",

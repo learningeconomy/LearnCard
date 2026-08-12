@@ -136,7 +136,7 @@ const IdsPage: React.FC = () => {
                             credentials?.length === 0 &&
                             activeTab === CredentialListTabEnum.Earned && (
                                 <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                                    <img src={imgSrc} alt="ids" className="max-w-[250px] m-auto" />
+                                    <img src={imgSrc} alt="" className="max-w-[250px] m-auto" />
                                     <strong>{m['ids.noTroops']()}</strong>
                                 </section>
                             )}
@@ -160,7 +160,7 @@ const IdsPage: React.FC = () => {
                             boosts?.length === 0 &&
                             activeTab === CredentialListTabEnum.Managed && (
                                 <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                                    <img src={imgSrc} alt="ids" className="max-w-[250px] m-auto" />
+                                    <img src={imgSrc} alt="" className="max-w-[250px] m-auto" />
                                     <strong>{m['ids.noTroopsMng']()}</strong>
                                 </section>
                             )}

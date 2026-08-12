@@ -120,7 +120,7 @@ export const ScoutPassIDCMS: React.FC<{
                                 {m['scoutsId.card']()}
                             </h3>
 
-                            <img src={IDWallpaperSelected} alt="id highlighted" />
+                            <img src={IDWallpaperSelected} alt="" />
                         </div>
 
                         {_scoutPassID?.idBackgroundImage ? (
@@ -218,7 +218,7 @@ export const ScoutPassIDCMS: React.FC<{
                                 {m['scoutsId.wallpaper']()}
                             </h3>
 
-                            <img src={ContainerWallpaperSelected} alt="container highlighted" />
+                            <img src={ContainerWallpaperSelected} alt="" />
                         </div>
 
                         {_scoutPassID?.backgroundImage ? (

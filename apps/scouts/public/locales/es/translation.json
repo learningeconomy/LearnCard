@@ -969,6 +969,7 @@
         "scoutName": "Nombre de Scout",
         "network": "Red",
         "globalNetworkLabel": "Red Global",
+        "nationalNetworkLabel": "Red Nacional",
         "childMenu": {
             "nationalNetworks": "Redes Nacionales",
             "troops": "Tropas",
@@ -1055,8 +1056,27 @@
             "noTitle": "Sin título"
         },
         "perms": {
-            "title": "Permisos"
+            "title": "Permisos",
+            "general": "General",
+            "troopLeaderIds": "Identificaciones de líder de tropa",
+            "nationalAdminIds": "Identificaciones de administrador nacional",
+            "globalAdminIds": "Identificaciones de administrador global",
+            "scoutIds": "Identificaciones de scout",
+            "troopLeaderPermissions": "Permisos de líder de tropa",
+            "viewAnalytics": "Ver analíticas",
+            "issue": "Emitir",
+            "create": "Crear",
+            "revoke": "Revocar"
         },
+        "worldScoutingMission": "La misión del Escultismo es contribuir a la educación de los jóvenes a través de un sistema de valores basado en la Promesa y la Ley Scout. A través del Escultismo, estamos construyendo un mundo mejor donde las personas se realizan como individuos y desempeñan un papel constructivo en la sociedad. Ser el movimiento juvenil más inspirador e inclusivo del mundo, creando experiencias de aprendizaje transformadoras para cada persona joven, en todas partes.",
+        "bsaMission": "La misión de los BSA es inculcar los valores de la Promesa y la Ley Scout, que incluyen ser confiable, leal, útil y más. Los BSA también tienen como objetivo crear un ambiente acogedor donde los jóvenes puedan aprender mutuamente y respetarse.",
+        "wallpaperBackgroundColor": "Color de fondo del fondo de pantalla",
+        "colorHexPlaceholder": "Código de color hexadecimal",
+        "inviteMember": "Invitar miembro",
+        "shareMyId": "Compartir mi identificación",
+        "myIdDetails": "Detalles de mi identificación",
+        "deleteNoun": "Eliminar {{noun}}",
+        "inviteContact": "Invitar contacto",
         "details": {
             "title": "Detalles",
             "about": "Acerca de",
@@ -1467,7 +1487,8 @@
     "membership": {
         "joinWait": "Unirse a Lista de Espera",
         "troops": "Tropas",
-        "empty": "Aún no tienes Tropas."
+        "empty": "Aún no tienes Tropas.",
+        "addTroopId": "Agregar identificación de tropa"
     },
     "achievements": {
         "none": "Aún no hay logros",

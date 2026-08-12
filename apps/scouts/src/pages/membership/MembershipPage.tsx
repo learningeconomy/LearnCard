@@ -139,7 +139,7 @@ const MembershipPage: React.FC = () => {
         canCreateGlobalIDs || hasGlobalAdminID || hasNationalAdminID ? (
             <button
                 type="button"
-                aria-label="plus-button"
+                aria-label={m['membership.addTroopId']()}
                 onClick={() => showTroopIDSelector()}
                 className={`flex items-center justify-center h-fit w-fit p-[8px] rounded-full bg-white ${textColor}`}
             >

@@ -39,7 +39,7 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
                         {leaderImage ? (
                             <img
                                 src={leaderImage}
-                                alt="Troop Leader"
+                                alt=""
                                 className="h-full w-full object-cover"
                             />
                         ) : (

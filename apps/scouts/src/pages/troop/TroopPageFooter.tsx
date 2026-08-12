@@ -105,7 +105,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
     const handleDelete = async () => {
         const wallet = await initWallet();
         await confirm({
-            text: `Are you sure you want to delete ${credential?.name}?`,
+            text: m['troops.options.deleteConfirm']({ credential: credential?.name ?? '' }),
             onConfirm: async () => {
                 try {
                     const walletDid = wallet.id.did();
@@ -115,7 +115,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                 } catch (error: unknown) {
                     if (error) {
                         presentAlert(
-                            error instanceof Error ? error.message : 'Something went wrong'
+                            error instanceof Error ? error.message : m['boost.somethingWentWrong']()
                         );
                     }
                     closeAllModals();

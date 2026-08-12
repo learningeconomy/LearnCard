@@ -3,7 +3,13 @@ import React from 'react';
 import TruncateTextBox from '../../../../pages/troop/TroopIdDetails/TruncateTextBox';
 import * as m from '../../../../paraglide/messages.js';
 
-import { scoutPermissions, TroopsCMSState, TroopsCMSViewModeEnum } from '../../troopCMSState';
+import {
+    scoutPermissions,
+    permissionTitle,
+    permissionRole,
+    TroopsCMSState,
+    TroopsCMSViewModeEnum,
+} from '../../troopCMSState';
 
 export const TroopIDPreviewBackFace: React.FC<{
     rootViewMode: TroopsCMSViewModeEnum;
@@ -88,12 +94,15 @@ export const TroopIDPreviewBackFace: React.FC<{
                                 className="w-full flex flex-col last-of-type:border-none border-b-[1px] border-b-solid border-b-grayscale-200 py-2"
                             >
                                 <h4 className="text-sm font-semibold font-notoSans">
-                                    {permission?.title}
+                                    {permissionTitle(permission?.titleKey)}
                                 </h4>
                                 <div className="flex">
-                                    {permission?.roles.map((role, i) => {
-                                        const isLast = i === permission.roles.length - 1; // Check if it's the last item
-                                        const _role = isLast ? role : `${role},`; // Conditionally add the comma
+                                    {permission?.roleKeys.map((role, i) => {
+                                        const isLast =
+                                            i === permission.roleKeys.length - 1; // Check if it's the last item
+                                        const _role = isLast
+                                            ? permissionRole(role)
+                                            : `${permissionRole(role)},`; // Conditionally add the comma
 
                                         return (
                                             <p

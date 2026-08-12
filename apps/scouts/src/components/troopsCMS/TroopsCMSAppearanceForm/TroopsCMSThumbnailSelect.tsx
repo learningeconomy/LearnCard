@@ -113,7 +113,7 @@ export const TroopCMSThumbnailSelect: React.FC<{
                                 getDefaultBadgeThumbForViewMode(viewMode)
                             ) : (
                                 <img
-                                    alt="badge thumbnail"
+                                    alt=""
                                     src={
                                         state?.inheritNetworkStyles && !isInIDMode
                                             ? insertParamsToFilestackUrl(

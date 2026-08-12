@@ -51,14 +51,14 @@ export const ScoutPassIDContainerWallpaperSelect: React.FC<{
                     {!wallpaper ? (
                         <div className="p-[6px]">
                             <img
-                                alt="wallpaper empty state"
+                                alt=""
                                 src={EmptyImage}
                                 className="w-full h-full object-contain"
                             />
                         </div>
                     ) : (
                         <img
-                            alt="badge thumbnail"
+                            alt=""
                             src={wallpaper}
                             className="w-full h-full object-cover"
                         />

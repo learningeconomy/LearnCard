@@ -138,7 +138,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                             {scoutThumbnail ? (
                                 <img
                                     src={scoutThumbnail}
-                                    alt="network thumb"
+                                    alt=""
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
@@ -185,7 +185,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                             {adminThumbnail ? (
                                 <img
                                     src={adminThumbnail}
-                                    alt="network thumb"
+                                    alt=""
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
@@ -234,7 +234,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                     {adminThumbnail ? (
                         <img
                             src={adminThumbnail}
-                            alt="network thumb"
+                            alt=""
                             className="w-full h-full object-cover"
                         />
                     ) : (

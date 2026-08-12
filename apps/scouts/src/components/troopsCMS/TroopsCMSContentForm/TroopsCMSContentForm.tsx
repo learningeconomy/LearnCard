@@ -432,7 +432,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                                 <div className="max-w-[40px] max-h-[40px] min-h-[40px] min-w-[40px] rounded-full bg-white mr-[10px] overflow-hidden">
                                     <img
                                         src={networkImage}
-                                        alt="network thumb"
+                                        alt=""
                                         className="h-[40px] w-[40px] object-cover"
                                     />
                                 </div>
@@ -492,7 +492,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                                 <div className="max-w-[40px] max-h-[40px] min-h-[40px] min-w-[40px] rounded-full bg-white mr-[10px] overflow-hidden">
                                     <img
                                         src={thumbnail}
-                                        alt="thumbnail"
+                                        alt=""
                                         className="h-[40px] w-[40px] object-cover"
                                     />
                                 </div>
