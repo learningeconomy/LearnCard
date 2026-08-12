@@ -195,7 +195,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 });
 
                 await Share.share({
-                    title: 'ScoutPass Backup',
+                    title: m['recovery.setup.backup.shareTitle'](),
                     url: result.uri,
                     dialogTitle: m['recovery.setup.backup.downloadBtn'](),
                 });

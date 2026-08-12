@@ -83,7 +83,8 @@
         "clear": "Effacer",
         "privacyPolicy": "Politique de confidentialité",
         "termsOfService": "Conditions d’utilisation",
-        "ok": "D'accord"
+        "ok": "D'accord",
+        "dismiss": "Ignorer"
     },
     "navigation": {
         "boosts": "Boosts",
@@ -351,7 +352,12 @@
             "phoneLogin": "Se connecter par téléphone",
             "googleLogin": "Continuer avec Google",
             "appleLogin": "Continuer avec Apple"
-        }
+        },
+        "linkSent": "Un lien de connexion a été envoyé à votre adresse e-mail.",
+        "linkSendError": "Une erreur est survenue, impossible d'envoyer un lien de connexion !",
+        "refreshToFix": "Une erreur s'est produite. Veuillez rafraîchir pour corriger.",
+        "popupsBlocked": "Les fenêtres pop-up sont bloquées dans votre navigateur. Veuillez les activer pour vous connecter avec cette méthode.",
+        "logoutError": "Oups, un problème est survenu lors de la déconnexion"
     },
     "sidemenu": {
         "viewSharedBoosts": "Voir les Boosts partagés",
@@ -517,7 +523,8 @@
                 "readyDesc": "Téléchargez ce fichier et stockez-le dans un endroit sûr. Vous en aurez besoin avec votre mot de passe de sauvegarde pour récupérer.",
                 "downloadAgain": "Télécharger à nouveau",
                 "downloadBtn": "Télécharger le fichier de sauvegarde",
-                "confirmBtn": "Je l'ai sauvegardé dans un endroit sûr"
+                "confirmBtn": "Je l'ai sauvegardé dans un endroit sûr",
+                "shareTitle": "Sauvegarde ScoutPass"
             },
             "email": {
                 "recoveryRow": "E-mail de récupération : {{email}}",
@@ -556,6 +563,12 @@
                 "backup": "Fichier de sauvegarde sauvegardé ! Conservez-le ainsi que votre mot de passe dans un endroit sûr.",
                 "email": "Clé de récupération envoyée à votre e-mail !"
             }
+        },
+        "banner": {
+            "titlePublic": "Configurez la récupération avant de partir",
+            "titlePrivate": "Protégez votre compte",
+            "descPublic": "Ceci est une session temporaire. Fermer l'onglet vous déconnectera définitivement, sauf si vous configurez une méthode de récupération.",
+            "descPrivate": "Configurez la récupération pour pouvoir revenir si vous perdez cet appareil."
         }
     },
     "networkPrompts": {
@@ -604,7 +617,9 @@
         },
         "toasts": {
             "lostConn": "Oups ! Il semble que vous ayez perdu la connexion. L'application pourrait ne pas fonctionner correctement et vous ne pourrez pas envoyer de Boosts."
-        }
+        },
+        "userIdPlh": "Identifiant",
+        "firebaseError": "Une erreur Firebase s'est produite : {{detail}}"
     },
     "notifications": {
         "alerts": "Alertes",
@@ -632,7 +647,8 @@
         "toasts": {
             "successfullyClaimed": "Justificatif réclamé avec succès !"
         },
-        "notificationIcon": "icône de notification"
+        "notificationIcon": "icône de notification",
+        "loading": "Chargement des notifications"
     },
     "scoutsId": {
         "issuedDate": "Délivré le (Date)",
@@ -1644,5 +1660,42 @@
     },
     "scoutNews": {
         "viewPost": "Voir l'article"
+    },
+    "mainSubheader": {
+        "socialBadge": {
+            "title": "Badges sociaux",
+            "helper": "Mettez en valeur vos",
+            "helperAction": "étapes sociales"
+        },
+        "membership": {
+            "title": "Troupes",
+            "helper": "Accédez à vos",
+            "helperAction": "affiliations de troupe"
+        },
+        "meritBadge": {
+            "title": "Badges de mérite",
+            "helper": "Collectionnez vos",
+            "helperAction": "réalisations de scoutisme"
+        },
+        "skill": {
+            "title": "Centre de compétences",
+            "helper": "Votre",
+            "helperAction": "parcours de compétences."
+        },
+        "currency": {
+            "title": "Devises"
+        },
+        "id": {
+            "title": "Identifiants"
+        },
+        "achievement": {
+            "title": "Réalisations"
+        },
+        "job": {
+            "title": "Historique professionnel"
+        },
+        "learning": {
+            "title": "Historique d'apprentissage"
+        }
     }
 }

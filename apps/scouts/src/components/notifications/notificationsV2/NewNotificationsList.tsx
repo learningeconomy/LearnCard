@@ -69,7 +69,7 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
                 <section
                     className="flex w-full flex-col items-center px-[10px]"
                     role="status"
-                    aria-label="Loading notifications"
+                    aria-label={m['notifications.loading']()}
                 >
                     {[0, 1, 2].map(index => (
                         <NotificationSkeleton key={index} />

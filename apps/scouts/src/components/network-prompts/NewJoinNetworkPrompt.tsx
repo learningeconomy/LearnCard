@@ -263,7 +263,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             });
                         } catch (e) {
                             openErrorLogoutModal();
-                            setError(`There was a firebase error: ${e?.toString?.()}`);
+                            setError(
+                                m['networkPrompts.firebaseError']({ detail: e?.toString?.() ?? '' })
+                            );
                         }
 
                         // update LC network profile
@@ -358,7 +360,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 autocapitalize="on"
                                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                                 value={`@${lcNetworkProfile?.profileId}`}
-                                placeholder="User ID"
+                                placeholder={m['networkPrompts.userIdPlh']()}
                                 type="text"
                                 disabled={true}
                             />

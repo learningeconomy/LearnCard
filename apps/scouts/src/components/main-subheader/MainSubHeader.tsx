@@ -19,7 +19,7 @@ import SubheaderPlusActionButton from './SubheaderPlusActionButton';
 import CategoryDescriptorModal from '../category-descriptor/CategoryDescriptorModal';
 
 import { ACHIEVEMENT_CATEGORIES } from '../../../../../packages/learn-card-base/src/components/IssueVC/constants';
-import { SubheaderTypeEnum, SubheaderContentType } from './MainSubHeader.types';
+import { SubheaderTypeEnum, SubheaderContentType, getSubheaderCopy } from './MainSubHeader.types';
 import { BoostCategoryOptionsEnum, useModal, ModalTypes } from 'learn-card-base';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { getScoutPassCategoryCopy } from '../category-descriptor/scoutPassCategoryCopy';
@@ -79,8 +79,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
     const sheetModal = useRef<HTMLIonModalElement>(null);
     const centerModal = useRef<HTMLIonModalElement>(null);
 
-    const { title, IconComponent, iconColor, textColor, helperText, helperTextClickable } =
-        SubheaderContentType[subheaderType];
+    const { IconComponent, iconColor, textColor } = SubheaderContentType[subheaderType];
 
     const hideSelfIssueBtn = true;
 
@@ -127,7 +126,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
         isScoutPass: branding === BrandingEnum.scoutPass,
         subheaderType,
         count,
-        fallback: { title, helperText, helperTextClickable },
+        fallback: getSubheaderCopy(subheaderType),
         categoryCopy,
     });
 
@@ -214,7 +213,7 @@ export const MainSubHeader: React.FC<MainSubHeaderProps> = ({
                 {!_hidePlusBtn && !plusButtonOverride && (
                     <button
                         type="button"
-                        aria-label="plus-button"
+                        aria-label={m['common.add']()}
                         onClick={handlePresentBoostModal}
                         className={`flex items-center justify-center h-fit w-fit p-[8px] rounded-full bg-white ${textColor}`}
                     >

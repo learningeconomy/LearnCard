@@ -138,11 +138,7 @@ const LearningHistoryPage: React.FC = () => {
                         activeTab === CredentialListTabEnum.Earned &&
                         !earnedBoostsError && (
                             <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                                <img
-                                    src={imgSrc}
-                                    alt="learning history"
-                                    className="w-[250px] h-[250px] m-auto"
-                                />
+                                <img src={imgSrc} alt="" className="w-[250px] h-[250px] m-auto" />
                                 <strong>{m['learningHistory.noHistory']()}</strong>
                             </section>
                         )}
@@ -168,11 +164,7 @@ const LearningHistoryPage: React.FC = () => {
                         boosts?.length === 0 &&
                         activeTab === CredentialListTabEnum.Managed && (
                             <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                                <img
-                                    src={imgSrc}
-                                    alt="learning history"
-                                    className="w-[250px] h-[250px] m-auto"
-                                />
+                                <img src={imgSrc} alt="" className="w-[250px] h-[250px] m-auto" />
                                 <strong>{m['achievements.noBoosts']()}</strong>
                             </section>
                         )}

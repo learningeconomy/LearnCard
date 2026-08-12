@@ -27,7 +27,7 @@ export const ChapiPrompt: React.FC<{ handleCloseModal: () => void }> = ({ handle
             </div>
 
             <div className="w-full flex flex-col items-center justify-center">
-                <img src={PigeonMail} alt="chapi logo" />
+                <img src={PigeonMail} alt="" />
 
                 <h4 className="w-full text-center p-0 m-0 text-emerald-800 text-2xl mt-2 mb-2">
                     {m['credsBundle.aboutChapi']()}

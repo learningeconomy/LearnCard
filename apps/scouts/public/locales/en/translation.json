@@ -83,7 +83,8 @@
         "clear": "Clear",
         "privacyPolicy": "Privacy Policy",
         "termsOfService": "Terms of Service",
-        "ok": "OK"
+        "ok": "OK",
+        "dismiss": "Dismiss"
     },
     "navigation": {
         "boosts": "Boosts",
@@ -351,7 +352,12 @@
             "phoneLogin": "Sign in with phone",
             "googleLogin": "Continue with Google",
             "appleLogin": "Continue with Apple"
-        }
+        },
+        "linkSent": "A login link has been sent to your email.",
+        "linkSendError": "An error occurred, unable to send a login link!",
+        "refreshToFix": "An error occurred. Please refresh to fix.",
+        "popupsBlocked": "Popups are blocked in your browser. Please enable Popups to login with this method.",
+        "logoutError": "Oops, there was an issue logging out"
     },
     "sidemenu": {
         "viewSharedBoosts": "View Shared Boosts",
@@ -517,7 +523,8 @@
                 "readyDesc": "Download this file and store it somewhere safe. You'll need it along with your backup password to recover.",
                 "downloadAgain": "Download Again",
                 "downloadBtn": "Download Backup File",
-                "confirmBtn": "I've Saved It Somewhere Safe"
+                "confirmBtn": "I've Saved It Somewhere Safe",
+                "shareTitle": "ScoutPass Backup"
             },
             "email": {
                 "recoveryRow": "Recovery email: {{email}}",
@@ -556,6 +563,12 @@
                 "backup": "Backup file saved! Keep it and your password somewhere safe.",
                 "email": "Recovery key sent to your email!"
             }
+        },
+        "banner": {
+            "titlePublic": "Set up recovery before you leave",
+            "titlePrivate": "Protect your account",
+            "descPublic": "This is a temporary session. Closing the tab will sign you out permanently unless you set up a recovery method.",
+            "descPrivate": "Set up recovery so you can get back in if you lose this device."
         }
     },
     "networkPrompts": {
@@ -604,7 +617,9 @@
         },
         "toasts": {
             "lostConn": "Oops! It seems you’ve lost your connection. The app may not function properly and you will not be able to send boosts."
-        }
+        },
+        "userIdPlh": "User ID",
+        "firebaseError": "There was a Firebase error: {{detail}}"
     },
     "notifications": {
         "alerts": "Alerts",
@@ -632,7 +647,8 @@
         "toasts": {
             "successfullyClaimed": "Successfully claimed Credential!"
         },
-        "notificationIcon": "notification icon"
+        "notificationIcon": "notification icon",
+        "loading": "Loading notifications"
     },
     "scoutsId": {
         "issuedDate": "Issued (Date)",
@@ -1644,5 +1660,42 @@
     },
     "scoutNews": {
         "viewPost": "View Post"
+    },
+    "mainSubheader": {
+        "socialBadge": {
+            "title": "Social Boosts",
+            "helper": "Showcase your",
+            "helperAction": "social milestones"
+        },
+        "membership": {
+            "title": "Troops",
+            "helper": "Access your",
+            "helperAction": "troop affiliations"
+        },
+        "meritBadge": {
+            "title": "Merit Badges",
+            "helper": "Collect your",
+            "helperAction": "scouting achievements"
+        },
+        "skill": {
+            "title": "Competencies Hub",
+            "helper": "Your",
+            "helperAction": "competency roadmap."
+        },
+        "currency": {
+            "title": "Currencies"
+        },
+        "id": {
+            "title": "IDs"
+        },
+        "achievement": {
+            "title": "Achievements"
+        },
+        "job": {
+            "title": "Work History"
+        },
+        "learning": {
+            "title": "Learning History"
+        }
     }
 }

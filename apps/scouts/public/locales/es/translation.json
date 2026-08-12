@@ -83,7 +83,8 @@
         "clear": "Borrar",
         "privacyPolicy": "Política de privacidad",
         "termsOfService": "Términos del servicio",
-        "ok": "De acuerdo"
+        "ok": "De acuerdo",
+        "dismiss": "Descartar"
     },
     "navigation": {
         "boosts": "Impulsos",
@@ -351,7 +352,12 @@
             "phoneLogin": "Iniciar sesión con teléfono",
             "googleLogin": "Continuar con Google",
             "appleLogin": "Continuar con Apple"
-        }
+        },
+        "linkSent": "Se ha enviado un enlace de inicio de sesión a tu correo.",
+        "linkSendError": "Se produjo un error, no se pudo enviar un enlace de inicio de sesión.",
+        "refreshToFix": "Se produjo un error. Actualiza para solucionarlo.",
+        "popupsBlocked": "Las ventanas emergentes están bloqueadas en tu navegador. Actívalas para iniciar sesión con este método.",
+        "logoutError": "Vaya, hubo un problema al cerrar sesión"
     },
     "sidemenu": {
         "viewSharedBoosts": "Ver Boosts Compartidos",
@@ -517,7 +523,8 @@
                 "readyDesc": "Descarga este archivo y guárdalo en un lugar seguro. Lo necesitarás junto con tu contraseña de respaldo.",
                 "downloadAgain": "Descargar de Nuevo",
                 "downloadBtn": "Descargar Archivo de Respaldo",
-                "confirmBtn": "Lo He Guardado en un Lugar Seguro"
+                "confirmBtn": "Lo He Guardado en un Lugar Seguro",
+                "shareTitle": "Copia de seguridad de ScoutPass"
             },
             "email": {
                 "recoveryRow": "Correo de recuperación: {{email}}",
@@ -556,6 +563,12 @@
                 "backup": "¡Archivo de respaldo guardado! Mantenlo y tu contraseña en un lugar seguro.",
                 "email": "¡Clave de recuperación enviada a tu correo!"
             }
+        },
+        "banner": {
+            "titlePublic": "Configura la recuperación antes de irte",
+            "titlePrivate": "Protege tu cuenta",
+            "descPublic": "Esta es una sesión temporal. Cerrar la pestaña cerrará tu sesión permanentemente a menos que configures un método de recuperación.",
+            "descPrivate": "Configura la recuperación para poder volver a entrar si pierdes este dispositivo."
         }
     },
     "networkPrompts": {
@@ -604,7 +617,9 @@
         },
         "toasts": {
             "lostConn": "¡Vaya! Parece que perdiste la conexión. La app puede no funcionar correctamente y no podrás enviar Boosts."
-        }
+        },
+        "userIdPlh": "ID de usuario",
+        "firebaseError": "Se produjo un error de Firebase: {{detail}}"
     },
     "notifications": {
         "alerts": "Alertas",
@@ -632,7 +647,8 @@
         "toasts": {
             "successfullyClaimed": "¡Credencial reclamada exitosamente!"
         },
-        "notificationIcon": "icono de notificación"
+        "notificationIcon": "icono de notificación",
+        "loading": "Cargando notificaciones"
     },
     "scoutsId": {
         "issuedDate": "Emitido (Fecha)",
@@ -1644,5 +1660,42 @@
     },
     "scoutNews": {
         "viewPost": "Ver Publicación"
+    },
+    "mainSubheader": {
+        "socialBadge": {
+            "title": "Insignias sociales",
+            "helper": "Muestra tus",
+            "helperAction": "hitos sociales"
+        },
+        "membership": {
+            "title": "Tropas",
+            "helper": "Accede a tus",
+            "helperAction": "afiliaciones de tropa"
+        },
+        "meritBadge": {
+            "title": "Insignias de mérito",
+            "helper": "Reúne tus",
+            "helperAction": "logros scouts"
+        },
+        "skill": {
+            "title": "Centro de competencias",
+            "helper": "Tu",
+            "helperAction": "ruta de competencias."
+        },
+        "currency": {
+            "title": "Monedas"
+        },
+        "id": {
+            "title": "Identificaciones"
+        },
+        "achievement": {
+            "title": "Logros"
+        },
+        "job": {
+            "title": "Historial laboral"
+        },
+        "learning": {
+            "title": "Historial de aprendizaje"
+        }
     }
 }

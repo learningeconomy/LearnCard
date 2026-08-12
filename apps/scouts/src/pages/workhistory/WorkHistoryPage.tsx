@@ -141,7 +141,7 @@ const WorkHistoryPage: React.FC = () => {
                             <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
                                 <img
                                     src={imgSrc}
-                                    alt="Work History"
+                                    alt=""
                                     className="relative w-[250px] h-[250px] m-auto z-[1000]"
                                 />
                                 <div className="bg-filler bg-rose-300 absolute h-full w-full mt-[200px]" />
@@ -172,11 +172,7 @@ const WorkHistoryPage: React.FC = () => {
                         boosts?.length === 0 &&
                         activeTab === CredentialListTabEnum.Managed && (
                             <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                                <img
-                                    src={imgSrc}
-                                    alt="work history"
-                                    className="w-[250px] h-[250px] m-auto"
-                                />
+                                <img src={imgSrc} alt="" className="w-[250px] h-[250px] m-auto" />
                                 <strong>{m['achievements.noBoosts']()}</strong>
                             </section>
                         )}

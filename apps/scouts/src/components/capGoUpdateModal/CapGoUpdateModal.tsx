@@ -41,7 +41,7 @@ export const CapGoUpdateModal: React.FC<{
             <div className="w-full flex flex-col items-center justify-center pt-2">
                 <img
                     src={AppIcon}
-                    alt="app iocon"
+                    alt=""
                     className="h-[75px] w-[75px] overflow-hidden rounded-[12px] mt-4"
                 />
                 <h6 className="tracking-[16px] text-[20px] font-bold text-black mt-4">SCOUTPASS</h6>

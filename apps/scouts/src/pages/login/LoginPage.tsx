@@ -169,12 +169,8 @@ const LoginPage: React.FC = () => {
                     <IonRow className="p-0 m-0 w-full flex items-center justify-center bg-sp-purple-base relative login-page-header !overflow-hidden">
                         <LanguagePickerCompact className="absolute top-4 right-4 z-10" />
                         <IonCol size="12" className="flex flex-col items-center justify-center">
-                            <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
-                            <img
-                                src={ScoutPassTextLogo}
-                                alt="ScoutPass text logo"
-                                className="mt-4"
-                            />
+                            <img src={ScoutPassLogo} alt="" className="w-[55px]" />
+                            <img src={ScoutPassTextLogo} alt="" className="mt-4" />
                         </IonCol>
                         <div className="absolute bottom-[-150px] h-[75%] w-[106%] rounded-[100%] bg-white login-page-curve" />
                     </IonRow>
