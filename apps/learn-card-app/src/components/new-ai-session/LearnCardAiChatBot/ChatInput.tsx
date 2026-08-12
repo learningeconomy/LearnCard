@@ -40,7 +40,7 @@ import {
     aiPassportApps,
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { AiSessionMode, NewAiSessionStepEnum, sessionWrapUpText } from '../newAiSession.helpers';
+import { AiSessionMode, NewAiSessionStepEnum } from '../newAiSession.helpers';
 
 import { chatBotStore } from '../../../stores/chatBotStore';
 

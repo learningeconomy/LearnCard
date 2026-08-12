@@ -13,7 +13,7 @@ import { useModal } from 'learn-card-base';
 import { LaunchPadAppListItem, useDeviceTypeByWidth } from 'learn-card-base';
 import { aiPassportApps } from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { useGetCurrentLCNUser } from 'learn-card-base';
-import { sessionLoadingText } from '../newAiSession.helpers';
+import { getSessionLoadingText } from '../newAiSession.helpers';
 import useAppStore from '../../../pages/launchPad/useAppStore';
 
 // Extended type to include url for launching
@@ -195,7 +195,7 @@ export const NewAiAppSessionChatBotContainer: React.FC<{}> = () => {
     return (
         <div className={`w-full flex flex-col ${isDesktop ? 'max-w-[800px]' : ''}`}>
             {showLoader && (
-                <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
+                <AiSessionLoader chatBotQA={chatBotQA} overrideText={getSessionLoadingText()} />
             )}
             {chatBotQA.map((qa, index) => {
                 const isVisible = visibleIndexes.includes(index);

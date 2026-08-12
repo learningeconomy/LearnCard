@@ -46,7 +46,7 @@ import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
-import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
+import { getSessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import {
     AiPassportAppContractUri,
     getAiPassportAppByContractUri,
@@ -406,7 +406,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                 {isEnding && showEndingLoader && (
                     <AiSessionLoader
                         contractUri={contractUri}
-                        overrideText={sessionWrapUpText}
+                        overrideText={getSessionWrapUpText()}
                         // !force user to wait
                         // showActionButton={true}
                         // actionButtonText="Back to AI Sessions"

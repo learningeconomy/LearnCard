@@ -18,7 +18,7 @@ import { VC } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { LearningPathway } from '../../ai-sessions/AiSessionTopics/aiSession-topics.helpers';
 import { Boost } from '@learncard/types';
-import { sessionLoadingText } from '../newAiSession.helpers';
+import { getSessionLoadingText } from '../newAiSession.helpers';
 
 export const AiSessionLearningPathwayPreview: React.FC<{
     topicRecord?: LCR;
@@ -75,7 +75,7 @@ export const AiSessionLearningPathwayPreview: React.FC<{
             style={{ ...appStyles }}
         >
             {showLoader && (
-                <AiSessionLoader topicRecord={topicRecord} overrideText={sessionLoadingText} />
+                <AiSessionLoader topicRecord={topicRecord} overrideText={getSessionLoadingText()} />
             )}
             <div className="h-full w-full ion-padding max-w-[600px] overflow-y-scroll pb-[200px]">
                 <AiSessionLearningPathwayPreviewHeader
