@@ -43,7 +43,7 @@
         "vitest": "^3.2.6"
     },
     "dependencies": {
-        "@trpc/client": "11.3.0"
+        "@trpc/client": "11.8.0"
     },
     "repository": {
         "type": "git",
