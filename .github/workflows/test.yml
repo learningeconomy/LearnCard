@@ -38,10 +38,10 @@ jobs:
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 
-    # Run E2E tests on changeset release PRs or manual trigger
+    # Run the real-backend E2E and Axe suites on every PR or manual trigger.
     # SSHs into EC2 to run Playwright tests against the branch
     e2e-tests:
-        if: github.head_ref == 'changeset-release/main' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
         concurrency:
             group: learncard-e2e-ec2
             cancel-in-progress: false
