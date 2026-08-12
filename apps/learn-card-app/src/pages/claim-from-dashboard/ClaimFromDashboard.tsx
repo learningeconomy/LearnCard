@@ -436,6 +436,18 @@ const ClaimFromDashboard: React.FC = () => {
 
             presentClaimSuccessToast();
         } catch (e) {
+            if (e instanceof Error && e.message.includes('exists')) {
+                completeClaimAttempt(credential, AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                setClaimingCredential(false);
+                log.warn('Credential already exists in wallet index', e);
+                handleAfterCredentialClaim();
+                presentToast(m['toasts.alreadyClaimed'](), {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
             completeClaimAttempt(
                 credential,
                 AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,

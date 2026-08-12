@@ -58,7 +58,10 @@ import { AlertCircle, RefreshCw, Home, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import * as m from '../../paraglide/messages.js';
-import { getClaimInteractionBoostUri } from './claimRequest.helpers';
+import {
+    getClaimInteractionBoostUri,
+    getClaimInteractionDuplicateLookup,
+} from './claimRequest.helpers';
 
 export type RequestMetadata = {
     credentialName: string;
@@ -729,7 +732,10 @@ const ClaimFromRequest: React.FC = () => {
     const handleClaimCredential = async () => {
         try {
             if (!credential) return;
-            const duplicateResolution = await requestDuplicateResolution(credential);
+            const duplicateResolution = await requestDuplicateResolution(
+                credential,
+                getClaimInteractionDuplicateLookup(claimInteractionBoostUri)
+            );
             if (duplicateResolution.action === 'cancel') return;
             if (duplicateResolution.action === 'skip') {
                 void handleAfterCredentialClaim(credential);
@@ -755,6 +761,7 @@ const ClaimFromRequest: React.FC = () => {
             const storeResult = await storeAndAddVCToWallet(credential, {
                 title: name,
                 allowDuplicate: duplicateResolution.isDuplicate,
+                boostUri: claimInteractionBoostUri,
             });
             if (!storeResult.result) throw new Error('Credential was not added to LearnCard');
 
@@ -794,6 +801,18 @@ const ClaimFromRequest: React.FC = () => {
 
             presentClaimSuccessToast();
         } catch (e) {
+            if (e instanceof Error && e.message.includes('exists')) {
+                completeClaimAttempt(credential, AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                setClaimingCredential(false);
+                log.warn('Credential already exists in wallet index', e);
+                void handleAfterCredentialClaim(credential);
+                presentToast(m['toasts.alreadyClaimed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
             completeClaimAttempt(
                 credential,
                 AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,

@@ -40,118 +40,179 @@ const getCredentialContentKey = (credential: VC): string => {
     });
 };
 
+type ResolveCredential = (uri: string) => Promise<VC | undefined>;
+const MAX_CATEGORY_PAGES = 20;
+const DUPLICATE_SCAN_TIME_BUDGET_MS = 3000;
+
+type DuplicateCredentialScanIncompleteReason = 'timeout' | 'page-limit';
+
+export class DuplicateCredentialScanIncompleteError extends Error {
+    public constructor(
+        public readonly reason: DuplicateCredentialScanIncompleteReason,
+        message: string
+    ) {
+        super(message);
+        this.name = 'DuplicateCredentialScanIncompleteError';
+    }
+}
+
+export class DuplicateCredentialScanSafetyError extends Error {
+    public constructor(message: string) {
+        super(message);
+        this.name = 'DuplicateCredentialScanSafetyError';
+    }
+}
+
+const createIncompleteScanError = (
+    reason: DuplicateCredentialScanIncompleteReason
+): DuplicateCredentialScanIncompleteError =>
+    new DuplicateCredentialScanIncompleteError(
+        reason,
+        reason === 'timeout'
+            ? `Duplicate credential scan exceeded ${DUPLICATE_SCAN_TIME_BUDGET_MS}ms`
+            : `Duplicate credential scan exceeded ${MAX_CATEGORY_PAGES} pages`
+    );
+
+const runWithinDuplicateScanBudget = async <T>(
+    operation: () => Promise<T>,
+    deadline: number
+): Promise<T> => {
+    const remainingMs = deadline - Date.now();
+
+    if (remainingMs <= 0) {
+        throw createIncompleteScanError('timeout');
+    }
+
+    const { promise: timeout, reject } = Promise.withResolvers<never>();
+    const timeoutId = setTimeout(() => {
+        reject(createIncompleteScanError('timeout'));
+    }, remainingMs);
+
+    // These wallet APIs do not expose cancellation. A timed-out operation may finish in the
+    // background, and cached credential reads can make a retry faster, but the claim stops waiting.
+    try {
+        return await Promise.race([operation(), timeout]);
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
+
 const resolveMatchingRecord = async (
-    wallet: BespokeLearnCard,
     records: LCR[],
+    incomingCredential: VC,
     credentialId: string,
     boostUri: string,
     credentialContentKey: string,
-    seenUris: Set<string>
+    seenUris: Set<string>,
+    resolveCredential: ResolveCredential
 ): Promise<ExistingCredentialMatch | null> => {
+    const indexMatch = records.find(
+        record =>
+            (credentialId && record.id === credentialId) ||
+            (boostUri && record.boostUri === boostUri)
+    );
+    if (indexMatch) return { credential: incomingCredential, record: indexMatch };
+
+    if (!credentialContentKey) return null;
+
     const unreadRecords = records.filter(record => record.uri && !seenUris.has(record.uri));
     unreadRecords.forEach(record => seenUris.add(record.uri));
 
     const resolved = await Promise.allSettled(
         unreadRecords.map(async record => ({
             record,
-            credential: (await wallet.read.get(record.uri)) as VC,
+            credential: await resolveCredential(record.uri),
         }))
     );
 
     for (const result of resolved) {
-        if (result.status !== 'fulfilled') continue;
+        if (result.status !== 'fulfilled' || !result.value.credential) continue;
 
-        const resolvedCredential = result.value.credential;
-        const unwrappedCredential = unwrapBoostCredential(resolvedCredential);
-        const resolvedCredentialId = unwrappedCredential?.id;
-        const resolvedBoostUri = resolvedCredential?.boostId ?? unwrappedCredential?.boostId;
-        const matchesCredentialId = Boolean(credentialId && resolvedCredentialId === credentialId);
-        const matchesBoostUri = Boolean(
-            boostUri && (result.value.record.boostUri === boostUri || resolvedBoostUri === boostUri)
-        );
-        const matchesCredentialContents = Boolean(
-            credentialContentKey &&
-                getCredentialContentKey(resolvedCredential) === credentialContentKey
-        );
-
-        if (matchesCredentialId || matchesBoostUri || matchesCredentialContents)
-            return result.value;
+        if (getCredentialContentKey(result.value.credential) === credentialContentKey) {
+            return {
+                record: result.value.record,
+                credential: result.value.credential,
+            };
+        }
     }
 
     return null;
 };
 
 /**
- * Finds an already-saved credential with the same stable credential ID or source Boost URI.
+ * Finds an already-saved credential by index metadata or, when explicitly requested, stable
+ * credential contents.
  *
- * Older claim flows generated a random wallet-index record ID, so exact index lookups are only
- * fast paths. The category scan preserves duplicate detection for those existing records. Claim
- * links also issue a new credential ID on each request. New records retain the source Boost URI;
- * legacy records fall back to comparing stable credential contents.
+ * Exact credential-ID and source-Boost queries require no credential reads. Content comparison is
+ * reserved for legacy records that predate those index fields; callers opt into that slower scan
+ * with `compareByContent`.
+ *
+ * Every lookup shares a three-second deadline, and legacy content scans stop after 20 pages. Those
+ * operating limits report an incomplete scan so the guard can continue the claim; malformed
+ * pagination remains a safety error that blocks the write.
  */
 export const findDuplicateCredential = async (
     wallet: BespokeLearnCard,
     credential: VC,
-    lookup: DuplicateCredentialLookup = {}
+    lookup: DuplicateCredentialLookup = {},
+    resolveCredential: ResolveCredential = async uri =>
+        (await wallet.read.get(uri)) as VC | undefined
 ): Promise<ExistingCredentialMatch | null> => {
     const unwrappedCredential = unwrapBoostCredential(credential) ?? credential;
     const credentialId =
         typeof unwrappedCredential.id === 'string' ? unwrappedCredential.id.trim() : '';
     const credentialBoostUri = credential?.boostId ?? unwrappedCredential?.boostId;
-    const boostUri =
-        typeof (lookup.boostUri ?? credentialBoostUri) === 'string'
-            ? (lookup.boostUri ?? credentialBoostUri)?.trim() ?? ''
-            : '';
-    const credentialContentKey =
-        boostUri || lookup.compareByContent ? getCredentialContentKey(credential) : '';
-    if (!credentialId && !credentialContentKey) return null;
+    const rawBoostUri = lookup.boostUri ?? credentialBoostUri;
+    const boostUri = typeof rawBoostUri === 'string' ? rawBoostUri.trim() : '';
+    const credentialContentKey = lookup.compareByContent ? getCredentialContentKey(credential) : '';
 
-    const seenUris = new Set<string>();
+    if (!credentialId && !boostUri && !credentialContentKey) return null;
+    const scanDeadline = Date.now() + DUPLICATE_SCAN_TIME_BUDGET_MS;
 
     if (credentialId) {
-        const exactRecords = ((await wallet.index.LearnCloud.get<CredentialMetadata>({
-            id: credentialId,
-        })) ?? []) as LCR[];
-        const exactMatch = await resolveMatchingRecord(
-            wallet,
-            exactRecords,
-            credentialId,
-            boostUri,
-            credentialContentKey,
-            seenUris
-        );
-        if (exactMatch) return exactMatch;
+        const exactRecords = ((await runWithinDuplicateScanBudget(
+            () => wallet.index.LearnCloud.get<CredentialMetadata>({ id: credentialId }),
+            scanDeadline
+        )) ?? []) as LCR[];
+        const exactMatch = exactRecords[0];
+        if (exactMatch) return { credential, record: exactMatch };
     }
 
     if (boostUri) {
-        const boostRecords = ((await wallet.index.LearnCloud.get<CredentialMetadata>({
-            boostUri,
-        })) ?? []) as LCR[];
-        const boostMatch = await resolveMatchingRecord(
-            wallet,
-            boostRecords,
-            credentialId,
-            boostUri,
-            credentialContentKey,
-            seenUris
-        );
-        if (boostMatch) return boostMatch;
+        const boostRecords = ((await runWithinDuplicateScanBudget(
+            () => wallet.index.LearnCloud.get<CredentialMetadata>({ boostUri }),
+            scanDeadline
+        )) ?? []) as LCR[];
+        const boostMatch = boostRecords[0];
+        if (boostMatch) return { credential, record: boostMatch };
     }
 
-    const category = await getCategoryForCredential(credential, wallet);
+    if (!credentialContentKey) return null;
+
+    const seenUris = new Set<string>();
+    const category = await runWithinDuplicateScanBudget(
+        () => getCategoryForCredential(credential, wallet),
+        scanDeadline
+    );
     const getPage = wallet.index.LearnCloud.getPage;
 
     if (!getPage) {
-        const categoryRecords = ((await wallet.index.LearnCloud.get<CredentialMetadata>({
-            category,
-        })) ?? []) as LCR[];
-        return resolveMatchingRecord(
-            wallet,
-            categoryRecords,
-            credentialId,
-            boostUri,
-            credentialContentKey,
-            seenUris
+        const categoryRecords = ((await runWithinDuplicateScanBudget(
+            () => wallet.index.LearnCloud.get<CredentialMetadata>({ category }),
+            scanDeadline
+        )) ?? []) as LCR[];
+        return runWithinDuplicateScanBudget(
+            () =>
+                resolveMatchingRecord(
+                    categoryRecords,
+                    credential,
+                    credentialId,
+                    boostUri,
+                    credentialContentKey,
+                    seenUris,
+                    resolveCredential
+                ),
+            scanDeadline
         );
     }
 
@@ -159,28 +220,41 @@ export const findDuplicateCredential = async (
     let pageCount = 0;
     const seenCursors = new Set<string>();
 
-    while (pageCount < 1000) {
+    while (pageCount < MAX_CATEGORY_PAGES) {
+        pageCount += 1;
         // Sequential pages avoid loading the user's entire wallet into memory at once.
         // eslint-disable-next-line no-await-in-loop
-        const page = await getPage<CredentialMetadata>({ category }, { cursor, limit: 50 });
-        pageCount += 1;
+        const page = await runWithinDuplicateScanBudget(
+            () => getPage<CredentialMetadata>({ category }, { cursor, limit: 50 }),
+            scanDeadline
+        );
 
         // eslint-disable-next-line no-await-in-loop
-        const match = await resolveMatchingRecord(
-            wallet,
-            (page?.records ?? []) as LCR[],
-            credentialId,
-            boostUri,
-            credentialContentKey,
-            seenUris
+        const match = await runWithinDuplicateScanBudget(
+            () =>
+                resolveMatchingRecord(
+                    (page?.records ?? []) as LCR[],
+                    credential,
+                    credentialId,
+                    boostUri,
+                    credentialContentKey,
+                    seenUris,
+                    resolveCredential
+                ),
+            scanDeadline
         );
         if (match) return match;
 
-        if (!page?.hasMore || !page.cursor || seenCursors.has(page.cursor)) break;
+        if (!page?.hasMore) return null;
+        if (!page.cursor || seenCursors.has(page.cursor)) {
+            throw new DuplicateCredentialScanSafetyError(
+                'Duplicate credential scan received an invalid pagination cursor'
+            );
+        }
 
         seenCursors.add(page.cursor);
         cursor = page.cursor;
     }
 
-    return null;
+    throw createIncompleteScanError('page-limit');
 };

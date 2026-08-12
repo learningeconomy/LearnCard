@@ -9,6 +9,7 @@ import { getVCDisplayCardVariant } from '@learncard/react';
 
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { getClaimInteractionDuplicateLookup } from './claimRequest.helpers';
 const log = getLogger('exchange-accept-credentials');
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -251,9 +252,10 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         for (const credential of selectedCredentials) {
             // Duplicate prompts must be handled one at a time.
             // eslint-disable-next-line no-await-in-loop
-            const duplicateResolution = sourceBoostUri
-                ? await requestDuplicateResolution(credential, { boostUri: sourceBoostUri })
-                : await requestDuplicateResolution(credential);
+            const duplicateResolution = await requestDuplicateResolution(
+                credential,
+                getClaimInteractionDuplicateLookup(sourceBoostUri)
+            );
             if (duplicateResolution.action === 'cancel') return;
             if (duplicateResolution.action === 'save') {
                 credentialsToStore.push({ credential, duplicateResolution });
@@ -266,6 +268,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
+            // This count is a completion signal for the VC-API exchange, not the number stored.
+            // Skipping every duplicate still completes the exchange instead of reopening DID Auth.
             onAccept({}, selectedCredentials.length);
             return;
         }
@@ -359,6 +363,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 hasDismissButton: true,
             });
 
+            // The exchange uses this as a completion signal; storage reporting uses
+            // credentialsToStore.length above.
             onAccept({}, selectedCredentials.length);
         } catch (e) {
             completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, getClaimErrorCode(e));

@@ -357,10 +357,6 @@ const ClaimBoost: React.FC<{
 
     const handleClaimBoost = async () => {
         if (isClaimed || isCheckingDuplicate) return;
-        const wallet = await initWallet();
-
-        const { prompted } = await gate();
-        if (prompted) return;
         if (!boost) return;
         const duplicateResolution = await requestDuplicateResolution(boost, { boostUri });
         if (duplicateResolution.action === 'cancel') return;
@@ -375,6 +371,10 @@ const ClaimBoost: React.FC<{
             return;
         }
 
+        const { prompted } = await gate();
+        if (prompted) return;
+        const wallet = await initWallet();
+
         try {
             beginClaimAttempt(boost);
             setIsClaimLoading(true);
@@ -382,7 +382,10 @@ const ClaimBoost: React.FC<{
             capture();
 
             const claimedBoostUri = await wallet.invoke.claimBoostWithLink(boostUri, challenge);
-            const addedToWallet = await addVCtoWallet({ uri: claimedBoostUri });
+            const addedToWallet = await addVCtoWallet({
+                uri: claimedBoostUri,
+                boostUri,
+            });
             if (!addedToWallet) throw new Error('Credential was not added to LearnCard');
 
             const category = getDefaultCategoryForCredential(boost);
@@ -459,8 +462,6 @@ const ClaimBoost: React.FC<{
     const handleClaimRawCredential = async () => {
         if (isClaimed || isCheckingDuplicate || !vc) return;
 
-        const { prompted } = await gate();
-        if (prompted) return;
         const duplicateResolution = await requestDuplicateResolution(vc);
         if (duplicateResolution.action === 'cancel') return;
         if (duplicateResolution.action === 'skip') {
@@ -473,6 +474,9 @@ const ClaimBoost: React.FC<{
             });
             return;
         }
+
+        const { prompted } = await gate();
+        if (prompted) return;
 
         try {
             beginClaimAttempt(vc);

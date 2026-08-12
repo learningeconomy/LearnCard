@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { MongoSigningAuthorityType } from '@models';
+import { MongoSigningAuthorityType, SigningAuthorityResponseType } from '@models';
 
 dotenv.config();
 
@@ -7,11 +7,14 @@ export const getEndpoint = (domainName: string) => {
     return !domainName || process.env.IS_OFFLINE
         ? `http://localhost:${process.env.PORT || 3000}/api`
         : `https://${domainName}/api`;
-}
+};
 
-export const getSigningAuthorityWithEndpoint = (sa: MongoSigningAuthorityType, domainName: string) => {
+export const getSigningAuthorityWithEndpoint = (
+    signingAuthority: MongoSigningAuthorityType & { did: string },
+    domainName: string
+): SigningAuthorityResponseType => {
     return {
-        ...sa,
-        endpoint: getEndpoint(domainName)
-    }
-}
+        ...signingAuthority,
+        endpoint: getEndpoint(domainName),
+    };
+};

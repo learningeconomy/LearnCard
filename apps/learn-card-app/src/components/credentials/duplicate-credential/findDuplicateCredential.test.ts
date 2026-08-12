@@ -44,16 +44,25 @@ const createWallet = ({
 };
 
 describe('findDuplicateCredential', () => {
-    it('uses an exact index record when it resolves to the same credential ID', async () => {
+    it('uses an exact index record without resolving its credential', async () => {
         const wallet = createWallet({
-            exactRecords: [{ uri: 'lc:credential:existing' }],
-            credentialsByUri: { 'lc:credential:existing': credential },
+            exactRecords: [
+                {
+                    uri: 'lc:credential:existing',
+                    id: 'urn:uuid:credential-id',
+                },
+            ],
         });
+        vi.mocked(wallet.read.get).mockRejectedValue(new Error('temporary read failure'));
 
         await expect(findDuplicateCredential(wallet, credential)).resolves.toMatchObject({
-            record: { uri: 'lc:credential:existing' },
+            record: {
+                uri: 'lc:credential:existing',
+                id: 'urn:uuid:credential-id',
+            },
             credential,
         });
+        expect(wallet.read.get).not.toHaveBeenCalled();
     });
 
     it('finds legacy records whose wallet index ID differs from the credential ID', async () => {
@@ -62,7 +71,9 @@ describe('findDuplicateCredential', () => {
             credentialsByUri: { 'lc:credential:legacy': credential },
         });
 
-        await expect(findDuplicateCredential(wallet, credential)).resolves.toMatchObject({
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).resolves.toMatchObject({
             record: { uri: 'lc:credential:legacy' },
             credential,
         });
@@ -101,7 +112,9 @@ describe('findDuplicateCredential', () => {
             });
         wallet.index.LearnCloud.getPage = getPage;
 
-        await expect(findDuplicateCredential(wallet, credential)).resolves.toMatchObject({
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).resolves.toMatchObject({
             record: { uri: 'lc:credential:second-page' },
         });
         expect(getPage).toHaveBeenNthCalledWith(
@@ -109,6 +122,129 @@ describe('findDuplicateCredential', () => {
             { category: 'Achievement' },
             { cursor: 'next-page', limit: 50 }
         );
+    });
+
+    it('returns no match when the final category page is exhausted', async () => {
+        const wallet = createWallet();
+        const getPage = vi.fn().mockResolvedValue({
+            records: [{ uri: 'lc:credential:different' }],
+            hasMore: false,
+        });
+        wallet.index.LearnCloud.getPage = getPage;
+
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).resolves.toBeNull();
+        expect(getPage).toHaveBeenCalledTimes(1);
+    });
+    it('rejects when more pages are reported without a cursor', async () => {
+        const wallet = createWallet();
+        const getPage = vi.fn().mockResolvedValue({
+            records: [],
+            hasMore: true,
+        });
+        wallet.index.LearnCloud.getPage = getPage;
+
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).rejects.toMatchObject({
+            name: 'DuplicateCredentialScanSafetyError',
+            message: 'Duplicate credential scan received an invalid pagination cursor',
+        });
+        expect(getPage).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects when pagination repeats a cursor', async () => {
+        const wallet = createWallet();
+        const getPage = vi.fn().mockResolvedValue({
+            records: [],
+            hasMore: true,
+            cursor: 'repeated-page',
+        });
+        wallet.index.LearnCloud.getPage = getPage;
+
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).rejects.toMatchObject({
+            name: 'DuplicateCredentialScanSafetyError',
+            message: 'Duplicate credential scan received an invalid pagination cursor',
+        });
+        expect(getPage).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports an incomplete scan after the page limit', async () => {
+        const wallet = createWallet();
+        let pageCount = 0;
+        const getPage = vi.fn().mockImplementation(async () => {
+            pageCount += 1;
+            return {
+                records: [],
+                hasMore: true,
+                cursor: `page-${pageCount}`,
+            };
+        });
+        wallet.index.LearnCloud.getPage = getPage;
+
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).rejects.toMatchObject({
+            name: 'DuplicateCredentialScanIncompleteError',
+            reason: 'page-limit',
+            message: 'Duplicate credential scan exceeded 20 pages',
+        });
+        expect(getPage).toHaveBeenCalledTimes(20);
+    });
+
+    it('allows a completed scan on the twentieth page', async () => {
+        const wallet = createWallet();
+        let pageCount = 0;
+        const getPage = vi.fn().mockImplementation(async () => {
+            pageCount += 1;
+            const hasMore = pageCount < 20;
+
+            return {
+                records: [],
+                hasMore,
+                ...(hasMore ? { cursor: `page-${pageCount}` } : {}),
+            };
+        });
+        wallet.index.LearnCloud.getPage = getPage;
+
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).resolves.toBeNull();
+        expect(getPage).toHaveBeenCalledTimes(20);
+    });
+
+    it('stops the entire duplicate check after three seconds', async () => {
+        vi.useFakeTimers();
+
+        try {
+            const wallet = createWallet();
+            const { promise: delayedExactRecords, resolve: resolveExactRecords } =
+                Promise.withResolvers<never[]>();
+            setTimeout(() => resolveExactRecords([]), 2000);
+            vi.mocked(wallet.index.LearnCloud.get).mockReturnValueOnce(delayedExactRecords);
+
+            const { promise: stalledPage } = Promise.withResolvers<never>();
+            const getPage = vi.fn().mockReturnValue(stalledPage);
+            wallet.index.LearnCloud.getPage = getPage;
+
+            const result = findDuplicateCredential(wallet, credential, {
+                compareByContent: true,
+            });
+            const rejection = expect(result).rejects.toMatchObject({
+                name: 'DuplicateCredentialScanIncompleteError',
+                reason: 'timeout',
+                message: 'Duplicate credential scan exceeded 3000ms',
+            });
+
+            await vi.advanceTimersByTimeAsync(3000);
+            await rejection;
+            expect(getPage).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
     });
     it('matches a repeated claim link by boost URI when issuance creates a new credential ID', async () => {
         const boostUri = 'lc:network:example.org/trpc:boost:boost-id';
@@ -123,15 +259,15 @@ describe('findDuplicateCredential', () => {
         } as VC;
         const wallet = createWallet({
             boostRecords: [{ uri: 'lc:credential:issued', boostUri }],
-            credentialsByUri: { 'lc:credential:issued': issuedCredential },
         });
 
         await expect(
             findDuplicateCredential(wallet, previewCredential, { boostUri })
         ).resolves.toMatchObject({
             record: { uri: 'lc:credential:issued', boostUri },
-            credential: issuedCredential,
+            credential: previewCredential,
         });
+        expect(wallet.read.get).not.toHaveBeenCalled();
         expect(wallet.index.LearnCloud.get).toHaveBeenCalledWith({ boostUri });
     });
 
@@ -154,7 +290,7 @@ describe('findDuplicateCredential', () => {
         await expect(findDuplicateCredential(wallet, interactionCredential)).resolves.toMatchObject(
             {
                 record: { uri: 'lc:credential:previous', boostUri },
-                credential: savedCredential,
+                credential: interactionCredential,
             }
         );
     });
@@ -185,7 +321,10 @@ describe('findDuplicateCredential', () => {
         });
 
         await expect(
-            findDuplicateCredential(wallet, interactionCredential, { boostUri })
+            findDuplicateCredential(wallet, interactionCredential, {
+                boostUri,
+                compareByContent: true,
+            })
         ).resolves.toMatchObject({
             record: { uri: 'lc:credential:legacy-interaction' },
             credential: savedCredential,
@@ -222,6 +361,40 @@ describe('findDuplicateCredential', () => {
             record: { uri: 'lc:credential:previous-notification' },
             credential: savedCredential,
         });
+    });
+
+    it('uses the caller-provided cached resolver for legacy content comparison', async () => {
+        const wallet = createWallet({
+            categoryRecords: [{ uri: 'lc:credential:legacy' }],
+        });
+        const resolveCredential = vi.fn().mockResolvedValue({
+            ...credential,
+            id: 'urn:uuid:previous-instance',
+        });
+
+        await expect(
+            findDuplicateCredential(
+                wallet,
+                credential,
+                { compareByContent: true },
+                resolveCredential
+            )
+        ).resolves.toMatchObject({
+            record: { uri: 'lc:credential:legacy' },
+        });
+        expect(resolveCredential).toHaveBeenCalledWith('lc:credential:legacy');
+        expect(wallet.read.get).not.toHaveBeenCalled();
+    });
+
+    it('does not scan legacy records unless content comparison is explicitly requested', async () => {
+        const wallet = createWallet({
+            categoryRecords: [{ uri: 'lc:credential:legacy', id: 'random-index-id' }],
+            credentialsByUri: { 'lc:credential:legacy': credential },
+        });
+
+        await expect(findDuplicateCredential(wallet, credential)).resolves.toBeNull();
+        expect(wallet.read.get).not.toHaveBeenCalled();
+        expect(wallet.index.LearnCloud.get).toHaveBeenCalledTimes(1);
     });
 
     it('does not scan the wallet when the incoming credential has no stable ID', async () => {

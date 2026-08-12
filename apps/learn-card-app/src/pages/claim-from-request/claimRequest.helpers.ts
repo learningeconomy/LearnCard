@@ -26,3 +26,9 @@ export const getClaimInteractionBoostUri = (requestUrl: unknown): string | undef
         return undefined;
     }
 };
+
+/**
+ * Uses the source Boost as the fast path and stable contents for pre-index-metadata records.
+ */
+export const getClaimInteractionDuplicateLookup = (boostUri: string | undefined) =>
+    boostUri ? { boostUri, compareByContent: true as const } : undefined;

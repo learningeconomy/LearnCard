@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { VC } from '@learncard/types';
-import { getLogger, useWallet } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
+import { getLogger, ToastTypeEnum, useToast, useWallet } from 'learn-card-base';
+import { getOrFetchResolvedCredential } from 'learn-card-base/react-query/queries/vcQueries';
+import * as m from '../../../paraglide/messages.js';
 
 import {
     DuplicateCredentialPrompt,
@@ -26,6 +29,8 @@ const CONTINUE_WITH_NEW_CREDENTIAL: DuplicateCredentialResolution = {
 
 export const useDuplicateCredentialGuard = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    const { presentToast } = useToast();
     const [existing, setExisting] = useState<ExistingCredentialMatch | null>(null);
     const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
     const mountedRef = useRef(true);
@@ -63,14 +68,15 @@ export const useDuplicateCredentialGuard = () => {
             const request = (async () => {
                 try {
                     const wallet = await initWallet();
-                    const match = await findDuplicateCredential(wallet, credential, lookup);
-                    if (mountedRef.current) setIsCheckingDuplicate(false);
-
-                    if (!match || !mountedRef.current) {
-                        return match
-                            ? { action: 'cancel' as const, isDuplicate: true }
-                            : CONTINUE_WITH_NEW_CREDENTIAL;
+                    const match = await findDuplicateCredential(wallet, credential, lookup, uri =>
+                        getOrFetchResolvedCredential(uri, initWallet, queryClient)
+                    );
+                    if (!mountedRef.current) {
+                        return { action: 'cancel' as const, isDuplicate: Boolean(match) };
                     }
+
+                    setIsCheckingDuplicate(false);
+                    if (!match) return CONTINUE_WITH_NEW_CREDENTIAL;
 
                     setExisting(match);
                     return await new Promise<DuplicateCredentialResolution>(resolve => {
@@ -78,6 +84,28 @@ export const useDuplicateCredentialGuard = () => {
                     });
                 } catch (error) {
                     if (mountedRef.current) setIsCheckingDuplicate(false);
+                    if (
+                        error instanceof Error &&
+                        error.name === 'DuplicateCredentialScanIncompleteError'
+                    ) {
+                        log.warn('Duplicate credential scan incomplete; continuing claim', error);
+                        return CONTINUE_WITH_NEW_CREDENTIAL;
+                    }
+
+                    if (
+                        error instanceof Error &&
+                        error.name === 'DuplicateCredentialScanSafetyError'
+                    ) {
+                        log.warn('Duplicate credential scan stopped at its safety boundary', error);
+                        if (mountedRef.current) {
+                            presentToast(m['toasts.claimOops'](), {
+                                duration: 4000,
+                                type: ToastTypeEnum.Error,
+                            });
+                        }
+                        return { action: 'cancel', isDuplicate: false };
+                    }
+
                     // Duplicate detection must never block a legitimate claim when the wallet index
                     // is temporarily unavailable. The underlying claim still reports real failures.
                     log.warn('Unable to check for an existing credential', error);
@@ -92,7 +120,7 @@ export const useDuplicateCredentialGuard = () => {
 
             return request;
         },
-        [initWallet]
+        [initWallet, presentToast, queryClient]
     );
 
     return {

@@ -29,7 +29,13 @@ describe('DuplicateCredentialPrompt', () => {
             <DuplicateCredentialPrompt existing={existing} onChoose={onChoose} />
         );
 
-        expect(screen.getByRole('dialog', { name: 'Already saved' })).toBeVisible();
+        expect(
+            screen.getByRole('dialog', {
+                name: 'Already saved',
+                description:
+                    "Choose whether to skip this credential you've already saved or save another copy.",
+            })
+        ).toBeVisible();
         expect(screen.getByText('Safety Training')).toBeVisible();
         await waitFor(() =>
             expect(screen.getByRole('button', { name: 'Skip This Copy' })).toHaveFocus()
@@ -48,6 +54,29 @@ describe('DuplicateCredentialPrompt', () => {
         rerender(<DuplicateCredentialPrompt existing={existing} onChoose={onChoose} />);
         fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(onChoose).toHaveBeenLastCalledWith('cancel');
+    });
+
+    it('keeps keyboard focus inside the duplicate decision', async () => {
+        render(
+            <>
+                <button type="button">Outside action</button>
+                <DuplicateCredentialPrompt existing={existing} onChoose={vi.fn()} />
+            </>
+        );
+        const outsideButton = screen.getByRole('button', { name: 'Outside action' });
+        const cancelButton = screen.getByRole('button', { name: 'Cancel' });
+        const saveButton = screen.getByRole('button', { name: 'Save Another Copy' });
+
+        saveButton.focus();
+        fireEvent.keyDown(window, { key: 'Tab' });
+        expect(cancelButton).toHaveFocus();
+
+        fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+        expect(saveButton).toHaveFocus();
+
+        outsideButton.focus();
+        fireEvent.keyDown(window, { key: 'Tab' });
+        expect(cancelButton).toHaveFocus();
     });
 
     it('escapes the claim screen stacking context', () => {

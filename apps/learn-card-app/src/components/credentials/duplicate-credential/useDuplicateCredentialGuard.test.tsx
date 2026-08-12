@@ -11,11 +11,22 @@ const mocks = vi.hoisted(() => ({
     findDuplicateCredential: vi.fn(),
     initWallet: vi.fn(),
     warn: vi.fn(),
+    presentToast: vi.fn(),
+}));
+
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => ({}),
 }));
 
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ warn: mocks.warn }),
+    ToastTypeEnum: { Error: 'error' },
+    useToast: () => ({ presentToast: mocks.presentToast }),
     useWallet: () => ({ initWallet: mocks.initWallet }),
+}));
+
+vi.mock('learn-card-base/react-query/queries/vcQueries', () => ({
+    getOrFetchResolvedCredential: vi.fn(),
 }));
 
 vi.mock('./findDuplicateCredential', () => ({
@@ -106,7 +117,8 @@ describe('useDuplicateCredentialGuard', () => {
         expect(mocks.findDuplicateCredential).toHaveBeenCalledWith(
             expect.any(Object),
             incomingCredential,
-            { boostUri: 'lc:network:example.org/trpc:boost:boost-id' }
+            { boostUri: 'lc:network:example.org/trpc:boost:boost-id' },
+            expect.any(Function)
         );
     });
 
@@ -159,6 +171,43 @@ describe('useDuplicateCredentialGuard', () => {
         );
     });
 
+    it('continues the claim when legacy duplicate scanning reaches an operating limit', async () => {
+        const error = new Error('Duplicate credential scan exceeded 3000ms');
+        error.name = 'DuplicateCredentialScanIncompleteError';
+        mocks.findDuplicateCredential.mockRejectedValue(error);
+        render(<Harness />);
+
+        await expect(requestImmediateResolution()).resolves.toEqual({
+            action: 'save',
+            isDuplicate: false,
+        });
+        expect(mocks.warn).toHaveBeenCalledWith(
+            'Duplicate credential scan incomplete; continuing claim',
+            error
+        );
+        expect(mocks.presentToast).not.toHaveBeenCalled();
+    });
+
+    it('cancels rather than allowing a claim when the duplicate scan stops for safety', async () => {
+        const error = new Error('Duplicate credential scan received an invalid pagination cursor');
+        error.name = 'DuplicateCredentialScanSafetyError';
+        mocks.findDuplicateCredential.mockRejectedValue(error);
+        render(<Harness />);
+
+        await expect(requestImmediateResolution()).resolves.toEqual({
+            action: 'cancel',
+            isDuplicate: false,
+        });
+        expect(mocks.warn).toHaveBeenCalledWith(
+            'Duplicate credential scan stopped at its safety boundary',
+            error
+        );
+        expect(mocks.presentToast).toHaveBeenCalledWith(expect.any(String), {
+            duration: 4000,
+            type: 'error',
+        });
+    });
+
     it('cancels a pending decision when the claim surface unmounts', async () => {
         mocks.findDuplicateCredential.mockResolvedValue(existingMatch);
         const { unmount } = render(<Harness />);
@@ -168,5 +217,19 @@ describe('useDuplicateCredentialGuard', () => {
         unmount();
 
         await expect(resolution).resolves.toEqual({ action: 'cancel', isDuplicate: true });
+    });
+
+    it('cancels when the claim surface unmounts during the wallet check', async () => {
+        const { promise: check, resolve: resolveCheck } = Promise.withResolvers<
+            typeof existingMatch | null
+        >();
+        mocks.findDuplicateCredential.mockReturnValue(check);
+        const { unmount } = render(<Harness />);
+
+        const resolution = requestResolution();
+        unmount();
+        await act(async () => resolveCheck(null));
+
+        await expect(resolution).resolves.toEqual({ action: 'cancel', isDuplicate: false });
     });
 });
