@@ -55,7 +55,6 @@ const CANDIDATES = [
     'packages/learn-card-types',
     'packages/learn-card-network/brain-client',
     'packages/learn-card-network/cloud-client',
-    'packages/learn-card-network/simple-signing-client',
     'packages/sss-key-manager',
     ...fs.readdirSync(path.join(ROOT, 'packages/plugins')).map(d => `packages/plugins/${d}`),
 ];
@@ -165,10 +164,10 @@ const ATTW_IGNORE_RULES = [
 //     didkit-plugin-node is a tsc-compiled N-API package with no dual format).
 //   - The smoketest workflow checks *runtime ESM/CJS loadability* by actually
 //     installing + importing each published plugin from npm. The packages that
-//     fail there (ceramic, didkey, idx, lca-api, learn-cloud, network,
-//     simple-signing) have runtime resolution bugs (transitive CJS-only deps
-//     imported via named ESM, dynamic require() in ESM bundles) that are
-//     invisible to static type analysis.
+//     fail there (ceramic, didkey, idx, lca-api, learn-cloud, network) have
+//     runtime resolution bugs (transitive CJS-only deps imported via named
+//     ESM, dynamic require() in ESM bundles) that are invisible to static type
+//     analysis.
 // A package can pass one surface and fail the other. Keep both lists scoped to
 // the failures their own tool actually reports; don't try to unify them.
 const ADVISORY_ONLY = new Set([
