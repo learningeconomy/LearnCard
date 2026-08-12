@@ -80,7 +80,6 @@ vi.mock('../../paraglide/messages.js', () => ({
     'claim.accept.claiming': () => 'Claiming Credential',
     'claim.accept.failed': () => 'Unable to claim credential',
     'claim.accept.success': () => 'Credential claimed',
-    'claim.duplicate.checking': () => 'Checking saved credentials',
     'claim.accept.exists': () => 'Credential exists',
     'claim.duplicate.skippedToast': () => 'Duplicate skipped',
     'common.accept': () => 'Claim My Credential',
@@ -151,6 +150,24 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
             result: true,
             credentialUri: 'lc:credential:new-copy',
         });
+    });
+
+    it('uses the compact claim loading label while checking for a saved copy', async () => {
+        render(
+            <ExchangeAcceptCredentials
+                verifiablePresentation={presentation}
+                onAccept={mocks.onAccept}
+                requestDuplicateResolution={mocks.requestDuplicateResolution}
+                isCheckingDuplicate
+                sourceBoostUri={sourceBoostUri}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: 'Loading' })).toBeDisabled();
+            expect(screen.getByRole('status')).toHaveTextContent('Claiming Credential');
+        });
+        expect(screen.queryByText('Checking saved credentials')).not.toBeInTheDocument();
     });
 
     it('checks the credential and skips wallet storage when the learner skips a duplicate', async () => {

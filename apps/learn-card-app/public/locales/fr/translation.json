@@ -2378,7 +2378,6 @@
             "title": "Déjà enregistré",
             "description": "Choisissez d'ignorer ce justificatif déjà enregistré ou d'en enregistrer une autre copie.",
             "existingLabel": "Justificatif enregistré",
-            "checking": "Vérification des justificatifs enregistrés...",
             "issuedBy": "Émis par {{issuer}}",
             "skip": "Ignorer cette copie",
             "save": "Enregistrer une autre copie",

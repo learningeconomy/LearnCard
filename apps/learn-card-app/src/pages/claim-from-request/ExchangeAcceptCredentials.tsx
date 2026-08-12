@@ -620,9 +620,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
     const claimBtnText = isClaimed
         ? m['claim.accept.claimed']()
-        : isCheckingDuplicate
-        ? m['claim.duplicate.checking']()
-        : claiming
+        : isCheckingDuplicate || claiming
         ? m['common.loading']()
         : m['common.accept']();
 
@@ -638,9 +636,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     className="h-5 w-5 animate-spin rounded-full border-2 border-grayscale-300 border-t-grayscale-900"
                 />
                 <span className="font-poppins text-sm font-medium text-grayscale-900">
-                    {isCheckingDuplicate
-                        ? m['claim.duplicate.checking']()
-                        : m['claim.accept.claiming']()}
+                    {m['claim.accept.claiming']()}
                 </span>
             </div>
         </div>

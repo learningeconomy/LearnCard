@@ -2072,7 +2072,6 @@
             "title": "Already saved",
             "description": "Choose whether to skip this credential you've already saved or save another copy.",
             "existingLabel": "Saved credential",
-            "checking": "Checking saved credentials...",
             "issuedBy": "Issued by {{issuer}}",
             "skip": "Skip This Copy",
             "save": "Save Another Copy",

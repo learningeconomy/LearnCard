@@ -454,11 +454,10 @@ const ClaimFromDashboard: React.FC = () => {
         return <ClaimFromDashboardLoggedOut metadata={metadata} />;
     }
 
-    const loadingText = isCheckingDuplicate
-        ? m['claim.duplicate.checking']()
-        : claimingCredential
-        ? m['claim.claimingCredential']()
-        : m['claim.fetchingCredential']();
+    const loadingText =
+        isCheckingDuplicate || claimingCredential
+            ? m['claim.claimingCredential']()
+            : m['claim.fetchingCredential']();
 
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID =

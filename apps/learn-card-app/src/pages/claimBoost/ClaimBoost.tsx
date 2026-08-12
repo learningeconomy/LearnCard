@@ -534,9 +534,7 @@ const ClaimBoost: React.FC<{
 
     let actionButtonText = m['common.accept']();
 
-    if (isCheckingDuplicate) {
-        actionButtonText = m['claim.duplicate.checking']();
-    } else if (isClaimLoading) {
+    if (isCheckingDuplicate || isClaimLoading) {
         actionButtonText = m['common.loading']();
         if (isFamily) actionButtonText = m['contacts.joining']();
     } else if (isClaimed) {

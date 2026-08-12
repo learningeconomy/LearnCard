@@ -436,12 +436,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         claimStatusText = m['contacts.claimed']();
         if (isFamily) claimStatusText = m['contacts.joined']();
     }
-    if (isClaimLoading && isLoggedIn) {
+    if ((isClaimLoading || isCheckingDuplicate) && isLoggedIn) {
         claimStatusText = m['contacts.saving']();
         if (isFamily) claimStatusText = m['contacts.joining']();
-    }
-    if (isCheckingDuplicate && isLoggedIn) {
-        claimStatusText = m['claim.duplicate.checking']();
     }
 
     if (!isClaimLoading && !isCheckingDuplicate && isLoggedIn && credential && !isClaimed) {

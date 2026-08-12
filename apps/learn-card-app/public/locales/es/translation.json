@@ -2378,7 +2378,6 @@
             "title": "Ya está guardada",
             "description": "Elige si quieres omitir esta credencial que ya guardaste o guardar otra copia.",
             "existingLabel": "Credencial guardada",
-            "checking": "Comprobando las credenciales guardadas...",
             "issuedBy": "Emitida por {{issuer}}",
             "skip": "Omitir esta copia",
             "save": "Guardar otra copia",
