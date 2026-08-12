@@ -15,7 +15,7 @@ import BoostCMSMediaForm from './boostCMSForms/boostCMSMedia/BoostCMSMediaForm';
 import BoostPreview from './BoostPreview/BoostPreview';
 import BoostPreviewBody from './BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from './BoostPreview/BoostPreviewFooter';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostCMSTitleForm from './boostCMSForms/boostCMSTitleForm/BoostCMSTitleForm';
@@ -46,12 +46,14 @@ import {
     getDefaultDisplayType,
     sendBoostCredential,
     updateBoost,
+    updateBoostStatus,
 } from '../boostHelpers';
 import {
     getExistingAttachmentsOrEvidence,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useWallet from 'learn-card-base/hooks/useWallet';
 import {
@@ -75,8 +77,11 @@ import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import BoostCMSAchievementTypeSelectorButton from './boostCMSForms/boostCMSAppearance/BoostCMSAchievementTypeSelectorButton';
 import BoostIDCardCMSMembersForm from './BoostIDCardCMS/BoostIDCardCMSForms/BoostIDCardCMSMembersForm';
 import BoostCMSDisplayTypeSelector from './boostCMSForms/boostCMSAppearance/BoostCMSDisplayTypeSelector';
-import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm';
 import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
+import * as m from '../../../paraglide/messages.js';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('update-boost-cms');
 
 const UpdateBoostCMS: React.FC = () => {
     const history = useHistory();
@@ -84,6 +89,7 @@ const UpdateBoostCMS: React.FC = () => {
     const query = usePathQuery();
 
     const { track } = useAnalytics();
+    const flags = useFlags();
 
     const { initWallet, addVCtoWallet } = useWallet();
     const { presentToast } = useToast();
@@ -126,6 +132,7 @@ const UpdateBoostCMS: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isPublishLoading, setIsPublishLoading] = useState<boolean>(false);
     const [isSaveLoading, setIsSaveLoading] = useState<boolean>(false);
+    const [skippedPublishStep, setSkippedPublishStep] = useState<boolean>(false);
     const [admin, setAdmin] = useState<BoostCMSAdmin[]>([]);
 
     useEffect(() => {
@@ -170,7 +177,6 @@ const UpdateBoostCMS: React.FC = () => {
                   })
                 : [];
 
-            // Prefer OBv3 alignments if present on the VC; otherwise, derive from legacy skills
             const derivedAlignments = deriveAlignmentsFromVC(_boostVC);
 
             setState(prevState => {
@@ -216,7 +222,6 @@ const UpdateBoostCMS: React.FC = () => {
                         },
                     },
                     mediaAttachments: [...state?.mediaAttachments, ...boostVcAttachments],
-                    skills: [...state.skills, ...(_boostVC?.skills ?? [])],
                     alignments: derivedAlignments,
                     boostPermissions: {
                         canView:
@@ -353,16 +358,28 @@ const UpdateBoostCMS: React.FC = () => {
         );
     };
 
-    const handleNextStep = () => {
+    const handleNextStep = async () => {
         dissmissModal();
         if (currentStep === BoostCMSStepsEnum.create) {
-            setCurrentStep(BoostCMSStepsEnum.publish);
-            track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
-                timestamp: Date.now(),
-                action: 'publish',
-                boostType: state?.basicInfo?.achievementType,
-                category: state?.basicInfo?.type,
-            });
+            // When skipPublishStep flag is enabled, skip directly to issueTo without updating the boost yet
+            if (flags?.skipPublishStep) {
+                setSkippedPublishStep(true);
+                setCurrentStep(BoostCMSStepsEnum.issueTo);
+                track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
+                    timestamp: Date.now(),
+                    action: 'issue_to',
+                    boostType: state?.basicInfo?.achievementType,
+                    category: state?.basicInfo?.type,
+                });
+            } else {
+                setCurrentStep(BoostCMSStepsEnum.publish);
+                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
+                    timestamp: Date.now(),
+                    action: 'publish',
+                    boostType: state?.basicInfo?.achievementType,
+                    category: state?.basicInfo?.type,
+                });
+            }
         } else if (currentStep === BoostCMSStepsEnum.publish) {
             setCurrentStep(BoostCMSStepsEnum.issueTo);
             track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
@@ -391,7 +408,12 @@ const UpdateBoostCMS: React.FC = () => {
                     `/boost/update?uri=${_boostUri}&boostUserType=${_boostUserType}&boostCategoryType=${_boostCategoryType}&boostSubCategoryType=${_boostSubCategoryType}`
                 );
             }
-            handleConfirmationModal();
+            // When skipPublishStep flag is enabled, go back to create step (since publish was skipped)
+            if (flags?.skipPublishStep) {
+                setCurrentStep(BoostCMSStepsEnum.create);
+            } else {
+                handleConfirmationModal();
+            }
         }
     };
 
@@ -455,7 +477,7 @@ const UpdateBoostCMS: React.FC = () => {
 
             if (updatedBoost) {
                 setIsSaveLoading(false);
-                presentToast(`Boost saved successfully`, {
+                presentToast(m['toasts.boost.boostSavedSuccess'](), {
                     duration: 3000,
                     type: ToastTypeEnum.Success,
                 });
@@ -477,8 +499,8 @@ const UpdateBoostCMS: React.FC = () => {
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
-            presentToast(`Unable to save boost`, {
+            log.info('error::savingBoost', e);
+            presentToast(m['toasts.boost.boostSaveFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -513,8 +535,8 @@ const UpdateBoostCMS: React.FC = () => {
                 }
             } catch (e) {
                 setIsPublishLoading(false);
-                console.log('error::boosting::someone', e);
-                presentToast(`Error issuing boost`, {
+                log.info('error::boosting::someone', e);
+                presentToast(m['toasts.boost.boostIssuedError'](), {
                     duration: 3000,
                     type: ToastTypeEnum.Error,
                 });
@@ -528,6 +550,11 @@ const UpdateBoostCMS: React.FC = () => {
         try {
             setIsLoading(true);
             if (_boostUri && state?.issueTo.length > 0) {
+                // If we skipped the publish step, update the boost to LIVE before issuing
+                if (skippedPublishStep) {
+                    await updateBoostStatus(wallet, _boostUri, LCNBoostStatusEnum.live);
+                }
+
                 const uris = await Promise.all(
                     state?.issueTo.map(async issuee => {
                         // handle self boosting
@@ -535,7 +562,8 @@ const UpdateBoostCMS: React.FC = () => {
                             const { sentBoost, sentBoostUri } = await sendBoostCredential(
                                 wallet,
                                 profile?.profileId,
-                                _boostUri
+                                _boostUri,
+                                { mediaAttachments: issuee.mediaAttachments }
                             );
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
@@ -550,7 +578,8 @@ const UpdateBoostCMS: React.FC = () => {
                         const issuedVc = await addBoostSomeone(
                             wallet,
                             issuee?.profileId,
-                            _boostUri
+                            _boostUri,
+                            { mediaAttachments: issuee.mediaAttachments }
                         );
                         return issuedVc;
                     })
@@ -558,7 +587,7 @@ const UpdateBoostCMS: React.FC = () => {
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast(`Boost issued successfully`, {
+                    presentToast(m['toasts.boost.boostIssuedSuccess'](), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -569,7 +598,7 @@ const UpdateBoostCMS: React.FC = () => {
 
                 if (_boostUri) {
                     setIsSaveLoading(false);
-                    presentToast(`Boost saved successfully`, {
+                    presentToast(m['toasts.boost.boostSavedSuccess'](), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -578,8 +607,8 @@ const UpdateBoostCMS: React.FC = () => {
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
-            presentToast(`Error issuing boost`, {
+            log.info('error::boosting::someone', e);
+            presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -598,7 +627,7 @@ const UpdateBoostCMS: React.FC = () => {
         );
     } else {
         previewDisplay = (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={state?.basicInfo?.achievementType}
                 boostType={state?.basicInfo?.type}
                 badgeThumbnail={state?.appearance?.badgeThumbnail}
@@ -649,7 +678,9 @@ const UpdateBoostCMS: React.FC = () => {
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? 'Continue Issuing' : 'Continue Editing';
+            currentStep === BoostCMSStepsEnum.issueTo
+                ? m['boost.cms.continueIssuing']()
+                : m['boost.cms.continueEditing']();
 
         newModal(
             <BoostCMSConfirmationPrompt
@@ -658,6 +689,7 @@ const UpdateBoostCMS: React.FC = () => {
                 currentStep={currentStep}
                 isEditMode={false}
                 isSaveLoading={isSaveLoading}
+                skippedPublishStep={skippedPublishStep}
             />,
             { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -707,7 +739,6 @@ const UpdateBoostCMS: React.FC = () => {
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                     disabled={isEditDisabled}
                 />
-                {/* <BoostCMSSkillsAttachmentForm state={state} setState={setState} /> */}
                 <BoostFrameworkSkillSelector
                     state={state}
                     setState={setState}
@@ -735,7 +766,7 @@ const UpdateBoostCMS: React.FC = () => {
                     isLoading={loading}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m['boost.cms.issueTo.assignAdmins']()}
                     hideBoostShareableCode
                 />
                 {/* {isMembership && <BoostIDCardCMSMembersForm state={state} setState={setState} />} */}
@@ -800,13 +831,15 @@ const UpdateBoostCMS: React.FC = () => {
 
     let loadingText = '';
     if (isBoostLoading) {
-        loadingText = 'Loading boost...';
+        loadingText = m['boost.cms.loading.loading']();
     } else if (isLoading) {
-        loadingText = 'Issuing boost...';
+        loadingText = m['boost.cms.loading.issuing']();
     } else if (isPublishLoading) {
-        loadingText = 'Publishing boost...';
+        loadingText = skippedPublishStep
+            ? m['boost.cms.loading.creating']()
+            : m['boost.cms.loading.publishing']();
     } else if (isSaveLoading) {
-        loadingText = 'Saving boost...';
+        loadingText = m['boost.cms.loading.saving']();
     }
 
     return (
@@ -836,7 +869,7 @@ const UpdateBoostCMS: React.FC = () => {
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m['boost.cms.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>

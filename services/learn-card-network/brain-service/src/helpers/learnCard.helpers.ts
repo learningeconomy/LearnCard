@@ -1,4 +1,6 @@
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { generateLearnCard } from '@learncard/core';
 import type { LearnCard } from '@learncard/core';
@@ -19,9 +21,28 @@ import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import type { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 import type { DidWebPlugin } from '@learncard/did-web-plugin';
+import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
+
+// The DIDKit WASM is copied next to the compiled handler at build time (see
+// esbuildPlugins.cjs). The Lambda bundle's node_modules layout doesn't match what
+// require.resolve expects (the package is a hoisted workspace symlink), so prefer the
+// co-located copy and fall back to package resolution for local dev / Docker.
+const DIDKIT_WASM_SPECIFIER = '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm';
+
+const resolveDidkitWasmPath = (): string => {
+    const colocated = join(__dirname, 'didkit_wasm_bg.wasm');
+    if (existsSync(colocated)) return colocated;
+
+    return require.resolve(DIDKIT_WASM_SPECIFIER);
+};
+
+// Which DIDKit engine actually loaded — exposed via the deep health check so
+// native-vs-wasm is observable from an HTTP probe instead of CloudWatch spelunking.
+let didKitEngine: 'native' | 'wasm' | 'unloaded' = 'unloaded';
+export const getDidKitEngine = (): 'native' | 'wasm' | 'unloaded' => didKitEngine;
 
 // Try native plugin first, fall back to WASM
-let didKitPluginPromise: Promise<DIDKitPlugin> | null = null;
+const didKitPluginPromises = new Map<boolean, Promise<DIDKitPlugin>>();
 
 const resolveDidKitPluginFactory = (
     module: Record<string, unknown>
@@ -38,25 +59,42 @@ const resolveDidKitPluginFactory = (
 };
 
 const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugin> => {
-    if (didKitPluginPromise) return didKitPluginPromise;
+    const cached = didKitPluginPromises.get(allowRemoteContexts);
 
-    didKitPluginPromise = (async () => {
+    if (cached) return cached;
+
+    const promise = (async () => {
+        if (process.env.SKIP_DIDKIT_NAPI) {
+            const didkitModule = await import('@learncard/didkit-plugin');
+            const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
+            const wasmBuffer = await readFile(resolveDidkitWasmPath());
+            const plugin = await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            didKitEngine = 'wasm';
+            return plugin;
+        }
+
         try {
             const didkitModule = await import('@learncard/didkit-plugin-node');
             const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
-            return await getNativePlugin(undefined, allowRemoteContexts);
-        } catch (e) {
-            console.log('Native DIDKit plugin not available, falling back to WASM');
+            const plugin = await getNativePlugin(undefined, allowRemoteContexts);
+            didKitEngine = 'native';
+            return plugin;
+        } catch (error) {
+            // Surface the fallback — a silent catch here hid a months-long "native never
+            // actually loads in Lambda" gap (see PR #1341 investigation).
+            console.warn('[didkit] native plugin unavailable, falling back to WASM:', error);
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
-            const wasmBuffer = await readFile(
-                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
-            );
-            return await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            const wasmBuffer = await readFile(resolveDidkitWasmPath());
+            const plugin = await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            didKitEngine = 'wasm';
+            return plugin;
         }
     })();
 
-    return didKitPluginPromise;
+    didKitPluginPromises.set(allowRemoteContexts, promise);
+
+    return promise;
 };
 
 export type EmptyLearnCard = LearnCard<
@@ -119,8 +157,14 @@ export const getLearnCard = async (
 ): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
 
-    if (!learnCards[seed] || IS_OFFLINE) {
-        const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
+    const cacheKey = `${seed}:${allowRemoteContexts}`;
+
+    if (!learnCards[cacheKey] || IS_OFFLINE) {
+        const emptyLc = await generateLearnCard();
+
+        const cryptoLc = allowRemoteContexts
+            ? await (await emptyLc.addPlugin(DynamicLoaderPlugin)).addPlugin(CryptoPlugin)
+            : await emptyLc.addPlugin(CryptoPlugin);
 
         const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(allowRemoteContexts));
 
@@ -136,10 +180,12 @@ export const getLearnCard = async (
 
         const expirationLc = await templateLc.addPlugin(expirationPlugin(templateLc));
 
-        learnCards[seed] = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc));
+        learnCards[cacheKey] = (await expirationLc.addPlugin(
+            getLearnCardPlugin(expirationLc)
+        )) as SeedLearnCard;
     }
 
-    const learnCard = learnCards[seed];
+    const learnCard = learnCards[cacheKey];
 
     if (!learnCard) {
         throw new Error('LearnCard not initialized');
@@ -150,10 +196,22 @@ export const getLearnCard = async (
 
 export const getServerDidWebDID = (): string => {
     const domainName = process.env.DOMAIN_NAME;
-    const domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost%3A${process.env.PORT || 3000}`
-            : domainName.replace(/:/g, '%3A');
+    const isOffline = !!process.env.IS_OFFLINE;
+
+    // Misconfig guard: a deployed (non-offline) environment without DOMAIN_NAME
+    // would silently fall back to localhost and produce an unresolvable did:web,
+    // breaking every signing operation. Fail loud at first call instead.
+    if (!domainName && !isOffline) {
+        throw new Error(
+            'getServerDidWebDID: DOMAIN_NAME must be set when IS_OFFLINE is not set ' +
+                '(missing both → unresolvable did:web). Set DOMAIN_NAME on the Lambda ' +
+                'or run with IS_OFFLINE=true for local development.'
+        );
+    }
+
+    // IS_OFFLINE forces localhost even if DOMAIN_NAME is set — preserves dev/prod
+    // isolation so an inherited prod env var can't leak into a local dev session.
+    const domain = isOffline ? `localhost%3A${process.env.PORT || 3000}` : domainName!;
     return `did:web:${domain}`;
 };
 

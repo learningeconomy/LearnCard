@@ -5,30 +5,27 @@ import Web3AuthLogo from '../../assets/images/web3auth-logo.svg';
 import ExternalLinkIcon from 'learn-card-base/svgs/ExternalLink';
 import { openToS, openPP, openContactLink, openLCwebsite } from '../../helpers/externalLinkHelpers';
 
-const LoginFooter: React.FC = () => {
+interface LoginFooterProps {
+    className?: string;
+    wrapperClassName?: string;
+    hideSelfCustodialLogin?: boolean;
+}
+
+const LoginFooter: React.FC<LoginFooterProps> = ({
+    className = 'login-footer-container',
+    wrapperClassName = 'login-footer-wrap',
+    hideSelfCustodialLogin = false,
+}) => {
     return (
-        <div className="login-footer-container">
-            <div className="ion-padding pl-6 w-full login-footer-wrap">
-                <IonCol
-                    size="12"
-                    className="w-full flex-col items-center justify-start login-footer-title-wrap"
-                >
-                    <p className="w-full flex items-center mr-3 text-grayscale-600 font-medium text-base">
-                        Self-custodial login by{' '}
-                        <img src={Web3AuthLogo} alt="web3Auth logo" className="p-0 mt-0 ml-1 h-6" />
-                    </p>
-                    <IonRouterLink
-                        href="https://web3auth.io/"
-                        rel="noreferrer"
-                        target="_blank"
-                        className="w-full flex items-centermr-3 text-indigo-500 font-bold text-lg mt-2 login-footer-web3-link"
-                    >
-                        How does this work?{' '}
-                    </IonRouterLink>
-                    <p className="w-full flex items-center mt-2 text-grayscale-600 font-medium">
-                        Web3Auth does not store any data related to your social logins.
-                    </p>
-                </IonCol>
+        <div className={`${className}`}>
+            <div className={`ion-padding pl-6 !pt-1 w-full ${wrapperClassName}`}>
+                {!hideSelfCustodialLogin && (
+                    <IonCol size="12" className="login-footer-title-wrap">
+                        <p className="text-grayscale-600 font-medium text-base">
+                            Self-custodial login.
+                        </p>
+                    </IonCol>
+                )}
                 <div className="bg-grayscale-100 w-full h-[2px]" />
                 <button
                     onClick={openLCwebsite}
@@ -39,7 +36,7 @@ const LoginFooter: React.FC = () => {
                 </button>
                 <IonCol
                     size="12"
-                    className="w-full flex items-start justify-start p-0 mt-2 login-footer-links-wrap"
+                    className="w-full flex items-center justify-center p-0 mt-2 login-footer-links-wrap"
                 >
                     <button
                         onClick={openToS}

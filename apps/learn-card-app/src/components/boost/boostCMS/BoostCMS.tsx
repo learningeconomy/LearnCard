@@ -42,15 +42,10 @@ const BoostCMSAppearanceController = lazyWithRetry(
 );
 
 const BoostPreviewFooter = lazyWithRetry(() => import('./BoostPreview/BoostPreviewFooter'));
-const CredentialBadge = lazyWithRetry(
-    () => import('learn-card-base/components/CredentialBadge/CredentialBadge')
+const CredentialBadgeNew = lazyWithRetry(
+    () => import('learn-card-base/components/CredentialBadge/CredentialBadgeNew')
 );
 
-// Legacy skill selector (hardcoded skills)
-// oxlint-disable-next-line no-unused-vars
-const BoostCMSSkillsAttachmentForm = lazyWithRetry(
-    () => import('./boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm')
-);
 // New framework-based skill selector (Neo4j backend)
 const BoostFrameworkSkillSelector = lazyWithRetry(
     () => import('./boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector')
@@ -62,14 +57,12 @@ const BoostCMSIDCard = lazyWithRetry(() => import('../boost-id-card/BoostIDCard'
 const BoostCMSIDAppearanceController = lazyWithRetry(
     () => import('./boostCMSForms/boostCMSAppearance/BoostCMSIDAppearanceController')
 );
-const BoostCMSPublish = lazyWithRetry(
-    () => import('./boostCMSForms/boostCMSPublish/boostCMSPublish')
-);
 
 import BoostCMSMediaDisplayWarning from './boostCMSForms/boostCMSMedia/BoostCMSMediaDisplayWarning';
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostSuccessConfirmation from './BoostSuccessConfirmation/BoostSuccessConfirmation';
+import BoostCMSPublish from './boostCMSForms/boostCMSPublish/boostCMSPublish';
 import RecoveryPrompt from '../../common/RecoveryPrompt';
 import useBoostCMSAutosave from '../../../hooks/useBoostCMSAutosave';
 
@@ -111,6 +104,7 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { useAddCredentialToWallet } from '../mutations';
 import useWallet from 'learn-card-base/hooks/useWallet';
@@ -119,6 +113,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import BoostCMSMediaOptions from './boostCMSForms/boostCMSMedia/BoostCMSMediaOptions';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
+import * as m from '../../../paraglide/messages.js';
 
 const FamilyCMS = lazyWithRetry(() => import('../../familyCMS/FamilyCMS'));
 
@@ -138,6 +133,9 @@ interface BoostCMSProps {
     boostCMSState?: BoostCMSState;
     profileId?: string;
 }
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<BoostCMSProps> = ({
     boostDetails,
@@ -161,6 +159,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const { isDesktop } = useDeviceTypeByWidth();
 
     const { track } = useAnalytics();
+    const flags = useFlags();
 
     const { newModal, closeModal } = useModal();
     const { mutateAsync: createBoost } = useCreateBoost();
@@ -221,6 +220,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     const [isPublishLoading, setIsPublishLoading] = useState<boolean>(false);
     const [isSaveLoading, setIsSaveLoading] = useState<boolean>(false);
     const [publishedBoostUri, setPublishedBoostUri] = useState<string | null>(null);
+    const [skippedPublishStep, setSkippedPublishStep] = useState<boolean>(false);
     const [wallet, setWallet] = useState<BespokeLearnCard | null>(propWallet || null);
     const [displayType, setDisplayType] = useState<BoostCMSAppearanceDisplayTypeEnum>(
         state.appearance?.displayType || BoostCMSAppearanceDisplayTypeEnum.Certificate
@@ -364,11 +364,10 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     <div className="flex flex-col items-center justify-center w-full">
                         <div className="w-full flex flex-col items-center justify-center px-4 text-grayscale-900">
                             <h6 className="font-semibold text-black font-poppins text-xl mb-2">
-                                Leave This Page?
+                                {m['boost.cms.leavePage.title']()}
                             </h6>
                             <p className="text-center text-grayscale-600 font-poppins text-sm mb-4">
-                                You have unsaved changes. Your progress will be saved locally and
-                                you can continue editing later.
+                                {m['boost.cms.leavePage.body']()}
                             </p>
                             <button
                                 onClick={() => {
@@ -378,13 +377,13 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                                 }}
                                 className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-rose-600 font-poppins font-medium text-xl w-full shadow-lg"
                             >
-                                Leave Page
+                                {m['boost.cms.leavePage.leave']()}
                             </button>
                             <button
                                 onClick={() => closeModalRef.current()}
                                 className="flex items-center justify-center text-white rounded-full px-[50px] py-[10px] bg-grayscale-900 font-poppins font-medium text-xl w-full shadow-lg mt-4"
                             >
-                                Stay & Continue Editing
+                                {m['boost.cms.leavePage.stay']()}
                             </button>
                         </div>
                     </div>
@@ -500,7 +499,6 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         ...prevState.appearance,
                         badgeThumbnail: aiBoost?.imageUrl || prevState.appearance.badgeThumbnail,
                     },
-                    skills: aiBoost?.skills || prevState.skills,
                 };
             });
         }
@@ -599,7 +597,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         return <FamilyCMS handleCloseModal={() => history.goBack()} />;
     }
 
-    const handleNextStep = () => {
+    const handleNextStep = async () => {
         if (currentStep === BoostCMSStepsEnum.create) {
             if (isMediaDisplay && state?.mediaAttachments?.length === 0) {
                 newModal(
@@ -611,13 +609,26 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
 
             closeModal();
-            setCurrentStep(BoostCMSStepsEnum.publish);
-            track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
-                timestamp: Date.now(),
-                action: 'publish',
-                boostType: state?.basicInfo?.achievementType ?? undefined,
-                category: state?.basicInfo?.type,
-            });
+
+            // When skipPublishStep flag is enabled, skip directly to issueTo without creating the boost yet
+            if (flags?.skipPublishStep) {
+                setSkippedPublishStep(true);
+                setCurrentStep(BoostCMSStepsEnum.issueTo);
+                track(AnalyticsEvents.BOOST_CMS_ISSUE_TO, {
+                    timestamp: Date.now(),
+                    action: 'issue_to',
+                    boostType: state?.basicInfo?.achievementType ?? undefined,
+                    category: state?.basicInfo?.type,
+                });
+            } else {
+                setCurrentStep(BoostCMSStepsEnum.publish);
+                track(AnalyticsEvents.BOOST_CMS_PUBLISH, {
+                    timestamp: Date.now(),
+                    action: 'publish',
+                    boostType: state?.basicInfo?.achievementType ?? undefined,
+                    category: state?.basicInfo?.type,
+                });
+            }
         } else if (currentStep === BoostCMSStepsEnum.publish) {
             closeModal();
             setCurrentStep(BoostCMSStepsEnum.issueTo);
@@ -634,7 +645,12 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         if (currentStep === BoostCMSStepsEnum.publish) {
             setCurrentStep(BoostCMSStepsEnum.create);
         } else if (currentStep === BoostCMSStepsEnum.issueTo) {
-            handleConfirmationModal();
+            // When skipPublishStep flag is enabled, go back to create step (since publish was skipped)
+            if (flags?.skipPublishStep) {
+                setCurrentStep(BoostCMSStepsEnum.create);
+            } else {
+                handleConfirmationModal();
+            }
         }
     };
 
@@ -694,7 +710,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     // oxlint-disable-next-line no-unused-vars
     const handleSaveAndQuit = async (goBack: boolean = false) => {
         if (!wallet) {
-            presentToast(`Wallet is not initialized`, {
+            presentToast(m['toasts.boost.walletNotInitialized'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -738,7 +754,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 clearLocalSave();
 
                 setIsSaveLoading(false);
-                presentToast(`Boost saved successfully`, {
+                presentToast(m['toasts.boost.boostSavedSuccess'](), {
                     duration: 3000,
                     type: ToastTypeEnum.Success,
                 });
@@ -758,8 +774,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
-            presentToast(`Unable to save boost`, {
+            log.info('error::savingBoost', e);
+            presentToast(m['toasts.boost.boostSaveFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -768,7 +784,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     const handlePublishBoost = async () => {
         if (!wallet) {
-            presentToast(`Wallet is not initialized`, {
+            presentToast(m['toasts.boost.walletNotInitialized'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -825,8 +841,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsPublishLoading(false);
-            console.log('error::boosting::someone', e);
-            presentToast(`Error issuing boost`, {
+            log.info('error::boosting::someone', e);
+            presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -835,7 +851,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     const handleSaveAndIssue = async (boostUri?: string | null) => {
         if (!wallet) {
-            presentToast(`Wallet is not initialized`, {
+            presentToast(m['toasts.boost.walletNotInitialized'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -844,7 +860,39 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
         try {
             setIsLoading(true);
-            if (boostUri && issueToLength > 0) {
+
+            // If we skipped the publish step and boost hasn't been created yet, create it now
+            let finalBoostUri = boostUri;
+            if (skippedPublishStep && !boostUri && issueToLength > 0) {
+                const skillIds = extractSkillIdsFromAlignments(state?.alignments ?? []);
+                const { boostUri: newBoostUri } = await createBoost({
+                    state: addFallbackNameToCMSState(state),
+                    status: LCNBoostStatusEnum.live, // Create directly as LIVE since we're issuing
+                    defaultPermissions: {
+                        canView:
+                            typeof state.boostPermissions?.canView === 'boolean'
+                                ? state.boostPermissions.canView
+                                : false,
+                        canEdit:
+                            typeof state.boostPermissions?.canEdit === 'boolean'
+                                ? state.boostPermissions.canEdit
+                                : true,
+                        canIssue:
+                            typeof state.boostPermissions?.canIssue === 'boolean'
+                                ? state.boostPermissions.canIssue
+                                : true,
+                    },
+                    skillIds,
+                });
+                finalBoostUri = newBoostUri;
+                setPublishedBoostUri(newBoostUri);
+
+                if (state?.admins?.length > 0) {
+                    await handleAddAdmin(wallet, newBoostUri);
+                }
+            }
+
+            if (finalBoostUri && issueToLength > 0) {
                 const uris = await Promise.all(
                     state?.issueTo.map(async issuee => {
                         // handle self boosting
@@ -853,7 +901,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                             const { sentBoost, sentBoostUri } = await sendBoostCredential(
                                 wallet,
                                 profile?.profileId,
-                                boostUri
+                                finalBoostUri,
+                                { mediaAttachments: issuee.mediaAttachments }
                             );
                             const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
                                 sentBoost
@@ -864,7 +913,12 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         }
 
                         // handle boosting someone else
-                        const issuedVc = await addBoostSomeone(wallet, issuee?.profileId, boostUri);
+                        const issuedVc = await addBoostSomeone(
+                            wallet,
+                            issuee?.profileId,
+                            finalBoostUri,
+                            { mediaAttachments: issuee.mediaAttachments }
+                        );
                         return issuedVc;
                     })
                 );
@@ -872,7 +926,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 if (uris.length > 0) {
                     setIsLoading(false);
                     clearLocalSave();
-                    presentToast(`Boost issued successfully`, {
+                    presentToast(m['toasts.boost.boostIssuedSuccess'](), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -881,10 +935,10 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             } else {
                 setIsSaveLoading(true);
 
-                if (boostUri) {
+                if (finalBoostUri) {
                     setIsSaveLoading(false);
                     clearLocalSave();
-                    presentToast(`Boost saved successfully`, {
+                    presentToast(m['toasts.boost.boostSavedSuccess'](), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -893,8 +947,8 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
-            presentToast(`Error issuing boost`, {
+            log.info('error::boosting::someone', e);
+            presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -913,7 +967,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         );
     } else {
         previewDisplay = (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={state?.basicInfo?.achievementType}
                 boostType={state?.basicInfo?.type}
                 badgeThumbnail={state?.appearance?.badgeThumbnail}
@@ -924,7 +978,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? 'Continue Issuing' : 'Continue Editing';
+            currentStep === BoostCMSStepsEnum.issueTo
+                ? m['boost.cms.continueIssuing']()
+                : m['boost.cms.continueEditing']();
 
         newModal(
             <BoostCMSConfirmationPrompt
@@ -937,6 +993,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 onIntentionalNavigation={() => {
                     isIntentionalNavigationRef.current = true;
                 }}
+                skippedPublishStep={skippedPublishStep}
             />,
             { sectionClassName: '!max-w-[400px]', cancelButtonTextOverride: buttonText },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -1008,7 +1065,6 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     setCustomTypes={setCustomTypes}
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                 />
-                {/* <BoostCMSSkillsAttachmentForm state={state} setState={setState} /> */}
                 {/* Framework-based skill selector (new) */}
                 <BoostFrameworkSkillSelector state={state} setState={setState} />
                 <BoostCMSMediaForm state={state} setState={setState} />
@@ -1026,7 +1082,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     boostUri={publishedBoostUri}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m['boost.cms.issueTo.assignAdmins']()}
                     hideBoostShareableCode
                 />
             </>
@@ -1064,15 +1120,17 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     let loadingText = '';
     if (isLoading) {
-        loadingText = 'Issuing boost...';
+        loadingText = m['boost.cms.loading.issuing']();
     } else if (isPublishLoading) {
-        loadingText = 'Publishing boost...';
+        loadingText = skippedPublishStep
+            ? m['boost.cms.loading.creating']()
+            : m['boost.cms.loading.publishing']();
     } else if (isSaveLoading) {
-        loadingText = 'Saving boost...';
+        loadingText = m['boost.cms.loading.saving']();
     } else if (isAutosaving) {
-        loadingText = 'Auto-saving...';
+        loadingText = m['boost.cms.loading.autoSaving']();
     } else if (stylePackLoading) {
-        loadingText = 'Loading boost...';
+        loadingText = m['boost.cms.loading.loading']();
     }
 
     return (
@@ -1104,7 +1162,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m['boost.cms.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>

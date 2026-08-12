@@ -6,9 +6,14 @@ import {
     BrandingEnum,
     getHeaderBrandingColor,
 } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import { getHeaderText } from 'learn-card-base/config/brandingHelpers';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { CredentialCategoryEnum } from 'learn-card-base';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { useTenantConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { getPageTitle } from '../main-header/pageTitles';
+import headerScrollStore from '../../stores/headerScrollStore';
 
 type HeaderBrandingProps = {
     category?: CredentialCategoryEnum;
@@ -27,6 +32,8 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
 }) => {
     const location = useLocation();
     const history = useHistory();
+    const { textLogoDark } = useTenantBrandingAssets();
+    const tenantConfig = useTenantConfig();
 
     const { getThemedCategoryColors } = useTheme();
     const colors = getThemedCategoryColors(category as CredentialCategoryEnum);
@@ -34,13 +41,31 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
     const headerColors =
         colors?.headerBrandingTextColor || getHeaderBrandingColor(branding, location.pathname);
 
+    const headerText = getHeaderText(tenantConfig.branding);
+
+    const scrolled = headerScrollStore.use.scrolled();
+    const pageTitle = getPageTitle(location.pathname);
+    const showTitle = scrolled && !!pageTitle;
+
     return (
         <button
-            onClick={() => history.push('/wallet')}
+            onClick={() => history.push(tenantConfig.branding.homeRoute ?? '/wallet')}
             className={`text-sm z-10 tracking-[6px] font-bold select-none ${headerColors} ${textColor} ${className}`}
             disabled={disableClick}
         >
-            LEARNCARD
+            {showTitle ? (
+                <span className="font-poppins text-[20px] font-normal normal-case tracking-normal whitespace-nowrap">
+                    {pageTitle}
+                </span>
+            ) : textLogoDark ? (
+                <img
+                    src={textLogoDark}
+                    alt={headerText}
+                    className="max-w-[150px] max-h-[24px] object-contain"
+                />
+            ) : (
+                headerText
+            )}
         </button>
     );
 };

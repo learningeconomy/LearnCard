@@ -1,6 +1,8 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import SkillsInsightIcon from 'learn-card-base/svgs/SkillsInsightIcon';
 
 const SkillsInsightCard: React.FC = () => {
@@ -15,19 +17,22 @@ const SkillsInsightCard: React.FC = () => {
             <div className="w-full bg-indigo-600 rounded-[16px] flex items-center justify-between mb-4 relative shadow-soft-bottom">
                 <div className="flex flex-col items-start justify-center py-4 pl-4">
                     <h2 className="font-poppins font-semibold text-[20px] text-grayscale-50 text-left">
-                        AI Insights
+                        {m['wallet.categories.aiInsights']()}
                     </h2>
                     <p className="font-poppins font-semibold text-[14px] text-indigo-50 text-left my-2">
-                        <span className="font-normal text-grayscale-200">Your</span> top skills,
-                        learning
-                        <br /> snapshots, suggested lessons <br /> & careers,
-                        <span className="font-normal text-grayscale-200">and</span> TEDed content.
+                        <TransP
+                            m={m['skills.insightCard.blurb']}
+                            components={[
+                                <span className="font-normal text-grayscale-200" />,
+                                <span className="font-normal text-grayscale-200" />,
+                            ]}
+                        />
                     </p>
                     <button
                         onClick={handleExploreClick}
                         className="rounded-full bg-white text-indigo-600 font-semibold px-6 py-2 mt-2 uppercase"
                     >
-                        Explore
+                        {m['passport.explore']()}
                     </button>
                 </div>
                 <div className="flex items-end justify-end">

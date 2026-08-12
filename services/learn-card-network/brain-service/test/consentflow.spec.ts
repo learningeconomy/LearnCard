@@ -2567,6 +2567,118 @@ describe('Consent Flow Contracts', () => {
         });
     });
 
+    describe('deleteCredentialFromAllContracts', () => {
+        it('should not allow you to delete credential references without full auth', async () => {
+            const profileSuffix = `prune-auth-${Date.now()}`;
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: `usera-${profileSuffix}`,
+            });
+            await userB.clients.fullAuth.profile.createProfile({
+                profileId: `userb-${profileSuffix}`,
+            });
+
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'prune-test',
+            });
+
+            const pruneTerms = {
+                ...normalFullTerms,
+                read: {
+                    ...normalFullTerms.read,
+                    credentials: {
+                        ...normalFullTerms.read.credentials,
+                        shareAll: true,
+                        sharing: true,
+                        categories: {
+                            ...normalFullTerms.read.credentials.categories,
+                            Achievement: {
+                                ...normalFullTerms.read.credentials.categories.Achievement,
+                                shared: ['keep-uri', 'delete-uri'],
+                            },
+                            ID: {
+                                ...normalFullTerms.read.credentials.categories.ID,
+                                shared: ['id-uri'],
+                            },
+                        },
+                    },
+                },
+            };
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: pruneTerms,
+            });
+
+            await expect(
+                noAuthClient.contracts.deleteCredentialFromAllContracts({
+                    deletedUris: ['delete-uri'],
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            await expect(
+                userB.clients.partialAuth.contracts.deleteCredentialFromAllContracts({
+                    deletedUris: ['delete-uri'],
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        }, 120000);
+
+        it('should prune deleted URIs from live consent terms', async () => {
+            const profileSuffix = `prune-live-${Date.now()}`;
+            await userC.clients.fullAuth.profile.createProfile({
+                profileId: `userc-${profileSuffix}`,
+            });
+            await userD.clients.fullAuth.profile.createProfile({
+                profileId: `userd-${profileSuffix}`,
+            });
+
+            const contractUri = await userC.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'prune-test',
+            });
+
+            const pruneTerms = {
+                ...normalFullTerms,
+                read: {
+                    ...normalFullTerms.read,
+                    credentials: {
+                        ...normalFullTerms.read.credentials,
+                        shareAll: true,
+                        sharing: true,
+                        categories: {
+                            ...normalFullTerms.read.credentials.categories,
+                            Achievement: {
+                                ...normalFullTerms.read.credentials.categories.Achievement,
+                                shared: ['keep-uri', 'delete-uri'],
+                            },
+                            ID: {
+                                ...normalFullTerms.read.credentials.categories.ID,
+                                shared: ['id-uri'],
+                            },
+                        },
+                    },
+                },
+            };
+
+            const consent = await userD.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: pruneTerms,
+            });
+
+            const result = await userD.clients.fullAuth.contracts.deleteCredentialFromAllContracts({
+                deletedUris: ['delete-uri'],
+            });
+
+            expect(result).toEqual({ contractsUpdated: 1, removedSharedUris: 1 });
+
+            const contracts = await userD.clients.fullAuth.contracts.getConsentedContracts();
+            const terms = contracts.records.find(record => record.uri === consent.termsUri)!.terms;
+
+            expect(terms.read.credentials.categories.Achievement.shared).toEqual(['keep-uri']);
+            expect(terms.read.credentials.categories.ID.shared).toEqual(['id-uri']);
+        }, 120000);
+    });
+
     describe('withdrawConsent', () => {
         let contractUri: string;
         let termsUri: string;

@@ -1,42 +1,271 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 
+import { QRCodeSVG } from 'qrcode.react';
+import { ProfilePicture, UserProfilePicture, useIsLoggedIn } from 'learn-card-base';
+import { getProfileIdFromLCNDidWeb } from 'learn-card-base/helpers/credentialHelpers';
+import { useGetProfile } from 'learn-card-base/react-query/queries/queries';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
+import { TrustedIcon } from 'learn-card-base/svgs/TrustedIcon';
+import ResumePreviewInfoChip from './ResumePreviewInfoChip';
+import ResumeBuilderToggle from '../ResumeBuilderToggle';
 
-const ResumePreviewUserInfo: React.FC = () => {
+import {
+    PersonalDetails,
+    UserInfoEnum,
+    getLinkedInHandle,
+    resumeUserInfo,
+} from '../resume-builder.helpers';
+import { getUserInfoPlaceholder } from '../resumeBuilderI18n';
+import { formatPhoneForDisplay } from './resume-preview.helpers';
+
+const PRIMARY_CHIP_KEYS: (keyof PersonalDetails)[] = [UserInfoEnum.Career, UserInfoEnum.Location];
+const CONTACT_CHIP_KEYS: (keyof PersonalDetails)[] = [
+    UserInfoEnum.Email,
+    UserInfoEnum.Phone,
+    UserInfoEnum.Website,
+    UserInfoEnum.LinkedIn,
+];
+
+const ResumePreviewUserInfo: React.FC<{
+    isMobile?: boolean;
+    readOnly?: boolean;
+    qrCodeValue?: string;
+    profileDid?: string;
+}> = ({ isMobile = false, readOnly = false, qrCodeValue, profileDid }) => {
+    const isLoggedIn = useIsLoggedIn();
     const personalDetails = resumeBuilderStore.useTracked.personalDetails();
+    const hiddenPersonalDetails = resumeBuilderStore.useTracked.hiddenPersonalDetails();
+    const documentSetup = resumeBuilderStore.useTracked.documentSetup();
+    const setPersonalDetails = resumeBuilderStore.set.setPersonalDetails;
+    const setPersonalDetailHidden = resumeBuilderStore.set.setPersonalDetailHidden;
+    const showThumbnail = !hiddenPersonalDetails?.[UserInfoEnum.Thumbnail];
+    const profileId = getProfileIdFromLCNDidWeb(profileDid);
+    const { data: sharedProfile } = useGetProfile(
+        profileId,
+        Boolean(profileId) && !isLoggedIn && showThumbnail
+    );
 
-    const name = personalDetails.name;
-    const email = personalDetails.email;
-    const phone = personalDetails.phone;
-    const location = personalDetails.location;
-    const summary = personalDetails.summary;
+    const placeholderByKey = Object.fromEntries(
+        resumeUserInfo.map(field => [field.key, getUserInfoPlaceholder(field.key)])
+    ) as Record<UserInfoEnum, string>;
 
-    const hasPersonalInfo = useMemo(() => {
-        return Object.values(personalDetails).some(v => v.trim());
-    }, [personalDetails]);
+    const isFieldEnabled = (key: keyof PersonalDetails) => !hiddenPersonalDetails?.[key];
+    const isFieldVisible = (key: keyof PersonalDetails) =>
+        isFieldEnabled(key) && Boolean(personalDetails[key]?.trim());
 
-    if (!hasPersonalInfo) return null;
+    const removeField = (key: keyof PersonalDetails) => {
+        setPersonalDetails({ [key]: '' });
+        setPersonalDetailHidden(key, false);
+    };
+
+    const updateField = (key: keyof PersonalDetails, value: string) => {
+        setPersonalDetails({ [key]: value });
+        setPersonalDetailHidden(key, false);
+    };
+
+    const hasVisibleUserInfo = readOnly
+        ? showThumbnail || resumeUserInfo.some(field => isFieldVisible(field.key))
+        : showThumbnail || resumeUserInfo.some(field => isFieldEnabled(field.key));
+
+    if (!hasVisibleUserInfo) return null;
+
+    const exportContactItems = [
+        isFieldVisible(UserInfoEnum.Email) ? personalDetails.email : '',
+        isFieldVisible(UserInfoEnum.Phone) ? formatPhoneForDisplay(personalDetails.phone) : '',
+        isFieldVisible(UserInfoEnum.Website) ? personalDetails.website : '',
+        isFieldVisible(UserInfoEnum.LinkedIn)
+            ? `linkedin.com/in/${getLinkedInHandle(personalDetails.linkedIn)}`
+            : '',
+    ].filter(Boolean);
+    const exportPrimaryItems = [
+        isFieldVisible(UserInfoEnum.Career) ? personalDetails.career : '',
+        isFieldVisible(UserInfoEnum.Location) ? personalDetails.location : '',
+    ].filter(Boolean);
+    const showPrimaryChips = !readOnly || exportPrimaryItems.length > 0;
+    const showSummary =
+        isFieldEnabled(UserInfoEnum.Summary) &&
+        (!readOnly || Boolean(personalDetails.summary.trim()));
+    const showContactChips = !readOnly || exportContactItems.length > 0;
+    const sharedUserForPicture =
+        !isLoggedIn && showThumbnail
+            ? {
+                  profileId: sharedProfile?.profileId || profileId || profileDid || '',
+                  displayName: sharedProfile?.displayName || personalDetails.name,
+                  name: sharedProfile?.displayName || personalDetails.name,
+                  image: sharedProfile?.image || personalDetails.thumbnail || undefined,
+              }
+            : undefined;
 
     return (
-        <>
-            {hasPersonalInfo && (
-                <div className="border-b border-grayscale-200 pb-6 mb-6">
-                    {name && (
-                        <h1 className="text-3xl font-bold text-grayscale-900 tracking-tight">
-                            {name}
-                        </h1>
+        <div className="relative mb-6 overflow-x-hidden rounded-[20px] border-2 border-solid border-grayscale-100 bg-grayscale-50 p-4">
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
+                <div className="flex w-full min-w-0 flex-col items-start gap-3 sm:flex-row">
+                    {showThumbnail && (
+                        <div className="relative shrink-0">
+                            {isLoggedIn ? (
+                                <ProfilePicture
+                                    customContainerClass="text-grayscale-900 h-[60px] w-[60px] min-h-[60px] min-w-[60px] max-h-[60px] max-w-[60px] mt-[0px] mb-0"
+                                    customImageClass="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <UserProfilePicture
+                                    user={sharedUserForPicture}
+                                    customContainerClass="text-grayscale-900 h-[60px] w-[60px] min-h-[60px] min-w-[60px] max-h-[60px] max-w-[60px] mt-[0px] mb-0"
+                                    customImageClass="w-full h-full object-cover"
+                                />
+                            )}
+                        </div>
                     )}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-grayscale-600">
-                        {email && <span>{email}</span>}
-                        {phone && <span>{phone}</span>}
-                        {location && <span>{location}</span>}
+
+                    <div className="w-full min-w-0 max-w-full sm:flex-1">
+                        {isFieldEnabled(UserInfoEnum.Name) &&
+                            (readOnly ? (
+                                personalDetails.name.trim() ? (
+                                    <h1 className="w-full max-w-full break-words whitespace-normal text-3xl font-bold text-grayscale-900 tracking-tight">
+                                        {personalDetails.name}
+                                    </h1>
+                                ) : null
+                            ) : (
+                                <input
+                                    value={personalDetails.name}
+                                    onChange={event =>
+                                        updateField(UserInfoEnum.Name, event.target.value)
+                                    }
+                                    placeholder={placeholderByKey[UserInfoEnum.Name]}
+                                    aria-label={placeholderByKey[UserInfoEnum.Name]}
+                                    className="w-full max-w-full bg-transparent border-none outline-none text-3xl font-bold text-grayscale-900 tracking-tight placeholder:text-grayscale-400"
+                                />
+                            ))}
+
+                        {showPrimaryChips && (
+                            <div
+                                data-pdf-screen-only
+                                className="mt-2 flex w-full max-w-full flex-col gap-2 sm:flex-row sm:flex-wrap"
+                            >
+                                {(readOnly
+                                    ? PRIMARY_CHIP_KEYS.filter(isFieldVisible)
+                                    : PRIMARY_CHIP_KEYS.filter(isFieldEnabled)
+                                ).map(key => (
+                                    <ResumePreviewInfoChip
+                                        key={key}
+                                        detailKey={key}
+                                        placeholder={placeholderByKey[key]}
+                                        value={personalDetails[key]}
+                                        onChange={readOnly ? undefined : updateField}
+                                        onRemove={readOnly ? undefined : removeField}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                        {exportPrimaryItems.length > 0 && (
+                            <p
+                                data-pdf-export-block
+                                style={{ display: 'none' }}
+                                className="mt-1 text-sm text-grayscale-600"
+                            >
+                                {exportPrimaryItems.join(' \u00b7 ')}
+                            </p>
+                        )}
                     </div>
-                    {summary && (
-                        <p className="mt-3 text-sm text-grayscale-700 leading-relaxed">{summary}</p>
+                </div>
+
+                {documentSetup?.showQRCode && (
+                    <div
+                        className={`shrink-0 rounded-lg border border-grayscale-200 bg-white p-2 ${
+                            isMobile ? 'absolute right-4 top-4 z-10' : 'relative z-auto'
+                        }`}
+                    >
+                        <div className="absolute top-[-7px] right-[-7px] sm:top-[-7px] sm:right-[-7px]">
+                            <TrustedIcon className="w-4 h-4" />
+                        </div>
+
+                        <QRCodeSVG value={qrCodeValue || getAppBaseUrl()} size={44} />
+                    </div>
+                )}
+            </div>
+
+            {showSummary && (
+                <div
+                    data-pdf-screen-only
+                    className="mt-4 flex w-full flex-col items-start gap-3 sm:flex-row"
+                >
+                    <div className="w-full max-w-full rounded-xl bg-indigo-50 px-3 py-3 min-h-[96px] flex flex-col justify-between sm:flex-1">
+                        {readOnly ? (
+                            personalDetails.summary.trim() ? (
+                                <p className="w-full max-w-full break-words text-[13px] text-grayscale-900 leading-relaxed whitespace-pre-wrap">
+                                    {personalDetails.summary}
+                                </p>
+                            ) : null
+                        ) : (
+                            <textarea
+                                value={personalDetails.summary}
+                                onChange={event =>
+                                    updateField(UserInfoEnum.Summary, event.target.value)
+                                }
+                                placeholder={placeholderByKey[UserInfoEnum.Summary]}
+                                aria-label={placeholderByKey[UserInfoEnum.Summary]}
+                                rows={4}
+                                className="w-full max-w-full resize-none bg-transparent border-none outline-none text-[13px] text-grayscale-900 leading-relaxed placeholder:text-grayscale-500"
+                            />
+                        )}
+                    </div>
+                    {!readOnly && (
+                        <div
+                            data-pdf-hide
+                            className="shrink-0 flex flex-col items-center gap-2 pt-0.5 self-end sm:self-auto"
+                        >
+                            <ResumeBuilderToggle
+                                checked={!hiddenPersonalDetails?.[UserInfoEnum.Summary]}
+                                onChange={checked =>
+                                    setPersonalDetailHidden(UserInfoEnum.Summary, !checked)
+                                }
+                            />
+                        </div>
                     )}
                 </div>
             )}
-        </>
+            {Boolean(personalDetails.summary.trim()) &&
+                !hiddenPersonalDetails?.[UserInfoEnum.Summary] && (
+                    <p
+                        data-pdf-export-block
+                        style={{ display: 'none' }}
+                        className="mt-4 text-sm text-grayscale-700 leading-relaxed"
+                    >
+                        {personalDetails.summary}
+                    </p>
+                )}
+
+            {showContactChips && (
+                <div
+                    data-pdf-screen-only
+                    className="mt-4 flex w-full max-w-full flex-col gap-2 border-t border-grayscale-200 pt-4 sm:flex-row sm:flex-wrap"
+                >
+                    {(readOnly
+                        ? CONTACT_CHIP_KEYS.filter(isFieldVisible)
+                        : CONTACT_CHIP_KEYS.filter(isFieldEnabled)
+                    ).map(key => (
+                        <ResumePreviewInfoChip
+                            key={key}
+                            detailKey={key}
+                            placeholder={placeholderByKey[key]}
+                            value={personalDetails[key]}
+                            onChange={readOnly ? undefined : updateField}
+                            onRemove={readOnly ? undefined : removeField}
+                        />
+                    ))}
+                </div>
+            )}
+            {exportContactItems.length > 0 && (
+                <p
+                    data-pdf-export-block
+                    style={{ display: 'none' }}
+                    className="mt-4 pt-4 border-t border-grayscale-200 text-sm text-grayscale-600"
+                >
+                    {exportContactItems.join(' \u00b7 ')}
+                </p>
+            )}
+        </div>
     );
 };
 

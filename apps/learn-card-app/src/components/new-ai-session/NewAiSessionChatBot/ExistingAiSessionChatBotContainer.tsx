@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import AiSessionLearningPathways from '../AiSessionLearningPathways/AiSessionLearningPathways';
 import { ChatBotBubbleAnswer, ChatBotBubbleQuestion } from './helpers/ChatBotBubble';
 import ExistingAiTopics from './ExistingAiTopics/ExistingAiTopics';
 import ChatBotTypingIndicator from './helpers/TypingIndicator';
 import ExistingTopicSearch from './helpers/ExistingTopicSearch';
+import OnboardingHeader from './helpers/OnboardingHeader';
 
 import {
     ChatBotQA,
@@ -43,14 +46,16 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
 
     useEffect(() => {
         const timeouts: NodeJS.Timeout[] = [];
+        let typedPos = 0;
 
         chatBotQA.forEach((qa, index) => {
-            if (index === 0) {
+            if (qa.hidden || index === 0) {
                 setVisibleIndexes(prev => [...prev, index]);
                 return;
             }
 
-            const delay = index * 1000;
+            const delay = typedPos * 1000;
+            typedPos += 1;
 
             timeouts.push(
                 setTimeout(() => {
@@ -117,13 +122,26 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
         }, 1000);
     };
 
+    const introAnswer = chatBotQA[0]?.answer;
+    const headerTitle =
+        typeof introAnswer === 'string' && introAnswer.length > 0
+            ? introAnswer
+            : m['ai.revisitTopic']();
+
     return (
         <div
-            className={`w-full flex flex-col overflow-y-auto ${
+            className={`w-full flex flex-col overflow-y-auto pt-[80px] ${
                 isDesktop ? 'max-w-[800px]' : ''
             } scrollbar-hide relative`}
+            style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
         >
+            <OnboardingHeader
+                title={headerTitle}
+                onClose={isDesktop ? handleStartOver : undefined}
+            />
             {chatBotQA.map((qa, index) => {
+                if (qa.hidden) return null;
+
                 const isVisible = visibleIndexes.includes(index);
                 const isTyping = typingIndex === index;
 

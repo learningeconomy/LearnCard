@@ -21,8 +21,7 @@ import { useWallet, SelectedCredsStoreState, useToast, ToastTypeEnum } from 'lea
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import ShareBoostsBundle from './ShareBoostsBundle';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
-
-export const baseUrl = process.env.NODE_ENV === 'production' ? 'pass.scout.org' : 'localhost:3000';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
 const ShareBoostsBundleModal = ({
     onDismiss,
@@ -185,7 +184,7 @@ const ShareBoostsBundleModal = ({
         }
     };
 
-    const link = `https://${baseUrl}/share-creds/${vpUri}/${randomSeed}`;
+    const link = `${getAppBaseUrl()}/share-creds/${vpUri}/${randomSeed}`;
 
     const handleCopy = async () => {
         try {

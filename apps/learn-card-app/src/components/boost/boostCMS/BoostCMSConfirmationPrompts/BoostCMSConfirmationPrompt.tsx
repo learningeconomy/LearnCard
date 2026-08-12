@@ -5,6 +5,8 @@ import { BoostCMSState, BoostCMSStepsEnum } from '../../boost';
 import { BOOST_CATEGORY_TO_WALLET_ROUTE } from '../../boost-options/boostOptions';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import { useBrandingConfig } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 
 type BoostCMSConfirmationPromptProps = {
     state: BoostCMSState;
@@ -14,6 +16,7 @@ type BoostCMSConfirmationPromptProps = {
     isSaveLoading: boolean;
     clearLocalSave?: () => void;
     onIntentionalNavigation?: () => void;
+    skippedPublishStep?: boolean;
 };
 
 export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProps> = ({
@@ -24,9 +27,11 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
     isSaveLoading,
     clearLocalSave,
     onIntentionalNavigation,
+    skippedPublishStep = false,
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     const { closeModal } = useModal();
     const history = useHistory();
@@ -45,13 +50,15 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
 
     let promptText = null;
 
-    if (currentStep === BoostCMSStepsEnum.issueTo) {
-        promptText =
-            'Your boost is published and no more edits can be made. You can return to issuing or quit to start over.';
+    if (currentStep === BoostCMSStepsEnum.issueTo && !skippedPublishStep) {
+        promptText = m['boost.cms.confirm.publishedNoEdits']();
     }
 
+    // Show "Issue Later" only when on issueTo step AND publish step was NOT skipped
     const quitWithoutSavingText =
-        currentStep === BoostCMSStepsEnum.issueTo ? 'Issue Later' : 'Quit Without Saving';
+        currentStep === BoostCMSStepsEnum.issueTo && !skippedPublishStep
+            ? m['boost.cms.confirm.issueLater']()
+            : m['boost.cms.confirm.quitWithoutSaving']();
 
     return (
         <section className="pt-[36px] pb-[16px]">
@@ -60,26 +67,27 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
                     <div className="flex flex-col">
                         <div className="w-full flex items-center justify-center">
                             <h6 className="tracking-[12px] text-base font-bold text-black">
-                                LEARNCARD
+                                {brandingConfig?.name || 'LEARNCARD'}
                             </h6>
                         </div>
                     </div>
 
                     <h6 className="font-semi-bold text-black font-poppins text-xl mb-4 mt-4">
-                        Are you sure?
+                        {m['boost.cms.confirm.areYouSure']()}
                     </h6>
 
                     {promptText}
 
                     {currentStep !== BoostCMSStepsEnum.confirmation &&
-                        currentStep !== BoostCMSStepsEnum.issueTo &&
-                        !isEditMode && (
+                        !isEditMode &&
+                        (currentStep !== BoostCMSStepsEnum.issueTo ||
+                            (currentStep === BoostCMSStepsEnum.issueTo && skippedPublishStep)) && (
                             <button
                                 disabled={isSaveLoading}
                                 onClick={handleQuitAndSave}
                                 className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-emerald-700 font-poppins font-medium text-xl w-full shadow-lg"
                             >
-                                Save & Quit
+                                {m['boost.cms.confirm.saveAndQuit']()}
                             </button>
                         )}
                     <button
@@ -100,7 +108,7 @@ export const BoostCMSConfirmationPrompt: React.FC<BoostCMSConfirmationPromptProp
                             }}
                             className={`flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-${primaryColor} font-poppins text-xl w-full shadow-lg normal mt-4`}
                         >
-                            Return to Wallet
+                            {m['boost.cms.confirm.returnToWallet']()}
                         </button>
                     )}
                 </div>

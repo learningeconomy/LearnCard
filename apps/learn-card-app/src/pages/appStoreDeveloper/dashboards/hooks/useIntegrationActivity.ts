@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import { useWallet } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 
 import type { CredentialTemplate } from '../types';
 
@@ -31,19 +32,38 @@ export interface CredentialActivityRecord {
         profileId: string;
         displayName?: string;
     };
+    status?: 'active' | 'revoked' | 'suspended';
 }
 
 interface CredentialActivityStats {
+    totalEvents: number;
     total: number;
     created: number;
     delivered: number;
     claimed: number;
     expired: number;
     failed: number;
+    revoked?: number;
+    suspended?: number;
     claimRate: number;
 }
 
 export type CredentialEventType = 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED' | 'FAILED';
+
+/** Get filter options for event type dropdown (resolved at render for i18n) */
+export function getEventTypeFilterOptions(): {
+    value: CredentialEventType | 'ALL';
+    label: string;
+}[] {
+    return [
+        { value: 'ALL', label: m['developerPortal.dashboards.activity.allEvents']() },
+        { value: 'CREATED', label: m['developerPortal.dashboards.activity.sent']() },
+        { value: 'DELIVERED', label: m['developerPortal.dashboards.activity.delivered']() },
+        { value: 'CLAIMED', label: m['developerPortal.dashboards.activity.claimed']() },
+        { value: 'FAILED', label: m['developerPortal.dashboards.activity.failed']() },
+        { value: 'EXPIRED', label: m['developerPortal.dashboards.activity.expired']() },
+    ];
+}
 
 /**
  * Get display label for event type
@@ -51,15 +71,15 @@ export type CredentialEventType = 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED
 export function getEventTypeLabel(eventType: CredentialEventType): string {
     switch (eventType) {
         case 'CREATED':
-            return 'Sent';
+            return m['developerPortal.dashboards.activity.sent']();
         case 'DELIVERED':
-            return 'Delivered';
+            return m['developerPortal.dashboards.activity.delivered']();
         case 'CLAIMED':
-            return 'Claimed';
+            return m['developerPortal.dashboards.activity.claimed']();
         case 'EXPIRED':
-            return 'Expired';
+            return m['developerPortal.dashboards.activity.expired']();
         case 'FAILED':
-            return 'Failed';
+            return m['developerPortal.dashboards.activity.failed']();
     }
 }
 
@@ -71,7 +91,7 @@ export function getEventTypeLabel(eventType: CredentialEventType): string {
  */
 export function getActivityLabel(record: CredentialActivityRecord): string {
     if (record.eventType === 'DELIVERED' && record.recipientProfileId && isInboxActivity(record)) {
-        return 'Auto-Delivered';
+        return m['developerPortal.dashboards.activity.autoDelivered']();
     }
 
     return getEventTypeLabel(record.eventType);
@@ -97,14 +117,18 @@ export function isInboxActivity(record: CredentialActivityRecord): boolean {
  * Get display name for recipient
  */
 export function getRecipientDisplayName(record: CredentialActivityRecord): string {
-    return record.recipientProfile?.displayName || record.recipientIdentifier || 'Unknown';
+    return (
+        record.recipientProfile?.displayName ||
+        record.recipientIdentifier ||
+        m['developerPortal.dashboards.activity.recipientUnknown']()
+    );
 }
 
 /**
  * Get template/credential name for display
  */
 export function getActivityName(record: CredentialActivityRecord): string {
-    return record.boost?.name || 'Credential';
+    return record.boost?.name || m['developerPortal.dashboards.activity.credential']();
 }
 
 /**
@@ -121,37 +145,46 @@ export function getActivityError(record: CredentialActivityRecord): string | und
 export function formatActivitySource(source: string): string {
     switch (source) {
         case 'send':
-            return 'API Send';
+            return m['developerPortal.dashboards.activity.source.apiSend']();
         case 'sendBoost':
-            return 'Boost Send';
+            return m['developerPortal.dashboards.activity.source.boostSend']();
         case 'sendCredential':
-            return 'Credential Send';
+            return m['developerPortal.dashboards.activity.source.credentialSend']();
         case 'contract':
-            return 'Contract';
+            return m['developerPortal.dashboards.activity.source.contract']();
         case 'claim':
-            return 'Claim';
+            return m['developerPortal.dashboards.activity.source.claim']();
         case 'inbox':
-            return 'Inbox';
+            return m['developerPortal.dashboards.activity.source.inbox']();
         case 'claimLink':
-            return 'Claim Link';
+            return m['developerPortal.dashboards.activity.source.claimLink']();
         case 'acceptCredential':
-            return 'Accept Credential';
+            return m['developerPortal.dashboards.activity.source.acceptCredential']();
         case 'appEvent':
-            return 'App Event';
+            return m['developerPortal.dashboards.activity.source.appEvent']();
         default:
-            return source || 'Unknown';
+            return source || m['developerPortal.dashboards.activity.source.unknown']();
     }
 }
 
 export interface IntegrationActivityResult {
     activity: CredentialActivityRecord[];
     isLoading: boolean;
+    isLoadingMore: boolean;
+    hasMore: boolean;
     error: Error | null;
     refetch: () => void;
+    loadMore: () => Promise<void>;
 
     stats: {
         totalSent: number;
         totalClaimed: number;
+        total: number;
+        totalEvents: number;
+        expired: number;
+        failed: number;
+        revoked: number;
+        suspended: number;
         pendingClaims: number;
         claimRate: number;
     };
@@ -166,98 +199,117 @@ export interface IntegrationActivityResult {
  * @param templates - Credential templates to filter by (optional)
  * @param options.limit - Maximum number of activities to fetch
  * @param options.integrationId - Filter activities by integration ID for accurate per-integration stats
+ * @param options.listingId - Filter activities by app listing ID for per-app stats
+ * @param options.eventType - Filter activities by event type (optional)
  */
+const EMPTY_STATS: IntegrationActivityResult['stats'] = {
+    totalSent: 0,
+    totalClaimed: 0,
+    total: 0,
+    totalEvents: 0,
+    expired: 0,
+    failed: 0,
+    revoked: 0,
+    suspended: 0,
+    pendingClaims: 0,
+    claimRate: 0,
+};
+
 export function useIntegrationActivity(
     templates: CredentialTemplate[],
-    options: { limit?: number; integrationId?: string } = {}
+    options: {
+        limit?: number;
+        integrationId?: string;
+        listingId?: string;
+        eventType?: CredentialEventType;
+        boostUri?: string;
+    } = {}
 ): IntegrationActivityResult {
-    const { limit = 20, integrationId } = options;
+    const { limit = 25, integrationId, listingId, eventType, boostUri } = options;
     const { initWallet } = useWallet();
-    const initWalletRef = useRef(initWallet);
-    initWalletRef.current = initWallet;
-
-    const [activity, setActivity] = useState<CredentialActivityRecord[]>([]);
-    const [stats, setStats] = useState<IntegrationActivityResult['stats']>({
-        totalSent: 0,
-        totalClaimed: 0,
-        pendingClaims: 0,
-        claimRate: 0,
-    });
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<Error | null>(null);
-    const [fetchKey, setFetchKey] = useState(0);
-
-    // Get boostUris from templates for client-side filtering
     const boostUris = templates.map(t => t.boostUri).filter(Boolean) as string[];
+    const boostUrisKey = boostUris.join(',');
 
-    // Fetch activity and stats
-    useEffect(() => {
-        let cancelled = false;
+    const activityQuery = useInfiniteQuery({
+        queryKey: ['getMyActivities', { limit, integrationId, listingId, eventType, boostUri }],
+        initialPageParam: undefined as string | undefined,
+        queryFn: async ({ pageParam }) => {
+            const wallet = await initWallet();
+            const result = await (wallet.invoke as any).getMyActivities?.({
+                limit,
+                cursor: pageParam,
+                integrationId,
+                listingId,
+                eventType,
+                boostUri,
+            });
+            return {
+                records: (result?.records ?? []) as CredentialActivityRecord[],
+                cursor: result?.cursor as string | undefined,
+                hasMore: (result?.hasMore ?? false) as boolean,
+            };
+        },
+        getNextPageParam: lastPage => (lastPage.hasMore ? lastPage.cursor : undefined),
+    });
 
-        const fetchActivity = async () => {
-            try {
-                setIsLoading(true);
-                const wallet = await initWalletRef.current();
+    const statsQuery = useQuery({
+        queryKey: [
+            'getActivityStats',
+            { integrationId, listingId, boostUri, boostUris: boostUrisKey },
+        ],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            const result = await (wallet.invoke as any).getActivityStats?.({
+                boostUris: boostUri
+                    ? [boostUri]
+                    : !integrationId && !listingId && boostUris.length > 0
+                    ? boostUris
+                    : undefined,
+                integrationId,
+                listingId,
+                boostUri,
+            });
+            return (result ?? undefined) as CredentialActivityStats | undefined;
+        },
+    });
 
-                // Fetch activity records using unified API
-                // Use integrationId for server-side filtering when available
-                const activityResult = await (wallet.invoke as any).getMyActivities?.({
-                    limit,
-                    integrationId,
-                });
+    const activity = activityQuery.data?.pages.flatMap(p => p.records) ?? [];
+    const apiStats = statsQuery.data;
+    const stats: IntegrationActivityResult['stats'] = apiStats
+        ? {
+              totalSent: apiStats.delivered + apiStats.created + apiStats.claimed,
+              totalClaimed: apiStats.claimed,
+              total: apiStats.total,
+              totalEvents: apiStats.totalEvents,
+              expired: apiStats.expired,
+              failed: apiStats.failed,
+              revoked: apiStats.revoked ?? 0,
+              suspended: apiStats.suspended ?? 0,
+              pendingClaims: apiStats.delivered + apiStats.created,
+              claimRate: apiStats.claimRate,
+          }
+        : EMPTY_STATS;
 
-                // Fetch stats using unified API with integrationId for accurate per-integration stats
-                const statsResult = await (wallet.invoke as any).getActivityStats?.({
-                    boostUris: boostUris.length > 0 ? boostUris : undefined,
-                    integrationId,
-                });
+    const refetch = () => {
+        activityQuery.refetch();
+        statsQuery.refetch();
+    };
+    const loadMore = async () => {
+        if (activityQuery.hasNextPage && !activityQuery.isFetchingNextPage) {
+            await activityQuery.fetchNextPage();
+        }
+    };
 
-                if (cancelled) return;
-
-                // Pass through all records - server already filters by integrationId
-                // Client-side filtering by boostUri is not needed since stats API handles it
-                const records: CredentialActivityRecord[] = activityResult?.records || [];
-
-                setActivity(records);
-
-                // Set stats from unified API
-                if (statsResult) {
-                    const apiStats = statsResult as CredentialActivityStats;
-
-                    setStats({
-                        totalSent: apiStats.delivered + apiStats.created,
-                        totalClaimed: apiStats.claimed,
-                        pendingClaims: apiStats.delivered + apiStats.created - apiStats.claimed,
-                        claimRate: apiStats.claimRate,
-                    });
-                }
-
-                setError(null);
-            } catch (err) {
-                if (cancelled) return;
-                console.error('[useIntegrationActivity] Failed to fetch activity:', err);
-                setError(err instanceof Error ? err : new Error('Failed to fetch activity'));
-                setActivity([]);
-            } finally {
-                if (!cancelled) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        fetchActivity();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [boostUris.join(','), limit, integrationId, fetchKey]);
-
-    // Refetch function
-    const refetch = useCallback(() => {
-        setFetchKey(k => k + 1);
-    }, []);
-
-    return { activity, isLoading, error, refetch, stats };
+    return {
+        activity,
+        isLoading: activityQuery.isLoading,
+        isLoadingMore: activityQuery.isFetchingNextPage,
+        hasMore: activityQuery.hasNextPage ?? false,
+        error: (activityQuery.error ?? statsQuery.error ?? null) as Error | null,
+        refetch,
+        loadMore,
+        stats,
+    };
 }
 
 /**
@@ -271,10 +323,12 @@ export function formatRelativeTime(dateString: string): string {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 1) return m['developerPortal.dashboards.activity.justNow']();
+    if (diffMins < 60)
+        return m['developerPortal.dashboards.activity.minutesAgo']({ count: diffMins });
+    if (diffHours < 24)
+        return m['developerPortal.dashboards.activity.hoursAgo']({ count: diffHours });
+    if (diffDays < 7) return m['developerPortal.dashboards.activity.daysAgo']({ count: diffDays });
 
     return date.toLocaleDateString();
 }

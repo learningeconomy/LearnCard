@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('ai-passport-app-profile-options');
 
 import { LaunchPadAppListItem, useWallet } from 'learn-card-base';
 import { aiAppProfileOptions } from './aiPassport-app-options.helpers';
@@ -19,7 +21,7 @@ export const AiPassportAppProfileOptions: React.FC<{ app: LaunchPadAppListItem }
 
             setUri(recordUri);
         } catch (error) {
-            console.log('handleGetQACredential::error', error);
+            log.info('handleGetQACredential::error', error);
         }
     };
 

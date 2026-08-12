@@ -1,3 +1,6 @@
+import type { TenantBrandingConfig } from '../../config/tenantConfig';
+import { getHeaderTextColor as getHeaderTextColorFromConfig } from '../../config/brandingHelpers';
+
 // Note: tab routes must include leading slash
 export const lcRoutes = {
     // tab1: "/home",
@@ -51,10 +54,13 @@ export const getLearnCardHeaderBrandingColors = (path: string = '/') => {
         path === '/invite' ||
         path === '/claim/boost' ||
         path.includes('/share-boost') ||
-        path === '/launchpad' ||
+        path.includes('/verify/resume') ||
+        path.startsWith('/launchpad') ||
+        path === '/issue' ||
         path.includes('/contacts') ||
         path.includes('/skills') ||
-        path === '/ai/insights'
+        path === '/ai/insights' ||
+        path.startsWith('/pathways')
     ) {
         return 'text-grayscale-900';
     }
@@ -91,6 +97,7 @@ export const getScoutPassBrandingColors = (path: string = '/') => {
         path === '/invite' ||
         path === '/claim/boost' ||
         path.includes('/share-boost') ||
+        path.includes('/verify/resume') ||
         path.includes('/contacts')
     ) {
         return 'text-sp-purple-base';
@@ -102,8 +109,16 @@ export const getScoutPassBrandingColors = (path: string = '/') => {
 
 export const getHeaderBrandingColor = (
     branding: BrandingEnum = BrandingEnum.learncard,
-    path: string = '/'
+    path: string = '/',
+    tenantBranding?: TenantBrandingConfig
 ) => {
+    // Data-driven path: if tenant branding config provides headerTextColors, use it
+    if (tenantBranding) {
+        const override = getHeaderTextColorFromConfig(tenantBranding, path);
+
+        if (override) return override;
+    }
+
     if (branding === BrandingEnum.metaversity) {
         return getMetaversityHeaderBrandingColors(path);
     }

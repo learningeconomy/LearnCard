@@ -2,39 +2,39 @@
 
 Welcome! This guide covers the essential setup required to start building with **LearnCard**. Following these steps will get your environment ready for our Quick Start and tutorials.
 
-***
+---
 
 ### 1. 🧭 Introduction
 
 This guide will help you:
 
-* Set up your development environment
-* Install core SDKs and tools
-* Verify everything is working before your first credential issuance
+-   Set up your development environment
+-   Install core SDKs and tools
+-   Verify everything is working before your first credential issuance
 
 > **Assumed Knowledge:**\
 > You should be familiar with:
 >
-> * Basic terminal/command line use
-> * JavaScript or TypeScript
-> * Package managers like npm, yarn, or pnpm
+> -   Basic terminal/command line use
+> -   JavaScript or TypeScript
+> -   Package managers like npm, yarn, or Bun
 
 All examples use modern JavaScript and run on Node.js.
 
-***
+---
 
 ### 2. 🖥️ System Requirements
 
 #### ✅ Supported OS
 
-* **macOS** (M1/M2/M3+ supported)
-* **Windows** (Use [**WSL**](https://learn.microsoft.com/en-us/windows/wsl/install) for best results)
-* **Linux** (Ubuntu LTS recommended)
+-   **macOS** (M1/M2/M3+ supported)
+-   **Windows** (Use [**WSL**](https://learn.microsoft.com/en-us/windows/wsl/install) for best results)
+-   **Linux** (Ubuntu LTS recommended)
 
 #### 🔧 Node.js + npm/yarn
 
-* Required version: **Node.js v18.x or v20.x**
-* Node.js includes npm by default.
+-   Required version: **Node.js v18.x or v20.x**
+-   Node.js includes npm by default.
 
 📥 [Download Node.js](https://nodejs.org/)
 
@@ -59,7 +59,7 @@ Git is required for cloning repositories and managing code.
 git --version
 ```
 
-***
+---
 
 ### 3. 👤 Account Setup (Optional)
 
@@ -75,11 +75,11 @@ Not required for Quick Start.
 
 > You’ll need them later for:
 >
-> * Live network integrations
-> * Custom signing authorities
-> * Auth-granted service access
+> -   Live network integrations
+> -   Custom signing authorities
+> -   Auth-granted service access
 
-***
+---
 
 ### 4. 📦 Install the Wallet SDK
 
@@ -87,18 +87,18 @@ To get started with the [LearnCard Wallet SDK](../sdks/learncard-core/):
 
 ```bash
 # Using npm
-npm install @learncard/init 
+npm install @learncard/init
 
 # Using yarn
-yarn add @learncard/init 
+yarn add @learncard/init
 
-# Using pnpm
-pnpm add @learncard/init 
+# Using Bun
+bun add @learncard/init
 ```
 
 This installs the essential module to initialize LearnCard
 
-***
+---
 
 ### 5. 🔧 Install Essential Tools (Optional for Quick Start)
 
@@ -118,7 +118,7 @@ This launches an interactive REPL where you can issue credentials, verify them, 
 
 You **don’t need** an external wallet for Quick Start. LearnCard uses secure, deterministic wallets derived from seed phrases. You’ll use an environment variable (`SECURE_SEED`) for your first script.
 
-***
+---
 
 ### 6. 💡 Recommended Tools
 
@@ -128,11 +128,11 @@ We recommend [Visual Studio Code](https://code.visualstudio.com/)
 
 #### Helpful Extensions:
 
-* **ESLint** – Code quality
-* **Prettier** – Auto-formatting
-* **dotenv** – Recognizes environment variables in `.env` files
+-   **ESLint** – Code quality
+-   **Prettier** – Auto-formatting
+-   **dotenv** – Recognizes environment variables in `.env` files
 
-***
+---
 
 ### 7. ✅ Check Your Setup
 
@@ -142,7 +142,7 @@ Run the following commands to confirm everything is ready:
 # Verify Node + package manager
 node -v
 npm -v
-# or yarn -v / pnpm -v
+# or yarn -v / bun -v
 
 # Verify Git
 git --version
@@ -153,7 +153,7 @@ npx @learncard/cli
 
 Need help? Visit our [Troubleshooting Guide ](../sdks/learncard-core/troubleshooting-guide.md)or join the Community for support.
 
-***
+---
 
 ### 8. 🚀 Next Steps
 

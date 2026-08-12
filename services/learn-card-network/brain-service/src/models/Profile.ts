@@ -11,12 +11,27 @@ import { FlatProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
 import { LearnCardRolesEnum } from 'types/profile';
 
+export enum ProfileVisibilityEnum {
+    public = 'public',
+    connections_only = 'connections_only',
+    private = 'private',
+}
+
+export enum AllowConnectionRequestsEnum {
+    anyone = 'anyone',
+    invite_only = 'invite_only',
+}
+
 type CredentialRelationshipProps = {
     to: string;
     date: string;
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
+    status?: 'revoked' | 'suspended';
+    revokedAt?: string;
+    suspendedAt?: string;
+    unsuspendedAt?: string;
 } & Record<string, unknown>;
 
 export type ProfileRelationships = {
@@ -67,7 +82,18 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
             shortBio: { type: 'string', required: false },
             bio: { type: 'string', required: false },
             did: { type: 'string', required: true, uniqueItems: true },
-            isPrivate: { type: 'boolean', required: false },
+            isPrivate: { type: 'boolean', required: false }, // ! deprecated, use profileVisibility instead
+            profileVisibility: {
+                type: 'string',
+                required: false,
+                enum: Object.values(ProfileVisibilityEnum),
+            },
+            showEmail: { type: 'boolean', required: false },
+            allowConnectionRequests: {
+                type: 'string',
+                required: false,
+                enum: Object.values(AllowConnectionRequestsEnum),
+            },
             email: { type: 'string', required: false, uniqueItems: true },
             image: { type: 'string', required: false },
             heroImage: { type: 'string', required: false },
@@ -84,6 +110,12 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 enum: Object.values(LearnCardRolesEnum),
             },
             approved: { type: 'boolean', required: false },
+            // Per-user UI locale (BCP-47 primary subtag: en/es/fr/ar) used to
+            // localize server-sent notifications. Must be declared here or
+            // neogma model reads (e.g. Profile.findRelationships) strip it from
+            // `.dataValues`, silently falling back to 'en' — only raw
+            // QueryBuilder reads would carry it. See getRecipientLocale.helpers.
+            locale: { type: 'string', required: false },
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },
@@ -107,6 +139,19 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 properties: {
                     to: { property: 'to', schema: { type: 'string', required: true } },
                     date: { property: 'date', schema: { type: 'string', required: true } },
+                    status: { property: 'status', schema: { type: 'string', required: false } },
+                    revokedAt: {
+                        property: 'revokedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    suspendedAt: {
+                        property: 'suspendedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    unsuspendedAt: {
+                        property: 'unsuspendedAt',
+                        schema: { type: 'string', required: false },
+                    },
                 },
             },
             presentationSent: {

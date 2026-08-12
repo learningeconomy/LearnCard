@@ -1,0 +1,1331 @@
+{
+    "id": "fw-1769813954210",
+    "name": "WEF Global Skills Taxonomy",
+    "description": "The World Economic Forum Global Skills Taxonomy creates a shared language that clarifies in-demand skills, helps employers identify the right talent, guiding educators in designing relevant training programmes, and empowers jobseekers to showcase their skills.",
+    "image": "https://cdn.filestackcontent.com/MLseH895Tia5SpY5iOz2",
+    "skills": [
+        {
+            "id": "skill-1770752882121-83py7nqrh",
+            "targetName": "Skills, knowledge and abilities",
+            "targetDescription": "Whether gained through experiential learning or formal instruction, skills represent developed proficiencies in the performance of distinct cross-functional aspects of tasks. Though they may become increasingly automatic as they develop, skills are nevertheless often difficult to practically disentangle from familiarity in using a body of contextual or theoretical knowledge. Skills may also be dependent on physical, psychomotor, cognitive and sensory abilities which are to varying degrees innate. ",
+            "targetFramework": "fw-1769813954210",
+            "icon": "🛠️",
+            "role": "tier",
+            "subskills": [
+                {
+                    "id": "skill-1770752882121-aueph8cjs",
+                    "targetName": "Engagement skills",
+                    "targetDescription": "Capacity to engage customers either corporately or personally.",
+                    "targetFramework": "fw-1769813954210",
+                    "icon": "💬",
+                    "role": "tier",
+                    "subskills": [
+                        {
+                            "id": "skill-1770752882121-5eiywbssr",
+                            "targetName": "Customer experience",
+                            "targetDescription": "Capacity to manage positive interactions between an organization and its customers.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🛍️",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-3zhqyc1zp",
+                                    "targetName": "Customer service",
+                                    "targetDescription": "Responding to customer enquiries in a manner that balances speed and quality, and represents brand values.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🛎️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-4-2-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-xmsc8x2ex",
+                                    "targetName": "Customer relationship management",
+                                    "targetDescription": "Managing and developing a portfolio of client relationships over extended periods to accomplish an operational strategy.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📊",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-4-2-2",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-4-2",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-z5yk698q4",
+                            "targetName": "Marketing and media",
+                            "targetDescription": "Capacity to promote and sell products or services.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "📈",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-2mvqeduix",
+                                    "targetName": "Digital marketing",
+                                    "targetDescription": "Using the internet, mobile devices, social media, search engines and other online channels to reach consumers.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📲",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-4-1-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-nkqo1a60f",
+                                    "targetName": "Sales, communication and marketing of products and services",
+                                    "targetDescription": "Capacity to identify and shape effective value propositions for products and services, as well as to sell products on that basis.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "💼",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-4-1-1",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-4-1",
+                            "type": "Alignment"
+                        }
+                    ],
+                    "targetCode": "WEF-1-4",
+                    "type": "Alignment"
+                },
+                {
+                    "id": "skill-1770752882121-mkl0fah9m",
+                    "targetName": "Physical abilities",
+                    "targetDescription": "The range of physical, psychomotor, sensory and sensory-processing abilities that are required to perform a job role.",
+                    "targetFramework": "fw-1769813954210",
+                    "icon": "🏃‍♂️",
+                    "role": "tier",
+                    "subskills": [
+                        {
+                            "id": "skill-1770752882121-bxlyqbwcw",
+                            "targetName": "Sensory-processing abilities",
+                            "targetDescription": "Abilities that influence visual, auditory and spatial perception, and the acquisition and application of knowledge in problem-solving.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "👂",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-1rvu41148",
+                                    "targetName": "Spatial abilities",
+                                    "targetDescription": "The ability to mentally manipulate objects and perceive locations relative to an environment.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📐",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-1-2-4",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-9ze0xj4k5",
+                                    "targetName": "Information-processing abilities",
+                                    "targetDescription": "The ability to remember and organise information, identify patterns and differences, concentrate, and shift attention between sources of information.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🗂️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-1-2-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-d0y1vzz6y",
+                                    "targetName": "Visual abilities",
+                                    "targetDescription": "Abilities relating to resolving details, perceiving depth, differentiating colours and intensities, and seeing in low light, at oblique angles and in bright lighting.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "👀",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-1-2-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-mpty2ku2a",
+                                    "targetName": "Auditory abilities",
+                                    "targetDescription": "Abilities relating to distinguishing and isolating sounds, interpreting speech and speaking clearly.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "👂",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-1-2-2",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-1-2",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-zgvye8jdl",
+                            "targetName": "Manual dexterity, endurance and precision",
+                            "targetDescription": "Abilities related to the capacity to manipulate and control objects, strength, endurance, flexibility, balance and coordination.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "✋",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-27sn3qflm",
+                                    "targetName": "Strength and stamina",
+                                    "targetDescription": "The ability to exert muscle force in short bursts or over long periods with endurance to fatigue.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "💪",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-1-1-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-mr2r7vawh",
+                                    "targetName": "Dexterity",
+                                    "targetDescription": "The ability to steadily, precisely and responsively grasp, manipulate, and assemble objects or adjust the controls of a machine.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🤲",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-1-1-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-nyprlx562",
+                                    "targetName": "Flexibility and coordination",
+                                    "targetDescription": "The ability to bend, stretch, twist, and reach, and coordinate these movements when the whole body is in motion, while maintaining balance and stability.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🤸‍♂️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-1-1-3",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-1-1",
+                            "type": "Alignment"
+                        }
+                    ],
+                    "targetCode": "WEF-1-1",
+                    "type": "Alignment"
+                },
+                {
+                    "id": "skill-1770752882121-tsl47syxo",
+                    "targetName": "Cognitive skills",
+                    "targetDescription": "Cognitive functioning refers to multiple mental abilities, including learning, thinking, reasoning, remembering, problem solving, decision making, and attention. ",
+                    "targetFramework": "fw-1769813954210",
+                    "icon": "🧠",
+                    "role": "tier",
+                    "subskills": [
+                        {
+                            "id": "skill-1770752882121-2nulnjvyp",
+                            "targetName": "Creativity and problem solving",
+                            "targetDescription": "Qualitative reasoning and ideation.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "💡",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-4o69efqu6",
+                                    "targetName": "Creative thinking",
+                                    "targetDescription": "Capacity to bring a new idea or concept into existence through imagination and to imagine something that does not exist.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🎨",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-1-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-7awe5ozu1",
+                                    "targetName": "Analytical thinking",
+                                    "targetDescription": "Capacity to break down concepts and complex ideas into basic or fundamental principles. Includes critical thinking, whereby judgements are made by analysing and interpreting facts and information.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📊",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-1-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-re92lez5u",
+                                    "targetName": "Systems thinking",
+                                    "targetDescription": "Capacity to understand how concepts work together, embrace a multidisciplinary approach, and identify patterns over time.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🔗",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-1-3",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-2-1",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-a8csxxn8d",
+                            "targetName": "Speaking, writing and languages",
+                            "targetDescription": "Communicate through reading, writing, speaking and listening in a mother tongue or a foreign language.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🗣️",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-8i74t9iu9",
+                                    "targetName": "Reading",
+                                    "targetDescription": "Understanding written sentences and paragraphs in work-related documents.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📖",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-3-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-fxs8773lj",
+                                    "targetName": "Writing",
+                                    "targetDescription": "Communicating effectively in writing as appropriate for the needs of the audience.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📝",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-3-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-ko4tabbii",
+                                    "targetName": "Multi-lingualism",
+                                    "targetDescription": "Communicating through reading, writing, speaking and listening in foreign languages.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🌐",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-3-5",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-oz00jnqee",
+                                    "targetName": "Speaking",
+                                    "targetDescription": "Talking to others to convey information effectively.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🗣️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-3-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-pu9grtt9h",
+                                    "targetName": "Editing",
+                                    "targetDescription": "Synthesising text resources into a coherent narrative with a specified style or for a target audience.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "✍️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-3-4",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-2-3",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-haqv2j2cx",
+                            "targetName": "Mathematical and statistical thinking",
+                            "targetDescription": "Quantitative reasoning in order to calculate, estimate or model phenomena.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🔢",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-76o8ltqm3",
+                                    "targetName": "Number facility",
+                                    "targetDescription": "The ability to rapidly and accurately add, subtract, multiply and divide.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🔡",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-2-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-djbz84kxu",
+                                    "targetName": "Data analysis and mathematical modelling",
+                                    "targetDescription": "Making statistical inferences from data and using statistical techniques to determine the properties of complex systems.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📊",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-2-4",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-kl3jngmdy",
+                                    "targetName": "Calculating and estimating",
+                                    "targetDescription": "The ability to synthesise quantitative information into pertinent calculations or estimates given precise or approximate information.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🧮",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-2-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-sz6qleb95",
+                                    "targetName": "Algebraic facility",
+                                    "targetDescription": "Solving equations and using advanced mathematical techniques.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "➗",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-2-2-3",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-2-2",
+                            "type": "Alignment"
+                        }
+                    ],
+                    "targetCode": "WEF-1-2",
+                    "type": "Alignment"
+                },
+                {
+                    "id": "skill-1770752882121-ut6dxnw88",
+                    "targetName": "Technology skills",
+                    "targetDescription": "Effectively designing and using technology.",
+                    "targetFramework": "fw-1769813954210",
+                    "icon": "💻",
+                    "role": "tier",
+                    "subskills": [
+                        {
+                            "id": "skill-1770752882121-18vscp99a",
+                            "targetName": "Programming",
+                            "targetDescription": "Using software and programming languages.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "💻",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-q181g6qkf",
+                                    "targetName": "Functional programming",
+                                    "targetDescription": "Writing simple programs using calls to subroutines.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🧬",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-2-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-shk6subws",
+                                    "targetName": "Computational thinking",
+                                    "targetDescription": "Looking at real-world scenarios and creating models that can be processed by a computer.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🧮",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-2-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-xxoaepwu0",
+                                    "targetName": "Object-oriented programming",
+                                    "targetDescription": "Using data encapsulation and inheritance to develop well designed programming projects, often as part of a team.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🔄",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-2-2",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-5-2",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-6cjrqhy6z",
+                            "targetName": "Artificial intelligence and big data",
+                            "targetDescription": "Building and developing machines capable of thinking autonomously and performing tasks that mimic human intelligence.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🤖",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-36ojnkvzj",
+                                    "targetName": "Supervised learning",
+                                    "targetDescription": "Designing neural networks which can be trained to reliably make decisions based on example data.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🖥️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-5-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-4k9phgwsn",
+                                    "targetName": "Data mining",
+                                    "targetDescription": "Accessing, cleaning and sorting large data sets, and using software tools to visualise the results.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "⛏️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-5-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-xubl2illk",
+                                    "targetName": "Unsupervised learning",
+                                    "targetDescription": "Designing neural networks which can detect clusters and patterns in large and complex data sets without human guidance.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🔍",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-5-3",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-5-5",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-s6557kbsj",
+                            "targetName": "Design and user experience",
+                            "targetDescription": "Developing and delivering effective and efficient physical and digital designs given a systematic understanding of how users will perceive their value, function, usability and aesthetic.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🎨",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-9e9j577i4",
+                                    "targetName": "Mobile development",
+                                    "targetDescription": "Developing applications for mobile devices.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📱",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-3-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-icgpdbh1l",
+                                    "targetName": "Web development",
+                                    "targetDescription": "Building and maintaining websites.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🌐",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-3-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-ijd7lrmqh",
+                                    "targetName": "Human-technology interaction",
+                                    "targetDescription": "Designing technology from a users perspective by balancing considerations such as practical usability, ergonomics, perception, cognition, social psychology, consumer behaviour and environmental impact.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "👨‍💻",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-3-1",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-5-3",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-wxte7mc3d",
+                            "targetName": "Networks and cybersecurity",
+                            "targetDescription": "Securely and efficiently delivering information-technology solutions.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🔐",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-emsuj5izt",
+                                    "targetName": "Cybersecurity and application security",
+                                    "targetDescription": "Using technologies, processes and practices to protect computers, networks, programs and data from unauthorised access or attacks that are aimed for exploitation.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🛡️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-4-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-ug53qy17k",
+                                    "targetName": "Computer hardware and networking",
+                                    "targetDescription": "Setting up a connected network of computing devices, such as laptops, desktops, servers, smartphones, tablets and internet-of-things devices that communicate with one another.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🖥️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-4-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-voru9ewsp",
+                                    "targetName": "Cloud computing",
+                                    "targetDescription": "Delivering computing services over the internet.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "☁️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-4-3",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-5-4",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-z8j4u34ou",
+                            "targetName": "Technology literacy",
+                            "targetDescription": "Capacity to select the right tools needed to perform tasks, use those tools and set up and operate technology.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "📔",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-ez7xy2upj",
+                                    "targetName": "Manufacturing technologies",
+                                    "targetDescription": "Using technologies that assist in industrial production and manufacturing processes.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🏭",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-1-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-pwnwrrai6",
+                                    "targetName": "Collaboration and productivity software",
+                                    "targetDescription": "Using software designed to help get work done faster and more efficiently.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🤝",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-1-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-q7jazzwoh",
+                                    "targetName": "Installation",
+                                    "targetDescription": "Installing equipment, machines, wiring or programs to meet specifications.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "⚙️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-5-1-3",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-5-1",
+                            "type": "Alignment"
+                        }
+                    ],
+                    "targetCode": "WEF-1-5",
+                    "type": "Alignment"
+                },
+                {
+                    "id": "skill-1770752882121-xayhyvpc1",
+                    "targetName": "Management skills",
+                    "targetDescription": "Capacity to allocate resources efficiently and effectively, and manage activities that businesses engage in daily to gain value from physical or intangible assets.",
+                    "targetFramework": "fw-1769813954210",
+                    "icon": "📊",
+                    "role": "tier",
+                    "subskills": [
+                        {
+                            "id": "skill-1770752882121-3ykkfcv42",
+                            "targetName": "Financial management",
+                            "targetDescription": "Capacity for gathering resources to achieve tasks, including how money will be spent to get the work done, obtaining equipment, facilities, and materials, and accounting for expenditures. Determining how money will be spent to get the work done, and accounting for these expenditures. ",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "💵",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-5k97rkh0h",
+                                    "targetName": "Accounting",
+                                    "targetDescription": "Tracking the flow of money that has been spent.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📊",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-3-3-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-9dq33sfkq",
+                                    "targetName": "Finance",
+                                    "targetDescription": "Budgeting money that will be spent, managing financial portfolios, and tracking economic trends which affect business performance.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "💰",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-3-3-2",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-3-3",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-kov8c9c92",
+                            "targetName": "Operations and logistics",
+                            "targetDescription": "Management of Material Resources. Obtaining and seeing to the appropriate use of equipment, facilities, and materials needed to do certain work. ",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🚚",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-p0j2zaxe9",
+                                    "targetName": "Supply-chain management",
+                                    "targetDescription": "Optimising the flow of the goods and services which are required to realise a product or goal.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "⚙️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-3-2-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-tvgteak0r",
+                                    "targetName": "Coordination and time management",
+                                    "targetDescription": "Capacity to coordinate time-sensitive schedules in cooperation with others.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🕒",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-3-2-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-y75tnzenk",
+                                    "targetName": "Project management",
+                                    "targetDescription": "Capacity to lead the work of a team to identify, select and implement the appropriate changes, tools, and improvements to achieve and deliver a defined goal.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📋",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-3-2-2",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-3-2",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-lzzsfca05",
+                            "targetName": "Talent management",
+                            "targetDescription": "Capacity for evaluating skills and skills gaps, and gathering personnel resources to achieve tasks, including how human capital will be allocated to get the work done. ",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🧑‍🎤",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-9utrc90g7",
+                                    "targetName": "Skill evaluation",
+                                    "targetDescription": "Accurately evaluating a candidate or colleagues proficiencies and characteristics over their full profile of skills, knowledge, abilities and attitudes.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📈",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-3-1-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-iy40acjjl",
+                                    "targetName": "Talent planning and development",
+                                    "targetDescription": "Identifying developmental or hiring solutions to bridge a team's skills gaps and ensuring knowledge transfer when team members transition to new roles.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📈",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-3-1-2",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-3-1",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-vjxfo8qhy",
+                            "targetName": "Quality management",
+                            "targetDescription": "Pursuing excellence in workplace processes, products and activities.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "✔️",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-d1ibkd58k",
+                                    "targetName": "Quality control",
+                                    "targetDescription": "Inspecting products to ensure they fulfil quality requirements.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🔍",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-3-4-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-qwvgkkzvs",
+                                    "targetName": "Risk management",
+                                    "targetDescription": "Assessing, prioritising and mitigating the effect of uncertainty on objectives, to enhance institutional resilience.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "⚠️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-3-4-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-wmop5x6en",
+                                    "targetName": "Quality assurance",
+                                    "targetDescription": "Setting quality objectives, specifying operational processes to achieve them, providing confidence they will be effective, and improving them based on experience.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "👍",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-1-3-4-1",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-1-3-4",
+                            "type": "Alignment"
+                        }
+                    ],
+                    "targetCode": "WEF-1-3",
+                    "type": "Alignment"
+                }
+            ],
+            "targetCode": "WEF-1",
+            "type": "Alignment"
+        },
+        {
+            "id": "skill-1770752882121-rubk5lo76",
+            "targetName": "Attitudes",
+            "targetDescription": "Consistent behaviours, emotional-intelligence traits and beliefs that individuals exhibit that influence their interpersonal interactions and their approach to ideas, persons and situations. Attitudes are learned and often a big part of the driving force of learning and the approach to doing tasks.",
+            "targetFramework": "fw-1769813954210",
+            "icon": "🤔",
+            "role": "tier",
+            "subskills": [
+                {
+                    "id": "skill-1770752882121-an2caqar8",
+                    "targetName": "Ethics",
+                    "targetDescription": "Ethical attitudes maintain awareness of the societal and environmental impacts or personal and organisational actions, and seek to actively mitigate, prevent and repair harmful impacts.",
+                    "targetFramework": "fw-1769813954210",
+                    "icon": "⚖️",
+                    "role": "tier",
+                    "subskills": [
+                        {
+                            "id": "skill-1770752882121-18njm28bc",
+                            "targetName": "Environmental stewardship",
+                            "targetDescription": "Sustainably using natural resources and protecting the natural environment.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🌿",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-16b9mnder",
+                                    "targetName": "Adopting green technologies",
+                                    "targetDescription": "Adopting clean and environmentally sound technologies and industrial processes.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "♻️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-3-2-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-e1b87l58i",
+                                    "targetName": "Sustainable and efficient resource usage",
+                                    "targetDescription": "Using natural resources sustainably and efficiently.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "💧",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-3-2-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-rsl5pp080",
+                                    "targetName": "Environmental awareness",
+                                    "targetDescription": "Being mindful of the impact of humans and human activity on the planet.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🍀",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-3-2-1",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-2-3-2",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-sptgder2v",
+                            "targetName": "Civic responsibility",
+                            "targetDescription": "Playing an active role in the global and local community and the application of civic values. ",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🏛️",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-dbobvg6g4",
+                                    "targetName": "Social-cultural awareness",
+                                    "targetDescription": "Respecting and understanding the ideas, customs, and social behaviours of others. Awareness of and sensitivity to the wider world, the historical context of non-dominant cultural values, and systemic discrimination that may be directed toward these cultures.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🌏",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-3-1-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-khxukvess",
+                                    "targetName": "Social justice",
+                                    "targetDescription": "Taking a conscious and active approach to building inclusivity and fairness across wealth, privilege and opportunity while taking a transformative approach to address and dismantle individual and cultural biases toward marginalised groups in one's community and workplace.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🧑‍⚖️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-3-1-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-n0yqautmg",
+                                    "targetName": "Technology ethics",
+                                    "targetDescription": "Applying moral principles for the responsible use of technology while being mindful of how technology is impacting societies.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🛡️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-3-1-3",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-2-3-1",
+                            "type": "Alignment"
+                        }
+                    ],
+                    "targetCode": "WEF-2-3",
+                    "type": "Alignment"
+                },
+                {
+                    "id": "skill-1770752882121-irdkkvx5t",
+                    "targetName": "Self-efficacy",
+                    "targetDescription": "Controlling one's thoughts, feelings and actions.",
+                    "targetFramework": "fw-1769813954210",
+                    "icon": "💪",
+                    "role": "tier",
+                    "subskills": [
+                        {
+                            "id": "skill-1770752882121-an39a7bu2",
+                            "targetName": "Motivation and self-awareness",
+                            "targetDescription": "Seeing one's own values, passions, aspirations, fit with environment, reactions (including thoughts, feelings, behaviours, strengths, and weaknesses), and impact on others, as well as understanding how one is perceived by others, in terms of those same factors.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🌟",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-btx4y0jcq",
+                                    "targetName": "External self-awareness",
+                                    "targetDescription": "Awareness of how one is perceived by others.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🌍",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-1-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-kkc6wxf1k",
+                                    "targetName": "Internal self-awareness",
+                                    "targetDescription": "Understanding one's own values, passions, aspirations and reactions.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🧠",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-1-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-ltr7aytdx",
+                                    "targetName": "Self-control",
+                                    "targetDescription": "Doing what's best despite short-term temptations; strength of will.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🧘",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-1-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-nf6c7plai",
+                                    "targetName": "Initiative",
+                                    "targetDescription": "Daring to explore and implement new ideas using active-learning strategies.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🚀",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-1-5",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-nq6prkq7l",
+                                    "targetName": "Working independently",
+                                    "targetDescription": "Developing one's own ways of doing things, motivating oneself with little or no supervision and depending on oneself to get things done.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🧑‍💻",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-1-4",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-2-1-1",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-s5dy4sgdm",
+                            "targetName": "Dependability and attention to detail",
+                            "targetDescription": "Dependability, commitment to doing the job punctually, correctly and carefully, and paying attention to details.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🔍",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-6es7p4ulc",
+                                    "targetName": "Time management and prioritisation",
+                                    "targetDescription": "Organising one's own time to be able to deliver on commitments and responsibilities",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "⏰",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-3-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-8m4gp3k6i",
+                                    "targetName": "Meeting commitments and deadlines",
+                                    "targetDescription": "Performing one's tasks in a self-disciplined, reliable and goal-oriented manner, and ensuring that operative processes are finished at a previously agreed time.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📆",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-3-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-8oup5zhkp",
+                                    "targetName": "Attention to detail",
+                                    "targetDescription": "Producing accurate and error-free work.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🔬",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-3-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-gpeh076mj",
+                                    "targetName": "Assuming responsibility",
+                                    "targetDescription": "Accepting responsibility and accountability for one's own professional decisions and actions, or those delegated to others.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "✅",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-3-4",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-2-1-3",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-svm2xgfh6",
+                            "targetName": "Resilience, flexibility and agility",
+                            "targetDescription": "Maturity, poise, flexibility, and restraint to cope with pressure, stress, criticism, setbacks, and personal and work-related problems.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🌀",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-4ge5emdlb",
+                                    "targetName": "Adaptation to change",
+                                    "targetDescription": "Altering one's attitude or behaviour to accommodate modifications in the workplace.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🔄",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-4-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-ejy750l83",
+                                    "targetName": "Stress management",
+                                    "targetDescription": "Dealing with and managing stressful situations in the workplace by following adequate procedures, communicating in a quiet and effective manner, and remaining level-headed when taking decisions.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🧘",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-4-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-ibrcfhxfc",
+                                    "targetName": "Frustration management",
+                                    "targetDescription": "Handling challenges, disruption and change, and recovering from set-backs and adversity.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "😤",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-4-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-lpy3rnsqi",
+                                    "targetName": "Persistence",
+                                    "targetDescription": "Sticking to one's tasks in spite of fatigue or frustration.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🏃",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-4-4",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-2-1-4",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-z6n9w1w9d",
+                            "targetName": "Curiosity and lifelong learning",
+                            "targetDescription": "Understanding the implications of new information for both current and future problem-solving and decision-making.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🔍",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-gspxpjkur",
+                                    "targetName": "Curiosity",
+                                    "targetDescription": "Showing a lively interest in novelty and an openness to experience, finding subjects and topics fascinating and discovering new ideas.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "❓",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-2-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-kgp1fmr19",
+                                    "targetName": "Willingness to learn",
+                                    "targetDescription": "Showing a positive attitude towards new and challenging demands that can only be met via lifelong learning.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📖",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-1-2-2",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-2-1-2",
+                            "type": "Alignment"
+                        }
+                    ],
+                    "targetCode": "WEF-2-1",
+                    "type": "Alignment"
+                },
+                {
+                    "id": "skill-1770752882121-ykhcjyxvc",
+                    "targetName": "Working with others",
+                    "targetDescription": "Emotionally intelligent behaviours which help a team to complete tasks effectively by promoting cooperation, communication, respect and mutual upbuilding.",
+                    "targetFramework": "fw-1769813954210",
+                    "icon": "🤝",
+                    "role": "tier",
+                    "subskills": [
+                        {
+                            "id": "skill-1770752882121-1otk540ck",
+                            "targetName": "Empathy and active listening",
+                            "targetDescription": "Paying attention to what others say and understanding points being made, establishing rapport, adjusting the register, and respecting the intervention of others. ",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "👂",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-3g3rm0ruu",
+                                    "targetName": "Empathy",
+                                    "targetDescription": "Understanding the feelings, points of view and needs of others, and acting in an understanding, sensitive and supportive manner.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "❤️",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-1-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-6kjwahbon",
+                                    "targetName": "Giving and receiving feedback",
+                                    "targetDescription": "Providing and reacting to professional opinions and directions in a calm, reflective and constructive manner.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🔄",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-1-3",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-sab6qg4lo",
+                                    "targetName": "Asking questions",
+                                    "targetDescription": "Listening carefully to what other people say and asking appropriate questions to gain better understanding.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "❓",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-1-2",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-2-2-1",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-ha743eo69",
+                            "targetName": "Teaching, mentoring and coaching",
+                            "targetDescription": "Facilitating the acquisition of new knowledge and skills. Leading and guiding individuals and groups through a process in which they are taught the necessary skills and knowledge for life, future learning, or for a particular job or set of jobs.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "👩‍🏫",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-eg14uwq9x",
+                                    "targetName": "Mentoring",
+                                    "targetDescription": "Supporting the development of a mentee over an extended period by sharing experiences and expertise, and setting growth targets.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🧑‍🏫",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-3-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-ga6n6e8mj",
+                                    "targetName": "Teaching",
+                                    "targetDescription": "Inculcating knowledge and skills using techniques from cognitive psychology such as helping learners construct meaning through active engagement with the world and by building on the conceptual scaffolding of prior experience.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📚",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-3-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-vfg1novuc",
+                                    "targetName": "Coaching",
+                                    "targetDescription": "Using questioning and structured conversations to support reflection, learning and the development of skills. Coaching does not require expertise in the subject at hand.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🎓",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-3-3",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-2-2-3",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-phfobunky",
+                            "targetName": "Service orientation",
+                            "targetDescription": "Actively looking for ways to help others as well as to make them feel attended to and welcome.  ",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "🛎️",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-bsyphzt55",
+                                    "targetName": "Assisting and supporting co-workers",
+                                    "targetDescription": "Assisting and supporting colleagues, managers, volunteers and other co-workers in the performance of their tasks or in the operations of a business unit.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🤲",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-2-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-ptcwyfxpa",
+                                    "targetName": "Following instructions and procedures",
+                                    "targetDescription": "Following instructions given verbally or in writing and following standard or agreed procedures.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "📋",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-2-1",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-2-2-2",
+                            "type": "Alignment"
+                        },
+                        {
+                            "id": "skill-1770752882121-urk9mo3ku",
+                            "targetName": "Leadership and social influence",
+                            "targetDescription": "Having an impact on others in the organisation, and displaying energy and leadership. Leadership is defined as a quality that can be possessed by anyone, regardless of their particular function within an organisation.",
+                            "targetFramework": "fw-1769813954210",
+                            "icon": "👥",
+                            "role": "tier",
+                            "subskills": [
+                                {
+                                    "id": "skill-1770752882121-1x7z5ujkt",
+                                    "targetName": "Ethical leadership",
+                                    "targetDescription": "Carrying out workplace activities according to accepted principles of right and wrong, including fairness, transparency and impartiality in work practices and conduct towards other people.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "👔",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-4-4",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-dnjv3j9g8",
+                                    "targetName": "Liaising, networking and exchanging information",
+                                    "targetDescription": "Developing alliances, contacts or partnerships, and exchanging information with clarity and consistency.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🔗",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-4-2",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-dsrs84e8i",
+                                    "targetName": "Persuasion and negotiation",
+                                    "targetDescription": "Persuading others to change their minds or behaviour as well as bringing them together and trying to reconcile differences.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "💬",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-4-1",
+                                    "type": "Alignment"
+                                },
+                                {
+                                    "id": "skill-1770752882121-ktvo5lv1c",
+                                    "targetName": "Building trust",
+                                    "targetDescription": "Creating a culture that encourages team members to rely on each other and make decisions collaboratively.",
+                                    "targetFramework": "fw-1769813954210",
+                                    "icon": "🤝",
+                                    "role": "competency",
+                                    "subskills": [],
+                                    "targetCode": "WEF-2-2-4-3",
+                                    "type": "Alignment"
+                                }
+                            ],
+                            "targetCode": "WEF-2-2-4",
+                            "type": "Alignment"
+                        }
+                    ],
+                    "targetCode": "WEF-2-2",
+                    "type": "Alignment"
+                }
+            ],
+            "targetCode": "WEF-2",
+            "type": "Alignment"
+        }
+    ]
+}

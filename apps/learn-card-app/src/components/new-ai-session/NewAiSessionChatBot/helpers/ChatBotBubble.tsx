@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 
 import { ProfilePicture, useGetEnrichedSession, useDeviceTypeByWidth } from 'learn-card-base';
 import { UserChatBotTypingIndicator } from './TypingIndicator';
-import ExperimentalFeatureBox from '../../../generic/ExperimentalFeatureBox';
 import FormatQuestionTitle from '../../../ai-passport/helpers/FormatQuestionTitle';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
@@ -69,7 +68,7 @@ export const ChatBotBubbleAnswer: React.FC<{
         containerStyles = 'items-center';
     } else if (qa.type === ChatBotQuestionsEnum.AppSelection) {
         // First try to find in hardcoded apps (numeric id)
-        app = aiPassportApps.find(a => a.id === qa.answer);
+        app = aiPassportApps.find(a => Number(a.id) === Number(qa.answer));
 
         // If not found, check installed app store listings (string id)
         if (!app && installedAppsData?.records) {
@@ -105,11 +104,6 @@ export const ChatBotBubbleAnswer: React.FC<{
             <div
                 className={`w-full bg-white flex flex-col items-end justify-center ion-padding ${firstStyles} ${lastStyles} ${className}`}
             >
-                {index === 0 && (
-                    <div className="w-full flex items-center justify-center">
-                        <ExperimentalFeatureBox className="mb-[20px] w-full max-w-[375px]" />
-                    </div>
-                )}
                 <div className="animate-chat-in-mine flex" style={{ animationDelay }}>
                     <div
                         className={`bg-cyan-50 px-[15px] py-[10px] mr-2 flex rounded-[20px] ${containerStyles}`}
@@ -118,7 +112,7 @@ export const ChatBotBubbleAnswer: React.FC<{
                         <p className="text-grayscale-800 mr-1 font-semibold text-[17px]">
                             {answer}
                         </p>
-                        {!disableEdit && isDesktop && index === 0 && (
+                        {!disableEdit && (
                             <button
                                 onClick={() => {
                                     handleEditChatBotAnswer(index);

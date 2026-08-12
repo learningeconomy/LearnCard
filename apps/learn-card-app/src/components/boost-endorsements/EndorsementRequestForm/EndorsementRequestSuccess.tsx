@@ -2,6 +2,7 @@ import React from 'react';
 
 import { EndorsmentThumbWithCircle } from 'learn-card-base/svgs/EndorsementThumb';
 import EndorsementRequestFormFooter from './EndorsementRequestFormFooter';
+import * as m from '../../../paraglide/messages.js';
 
 export const EndorsementRequestSuccess: React.FC<{ closeModal: () => void }> = ({ closeModal }) => {
     return (
@@ -11,9 +12,12 @@ export const EndorsementRequestSuccess: React.FC<{ closeModal: () => void }> = (
                     className="w-[50px] h-[50px] text-grayscale-900"
                     fill="#E2E3E9"
                 />
-                <h1 className="text-[22px] font-semibold text-grayscale-900">Request Sent!</h1>
+                <h1 className="text-[22px] font-semibold text-grayscale-900">
+                    {m['endorsement.request.success.title']()}
+                </h1>
                 <p className="text-grayscale-900 text-center text-[17px]">
-                    You’ll be notified when the <br /> endorsement is ready.
+                    {m['endorsement.request.success.bodyPre']()} <br />{' '}
+                    {m['endorsement.request.success.bodyPost']()}
                 </p>
             </div>
 

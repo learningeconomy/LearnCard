@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { ChatBotBubbleAnswer, ChatBotBubbleQuestion } from './helpers/ChatBotBubble';
 import LearnCardAiChatBot from '../LearnCardAiChatBot/LearnCardAiChatBot';
 import StartAiSessionButton from './helpers/StartAiSessionButton';
+import ActiveAiSessionPrompt from './helpers/ActiveAiSessionPrompt';
 import ChatBotTypingIndicator from './helpers/TypingIndicator';
 import ChatBotAppList from './helpers/ChatBotAppList';
 import AiSessionLoader from '../AiSessionLoader';
 import TopicInput from './helpers/TopicInput';
+import OnboardingHeader from './helpers/OnboardingHeader';
 
 import {
     ChatBotQA,
@@ -15,11 +19,15 @@ import {
 } from './newAiSessionChatbot.helpers';
 
 import {
+    getLogger,
     useGetCurrentLCNUser,
     useModal,
     useDeviceTypeByWidth,
     LaunchPadAppListItem,
 } from 'learn-card-base';
+import type { ActiveSessionStatus } from 'learn-card-base/types/ai-chat';
+import { getActiveSessionStatus, resumeThread } from 'learn-card-base/stores/nanoStores/chatStore';
+import { showErrorModal } from 'learn-card-base/stores/nanoStores/ErrorModalStore';
 import { NewAiSessionStepEnum } from '../newAiSession.helpers';
 
 import {
@@ -27,11 +35,13 @@ import {
     aiPassportApps,
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { sessionLoadingText } from '../newAiSession.helpers';
+import { AiSessionMode, sessionLoadingText } from '../newAiSession.helpers';
 import { usePathQuery } from 'learn-card-base';
 
 import { chatBotStore, useChatBotQA } from '../../../stores/chatBotStore';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, useEngagementSignal } from '@analytics';
+
+const log = getLogger('new-ai-session-chatbot');
 
 export const NewAiSessionChatBotContainer: React.FC<{
     setActiveStep: (step: NewAiSessionStepEnum) => void;
@@ -58,6 +68,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
     const setChatBotQA = chatBotStore.set.setChatBotQA;
     const mode = chatBotStore.useTracked.mode();
     const { track } = useAnalytics();
+    const fireEngagement = useEngagementSignal();
 
     // const [visibleIndexes, setVisibleIndexes] = useState<number[]>([]);
     const visibleIndexes = chatBotStore.useTracked.visibleIndexes();
@@ -68,9 +79,13 @@ export const NewAiSessionChatBotContainer: React.FC<{
     const setTypingIndex = chatBotStore.set.setTypingIndex;
 
     const [showLoader, setShowLoader] = useState<boolean>(false);
+    const [activeSessionStatus, setActiveSessionStatus] = useState<ActiveSessionStatus>();
+    const [isCheckingActiveSession, setIsCheckingActiveSession] = useState(false);
+    const [isResumingActiveSession, setIsResumingActiveSession] = useState(false);
+    const [isStartingNewSession, setIsStartingNewSession] = useState(false);
 
     // If a preselected app is passed in the query or as a prop, use it
-    const preselectedAppId = Number(query.get('selectedAppId')) || selectedApp?.id || null;
+    const preselectedAppId = Number(query.get('selectedAppId')) || Number(selectedApp?.id) || null;
 
     const topicAnswer = chatBotQA.find(
         qa => qa.type === ChatBotQuestionsEnum.TopicSelection
@@ -79,15 +94,43 @@ export const NewAiSessionChatBotContainer: React.FC<{
     const app = aiPassportApps.find(app => Number(app.id) === Number(appAnswer)); // ! hot fix for type mismatch
 
     useEffect(() => {
+        if (app?.type !== AiPassportAppsEnum.learncardapp) {
+            setActiveSessionStatus(undefined);
+            return;
+        }
+
+        let cancelled = false;
+
+        setIsCheckingActiveSession(true);
+
+        void getActiveSessionStatus()
+            .then(status => {
+                if (!cancelled) setActiveSessionStatus(status);
+            })
+            .catch(error => {
+                log.warn('Failed to preflight active AI session', error);
+            })
+            .finally(() => {
+                if (!cancelled) setIsCheckingActiveSession(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [app?.type]);
+
+    useEffect(() => {
         const timeouts: NodeJS.Timeout[] = [];
+        let typedPos = 0;
 
         chatBotQA.forEach((qa, index) => {
-            if (index === 0) {
+            if (qa.hidden || index === 0) {
                 setVisibleIndexes(prev => [...prev, index]);
                 return;
             }
 
-            const delay = index * 1000;
+            const delay = typedPos * 1000;
+            typedPos += 1;
 
             timeouts.push(
                 setTimeout(() => {
@@ -170,21 +213,43 @@ export const NewAiSessionChatBotContainer: React.FC<{
         }, 1000);
     };
 
-    const handleStartAiSession = () => {
-        const topicAnswer = chatBotQA.find(
-            qa => qa.type === ChatBotQuestionsEnum.TopicSelection
-        )?.answer;
-        const appAnswer = chatBotQA.find(
-            qa => qa.type === ChatBotQuestionsEnum.AppSelection
-        )?.answer;
+    const showActiveSessionError = (error: unknown): void => {
+        log.error('Failed to check or resume active AI session', error);
+        showErrorModal(
+            m['aiSession.activeCheckFailedTitle'](),
+            m['aiSession.activeCheckFailedDescription']()
+        );
+    };
 
+    const launchInternalSession = (resumed = false): void => {
+        track(AnalyticsEvents.AI_CHAT_SESSION_STARTED, {
+            topic: resumed ? activeSessionStatus?.activeThreadTitle : topicAnswer,
+            appType: 'internal',
+            appName: app?.name,
+            resumed,
+        });
+        fireEngagement('ai_chat');
+        setStartInternalAiChatBot?.(true);
+    };
+
+    const handleStartAiSession = async (): Promise<void> => {
         if (app?.type === AiPassportAppsEnum.learncardapp) {
-            track(AnalyticsEvents.AI_CHAT_SESSION_STARTED, {
-                topic: topicAnswer,
-                appType: 'internal',
-                appName: app?.name,
-            });
-            setStartInternalAiChatBot?.(true);
+            setIsCheckingActiveSession(true);
+
+            try {
+                const status = await getActiveSessionStatus();
+
+                setActiveSessionStatus(status);
+
+                if (status.isActive && status.activeThreadId) return;
+
+                launchInternalSession();
+            } catch (error) {
+                showActiveSessionError(error);
+            } finally {
+                setIsCheckingActiveSession(false);
+            }
+
             return;
         }
 
@@ -193,6 +258,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
             appType: 'external',
             appName: aiPassportApps.find(a => a.id === appAnswer)?.name,
         });
+        fireEngagement('ai_chat');
         setShowLoader(true);
 
         setTimeout(() => {
@@ -200,10 +266,60 @@ export const NewAiSessionChatBotContainer: React.FC<{
             const url = aiPassportApps.find(app => app.id === appAnswer)?.url;
 
             window.location.href = `${url}/chats?topic=${encodeURIComponent(
-                // window.location.href = `http://localhost:4321/chats?topic=${encodeURIComponent(
                 topicAnswer || ''
             )}&did=${currentLCNUser?.did}`;
         }, 3000);
+    };
+
+    const handleResumeActiveSession = async (): Promise<void> => {
+        const threadId = activeSessionStatus?.activeThreadId;
+
+        if (!threadId) return;
+
+        setIsResumingActiveSession(true);
+
+        try {
+            const resumed = await resumeThread(threadId);
+
+            if (!resumed) throw new Error('Active AI session could not be loaded');
+
+            chatBotStore.set.setMode(
+                activeSessionStatus?.activeThreadMode === 'ai-insights'
+                    ? AiSessionMode.insights
+                    : AiSessionMode.tutor
+            );
+
+            launchInternalSession(true);
+        } catch (error) {
+            showActiveSessionError(error);
+        } finally {
+            setIsResumingActiveSession(false);
+        }
+    };
+
+    const handleStartNewSession = async (): Promise<void> => {
+        const confirmedThreadId = activeSessionStatus?.activeThreadId;
+
+        setIsStartingNewSession(true);
+
+        try {
+            const latestStatus = await getActiveSessionStatus();
+
+            if (
+                latestStatus.isActive &&
+                latestStatus.activeThreadId &&
+                latestStatus.activeThreadId !== confirmedThreadId
+            ) {
+                setActiveSessionStatus(latestStatus);
+                return;
+            }
+
+            launchInternalSession();
+        } catch (error) {
+            showActiveSessionError(error);
+        } finally {
+            setIsStartingNewSession(false);
+        }
     };
 
     if (startInternalAiChatBot && app?.type === AiPassportAppsEnum.learncardapp && topicAnswer) {
@@ -219,11 +335,22 @@ export const NewAiSessionChatBotContainer: React.FC<{
     }
 
     return (
-        <div className={`w-full flex flex-col ${isDesktop ? 'max-w-[800px]' : ''}`}>
+        <div
+            className={`relative w-full flex flex-col pt-[80px] ${
+                isDesktop ? 'max-w-[800px]' : ''
+            }`}
+            style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
+        >
+            <OnboardingHeader
+                title={m['aiSession.newTopic']()}
+                onClose={isDesktop ? handleStartOver : undefined}
+            />
             {showLoader && (
                 <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
             )}
             {chatBotQA.map((qa, index) => {
+                if (qa.hidden) return null;
+
                 const isVisible = visibleIndexes.includes(index);
                 const isTyping = typingIndex === index;
 
@@ -281,12 +408,25 @@ export const NewAiSessionChatBotContainer: React.FC<{
                                 <ChatBotAppList handleChatBotAnswer={handleChatBotAnswer} />
                             )}
 
-                        {showStartButton && (
-                            <StartAiSessionButton handleStartSession={handleStartAiSession} />
+                        {showStartButton && !activeSessionStatus?.isActive && (
+                            <StartAiSessionButton
+                                handleStartSession={handleStartAiSession}
+                                isLoading={isCheckingActiveSession}
+                            />
                         )}
                     </React.Fragment>
                 );
             })}
+
+            {activeSessionStatus?.isActive && (
+                <ActiveAiSessionPrompt
+                    activeThreadTitle={activeSessionStatus.activeThreadTitle}
+                    isResuming={isResumingActiveSession}
+                    isStartingNew={isStartingNewSession}
+                    onResume={handleResumeActiveSession}
+                    onStartNew={handleStartNewSession}
+                />
+            )}
         </div>
     );
 };

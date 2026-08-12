@@ -7,34 +7,88 @@
     color: #6366f1;
 }
 
-.react-code-input {
+.react-code-input:not(.small) {
+    display: flex !important;
+    justify-content: center;
+    gap: 8px;
+
+    @media (max-width: 380px) {
+        gap: 6px;
+    }
+
     & > input {
-        margin: 4px;
         width: 14%;
+        flex-grow: 1;
         border-radius: 12px;
         font-size: 24px;
         height: 100px;
-        padding-left: 24px;
-        background-color: #eff0f5;
+        text-align: center;
+        background-color: var(--ion-color-grayscale-100);
         color: #000000;
-        border: 1px solid #eff0f5;
+        border: 1px solid var(--ion-color-grayscale-100);
         outline: none;
+        transition: background-color 0.3s ease-out;
 
         &:focus {
             border: none;
-            background-color: #d0f3fc;
+            background-color: white;
         }
 
         @media (max-width: 479px) {
-            padding-left: 18px;
             width: 14%;
         }
 
         @media (max-width: 380px) {
-            padding-left: 12px;
             width: 12.25%;
         }
     }
+}
+
+.react-code-input:not(.small) > input:not([value='']) {
+    background-color: white;
+    transition: background-color 0.3s ease-in;
+}
+
+.react-code-input.small {
+    display: flex !important;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+
+    & > input {
+        flex: 0 0 auto;
+        width: clamp(34px, 9vw, 46px);
+        min-width: 0;
+        border-radius: 12px;
+        font-size: 24px;
+        height: 60px;
+        background-color: var(--ion-color-grayscale-100);
+        color: #000000;
+        border: 1px solid var(--ion-color-grayscale-100);
+        outline: none;
+        transition: background-color 0.3s ease-out;
+
+        text-align: center;
+
+        &:focus {
+            border: none;
+            background-color: white;
+        }
+
+        @media (max-width: 479px) {
+            width: clamp(30px, 10vw, 44px);
+        }
+
+        @media (max-width: 380px) {
+            width: clamp(28px, 10vw, 40px);
+        }
+    }
+}
+
+.react-code-input.small > input:not([value='']) {
+    background-color: white;
+    transition: background-color 0.3s ease-in;
 }
 
 .react-code-input-error {
@@ -43,7 +97,7 @@
 
         &:focus {
             border: 1px solid red;
-            background-color: #d0f3fc;
+            background-color: white;
         }
     }
 }

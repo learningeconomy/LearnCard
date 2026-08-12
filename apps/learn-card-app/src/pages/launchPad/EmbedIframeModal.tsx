@@ -1,13 +1,26 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { X } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('embed-iframe-modal');
 
-import { useModal, useDeviceTypeByWidth } from 'learn-card-base';
+import {
+    useModal,
+    useDeviceTypeByWidth,
+    useIsOffline,
+    connectivityStore,
+    appendQueryParams,
+} from 'learn-card-base';
+import { Network } from '@capacitor/network';
+import { AppEmbedOfflineState } from './AppEmbedOfflineState';
 import { IonPage, IonContent, IonToast, IonHeader, IonToolbar } from '@ionic/react';
 
 import { useLearnCardPostMessage } from '../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../hooks/post-message/useLearnCardMessageHandlers';
 import { CredentialClaimModal } from './CredentialClaimModal';
+import { AppCredentialDashboard } from './AppCredentialDashboard';
+import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
 
 interface LaunchConfig {
     url?: string;
@@ -37,6 +50,31 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const [showErrorToast, setShowErrorToast] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [hasLoadFailed, setHasLoadFailed] = useState(false);
+    const [iframeKey, setIframeKey] = useState(0);
+    const isOffline = useIsOffline();
+
+    // Timeout for iframe loading
+    React.useEffect(() => {
+        if (!isLoading || isOffline || hasLoadFailed) return;
+
+        const timer = setTimeout(() => {
+            setHasLoadFailed(true);
+            setIsLoading(false);
+        }, 12000);
+
+        return () => clearTimeout(timer);
+    }, [isLoading, isOffline, hasLoadFailed, iframeKey]);
+
+    const handleRetry = async () => {
+        const status = await Network.getStatus();
+        connectivityStore.set.report(status.connected);
+        setHasLoadFailed(false);
+        if (status.connected) {
+            setIsLoading(true);
+            setIframeKey(prev => prev + 1);
+        }
+    };
 
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -44,11 +82,47 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     const [pendingCredential, setPendingCredential] = useState<{
         credentialUri: string;
         boostUri?: string;
+        credential?: any;
     } | null>(null);
 
-    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string) => {
-        setPendingCredential({ credentialUri, boostUri });
-    }, []);
+    const handleCredentialIssued = useCallback(
+        (credentialUri: string, boostUri?: string, credential?: any) => {
+            setPendingCredential({ credentialUri, boostUri, credential });
+        },
+        []
+    );
+
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    const handleTapNotificationAction = useCallback(
+        (actionPath: string) => {
+            if (!iframeRef.current) return;
+
+            // Only allow relative paths — reject anything with a protocol (e.g. javascript:, data:)
+            if (/^[a-z][a-z0-9+.-]*:/i.test(actionPath)) return;
+
+            try {
+                const base = new URL(embedUrl);
+                const expectedOrigin = base.origin;
+                const safePath = actionPath.startsWith('/') ? actionPath : `/${actionPath}`;
+                base.pathname = base.pathname.replace(/\/$/, '') + safePath;
+
+                // Verify the constructed URL hasn't escaped to a different origin
+                if (base.origin !== expectedOrigin) return;
+
+                iframeRef.current.src = appendQueryParams(base.toString(), {
+                    lc_host_override: window.location.origin,
+                });
+            } catch {
+                // embedUrl is invalid — do not navigate
+            }
+        },
+        [embedUrl]
+    );
+
+    const { handleAppNotification, ToastOverlay } = useAppNotificationToast(appName, {
+        onTapAction: handleTapNotificationAction,
+    });
 
     const handleDismissClaimModal = useCallback(() => {
         setPendingCredential(null);
@@ -73,7 +147,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
             const url = new URL(embedUrl);
             return url.origin;
         } catch (error) {
-            console.error('[PostMessage] Invalid embedUrl:', embedUrl);
+            log.error('[PostMessage] Invalid embedUrl:', embedUrl);
             setErrorMessage(`Invalid embed URL: ${embedUrl}`);
             setShowErrorToast(true);
             return '';
@@ -88,6 +162,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         isInstalled,
         appId: appId?.toString(),
         onCredentialIssued: handleCredentialIssued,
+        onAppNotification: handleAppNotification,
     });
 
     // Initialize the PostMessage listener with trusted origins
@@ -97,15 +172,23 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         debug: false, // Disable detailed logging
     });
 
-    const embedUrlWithOverride = `${embedUrl}?lc_host_override=${window.location.origin}`;
+    const embedUrlWithOverride = appendQueryParams(embedUrl, {
+        lc_host_override: window.location.origin,
+    });
 
     return (
         <IonPage className="h-full w-full">
             <IonHeader>
                 <IonToolbar color="light">
-                    <div className="flex items-center justify-between px-4 py-2 bg-white border-b">
+                    <div className="flex items-center justify-between px-3 py-4 bg-white border-b">
                         <h2 className="text-xl font-semibold">{appName}</h2>
                         <div className="flex items-center gap-2">
+                            <AppCredentialDashboard
+                                appId={appId?.toString() || 'preview'}
+                                appName={appName}
+                                pendingCredential={pendingCredential}
+                                onNavigateAction={handleTapNotificationAction}
+                            />
                             {!hideFullScreenButton && !Capacitor.isNativePlatform() && (
                                 <button
                                     onClick={handleFullScreen}
@@ -126,14 +209,13 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                                             d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
                                         />
                                     </svg>
-                                    {isMobile ? '' : 'Full Screen'}
                                 </button>
                             )}
                             <button
                                 onClick={closeModal}
                                 className="px-4 py-2 rounded-full bg-gray-200 hover:bg-gray-300 font-medium"
                             >
-                                Close
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
@@ -142,36 +224,48 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
             <IonContent fullscreen>
                 <div className="w-full h-full flex-1">
                     <div className="relative w-full h-full flex-1">
-                        {isLoading && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
-                                <div className="flex flex-col items-center gap-4">
-                                    {/* Animated spinner */}
-                                    <div className="relative">
-                                        <div className="w-16 h-16 border-4 border-indigo-200 rounded-full"></div>
-                                        <div className="w-16 h-16 border-4 border-indigo-600 rounded-full border-t-transparent absolute top-0 left-0 animate-spin"></div>
+                        {isOffline || hasLoadFailed ? (
+                            <AppEmbedOfflineState appName={appName} onRetry={handleRetry} />
+                        ) : (
+                            <>
+                                {isLoading && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
+                                        <div className="flex flex-col items-center gap-4">
+                                            {/* Animated spinner */}
+                                            <div className="relative">
+                                                <div className="w-16 h-16 border-4 border-indigo-200 rounded-full"></div>
+                                                <div className="w-16 h-16 border-4 border-indigo-600 rounded-full border-t-transparent absolute top-0 left-0 animate-spin"></div>
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-lg font-semibold text-grayscale-800">
+                                                    Loading {appName}...
+                                                </p>
+                                                <p className="text-sm text-grayscale-600 mt-1">
+                                                    Please wait
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="text-center">
-                                        <p className="text-lg font-semibold text-grayscale-800">
-                                            Loading {appName}...
-                                        </p>
-                                        <p className="text-sm text-grayscale-600 mt-1">
-                                            Please wait
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                                )}
+                                <iframe
+                                    key={iframeKey}
+                                    ref={iframeRef}
+                                    src={embedUrlWithOverride}
+                                    onLoad={() => setIsLoading(false)}
+                                    onError={() => {
+                                        setHasLoadFailed(true);
+                                        setIsLoading(false);
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        border: 'none',
+                                        display: 'block',
+                                    }}
+                                    title={`${appName} - Modal View`}
+                                />
+                            </>
                         )}
-                        <iframe
-                            src={embedUrlWithOverride}
-                            onLoad={() => setIsLoading(false)}
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                border: 'none',
-                                display: 'block',
-                            }}
-                            title={`${appName} - Modal View`}
-                        />
                     </div>
                 </div>
             </IonContent>
@@ -188,9 +282,12 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                 <CredentialClaimModal
                     credentialUri={pendingCredential.credentialUri}
                     boostUri={pendingCredential.boostUri}
+                    credential={pendingCredential.credential}
                     onDismiss={handleDismissClaimModal}
                 />
             )}
+
+            {ToastOverlay}
         </IonPage>
     );
 };

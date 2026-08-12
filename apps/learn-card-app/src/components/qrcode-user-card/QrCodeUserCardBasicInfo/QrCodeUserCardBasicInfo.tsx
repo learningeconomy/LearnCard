@@ -1,5 +1,7 @@
 import React from 'react';
 import { Clipboard } from '@capacitor/clipboard';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('qr-code-user-card-basic-info');
 
 import ChainLink from 'learn-card-base/svgs/LinkChain';
 
@@ -10,6 +12,8 @@ import {
     ToastTypeEnum,
     UserProfilePicture,
 } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
+import * as m from '../../../paraglide/messages.js';
 
 const QrCodeUserCardBasicInfo: React.FC<{
     walletDid: string;
@@ -24,12 +28,10 @@ const QrCodeUserCardBasicInfo: React.FC<{
 
     const copyToClipBoard = async () => {
         try {
-            let link = `learncard.app/connect?connect=true&did=${walletDid}`;
+            let link = `${getAppBaseUrl()}/connect?connect=true&did=${walletDid}`;
 
             if (contractUri) {
-                link = `${
-                    IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-                }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
+                link = `${getAppBaseUrl()}/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
             }
 
             if (overrideShareLink) {
@@ -39,12 +41,12 @@ const QrCodeUserCardBasicInfo: React.FC<{
             await Clipboard.write({
                 string: link,
             });
-            presentToast('Link copied to clipboard', {
+            presentToast(m['share.profileLinkCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            console.error('Failed to copy to clipboard:', err);
-            presentToast('Unable to copy link to clipboard', {
+            log.error('Failed to copy to clipboard:', err);
+            presentToast(m['share.profileLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -89,7 +91,8 @@ const QrCodeUserCardBasicInfo: React.FC<{
                         onClick={copyToClipBoard}
                         className={`text-base flex items-center text-center font-medium text-grayscale-900`}
                     >
-                        <ChainLink className="h-[20px]" /> {`learncard.app/...${profileId}`}
+                        <ChainLink className="h-[20px]" />{' '}
+                        {`${getAppBaseUrl().replace(/^https?:\/\//, '')}/...${profileId}`}
                     </button>
                 )}
             </div>

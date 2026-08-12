@@ -26,7 +26,7 @@ import { FlatSkillType } from 'types/skill';
 import { neogma } from '@instance';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { FlatProfileType, ProfileType } from 'types/profile';
-import { BoostType, BoostWithClaimPermissionsType } from 'types/boost';
+import { BoostType, BoostWithClaimPermissionsType, BoostOwner } from 'types/boost';
 import { ADMIN_ROLE_ID, CREATOR_ROLE_ID } from 'src/constants/roles';
 import {
     CHILD_TO_NON_CHILD_PERMISSION,
@@ -40,12 +40,13 @@ import { getCredentialUri } from '@helpers/credential.helpers';
 import { giveProfileEmptyPermissions } from './create';
 import { getBoostUri } from '@helpers/boost.helpers';
 
-export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileType | undefined> => {
+export const getBoostOwner = async (boost: BoostInstance): Promise<BoostOwner | undefined> => {
     const profile = (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
+    if (profile) {
+        return { type: 'profile', profile: inflateObject<ProfileType>(profile.dataValues as any) };
+    }
 
-    if (!profile) return undefined;
-
-    return inflateObject<ProfileType>(profile.dataValues as any);
+    return undefined;
 };
 
 /**
@@ -335,12 +336,14 @@ export const getBoostRecipients = async (
         includeUnacceptedBoosts = true,
         query: matchQuery = {},
         domain,
+        from,
     }: {
         limit: number;
         cursor?: string;
         includeUnacceptedBoosts?: boolean;
         query?: LCNProfileQuery;
         domain: string;
+        from?: string;
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
@@ -349,7 +352,7 @@ export const getBoostRecipients = async (
         convertedQuery as any
     );
 
-    const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
+    const _query = new QueryBuilder(new BindParam({ cursor, from, ...queryParams }))
         .match({
             related: [
                 { identifier: 'source', model: Boost, where: { id: boost.id } },
@@ -368,7 +371,7 @@ export const getBoostRecipients = async (
             ],
         })
         .match({ model: Profile, identifier: 'recipient' })
-        .where('recipient.profileId = sent.to')
+        .where(`recipient.profileId = sent.to${from ? ' AND sender.profileId = $from' : ''}`)
         .match({
             optional: includeUnacceptedBoosts,
             related: [
@@ -383,7 +386,7 @@ export const getBoostRecipients = async (
         .with('sender, sent, received, recipient, credential')
         // Filter out revoked credentials using WITH barrier pattern
         .where(
-            `(received IS NULL OR coalesce(received.status, '') <> 'revoked')${
+            `coalesce(sent.status, received.status, '') <> 'revoked'${
                 whereClause ? ' AND ' + whereClause : ''
             }`
         );
@@ -410,6 +413,11 @@ export const getBoostRecipients = async (
         from: sender.profileId,
         received: received?.date,
         ...(credential && { uri: getCredentialUri(credential.id, domain) }),
+        status: coalesceStatus(sent.status, received?.status) as
+            | 'active'
+            | 'revoked'
+            | 'suspended'
+            | undefined,
     }));
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
@@ -431,6 +439,10 @@ export const getBoostRecipients = async (
         }))
         .filter(result => Boolean(result.to)) as Array<BoostRecipientInfo & { sent: string }>;
 };
+
+/** Coalesce sent/received status into a single value (undefined when unset — callers treat as 'active'). */
+const coalesceStatus = (sentStatus?: unknown, receivedStatus?: unknown): string | undefined =>
+    (sentStatus as string) || (receivedStatus as string) || undefined;
 
 /** @deprecated */
 export const getBoostRecipientsSkipLimit = async (
@@ -478,7 +490,7 @@ export const getBoostRecipientsSkipLimit = async (
         })
         // Use WITH barrier pattern to properly filter revoked credentials
         .with('sender, sent, received, credential')
-        .where(`received IS NULL OR coalesce(received.status, '') <> 'revoked'`);
+        .where(`coalesce(sent.status, received.status, '') <> 'revoked'`);
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: FlatProfileType;
@@ -499,6 +511,11 @@ export const getBoostRecipientsSkipLimit = async (
         from: sender.profileId,
         received: received?.date,
         ...(credential && { uri: getCredentialUri(credential.id, domain) }),
+        status: coalesceStatus(sent.status, received?.status) as
+            | 'active'
+            | 'revoked'
+            | 'suspended'
+            | undefined,
     }));
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
@@ -521,15 +538,15 @@ export const countBoostRecipients = async (
             MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
             MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
             OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
-            WITH DISTINCT sent.to AS recipientId, received
-            WHERE received IS NULL OR coalesce(received.status, '') <> 'revoked'
+            WITH DISTINCT sent.to AS recipientId, sent.status AS sentStatus, received
+            WHERE coalesce(sentStatus, received.status, '') <> 'revoked'
             RETURN COUNT(DISTINCT recipientId) AS count
           `
         : `
             MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)
             MATCH (credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)
             MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile)
-            WHERE coalesce(received.status, '') <> 'revoked'
+            WHERE coalesce(sent.status, received.status, '') <> 'revoked'
             RETURN COUNT(DISTINCT sent.to) AS count
           `;
 
@@ -1518,18 +1535,6 @@ export const getBoostRecipientsWithChildren = async (
     }>(await _query.run());
 
     // Process results and group by profile, filtering out revoked credentials
-    // Debug: log results with status info
-    console.log('[getBoostRecipientsWithChildren] Total results before filter:', results.length);
-    const revokedResults = results.filter(({ received }) => received?.status === 'revoked');
-    console.log(
-        '[getBoostRecipientsWithChildren] Revoked results:',
-        revokedResults.map(r => ({
-            to: r.sent?.to,
-            status: r.received?.status,
-            boostId: r.relevantBoost?.id,
-        }))
-    );
-
     const resultsWithIds = results
         .filter(({ received }) => received?.status !== 'revoked')
         .map(({ relevantBoost, sender, sent, received, credential }) => {
@@ -1541,6 +1546,11 @@ export const getBoostRecipientsWithChildren = async (
                 received: received?.date,
                 boostUri: getBoostUri(boostId, domain),
                 ...(credential && { uri: getCredentialUri(credential.id, domain) }),
+                status: coalesceStatus(sent.status, received?.status) as
+                    | 'active'
+                    | 'revoked'
+                    | 'suspended'
+                    | undefined,
             };
         });
 
@@ -1557,6 +1567,7 @@ export const getBoostRecipientsWithChildren = async (
             received?: string;
             boostUris: string[];
             credentialUris: string[];
+            status?: 'active' | 'revoked' | 'suspended';
         }
     >();
 
@@ -1572,6 +1583,7 @@ export const getBoostRecipientsWithChildren = async (
                 received: result.received,
                 boostUris: [],
                 credentialUris: [],
+                status: result.status,
             });
         }
 

@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { TrustedAppRegistryEntry, useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { IonHeader, IonRow, IonCol, IonGrid, IonPage, IonToolbar } from '@ionic/react';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('trusted-app-request-modal');
 
 type TrustedAppRequestModalProps = {
     appInfo: TrustedAppRegistryEntry;
@@ -17,6 +20,7 @@ export const TrustedAppRequestModal: React.FC<TrustedAppRequestModalProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+    const brandingConfig = useBrandingConfig();
 
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -40,7 +44,7 @@ export const TrustedAppRequestModal: React.FC<TrustedAppRequestModalProps> = ({
                 }
             );
             // @ts-ignore
-            console.log('connectionReq::error', err?.message);
+            log.debug('connectionReq::error', err?.message);
             setLoading(false);
         }
     };
@@ -52,7 +56,7 @@ export const TrustedAppRequestModal: React.FC<TrustedAppRequestModalProps> = ({
                     <IonRow className="flex flex-col pb-4">
                         <IonCol className="w-full flex items-center justify-center">
                             <h6 className="tracking-[12px] text-base font-bold text-black">
-                                LEARNCARD
+                                {brandingConfig?.name}
                             </h6>
                         </IonCol>
                     </IonRow>
@@ -80,7 +84,7 @@ export const TrustedAppRequestModal: React.FC<TrustedAppRequestModalProps> = ({
                     <IonCol className="text-center">
                         <p className="text-center text-sm font-semibold px-[16px] text-grayscale-800">
                             An application is requesting access to credentials stored in your
-                            LearnCard.
+                            {brandingConfig?.name}.
                         </p>
                         <br />
 

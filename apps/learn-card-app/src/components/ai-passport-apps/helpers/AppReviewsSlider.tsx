@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper';
+import { Navigation } from 'swiper/modules';
 
 import StaticStarRating from '../helpers/StaticStarRating';
 

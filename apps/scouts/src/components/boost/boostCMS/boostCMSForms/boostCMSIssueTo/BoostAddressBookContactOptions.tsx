@@ -20,6 +20,7 @@ import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import Camera from 'learn-card-base/svgs/Camera';
 import AddressBookQRCode from '../../../../../pages/addressBook/addressBook-qrcode/AddressBookQRCode';
 import ScannerPermissionsPrompt from '../../../../../components/scanner-permissions-prompt/ScannerPermissionsPrompt';
+import { getAppBaseUrl } from '../../../../../config/bootstrapTenantConfig';
 
 import {
     BoostAddressBook,
@@ -36,6 +37,8 @@ import { useGetCurrentLCNUser } from 'learn-card-base';
 
 import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-address-book-contact-options');
 
 const BoostAddressBookContactOptions: React.FC<{
     state: BoostCMSState;
@@ -176,7 +179,7 @@ const BoostAddressBookContactOptions: React.FC<{
     const copyToClipBoard = async () => {
         try {
             await Clipboard.write({
-                string: `https://pass.scout.org/connect?did=${walletDid}`,
+                string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
             presentToast('Contact link copied to clipboard', {
                 type: ToastTypeEnum.Success,
@@ -195,7 +198,7 @@ const BoostAddressBookContactOptions: React.FC<{
             await Share.share({
                 title: 'Add contact',
                 text: '',
-                url: `https://pass.scout.org/connect?did=${walletDid}`,
+                url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',
             });
         } else {
@@ -232,7 +235,7 @@ const BoostAddressBookContactOptions: React.FC<{
 
                 handleCloseModal();
             } catch (e: any) {
-                console.log('///Add yourself error', e);
+                log.debug('///Add yourself error', e);
                 throw new Error('There was an error', e);
             }
         }

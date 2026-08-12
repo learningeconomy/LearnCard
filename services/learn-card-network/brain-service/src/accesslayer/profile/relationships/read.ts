@@ -28,8 +28,8 @@ export const getManagedServiceProfiles = async (
 
     const query = cursor
         ? _query.where(
-            new Where({ managed: { profileId: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
+              new Where({ managed: { profileId: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
@@ -39,13 +39,21 @@ export const getManagedServiceProfiles = async (
     return results.map(({ managed }) => inflateObject(managed as any));
 };
 
+export const isProfileManaged = async (profileId: string): Promise<boolean> => {
+    const managers = await getProfilesThatManageAProfile(profileId);
+    return managers.length > 0;
+};
+
 export const getProfilesThatManageAProfile = async (profileId: string): Promise<ProfileType[]> => {
     const results = convertQueryResultToPropertiesObjectArray<{ manager: FlatProfileType }>(
-        await new QueryBuilder()
+        await new QueryBuilder(new BindParam({ profileId }))
+            .match({
+                related: [{ model: Profile, where: { profileId }, identifier: 'child' }],
+            })
             .match({
                 optional: true,
                 related: [
-                    { model: Profile, where: { profileId } },
+                    { identifier: 'child' },
                     Profile.getRelationshipByAlias('managedBy'),
                     { identifier: 'directManager', model: Profile },
                 ],
@@ -53,7 +61,7 @@ export const getProfilesThatManageAProfile = async (profileId: string): Promise<
             .match({
                 optional: true,
                 related: [
-                    { model: Profile, where: { profileId } },
+                    { identifier: 'child' },
                     { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
                     { model: ProfileManager },
                     ProfileManager.getRelationshipByAlias('administratedBy'),
@@ -63,7 +71,7 @@ export const getProfilesThatManageAProfile = async (profileId: string): Promise<
             .match({
                 optional: true,
                 related: [
-                    { model: Profile, where: { profileId } },
+                    { identifier: 'child' },
                     { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
                     { model: ProfileManager },
                     ProfileManager.getRelationshipByAlias('childOf'),
@@ -78,10 +86,10 @@ export const getProfilesThatManageAProfile = async (profileId: string): Promise<
             )
             .where(
                 `
-(implicitManager IS NULL AND manager IS NOT NULL) OR 
-implicitManager = manager OR 
-(implicitManager IS NULL AND directManager IS NOT NULL) OR 
-implicitManager = directManager OR 
+(implicitManager IS NULL AND manager IS NOT NULL) OR
+implicitManager = manager OR
+(implicitManager IS NULL AND directManager IS NOT NULL) OR
+implicitManager = directManager OR
 (implicitManager IS NOT NULL AND canManageChildrenProfiles = true)
 `
             )
@@ -103,8 +111,11 @@ export const getProfilesThatAProfileManages = async (
     }: { limit: number; cursor?: string; query?: LCNProfileQuery }
 ): Promise<{ profile: ProfileType; manager?: ProfileManagerType }[]> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
-    const { whereClause, params: queryParams } = buildWhereForQueryBuilder('managed', convertedQuery as any);
-    
+    const { whereClause, params: queryParams } = buildWhereForQueryBuilder(
+        'managed',
+        convertedQuery as any
+    );
+
     const _query = new QueryBuilder(new BindParam({ cursor, ...queryParams }))
         .match({
             optional: true,
@@ -142,11 +153,11 @@ export const getProfilesThatAProfileManages = async (
         )
         .where(
             `
-(implicitlyManaged IS NULL AND managed IS NOT NULL) OR 
-implicitlyManaged = managed OR 
-(implicitlyManaged IS NULL AND directlyManaged IS NOT NULL) OR 
-implicitlyManaged = directlyManaged OR 
-(implicitlyManaged IS NOT NULL AND canManageChildrenProfiles = true)
+((implicitlyManaged IS NULL AND managed IS NOT NULL AND (manager IS NULL OR coalesce(manager.managerType, '') <> 'guardian')) OR
+implicitlyManaged = managed OR
+(implicitlyManaged IS NULL AND directlyManaged IS NOT NULL) OR
+implicitlyManaged = directlyManaged OR
+(implicitlyManaged IS NOT NULL AND canManageChildrenProfiles = true))
 `
         )
         .with(

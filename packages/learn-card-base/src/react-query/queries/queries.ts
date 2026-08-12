@@ -5,25 +5,31 @@ import {
     useMutation,
     useInfiniteQuery,
     UseQueryResult,
+    type QueryClient,
 } from '@tanstack/react-query';
 import {
     BoostAndVCType,
     CredentialCategoryEnum,
     useWallet,
     switchedProfileStore,
-    LEARNCARD_NETWORK_API_URL,
 } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { walletStore } from 'learn-card-base/stores/walletStore';
+import { useAuthGateState } from 'learn-card-base/auth-status/useAuthGateState';
+import { hasNetworkProfile, isAuthSettled } from 'learn-card-base/auth-status/authStatus';
 import {
     Boost,
     BoostRecipientInfo,
     LCNProfile,
+    LCNVisibleProfile,
+    LCNProfileConnectionStatusEnum,
     AppStoreListing,
     SentCredentialInfo,
     VC,
     PaginationOptionsType,
     PaginatedLCNProfiles,
     BoostPermissions,
+    LCNIntegration,
 } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { CREDENTIAL_CATEGORIES } from 'learn-card-base/types/credentials';
@@ -31,6 +37,10 @@ import { LCR } from 'learn-card-base/types/credential-records';
 import { useIsLoggedIn, useCurrentUser } from 'learn-card-base';
 import { getBespokeLearnCard, generatePK } from 'learn-card-base/helpers/walletHelpers';
 import { SELF_ASSIGNED_SKILLS_BOOST_NAME } from 'learn-card-base/helpers/credentialHelpers';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('queries');
+
+type QueriedProfile = LCNProfile | LCNVisibleProfile;
 
 /** ===============================
  *      BOOST QUERIES
@@ -568,7 +578,7 @@ export const useGetBoostAdmins = (boostUri?: string) => {
 export const useGetConnections = () => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile[]>({
+    return useQuery<LCNVisibleProfile[]>({
         queryKey: ['connections', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -605,7 +615,7 @@ export const useGetConnection = (profileId: string) => {
     profileId = profileId?.toLowerCase();
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile | undefined>({
+    return useQuery<LCNVisibleProfile | undefined>({
         queryKey: ['connection', switchedDid ?? '', profileId],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -623,7 +633,7 @@ export const useGetConnection = (profileId: string) => {
 export const useGetPendingConnections = () => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile[]>({
+    return useQuery<LCNVisibleProfile[]>({
         queryKey: ['pendingConnections', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -659,7 +669,7 @@ export const useGetPaginatedPendingConnections = (
 export const useGetConnectionsRequests = () => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile[]>({
+    return useQuery<LCNVisibleProfile[]>({
         queryKey: ['getConnectionRequests', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -695,7 +705,7 @@ export const useGetPaginatedConnectionRequests = (
 export const useGetBlockedProfiles = () => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile[]>({
+    return useQuery<LCNVisibleProfile[]>({
         queryKey: ['getBlockedProfiles', switchedDid ?? ''],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -736,7 +746,7 @@ export const useGenerateInvite = () => {
 export const useGetSearchProfiles = (profileId: string) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    return useQuery<LCNProfile[]>({
+    return useQuery<(LCNVisibleProfile & { connectionStatus?: LCNProfileConnectionStatusEnum })[]>({
         queryKey: ['getSearchProfiles', switchedDid ?? '', profileId],
         queryFn: async () => {
             const wallet = await initWallet();
@@ -751,44 +761,72 @@ export const useGetSearchProfiles = (profileId: string) => {
 
 /**
  * Hook: Determine if the current user is an LCN user.
+ *
+ * Re-rooted on the canonical auth-gate selector: `data` is true ONLY for a
+ * confirmed network profile, and `isLoading` stays true until auth is settled —
+ * the profile is definitively resolved (present or absent) or the user is
+ * definitively unauthenticated. A transient wallet/network failure
+ * resolves to "still resolving", never "no profile", so the Complete Profile /
+ * age gate / JoinNetworkModal prompts can't fire during the resume race.
  */
-type ResultStatus = 'pending' | 'success' | 'error';
 export const useIsCurrentUserLCNUser = () => {
     const result = useGetProfile();
+    const authStatus = useAuthGateState(result.status, Boolean(result.data));
+
     return {
         ...result,
-        data: Boolean(result.data),
-        isLoading: result.status === 'pending',
+        data: hasNetworkProfile(authStatus),
+        isLoading: !isAuthSettled(authStatus),
     };
 };
 
 export const useGetProfile = (
     profileId?: string,
     enabled = true
-): UseQueryResult<LCNProfile | null> => {
+): UseQueryResult<QueriedProfile | null> => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
+    const wallet = walletStore.use.wallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
-    return useQuery<LCNProfile | null>({
-        enabled: enabled && (!!profileId || isLoggedIn),
+    // Fetching the current user's OWN profile (no explicit profileId) needs a
+    // reconstructed wallet. On resume the persisted `currentUser` rehydrates (so
+    // `isLoggedIn` flips true) before the private key is restored; gating on the
+    // wallet being present stops the query from running early and caching a bogus
+    // `null` for the whole staleTime — the root cause of the mixed-login state.
+    const requiresOwnWallet = isLoggedIn && !profileId;
+    const walletReady = !!wallet;
+
+    return useQuery<QueriedProfile | null>({
+        enabled: enabled && (!!profileId || isLoggedIn) && (!requiresOwnWallet || walletReady),
         queryKey: ['getProfile', switchedDid ?? '', profileId],
-        queryFn: async (): Promise<LCNProfile | null> => {
-            // If user is logged in, try to use the wallet
-            if (isLoggedIn) {
+        // The current user's profile changes rarely (avatar/displayName edits).
+        // Keep cached data fresh for 5 minutes so navigations between pages don't
+        // trigger background refetches that flicker dependent UI like
+        // UserProfilePicture in the header. Mutations that update the profile
+        // (e.g., editProfile) are responsible for invalidating this query.
+        staleTime: 5 * 60 * 1000,
+        queryFn: async (): Promise<QueriedProfile | null> => {
+            // Own profile: the wallet MUST resolve here. On failure, throw so React
+            // Query records an error rather than caching `null` as a definitive
+            // "no profile" (which would falsely trigger onboarding). Recovery is the
+            // `enabled` false→true transition once the wallet lands, not retries.
+            if (isLoggedIn && !profileId) {
+                const ownWallet = await initWallet();
+                if (!ownWallet) throw new Error('Wallet not ready for profile fetch');
+                const data = await ownWallet.invoke.getProfile();
+                return data ?? null;
+            }
+
+            if (isLoggedIn && profileId) {
                 try {
-                    const wallet = await initWallet();
-                    if (wallet) {
-                        if (profileId) {
-                            const data = await wallet.invoke.getProfile(profileId);
-                            return data ?? null;
-                        } else {
-                            const data = await wallet.invoke.getProfile();
-                            return data ?? null;
-                        }
+                    const loggedInWallet = await initWallet();
+                    if (loggedInWallet) {
+                        const data = await loggedInWallet.invoke.getProfile(profileId);
+                        return data ?? null;
                     }
                 } catch (error) {
-                    console.warn('Failed to initialize wallet, falling back to public API', error);
+                    log.warn('Failed to initialize wallet, falling back to public API', error);
                 }
             }
 
@@ -803,7 +841,7 @@ export const useGetProfile = (
                         return data ?? null;
                     }
                 } catch (error) {
-                    console.warn(
+                    log.warn(
                         'Failed to initialize dummy wallet, falling back to public API',
                         error
                     );
@@ -814,13 +852,13 @@ export const useGetProfile = (
             if (profileId) {
                 try {
                     const response = await fetch(
-                        `${LEARNCARD_NETWORK_API_URL}/profile/${profileId}`
+                        `${networkStore.get.networkApiUrl()}/profile/${profileId}`
                     );
                     if (!response.ok) throw new Error('Failed to fetch profile');
                     const data = await response.json();
                     return data ?? null;
                 } catch (error) {
-                    console.error('Failed to fetch profile from public API', error);
+                    log.error('Failed to fetch profile from public API', error);
                     return null;
                 }
             }
@@ -848,11 +886,11 @@ export const useGetAppStoreListingBySlug = (
                 try {
                     return await wallet.invoke.getPublicAppStoreListingBySlug(slug);
                 } catch (error) {
-                    console.warn('Failed to load app listing by slug', error);
+                    log.warn('Failed to load app listing by slug', error);
                 }
             }
 
-            const networkUrl = networkStore.get.networkUrl() || LEARNCARD_NETWORK_API_URL;
+            const networkUrl = networkStore.get.networkApiUrl();
 
             try {
                 const response = await fetch(`${networkUrl}/app-store/public/listing/slug/${slug}`);
@@ -861,9 +899,50 @@ export const useGetAppStoreListingBySlug = (
 
                 return (await response.json()) as AppStoreListing;
             } catch (error) {
-                console.warn('Failed to load app listing by slug', error);
+                log.warn('Failed to load app listing by slug', error);
                 return undefined;
             }
+        },
+    });
+};
+
+/**
+ * Query: Get integration for a listing
+ */
+export const useGetIntegrationForListing = (
+    listingId?: string,
+    enabled = true
+): UseQueryResult<LCNIntegration | undefined> => {
+    const { initWallet } = useWallet();
+
+    return useQuery<LCNIntegration | null>({
+        enabled: enabled && Boolean(listingId),
+        queryKey: ['getIntegrationForListing', listingId],
+        queryFn: async () => {
+            if (!listingId) return null;
+
+            const wallet = await initWallet();
+
+            return (await wallet.invoke.getIntegrationForListing(listingId)) || null;
+        },
+        staleTime: 1000 * 60 * 5,
+    });
+};
+
+// Helper to get integration for listing from cache or fetch manually and cache result
+export const getOrFetchIntegrationForListing = async (
+    queryClient: QueryClient,
+    learnCard: BespokeLearnCard,
+    listingId?: string
+) => {
+    const queryKey = ['getIntegrationForListing', listingId];
+
+    return queryClient.fetchQuery<LCNIntegration | null>({
+        queryKey,
+        queryFn: async () => {
+            if (!listingId) return null;
+
+            return (await learnCard.invoke.getIntegrationForListing(listingId)) || null;
         },
     });
 };
@@ -962,6 +1041,32 @@ export const useGetManagedProfiles = (userDid: string) => {
         queryFn: async () => {
             const managerLc = await getBespokeLearnCard(currentUser?.privateKey ?? '', userDid);
             return (await managerLc.invoke.getManagedProfiles()) ?? null;
+        },
+    });
+};
+
+export const useGetMyManagedChildren = () => {
+    const { initWallet } = useWallet();
+    return useQuery<LCNProfile[]>({
+        queryKey: ['useGetMyManagedChildren'],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            return (await wallet.invoke.getMyManagedChildren?.()) ?? [];
+        },
+    });
+};
+
+export const useGetMyGuardians = () => {
+    const { initWallet } = useWallet();
+    return useQuery<LCNProfile[]>({
+        queryKey: ['useGetMyGuardians'],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            if (!wallet.invoke.getMyGuardians) {
+                log.warn('[useGetMyGuardians] wallet.invoke.getMyGuardians is not available');
+                return [];
+            }
+            return (await wallet.invoke.getMyGuardians()) ?? [];
         },
     });
 };
@@ -1125,6 +1230,42 @@ export const useGetSkillChildren = (frameworkId: string, skillId: string) => {
             return wallet.invoke.getSkillChildren(frameworkId, skillId);
         },
         enabled: !!frameworkId && !!skillId,
+    });
+};
+
+/**
+ * Infinite Query: Get paginated skill children for a specific skill (or root skills if no skillId)
+ * Supports loading more pages via cursor-based pagination
+ */
+export const useGetSkillChildrenInfinite = (
+    frameworkId: string,
+    skillId?: string,
+    options?: { limit?: number; enabled?: boolean }
+) => {
+    const { initWallet } = useWallet();
+    const { limit = 50, enabled = true } = options ?? {};
+
+    return useInfiniteQuery({
+        queryKey: ['getSkillChildrenInfinite', frameworkId, skillId, limit],
+        queryFn: async ({ pageParam }) => {
+            const wallet = await initWallet();
+            if (skillId) {
+                return wallet.invoke.getSkillChildren(frameworkId, skillId, {
+                    limit,
+                    cursor: pageParam as string | undefined,
+                });
+            } else {
+                // For root level skills, use getSkillFrameworkById with pagination
+                const result = await wallet.invoke.getSkillFrameworkById(frameworkId, {
+                    limit,
+                    cursor: pageParam as string | undefined,
+                });
+                return result?.skills;
+            }
+        },
+        initialPageParam: undefined as string | undefined,
+        getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage.cursor : undefined),
+        enabled: !!frameworkId && enabled,
     });
 };
 

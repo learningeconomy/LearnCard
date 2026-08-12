@@ -6,6 +6,7 @@ import { Clipboard } from '@capacitor/clipboard';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 import { IonCol, IonRow, IonPage } from '@ionic/react';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
@@ -37,7 +38,7 @@ const AddressBookQRCode: React.FC<{
 
         try {
             await Clipboard.write({
-                string: `https://pass.scout.org/connect?did=${wallet?.id?.did()}`,
+                string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
             });
             presentToast('Contact link copied to clipboard', {
                 type: ToastTypeEnum.Success,
@@ -58,7 +59,7 @@ const AddressBookQRCode: React.FC<{
             await Share.share({
                 title: 'Add contact',
                 text: '',
-                url: `https://pass.scout.org/connect?did=${wallet?.id?.did()}`,
+                url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
                 dialogTitle: '',
             });
         } else {
@@ -95,7 +96,7 @@ const AddressBookQRCode: React.FC<{
                     <div className="max-w-[90%] w-full h-auto relative user-qr-code-modal-qr-wrap">
                         <QRCodeSVG
                             className="h-full w-full"
-                            value={`https://pass.scout.org/connect?connect=true&did=${walletDid}`}
+                            value={`${getAppBaseUrl()}/connect?connect=true&did=${walletDid}`}
                             data-testid="qrcode-card"
                             bgColor="transparent"
                         />

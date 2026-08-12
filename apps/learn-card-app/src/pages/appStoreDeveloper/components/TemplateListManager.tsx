@@ -1,16 +1,20 @@
+import * as m from '../../../paraglide/messages.js';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('template-list-manager');
 /**
  * TemplateListManager - Unified template management component
- * 
+ *
  * Provides a complete UI for managing credential templates linked to app listings.
  * Includes: template list, create/edit with CredentialBuilder, alias editing, code snippets.
- * 
+ *
  * Used by:
  * - IssueCredentialsSetup (EmbedAppGuide)
  * - PeerBadgesSetup (EmbedAppGuide)
  * - PartnerConnectTab (Dashboard)
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
     Plus,
     Loader2,
@@ -23,9 +27,10 @@ import {
     Sparkles,
     Pencil,
     Send,
+    AlertCircle,
 } from 'lucide-react';
 
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import { useToast, ToastTypeEnum, useGetCurrentLCNUser } from 'learn-card-base';
 
 import {
     useTemplateManager,
@@ -38,19 +43,23 @@ import {
     getBlankTemplate,
     templateToJson,
     jsonToTemplate,
+    validateTemplate,
     type OBv3CredentialTemplate,
+    type ValidationStatus,
 } from '../partner-onboarding/components/CredentialBuilder';
 
 import { CodeBlock } from './CodeBlock';
 
 export interface TemplateListManagerProps {
-    listingId: string;
+    listingId?: string;
     integrationId?: string;
     featureType?: 'issue-credentials' | 'peer-badges';
     showCodeSnippets?: boolean;
     editable?: boolean;
     compact?: boolean;
     onTemplateChange?: (templates: ManagedTemplate[]) => void;
+    /** Fires when builder opens/closes — true means unsaved template work in progress */
+    onBuilderOpenChange?: (isOpen: boolean) => void;
 }
 
 export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
@@ -61,8 +70,10 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     editable = true,
     compact = false,
     onTemplateChange,
+    onBuilderOpenChange,
 }) => {
     const { presentToast } = useToast();
+    const { currentLCNUser } = useGetCurrentLCNUser();
 
     // Use the shared template manager hook
     const {
@@ -75,25 +86,71 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
         refetch,
     } = useTemplateManager({ listingId, integrationId, featureType });
 
+    // Create a blank template pre-filled with org issuer info
+    const createBlankWithIssuer = useCallback(() => {
+        const blank = getBlankTemplate();
+        if (currentLCNUser?.displayName) {
+            blank.issuer.name.value = currentLCNUser.displayName;
+        }
+        if (currentLCNUser?.image) {
+            blank.issuer.image = {
+                value: currentLCNUser.image,
+                isDynamic: false,
+                variableName: '',
+            };
+        }
+        return blank;
+    }, [currentLCNUser]);
+
     // Local UI state
     const [showBuilder, setShowBuilder] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<ManagedTemplate | null>(null);
-    const [currentBuildingTemplate, setCurrentBuildingTemplate] = useState<OBv3CredentialTemplate>(() => getBlankTemplate());
+    const [currentBuildingTemplate, setCurrentBuildingTemplate] = useState<OBv3CredentialTemplate>(
+        () => getBlankTemplate()
+    );
     const [isSaving, setIsSaving] = useState(false);
     const [editingAlias, setEditingAlias] = useState<string | null>(null);
     const [tempAliasValue, setTempAliasValue] = useState('');
-    const [selectedTemplateForCode, setSelectedTemplateForCode] = useState<ManagedTemplate | null>(null);
+    const [selectedTemplateForCode, setSelectedTemplateForCode] = useState<ManagedTemplate | null>(
+        null
+    );
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const [builderValidationStatus, setBuilderValidationStatus] =
+        useState<ValidationStatus>('unknown');
+    const builderRef = useRef<HTMLDivElement>(null);
+
+    // Structural validation errors (required fields, URL format)
+    const structuralErrors = React.useMemo(
+        () => (showBuilder ? validateTemplate(currentBuildingTemplate) : []),
+        [showBuilder, currentBuildingTemplate]
+    );
+
+    // Block save when there are structural errors or JSON-LD validation failed
+    const canSave = structuralErrors.length === 0 && builderValidationStatus !== 'invalid';
+
+    // Pre-fill issuer info on initial blank template when user data loads
+    React.useEffect(() => {
+        if (currentLCNUser && !showBuilder && !editingTemplate) {
+            setCurrentBuildingTemplate(createBlankWithIssuer());
+        }
+    }, [currentLCNUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Reset local state when context changes (listingId, featureType)
     React.useEffect(() => {
         setShowBuilder(false);
         setEditingTemplate(null);
-        setCurrentBuildingTemplate(getBlankTemplate());
+        setCurrentBuildingTemplate(createBlankWithIssuer());
         setIsSaving(false);
         setEditingAlias(null);
         setTempAliasValue('');
         setSelectedTemplateForCode(null);
-    }, [listingId, featureType]);
+        setBuilderValidationStatus('unknown');
+    }, [listingId, integrationId, featureType]);
+
+    // Notify parent when builder opens/closes
+    React.useEffect(() => {
+        onBuilderOpenChange?.(showBuilder);
+    }, [showBuilder, onBuilderOpenChange]);
 
     // Notify parent when templates change
     React.useEffect(() => {
@@ -101,7 +158,10 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
 
         // Auto-select first template if none selected, or clear if selected template is not in current list
         if (templates.length > 0) {
-            if (!selectedTemplateForCode || !templates.some(t => t.boostUri === selectedTemplateForCode.boostUri)) {
+            if (
+                !selectedTemplateForCode ||
+                !templates.some(t => t.boostUri === selectedTemplateForCode.boostUri)
+            ) {
                 setSelectedTemplateForCode(templates[0]);
             }
         } else if (selectedTemplateForCode) {
@@ -110,21 +170,32 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
     }, [templates, onTemplateChange, selectedTemplateForCode]);
 
     // Start editing an existing template
-    const handleStartEdit = useCallback((template: ManagedTemplate) => {
-        try {
-            const obv3Template = jsonToTemplate(template.credential || {});
-            setCurrentBuildingTemplate(obv3Template);
-            setEditingTemplate(template);
-            setShowBuilder(true);
-        } catch (err) {
-            console.error('Failed to load template for editing:', err);
-            presentToast('Failed to load template for editing', { type: ToastTypeEnum.Error });
-        }
-    }, [presentToast]);
+    const handleStartEdit = useCallback(
+        (template: ManagedTemplate) => {
+            try {
+                const obv3Template = jsonToTemplate(template.credential || {});
+                setCurrentBuildingTemplate(obv3Template);
+                setEditingTemplate(template);
+                setShowBuilder(true);
+                setBuilderValidationStatus('unknown');
+                setSaveError(null);
+
+                // Scroll to builder after React renders it
+                requestAnimationFrame(() => {
+                    builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            } catch (err) {
+                log.error('Failed to load template for editing:', err);
+                presentToast('Failed to load template for editing', { type: ToastTypeEnum.Error });
+            }
+        },
+        [presentToast]
+    );
 
     // Save from builder (create or update)
     const handleSaveFromBuilder = useCallback(async () => {
         setIsSaving(true);
+        setSaveError(null);
 
         try {
             const credentialData = templateToJson(currentBuildingTemplate);
@@ -138,56 +209,74 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
                 // Create new - for peer-badges, add canIssue: true so anyone can issue
                 await createTemplate(credentialData, {
                     name,
-                    defaultPermissions: featureType === 'peer-badges'
-                        ? { canIssue: true }
-                        : undefined,
+                    defaultPermissions:
+                        featureType === 'peer-badges' ? { canIssue: true } : undefined,
                 });
                 presentToast('Template created!', { type: ToastTypeEnum.Success });
             }
 
             setShowBuilder(false);
             setEditingTemplate(null);
-            setCurrentBuildingTemplate(getBlankTemplate());
+            setCurrentBuildingTemplate(createBlankWithIssuer());
         } catch (err) {
-            console.error('Failed to save template:', err);
-            presentToast(`Failed to ${editingTemplate ? 'update' : 'create'} template`, { type: ToastTypeEnum.Error });
+            log.error('Failed to save template:', err);
+            const errMsg = err instanceof Error ? err.message : String(err);
+            setSaveError(errMsg);
+            presentToast(`Failed to ${editingTemplate ? 'update' : 'create'} template`, {
+                type: ToastTypeEnum.Error,
+            });
         } finally {
             setIsSaving(false);
         }
-    }, [currentBuildingTemplate, editingTemplate, createTemplate, updateTemplate, presentToast, featureType]);
+    }, [
+        currentBuildingTemplate,
+        editingTemplate,
+        createTemplate,
+        updateTemplate,
+        presentToast,
+        featureType,
+    ]);
 
     // Handle delete
-    const handleDelete = useCallback(async (boostUri: string) => {
-        try {
-            await deleteTemplate(boostUri);
-            presentToast('Template removed', { type: ToastTypeEnum.Success });
+    const handleDelete = useCallback(
+        async (boostUri: string) => {
+            try {
+                await deleteTemplate(boostUri);
+                presentToast('Template removed', { type: ToastTypeEnum.Success });
 
-            if (selectedTemplateForCode?.boostUri === boostUri) {
-                setSelectedTemplateForCode(null);
+                if (selectedTemplateForCode?.boostUri === boostUri) {
+                    setSelectedTemplateForCode(null);
+                }
+            } catch (err) {
+                log.error('Failed to delete template:', err);
+                presentToast('Failed to remove template', { type: ToastTypeEnum.Error });
             }
-        } catch (err) {
-            console.error('Failed to delete template:', err);
-            presentToast('Failed to remove template', { type: ToastTypeEnum.Error });
-        }
-    }, [deleteTemplate, presentToast, selectedTemplateForCode]);
+        },
+        [deleteTemplate, presentToast, selectedTemplateForCode]
+    );
 
     // Handle alias update
-    const handleSaveAlias = useCallback(async (boostUri: string) => {
-        try {
-            await updateAlias(boostUri, tempAliasValue);
-            setEditingAlias(null);
-            presentToast('Alias updated!', { type: ToastTypeEnum.Success });
-        } catch (err) {
-            console.error('Failed to update alias:', err);
-            presentToast((err as Error).message || 'Failed to update alias', { type: ToastTypeEnum.Error });
-        }
-    }, [updateAlias, tempAliasValue, presentToast]);
+    const handleSaveAlias = useCallback(
+        async (boostUri: string) => {
+            try {
+                await updateAlias(boostUri, tempAliasValue);
+                setEditingAlias(null);
+                presentToast('Alias updated!', { type: ToastTypeEnum.Success });
+            } catch (err) {
+                log.error('Failed to update alias:', err);
+                presentToast((err as Error).message || 'Failed to update alias', {
+                    type: ToastTypeEnum.Error,
+                });
+            }
+        },
+        [updateAlias, tempAliasValue, presentToast]
+    );
 
     // Cancel builder
     const handleCancelBuilder = useCallback(() => {
         setShowBuilder(false);
         setEditingTemplate(null);
-        setCurrentBuildingTemplate(getBlankTemplate());
+        setCurrentBuildingTemplate(createBlankWithIssuer());
     }, []);
 
     // Generate code snippet
@@ -203,29 +292,36 @@ export const TemplateListManager: React.FC<TemplateListManagerProps> = ({
 const result = await learnCard.initiateTemplateIssue('${template.boostUri}');`;
         }
 
+        // Use templateAlias when available (listing-based), boostUri otherwise
+        const templateRef = template.templateAlias
+            ? `    templateAlias: '${template.templateAlias}'`
+            : `    templateUri: '${template.boostUri}'`;
+
         if (hasVariables) {
-            const templateDataLines = template.variables!.map(v => `        ${v}: 'value', // Replace with actual value`).join('\n');
+            const templateDataLines = template
+                .variables!.map(v => `        ${v}: 'value', // Replace with actual value`)
+                .join('\n');
 
             return `// Issue "${template.name}" credential to user
 const result = await learnCard.sendCredential({
-    templateAlias: '${template.templateAlias}',
+${templateRef},
     templateData: {
 ${templateDataLines}
     }
 });
 
 if (result.credentialUri) {
-    console.log('Credential issued:', result.credentialUri);
+    log.info('Credential issued:', result.credentialUri);
 }`;
         }
 
         return `// Issue "${template.name}" credential to user
 const result = await learnCard.sendCredential({
-    templateAlias: '${template.templateAlias}'
+${templateRef}
 });
 
 if (result.credentialUri) {
-    console.log('Credential issued:', result.credentialUri);
+    log.info('Credential issued:', result.credentialUri);
 }`;
     };
 
@@ -234,7 +330,9 @@ if (result.credentialUri) {
         return (
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center gap-3">
                 <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
-                <span className="text-gray-600">Loading templates...</span>
+                <span className="text-gray-600">
+                    {m['developerPortal.components.templateListManager.loadingTemplates']()}
+                </span>
             </div>
         );
     }
@@ -248,22 +346,31 @@ if (result.credentialUri) {
                         <div
                             key={template.boostUri}
                             className={`p-4 rounded-xl border transition-colors ${
-                                selectedTemplateForCode?.boostUri === template.boostUri
+                                editingTemplate?.boostUri === template.boostUri
+                                    ? 'border-blue-300 bg-blue-50'
+                                    : showCodeSnippets &&
+                                      selectedTemplateForCode?.boostUri === template.boostUri
                                     ? 'border-emerald-300 bg-emerald-50'
                                     : 'border-gray-200 bg-white hover:border-gray-300'
                             }`}
                         >
                             <div className="flex items-start gap-3">
                                 {/* Template Icon */}
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${
-                                    template.imageUrl 
-                                        ? '' 
-                                        : featureType === 'peer-badges'
+                                <div
+                                    className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                                        template.imageUrl
+                                            ? ''
+                                            : featureType === 'peer-badges'
                                             ? 'bg-gradient-to-br from-violet-100 to-purple-100'
                                             : 'bg-gradient-to-br from-emerald-100 to-cyan-100'
-                                }`}>
+                                    }`}
+                                >
                                     {template.imageUrl ? (
-                                        <img src={template.imageUrl} alt={template.name} className="w-full h-full object-cover" />
+                                        <img
+                                            src={template.imageUrl}
+                                            alt={template.name}
+                                            className="w-full h-full object-cover"
+                                        />
                                     ) : featureType === 'peer-badges' ? (
                                         <Send className="w-5 h-5 text-violet-600" />
                                     ) : (
@@ -273,29 +380,41 @@ if (result.credentialUri) {
 
                                 {/* Template Info */}
                                 <div className="flex-1 min-w-0">
-                                    <h5 className="font-medium text-gray-900 truncate">{template.name}</h5>
+                                    <h5 className="font-medium text-gray-900 truncate">
+                                        {template.name}
+                                    </h5>
 
-                                    {/* Alias - only for issue-credentials templates */}
-                                    {featureType === 'issue-credentials' && (
+                                    {/* Alias - only for issue-credentials templates with a listing */}
+                                    {featureType === 'issue-credentials' && listingId && (
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs text-gray-500">Alias:</span>
+                                            <span className="text-xs text-gray-500">
+                                                {m[
+                                                    'developerPortal.components.templateListManager.alias'
+                                                ]()}
+                                            </span>
 
                                             {editingAlias === template.boostUri ? (
                                                 <div className="flex items-center gap-1">
                                                     <input
                                                         type="text"
                                                         value={tempAliasValue}
-                                                        onChange={e => setTempAliasValue(e.target.value)}
+                                                        onChange={e =>
+                                                            setTempAliasValue(e.target.value)
+                                                        }
                                                         className="px-2 py-0.5 text-xs border border-emerald-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                                         autoFocus
                                                         onKeyDown={e => {
-                                                            if (e.key === 'Enter') handleSaveAlias(template.boostUri!);
-                                                            if (e.key === 'Escape') setEditingAlias(null);
+                                                            if (e.key === 'Enter')
+                                                                handleSaveAlias(template.boostUri!);
+                                                            if (e.key === 'Escape')
+                                                                setEditingAlias(null);
                                                         }}
                                                     />
 
                                                     <button
-                                                        onClick={() => handleSaveAlias(template.boostUri!)}
+                                                        onClick={() =>
+                                                            handleSaveAlias(template.boostUri!)
+                                                        }
                                                         className="p-1 text-emerald-600 hover:text-emerald-800"
                                                     >
                                                         <Check className="w-3 h-3" />
@@ -312,30 +431,41 @@ if (result.credentialUri) {
                                                 <button
                                                     onClick={() => {
                                                         setEditingAlias(template.boostUri!);
-                                                        setTempAliasValue(template.templateAlias || '');
+                                                        setTempAliasValue(
+                                                            template.templateAlias || ''
+                                                        );
                                                     }}
                                                     className="flex items-center gap-1 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700 hover:bg-gray-200 transition-colors"
                                                 >
-                                                    <code>{template.templateAlias || 'No alias'}</code>
-                                                    {editable && <Pencil className="w-3 h-3 text-gray-400" />}
+                                                    <code>
+                                                        {template.templateAlias ||
+                                                            m[
+                                                                'developerPortal.components.templateListManager.noAlias'
+                                                            ]()}
+                                                    </code>
+                                                    {editable && (
+                                                        <Pencil className="w-3 h-3 text-gray-400" />
+                                                    )}
                                                 </button>
                                             )}
                                         </div>
                                     )}
 
                                     {/* Variables */}
-                                    {template.variables && template.variables.length > 0 && !compact && (
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                            {template.variables.map(v => (
-                                                <span
-                                                    key={v}
-                                                    className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-mono"
-                                                >
-                                                    {`{{${v}}}`}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
+                                    {template.variables &&
+                                        template.variables.length > 0 &&
+                                        !compact && (
+                                            <div className="flex flex-wrap gap-1 mt-2">
+                                                {template.variables.map(v => (
+                                                    <span
+                                                        key={v}
+                                                        className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-mono"
+                                                    >
+                                                        {`{{${v}}}`}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                 </div>
 
                                 {/* Actions */}
@@ -343,8 +473,14 @@ if (result.credentialUri) {
                                     {editable && (
                                         <button
                                             onClick={() => handleStartEdit(template)}
-                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            title="Edit template"
+                                            className={`p-2 rounded-lg transition-colors ${
+                                                editingTemplate?.boostUri === template.boostUri
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                                            }`}
+                                            title={m[
+                                                'developerPortal.components.templateListManager.editTemplate'
+                                            ]()}
                                         >
                                             <Edit3 className="w-4 h-4" />
                                         </button>
@@ -354,11 +490,14 @@ if (result.credentialUri) {
                                         <button
                                             onClick={() => setSelectedTemplateForCode(template)}
                                             className={`p-2 rounded-lg transition-colors ${
-                                                selectedTemplateForCode?.boostUri === template.boostUri
+                                                selectedTemplateForCode?.boostUri ===
+                                                template.boostUri
                                                     ? 'bg-emerald-100 text-emerald-700'
                                                     : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                                             }`}
-                                            title="View code"
+                                            title={m[
+                                                'developerPortal.components.templateListManager.viewCode'
+                                            ]()}
                                         >
                                             <Code className="w-4 h-4" />
                                         </button>
@@ -368,7 +507,9 @@ if (result.credentialUri) {
                                         <button
                                             onClick={() => handleDelete(template.boostUri!)}
                                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Remove"
+                                            title={m[
+                                                'developerPortal.components.templateListManager.remove'
+                                            ]()}
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
@@ -384,27 +525,50 @@ if (result.credentialUri) {
             {editable && (
                 <>
                     {showBuilder ? (
-                        <div className={`border rounded-xl overflow-hidden ${editingTemplate ? 'border-blue-200' : 'border-emerald-200'}`}>
-                            <div className={`p-3 border-b flex items-center justify-between ${editingTemplate ? 'bg-blue-50 border-blue-200' : 'bg-emerald-50 border-emerald-200'}`}>
-                                <h5 className={`font-medium flex items-center gap-2 ${editingTemplate ? 'text-blue-800' : 'text-emerald-800'}`}>
+                        <div
+                            ref={builderRef}
+                            className={`border rounded-xl overflow-hidden ${
+                                editingTemplate ? 'border-blue-200' : 'border-emerald-200'
+                            }`}
+                        >
+                            <div
+                                className={`p-3 border-b flex items-center justify-between ${
+                                    editingTemplate
+                                        ? 'bg-blue-50 border-blue-200'
+                                        : 'bg-emerald-50 border-emerald-200'
+                                }`}
+                            >
+                                <h5
+                                    className={`font-medium flex items-center gap-2 ${
+                                        editingTemplate ? 'text-blue-800' : 'text-emerald-800'
+                                    }`}
+                                >
                                     {editingTemplate ? (
                                         <>
                                             <Edit3 className="w-4 h-4" />
-                                            Editing: {editingTemplate.name}
+                                            {m[
+                                                'developerPortal.components.templateListManager.editingLabelFormat'
+                                            ]({ name: editingTemplate.name })}
                                         </>
                                     ) : (
                                         <>
                                             <Sparkles className="w-4 h-4" />
-                                            Design Your Credential Template
+                                            {m[
+                                                'developerPortal.components.templateListManager.designYourTemplate'
+                                            ]()}
                                         </>
                                     )}
                                 </h5>
 
                                 <button
                                     onClick={handleCancelBuilder}
-                                    className={`text-sm ${editingTemplate ? 'text-blue-600 hover:text-blue-800' : 'text-emerald-600 hover:text-emerald-800'}`}
+                                    className={`text-sm ${
+                                        editingTemplate
+                                            ? 'text-blue-600 hover:text-blue-800'
+                                            : 'text-emerald-600 hover:text-emerald-800'
+                                    }`}
                                 >
-                                    Cancel
+                                    {m['developerPortal.components.templateListManager.cancel']()}
                                 </button>
                             </div>
 
@@ -412,53 +576,131 @@ if (result.credentialUri) {
                                 <CredentialBuilder
                                     template={currentBuildingTemplate}
                                     onChange={setCurrentBuildingTemplate}
+                                    onValidationChange={status =>
+                                        setBuilderValidationStatus(status)
+                                    }
                                     disableDynamicFields={featureType === 'peer-badges'}
+                                    hideRecipientSection={false}
+                                    issuerName={currentLCNUser?.displayName}
+                                    issuerImage={currentLCNUser?.image}
                                 />
                             </div>
 
-                            <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
-                                <button
-                                    onClick={handleCancelBuilder}
-                                    className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg text-sm font-medium"
-                                >
-                                    Cancel
-                                </button>
+                            {saveError && (
+                                <div className="px-4 py-3 bg-red-50 border-t border-red-200">
+                                    <div className="flex items-start gap-2">
+                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-red-800">
+                                                {m[
+                                                    'developerPortal.components.templateListManager.failedToSave'
+                                                ]()}
+                                            </p>
+                                            <p className="text-xs text-red-600 mt-1 break-words">
+                                                {saveError}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => setSaveError(null)}
+                                            className="text-red-400 hover:text-red-600 flex-shrink-0"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
-                                <button
-                                    onClick={handleSaveFromBuilder}
-                                    disabled={isSaving}
-                                    className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors ${
-                                        editingTemplate
-                                            ? 'bg-blue-500 hover:bg-blue-600'
-                                            : 'bg-emerald-500 hover:bg-emerald-600'
-                                    }`}
-                                >
-                                    {isSaving ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            {editingTemplate ? 'Saving...' : 'Creating...'}
-                                        </>
-                                    ) : editingTemplate ? (
-                                        <>
-                                            <Check className="w-4 h-4" />
-                                            Save Changes
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Plus className="w-4 h-4" />
-                                            Create Template
-                                        </>
+                            <div className="p-3 bg-gray-50 border-t border-gray-200 space-y-2">
+                                {/* Validation errors near save button */}
+                                {structuralErrors.length > 0 && (
+                                    <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-red-700">
+                                            {structuralErrors.map(e => e.message).join('. ')}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {builderValidationStatus === 'invalid' &&
+                                    structuralErrors.length === 0 && (
+                                        <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                            <p className="text-xs text-red-700">
+                                                {m[
+                                                    'developerPortal.components.templateListManager.validationErrors'
+                                                ]()}
+                                            </p>
+                                        </div>
                                     )}
-                                </button>
+
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        onClick={handleCancelBuilder}
+                                        className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg text-sm font-medium"
+                                    >
+                                        {m[
+                                            'developerPortal.components.templateListManager.cancel'
+                                        ]()}
+                                    </button>
+
+                                    <button
+                                        onClick={handleSaveFromBuilder}
+                                        disabled={isSaving || !canSave}
+                                        className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors ${
+                                            editingTemplate
+                                                ? 'bg-blue-500 hover:bg-blue-600'
+                                                : 'bg-emerald-500 hover:bg-emerald-600'
+                                        }`}
+                                    >
+                                        {isSaving ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                {editingTemplate
+                                                    ? m[
+                                                          'developerPortal.components.templateListManager.saving'
+                                                      ]()
+                                                    : m[
+                                                          'developerPortal.components.templateListManager.creating'
+                                                      ]()}
+                                            </>
+                                        ) : editingTemplate ? (
+                                            <>
+                                                <Check className="w-4 h-4" />
+                                                {m[
+                                                    'developerPortal.components.templateListManager.saveChanges'
+                                                ]()}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus className="w-4 h-4" />
+                                                {m[
+                                                    'developerPortal.components.templateListManager.createTemplate'
+                                                ]()}
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ) : (
                         <button
-                            onClick={() => setShowBuilder(true)}
+                            onClick={() => {
+                                setCurrentBuildingTemplate(createBlankWithIssuer());
+                                setEditingTemplate(null);
+                                setShowBuilder(true);
+                                setBuilderValidationStatus('unknown');
+                                setSaveError(null);
+                            }}
                             className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-emerald-300 text-emerald-600 rounded-xl hover:bg-emerald-50 transition-colors"
                         >
                             <Plus className="w-5 h-5" />
-                            {templates.length === 0 ? 'Create Your First Template' : 'Add Another Template'}
+                            {templates.length === 0
+                                ? m[
+                                      'developerPortal.components.templateListManager.createFirstTemplate'
+                                  ]()
+                                : m[
+                                      'developerPortal.components.templateListManager.addAnotherTemplate'
+                                  ]()}
                         </button>
                     )}
                 </>
@@ -469,7 +711,11 @@ if (result.credentialUri) {
                 <div className="space-y-3">
                     {templates.length > 1 && (
                         <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm text-gray-500">Select template:</span>
+                            <span className="text-sm text-gray-500">
+                                {m[
+                                    'developerPortal.components.templateListManager.selectTemplate'
+                                ]()}
+                            </span>
 
                             {templates.map(t => (
                                 <button
@@ -494,7 +740,7 @@ if (result.credentialUri) {
             {/* Empty state */}
             {templates.length === 0 && !showBuilder && !editable && (
                 <div className="p-6 text-center text-gray-500">
-                    No templates configured yet.
+                    {m['developerPortal.components.templateListManager.noTemplates']()}
                 </div>
             )}
         </div>

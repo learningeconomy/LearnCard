@@ -11,6 +11,7 @@ import { IonItem } from '@ionic/react';
 import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
 
 import { LaunchPadFilterOptionsEnum } from './LaunchPadSearch/launchpad-search.helpers';
+import * as m from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
@@ -31,18 +32,17 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
         app.contractUri,
         app
     );
+    const { track } = useAnalytics();
 
     const buttonClass = `flex items-center justify-center rounded-full font-[600] rounded-full px-[20px] py-[5px] normal text-base font-poppins ${colors?.buttons?.unconnected}`;
     const connectedButtonClass = `flex items-center justify-center rounded-full font-[600] rounded-full px-[20px] py-[5px] normal text-base font-poppins ${colors?.buttons?.connected}`;
 
-    if (filterBy === LaunchPadFilterOptionsEnum.unConnectedApps && app.isConnected) return <></>;
-    if (filterBy === LaunchPadFilterOptionsEnum.myApps && !app.isConnected) return <></>;
+    if (filterBy === LaunchPadFilterOptionsEnum.unConnectedApps && app.isConnected) return null;
+    if (filterBy === LaunchPadFilterOptionsEnum.myApps && !app.isConnected) return null;
 
     const isAiApp = !!app.type;
     const isConnected = app.contractUri ? hasConsented : app.isConnected;
     const isLoading = app.contractUri ? consentedContractLoading : app.isConnected === null;
-
-    const { track } = useAnalytics();
 
     const handleConnect = (appItem: LaunchPadAppListItemType) => {
         if (appItem.contractUri && !isConnected) {
@@ -55,13 +55,20 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
     };
 
     const handleButtonClick = () => {
+        const action = isConnected && !isAiApp ? 'open' : 'connect';
         track(AnalyticsEvents.LAUNCHPAD_APP_CLICKED, {
             appName: app.name,
             appId: app.id,
-            action: isConnected && !isAiApp ? 'open' : 'connect',
+            action,
             appType: app.type,
         });
-        if (isConnected && !isAiApp) {
+        if (action === 'open') {
+            track(AnalyticsEvents.LAUNCHPAD_APP_OPENED, {
+                appName: app.name,
+                appId: app.id,
+                appType: app.type,
+                entry_point: 'list_item',
+            });
             app.handleView?.();
         } else {
             handleConnect(app);
@@ -103,7 +110,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                                 }
                                 className={buttonClass}
                             >
-                                Launch
+                                {m['launchpad.appCard.launch']()}
                             </button>
                         </div>
                     )}
@@ -111,20 +118,24 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                     {!app?.embedUrl && app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
                             <button disabled className={connectedButtonClass}>
-                                Soon
+                                {m['launchpad.appCard.soon']()}
                             </button>
                         </div>
                     )}
 
                     {!app?.embedUrl && !app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
-                            {isLoading && <button className={buttonClass}>Loading...</button>}
+                            {isLoading && (
+                                <button className={buttonClass}>
+                                    {m['launchpad.appCard.loading']()}
+                                </button>
+                            )}
                             {!isLoading && (
                                 <button
                                     onClick={handleButtonClick}
                                     className={isConnected ? connectedButtonClass : buttonClass}
                                 >
-                                    {isConnected ? 'Open' : 'Connect'}
+                                    {isConnected ? m['common.open']() : m['common.connect']()}
                                 </button>
                             )}
                         </div>

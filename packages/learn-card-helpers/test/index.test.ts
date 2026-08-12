@@ -110,10 +110,14 @@ describe('RegExp Transformer', () => {
         });
 
         it('should handle invalid RegExp patterns gracefully', () => {
+            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
             const input = '{"pattern":"/[invalid/g"}';
             expect(() => RegExpTransformer.deserialize(input)).not.toThrow();
             const deserialized = RegExpTransformer.deserialize(input);
             expect(deserialized.pattern).toBe('/[invalid/g');
+
+            expect(warnSpy).toHaveBeenCalled();
+            warnSpy.mockRestore();
         });
     });
 

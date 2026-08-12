@@ -2,19 +2,28 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import { Lock, Sparkles, Rocket, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 /**
  * BETA GATE - Easy to remove later!
- * 
+ *
  * To remove beta gating:
  * 1. Remove <BetaGate> wrapper from DeveloperPortalRoutes.tsx
  * 2. Remove useBetaAccess() checks from GuidePage.tsx and IntegrationHub.tsx
  * 3. Delete this file
- * 
+ *
  * That's it!
  */
 
 // All available guide IDs
-type GuideId = 'course-catalog' | 'issue-credentials' | 'verify-credentials' | 'consent-flow' | 'embed-claim' | 'embed-app' | 'server-webhooks';
+type GuideId =
+    | 'course-catalog'
+    | 'issue-credentials'
+    | 'verify-credentials'
+    | 'consent-flow'
+    | 'embed-claim'
+    | 'embed-app'
+    | 'server-webhooks';
 
 // Beta access codes - these are PUBLIC promotional codes, not secrets.
 // They are used for controlled rollout of features, not security.
@@ -137,7 +146,7 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
             setShowWelcome(true);
             setPassword('');
         } else {
-            setError('Invalid access code. Please check and try again.');
+            setError(m['developerPortal.components.betaGate.invalidAccessCode']());
         }
     };
 
@@ -173,26 +182,31 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
                         </div>
 
                         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                            Beta Access Required
+                            {m['developerPortal.components.betaGate.betaAccessRequired']()}
                         </h1>
 
                         <p className="text-gray-500">
-                            This feature is currently in beta. Enter your access code to continue.
+                            {m['developerPortal.components.betaGate.betaAccessDesc']()}
                         </p>
                     </div>
 
                     <form onSubmit={handlePasswordSubmit} className="space-y-4">
                         <div>
-                            <label htmlFor="beta-password" className="block text-sm font-medium text-gray-700 mb-2">
-                                Access Code
+                            <label
+                                htmlFor="beta-password"
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                            >
+                                {m['developerPortal.components.betaGate.accessCode']()}
                             </label>
 
                             <input
                                 id="beta-password"
                                 type="text"
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter your beta access code"
+                                onChange={e => setPassword(e.target.value)}
+                                placeholder={m[
+                                    'developerPortal.components.betaGate.accessCodePlaceholder'
+                                ]()}
                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all text-gray-900 bg-white"
                                 autoFocus
                                 autoComplete="off"
@@ -210,14 +224,17 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
                             type="submit"
                             className="w-full py-3 px-4 bg-cyan-500 text-white font-medium rounded-xl hover:bg-cyan-600 transition-colors"
                         >
-                            Continue
+                            {m['developerPortal.components.betaGate.continue']()}
                         </button>
                     </form>
 
                     <p className="mt-6 text-center text-sm text-gray-400">
-                        Don't have an access code?{' '}
-                        <a href="mailto:support@learncard.com" className="text-cyan-600 hover:underline">
-                            Contact us
+                        {m['developerPortal.components.betaGate.noAccessCode']()}{' '}
+                        <a
+                            href="mailto:support@learncard.com"
+                            className="text-cyan-600 hover:underline"
+                        >
+                            {m['developerPortal.components.betaGate.contactUs']()}
                         </a>
                     </p>
 
@@ -225,7 +242,7 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
                         onClick={() => history.push('/app-store/developer')}
                         className="mt-4 w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
                     >
-                        ← Back to Developer Portal
+                        {m['developerPortal.components.betaGate.backToDeveloperPortal']()}
                     </button>
                 </div>
             </div>
@@ -246,19 +263,19 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
         };
 
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8">
+            <div className="min-h-screen h-screen overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100 flex items-start justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-8 my-auto">
                     <div className="text-center mb-6">
                         <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-violet-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <Sparkles className="w-8 h-8 text-white" />
                         </div>
 
                         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                            Welcome to the Beta!
+                            {m['developerPortal.components.betaGate.welcomeToBeta']()}
                         </h1>
 
                         <p className="text-gray-500">
-                            You're previewing new developer tools before they're publicly available.
+                            {m['developerPortal.components.betaGate.welcomeDesc']()}
                         </p>
                     </div>
 
@@ -267,51 +284,72 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
                             <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
                             <div className="text-sm">
-                                <p className="font-medium text-amber-800 mb-1">Beta Preview Notice</p>
+                                <p className="font-medium text-amber-800 mb-1">
+                                    {m['developerPortal.components.betaGate.betaPreviewNotice']()}
+                                </p>
 
                                 <p className="text-amber-700">
-                                    This is pre-release functionality. Features may change, and you may encounter bugs.
-                                    Your feedback is valuable!
+                                    {m['developerPortal.components.betaGate.betaPreviewDesc']()}
                                 </p>
                             </div>
                         </div>
                     </div>
 
                     <div className="space-y-3 mb-6">
-                        <p className="text-sm font-medium text-gray-700">Your access includes:</p>
+                        <p className="text-sm font-medium text-gray-700">
+                            {m['developerPortal.components.betaGate.yourAccessIncludes']()}
+                        </p>
 
                         <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                             <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
 
-                            <span className="text-gray-700">Integration dashboard</span>
+                            <span className="text-gray-700">
+                                {m['developerPortal.components.betaGate.integrationDashboard']()}
+                            </span>
                         </div>
 
                         <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                             <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
 
-                            <span className="text-gray-700">API token management</span>
+                            <span className="text-gray-700">
+                                {m['developerPortal.components.betaGate.apiTokenManagement']()}
+                            </span>
                         </div>
 
                         {isFull ? (
                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                                 <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
 
-                                <span className="text-gray-700">All integration guides</span>
+                                <span className="text-gray-700">
+                                    {m[
+                                        'developerPortal.components.betaGate.allIntegrationGuides'
+                                    ]()}
+                                </span>
                             </div>
                         ) : (
                             <>
                                 {(accessConfig as string[]).map(guideId => (
-                                    <div key={guideId} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                                    <div
+                                        key={guideId}
+                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
+                                    >
                                         <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
 
-                                        <span className="text-gray-700">{guideNames[guideId] || guideId} guide</span>
+                                        <span className="text-gray-700">
+                                            {guideNames[guideId] || guideId}{' '}
+                                            {m['developerPortal.components.betaGate.guideLabel']()}
+                                        </span>
                                     </div>
                                 ))}
 
                                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                                     <Lock className="w-5 h-5 text-gray-400 flex-shrink-0" />
 
-                                    <span className="text-gray-500">Other guides (locked)</span>
+                                    <span className="text-gray-500">
+                                        {m[
+                                            'developerPortal.components.betaGate.otherGuidesLocked'
+                                        ]()}
+                                    </span>
                                 </div>
                             </>
                         )}
@@ -322,13 +360,16 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
                         className="w-full py-3 px-4 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                     >
                         <Rocket className="w-5 h-5" />
-                        Let's Go!
+                        {m['developerPortal.components.betaGate.letsGo']()}
                     </button>
 
                     <p className="mt-4 text-center text-xs text-gray-400">
-                        Questions or feedback?{' '}
-                        <a href="mailto:support@learncard.com" className="text-cyan-600 hover:underline">
-                            support@learncard.com
+                        {m['developerPortal.components.betaGate.questionsFeedback']()}{' '}
+                        <a
+                            href="mailto:support@learncard.com"
+                            className="text-cyan-600 hover:underline"
+                        >
+                            {m['developerPortal.components.betaGate.feedbackContact']()}
                         </a>
                     </p>
                 </div>
@@ -337,11 +378,7 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
     }
 
     // Normal content with context
-    return (
-        <BetaGateContext.Provider value={contextValue}>
-            {children}
-        </BetaGateContext.Provider>
-    );
+    return <BetaGateContext.Provider value={contextValue}>{children}</BetaGateContext.Provider>;
 };
 
 // Component to show locked state for a guide
@@ -353,20 +390,17 @@ export const LockedGuideOverlay: React.FC<{ guideName: string }> = ({ guideName 
                     <Lock className="w-8 h-8 text-gray-400" />
                 </div>
 
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                    {guideName}
-                </h2>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">{guideName}</h2>
 
                 <p className="text-gray-500 mb-6">
-                    This guide is not available with your current beta access.
-                    Contact us to request expanded access.
+                    {m['developerPortal.components.betaGate.guideLockedDesc']()}
                 </p>
 
                 <a
                     href="mailto:support@learncard.com?subject=Beta Access Request"
                     className="inline-flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
-                    Request Access
+                    {m['developerPortal.components.betaGate.requestAccess']()}
                 </a>
             </div>
         </div>

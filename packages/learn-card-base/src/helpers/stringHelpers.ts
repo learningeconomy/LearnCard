@@ -44,6 +44,55 @@ export const capitalize = (string?: string): string => {
     return string ? string[0].toUpperCase() + string.slice(1) : '';
 };
 
+const TITLE_CASE_SMALL_WORDS = new Set([
+    'a',
+    'an',
+    'and',
+    'as',
+    'at',
+    'but',
+    'by',
+    'for',
+    'in',
+    'nor',
+    'of',
+    'on',
+    'or',
+    'per',
+    'so',
+    'the',
+    'to',
+    'up',
+    'via',
+    'vs',
+    'vs.',
+    'yet',
+]);
+
+const titleCaseWord = (word: string, isFirstWord: boolean, isLastWord: boolean): string => {
+    const normalizedWord = word.toLowerCase();
+
+    if (!normalizedWord) {
+        return '';
+    }
+
+    if (!isFirstWord && !isLastWord && TITLE_CASE_SMALL_WORDS.has(normalizedWord)) {
+        return normalizedWord;
+    }
+
+    return normalizedWord.charAt(0).toUpperCase() + normalizedWord.slice(1);
+};
+
+export const toTitleCase = (string?: string): string => {
+    if (!string) return '';
+
+    const words = string.trim().split(/\s+/);
+
+    return words
+        .map((word, index) => titleCaseWord(word, index === 0, index === words.length - 1))
+        .join(' ');
+};
+
 export const pluralize = (word: string, count: number) => {
     return count === 1 ? word : `${word}s`;
 };

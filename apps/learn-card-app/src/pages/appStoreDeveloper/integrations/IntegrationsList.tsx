@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import { useHistory } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import {
@@ -18,6 +20,9 @@ import {
     Pencil,
 } from 'lucide-react';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('integrations-list');
+
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
@@ -31,28 +36,38 @@ interface IntegrationCardProps {
     onClick: () => void;
 }
 
-const STATUS_CONFIG: Record<IntegrationStatus, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+const STATUS_CONFIG: Record<
+    IntegrationStatus,
+    { label: string; labelKey: string; color: string; bgColor: string; icon: React.ElementType }
+> = {
     setup: {
         label: 'Setup Required',
+        labelKey: 'developerPortal.shell.statusSetupRequired',
         color: 'text-amber-700',
         bgColor: 'bg-amber-50 border-amber-200',
         icon: AlertCircle,
     },
     active: {
         label: 'Active',
+        labelKey: 'developerPortal.shell.statusActive',
         color: 'text-emerald-700',
         bgColor: 'bg-emerald-50 border-emerald-200',
         icon: CheckCircle2,
     },
     paused: {
         label: 'Paused',
+        labelKey: 'developerPortal.shell.statusPaused',
         color: 'text-gray-600',
         bgColor: 'bg-gray-50 border-gray-200',
         icon: Clock,
     },
 };
 
-const IntegrationCard: React.FC<IntegrationCardProps> = ({ integration, templateCount, onClick }) => {
+const IntegrationCard: React.FC<IntegrationCardProps> = ({
+    integration,
+    templateCount,
+    onClick,
+}) => {
     const status = integration.config?.status || 'setup';
     const statusConfig = STATUS_CONFIG[status];
     const StatusIcon = statusConfig.icon;
@@ -79,16 +94,20 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({ integration, template
                         </h3>
 
                         <p className="text-xs text-gray-500">
-                            ID: {integration.id.slice(0, 12)}...
+                            {m['developerPortal.shell.idLabel']()} {integration.id.slice(0, 12)}...
                         </p>
                     </div>
                 </div>
 
-                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${statusConfig.bgColor}`}>
+                <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${statusConfig.bgColor}`}
+                >
                     <StatusIcon className={`w-3.5 h-3.5 ${statusConfig.color}`} />
 
                     <span className={`text-xs font-medium ${statusConfig.color}`}>
-                        {statusConfig.label}
+                        {statusConfig.labelKey
+                            ? mDynamic(statusConfig.labelKey)
+                            : statusConfig.label}
                     </span>
                 </div>
             </div>
@@ -98,7 +117,8 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({ integration, template
                     <Award className="w-4 h-4 text-gray-400" />
 
                     <span className="text-sm text-gray-600">
-                        <span className="font-semibold text-gray-800">{stats.templates}</span> templates
+                        <span className="font-semibold text-gray-800">{stats.templates}</span>{' '}
+                        {m['developerPortal.shell.templates']()}
                     </span>
                 </div>
 
@@ -106,7 +126,8 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({ integration, template
                     <Zap className="w-4 h-4 text-gray-400" />
 
                     <span className="text-sm text-gray-600">
-                        <span className="font-semibold text-gray-800">{stats.issued}</span> issued
+                        <span className="font-semibold text-gray-800">{stats.issued}</span>{' '}
+                        {m['developerPortal.shell.issued']()}
                     </span>
                 </div>
 
@@ -124,12 +145,18 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({ integration, template
             <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">
                     {integration.createdAt
-                        ? `Created ${new Date(integration.createdAt).toLocaleDateString()}`
-                        : 'Recently created'}
+                        ? m['developerPortal.shell.createdDate']({
+                              date: new Date(integration.createdAt).toLocaleDateString(),
+                          })
+                        : m['developerPortal.shell.recentlyCreated']()}
                 </span>
 
                 <div className="flex items-center gap-1.5 text-cyan-600 font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span>{status === 'setup' ? 'Continue Setup' : 'Open Dashboard'}</span>
+                    <span>
+                        {status === 'setup'
+                            ? m['developerPortal.shell.continueSetup']()
+                            : m['developerPortal.shell.openDashboard']()}
+                    </span>
                     <ArrowRight className="w-4 h-4" />
                 </div>
             </div>
@@ -175,7 +202,7 @@ const IntegrationsList: React.FC = () => {
 
                 setTemplateCounts(counts);
             } catch (err) {
-                console.warn('Failed to load template counts:', err);
+                log.warn('Failed to load template counts:', err);
             }
         };
 
@@ -186,12 +213,17 @@ const IntegrationsList: React.FC = () => {
         if (!newProjectName.trim()) return;
 
         try {
-            const integrationId = await createIntegrationMutation.mutateAsync(newProjectName.trim());
+            const integrationId = await createIntegrationMutation.mutateAsync(
+                newProjectName.trim()
+            );
 
-            presentToast(`Created "${newProjectName.trim()}"`, {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
+            presentToast(
+                m['developerPortal.shell.createdProject']({ name: newProjectName.trim() }),
+                {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                }
+            );
 
             setNewProjectName('');
             setShowCreateForm(false);
@@ -199,9 +231,9 @@ const IntegrationsList: React.FC = () => {
             // Navigate to the new integration's guides hub to choose a guide
             history.push(`/app-store/developer/integrations/${integrationId}/guides`);
         } catch (error) {
-            console.error('Failed to create project:', error);
+            log.error('Failed to create project:', error);
 
-            presentToast('Failed to create project', {
+            presentToast(m['developerPortal.shell.failedCreateProject'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -232,7 +264,7 @@ const IntegrationsList: React.FC = () => {
     return (
         <IonPage>
             <AppStoreHeader
-                title="My Integrations"
+                title={m['developerPortal.shell.myIntegrations']()}
                 rightContent={
                     hasIntegrations && !showCreateForm ? (
                         <button
@@ -240,7 +272,7 @@ const IntegrationsList: React.FC = () => {
                             className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors shadow-lg shadow-cyan-200"
                         >
                             <Plus className="w-4 h-4" />
-                            New Integration
+                            {m['developerPortal.shell.newIntegration']()}
                         </button>
                     ) : null
                 }
@@ -253,7 +285,9 @@ const IntegrationsList: React.FC = () => {
                         <div className="flex items-center justify-center py-20">
                             <div className="text-center">
                                 <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                                <p className="text-sm text-gray-500 mt-3">Loading integrations...</p>
+                                <p className="text-sm text-gray-500 mt-3">
+                                    {m['developerPortal.shell.loadingIntegrations']()}
+                                </p>
                             </div>
                         </div>
                     )}
@@ -266,12 +300,11 @@ const IntegrationsList: React.FC = () => {
                             </div>
 
                             <h2 className="text-2xl font-bold text-gray-800 mb-3">
-                                Create Your First Integration
+                                {m['developerPortal.shell.createFirstIntegration']()}
                             </h2>
 
                             <p className="text-gray-500 mb-8 max-w-md mx-auto">
-                                Set up an integration to start issuing verifiable credentials from your platform.
-                                We'll guide you through every step.
+                                {m['developerPortal.shell.emptyIntegrationsDescription']()}
                             </p>
 
                             <button
@@ -279,7 +312,7 @@ const IntegrationsList: React.FC = () => {
                                 className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors shadow-lg shadow-cyan-200"
                             >
                                 <Plus className="w-5 h-5" />
-                                Create Integration
+                                {m['developerPortal.shell.createIntegration']()}
                             </button>
                         </div>
                     )}
@@ -288,13 +321,13 @@ const IntegrationsList: React.FC = () => {
                     {showCreateForm && (
                         <div className="max-w-md mx-auto mb-8 p-6 bg-white border border-gray-200 rounded-2xl shadow-lg">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                New Integration
+                                {m['developerPortal.shell.newIntegration']()}
                             </h3>
 
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Integration Name
+                                        {m['developerPortal.shell.integrationName']()}
                                     </label>
 
                                     <input
@@ -302,7 +335,9 @@ const IntegrationsList: React.FC = () => {
                                         value={newProjectName}
                                         onChange={e => setNewProjectName(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && handleCreateProject()}
-                                        placeholder="e.g., AARP Skills Builder"
+                                        placeholder={m[
+                                            'developerPortal.shell.integrationNamePlaceholder'
+                                        ]()}
                                         className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                                         autoFocus
                                         disabled={createIntegrationMutation.isPending}
@@ -318,22 +353,25 @@ const IntegrationsList: React.FC = () => {
                                         className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                                         disabled={createIntegrationMutation.isPending}
                                     >
-                                        Cancel
+                                        {m['common.cancel']()}
                                     </button>
 
                                     <button
                                         onClick={handleCreateProject}
-                                        disabled={!newProjectName.trim() || createIntegrationMutation.isPending}
+                                        disabled={
+                                            !newProjectName.trim() ||
+                                            createIntegrationMutation.isPending
+                                        }
                                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
                                         {createIntegrationMutation.isPending ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                Creating...
+                                                {m['developerPortal.shell.creating']()}
                                             </>
                                         ) : (
                                             <>
-                                                Create
+                                                {m['common.create']()}
                                                 <ArrowRight className="w-4 h-4" />
                                             </>
                                         )}
@@ -348,11 +386,13 @@ const IntegrationsList: React.FC = () => {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between mb-2">
                                 <h2 className="text-lg font-semibold text-gray-800">
-                                    Your Integrations
+                                    {m['developerPortal.shell.yourIntegrations']()}
                                 </h2>
 
                                 <span className="text-sm text-gray-500">
-                                    {integrationsWithConfig.length} integration{integrationsWithConfig.length !== 1 ? 's' : ''}
+                                    {m['developerPortal.shell.integrationCount']({
+                                        count: integrationsWithConfig.length,
+                                    })}
                                 </span>
                             </div>
 
@@ -373,7 +413,7 @@ const IntegrationsList: React.FC = () => {
                     {!isLoadingIntegrations && hasIntegrations && (
                         <div className="mt-10 pt-8 border-t border-gray-100">
                             <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
-                                Quick Actions
+                                {m['developerPortal.shell.quickActions']()}
                             </h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -386,8 +426,12 @@ const IntegrationsList: React.FC = () => {
                                     </div>
 
                                     <div>
-                                        <p className="font-medium text-gray-800">Integration Guides</p>
-                                        <p className="text-sm text-gray-500">Step-by-step tutorials</p>
+                                        <p className="font-medium text-gray-800">
+                                            {m['developerPortal.shell.integrationGuides']()}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            {m['developerPortal.shell.stepByStepTutorials']()}
+                                        </p>
                                     </div>
                                 </button>
 
@@ -402,8 +446,12 @@ const IntegrationsList: React.FC = () => {
                                     </div>
 
                                     <div>
-                                        <p className="font-medium text-gray-800">API Documentation</p>
-                                        <p className="text-sm text-gray-500">Full reference docs</p>
+                                        <p className="font-medium text-gray-800">
+                                            {m['developerPortal.shell.apiDocumentation']()}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            {m['developerPortal.shell.fullReferenceDocs']()}
+                                        </p>
                                     </div>
                                 </a>
                             </div>

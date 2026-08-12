@@ -235,6 +235,16 @@ describe('Preferences', () => {
             expect(result.analyticsEnabled).toBeUndefined();
         });
 
+        it('should not invent a theme when no saved preferences exist', async () => {
+            const result = await userA.clients.fullAuth.preferences.getPreferencesForDid();
+
+            expect(result.theme).toBeUndefined();
+            expect(result.aiEnabled).toBeUndefined();
+            expect(result.analyticsEnabled).toBeUndefined();
+            expect(result.bugReportsEnabled).toBeUndefined();
+            expect(result.isMinor).toBeUndefined();
+        });
+
         it('should update privacy fields via tRPC updatePreferences route', async () => {
             await createTestPreferences(ThemeEnum.Colorful);
 

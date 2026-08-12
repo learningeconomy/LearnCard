@@ -8,6 +8,8 @@ import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import { CreateMediaAttachmentFormModal } from './CreateMediaAttachmentForm';
 import { BoostMediaCMSFormItemProps } from './BoostCMSMediaForm';
 import { useModal, ModalTypes } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-media-cms-form-video-item');
 
 const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
     index,
@@ -21,7 +23,7 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
             const youtubeUrl = new URL(url);
             return youtubeUrl.hostname === 'www.youtube.com';
         } catch (e) {
-            console.log('error', e);
+            log.debug('error', e);
             return false;
         }
     };
@@ -53,7 +55,7 @@ const BoostMediaCMSFormVideoItem: React.FC<BoostMediaCMSFormItemProps> = ({
             hostname = hostname.replace(/^www\./, '');
             return hostname.toLowerCase();
         } catch (e) {
-            console.error('Invalid URL', e);
+            log.error('Invalid URL', e);
             return '';
         }
     };

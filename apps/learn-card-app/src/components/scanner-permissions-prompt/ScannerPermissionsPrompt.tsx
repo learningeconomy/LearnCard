@@ -1,5 +1,6 @@
 import React from 'react';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { IonRow, IonCol, IonPage } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
@@ -8,6 +9,7 @@ import Camera from 'learn-card-base/svgs/Camera';
 import useTheme from '../../theme/hooks/useTheme';
 
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
+import * as m from '../../paraglide/messages.js';
 
 export const ScannerPermissionsPrompt: React.FC<{
     handleCloseModal: () => void;
@@ -15,6 +17,7 @@ export const ScannerPermissionsPrompt: React.FC<{
 }> = ({ handleCloseModal, showScanner }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     const handleScan = async () => {
         const scannerPermissions = await BarcodeScanner.checkPermissions();
@@ -53,7 +56,7 @@ export const ScannerPermissionsPrompt: React.FC<{
                 <IonRow className="flex flex-col pb-6 pt-2 w-full">
                     <IonCol className="w-full flex items-center justify-center">
                         <h6 className="tracking-[12px] text-base font-bold text-black">
-                            LEARNCARD
+                            {brandingConfig?.name}
                         </h6>
                     </IonCol>
                 </IonRow>
@@ -69,11 +72,8 @@ export const ScannerPermissionsPrompt: React.FC<{
                     <IonCol className="text-center">
                         <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                             <span className="font-bold text-grayscale-800">
-                                Enable camera permissions for:
+                                {m['scanner.cameraPermission']()}
                             </span>
-                            <br />
-                            New connection requests, New boosts (like achievements, credentials, and
-                            badges) via QR codes.
                         </p>
                         <br />
                     </IonCol>
@@ -87,7 +87,7 @@ export const ScannerPermissionsPrompt: React.FC<{
                             type="button"
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 font-poppins text-xl w-full shadow-lg normal max-w-[320px]"
                         >
-                            Continue
+                            {m['common.continue']()}
                         </button>
 
                         <div className="w-full flex items-center justify-center m-4">
@@ -97,7 +97,7 @@ export const ScannerPermissionsPrompt: React.FC<{
                                 }}
                                 className="text-grayscale-900 text-center text-base w-full font-medium"
                             >
-                                Not Yet
+                                {m['common.close']()}
                             </button>
                         </div>
                     </IonCol>
@@ -108,14 +108,14 @@ export const ScannerPermissionsPrompt: React.FC<{
                             onClick={openPP}
                             className={`text-${primaryColor} font-bold text-sm`}
                         >
-                            Privacy Policy
+                            {m['legal.privacyPolicy']()}
                         </button>
                         <span className={`text-${primaryColor} font-bold text-sm`}>•</span>
                         <button
                             onClick={openToS}
                             className={`text-${primaryColor} font-bold text-sm`}
                         >
-                            Terms of Service
+                            {m['legal.termsOfService']()}
                         </button>
                     </IonCol>
                 </IonRow>

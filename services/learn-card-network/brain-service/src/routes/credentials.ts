@@ -1,12 +1,12 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
+    HolderExportMetadataValidator,
+    JWEValidator,
+    SentCredentialInfoValidator,
     UnsignedVCValidator,
     VCValidator,
-    SentCredentialInfoValidator,
-    JWEValidator,
 } from '@learncard/types';
-
 import { acceptCredential, sendCredential } from '@helpers/credential.helpers';
 
 import {
@@ -16,6 +16,7 @@ import {
     getSentCredentialsForProfile,
     getRevokedCredentialUrisForProfile,
 } from '@accesslayer/credential/read';
+import { getHolderExportMetadataForProfile } from '@accesslayer/consentflowcontract/relationships/read';
 
 import { deleteStorageForUri } from '@cache/storage';
 
@@ -77,7 +78,14 @@ export const credentialsRouter = t.router({
                 metadata,
             });
 
-            const credentialUri = await sendCredential(profile, targetProfile, credential, ctx.domain, metadata, activityId);
+            const credentialUri = await sendCredential(
+                profile,
+                targetProfile,
+                credential,
+                ctx.domain,
+                metadata,
+                activityId
+            );
 
             return credentialUri;
         }),
@@ -191,10 +199,16 @@ export const credentialsRouter = t.router({
         )
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit, from }, ctx }) => {
-            return getIncomingCredentialsForProfile(ctx.domain, ctx.user.profile, {
-                limit,
-                from: typeof from === 'string' ? [from] : from,
-            });
+            const incomingCredentials = await getIncomingCredentialsForProfile(
+                ctx.domain,
+                ctx.user.profile,
+                {
+                    limit,
+                    from: typeof from === 'string' ? [from] : from,
+                }
+            );
+
+            return incomingCredentials.slice(0, limit);
         }),
 
     deleteCredential: profileRoute
@@ -244,7 +258,8 @@ export const credentialsRouter = t.router({
                 path: '/credentials/revoked',
                 tags: ['Credentials'],
                 summary: 'Get revoked credentials',
-                description: "This endpoint returns credential URIs that have been revoked for the current user",
+                description:
+                    'This endpoint returns credential URIs that have been revoked for the current user',
             },
             requiredScope: 'credentials:read',
         })
@@ -252,6 +267,25 @@ export const credentialsRouter = t.router({
         .output(z.array(z.string()))
         .query(async ({ ctx }) => {
             return getRevokedCredentialUrisForProfile(ctx.domain, ctx.user.profile);
+        }),
+
+    getHolderExportMetadata: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/holder-export/metadata',
+                tags: ['Credentials'],
+                summary: 'Get holder export metadata',
+                description:
+                    'Returns holder-owned continuity metadata such as consent records and transaction history',
+            },
+            requiredScope: 'credentials:read',
+        })
+        .input(z.object({}).default({}))
+        .output(HolderExportMetadataValidator)
+        .query(async ({ ctx }) => {
+            return getHolderExportMetadataForProfile(ctx.user.profile, ctx.domain);
         }),
 });
 export type CredentialsRouter = typeof credentialsRouter;

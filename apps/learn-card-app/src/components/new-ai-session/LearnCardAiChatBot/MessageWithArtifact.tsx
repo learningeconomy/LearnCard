@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '@nanostores/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('message-with-artifact');
 
 import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/MarkdownRenderer';
 import { IonSpinner } from '@ionic/react';
@@ -106,7 +108,7 @@ export const MessageWithArtifact: React.FC<MessageProps> = ({ message }) => {
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
-            console.error(error);
+            log.error(error);
         } finally {
             setIsSaving(false);
         }

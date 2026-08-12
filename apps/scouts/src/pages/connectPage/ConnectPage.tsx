@@ -10,6 +10,8 @@ import { generatePK } from '../../helpers/privateKeyHelpers';
 
 import { AddressBookContact } from '../addressBook/addressBookHelpers';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('connect-page');
 
 const ConnectPage: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
@@ -39,7 +41,7 @@ const ConnectPage: React.FC = () => {
         }
 
         if (!profileId && !userDid) {
-            console.log('no handle or userDid detected!');
+            log.debug('no handle or userDid detected!');
             setLoading(false);
             return;
         }
@@ -55,7 +57,7 @@ const ConnectPage: React.FC = () => {
                 }
                 return;
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.debug('getLCNeworkProfile::err', err);
                 setLoading(false);
                 return;
             }
@@ -81,7 +83,7 @@ const ConnectPage: React.FC = () => {
                     }
                     return;
                 } catch (err) {
-                    console.log('getLCNeworkProfile::err', err);
+                    log.debug('getLCNeworkProfile::err', err);
                     setLoading(false);
                     return;
                 }

@@ -1,4 +1,6 @@
 export enum OnboardingStepsEnum {
+    ageGate = 'ageGate',
+    privacyData = 'privacyData',
     selectRole = 'selectRole',
     joinNetwork = 'joinNetwork',
 }

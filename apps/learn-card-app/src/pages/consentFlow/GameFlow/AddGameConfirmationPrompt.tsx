@@ -20,6 +20,8 @@ import { useImmer } from 'use-immer';
 import { getMinimumTermsForContract } from 'apps/learn-card-app/src/helpers/contract.helpers';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../../paraglide/messages.js';
 
 type AddGamePromptConfirmationPromptProps = {
     user?: LCNProfile;
@@ -40,6 +42,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     const history = useHistory();
     const { newModal, closeAllModals } = useModal();
@@ -117,7 +120,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                         <div className="w-full text-center text-grayscale-900 text-[17px] font-notoSans px-[30px]">
                             Add <span className="font-[600] tracking-[0.25px]">{gameTitle}</span> to{' '}
                             <span className="font-[600]">{user?.displayName ?? user?.name}'s</span>{' '}
-                            LearnCard
+                            {brandingConfig?.name}
                         </div>
                     )}
                     {hasConsented && (
@@ -125,7 +128,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                             <span className="font-[600] tracking-[0.25px]">{gameTitle}</span> is
                             already connected to{' '}
                             <span className="font-[600]">{user?.displayName ?? user?.name}'s</span>{' '}
-                            LearnCard
+                            {brandingConfig?.name}
                         </div>
                     )}
                 </div>
@@ -147,7 +150,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                         className="text-white rounded-full py-[10px] bg-emerald-700 w-full text-[20px] shadow-box-bottom disabled:opacity-70"
                         disabled={loading || consentedContractLoading}
                     >
-                        {loading ? 'Allowing...' : 'Allow Access'}
+                        {loading ? m['consentFlow.allowing']() : m['consentFlow.allowAccess']()}
                     </button>
                 )}
                 {hasConsented && (
@@ -176,7 +179,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                             );
                         }}
                     >
-                        Edit Access
+                        {m['consentFlow.editAccess']()}
                     </button>
                 )}
             </div>
@@ -186,7 +189,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                 onClick={handleSelectADifferentPlayer}
                 className="w-full py-[10px] px-[20px] text-[20px] bg-white rounded-[30px] text-grayscale-800 shadow-box-bottom"
             >
-                Select a Different Player
+                {m['consentFlow.selectPlayer']()}
             </button>
 
             <button
@@ -194,7 +197,7 @@ export const AddGameConfirmationPrompt: React.FC<AddGamePromptConfirmationPrompt
                 onClick={isFromGame ? handleBackToGame : closeAllModals}
                 className="w-full py-[10px] px-[20px] text-[20px] bg-white rounded-[30px] text-grayscale-800 shadow-box-bottom"
             >
-                {isFromGame ? 'Back to Game' : 'Cancel'}
+                {isFromGame ? m['common.back']() : m['common.cancel']()}
             </button>
         </div>
     );

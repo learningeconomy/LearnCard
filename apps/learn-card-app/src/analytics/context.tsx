@@ -1,31 +1,55 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('context');
 
 import type { AnalyticsProvider, AnalyticsProviderName } from './types';
 import type { AnalyticsEventName, EventPayload } from './events';
 import { NoopProvider } from './providers/noop';
+import { getSharedEventContext, shouldDropEvents } from './sharedContext';
+import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import {
+    setAnalyticsProvider as setSendCredentialFlowProvider,
+    setSendCredentialTelemetryEnabled,
+} from '../helpers/sendCredentialFlow.helpers';
 
 /**
- * Lazily load and instantiate the appropriate analytics provider based on env config.
+ * Lazily load and instantiate the appropriate analytics provider.
+ *
+ * Reads from TenantConfig.observability first, falling back to VITE_* env vars
+ * for backward compatibility during migration.
  */
 async function loadProvider(): Promise<AnalyticsProvider> {
-    const providerName = (
-        import.meta.env.VITE_ANALYTICS_PROVIDER || 'noop'
-    ) as AnalyticsProviderName;
+    let providerName: AnalyticsProviderName = 'noop';
+    let posthogKey: string | undefined;
+    let posthogHost: string | undefined;
+
+    try {
+        const config = getResolvedTenantConfig();
+        providerName = config.observability.analyticsProvider ?? 'noop';
+        posthogKey = config.observability.posthogKey;
+        posthogHost = config.observability.posthogHost;
+    } catch {
+        // TenantConfig not yet resolved — fall back to env vars
+        providerName = (import.meta.env.VITE_ANALYTICS_PROVIDER || 'noop') as AnalyticsProviderName;
+        posthogKey = import.meta.env.VITE_POSTHOG_KEY;
+        posthogHost = import.meta.env.VITE_POSTHOG_HOST;
+    }
 
     switch (providerName) {
         case 'posthog': {
-            const apiKey = import.meta.env.VITE_POSTHOG_KEY;
-
-            if (!apiKey) {
-                console.warn('[Analytics] PostHog selected but VITE_POSTHOG_KEY not set, falling back to noop');
+            if (!posthogKey) {
+                log.warn(
+                    '[Analytics] PostHog selected but no posthogKey configured, falling back to noop'
+                );
                 return new NoopProvider();
             }
 
             const { PostHogProvider } = await import('./providers/posthog');
 
             return new PostHogProvider({
-                apiKey,
-                apiHost: import.meta.env.VITE_POSTHOG_HOST,
+                apiKey: posthogKey,
+                apiHost: posthogHost,
             });
         }
 
@@ -41,12 +65,60 @@ async function loadProvider(): Promise<AnalyticsProvider> {
     }
 }
 
+/**
+ * Wrap a provider so every `track`/`page` call carries the enforced
+ * shared context (`environment`, `app_version`, `tenant_id`,
+ * `platform`) and automation/e2e traffic is dropped client-side.
+ * Enforced context wins key conflicts — call sites cannot override
+ * `environment`. PostHog additionally applies this at the SDK level
+ * (see `applyPostHogHygiene`) so `$exception`/`$rageclick`/`$pageleave`
+ * are covered too.
+ */
+function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
+    return {
+        name: provider.name,
+        init: () => provider.init(),
+        identify: (userId, traits) => {
+            // Drop automation/e2e identify calls provider-agnostically —
+            // PostHog also catches $identify in before_send, but other
+            // providers have no SDK-level hook.
+            if (shouldDropEvents()) return Promise.resolve();
+            return provider.identify(userId, traits);
+        },
+        reset: () => provider.reset(),
+        setEnabled: enabled => provider.setEnabled(enabled),
+        track: async (event, properties) => {
+            if (shouldDropEvents()) return;
+            await provider.track(event, { ...properties, ...getSharedEventContext() });
+        },
+        page: async (name, properties) => {
+            if (shouldDropEvents()) return;
+            await provider.page(name, { ...properties, ...getSharedEventContext() });
+        },
+    };
+}
+
 interface AnalyticsContextValue {
     provider: AnalyticsProvider;
     isReady: boolean;
 }
 
-const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
+const ANALYTICS_CONTEXT_KEY = '__learncardAnalyticsContext__';
+
+const getAnalyticsContext = (): React.Context<AnalyticsContextValue | null> => {
+    const globalScope = globalThis as typeof globalThis & {
+        [ANALYTICS_CONTEXT_KEY]?: React.Context<AnalyticsContextValue | null>;
+    };
+
+    if (!globalScope[ANALYTICS_CONTEXT_KEY]) {
+        globalScope[ANALYTICS_CONTEXT_KEY] = createContext<AnalyticsContextValue | null>(null);
+        globalScope[ANALYTICS_CONTEXT_KEY].displayName = 'AnalyticsContext';
+    }
+
+    return globalScope[ANALYTICS_CONTEXT_KEY];
+};
+
+const AnalyticsContext = getAnalyticsContext();
 
 interface AnalyticsProviderProps {
     children: React.ReactNode;
@@ -59,23 +131,29 @@ interface AnalyticsProviderProps {
 export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
     const [provider, setProvider] = useState<AnalyticsProvider>(() => new NoopProvider());
     const [isReady, setIsReady] = useState(false);
+    const flags = useFlags();
+    const sendCredentialTelemetryFlag = !!flags.enableSendCredentialPosthogTelemetry;
 
     useEffect(() => {
         let mounted = true;
 
         loadProvider()
-            .then(async loadedProvider => {
+            .then(async rawProvider => {
                 if (!mounted) return;
 
-                await loadedProvider.init();
+                await rawProvider.init();
 
                 if (!mounted) return;
+
+                const loadedProvider = withSharedContext(rawProvider);
 
                 setProvider(loadedProvider);
                 setIsReady(true);
+                // LC-1644: wire frontend perf telemetry helper to the same provider
+                setSendCredentialFlowProvider(loadedProvider);
             })
             .catch(error => {
-                console.error('[Analytics] Failed to load provider', error);
+                log.error('[Analytics] Failed to load provider', error);
 
                 if (mounted) {
                     setIsReady(true);
@@ -86,6 +164,12 @@ export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
             mounted = false;
         };
     }, []);
+
+    // LC-1644: gate natural send-credential telemetry on the LD flag.
+    // Bench-triggered events bypass the gate inside sendCredentialFlow.helpers.
+    useEffect(() => {
+        setSendCredentialTelemetryEnabled(sendCredentialTelemetryFlag);
+    }, [sendCredentialTelemetryFlag]);
 
     const value = useMemo(() => ({ provider, isReady }), [provider, isReady]);
 

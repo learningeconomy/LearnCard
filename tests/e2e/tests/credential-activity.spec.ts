@@ -155,8 +155,10 @@ describe('Credential Activity Tracking', () => {
             expect(stats.claimRate).toBeLessThanOrEqual(100);
 
             // If there are delivered credentials, claim rate should be calculated
-            if (stats.delivered > 0) {
-                const expectedRate = (stats.claimed / stats.delivered) * 100;
+            const totalSent = stats.created + stats.delivered + stats.claimed;
+
+            if (totalSent > 0) {
+                const expectedRate = (stats.claimed / totalSent) * 100;
 
                 expect(Math.abs(stats.claimRate - expectedRate)).toBeLessThan(1);
             }
@@ -295,9 +297,8 @@ describe('Credential Activity Tracking', () => {
 
             // Get all activities
             const activities = await a.invoke.getMyActivities({ limit: 20 });
-            const deliveredActivities = activities?.records?.filter(
-                (r: any) => r.eventType === 'DELIVERED'
-            ) ?? [];
+            const deliveredActivities =
+                activities?.records?.filter((r: any) => r.eventType === 'DELIVERED') ?? [];
 
             expect(deliveredActivities.length).toBeGreaterThanOrEqual(2);
 
@@ -324,9 +325,7 @@ describe('Credential Activity Tracking', () => {
             const deliveredEvent = activities?.records?.find(
                 (r: any) => r.eventType === 'DELIVERED'
             );
-            const claimedEvent = activities?.records?.find(
-                (r: any) => r.eventType === 'CLAIMED'
-            );
+            const claimedEvent = activities?.records?.find((r: any) => r.eventType === 'CLAIMED');
 
             expect(deliveredEvent).toBeDefined();
             expect(claimedEvent).toBeDefined();
@@ -391,9 +390,8 @@ describe('Credential Activity Tracking', () => {
 
             // Get second activityId
             const activities2 = await a.invoke.getMyActivities({ limit: 10 });
-            const deliveredActivities = activities2?.records?.filter(
-                (r: any) => r.eventType === 'DELIVERED'
-            ) ?? [];
+            const deliveredActivities =
+                activities2?.records?.filter((r: any) => r.eventType === 'DELIVERED') ?? [];
 
             expect(deliveredActivities.length).toBeGreaterThanOrEqual(2);
 
@@ -443,9 +441,7 @@ describe('Credential Activity Tracking', () => {
 
             // Check activity has boostUri
             const activities = await a.invoke.getMyActivities({ limit: 10 });
-            const activity = activities?.records?.find(
-                (r: any) => r.boostUri === boostUri
-            );
+            const activity = activities?.records?.find((r: any) => r.boostUri === boostUri);
 
             expect(activity).toBeDefined();
             expect(activity.boostUri).toBe(boostUri);
@@ -479,9 +475,7 @@ describe('Credential Activity Tracking', () => {
             await a.invoke.sendCredential('testb', vc);
 
             const activities = await a.invoke.getMyActivities({ limit: 10 });
-            const activity = activities?.records?.find(
-                (r: any) => r.source === 'sendCredential'
-            );
+            const activity = activities?.records?.find((r: any) => r.source === 'sendCredential');
 
             expect(activity).toBeDefined();
             expect(activity.source).toBe('sendCredential');
@@ -497,9 +491,7 @@ describe('Credential Activity Tracking', () => {
 
             // Check claim activity
             const activities = await a.invoke.getMyActivities({ limit: 20 });
-            const claimActivity = activities?.records?.find(
-                (r: any) => r.eventType === 'CLAIMED'
-            );
+            const claimActivity = activities?.records?.find((r: any) => r.eventType === 'CLAIMED');
 
             expect(claimActivity).toBeDefined();
             expect(claimActivity.source).toBe('claim');
@@ -687,9 +679,7 @@ describe('Credential Activity Tracking', () => {
 
                 // Verify activity was logged with correct boostUri
                 const activities = await a.invoke.getMyActivities({ limit: 10 });
-                const activity = activities.records.find(
-                    r => r.activityId === result.activityId
-                );
+                const activity = activities.records.find(r => r.activityId === result.activityId);
 
                 expect(activity).toBeDefined();
                 expect(activity?.boostUri).toBe(result.uri);
@@ -784,9 +774,7 @@ describe('Credential Activity Tracking', () => {
                 });
 
                 const activities = await a.invoke.getMyActivities({ limit: 10 });
-                const activity = activities.records.find(
-                    r => r.activityId === result.activityId
-                );
+                const activity = activities.records.find(r => r.activityId === result.activityId);
 
                 expect(activity?.boostUri).toBe(boostUri);
             });
@@ -1021,11 +1009,13 @@ describe('Credential Activity Tracking', () => {
                         boostUris: [boostUri],
                     });
 
-                    expect(afterClaimStats.delivered).toBe(initialStats.delivered + 1);
+                    // After claiming, the latest event in the chain is CLAIMED (not DELIVERED),
+                    // so delivered count returns to its initial value
+                    expect(afterClaimStats.delivered).toBe(initialStats.delivered);
                     expect(afterClaimStats.claimed).toBe(initialStats.claimed + 1);
 
-                    // Verify claim rate increased
-                    if (afterClaimStats.delivered > 0) {
+                    // Verify claim rate is valid
+                    if (afterClaimStats.claimed > 0) {
                         expect(afterClaimStats.claimRate).toBeGreaterThanOrEqual(0);
                         expect(afterClaimStats.claimRate).toBeLessThanOrEqual(100);
                     }
@@ -1152,9 +1142,7 @@ describe('Credential Activity Tracking', () => {
 
                     // Verify initial activity was logged
                     let activities = await a.invoke.getMyActivities({ limit: 20 });
-                    const initialEvent = activities.records.find(
-                        r => r.activityId === activityId
-                    );
+                    const initialEvent = activities.records.find(r => r.activityId === activityId);
 
                     expect(initialEvent).toBeDefined();
                     expect(initialEvent?.source).toBe('send');
@@ -1360,11 +1348,15 @@ describe('Credential Activity Tracking', () => {
                     const testEmail = 'auto-deliver-test@example.com';
 
                     // Add and verify the contact method
-                    await userWithEmail.invoke.addContactMethod({ type: 'email', value: testEmail });
+                    await userWithEmail.invoke.addContactMethod({
+                        type: 'email',
+                        value: testEmail,
+                    });
                     const verificationDelivery = await (
                         await fetch('http://localhost:4000/api/test/last-delivery')
                     ).json();
-                    const verificationToken = verificationDelivery?.templateModel?.verificationToken;
+                    const verificationToken =
+                        verificationDelivery?.templateModel?.verificationToken;
                     await userWithEmail.invoke.verifyContactMethod(verificationToken);
 
                     // Verify contact method is now verified
@@ -1412,11 +1404,15 @@ describe('Credential Activity Tracking', () => {
                     const testEmail2 = 'auto-deliver-chain@example.com';
 
                     // Add and verify the contact method
-                    await userWithEmail2.invoke.addContactMethod({ type: 'email', value: testEmail2 });
+                    await userWithEmail2.invoke.addContactMethod({
+                        type: 'email',
+                        value: testEmail2,
+                    });
                     const verificationDelivery2 = await (
                         await fetch('http://localhost:4000/api/test/last-delivery')
                     ).json();
-                    const verificationToken2 = verificationDelivery2?.templateModel?.verificationToken;
+                    const verificationToken2 =
+                        verificationDelivery2?.templateModel?.verificationToken;
                     await userWithEmail2.invoke.verifyContactMethod(verificationToken2);
 
                     // User A sends to verified email
@@ -1450,11 +1446,15 @@ describe('Credential Activity Tracking', () => {
                     const testEmail3 = 'auto-deliver-integration@example.com';
 
                     // Add and verify the contact method
-                    await userWithEmail3.invoke.addContactMethod({ type: 'email', value: testEmail3 });
+                    await userWithEmail3.invoke.addContactMethod({
+                        type: 'email',
+                        value: testEmail3,
+                    });
                     const verificationDelivery3 = await (
                         await fetch('http://localhost:4000/api/test/last-delivery')
                     ).json();
-                    const verificationToken3 = verificationDelivery3?.templateModel?.verificationToken;
+                    const verificationToken3 =
+                        verificationDelivery3?.templateModel?.verificationToken;
                     await userWithEmail3.invoke.verifyContactMethod(verificationToken3);
 
                     // User A sends to verified email with integrationId
@@ -1491,8 +1491,8 @@ describe('Credential Activity Tracking', () => {
                     // For auto-delivery, credential is already in user's pending credentials
                     // Get the pending credential and accept it
                     const pendingCredentials = await userWithEmail3.invoke.getIncomingCredentials();
-                    const pendingCred = pendingCredentials.find(
-                        (c: { uri: string }) => c.uri?.includes('credential')
+                    const pendingCred = pendingCredentials.find((c: { uri: string }) =>
+                        c.uri?.includes('credential')
                     );
 
                     expect(pendingCred).toBeDefined();
@@ -1618,8 +1618,9 @@ describe('Credential Activity Tracking', () => {
                     const activities = await a.invoke.getMyActivities({ limit: 100 });
                     const lifecycle = activities.records
                         .filter(r => r.activityId === sendResult.activityId)
-                        .sort((x, y) =>
-                            new Date(x.timestamp).getTime() - new Date(y.timestamp).getTime()
+                        .sort(
+                            (x, y) =>
+                                new Date(x.timestamp).getTime() - new Date(y.timestamp).getTime()
                         );
 
                     // Should have 2 events in chronological order
@@ -1652,9 +1653,7 @@ describe('Credential Activity Tracking', () => {
             });
 
             const activities = await a.invoke.getMyActivities({ limit: 10 });
-            const activity = activities.records.find(
-                r => r.activityId === sendResult.activityId
-            );
+            const activity = activities.records.find(r => r.activityId === sendResult.activityId);
 
             expect(activity).toBeDefined();
             expect(activity?.integrationId).toBe(integrationId);
@@ -1789,9 +1788,7 @@ describe('Credential Activity Tracking', () => {
 
             const lifecycle = activities.records
                 .filter(r => r.activityId === sendResult.activityId)
-                .sort((x, y) =>
-                    new Date(x.timestamp).getTime() - new Date(y.timestamp).getTime()
-                );
+                .sort((x, y) => new Date(x.timestamp).getTime() - new Date(y.timestamp).getTime());
 
             // Should have 2 events with same integrationId
             expect(lifecycle.length).toBe(2);
@@ -1950,9 +1947,7 @@ describe('Credential Activity Tracking', () => {
 
             // Verify activity was created
             const activities = await a.invoke.getMyActivities({ limit: 20 });
-            const activity = activities.records.find(
-                r => r.activityId === sendResult.activityId
-            );
+            const activity = activities.records.find(r => r.activityId === sendResult.activityId);
 
             expect(activity).toBeDefined();
             expect(activity?.eventType).toBe('CREATED');
@@ -2071,9 +2066,7 @@ describe('Credential Activity Tracking', () => {
                 integrationId,
             });
 
-            const activity = activities.records.find(
-                r => r.activityId === sendResult.activityId
-            );
+            const activity = activities.records.find(r => r.activityId === sendResult.activityId);
 
             expect(activity).toBeDefined();
             expect(activity?.integrationId).toBe(integrationId);

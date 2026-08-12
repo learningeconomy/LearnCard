@@ -6,15 +6,17 @@ export const getClient = (options?: {
     did?: string;
     isChallengeValid?: boolean;
     scope?: string;
+    guardianApproval?: string;
 }) => {
-    const { did, isChallengeValid, scope } = options ?? {};
+    const { did, isChallengeValid, scope, guardianApproval } = options ?? {};
     const domain = 'localhost%3A3000';
 
-    if (!did) return appRouter.createCaller({ domain });
+    if (!did) return appRouter.createCaller({ domain, _guardianApprovalToken: guardianApproval });
 
     return appRouter.createCaller({
         domain,
         user: { did, isChallengeValid: Boolean(isChallengeValid), scope },
+        _guardianApprovalToken: guardianApproval,
     });
 };
 

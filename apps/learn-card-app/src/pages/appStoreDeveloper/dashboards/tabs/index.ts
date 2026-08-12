@@ -2,6 +2,7 @@ export { OverviewTab } from './OverviewTab';
 export { TemplatesTab } from './TemplatesTab';
 export { ApiTokensTab } from './ApiTokensTab';
 export { EmbedCodeTab } from './EmbedCodeTab';
+export { EmbedConfigTab } from './EmbedConfigTab';
 export { ContractsTab } from './ContractsTab';
 export { ConnectionsTab } from './ConnectionsTab';
 export { SigningTab } from './SigningTab';

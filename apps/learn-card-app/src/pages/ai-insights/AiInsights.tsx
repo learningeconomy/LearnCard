@@ -1,30 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
 import AiInsightsTopSkills from './AiInsightsTopSkills';
+import MySkillProfile from '../ai-pathways/ai-pathways-skill-profile/MySkillProfile';
 import { AiFeatureGate } from '../../components/ai-feature-gate/AiFeatureGate';
 import ChildInsights from './child-insights/ChildInsights';
 import AiInsightsTabs from './ai-insight-tabs/AiInsightsTabs';
 import MainHeader from '../../components/main-header/MainHeader';
 import LearnerInsights from './learner-insights/LearnerInsights';
+import SharedInsights from './shared-insights/SharedInsights';
 import ShareInsightsCard from './share-insights/ShareInsightsCard';
-import AiInsightsSkillsCardSimple from './AiInsightsSkillsCardSimple';
 import AiInsightsLearningSnapshots from './AiInsightsLearningSnapshots';
 import RequestInsightsCard from './request-insights/RequestInsightsCard';
-import AiInsightsLearningPathwaysCard from './AiInsightsLearningPathwaysCard';
+import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
-import ExperimentalFeatureBox from '../../components/generic/ExperimentalFeatureBox';
 import AiInsightsPromptBoxContainer from './ai-inisghts-prompt/AiInsightsPromptBoxContainer';
+import { m } from '../../paraglide/messages.js';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import {
     CredentialCategoryEnum,
     useAiInsightCredentialMutation,
+    useAiFeatureGate,
+    useConsentedContracts,
+    useExistingAiInsightCredential,
     useGetCredentialsForSkills,
+    aiInsightRefreshStore,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { useLoadingLine } from '../../stores/loadingStore';
 import {
@@ -38,18 +45,33 @@ import useTheme from '../../theme/hooks/useTheme';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 import { useAllContractRequestsForProfile } from 'learn-card-base';
 import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
+import AiInsightsWidgets from './AiInsightsWidgets';
+import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 
 type Flags = {
     hideAiPathways?: boolean;
     showGenerateAiInsightsButton?: boolean;
 };
 
+type ContractRequestRecord = {
+    contract?: { uri?: string };
+    status?: string | null;
+};
+
 const AiInsights: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
+    const { presentToast } = useToast();
     const location = useLocation();
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const globalSkillFrameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
 
     const [selectedTab, setSelectedTab] = useState(AiInsightsTabsEnum.MyInsights);
+    const autoGenerateAiInsightsAttemptedRef = useRef(false);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -57,6 +79,7 @@ const AiInsights: React.FC = () => {
         if (
             tab === AiInsightsTabsEnum.MyInsights ||
             tab === AiInsightsTabsEnum.LearnerInsights ||
+            tab === AiInsightsTabsEnum.SharedInsights ||
             tab === AiInsightsTabsEnum.ChildInsights
         ) {
             setSelectedTab(tab);
@@ -73,6 +96,27 @@ const AiInsights: React.FC = () => {
         isLoading: allResolvedBoostsLoading,
     } = useGetCredentialsForSkills();
 
+    const { isLoading: consentedContractsLoading } = useConsentedContracts();
+
+    const { data: existingAiInsightCredential, isLoading: existingAiInsightCredentialLoading } =
+        useExistingAiInsightCredential({
+            enabled: isAiEnabled && !aiFeatureGateLoading && Boolean(currentLCNUser),
+        });
+    const [displayedAiInsightCredential, setDisplayedAiInsightCredential] = useState(
+        existingAiInsightCredential
+    );
+
+    useEffect(() => {
+        if (existingAiInsightCredential) {
+            setDisplayedAiInsightCredential(existingAiInsightCredential);
+            return;
+        }
+
+        if (!existingAiInsightCredentialLoading && existingAiInsightCredential === null) {
+            setDisplayedAiInsightCredential(null);
+        }
+    }, [existingAiInsightCredential, existingAiInsightCredentialLoading]);
+
     const { mutate: createAiInsightCredential, isPending: createAiInsightCredentialLoading } =
         useAiInsightCredentialMutation();
 
@@ -80,76 +124,191 @@ const AiInsights: React.FC = () => {
         currentLCNUser?.profileId ?? ''
     );
 
-    const pendingRequests =
-        contractRequests?.filter(request => request?.status === 'pending') || [];
+    const pendingRequests = useMemo<ContractRequestRecord[]>(() => {
+        return (
+            contractRequests?.filter(
+                (request: ContractRequestRecord) => request?.status === 'pending'
+            ) || []
+        );
+    }, [contractRequests]);
 
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
+    const aiInsightCredentialRegenerating = aiInsightRefreshStore.use.status() === 'pending';
+    const walletCredentialsLoading = credentialsFetching || allResolvedBoostsLoading;
+    const hasWalletCredentials = Number(allResolvedCreds?.length ?? 0) > 0;
+    const aiInsightCredentialToDisplay =
+        existingAiInsightCredential ?? displayedAiInsightCredential;
+    const hasExistingAiInsightCredential = Boolean(aiInsightCredentialToDisplay);
+    const canGenerateAiInsights = hasWalletCredentials || hasExistingAiInsightCredential;
 
-    useLoadingLine(credentialsBackgroundFetching || createAiInsightCredentialLoading);
+    const generateAiInsights = useCallback(() => {
+        if (!canGenerateAiInsights) {
+            return;
+        }
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
+        createAiInsightCredential(undefined, {
+            onError: () => {
+                presentToast('Something went wrong. Please try again.', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            },
+        });
+    }, [canGenerateAiInsights, createAiInsightCredential, presentToast]);
+    const canAutoGenerateAiInsights =
+        selectedTab === AiInsightsTabsEnum.MyInsights &&
+        isAiEnabled &&
+        !aiFeatureGateLoading &&
+        Boolean(currentLCNUser) &&
+        !walletCredentialsLoading &&
+        !consentedContractsLoading &&
+        !existingAiInsightCredentialLoading &&
+        !createAiInsightCredentialLoading &&
+        !aiInsightCredentialToDisplay &&
+        hasWalletCredentials &&
+        !autoGenerateAiInsightsAttemptedRef.current;
 
-    const categorizedSkills: [
-        string,
-        RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
-    ][] = Object.entries(skillsMap);
+    useEffect(() => {
+        if (hasWalletCredentials) return;
 
-    const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
+        autoGenerateAiInsightsAttemptedRef.current = false;
+    }, [hasWalletCredentials]);
 
-    const topSkills = getTopSkills(aggregatedSkills, 3);
+    const learningSnapshotsIsLoading = useMemo(() => {
+        if (hasExistingAiInsightCredential) {
+            return false;
+        }
 
-    const contractRequest =
-        pendingRequests?.length > 0
-            ? pendingRequests?.map(request => (
-                  <AiInsightsUserRequestsToast
-                      contractUri={request?.contract?.uri}
-                      options={{
-                          className: 'bg-indigo-100 p-4 rounded-[16px] mb-4',
-                          isInline: true,
-                          useDarkText: true,
-                          hideCloseButton: true,
-                      }}
-                  />
-              ))
-            : null;
+        return (
+            existingAiInsightCredentialLoading ||
+            createAiInsightCredentialLoading ||
+            walletCredentialsLoading ||
+            consentedContractsLoading ||
+            canAutoGenerateAiInsights
+        );
+    }, [
+        canAutoGenerateAiInsights,
+        consentedContractsLoading,
+        createAiInsightCredentialLoading,
+        existingAiInsightCredentialLoading,
+        hasExistingAiInsightCredential,
+        walletCredentialsLoading,
+    ]);
+
+    useLoadingLine(
+        credentialsBackgroundFetching ||
+            createAiInsightCredentialLoading ||
+            aiInsightCredentialRegenerating
+    );
+
+    useEffect(() => {
+        if (!canAutoGenerateAiInsights) return;
+
+        autoGenerateAiInsightsAttemptedRef.current = true;
+        generateAiInsights();
+    }, [canAutoGenerateAiInsights, generateAiInsights]);
+
+    const skillsMap = useMemo(() => {
+        return mapBoostsToSkills(allResolvedCreds, globalSkillFrameworkIds);
+    }, [allResolvedCreds, globalSkillFrameworkIds]);
+
+    const categorizedSkills = useMemo(
+        () =>
+            Object.entries(skillsMap) as [
+                string,
+                RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
+            ][],
+        [skillsMap]
+    );
+
+    const aggregatedSkills = useMemo(() => {
+        return aggregateCategorizedEntries(categorizedSkills);
+    }, [categorizedSkills]);
+
+    const topSkills = useMemo(() => {
+        return getTopSkills(aggregatedSkills, 3);
+    }, [aggregatedSkills]);
+
+    const contractRequest = useMemo(() => {
+        if (pendingRequests.length === 0) {
+            return null;
+        }
+
+        return pendingRequests.flatMap((request: ContractRequestRecord, index: number) => {
+            const contractUri = request?.contract?.uri;
+            if (!contractUri) return [];
+
+            return [
+                <AiInsightsUserRequestsToast
+                    key={`request-${index}`}
+                    contractUri={contractUri}
+                    options={{
+                        className: 'bg-indigo-100 p-4 rounded-[16px] shadow-bottom-4-4',
+                        isInline: true,
+                        useDarkText: true,
+                        hideCloseButton: true,
+                    }}
+                />,
+            ];
+        });
+    }, [pendingRequests]);
 
     const myInsights = (
         <>
-            <div className="flex items-center justify-center w-full shadow-box-bottom rounded-[10px]">
-                <ExperimentalFeatureBox />
-            </div>
-            <div className="flex items-center justify-center w-full my-4">
+            <div className="flex items-center justify-center w-full">
                 {flags?.showGenerateAiInsightsButton && (
                     <button
                         className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
                         type="button"
-                        disabled={createAiInsightCredentialLoading}
-                        onClick={() => createAiInsightCredential()}
+                        disabled={createAiInsightCredentialLoading || !canGenerateAiInsights}
+                        onClick={generateAiInsights}
                     >
                         {createAiInsightCredentialLoading
-                            ? 'Generating...'
-                            : 'Generate AI Insights'}
+                            ? m['aiInsights.generating']()
+                            : m['aiInsights.generateAiInsights']()}
                     </button>
                 )}
             </div>
 
             {contractRequest}
             <ShareInsightsCard />
-            {/* <AiInsightsLearningPathwaysCard /> */}
-            <AiInsightsPromptBoxContainer />
-            {!flags?.hideAiPathways && <AiInsightsLearningPathwaysCard />}
+
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
-            {topSkills.length > 0 && <AiInsightsSkillsCardSimple />}
-            <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
+            <AiInsightsLearningSnapshots
+                aiInsightCredential={aiInsightCredentialToDisplay}
+                isLoading={learningSnapshotsIsLoading}
+                isRegenerating={aiInsightCredentialRegenerating}
+                showRegenerate
+                onRegenerate={generateAiInsights}
+                regenerateLabel={aiInsightCredentialToDisplay ? 'Regenerate' : 'Generate'}
+                regenerateDisabled={
+                    createAiInsightCredentialLoading ||
+                    walletCredentialsLoading ||
+                    aiInsightCredentialRegenerating ||
+                    !canGenerateAiInsights
+                }
+            />
+
+            <MySkillProfile />
+
+            <AiInsightsWidgets />
+
+            <AiInsightsPromptBoxContainer />
+            {!flags?.hideAiPathways && (
+                <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
+            )}
         </>
     );
 
     const childInsights = <ChildInsights />;
     const learningInsights = <LearnerInsights />;
+    const sharedInsights = <SharedInsights />;
 
     let activeInsights;
     if (selectedTab === AiInsightsTabsEnum.MyInsights) {
         activeInsights = myInsights;
+    } else if (selectedTab === AiInsightsTabsEnum.SharedInsights) {
+        activeInsights = sharedInsights;
     } else if (selectedTab === AiInsightsTabsEnum.ChildInsights) {
         activeInsights = childInsights;
     } else {
@@ -165,10 +324,11 @@ const AiInsights: React.FC = () => {
                         showBackButton
                         subheaderType={SubheaderTypeEnum.AiInsights}
                         hidePlusBtn={true}
+                        customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
                     />
                     <AiFeatureGate>
                         <div className="flex relative justify-center items-center w-full">
-                            <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] pb-[100px]">
+                            <div className="w-full max-w-[600px] flex flex-col items-stretch gap-[20px] text-center ion-padding mt-[30px] pb-[100px]">
                                 <AiInsightsTabs
                                     selectedTab={selectedTab}
                                     setSelectedTab={setSelectedTab}

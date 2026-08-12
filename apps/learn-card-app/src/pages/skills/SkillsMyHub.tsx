@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import SkillDisplay from './SkillDisplay';
 import SkillsHubSearch from './SkillsHubSearch';
-import LegacySkillDisplay from './LegacySkillDisplay';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
-import ExploreAiInsightsButton from '../ai-insights/ExploreAiInsightsButton';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import { useAlignments } from '../../hooks/useAlignments';
@@ -24,22 +24,19 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
     ]);
     const [sortBy, setSortBy] = useState(SkillsHubSortOptionsEnum.recentlyAdded);
 
-    const { alignmentsAndSkills, frameworkIds, isLoading, error, refetch } = useAlignments({
-        searchInput,
-        filterBy,
-        sortBy,
-    });
+    const { alignments, alignmentsAndSkills, frameworkIds, isLoading, error, refetch } =
+        useAlignments({
+            searchInput,
+            filterBy,
+            sortBy,
+        });
 
-    const noSkills = alignmentsAndSkills?.length === 0;
-    const noFilter =
-        filterBy.length === 0 ||
-        (filterBy.length === 1 && filterBy.includes(SkillsHubFilterOptionsEnum.all));
-    const showPlaceholder = (noSkills && !searchInput && noFilter) || isLoading;
+    const noSkills = alignments.length === 0;
+    const noResults = alignmentsAndSkills.length === 0;
+    const showPlaceholder = isLoading;
 
     return (
         <div className="flex flex-col gap-[10px] w-full">
-            <ExploreAiInsightsButton />
-
             {showPlaceholder && <SkillsPageEmptyPlaceholder isLoading={isLoading} />}
 
             {!showPlaceholder && (
@@ -54,23 +51,31 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
                         frameworkIds={frameworkIds}
                     />
 
-                    {!noSkills && (
+                    {!noResults && (
                         <div className="flex flex-col gap-[10px] w-full">
-                            {alignmentsAndSkills?.map((item, index) =>
-                                item.isLegacySkill ? (
-                                    <LegacySkillDisplay key={`legacy-${index}`} skill={item} />
-                                ) : (
-                                    <SkillDisplay key={`alignment-${index}`} skill={item} />
-                                )
-                            )}
+                            {alignmentsAndSkills?.map(item => (
+                                <SkillDisplay key={item.targetUrl} skill={item} />
+                            ))}
                         </div>
                     )}
 
-                    {noSkills && searchInput && (
+                    {noResults && searchInput && (
                         <p className="font-poppins text-[14px] text-grayscale-800 font-[700] text-left">
-                            No results found for <span className="italic">{searchInput}</span>
+                            <TransP
+                                m={m['skills.myHub.noResultsFoundFor']}
+                                values={{ query: searchInput }}
+                                components={[<span className="italic" />]}
+                            />
                         </p>
                     )}
+
+                    {noResults && !searchInput && !noSkills && (
+                        <p className="font-poppins text-sm text-grayscale-600 leading-relaxed">
+                            {m['common.searchResults.noResults']()}
+                        </p>
+                    )}
+
+                    {noSkills && !searchInput && <SkillsPageEmptyPlaceholder isLoading={false} />}
                 </>
             )}
 

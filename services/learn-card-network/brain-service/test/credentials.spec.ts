@@ -1,9 +1,18 @@
 import { vi } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
 import { testVc, sendBoost, sendCredential, testUnsignedBoost } from './helpers/send';
-import { Profile, Credential } from '@models';
+import { minimalContract, minimalTerms } from './helpers/contract';
+import {
+    Profile,
+    Credential,
+    ConsentFlowContract,
+    ConsentFlowTerms,
+    ConsentFlowTransaction,
+} from '@models';
 import * as Notifications from '@helpers/notifications.helpers';
 import { addNotificationToQueueSpy } from './helpers/spies';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 import {
     getDidDocForProfile,
     getDidDocForProfileManager,
@@ -25,6 +34,53 @@ describe('Credentials', () => {
         vi.spyOn(Notifications, 'addNotificationToQueue').mockImplementation(
             addNotificationToQueueSpy
         );
+    });
+
+    describe('getHolderExportMetadata', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        it('should require full auth to export holder metadata', async () => {
+            await expect(noAuthClient.credential.getHolderExportMetadata()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.credential.getHolderExportMetadata()
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should return holder-owned consent records and transactions only', async () => {
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'Continuity Contract',
+            });
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: minimalTerms,
+            });
+
+            const userAMetadata = await userA.clients.fullAuth.credential.getHolderExportMetadata();
+            const userBMetadata = await userB.clients.fullAuth.credential.getHolderExportMetadata();
+
+            expect(userAMetadata.consentRecords).toHaveLength(0);
+            expect(userBMetadata.consentRecords).toHaveLength(1);
+            expect(userBMetadata.consentRecords[0]).toMatchObject({
+                termsUri,
+                status: 'live',
+                contract: { uri: contractUri, name: 'Continuity Contract' },
+                terms: minimalTerms,
+            });
+            expect(userBMetadata.consentRecords[0]!.transactions).toEqual(
+                expect.arrayContaining([expect.objectContaining({ action: 'consent' })])
+            );
+        });
     });
 
     describe('sendCredential', () => {
@@ -187,6 +243,33 @@ describe('Credentials', () => {
             await expect(
                 userB.clients.fullAuth.credential.acceptCredential({ uri })
             ).resolves.not.toThrow();
+        });
+
+        it('localizes the boost-accepted notification to the recipient (sender) profile locale', async () => {
+            // userA sends the credential, so userA is the recipient of the
+            // BOOST_ACCEPTED notification ("X has accepted your boost"). Their
+            // saved locale must drive the message language.
+            await userA.clients.fullAuth.profile.updateProfile({ locale: 'fr' });
+
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            addNotificationToQueueSpy.mockClear();
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri });
+
+            const acceptedCall = addNotificationToQueueSpy.mock.calls.find(
+                call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+            );
+            expect(acceptedCall).toBeDefined();
+            // Regression: sourceProfile is loaded via Profile.findRelationships,
+            // whose dataValues only carry schema-declared fields. Before `locale`
+            // was added to the Profile model schema this silently fell back to 'en'.
+            expect(acceptedCall?.[0]?.message.title).toBe(
+                getNotificationMessage('boostAccepted', 'fr', {}).title
+            );
         });
 
         it('should not allow accepting the same credential twice', async () => {

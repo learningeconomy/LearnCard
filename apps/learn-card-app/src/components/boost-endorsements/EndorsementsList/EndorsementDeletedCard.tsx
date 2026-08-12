@@ -9,6 +9,7 @@ import { BoostEndorsement } from '../boost-endorsement.helpers';
 import { VC } from '@learncard/types';
 import { CredentialCategoryEnum, useGetVCInfo, UserProfilePicture } from 'learn-card-base';
 import EndorsementButton from '../EndorsementButton';
+import * as m from '../../../paraglide/messages.js';
 
 const EndorsementDeletedCard: React.FC<{
     endorsement: BoostEndorsement;
@@ -46,7 +47,9 @@ const EndorsementDeletedCard: React.FC<{
                 >
                     <p className="text-xs flex items-center font-semibold text-grayscale-700 uppercase">
                         <EndorsmentThumbWithCircle className={`mr-1 ${endorserIconStyles}`} />{' '}
-                        Deleted on {moment(date).format('MMM D, YYYY')}
+                        {m['endorsement.fullview.deletedOn']({
+                            date: moment(date).format('MMM D, YYYY'),
+                        })}
                     </p>
                 </div>
 

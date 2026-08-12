@@ -1,0 +1,1142 @@
+#!/usr/bin/env bun
+
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger();
+
+/**
+ * prepare-native-config.ts
+ *
+ * Generates `public/tenant-config.json` for native (Capacitor) builds.
+ *
+ * Usage:
+ *   bun scripts/prepare-native-config.ts [tenant] [--stage <stage>] [--local-aip]
+ *   bun scripts/prepare-native-config.ts --reset
+ *
+ * Arguments:
+ *   tenant  - The tenant identifier (default: "learncard").
+ *             Maps to environments/<tenant>/config.json if it exists,
+ *             otherwise falls back to the baked default config.
+ *   --stage - Optional stage overlay (e.g. "local", "staging").
+ *             Loads environments/<tenant>/config.<stage>.json on top
+ *             of config.json via deepMerge. Only diffs need to be in
+ *             the stage file.
+ *   --local-aip - Point apis.aiService at http://localhost:3001.
+ *   --reset - Undo all changes: restore git-tracked files and remove
+ *             generated artifacts (public/branding/, tenant-config.json, etc.)
+ *
+ * Merge order:
+ *   tenantDefaults → config.json → config.<stage>.json → local AI override → final
+ *
+ * Examples:
+ *   bun scripts/prepare-native-config.ts                          # production learncard
+ *   bun scripts/prepare-native-config.ts vetpass                   # production vetpass
+ *   bun scripts/prepare-native-config.ts learncard --stage local   # local dev learncard
+ *   bun scripts/prepare-native-config.ts vetpass --stage staging   # staging vetpass
+ *   bun scripts/prepare-native-config.ts learncard --local-aip
+ *   bun scripts/prepare-native-config.ts --reset                   # undo everything
+ *
+ * Backward compat:
+ *   bun scripts/prepare-native-config.ts local
+ *   → treated as: learncard --stage local
+ *
+ * The generated file is read by resolveTenantConfig() at runtime via
+ * the `loadBakedConfig()` step (fetches /tenant-config.json).
+ *
+ * The merged config is validated against the Zod schema at build time
+ * so schema violations are caught before deploy, not at runtime.
+ */
+
+import {
+    readFileSync,
+    writeFileSync,
+    mkdirSync,
+    existsSync,
+    cpSync,
+    readdirSync,
+    statSync,
+    rmSync,
+} from 'fs';
+import { createRequire } from 'module';
+import { resolve, dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+import { tenantConfigSchema } from 'learn-card-base/src/config/tenantConfigSchema';
+import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/src/config/tenantDefaults';
+import { deepMerge } from 'learn-card-base/src/config/deepMerge';
+import type { TenantConfig } from 'learn-card-base/src/config/tenantConfigSchema';
+
+const requireFromHere = createRequire(import.meta.url);
+const { readDefaultChannel } = requireFromHere('../../../tools/capgo/readDefaultChannel.cjs') as {
+    readDefaultChannel: (configPath: string) => string | undefined;
+};
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const APP_ROOT = resolve(__dirname, '..');
+
+// ---------------------------------------------------------------------------
+// Parse CLI arguments
+// ---------------------------------------------------------------------------
+
+const KNOWN_STAGES = ['local', 'staging', 'production'] as const;
+type Stage = (typeof KNOWN_STAGES)[number];
+
+const parseArgs = (): {
+    tenant: string;
+    stage: Stage | undefined;
+    useLocalAi: boolean;
+} => {
+    const args = process.argv.slice(2);
+
+    let tenant = 'learncard';
+    let stage: Stage | undefined;
+    let useLocalAi = false;
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--stage' && args[i + 1]) {
+            stage = args[i + 1] as Stage;
+            i++; // skip the stage value
+        } else if (args[i] === '--local-aip') {
+            useLocalAi = true;
+        } else if (args[i] === '--reset') {
+            // handled below
+            tenant = '--reset';
+        } else if (!args[i]!.startsWith('--')) {
+            tenant = args[i]!;
+        }
+    }
+
+    // Backward compat: `prepare-native-config.ts local` → learncard --stage local
+    // Only applies when there's no explicit --stage and the tenant name matches a known stage
+    if (!stage && KNOWN_STAGES.includes(tenant as Stage) && tenant !== 'production') {
+        log.info(`ℹ️  Interpreting "${tenant}" as: learncard --stage ${tenant}`);
+
+        stage = tenant as Stage;
+        tenant = 'learncard';
+    }
+
+    // "production" stage is the same as no stage (just config.json)
+    if (stage === 'production') {
+        stage = undefined;
+    }
+
+    return { tenant, stage, useLocalAi };
+};
+
+const { tenant: tenantArg, stage: stageArg, useLocalAi } = parseArgs();
+
+// ---------------------------------------------------------------------------
+// 0. Handle --reset: undo all changes and exit
+// ---------------------------------------------------------------------------
+
+if (tenantArg === '--reset') {
+    log.info('\n🔄 Cleaning all platform output files...\n');
+
+    // All output paths that prepare-native-config.ts populates (gitignored).
+    // These are removed so the next `prepare-native-config.ts <tenant>` starts clean.
+    const removeTargets = [
+        // iOS
+        'ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon.png',
+        'ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png',
+        'ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png',
+        'ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png',
+        'ios/App/App/capacitor.config.json',
+        'ios/App/App/tenant-deep-link-domains.json',
+        'ios/App/App.xcodeproj/project.pbxproj',
+        'ios/App/Podfile.lock',
+
+        // Android — build.gradle (patched with tenant bundle ID)
+        'android/app/build.gradle',
+
+        // Android — AndroidManifest.xml (patched with tenant deep links + custom schemes)
+        'android/app/src/main/AndroidManifest.xml',
+
+        // Android — strings.xml (patched with tenant display name + bundle ID)
+        'android/app/src/main/res/values/strings.xml',
+
+        // Android — capacitor config
+        'android/app/src/main/assets/capacitor.config.json',
+
+        // Android — Firebase
+        'android/app/google-services.json',
+
+        // iOS — Firebase
+        'ios/App/App/GoogleService-Info.plist',
+
+        // Web
+        'public/assets/icon/favicon.png',
+        'public/assets/icon/icon.png',
+        'public/assets/icon/icon-192.png',
+        'public/assets/icon/apple-touch-icon.png',
+        'public/manifest.json',
+        'public/manifest.webmanifest',
+        'public/tenant-config.json',
+        'public/branding',
+    ];
+
+    // Android icon + splash patterns (resolve dynamically)
+    const densities = ['hdpi', 'ldpi', 'mdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi'];
+
+    for (const d of densities) {
+        removeTargets.push(`android/app/src/main/res/mipmap-${d}/ic_launcher.webp`);
+        removeTargets.push(`android/app/src/main/res/mipmap-${d}/ic_launcher_foreground.webp`);
+        removeTargets.push(`android/app/src/main/res/mipmap-${d}/ic_launcher_round.webp`);
+        removeTargets.push(`android/app/src/main/res/drawable-${d}/splash.9.png`);
+        removeTargets.push(`android/app/src/main/res/drawable-land-${d}/splash.9.png`);
+        removeTargets.push(`android/app/src/main/res/drawable-port-${d}/splash.9.png`);
+        // Notification icons (density-qualified)
+        removeTargets.push(`android/app/src/main/res/drawable-${d}/ic_stat_name.png`);
+        removeTargets.push(`android/app/src/main/res/drawable-${d}/ic_action_name.png`);
+    }
+
+    removeTargets.push('android/app/src/main/res/drawable/splash.9.png');
+    removeTargets.push('android/app/src/main/res/drawable/ic_launcher_background.xml');
+    removeTargets.push('android/app/src/main/res/values/ic_launcher_background.xml');
+    // Notification icons (default drawable)
+    removeTargets.push('android/app/src/main/res/drawable/ic_notification.png');
+    removeTargets.push('android/app/src/main/res/drawable/ic_stat_name.png');
+
+    let removed = 0;
+
+    for (const relPath of removeTargets) {
+        const absPath = resolve(APP_ROOT, relPath);
+
+        if (existsSync(absPath)) {
+            rmSync(absPath, { recursive: true, force: true });
+            log.info(`   ✓ Removed ${relPath}`);
+            removed++;
+        }
+    }
+
+    if (removed === 0) {
+        log.info('   Nothing to clean — already reset.');
+    }
+
+    log.info(`\n✅ Cleaned ${removed} file(s). To restore defaults, run:`);
+    log.info('   bun scripts/prepare-native-config.ts learncard\n');
+    process.exit(0);
+}
+
+// ---------------------------------------------------------------------------
+// 1. Load tenant-specific overrides from environments/<tenant>/config.json
+// ---------------------------------------------------------------------------
+
+const envFilePath = resolve(APP_ROOT, 'environments', tenantArg, 'config.json');
+let tenantOverrides: Record<string, unknown> = {};
+
+if (existsSync(envFilePath)) {
+    log.info(`📦 Loading tenant overrides from: environments/${tenantArg}/config.json`);
+    tenantOverrides = JSON.parse(readFileSync(envFilePath, 'utf-8'));
+} else {
+    log.info(
+        `ℹ️  No override file found at environments/${tenantArg}/config.json — using defaults.`
+    );
+}
+
+// ---------------------------------------------------------------------------
+// 1b. Load stage overlay from environments/<tenant>/config.<stage>.json
+// ---------------------------------------------------------------------------
+
+let stageOverrides: Record<string, unknown> = {};
+
+if (stageArg) {
+    const stageFilePath = resolve(APP_ROOT, 'environments', tenantArg, `config.${stageArg}.json`);
+
+    if (existsSync(stageFilePath)) {
+        log.info(
+            `🔧 Loading stage overlay from: environments/${tenantArg}/config.${stageArg}.json`
+        );
+        stageOverrides = JSON.parse(readFileSync(stageFilePath, 'utf-8'));
+    } else {
+        log.info(
+            `⚠️  No stage overlay at environments/${tenantArg}/config.${stageArg}.json — using base config only.`
+        );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 2. Deep-merge: defaults → config.json → config.<stage>.json → local AI
+// ---------------------------------------------------------------------------
+
+const merged = deepMerge(
+    deepMerge(
+        deepMerge(
+            DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
+            tenantOverrides
+        ),
+        stageOverrides
+    ),
+    useLocalAi ? { apis: { aiService: 'http://localhost:3001' } } : {}
+);
+
+// Add build metadata
+merged['_source'] = 'baked-native';
+merged['_tenant'] = tenantArg;
+merged['_stage'] = stageArg ?? 'production';
+merged['_localAi'] = useLocalAi;
+
+// ---------------------------------------------------------------------------
+// 3. Validate against the Zod schema
+// ---------------------------------------------------------------------------
+
+const validation = tenantConfigSchema.safeParse(merged);
+
+if (!validation.success) {
+    log.error('\n❌ Merged tenant config failed schema validation:\n');
+
+    for (const issue of validation.error.issues) {
+        log.error(`   ${issue.path.join('.')}: ${issue.message}`);
+    }
+
+    log.error('\nFix the environment file or update the schema, then re-run.\n');
+    process.exit(1);
+}
+
+const validatedConfig: TenantConfig = validation.data;
+
+const publicDir = resolve(APP_ROOT, 'public');
+
+if (!existsSync(publicDir)) {
+    mkdirSync(publicDir, { recursive: true });
+}
+
+// ---------------------------------------------------------------------------
+// 4. Copy tenant-specific image assets (if they exist)
+// ---------------------------------------------------------------------------
+
+const assetsDir = resolve(APP_ROOT, 'environments', tenantArg, 'assets');
+
+if (existsSync(assetsDir)) {
+    log.info(`\n📸 Copying tenant assets from environments/${tenantArg}/assets/...`);
+
+    let copiedCount = 0;
+
+    const copyRecursive = (src: string, dest: string): void => {
+        for (const entry of readdirSync(src, { withFileTypes: true })) {
+            const srcPath = join(src, entry.name);
+            const destPath = join(dest, entry.name);
+
+            if (entry.isDirectory()) {
+                mkdirSync(destPath, { recursive: true });
+                copyRecursive(srcPath, destPath);
+            } else {
+                cpSync(srcPath, destPath);
+                copiedCount++;
+            }
+        }
+    };
+
+    // iOS assets → ios/App/App/Assets.xcassets/
+    const iosSrc = join(assetsDir, 'ios');
+
+    if (existsSync(iosSrc)) {
+        const iosAppIconDest = resolve(APP_ROOT, 'ios/App/App/Assets.xcassets/AppIcon.appiconset');
+        const iosSplashDest = resolve(APP_ROOT, 'ios/App/App/Assets.xcassets/Splash.imageset');
+
+        const appIconSrc = join(iosSrc, 'AppIcon.png');
+
+        if (existsSync(appIconSrc)) {
+            mkdirSync(iosAppIconDest, { recursive: true });
+            cpSync(appIconSrc, join(iosAppIconDest, 'AppIcon.png'));
+            copiedCount++;
+        }
+
+        for (const splashFile of [
+            'splash-2732x2732.png',
+            'splash-2732x2732-1.png',
+            'splash-2732x2732-2.png',
+        ]) {
+            const src = join(iosSrc, splashFile);
+
+            if (existsSync(src)) {
+                mkdirSync(iosSplashDest, { recursive: true });
+                cpSync(src, join(iosSplashDest, splashFile));
+                copiedCount++;
+            }
+        }
+
+        log.info('   ✓ iOS assets');
+    }
+
+    // Android assets → android/app/src/main/res/
+    const androidSrc = join(assetsDir, 'android');
+
+    if (existsSync(androidSrc)) {
+        const androidResDest = resolve(APP_ROOT, 'android/app/src/main/res');
+        copyRecursive(androidSrc, androidResDest);
+        log.info('   ✓ Android assets');
+    }
+
+    // Web assets → public/assets/icon/
+    const webSrc = join(assetsDir, 'web');
+
+    if (existsSync(webSrc)) {
+        const webIconDest = resolve(APP_ROOT, 'public/assets/icon');
+        mkdirSync(webIconDest, { recursive: true });
+
+        for (const webFile of ['favicon.png', 'icon.png', 'icon-192.png', 'apple-touch-icon.png']) {
+            const src = join(webSrc, webFile);
+
+            if (existsSync(src)) {
+                cpSync(src, join(webIconDest, webFile));
+                copiedCount++;
+            }
+        }
+
+        log.info('   ✓ Web assets');
+    }
+
+    log.info(`   Copied ${copiedCount} asset files.`);
+} else {
+    log.info(
+        `\nℹ️  No tenant assets found at environments/${tenantArg}/assets/ — skipping asset copy.`
+    );
+}
+
+// ---------------------------------------------------------------------------
+// 5. Copy in-app branding images and auto-set branding URL fields
+// ---------------------------------------------------------------------------
+//
+// Convention: place tenant branding images in
+//   environments/<tenant>/assets/branding/
+//
+// Supported filenames (any common image extension):
+//   text-logo.*            → branding.textLogoUrl        (wordmark, dark bg)
+//   text-logo-dark.*       → branding.textLogoDarkUrl    (wordmark, light bg)
+//   brand-mark.*           → branding.brandMarkUrl       (icon, light bg)
+//   brand-mark-light.*     → branding.brandMarkLightUrl  (icon, dark bg)
+//   app-icon.*             → branding.appIconUrl
+//   full-logo.*            → branding.fullLogoUrl        (lockup, light bg)
+//   full-logo-dark.*       → branding.fullLogoDarkUrl    (lockup, dark bg)
+//   desktop-login-bg.*     → branding.desktopLoginBgUrl
+//   desktop-login-bg-alt.* → branding.desktopLoginBgAltUrl
+//
+// Files are copied to public/branding/<filename> and the config field is
+// auto-set to "/branding/<filename>" (relative URL) unless the tenant
+// config already specifies an explicit URL for that field.
+
+const BRANDING_FILE_MAP: Array<{
+    prefix: string;
+    configKey: keyof typeof validatedConfig.branding;
+}> = [
+    { prefix: 'text-logo-dark', configKey: 'textLogoDarkUrl' },
+    { prefix: 'text-logo', configKey: 'textLogoUrl' },
+    { prefix: 'brand-mark-light', configKey: 'brandMarkLightUrl' },
+    { prefix: 'brand-mark', configKey: 'brandMarkUrl' },
+    { prefix: 'app-icon', configKey: 'appIconUrl' },
+    { prefix: 'full-logo-dark', configKey: 'fullLogoDarkUrl' },
+    { prefix: 'full-logo', configKey: 'fullLogoUrl' },
+    { prefix: 'desktop-login-bg-alt', configKey: 'desktopLoginBgAltUrl' },
+    { prefix: 'desktop-login-bg', configKey: 'desktopLoginBgUrl' },
+];
+
+const brandingDir = resolve(APP_ROOT, 'environments', tenantArg, 'assets', 'branding');
+
+if (existsSync(brandingDir)) {
+    log.info(
+        `\n🎨 Processing in-app branding images from environments/${tenantArg}/assets/branding/...`
+    );
+
+    const brandingDest = resolve(publicDir, 'branding');
+    mkdirSync(brandingDest, { recursive: true });
+
+    const brandingFiles = readdirSync(brandingDir).filter(f =>
+        statSync(join(brandingDir, f)).isFile()
+    );
+
+    let brandingCopied = 0;
+
+    for (const { prefix, configKey } of BRANDING_FILE_MAP) {
+        const match = brandingFiles.find(f => {
+            const name = f.substring(0, f.lastIndexOf('.'));
+            return name === prefix;
+        });
+
+        if (match) {
+            cpSync(join(brandingDir, match), join(brandingDest, match));
+            brandingCopied++;
+
+            const currentValue = validatedConfig.branding[configKey];
+
+            if (!currentValue) {
+                (validatedConfig.branding as Record<string, unknown>)[
+                    configKey
+                ] = `/branding/${match}`;
+                log.info(`   ✓ ${match} → branding.${configKey} = /branding/${match}`);
+            } else {
+                log.info(
+                    `   ✓ ${match} copied (branding.${configKey} already set to "${currentValue}")`
+                );
+            }
+        }
+    }
+
+    if (brandingCopied === 0) {
+        log.info('   No matching branding files found.');
+    } else {
+        log.info(`   Copied ${brandingCopied} branding image(s).`);
+    }
+} else {
+    log.info(
+        `\nℹ️  No branding images at environments/${tenantArg}/assets/branding/ — using bundled defaults.`
+    );
+}
+
+// ---------------------------------------------------------------------------
+// 5b. Copy base config templates (capacitor config, manifests)
+//     These are gitignored, so we restore them from the tenant's assets/config/
+//     (falling back to learncard defaults if the tenant doesn't supply them).
+// ---------------------------------------------------------------------------
+
+const CONFIG_TEMPLATE_MAP: Array<{ src: string; dests: string[] }> = [
+    {
+        src: 'config/capacitor.config.json',
+        dests: [
+            'ios/App/App/capacitor.config.json',
+            'android/app/src/main/assets/capacitor.config.json',
+        ],
+    },
+    { src: 'config/manifest.json', dests: ['public/manifest.json'] },
+    { src: 'config/manifest.webmanifest', dests: ['public/manifest.webmanifest'] },
+];
+
+const configDir = resolve(APP_ROOT, 'environments', tenantArg, 'assets', 'config');
+const fallbackConfigDir = resolve(APP_ROOT, 'environments', 'learncard', 'assets', 'config');
+
+for (const { src, dests } of CONFIG_TEMPLATE_MAP) {
+    let srcPath = join(configDir, src.replace('config/', ''));
+
+    if (!existsSync(srcPath)) {
+        srcPath = join(fallbackConfigDir, src.replace('config/', ''));
+    }
+
+    if (!existsSync(srcPath)) continue;
+
+    for (const destRel of dests) {
+        const destPath = resolve(APP_ROOT, destRel);
+        mkdirSync(dirname(destPath), { recursive: true });
+        cpSync(srcPath, destPath);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 6. Write final config to public/tenant-config.json
+//    (after branding URL fields may have been auto-populated above)
+// ---------------------------------------------------------------------------
+
+const outPath = resolve(publicDir, 'tenant-config.json');
+
+writeFileSync(outPath, JSON.stringify(validatedConfig, null, 2) + '\n', 'utf-8');
+
+log.info(`\n✅ Wrote validated tenant config to: ${outPath}`);
+log.info(`   Tenant: ${tenantArg}`);
+log.info(`   Sections: ${Object.keys(validatedConfig).join(', ')}`);
+
+// ---------------------------------------------------------------------------
+// 7. Patch Capacitor native config JSON files with tenant values
+// ---------------------------------------------------------------------------
+
+const nativeConfig = validatedConfig.native;
+
+// SSOT for the Capgo channel is `defaultChannel` in capacitor.config.ts; we read
+// it through the shared `tools/capgo/readDefaultChannel.cjs` helper that CI also
+// uses (via tools/capgo/getCapgoChannel.js). Tenant asset capacitor.config.json
+// files must NOT specify defaultChannel — they are wholesale-copied over the
+// cap-synced platform JSONs in step 5b, so a tenant override silently drops
+// installed binaries off the channel CI uploads to (PR #1063 incident).
+const defaultCapgoChannel = readDefaultChannel(resolve(APP_ROOT, 'capacitor.config.ts'));
+
+if (nativeConfig) {
+    if (!defaultCapgoChannel) {
+        log.error('❌ Failed to read CapacitorUpdater.defaultChannel from capacitor.config.ts.');
+        log.error('   Aborting: writing platform JSONs without a Capgo channel would silently');
+        log.error('   diverge from CI (tools/capgo/getCapgoChannel.js reads the same SSOT for');
+        log.error('   the upload channel — installed binaries would fall back to the plugin');
+        log.error('   default and miss every OTA bundle).');
+        process.exit(1);
+    }
+
+    log.info('\n⚙️  Patching Capacitor config with tenant native settings...');
+    log.info(`   Capgo defaultChannel (from capacitor.config.ts): ${defaultCapgoChannel}`);
+
+    const patchCapacitorConfigJson = (jsonPath: string): void => {
+        if (!existsSync(jsonPath)) return;
+
+        try {
+            const raw = JSON.parse(readFileSync(jsonPath, 'utf-8'));
+
+            raw.appId = nativeConfig.bundleId;
+            raw.appName = nativeConfig.displayName;
+
+            if (raw.plugins?.CapacitorUpdater) {
+                raw.plugins.CapacitorUpdater.appId = nativeConfig.bundleId;
+                raw.plugins.CapacitorUpdater.defaultChannel = defaultCapgoChannel;
+            }
+
+            writeFileSync(jsonPath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
+            log.info(`   ✓ Patched ${jsonPath}`);
+        } catch (err) {
+            log.warn(`   ⚠️  Failed to patch ${jsonPath}:`, err);
+        }
+    };
+
+    // Patch the native project capacitor config JSON files (generated by `bunx cap sync`)
+    patchCapacitorConfigJson(resolve(APP_ROOT, 'ios/App/App/capacitor.config.json'));
+    patchCapacitorConfigJson(
+        resolve(APP_ROOT, 'android/app/src/main/assets/capacitor.config.json')
+    );
+
+    // Also patch the iOS Info.plist deep link domains via a JSON sidecar
+    // that the Fastlane/Xcode build can consume.
+    const deepLinkDomainsPath = resolve(APP_ROOT, 'ios/App/App/tenant-deep-link-domains.json');
+
+    writeFileSync(
+        deepLinkDomainsPath,
+        JSON.stringify(
+            {
+                bundleId: nativeConfig.bundleId,
+                displayName: nativeConfig.displayName,
+                deepLinkDomains: nativeConfig.deepLinkDomains,
+                customSchemes: nativeConfig.customSchemes ?? [],
+            },
+            null,
+            2
+        ) + '\n',
+        'utf-8'
+    );
+
+    log.info(`   ✓ Wrote deep link domains sidecar: ${deepLinkDomainsPath}`);
+    log.info(`   Bundle ID: ${nativeConfig.bundleId}`);
+    log.info(`   Display Name: ${nativeConfig.displayName}`);
+    log.info(`   Deep Link Domains: ${nativeConfig.deepLinkDomains.join(', ')}`);
+
+    // Patch iOS Xcode project with tenant bundle ID
+    const pbxprojPath = resolve(APP_ROOT, 'ios/App/App.xcodeproj/project.pbxproj');
+    const pbxprojTemplatePath = pbxprojPath + '.template';
+
+    // Always start from the template so tenant switches produce a clean result
+    if (existsSync(pbxprojTemplatePath)) {
+        cpSync(pbxprojTemplatePath, pbxprojPath);
+    }
+
+    if (existsSync(pbxprojPath)) {
+        try {
+            let pbx = readFileSync(pbxprojPath, 'utf-8');
+            const bundleId = nativeConfig.bundleId;
+
+            pbx = pbx.replace(
+                /PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/g,
+                `PRODUCT_BUNDLE_IDENTIFIER = ${bundleId};`
+            );
+
+            pbx = pbx.replace(
+                /PROVISIONING_PROFILE_SPECIFIER = "match AppStore [^"]+"/g,
+                `PROVISIONING_PROFILE_SPECIFIER = "match AppStore ${bundleId}"`
+            );
+
+            pbx = pbx.replace(
+                /"PROVISIONING_PROFILE_SPECIFIER\[sdk=iphoneos\*\]" = "match AppStore [^"]+"/g,
+                `"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "match AppStore ${bundleId}"`
+            );
+
+            writeFileSync(pbxprojPath, pbx, 'utf-8');
+            log.info(`   ✓ Patched project.pbxproj (PRODUCT_BUNDLE_IDENTIFIER → ${bundleId})`);
+        } catch (err) {
+            log.warn('   ⚠️  Failed to patch project.pbxproj:', err);
+        }
+    }
+
+    // Patch iOS Info.plist with tenant display name, Google/Firebase URL schemes, and tenant custom schemes
+    const infoPlistPath = resolve(APP_ROOT, 'ios/App/App/Info.plist');
+    const infoPlistTemplatePath = infoPlistPath + '.template';
+
+    if (existsSync(infoPlistTemplatePath)) {
+        cpSync(infoPlistTemplatePath, infoPlistPath);
+    }
+
+    if (existsSync(infoPlistPath)) {
+        try {
+            let plist = readFileSync(infoPlistPath, 'utf-8');
+            const displayName = nativeConfig.displayName;
+            const bundleId = nativeConfig.bundleId;
+            const customSchemes = nativeConfig.customSchemes ?? [];
+
+            plist = plist.replace(
+                /(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]+(<\/string>)/,
+                `$1${displayName}$2`
+            );
+
+            // Replace bundle ID placeholders in custom URL scheme names
+            plist = plist.replace(/__BUNDLE_ID__/g, bundleId);
+
+            // Parse GoogleService-Info.plist for Google Sign-In / Firebase Auth URL schemes
+            const googleServicePath = resolve(APP_ROOT, 'ios/App/App/GoogleService-Info.plist');
+
+            if (existsSync(googleServicePath)) {
+                const googlePlist = readFileSync(googleServicePath, 'utf-8');
+
+                const extractPlistValue = (key: string): string | undefined => {
+                    const match = googlePlist.match(
+                        new RegExp(`<key>${key}<\\/key>\\s*<string>([^<]+)<\\/string>`)
+                    );
+                    return match?.[1];
+                };
+
+                const reversedClientId = extractPlistValue('REVERSED_CLIENT_ID');
+                const googleAppId = extractPlistValue('GOOGLE_APP_ID');
+
+                if (reversedClientId) {
+                    plist = plist.replace('__REVERSED_CLIENT_ID__', reversedClientId);
+                    log.info(`   ✓ Patched Info.plist (REVERSED_CLIENT_ID → ${reversedClientId})`);
+                } else {
+                    log.warn('   ⚠️  REVERSED_CLIENT_ID not found in GoogleService-Info.plist');
+                }
+
+                if (googleAppId) {
+                    // Convert GOOGLE_APP_ID "1:123:ios:abc" → Firebase URL scheme "app-1-123-ios-abc"
+                    const firebaseAppUrlScheme = `app-${googleAppId.replace(/:/g, '-')}`;
+                    plist = plist.replace('__FIREBASE_APP_URL_SCHEME__', firebaseAppUrlScheme);
+                    log.info(
+                        `   ✓ Patched Info.plist (Firebase URL scheme → ${firebaseAppUrlScheme})`
+                    );
+                } else {
+                    log.warn('   ⚠️  GOOGLE_APP_ID not found in GoogleService-Info.plist');
+                }
+            } else {
+                log.warn(
+                    '   ⚠️  GoogleService-Info.plist not found — URL scheme placeholders not replaced'
+                );
+            }
+
+            // Replace the TENANT_CUSTOM_SCHEMES marker with generated <dict> entries for each scheme.
+            // Marker-based replacement (mirrors the Android approach) avoids ambiguity with the
+            // nested CFBundleURLSchemes <array> tags inside CFBundleURLTypes.
+            const TENANT_SCHEMES_MARKER = '<!-- TENANT_CUSTOM_SCHEMES -->';
+
+            if (plist.includes(TENANT_SCHEMES_MARKER)) {
+                const customSchemeEntries = customSchemes
+                    .map(scheme => {
+                        // CFBundleURLName must be a reverse-DNS identifier; replace dashes with
+                        // underscores so e.g. "openid-credential-offer" → "openid_credential_offer"
+                        const schemeIdentifier = scheme.replace(/-/g, '_');
+                        return [
+                            '\t\t<dict>',
+                            '\t\t\t<key>CFBundleTypeRole</key>',
+                            '\t\t\t<string>Editor</string>',
+                            '\t\t\t<key>CFBundleURLName</key>',
+                            `\t\t\t<string>${bundleId}.${schemeIdentifier}</string>`,
+                            '\t\t\t<key>CFBundleURLSchemes</key>',
+                            '\t\t\t<array>',
+                            `\t\t\t\t<string>${scheme}</string>`,
+                            '\t\t\t</array>',
+                            '\t\t</dict>',
+                        ].join('\n');
+                    })
+                    .join('\n');
+
+                plist = plist.replace(TENANT_SCHEMES_MARKER, customSchemeEntries);
+
+                console.log(
+                    `   ✓ Patched Info.plist (custom schemes → [${customSchemes.join(', ')}])`
+                );
+            } else if (customSchemes.length > 0) {
+                console.warn(
+                    '   ⚠️  TENANT_CUSTOM_SCHEMES marker not found in Info.plist.template — custom schemes not added'
+                );
+            }
+
+            writeFileSync(infoPlistPath, plist, 'utf-8');
+            log.info(`   ✓ Patched Info.plist (CFBundleDisplayName → ${displayName})`);
+        } catch (err) {
+            log.warn('   ⚠️  Failed to patch Info.plist:', err);
+        }
+    }
+
+    // Patch Android build.gradle with tenant bundle ID
+    const buildGradlePath = resolve(APP_ROOT, 'android/app/build.gradle');
+    const buildGradleTemplatePath = buildGradlePath + '.template';
+
+    // Always start from the template so tenant switches produce a clean result
+    if (existsSync(buildGradleTemplatePath)) {
+        cpSync(buildGradleTemplatePath, buildGradlePath);
+    }
+
+    if (existsSync(buildGradlePath)) {
+        try {
+            let gradle = readFileSync(buildGradlePath, 'utf-8');
+            const bundleId = nativeConfig.bundleId;
+
+            gradle = gradle.replace(/namespace = '[^']+'/, `namespace = '${bundleId}'`);
+
+            gradle = gradle.replace(/applicationId "[^"]+"/, `applicationId "${bundleId}"`);
+
+            writeFileSync(buildGradlePath, gradle, 'utf-8');
+            log.info(`   ✓ Patched build.gradle (applicationId → ${bundleId})`);
+        } catch (err) {
+            log.warn('   ⚠️  Failed to patch build.gradle:', err);
+        }
+    }
+
+    // Patch Android AndroidManifest.xml with tenant deep link domains and custom schemes
+    const manifestPath = resolve(APP_ROOT, 'android/app/src/main/AndroidManifest.xml');
+    const manifestTemplatePath = manifestPath + '.template';
+
+    if (existsSync(manifestTemplatePath)) {
+        cpSync(manifestTemplatePath, manifestPath);
+    }
+
+    if (existsSync(manifestPath)) {
+        try {
+            let manifest = readFileSync(manifestPath, 'utf-8');
+            const domains = nativeConfig.deepLinkDomains ?? [];
+            const customSchemes = nativeConfig.customSchemes ?? [];
+
+            // Build HTTPS deep link intent filters from tenant domains
+            const httpsIntentFilters = domains.map(domain => {
+                const wildcardDomain = domain.startsWith('*.') ? domain : domain;
+
+                return [
+                    '            <intent-filter android:autoVerify="true">',
+                    '                <action android:name="android.intent.action.VIEW" />',
+                    '                <category android:name="android.intent.category.DEFAULT" />',
+                    '                <category android:name="android.intent.category.BROWSABLE" />',
+                    '',
+                    '                <data android:scheme="https" />',
+                    `                <data android:host="${domain}" />`,
+                    '            </intent-filter>',
+                ].join('\n');
+            });
+
+            // Also add wildcard subdomains for each domain (e.g. *.vetpass.app)
+            const wildcardFilters = domains
+                .filter(d => !d.startsWith('*.'))
+                .map(domain =>
+                    [
+                        '            <intent-filter android:autoVerify="true">',
+                        '                <action android:name="android.intent.action.VIEW" />',
+                        '                <category android:name="android.intent.category.DEFAULT" />',
+                        '                <category android:name="android.intent.category.BROWSABLE" />',
+                        '',
+                        '                <data android:scheme="https" />',
+                        `                <data android:host="*.${domain}" />`,
+                        '            </intent-filter>',
+                    ].join('\n')
+                );
+
+            // Build custom scheme intent filters from tenant config
+            const schemeIntentFilters = customSchemes.map(scheme =>
+                [
+                    '            <intent-filter>',
+                    '                <action android:name="android.intent.action.VIEW" />',
+                    '                <category android:name="android.intent.category.DEFAULT" />',
+                    '                <category android:name="android.intent.category.BROWSABLE" />',
+                    '',
+                    `                <data android:scheme="${scheme}" />`,
+                    '            </intent-filter>',
+                ].join('\n')
+            );
+
+            const allIntentFilters = [
+                ...httpsIntentFilters,
+                ...wildcardFilters,
+                ...schemeIntentFilters,
+            ].join('\n\n');
+
+            // Replace everything between the LAUNCHER intent-filter and </activity>
+            // (i.e. replace the deep link + custom scheme intent filters block)
+            manifest = manifest.replace(
+                /(<!-- HTTPS deep linking intent-filters -->)[\s\S]*?(        <\/activity>)/,
+                `<!-- HTTPS deep linking intent-filters -->\n${allIntentFilters}\n\n        </activity>`
+            );
+
+            writeFileSync(manifestPath, manifest, 'utf-8');
+
+            const domainSummary = domains.join(', ');
+            const schemeSummary =
+                customSchemes.length > 0 ? ` + schemes: ${customSchemes.join(', ')}` : '';
+
+            log.info(
+                `   ✓ Patched AndroidManifest.xml (deep links → ${domainSummary}${schemeSummary})`
+            );
+        } catch (err) {
+            log.warn('   ⚠️  Failed to patch AndroidManifest.xml:', err);
+        }
+    }
+
+    // Patch Android strings.xml with tenant display name and bundle ID
+    // Template lives outside res/values/ so Gradle's resource merger doesn't choke on the .template extension
+    const stringsPath = resolve(APP_ROOT, 'android/app/src/main/res/values/strings.xml');
+    const stringsTemplatePath = resolve(APP_ROOT, 'android/app/strings.xml.template');
+
+    if (existsSync(stringsTemplatePath)) {
+        cpSync(stringsTemplatePath, stringsPath);
+    }
+
+    if (existsSync(stringsPath)) {
+        try {
+            let strings = readFileSync(stringsPath, 'utf-8');
+            const bundleId = nativeConfig.bundleId;
+            const displayName = nativeConfig.displayName;
+
+            strings = strings.replace(
+                /<string name="app_name">[^<]+<\/string>/,
+                `<string name="app_name">${displayName}</string>`
+            );
+
+            strings = strings.replace(
+                /<string name="title_activity_main">[^<]+<\/string>/,
+                `<string name="title_activity_main">${displayName}</string>`
+            );
+
+            strings = strings.replace(
+                /<string name="package_name">[^<]+<\/string>/,
+                `<string name="package_name">${bundleId}</string>`
+            );
+
+            strings = strings.replace(
+                /<string name="custom_url_scheme">[^<]+<\/string>/,
+                `<string name="custom_url_scheme">${bundleId}</string>`
+            );
+
+            writeFileSync(stringsPath, strings, 'utf-8');
+            log.info(
+                `   ✓ Patched strings.xml (app_name → ${displayName}, package_name → ${bundleId})`
+            );
+        } catch (err) {
+            log.warn('   ⚠️  Failed to patch strings.xml:', err);
+        }
+    }
+}
+// ---------------------------------------------------------------------------
+// 8. Patch manifest.json / manifest.webmanifest with tenant branding name
+// ---------------------------------------------------------------------------
+
+const manifestName = validatedConfig.branding.name;
+const manifestShortName = validatedConfig.branding.shortName ?? manifestName;
+
+const patchManifest = (filePath: string): void => {
+    if (!existsSync(filePath)) return;
+
+    try {
+        const raw = JSON.parse(readFileSync(filePath, 'utf-8'));
+
+        raw.name = manifestName;
+        raw.short_name = manifestShortName;
+
+        // Ensure the 192×192 icon entry exists (required for Chrome "Add to Home Screen")
+        const icons: Array<{ src: string; sizes: string; type: string; purpose?: string }> =
+            raw.icons ?? [];
+        const has192 = icons.some((i: { sizes: string }) => i.sizes.includes('192'));
+
+        if (!has192) {
+            icons.push({
+                src: 'assets/icon/icon-192.png',
+                type: 'image/png',
+                sizes: '192x192',
+                purpose: 'any',
+            });
+            raw.icons = icons;
+        }
+
+        writeFileSync(filePath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
+        log.info(
+            `   ✓ Patched ${filePath} (name="${manifestName}", short_name="${manifestShortName}")`
+        );
+    } catch (err) {
+        log.warn(`   ⚠️  Failed to patch ${filePath}:`, err);
+    }
+};
+
+log.info('\n📋 Patching web manifests with tenant branding name...');
+patchManifest(resolve(publicDir, 'manifest.json'));
+patchManifest(resolve(publicDir, 'manifest.webmanifest'));
+
+// ---------------------------------------------------------------------------
+// 9. Copy Firebase config files (tenant-specific or learncard fallback)
+// ---------------------------------------------------------------------------
+
+const FIREBASE_CONFIG_MAP: Array<{ src: string; dest: string }> = [
+    { src: 'config/google-services.json', dest: 'android/app/google-services.json' },
+    { src: 'config/GoogleService-Info.plist', dest: 'ios/App/App/GoogleService-Info.plist' },
+];
+
+log.info('\n🔥 Copying Firebase config files...');
+
+for (const { src, dest } of FIREBASE_CONFIG_MAP) {
+    const fileName = src.replace('config/', '');
+    let srcPath = join(configDir, fileName);
+
+    if (!existsSync(srcPath)) {
+        srcPath = join(fallbackConfigDir, fileName);
+    }
+
+    if (!existsSync(srcPath)) {
+        log.info(`   ⚠️  No ${fileName} found — skipping.`);
+        continue;
+    }
+
+    const destPath = resolve(APP_ROOT, dest);
+    mkdirSync(dirname(destPath), { recursive: true });
+    cpSync(srcPath, destPath);
+    log.info(`   ✓ ${dest}`);
+}
+
+// ---------------------------------------------------------------------------
+// 10. Patch iOS entitlements with tenant deep link domains
+// ---------------------------------------------------------------------------
+
+if (nativeConfig?.deepLinkDomains?.length) {
+    log.info('\n🔗 Patching iOS entitlements with deep link domains...');
+
+    const entitlementFiles = [
+        'ios/App/App/App.entitlements',
+        'ios/App/App/AppRelease.entitlements',
+    ];
+
+    const applinks = nativeConfig.deepLinkDomains.map((d: string) => `applinks:${d}`);
+
+    for (const relPath of entitlementFiles) {
+        const absPath = resolve(APP_ROOT, relPath);
+        const templatePath = absPath + '.template';
+
+        // Always start from the template so tenant switches produce a clean result
+        if (existsSync(templatePath)) {
+            cpSync(templatePath, absPath);
+        }
+
+        if (!existsSync(absPath)) continue;
+
+        try {
+            let content = readFileSync(absPath, 'utf-8');
+
+            // Replace the associated-domains array content.
+            // The entitlements plist has a structure like:
+            //   <key>com.apple.developer.associated-domains</key>
+            //   <array>
+            //       <string>applinks:example.com</string>
+            //   </array>
+            const domainRegex =
+                /(<key>com\.apple\.developer\.associated-domains<\/key>\s*<array>)([\s\S]*?)(<\/array>)/;
+            const match = content.match(domainRegex);
+
+            if (match) {
+                const newEntries = applinks
+                    .map((link: string) => `\n\t\t<string>${link}</string>`)
+                    .join('');
+                content = content.replace(domainRegex, `$1${newEntries}\n\t$3`);
+
+                writeFileSync(absPath, content, 'utf-8');
+                log.info(`   ✓ Patched ${relPath} → [${applinks.join(', ')}]`);
+            } else {
+                log.info(`   ⚠️  No associated-domains key found in ${relPath} — skipping.`);
+            }
+        } catch (err) {
+            log.warn(`   ⚠️  Failed to patch ${relPath}:`, err);
+        }
+    }
+}
+// ---------------------------------------------------------------------------
+// 11. Patch index.html with tenant branding name + apple-touch-icon
+// ---------------------------------------------------------------------------
+
+const indexHtmlPath = resolve(APP_ROOT, 'index.html');
+const indexTemplatePath = resolve(APP_ROOT, 'index.template.html');
+
+// Always start from the template so tenant switches produce a clean result
+if (existsSync(indexTemplatePath)) {
+    cpSync(indexTemplatePath, indexHtmlPath);
+}
+
+if (existsSync(indexHtmlPath)) {
+    log.info('\n📄 Patching index.html with tenant branding...');
+
+    try {
+        let html = readFileSync(indexHtmlPath, 'utf-8');
+
+        // Patch <title>
+        html = html.replace(/<title>[^<]*<\/title>/, `<title>${manifestName}</title>`);
+
+        // Patch apple-mobile-web-app-title
+        html = html.replace(
+            /(<meta\s+name="apple-mobile-web-app-title"\s+content=")[^"]*(")/,
+            `$1${manifestShortName}$2`
+        );
+
+        // Add apple-touch-icon link if missing
+        if (!html.includes('apple-touch-icon')) {
+            html = html.replace(
+                /(<link rel="shortcut icon"[^>]*>)/,
+                '$1\n        <link rel="apple-touch-icon" href="/assets/icon/apple-touch-icon.png" />'
+            );
+        }
+
+        writeFileSync(indexHtmlPath, html, 'utf-8');
+        log.info(`   ✓ <title>${manifestName}</title>`);
+        log.info(`   ✓ apple-mobile-web-app-title="${manifestShortName}"`);
+        log.info('   ✓ apple-touch-icon link');
+    } catch (err) {
+        log.warn('   ⚠️  Failed to patch index.html:', err);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 12. Sync runtime files into native asset directories
+//
+//     `cap sync` copies from webDir (build/) into the native projects, but
+//     that copy happens BEFORE this script runs. So the native projects end
+//     up with stale versions of tenant-config.json, branding images, icons,
+//     and manifests. This step overwrites those stale copies with the freshly
+//     generated files from public/.
+// ---------------------------------------------------------------------------
+
+const NATIVE_PUBLIC_DIRS = [
+    resolve(APP_ROOT, 'ios/App/App/public'),
+    resolve(APP_ROOT, 'android/app/src/main/assets/public'),
+];
+
+const SYNC_ITEMS = [
+    'tenant-config.json',
+    'branding',
+    'manifest.json',
+    'manifest.webmanifest',
+    'assets/icon',
+];
+
+const activeNativeDirs = NATIVE_PUBLIC_DIRS.filter(d => existsSync(d));
+
+if (activeNativeDirs.length > 0) {
+    log.info('\n📲 Syncing runtime files into native asset directories...');
+
+    let syncCount = 0;
+
+    for (const item of SYNC_ITEMS) {
+        const src = resolve(publicDir, item);
+
+        if (!existsSync(src)) continue;
+
+        for (const nativeDir of activeNativeDirs) {
+            const dest = resolve(nativeDir, item);
+
+            try {
+                const isDir = statSync(src).isDirectory();
+
+                if (isDir) {
+                    mkdirSync(dest, { recursive: true });
+                    cpSync(src, dest, { recursive: true });
+                } else {
+                    mkdirSync(dirname(dest), { recursive: true });
+                    cpSync(src, dest);
+                }
+
+                syncCount++;
+            } catch (err) {
+                log.warn(`   ⚠️  Failed to sync ${item} → ${nativeDir}:`, err);
+            }
+        }
+    }
+
+    const platforms = activeNativeDirs
+        .map(d => (d.includes('android') ? 'Android' : 'iOS'))
+        .join(' + ');
+
+    log.info(`   ✓ Synced ${syncCount} item(s) into ${platforms} native assets`);
+}

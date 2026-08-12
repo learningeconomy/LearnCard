@@ -1,6 +1,8 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('select-framework-to-manage-modal');
 
 import {
     useModal,
@@ -9,17 +11,18 @@ import {
     useWallet,
     useToast,
     ToastTypeEnum,
-    useGetSkillFrameworkById,
+    annotateBackendSkillsWithIcons,
 } from 'learn-card-base';
 
-import Plus from 'learn-card-base/svgs/Plus';
-import RefreshIcon from 'learn-card-base/svgs/Refresh';
+import Plus from '../../components/svgs/Plus';
+import RefreshIcon from '../../components/svgs/Refresh';
 import ManageSkills from './ManageSkills';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import CreateFrameworkModal from './CreateFrameworkModal';
 import SkillsAdminPanelFramework from '../skills/SkillsAdminPanelFramework';
 import { IonInput, IonSpinner } from '@ionic/react';
 import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
+import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 import {
     isFrameworkAllowedByOpenSaltAllowlist,
     isOpenSaltFramework,
@@ -60,20 +63,36 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
     const { presentToast } = useToast();
     const queryClient = useQueryClient();
     const flags = useFlags<Flags>();
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
 
-    const { data: userFrameworks = [], isLoading: isLoadingFrameworks } =
+    const { data: userFrameworks = [] as ApiFrameworkInfo[], isLoading: isLoadingFrameworks } =
         useListMySkillFrameworks();
 
-    const defaultFrameworkId = flags?.selfAssignedSkillsFrameworkId;
-    const { data: defaultFramework } = useGetSkillFrameworkById(defaultFrameworkId);
+    const globalFrameworkInfos = React.useMemo<ApiFrameworkInfo[]>(
+        () =>
+            globalSkillFrameworks.map(
+                (framework): ApiFrameworkInfo => ({
+                    id: framework.frameworkId,
+                    name: framework.name,
+                    status: 'active',
+                })
+            ) as ApiFrameworkInfo[],
+        [globalSkillFrameworks]
+    );
 
-    const frameworks: ApiFrameworkInfo[] = [];
-    if (defaultFramework?.framework) {
-        frameworks.push(defaultFramework.framework);
-    }
-    if (userFrameworks) {
-        frameworks.push(...userFrameworks.filter(f => f.id !== defaultFramework?.framework?.id));
-    }
+    const frameworks = React.useMemo(() => {
+        const combined = new Map<string, ApiFrameworkInfo>();
+
+        globalFrameworkInfos.forEach(framework => {
+            combined.set(framework.id, framework);
+        });
+
+        userFrameworks.forEach((framework: ApiFrameworkInfo) => {
+            combined.set(framework.id, framework);
+        });
+
+        return [...combined.values()];
+    }, [globalFrameworkInfos, userFrameworks]);
 
     const [openSaltRef, setOpenSaltRef] = React.useState('');
     const [isImportingOpenSaltFramework, setIsImportingOpenSaltFramework] = React.useState(false);
@@ -91,10 +110,10 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
             let cursor: string | null | undefined = null;
 
             for (let i = 0; i < 40; i++) {
-                const page = await wallet.invoke.getAllAvailableFrameworks({
+                const page = (await wallet.invoke.getAllAvailableFrameworks({
                     limit: 100,
                     cursor,
-                });
+                })) as { records: ApiFrameworkInfo[]; hasMore: boolean; cursor?: string | null };
 
                 records.push(...(page.records as ApiFrameworkInfo[]));
 
@@ -145,6 +164,13 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
             setSyncingFrameworkId(framework.id);
             const wallet = await initWallet();
             await wallet.invoke.syncFrameworkSkills({ id: framework.id });
+
+            try {
+                await annotateBackendSkillsWithIcons(framework.id, wallet);
+            } catch (iconError) {
+                log.error('Failed to generate icons for skills:', iconError);
+            }
+
             await queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
             presentToast('Framework synced successfully.', {
                 type: ToastTypeEnum.Success,
@@ -175,7 +201,14 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
             const wallet = await initWallet();
             const framework = await wallet.invoke.createSkillFramework({ frameworkId: ref });
+
             await wallet.invoke.syncFrameworkSkills({ id: framework.id });
+
+            try {
+                await annotateBackendSkillsWithIcons(framework.id, wallet);
+            } catch (iconError) {
+                log.error('Failed to generate icons for skills:', iconError);
+            }
 
             await queryClient.invalidateQueries({ queryKey: ['listMySkillFrameworks'] });
             await queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
@@ -186,6 +219,7 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
                 type: ToastTypeEnum.Success,
                 duration: 2500,
             });
+            closeModal();
         } catch (error: unknown) {
             presentToast(error instanceof Error ? error.message : 'Unable to import framework.', {
                 type: ToastTypeEnum.Error,
@@ -211,7 +245,11 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
 
     return (
         <div className="flex flex-col gap-[10px] px-[20px]">
-            <div className="bg-white rounded-[15px] p-[20px] max-h-[600px] overflow-y-auto">
+            <div
+                className={`bg-white rounded-[15px] p-[20px] ${
+                    !hideCreateFramework ? 'max-h-[400px]' : 'max-h-[600px]'
+                } overflow-y-auto`}
+            >
                 <h2 className="flex items-center justify-center gap-[10px] text-grayscale-900 font-poppins text-[22px] leading-[130%] tracking-[-0.25px] py-[10px]">
                     <SkillsFrameworkIcon
                         className="w-[35px] h-[35px]"

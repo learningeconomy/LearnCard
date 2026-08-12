@@ -1,0 +1,305 @@
+{
+    "id": "vetpass",
+    "displayName": "VetPass",
+    "iconSet": "vetpass",
+    "defaults": {
+        "viewMode": "list"
+    },
+    "colors": {
+        "categories": {
+            "achievement": {
+                "primaryColor": "baltic-blue-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-baltic-blue-100"
+            },
+            "socialBadge": {
+                "primaryColor": "navy-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-navy-100"
+            },
+            "learningHistory": {
+                "primaryColor": "army-green-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-army-green-100"
+            },
+            "workHistory": {
+                "primaryColor": "sand-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-sand-100"
+            },
+            "accomplishment": {
+                "primaryColor": "vp-red-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-vp-red-100"
+            },
+            "accommodation": {
+                "primaryColor": "baltic-blue-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-baltic-blue-100"
+            },
+            "id": {
+                "primaryColor": "navy-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-navy-100"
+            },
+            "family": {
+                "primaryColor": "sand-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-sand-100"
+            },
+            "skill": {
+                "primaryColor": "army-green-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-army-green-100"
+            },
+            "aiTopic": {
+                "primaryColor": "baltic-blue-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-baltic-blue-100"
+            },
+            "aiPathway": {
+                "primaryColor": "army-green-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-army-green-100"
+            },
+            "aiInsight": {
+                "primaryColor": "navy-50",
+                "secondaryColor": "navy-700",
+                "indicatorColor": "baltic-blue-400",
+                "borderColor": "white",
+                "statusBarColor": "light",
+                "headerBrandingTextColor": "text-grayscale-800",
+                "headerTextColor": "text-grayscale-800",
+                "backgroundPrimaryColor": "!bg-white",
+                "backgroundSecondaryColor": "grayscale-100",
+                "tabActiveColor": "bg-navy-100"
+            }
+        },
+        "launchPad": {
+            "contacts": {
+                "color": "navy-700"
+            },
+            "aiSessions": {
+                "color": "baltic-blue-500"
+            },
+            "alerts": {
+                "color": "navy-600",
+                "indicatorTextColor": "text-vp-red-600",
+                "indicatorBgColor": "bg-white"
+            },
+            "buttons": {
+                "unconnected": "bg-baltic-blue-500 text-white",
+                "connected": "bg-grayscale-100 text-baltic-blue-500"
+            },
+            "quickActionBgColor": "#FBFBFC"
+        },
+        "sideMenu": {
+            "linkActiveColor": "text-grayscale-900",
+            "linkInactiveColor": "text-grayscale-500",
+            "linkActiveBackgroundColor": "bg-grayscale-100/50",
+            "linkInactiveBackgroundColor": "bg-white",
+            "primaryButtonColor": "bg-baltic-blue-500 text-white",
+            "secondaryButtonColor": "bg-slate-700 text-white border-slate-700",
+            "indicatorColor": "text-baltic-blue-500",
+            "syncingColor": "!text-baltic-blue-500",
+            "completedColor": "!text-emerald-700"
+        },
+        "navbar": {
+            "activeColor": "text-vp-red-500",
+            "inactiveColor": "text-grayscale-500",
+            "syncingColor": "!text-baltic-blue-500",
+            "completedColor": "!text-emerald-700"
+        },
+        "introSlides": {
+            "firstSlideBackground": "bg-navy-500",
+            "secondSlideBackground": "bg-baltic-blue-400",
+            "thirdSlideBackground": "bg-army-green-500",
+            "textColors": {
+                "primary": "white",
+                "secondary": "white"
+            },
+            "pagination": {
+                "primary": "white",
+                "secondary": "#E2E3E9"
+            }
+        },
+        "placeholders": {
+            "achievement": {
+                "spilledCup": {
+                    "backsplash": "#66B8FF",
+                    "spill": "#33A0FF",
+                    "cupOutline": "#0055A3"
+                }
+            },
+            "socialBadge": {
+                "spilledCup": {
+                    "backsplash": "#87A4B8",
+                    "spill": "#33A0FF",
+                    "cupOutline": "#184463"
+                }
+            },
+            "learningHistory": {
+                "spilledCup": {
+                    "backsplash": "#ADB682",
+                    "spill": "#33A0FF",
+                    "cupOutline": "#47501C"
+                }
+            },
+            "workHistory": {
+                "spilledCup": {
+                    "backsplash": "#D8C9B4",
+                    "spill": "#33A0FF",
+                    "cupOutline": "#7A6A51"
+                }
+            },
+            "accomplishment": {
+                "spilledCup": {
+                    "backsplash": "#F7999C",
+                    "spill": "#33A0FF",
+                    "cupOutline": "#872025"
+                }
+            },
+            "accommodation": {
+                "spilledCup": {
+                    "backsplash": "#66B8FF",
+                    "spill": "#33A0FF",
+                    "cupOutline": "#0055A3"
+                }
+            },
+            "id": {
+                "spilledCup": {
+                    "backsplash": "#87A4B8",
+                    "spill": "#33A0FF",
+                    "cupOutline": "#184463"
+                }
+            },
+            "family": {
+                "spilledCup": {
+                    "backsplash": "#D8C9B4",
+                    "spill": "#33A0FF",
+                    "cupOutline": "#7A6A51"
+                }
+            },
+            "skill": {
+                "spilledCup": {
+                    "backsplash": "#ADB682",
+                    "spill": "#33A0FF",
+                    "cupOutline": "#47501C"
+                }
+            },
+            "defaults": {
+                "spilledCup": {
+                    "backsplash": "#BCCDD8",
+                    "spill": "#33A0FF",
+                    "cupOutline": "#184463"
+                }
+            }
+        },
+        "defaults": {
+            "primaryColor": "baltic-blue-500",
+            "primaryColorShade": "baltic-blue-200",
+            "loaders": ["#0089EE", "#78852F", "#396888", "#66B8FF"],
+            "loginBgColor": "#0089EE",
+            "loginButtonBgColor": "#11354E",
+            "loginButtonTextColor": "#FFFFFF",
+            "actionModalButtonColors": ["#F1F5F9"],
+            "featuredCardBgColor": "#F1F5F9",
+            "passportTextColor": "text-navy-700",
+            "passportCardBgColor": "#F8FAFC",
+            "passportCardTextColor": "text-navy-700"
+        }
+    },
+    "styles": {
+        "wallet": {
+            "cardStyles": "h-[240px]",
+            "iconStyles": "w-[100px] h-[100px]"
+        },
+        "launchPad": {
+            "textStyles": "text-[16px]",
+            "iconStyles": "w-[75px] h-auto xxs:w-[60px] xxs:h-[60px]",
+            "indicatorStyles": "shadow-soft-bottom"
+        },
+        "defaults": {
+            "tabs": {
+                "borderRadius": "rounded-[5px]"
+            }
+        }
+    }
+}

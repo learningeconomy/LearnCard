@@ -1,5 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { AlertCircle, Code, Play, BookOpen, PenTool, Sparkles, Info, HelpCircle, Server } from 'lucide-react';
+import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
+import {
+    AlertCircle,
+    Code,
+    Play,
+    BookOpen,
+    PenTool,
+    Sparkles,
+    Info,
+    HelpCircle,
+    Server,
+} from 'lucide-react';
+import { IonToggle } from '@ionic/react';
 
 import { IntegrationGuidePanel } from './IntegrationGuidePanel';
 
@@ -16,8 +29,15 @@ interface LaunchConfigStepProps {
     onPreview?: () => void;
 }
 
-export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChange, errors, onPreview }) => {
-    const [selectedContract, setSelectedContract] = useState<ConsentFlowContractDetails | null>(null);
+export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
+    data,
+    onChange,
+    errors,
+    onPreview,
+}) => {
+    const [selectedContract, setSelectedContract] = useState<ConsentFlowContractDetails | null>(
+        null
+    );
     const [showGuide, setShowGuide] = useState(false);
 
     const [config, setConfig] = useState<LaunchConfig>(() => {
@@ -40,7 +60,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
     const updateConfig = (updates: Partial<LaunchConfig>) => {
         const newConfig = { ...config, ...updates };
         setConfig(newConfig);
-        onChange({ ...data, launch_config_json: JSON.stringify(newConfig, null, 2) });
+        onChange({ launch_config_json: JSON.stringify(newConfig, null, 2) });
     };
 
     const renderConfigFields = () => {
@@ -49,7 +69,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                 return (
                     <div className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-1">Embed URL</label>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                {m['developerPortal.components.launchConfigStep.embedUrl']()}
+                            </label>
 
                             <input
                                 type="url"
@@ -61,16 +83,22 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                                 }`}
                             />
 
-                            {errors.url && <p className="text-sm text-red-500 mt-1">{errors.url}</p>}
+                            {errors.url && (
+                                <p className="text-sm text-red-500 mt-1">{errors.url}</p>
+                            )}
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Permissions Needed
+                                {m[
+                                    'developerPortal.components.launchConfigStep.permissionsNeeded'
+                                ]()}
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
-                                Select the capabilities your app requires from the wallet
+                                {m[
+                                    'developerPortal.components.launchConfigStep.permissionsNeededDesc'
+                                ]()}
                             </p>
 
                             <div className="space-y-2">
@@ -81,12 +109,18 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                                     >
                                         <input
                                             type="checkbox"
-                                            checked={config.permissions?.includes(permission.value) || false}
+                                            checked={
+                                                config.permissions?.includes(permission.value) ||
+                                                false
+                                            }
                                             onChange={e => {
                                                 const current = config.permissions || [];
                                                 const newPermissions = e.target.checked
                                                     ? [...current, permission.value]
-                                                    : current.filter((p: AppPermission) => p !== permission.value);
+                                                    : current.filter(
+                                                          (p: AppPermission) =>
+                                                              p !== permission.value
+                                                      );
                                                 updateConfig({ permissions: newPermissions });
                                             }}
                                             className="w-4 h-4 text-cyan-600 rounded mt-0.5"
@@ -94,11 +128,11 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
 
                                         <div>
                                             <span className="text-sm font-medium text-gray-700">
-                                                {permission.label}
+                                                {mDynamic(permission.labelKey)}
                                             </span>
 
                                             <p className="text-xs text-gray-500 mt-0.5">
-                                                {permission.description}
+                                                {mDynamic(permission.descriptionKey)}
                                             </p>
                                         </div>
                                     </label>
@@ -108,17 +142,25 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
 
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                Consent Flow Contract <span className="text-gray-400 font-normal">(Optional)</span>
+                                {m[
+                                    'developerPortal.components.launchConfigStep.consentFlowContract'
+                                ]()}{' '}
+                                <span className="text-gray-400 font-normal">
+                                    {m[
+                                        'developerPortal.components.createConsentContractModal.optional'
+                                    ]()}
+                                </span>
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
-                                Select a consent flow contract to request data sharing permissions when users install your app.
-                                Consent is automatically withdrawn when users uninstall.
+                                {m[
+                                    'developerPortal.components.launchConfigStep.consentFlowContractDesc'
+                                ]()}
                             </p>
 
                             <ConsentFlowContractSelector
                                 value={config.contractUri || ''}
-                                onChange={(uri) => updateConfig({ contractUri: uri })}
+                                onChange={uri => updateConfig({ contractUri: uri })}
                                 onContractChange={setSelectedContract}
                                 error={errors.contractUri}
                             />
@@ -126,11 +168,25 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                             {selectedContract && (
                                 <div className="mt-3 p-3 bg-cyan-50 border border-cyan-100 rounded-lg">
                                     <p className="text-xs text-cyan-700">
-                                        <strong>On Install:</strong> User will be prompted to consent to the selected contract's permissions.
+                                        <strong>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.onInstall'
+                                            ]()}
+                                        </strong>{' '}
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.onInstallDesc'
+                                        ]()}
                                     </p>
 
                                     <p className="text-xs text-cyan-700 mt-1">
-                                        <strong>On Uninstall:</strong> Consent will be automatically withdrawn.
+                                        <strong>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.onUninstall'
+                                            ]()}
+                                        </strong>{' '}
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.onUninstallDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             )}
@@ -139,10 +195,11 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                 );
 
             case 'SECOND_SCREEN':
-            case 'DIRECT_LINK':
                 return (
                     <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-1">Application URL</label>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">
+                            {m['developerPortal.components.launchConfigStep.appUrl']()}
+                        </label>
 
                         <input
                             type="url"
@@ -157,16 +214,72 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                         {errors.url && <p className="text-sm text-red-500 mt-1">{errors.url}</p>}
 
                         <p className="text-sm text-gray-400 mt-2">
-                            {data.launch_type === 'SECOND_SCREEN'
-                                ? 'This URL will open in a new window when users launch your app.'
-                                : 'Users will be redirected to this URL.'}
+                            {m['developerPortal.components.launchConfigStep.appUrlDesc1']()}
                         </p>
                     </div>
                 );
 
+            case 'DIRECT_LINK':
+                return (
+                    <div className="space-y-5">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                {m['developerPortal.components.launchConfigStep.appUrl']()}
+                            </label>
+
+                            <input
+                                type="url"
+                                value={config.url || ''}
+                                onChange={e => updateConfig({ url: e.target.value })}
+                                placeholder="https://yourapp.com"
+                                className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
+                                    errors.url ? 'border-red-300' : 'border-gray-200'
+                                }`}
+                            />
+
+                            {errors.url && (
+                                <p className="text-sm text-red-500 mt-1">{errors.url}</p>
+                            )}
+
+                            <p className="text-sm text-gray-400 mt-2">
+                                {m['developerPortal.components.launchConfigStep.appUrlDesc2']()}
+                            </p>
+                        </div>
+
+                        {/* {m['developerPortal.components.launchConfigStep.skipInstallation']()} Toggle - only shown for Plugin category */}
+                        {data.category === 'plugin' && (
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex-1 pr-4">
+                                    <p className="text-sm font-medium text-gray-700">
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.skipInstallation'
+                                        ]()}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.skipInstallationDesc'
+                                        ]()}
+                                    </p>
+                                </div>
+                                <IonToggle
+                                    checked={config.skipInstallation || false}
+                                    onIonChange={e =>
+                                        updateConfig({ skipInstallation: e.detail.checked })
+                                    }
+                                    aria-label={m[
+                                        'developerPortal.components.launchConfigStep.skipInstallation'
+                                    ]()}
+                                />
+                            </div>
+                        )}
+                    </div>
+                );
+
             case 'CONSENT_REDIRECT':
-                const readCategories = selectedContract?.contract?.read?.credentials?.categories || {};
-                const writeCategories = selectedContract?.contract?.write?.credentials?.categories || {};
+                const readCategories =
+                    selectedContract?.contract?.read?.credentials?.categories || {};
+                const writeCategories =
+                    selectedContract?.contract?.write?.credentials?.categories || {};
                 const hasReadCategories = Object.keys(readCategories).length > 0;
                 const hasWriteCategories = Object.keys(writeCategories).length > 0;
 
@@ -174,13 +287,15 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                     <div className="space-y-5">
                         <ConsentFlowContractSelector
                             value={config.contractUri || ''}
-                            onChange={(uri) => updateConfig({ contractUri: uri })}
+                            onChange={uri => updateConfig({ contractUri: uri })}
                             onContractChange={setSelectedContract}
                             error={errors.contractUri}
                         />
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-600 mb-1">Redirect URI</label>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                {m['developerPortal.components.launchConfigStep.redirectUri']()}
+                            </label>
 
                             <input
                                 type="url"
@@ -197,7 +312,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                             )}
 
                             <p className="text-sm text-gray-400 mt-1">
-                                Where users will be redirected after granting consent. This can override the contract's redirect URL.
+                                {m['developerPortal.components.launchConfigStep.redirectUriDesc']()}
                             </p>
                         </div>
 
@@ -205,20 +320,29 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                         {selectedContract && (
                             <div className="space-y-4">
                                 <label className="block text-sm font-medium text-gray-600">
-                                    Contract Permissions
+                                    {m[
+                                        'developerPortal.components.launchConfigStep.contractPermissions'
+                                    ]()}
                                 </label>
 
                                 {/* Read Permissions */}
                                 <div className="bg-cyan-50 border border-cyan-100 rounded-xl p-4">
                                     <div className="flex items-center gap-2 mb-3">
                                         <BookOpen className="w-4 h-4 text-cyan-600" />
-                                        <span className="text-sm font-medium text-cyan-700">Read Access</span>
+                                        <span className="text-sm font-medium text-cyan-700">
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.readAccess'
+                                            ]()}
+                                        </span>
                                     </div>
 
                                     {hasReadCategories ? (
                                         <div className="flex flex-wrap gap-2">
                                             {Object.keys(readCategories).map(category => {
-                                                const metadata = contractCategoryNameToCategoryMetadata(category);
+                                                const metadata =
+                                                    contractCategoryNameToCategoryMetadata(
+                                                        category
+                                                    );
                                                 return (
                                                     <span
                                                         key={category}
@@ -233,7 +357,11 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                                             })}
                                         </div>
                                     ) : (
-                                        <p className="text-xs text-cyan-600 italic">No read permissions requested</p>
+                                        <p className="text-xs text-cyan-600 italic">
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.noReadPermissions'
+                                            ]()}
+                                        </p>
                                     )}
                                 </div>
 
@@ -241,13 +369,20 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                                 <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
                                     <div className="flex items-center gap-2 mb-3">
                                         <PenTool className="w-4 h-4 text-emerald-600" />
-                                        <span className="text-sm font-medium text-emerald-700">Write Access</span>
+                                        <span className="text-sm font-medium text-emerald-700">
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.writeAccess'
+                                            ]()}
+                                        </span>
                                     </div>
 
                                     {hasWriteCategories ? (
                                         <div className="flex flex-wrap gap-2">
                                             {Object.keys(writeCategories).map(category => {
-                                                const metadata = contractCategoryNameToCategoryMetadata(category);
+                                                const metadata =
+                                                    contractCategoryNameToCategoryMetadata(
+                                                        category
+                                                    );
                                                 return (
                                                     <span
                                                         key={category}
@@ -262,7 +397,11 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                                             })}
                                         </div>
                                     ) : (
-                                        <p className="text-xs text-emerald-600 italic">No write permissions requested</p>
+                                        <p className="text-xs text-emerald-600 italic">
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.noWritePermissions'
+                                            ]()}
+                                        </p>
                                     )}
                                 </div>
                             </div>
@@ -271,7 +410,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                         {!selectedContract && config.contractUri && (
                             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                                 <p className="text-sm text-gray-500 italic">
-                                    Select a contract to view its permissions
+                                    {m[
+                                        'developerPortal.components.launchConfigStep.selectContractToView'
+                                    ]()}
                                 </p>
                             </div>
                         )}
@@ -286,11 +427,16 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                                 <Server className="w-5 h-5 text-emerald-600 flex-shrink-0" />
 
                                 <div className="text-sm text-emerald-800">
-                                    <p className="font-medium">Server-to-Server Integration</p>
+                                    <p className="font-medium">
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.serverToServer'
+                                        ]()}
+                                    </p>
 
                                     <p className="mt-1">
-                                        Use the Universal Inbox API to issue credentials directly from your server.
-                                        No additional configuration needed — see the integration guide for setup steps.
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.serverToServerDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -306,11 +452,16 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                                 <Sparkles className="w-5 h-5 text-violet-600 flex-shrink-0" />
 
                                 <div className="text-sm text-violet-800">
-                                    <p className="font-medium">AI Tutor Integration</p>
+                                    <p className="font-medium">
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.aiTutorIntegration'
+                                        ]()}
+                                    </p>
 
                                     <p className="mt-1">
-                                        AI Tutor apps let users select or create learning topics, then launch
-                                        your tutor app with the topic and user DID for personalized sessions.
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.aiTutorIntegrationDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -318,7 +469,8 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
 
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                AI Tutor URL <span className="text-red-500">*</span>
+                                {m['developerPortal.components.launchConfigStep.aiTutorUrl']()}{' '}
+                                <span className="text-red-500">*</span>
                             </label>
 
                             <input
@@ -336,13 +488,17 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                             )}
 
                             <p className="text-sm text-gray-400 mt-1">
-                                Users will be redirected to <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">{config.aiTutorUrl || 'https://yourtutor.com'}/chats?did=...&topic=...</code>
+                                {m['developerPortal.components.launchConfigStep.aiTutorUrlDesc']()}{' '}
+                                <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">
+                                    {config.aiTutorUrl || 'https://yourtutor.com'}
+                                    /chats?did=...&topic=...
+                                </code>
                             </p>
                         </div>
 
                         <ConsentFlowContractSelector
                             value={config.contractUri || ''}
-                            onChange={(uri) => updateConfig({ contractUri: uri })}
+                            onChange={uri => updateConfig({ contractUri: uri })}
                             onContractChange={setSelectedContract}
                             error={errors.contractUri}
                         />
@@ -352,13 +508,33 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                                 <Info className="w-5 h-5 text-gray-500 flex-shrink-0" />
 
                                 <div className="text-sm text-gray-600">
-                                    <p className="font-medium">How AI Tutor Launch Works</p>
+                                    <p className="font-medium">
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.howAiTutorWorks'
+                                        ]()}
+                                    </p>
 
                                     <ol className="mt-2 space-y-1 list-decimal list-inside text-xs">
-                                        <li>User clicks "Open" on your AI Tutor app</li>
-                                        <li>They select "New Topic" or "Revisit Topic"</li>
-                                        <li>User enters or selects a learning topic</li>
-                                        <li>App opens with <code className="bg-white px-1 py-0.5 rounded">?did=...&topic=...</code></li>
+                                        <li>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.aiTutorStep1'
+                                            ]()}
+                                        </li>
+                                        <li>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.aiTutorStep2'
+                                            ]()}
+                                        </li>
+                                        <li>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.aiTutorStep3'
+                                            ]()}
+                                        </li>
+                                        <li>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.aiTutorStep4'
+                                            ]()}
+                                        </li>
                                     </ol>
                                 </div>
                             </div>
@@ -375,13 +551,17 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
         <div className="space-y-6">
             <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2">
-                    <h2 className="text-xl font-semibold text-gray-700">Launch Configuration</h2>
+                    <h2 className="text-xl font-semibold text-gray-700">
+                        {m['developerPortal.components.launchConfigStep.title']()}
+                    </h2>
 
                     {data.launch_type && (
                         <button
                             onClick={() => setShowGuide(true)}
                             className="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
-                            title="View integration guide"
+                            title={m[
+                                'developerPortal.components.launchConfigStep.viewIntegrationGuide'
+                            ]()}
                         >
                             <HelpCircle className="w-5 h-5" />
                         </button>
@@ -389,7 +569,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                 </div>
 
                 <p className="text-sm text-gray-500 mt-1">
-                    Configure the technical details for your integration
+                    {m['developerPortal.components.launchConfigStep.description']()}
                 </p>
             </div>
 
@@ -404,10 +584,14 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                     </div>
 
                     <div className="flex-1">
-                        <h4 className="text-sm font-medium text-gray-800">Need help integrating?</h4>
+                        <h4 className="text-sm font-medium text-gray-800">
+                            {m['developerPortal.components.launchConfigStep.needHelpIntegrating']()}
+                        </h4>
 
                         <p className="text-xs text-gray-500 mt-0.5">
-                            View step-by-step developer guide with code examples
+                            {m[
+                                'developerPortal.components.launchConfigStep.needHelpIntegratingDesc'
+                            ]()}
                         </p>
                     </div>
 
@@ -424,7 +608,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                 <div className="flex items-center gap-2 mb-2">
                     <Code className="w-4 h-4 text-gray-400" />
 
-                    <span className="text-sm font-medium text-gray-500">Configuration Preview</span>
+                    <span className="text-sm font-medium text-gray-500">
+                        {m['developerPortal.components.launchConfigStep.configPreview']()}
+                    </span>
                 </div>
 
                 <pre className="p-4 bg-gray-800 text-gray-100 rounded-xl text-xs overflow-x-auto">
@@ -437,9 +623,15 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                 <div className="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h4 className="text-sm font-medium text-indigo-800">Test Your Integration</h4>
+                            <h4 className="text-sm font-medium text-indigo-800">
+                                {m[
+                                    'developerPortal.components.launchConfigStep.testYourIntegration'
+                                ]()}
+                            </h4>
                             <p className="text-xs text-indigo-600 mt-0.5">
-                                Preview your app and validate partner-connect API calls
+                                {m[
+                                    'developerPortal.components.launchConfigStep.testYourIntegrationDesc'
+                                ]()}
                             </p>
                         </div>
 
@@ -448,7 +640,7 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({ data, onChan
                             className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"
                         >
                             <Play className="w-4 h-4" />
-                            Preview App
+                            {m['developerPortal.components.launchConfigStep.previewApp']()}
                         </button>
                     </div>
                 </div>

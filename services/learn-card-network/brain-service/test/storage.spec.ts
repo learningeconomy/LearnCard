@@ -1,4 +1,5 @@
-import { JWE } from '@learncard/types';
+import { JWE, StoredCredentialEnvelope } from '@learncard/types';
+import cache from '@cache';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, Credential, Presentation } from '@models';
 import { minimalContract, minimalTerms } from './helpers/contract';
@@ -6,6 +7,24 @@ import { minimalContract, minimalTerms } from './helpers/contract';
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+
+const makeSdJwtEnvelope = (
+    overrides: Partial<StoredCredentialEnvelope> = {}
+): StoredCredentialEnvelope => ({
+    format: 'dc+sd-jwt',
+    data: 'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.payload.sig~',
+    ...overrides,
+});
+
+const makeMdocEnvelope = (
+    overrides: Partial<StoredCredentialEnvelope> = {}
+): StoredCredentialEnvelope => ({
+    format: 'mso_mdoc',
+    data: 'YWJjZGVmZ2hpams',
+    ...overrides,
+});
+
+const storageCacheKey = (uri: string) => `storage:${uri}`;
 
 describe('Storage', () => {
     beforeAll(async () => {
@@ -203,6 +222,123 @@ describe('Storage', () => {
             const resolvedContract = await promise;
 
             expect(resolvedContract).toEqual(minimalTerms);
+        });
+    });
+
+    describe('envelope', () => {
+        beforeAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
+        });
+
+        beforeEach(async () => {
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to store an envelope', async () => {
+            const envelope = makeSdJwtEnvelope();
+
+            await expect(noAuthClient.storage.store({ item: envelope })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userB.clients.partialAuth.storage.store({ item: envelope })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow storing an SD-JWT-VC envelope', async () => {
+            await expect(
+                userA.clients.fullAuth.storage.store({ item: makeSdJwtEnvelope() })
+            ).resolves.not.toThrow();
+        });
+
+        it('should allow storing an mDoc envelope (base64url binary)', async () => {
+            await expect(
+                userA.clients.fullAuth.storage.store({ item: makeMdocEnvelope() })
+            ).resolves.not.toThrow();
+        });
+
+        it('should roundtrip an SD-JWT-VC envelope unchanged', async () => {
+            const envelope = makeSdJwtEnvelope();
+
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+            const resolved = await userA.clients.fullAuth.storage.resolve({ uri });
+
+            expect(resolved).toEqual(envelope);
+        });
+
+        it('should roundtrip an mDoc envelope unchanged', async () => {
+            const envelope = makeMdocEnvelope();
+
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+            const resolved = await userA.clients.fullAuth.storage.resolve({ uri });
+
+            expect(resolved).toEqual(envelope);
+        });
+
+        it('should roundtrip a vc+sd-jwt legacy-format envelope unchanged', async () => {
+            const envelope = makeSdJwtEnvelope({ format: 'vc+sd-jwt' });
+
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+            const resolved = await userA.clients.fullAuth.storage.resolve({ uri });
+
+            expect(resolved).toEqual(envelope);
+        });
+
+        it('should preserve unknown passthrough fields on envelope roundtrip', async () => {
+            const envelope = {
+                ...makeSdJwtEnvelope(),
+                metadata: { issuedBy: 'partner-x', schemaVersion: 2 },
+                cnfHint: 'did:jwk:abc',
+            };
+
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+            const resolved = await userA.clients.fullAuth.storage.resolve({ uri });
+
+            expect(resolved).toEqual(envelope);
+        });
+
+        it('should roundtrip through Neo4j when the Redis cache is cold', async () => {
+            // The store mutation pre-populates Redis via setStorageForUri, so a
+            // resolve immediately after store always hits cache. Clearing the cache
+            // here forces the resolve to go through getCredentialById +
+            // JSON.parse(instance.credential), which is the path users hit when the
+            // cache TTL expires or Redis restarts.
+            const envelope = makeSdJwtEnvelope();
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+
+            await cache.delete([storageCacheKey(uri)]);
+
+            const resolved = await userA.clients.fullAuth.storage.resolve({ uri });
+
+            expect(resolved).toEqual(envelope);
+        });
+
+        it('should preserve `format` and `data` against ConsentFlowContract greedy-match on resolve', async () => {
+            // ConsentFlowContractValidator uses .prefault() on every field, so any
+            // object passes its Zod parse with defaults filling read/write. If the
+            // resolve output union puts contract before envelope, an envelope is
+            // silently parsed as an empty contract — format and data get stripped.
+            // This test pins the union-ordering invariant.
+            const envelope = makeSdJwtEnvelope();
+            const uri = await userA.clients.fullAuth.storage.store({ item: envelope });
+
+            const resolved = (await userA.clients.fullAuth.storage.resolve({ uri })) as Record<
+                string,
+                unknown
+            >;
+
+            expect(resolved.format).toBe('dc+sd-jwt');
+            expect(resolved.data).toBe(envelope.data);
+            expect(resolved.read).toBeUndefined();
+            expect(resolved.write).toBeUndefined();
         });
     });
 });

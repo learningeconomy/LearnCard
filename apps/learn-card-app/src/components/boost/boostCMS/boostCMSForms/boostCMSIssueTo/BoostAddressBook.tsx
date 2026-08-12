@@ -28,9 +28,12 @@ import BoostAddressBookContactList from './BoostAddressBookContactList';
 
 import { ModalTypes, useModal, UserProfilePicture, useWallet } from 'learn-card-base';
 import { BoostCMSIssueTo, BoostCMSState } from '../../../boost';
+import * as m from '../../../../../paraglide/messages.js';
 import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import BoostShareableCode from './BoostShareableCode';
+
+import { useBrandingConfig } from 'learn-card-base';
 
 export enum BoostAddressBookEditMode {
     edit = 'edit',
@@ -94,7 +97,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     // IE: issueTo
     // IE: admins
     collectionPropName = 'issueTo',
-    title = 'Issue To',
+    title = m['boost.cms.issueTo.title'](),
     hideBoostShareableCode = false,
 }) => {
     const { initWallet } = useWallet();
@@ -102,6 +105,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
+
+    const brandingConfig = useBrandingConfig();
 
     const [connections, setConnections] = useState<BoostCMSIssueTo[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
@@ -114,6 +119,19 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
     const issueTo = _issueTo ?? localIssueTo;
     const setIssueTo = _setIssueTo ?? setLocalIssueTo;
+
+    const setSavedCollection: React.Dispatch<React.SetStateAction<BoostCMSIssueTo[]>> = action => {
+        setState(prevState => {
+            const currentCollection = prevState?.[collectionKey] ?? [];
+            const nextCollection =
+                typeof action === 'function' ? action(currentCollection) : action;
+
+            return {
+                ...prevState,
+                [collectionKey]: nextCollection,
+            };
+        });
+    };
 
     useEffect(() => {
         if (state?.[collectionKey]?.length > 0) {
@@ -131,7 +149,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         showCloseButton: true,
         title: (
             <p className="font-poppins flex items-center font-medium justify-center text-xl w-full h-full text-grayscale-900">
-                Select Recipient
+                {m['boost.shortBoost.selectRecipient']()}
             </p>
         ),
         search,
@@ -149,7 +167,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         showCloseButton: false,
         title: (
             <p className="font-poppins font-medium flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                Who do you want to boost?
+                {m['boost.cms.issueTo.whoToBoost']()}
             </p>
         ),
         search,
@@ -236,14 +254,18 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                             <CaretLeft className="h-auto w-3 text-grayscale-900" />
                                         </button>
                                         <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
-                                            {contactCount ?? 0} Contacts
+                                            {m['contacts.contactsCount']({
+                                                count: contactCount ?? 0,
+                                            })}
                                         </h3>
                                     </IonCol>
 
                                     <div className="flex items-center justify-start w-full">
                                         <IonInput
                                             autocapitalize="on"
-                                            placeholder="Search LearnCard Network..."
+                                            placeholder={m['boost.cms.issueTo.searchNetwork']({
+                                                name: brandingConfig?.name || '',
+                                            })}
                                             value={search}
                                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
                                             onIonInput={e => handleSearch(e?.detail?.value ?? '')}
@@ -260,7 +282,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                     {loading && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full">
                             <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                            <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
                     {!loading && connections.length > 0 && search?.length === 0 && (
@@ -285,7 +307,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                 />
                             </div>
                             <p className="font-bold text-grayscale-800 mt-[20px]">
-                                No connections yet
+                                {m['contacts.noConnectionsYet']()}
                             </p>
                         </section>
                     )}
@@ -293,7 +315,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                     {isLoading && search?.length > 0 && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                             <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                            <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
                     {search?.length > 0 && searchResults?.length > 0 && !isLoading && (
@@ -307,11 +329,13 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             collectionPropName={collectionKey}
                         />
                     )}
-                    {!isLoading && (search?.length ?? 0) > 0 && (searchResults?.length ?? 0) === 0 && (
-                        <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                            <strong>No search results</strong>
-                        </section>
-                    )}
+                    {!isLoading &&
+                        (search?.length ?? 0) > 0 &&
+                        (searchResults?.length ?? 0) === 0 && (
+                            <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
+                                <strong>{m['boost.cms.issueTo.noSearchResults']()}</strong>
+                            </section>
+                        )}
                 </IonContent>
                 <IonFooter className="bg-white">
                     <IonToolbar className="w-full ion-no-border bg-white pt-5">
@@ -325,7 +349,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                         onClick={handleSaveContacts}
                                         className="relative flex flex-1 items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[8px] text-white font-poppins text-xl w-full shadow-lg normal font-medium text-center"
                                     >
-                                        Save
+                                        {m['common.save']()}
                                     </button>
                                 </IonCol>
                             </div>
@@ -429,7 +453,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         </div>
                         {collectionPropName === 'admins' && (
                             <p className="px-[16px] pb-6 font-poppins text-black text-base">
-                                Admins are granted permission to send and edit this Boost.
+                                {m['boost.cms.issueTo.adminsDescription']()}
                             </p>
                         )}
 
@@ -439,9 +463,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={state?.[collectionKey] ?? []}
                             mode={mode}
-                            _issueTo={issueTo}
-                            _setIssueTo={setIssueTo}
+                            _issueTo={state?.[collectionKey] ?? []}
+                            _setIssueTo={setSavedCollection}
                             collectionPropName={collectionKey}
+                            showRecipientAttachments={collectionKey === 'issueTo'}
                         />
                     </IonCol>
                 </IonRow>

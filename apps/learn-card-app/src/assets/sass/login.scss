@@ -8,16 +8,24 @@
 }
 
 .react-code-input:not(.small) {
+    display: flex !important;
+    justify-content: center;
+    gap: 8px;
+
+    @media (max-width: 380px) {
+        gap: 6px;
+    }
+
     & > input {
-        margin: 4px;
         width: 14%;
+        flex-grow: 1;
         border-radius: 12px;
         font-size: 24px;
         height: 100px;
-        padding-left: 24px;
-        background-color: #20c397;
+        text-align: center;
+        background-color: var(--ion-color-grayscale-100);
         color: #000000;
-        border: 1px solid #20c397;
+        border: 1px solid var(--ion-color-grayscale-100);
         outline: none;
         transition: background-color 0.3s ease-out;
 
@@ -27,12 +35,10 @@
         }
 
         @media (max-width: 479px) {
-            padding-left: 18px;
             width: 14%;
         }
 
         @media (max-width: 380px) {
-            padding-left: 12px;
             width: 12.25%;
         }
     }
@@ -78,9 +84,9 @@
         border-radius: 12px;
         font-size: 24px;
         height: 60px;
-        background-color: #20c397;
+        background-color: var(--ion-color-grayscale-100);
         color: #000000;
-        border: 1px solid #20c397;
+        border: 1px solid var(--ion-color-grayscale-100);
         outline: none;
         transition: background-color 0.3s ease-out;
 
@@ -167,7 +173,7 @@
     margin-top: 0;
 
     .PhoneInputInput {
-        background-color: #20c397;
+        background-color: rgba(255, 255, 255, 0.2);
         border: none;
         border-radius: 15px;
         color: white;
@@ -189,7 +195,7 @@
         display: flex;
         border: none;
         border-radius: 15px;
-        background-color: #20c397;
+        background-color: rgba(255, 255, 255, 0.2);
         align-items: center;
         justify-content: center;
         width: 20%;
@@ -373,12 +379,6 @@ ion-toast.login-link-warning-toast::part(button) {
         height: 40px;
         width: 40px;
         margin-left: 5px;
-    }
-
-    .react-code-input {
-        & > input {
-            margin: 7px;
-        }
     }
 }
 

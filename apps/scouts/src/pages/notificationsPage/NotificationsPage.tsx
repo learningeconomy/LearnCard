@@ -6,12 +6,16 @@ import { IonContent, IonPage, IonCol, IonRow } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 import NewNotificationsList from '../../components/notifications/notificationsV2/NewNotificationsList';
 import NotificationsSubHeader from '../../components/notifications/notifications-subheader/NotificationsSubheader';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('notifications-page');
 
 import {
     DEFAULT_ACTIVE_OPTIONS,
     DEFAULT_ACTIVE_FILTER,
     DEFAULT_ARCHIVE_OPTIONS,
     DEFAULT_ARCHIVE_FILTER,
+    DEFAULT_LCA_NOTIFICATIONS_ENDPOINT,
+    DEFAULT_SCOUTPASS_NOTIFICATIONS_ENDPOINT,
     getNotificationsEndpoint,
     useWallet,
     BrandingEnum,
@@ -33,18 +37,23 @@ const NotificationNavTabsContainer: React.FC<{
         try {
             const wallet = await initWallet();
             const myProfile = await wallet.invoke.getProfile();
+            const notificationsEndpoint = getNotificationsEndpoint();
+            const profileNotificationsWebhook = myProfile?.notificationsWebhook?.trim?.();
+            const isKnownAppEndpoint = [
+                DEFAULT_LCA_NOTIFICATIONS_ENDPOINT,
+                DEFAULT_SCOUTPASS_NOTIFICATIONS_ENDPOINT,
+            ].includes(profileNotificationsWebhook ?? '');
 
             if (
-                !myProfile?.notificationsWebhook ||
-                myProfile?.notificationsWebhook?.trim?.() === ''
+                !profileNotificationsWebhook ||
+                (isKnownAppEndpoint && profileNotificationsWebhook !== notificationsEndpoint)
             ) {
-                const notificationsEndpoint = getNotificationsEndpoint();
                 await wallet.invoke.updateProfile({
                     notificationsWebhook: notificationsEndpoint,
                 });
             }
         } catch (e) {
-            console.warn('Error checking user notifications endpoint', e);
+            log.warn('Error checking user notifications endpoint', e);
         }
     };
 

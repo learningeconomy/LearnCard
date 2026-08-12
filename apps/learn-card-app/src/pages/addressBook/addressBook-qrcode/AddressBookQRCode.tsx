@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
@@ -11,6 +12,7 @@ import { IonCol, IonRow, IonPage } from '@ionic/react';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;
@@ -37,14 +39,14 @@ const AddressBookQRCode: React.FC<{
 
         try {
             await Clipboard.write({
-                string: `https://learncard.app/connect?did=${wallet?.id?.did()}`,
+                string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(m['contacts.linkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(m['contacts.linkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -56,9 +58,9 @@ const AddressBookQRCode: React.FC<{
 
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['contacts.addContactDesc'](),
                 text: '',
-                url: `https://learncard.app/connect?did=${wallet?.id?.did()}`,
+                url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
                 dialogTitle: '',
             });
         } else {

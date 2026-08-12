@@ -1,10 +1,13 @@
 import React from 'react';
 import { BoostUserTypeEnum, CredentialCategory, categoryMetadata, useModal } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
-import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
+import { useStylePackRegistry } from '../../../registries/useStylePackRegistry';
 import { getDefaultAchievementTypeImage } from '../boostHelpers';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
 import CredentialGeneralPlus from '../../svgs/CredentialGeneralPlus';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
+import * as m from '../../../paraglide/messages.js';
 
 type LearnCardTemplateListItemProps = {
     categoryType: CredentialCategory;
@@ -19,6 +22,7 @@ const LearnCardTemplateListItem: React.FC<LearnCardTemplateListItemProps> = ({
 }) => {
     const history = useHistory();
     const { closeAllModals } = useModal();
+    const brandingConfig = useBrandingConfig();
 
     const baseLink = `/boost?boostUserType=${BoostUserTypeEnum.someone}&boostCategoryType=${categoryType}&boostSubCategoryType=${subType}`;
     let link = baseLink;
@@ -26,8 +30,7 @@ const LearnCardTemplateListItem: React.FC<LearnCardTemplateListItemProps> = ({
         link = `${baseLink}&otherUserProfileId=${userToBoostProfileId}`;
     }
 
-    const { data: boostAppearanceBadgeList, isLoading: stylePackLoading } =
-        useLCAStylesPackRegistry();
+    const { data: boostAppearanceBadgeList, isLoading: stylePackLoading } = useStylePackRegistry();
 
     const badgeThumbnail = getDefaultAchievementTypeImage(
         categoryType,
@@ -55,7 +58,7 @@ const LearnCardTemplateListItem: React.FC<LearnCardTemplateListItemProps> = ({
                     {achievementTypeDisplay}
                 </h3>
                 <p className="text-[13.5px] font-[600] text-grayscale-700 line-clamp-1">
-                    LearnCard Template
+                    {m['boost.template.brandTemplate']({ brand: brandingConfig?.name })}
                 </p>
             </div>
             <button

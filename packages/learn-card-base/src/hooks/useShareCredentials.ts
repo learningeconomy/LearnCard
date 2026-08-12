@@ -20,6 +20,9 @@ export const VC_TYPE = {
 
 export type VcType = (typeof VC_TYPE)[keyof typeof VC_TYPE];
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-share-credentials');
+
 export const useShareCredentials = (
     preSelectedCredentials?: VC[],
     skipReloadCredentials: boolean = false,
@@ -133,8 +136,9 @@ export const useShareCredentials = (
         if (credential.id && credential.id !== 'http://example.com/credentials/3527') {
             return `${credential.id}`;
         } else {
-            return `${credential.id}-${credential.proof?.proofValue}-${credential.issuanceDate}${moreUniqueness ? `-${moreUniqueness}` : ''
-                }`;
+            return `${credential.id}-${credential.proof?.proofValue}-${credential.issuanceDate}${
+                moreUniqueness ? `-${moreUniqueness}` : ''
+            }`;
         }
     };
 
@@ -242,7 +246,7 @@ export const useShareCredentials = (
                 selectedCredsStore.set.state(() => initialSyncState);
                 setLoading(false);
             } catch (e) {
-                console.log('///ERROR GETTING VCS FROM WALLET', e);
+                log.debug('///ERROR GETTING VCS FROM WALLET', e);
                 setLoading(false);
                 setErrorMessage(`Error loading credentials from wallet. Please try again. ${e}`);
             }

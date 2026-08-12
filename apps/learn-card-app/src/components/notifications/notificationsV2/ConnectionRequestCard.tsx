@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 // import X from '../../../assets/images/X.svg';
 import X from 'learn-card-base/svgs/X';
@@ -10,7 +11,11 @@ import ArrowArcLeft from '../../../assets/images/ArrowArcLeft.svg';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
-import { UserNotificationTypeStyles, UserNotificationTypeEnum } from './types';
+import {
+    UserNotificationTypeStyles,
+    UserNotificationTypeEnum,
+    notificationCardStyles,
+} from './types';
 
 type ConnectionRequestCardProps = {
     title: string;
@@ -41,7 +46,6 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
     handleRead,
     cardLoading,
 }) => {
-    const [isAccepted, setisAccepted] = useState<boolean>(acceptStatus);
     const [isRead, setisRead] = useState<boolean>(notification?.read);
 
     // Ref for the element that we want to detect whether on screen
@@ -49,24 +53,15 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
 
     const onScreen: boolean = useOnScreen<HTMLDivElement>(ref, '-130px');
 
-    useEffect(() => {
-        setisAccepted(acceptStatus);
-    }, [acceptStatus]);
-
     const { textStyles, viewButtonStyles, claimedButtonStyles, unclaimedButtonStyles, typeText } =
         UserNotificationTypeStyles[UserNotificationTypeEnum.ConnectionRequest];
 
-    const claimButtonStyles = isAccepted ? claimedButtonStyles : unclaimedButtonStyles;
+    const claimButtonStyles = acceptStatus ? claimedButtonStyles : unclaimedButtonStyles;
 
-    let buttonText: string = '';
+    const buttonText: string = acceptStatus ? m['alerts.accepted']() : m['common.accept']();
 
-    if (isAccepted) {
-        buttonText = 'Accepted';
-    } else if (!isAccepted) {
-        buttonText = 'Accept';
-    }
-
-    const handleAcceptConnection = async () => {
+    const handleAcceptConnection = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
         if (!acceptStatus && !isLoading) {
             await handleButtonClick?.();
         }
@@ -87,7 +82,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
         <div
             onClick={handleReadStatus}
             ref={ref}
-            className={`flex my-[15px] min-justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white ${className}`}
+            className={`${notificationCardStyles.shell} ${className}`}
         >
             {!isRead && !isLoading && (
                 <div className="notification-count-mobile unread-indicator-dot" />
@@ -110,19 +105,19 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
             <div className="flex flex-col justify-center items-start relative w-full">
                 <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
                     <h4
-                        className="cursor-pointer font-bold tracking-wide line-clamp-2 text-black text-[14px] pr-[20px] notification-card-title"
+                        className={`cursor-pointer ${notificationCardStyles.title}`}
                         data-testid="notification-title"
                     >
                         {title}
                     </h4>
                     <p
-                        className={`font-semibold p-0 mt-[10px] leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text ${textStyles}`}
+                        className={`${notificationCardStyles.meta} mt-[10px] ${textStyles}`}
                         data-testid="notification-type"
                     >
                         {typeText}{' '}
                         {issueDate && (
                             <span
-                                className="text-grayscale-600 normal-case font-normal text-[12px] notification-card-type-issue-date"
+                                className={notificationCardStyles.date}
                                 data-testid="notification-cred-issue-date"
                             >
                                 • {issueDate}
@@ -132,17 +127,17 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
 
                     <div className="relative flex items-center justify-between mt-3 w-full">
                         <button
-                            className={`notification-claim-btn flex items-center mr-[15px] w-[143px] justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
+                            className={`${notificationCardStyles.primaryButton} mr-[15px] w-[143px] ${claimButtonStyles}`}
                             onClick={handleAcceptConnection}
                             name="notification-claim-button"
                         >
-                            {isLoading ? 'Loading...' : buttonText}
-                            {isAccepted && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
+                            {isLoading ? m['common.loading']() : buttonText}
+                            {acceptStatus && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                         </button>
 
                         <button
                             onClick={handleCancelClick}
-                            className={`rounded-[40px] flex items-center justify-center border-[1px] border-grayscale-200 border-solid h-[42px] w-[42px] bg-white font-semibold mr-2 p-[0px] tracking-wide`}
+                            className={`${notificationCardStyles.iconButton} mr-2`}
                             name="notification-view-button"
                         >
                             {!isArchived && (

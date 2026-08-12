@@ -4,7 +4,12 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 import { useVerifyContactMethodWithProofOfLogin } from 'learn-card-base/react-query/mutations/firebase';
 import { auth } from '../firebase/firebase';
-import { useIsLoggedIn, useIsCurrentUserLCNUser, currentUserStore, firebaseAuthStore } from 'learn-card-base';
+import {
+    useIsLoggedIn,
+    useIsCurrentUserLCNUser,
+    currentUserStore,
+    firebaseAuthStore,
+} from 'learn-card-base';
 import { captureException } from '@sentry/react';
 import autoVerifyStore from '../stores/autoVerifyStore';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -54,7 +59,13 @@ export const useAutoVerifyContactMethodWithProofOfLogin = () => {
         if (inFlightRef.current) return;
 
         (async () => {
-            if (isLoading || !isLCNUser || !isLoggedIn || !flags?.enableAutoVerifyContactMethodWithProofOfLogin) return;
+            if (
+                isLoading ||
+                !isLCNUser ||
+                !isLoggedIn ||
+                !flags?.enableAutoVerifyContactMethodWithProofOfLogin
+            )
+                return;
             try {
                 inFlightRef.current = true;
 
@@ -105,7 +116,7 @@ export const useAutoVerifyContactMethodWithProofOfLogin = () => {
                 inFlightRef.current = false;
             }
         })();
-    }, [isLoggedIn, isLCNUser, firebaseAuthUser]);
+    }, [isLoggedIn, isLCNUser, isLoading, firebaseAuthUser, flags, currentUser]);
 };
 
 export default useAutoVerifyContactMethodWithProofOfLogin;

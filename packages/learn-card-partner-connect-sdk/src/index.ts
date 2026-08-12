@@ -18,6 +18,8 @@
  * ```
  */
 
+import { PartnerConnectError } from './types';
+import { MockHost } from './mock-host';
 import type {
     PartnerConnectOptions,
     IdentityResponse,
@@ -30,6 +32,22 @@ import type {
     ConsentResponse,
     RequestConsentOptions,
     TemplateIssueResponse,
+    CheckCredentialInput,
+    CheckCredentialResponse,
+    CheckIssuanceStatusInput,
+    TemplateIssuanceStatusResponse,
+    GetTemplateRecipientsInput,
+    TemplateRecipientsResponse,
+    RequestLearnerContextOptions,
+    LearnerContextResponse,
+    SyncStatus,
+    SendAiSessionCredentialInput,
+    SendAiSessionCredentialResponse,
+    AppNotificationInput,
+    AppNotificationResponse,
+    IncrementCounterResponse,
+    GetCounterResponse,
+    GetCountersResponse,
     AppEvent,
     AppEventResponse,
     LearnCardError,
@@ -38,7 +56,75 @@ import type {
     PendingRequest,
 } from './types';
 
+// Re-export the class as a value plus all type exports.
+// `MockHost` is an internal implementation detail (constructed via
+// `createPartnerConnect({ mock, mockOptions })`); only its options type is public.
+export { PartnerConnectError } from './types';
 export type * from './types';
+
+/** Maximum time to poll for sync completion before giving up (10 minutes) */
+const SYNC_STATUS_POLL_MAX_DURATION_MS = 10 * 60 * 1000;
+
+/** Default wait for the host presence probe (see `hostProbeTimeout`). */
+const DEFAULT_HOST_PROBE_TIMEOUT_MS = 1500;
+
+/**
+ * Whether a hostname is a local development host. `mock: 'auto'` only ever
+ * activates on these, so a standalone page on a production or preview origin
+ * never silently fabricates identity, consent, or credentials.
+ */
+const isLocalDevHost = (hostname: string): boolean =>
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    hostname === '::1' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.local');
+
+/**
+ * Who is on the other side of our iframe boundary, as far as we can tell:
+ * - 'learncard': ancestor origin matches a configured host pattern — real host.
+ * - 'foreign': ancestor origin is known and matches nothing — an unrelated
+ *   wrapper (Storybook manager on another origin, preview shells, …). No
+ *   LearnCard host will ever answer.
+ * - 'ambiguous': not embedded-verifiable — the ancestor origin is unavailable
+ *   (Firefox) or only matches the native-app localhost heuristic, which any
+ *   local wrapper (e.g. Storybook on localhost:6006) also matches.
+ */
+type ParentKind = 'learncard' | 'foreign' | 'ambiguous';
+
+/**
+ * Detect whether the current page is running inside an embedded iframe.
+ *
+ * Returns `true` when the SDK is embedded (e.g. inside the LearnCard host) and
+ * `false` when running as a standalone top-level page. Safe to call in any
+ * environment: returns `false` during server-side rendering (no `window`).
+ *
+ * Partner apps can use this to change behavior without writing their own frame
+ * detection — for example, showing a "Open in LearnCard" prompt when standalone.
+ *
+ * @example
+ * ```typescript
+ * import { isEmbedded } from '@learncard/partner-connect';
+ *
+ * if (isEmbedded()) {
+ *   // Running inside LearnCard — use the SDK against the real host.
+ * } else {
+ *   // Standalone — show a preview banner, or rely on automatic mock mode.
+ * }
+ * ```
+ */
+export function isEmbedded(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    try {
+        // A cross-origin parent still lets us compare WindowProxy references;
+        // when access is blocked entirely the throw means we ARE embedded.
+        return window.self !== window.top;
+    } catch {
+        return true;
+    }
+}
 
 /**
  * LearnCard Partner Connect SDK class
@@ -46,6 +132,26 @@ export type * from './types';
 export class PartnerConnect {
     /** Default host origin (security anchor) */
     public static readonly DEFAULT_HOST_ORIGIN = 'https://learncard.app';
+
+    /**
+     * Built-in list of LearnCard-managed tenant origins.
+     *
+     * These are merged with the partner app's configured `hostOrigin` whitelist
+     * unless `disableDefaultTenants: true` is passed. This lets a partner app
+     * run inside any current or future LearnCard tenant (staging, preview,
+     * VetPass, etc.) without needing a re-deploy each time a new tenant is
+     * onboarded.
+     *
+     * Patterns follow the same rules as user-supplied `hostOrigin` entries:
+     * `*` is a wildcard for one or more DNS labels in the host portion.
+     */
+    public static readonly DEFAULT_TRUSTED_TENANTS: readonly string[] = [
+        'https://learncard.app',
+        'https://*.learncard.app',
+        'https://*.learncard.ai',
+        'https://vetpass.app',
+        'https://*.vetpass.app',
+    ];
 
     private hostOrigins: string[] = ['https://learncard.app'];
     private activeHostOrigin: string = 'https://learncard.app';
@@ -55,28 +161,220 @@ export class PartnerConnect {
     private pendingRequests: Map<string, PendingRequest>;
     private messageListener: ((event: MessageEvent) => void) | null = null;
     private isInitialized = false;
+    private syncCompleteCallbacks: Set<(status: SyncStatus) => void> = new Set();
+    private syncStatusPollId: ReturnType<typeof setInterval> | null = null;
+    private mockHost: MockHost | null = null;
+    private embedded = false;
+    private warnedNoHost = false;
+    private hostProbeTimeout: number = DEFAULT_HOST_PROBE_TIMEOUT_MS;
+    /** Whether a real LearnCard host is believed to be listening. */
+    private hostReachable = false;
+    /** Pending probe decision; requests queue behind it when set. */
+    private activation: Promise<void> | null = null;
 
     constructor(options?: PartnerConnectOptions) {
         // Normalize hostOrigin to an array for whitelist validation
-        const hostOrigin = options?.hostOrigin || PartnerConnect.DEFAULT_HOST_ORIGIN;
-        this.hostOrigins = Array.isArray(hostOrigin) ? hostOrigin : [hostOrigin];
+        const hostOrigin = options?.hostOrigin ?? PartnerConnect.DEFAULT_HOST_ORIGIN;
+        const configured = Array.isArray(hostOrigin) ? hostOrigin : [hostOrigin];
+
+        // Merge with the built-in tenant list unless the caller explicitly
+        // opted out. De-duplicate while preserving order so the caller's
+        // first entry remains the default active origin.
+        const disableDefaults = options?.disableDefaultTenants === true;
+        const merged = disableDefaults
+            ? [...configured]
+            : [...configured, ...PartnerConnect.DEFAULT_TRUSTED_TENANTS];
+        this.hostOrigins = Array.from(new Set(merged));
 
         this.protocol = options?.protocol || 'LEARNCARD_V1';
         this.requestTimeout = options?.requestTimeout || 30000;
         this.allowNativeAppOrigins = options?.allowNativeAppOrigins ?? true;
+        this.hostProbeTimeout = options?.hostProbeTimeout ?? DEFAULT_HOST_PROBE_TIMEOUT_MS;
         this.pendingRequests = new Map();
         this.configureActiveOrigin();
         this.setupMessageListener();
+        this.embedded = isEmbedded();
+
+        this.configureMockActivation(options);
+    }
+
+    /**
+     * Decide whether this instance talks to a real host, simulates one, or
+     * fails fast — the resolution of the `mock` option against the runtime
+     * embed context. See the `mock` option docs for the contract.
+     */
+    private configureMockActivation(options?: PartnerConnectOptions): void {
+        const mockSetting = options?.mock ?? 'auto';
+
+        if (mockSetting === true) {
+            this.mockHost = new MockHost(options?.mockOptions);
+            return;
+        }
+
+        // Whether this origin may fall back to mocking when no host answers:
+        // 'standalone' anywhere, 'auto' only on local dev hosts (a standalone
+        // production page must never fabricate identity or consent), false
+        // nowhere.
+        const canAutoMock =
+            mockSetting === 'standalone' || (mockSetting === 'auto' && this.isLocalDevContext());
+
+        if (!this.embedded) {
+            // Standalone page: no host can answer. hostReachable stays false,
+            // so un-mocked calls fail fast with LC_NOT_EMBEDDED.
+            if (canAutoMock) {
+                this.mockHost = new MockHost(options?.mockOptions);
+            }
+            return;
+        }
+
+        switch (this.classifyParent()) {
+            case 'learncard':
+                this.hostReachable = true;
+                return;
+
+            case 'foreign':
+                // Known non-LearnCard wrapper (e.g. cross-origin Storybook):
+                // never postMessage into the 30s timeout. Mock where allowed,
+                // fail fast everywhere else.
+                if (canAutoMock) {
+                    this.mockHost = new MockHost(options?.mockOptions);
+                }
+                return;
+
+            case 'ambiguous':
+                if (canAutoMock) {
+                    // Could be a real (local/native) LearnCard host or an
+                    // unrelated wrapper. Ask: if the host answers a cheap
+                    // side-effect-free probe, stay real; otherwise mock.
+                    this.hostReachable = true;
+                    this.activation = this.probeHost(options);
+                } else {
+                    // Mocking is off the table here anyway — preserve the
+                    // long-standing assumption that an unverifiable parent
+                    // is the real host.
+                    this.hostReachable = true;
+                }
+                return;
+        }
+    }
+
+    private isLocalDevContext(): boolean {
+        if (typeof window === 'undefined') return false;
+        return isLocalDevHost(window.location.hostname);
+    }
+
+    private classifyParent(): ParentKind {
+        const ancestorOrigin = this.readAncestorOrigin();
+
+        if (!ancestorOrigin) return 'ambiguous';
+
+        // Trust requires an explicit configured pattern match. The native-app
+        // heuristic (any localhost origin) is NOT enough to call the parent
+        // LearnCard — Storybook's manager frame matches it too.
+        if (this.matchesConfiguredOrigin(ancestorOrigin)) return 'learncard';
+        if (this.allowNativeAppOrigins && this.isOriginNativeApp(ancestorOrigin)) {
+            return 'ambiguous';
+        }
+
+        return 'foreign';
+    }
+
+    private matchesConfiguredOrigin(origin: string): boolean {
+        return this.hostOrigins.some(entry => PartnerConnect.matchesOriginPattern(origin, entry));
+    }
+
+    /**
+     * One-time host presence probe for the ambiguous-parent case. Sends a
+     * side-effect-free `GET_SYNC_STATUS`; an answer proves a live LearnCard
+     * host (responses are origin-checked), a timeout means nobody is
+     * listening and the mock takes over. Requests issued while the probe is
+     * in flight queue behind the decision instead of racing it.
+     */
+    private probeHost(options?: PartnerConnectOptions): Promise<void> {
+        return this.postToHost('GET_SYNC_STATUS', undefined, this.hostProbeTimeout)
+            .then(() => {
+                this.activation = null;
+            })
+            .catch(() => {
+                this.activation = null;
+                if (this.isInitialized) {
+                    this.hostReachable = false;
+                    this.mockHost = new MockHost(options?.mockOptions);
+                    console.warn(
+                        '[LearnCard SDK] Embedded in a frame, but no LearnCard host answered ' +
+                            `within ${this.hostProbeTimeout}ms — activating standalone mock mode. ` +
+                            'If a real local host was just slow to boot, raise `hostProbeTimeout`.'
+                    );
+                }
+            });
+    }
+
+    /**
+     * Whether this SDK instance is running inside an embedded iframe.
+     * Instance-level convenience wrapper around the standalone {@link isEmbedded}.
+     */
+    public isEmbedded(): boolean {
+        return isEmbedded();
+    }
+
+    /**
+     * Whether the current page is running inside an embedded iframe.
+     * Static convenience wrapper around the standalone {@link isEmbedded}.
+     */
+    public static isEmbedded(): boolean {
+        return isEmbedded();
+    }
+
+    /**
+     * Whether this instance is currently simulating the LearnCard host locally
+     * instead of talking to a real host over `postMessage`.
+     */
+    public isMocked(): boolean {
+        return this.mockHost !== null;
     }
 
     /**
      * Configure the active host origin using the following hierarchy:
-     * 1. Check for `lc_host_override` query parameter (for staging/testing)
-     * 2. Fall back to first configured origin
-     * 3. Fall back to DEFAULT_HOST_ORIGIN
+     * 1. `window.location.ancestorOrigins[0]` (when supported) — the browser's
+     *    view of who our parent frame is. Cannot be forged by a malicious
+     *    `lc_host_override` query param and therefore takes precedence.
+     * 2. `?lc_host_override=<origin>` query param (for staging / cross-tenant).
+     * 3. `sessionStorage` value saved from a previously-validated override.
+     * 4. First configured origin.
+     * 5. `DEFAULT_HOST_ORIGIN`.
      *
-     * This origin will be used for all outgoing messages and incoming message validation.
+     * When a valid override is found in the query parameter, it is persisted
+     * to sessionStorage so subsequent in-iframe navigations in the same tab
+     * continue to use the same active origin.
      */
+    private static readonly SESSION_STORAGE_KEY = 'lc_host_override';
+
+    /**
+     * Read `window.location.ancestorOrigins[0]` without throwing if the
+     * property is unavailable (Firefox) or the list is empty (top-level
+     * context, e.g. running outside of an iframe).
+     */
+    private readAncestorOrigin(): string | null {
+        if (typeof window === 'undefined') return null;
+
+        try {
+            const ancestors = window.location.ancestorOrigins;
+
+            if (ancestors && ancestors.length > 0) {
+                const parent = ancestors[0];
+
+                if (typeof parent === 'string' && parent.length > 0) {
+                    return parent;
+                }
+            }
+        } catch {
+            // `ancestorOrigins` is a WebKit/Blink extension; accessing it
+            // under unusual conditions can throw. Treat as unavailable.
+        }
+
+        return null;
+    }
+
     private configureActiveOrigin(): void {
         if (typeof window === 'undefined') {
             this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
@@ -84,33 +382,74 @@ export class PartnerConnect {
         }
 
         try {
-            // Check for lc_host_override query parameter
+            const ancestorOrigin = this.readAncestorOrigin();
             const urlParams = new URLSearchParams(window.location.search);
             const hostOverride = urlParams.get('lc_host_override');
 
-            if (hostOverride) {
-                // Validate override against whitelist (if provided)
-                if (this.hostOrigins.length > 0 && !this.isOriginInWhitelist(hostOverride)) {
+            // Priority 1: the real parent origin as reported by the browser.
+            // This is unspoofable by query-param manipulation, so if it is
+            // trusted we use it and ignore any override. If both are present
+            // and disagree, we log and prefer the ancestor.
+            if (ancestorOrigin && this.isOriginInWhitelist(ancestorOrigin)) {
+                if (hostOverride && hostOverride !== ancestorOrigin) {
                     console.warn(
-                        '[LearnCard SDK] lc_host_override value is not in the configured whitelist:',
-                        hostOverride,
-                        'Allowed:',
-                        this.hostOrigins
+                        '[LearnCard SDK] lc_host_override does not match the real parent origin; preferring parent.',
+                        { override: hostOverride, parent: ancestorOrigin }
                     );
-                    this.activeHostOrigin =
-                        this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
-                } else {
-                    this.activeHostOrigin = hostOverride;
-                    console.log('[LearnCard SDK] Using lc_host_override:', hostOverride);
                 }
-            } else {
-                // Use first configured origin or default
-                this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
-                console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
+
+                this.activeHostOrigin = ancestorOrigin;
+                this.persistOverride(ancestorOrigin);
+                console.log('[LearnCard SDK] Using parent origin:', ancestorOrigin);
+                return;
             }
+
+            // Priority 2: lc_host_override query parameter.
+            if (hostOverride) {
+                if (this.isOriginInWhitelist(hostOverride)) {
+                    this.activeHostOrigin = hostOverride;
+                    this.persistOverride(hostOverride);
+                    console.log('[LearnCard SDK] Using lc_host_override:', hostOverride);
+                    return;
+                }
+
+                console.warn(
+                    '[LearnCard SDK] lc_host_override value is not in the configured whitelist:',
+                    hostOverride,
+                    'Allowed:',
+                    this.hostOrigins
+                );
+            }
+
+            // Priority 3: a previously-validated override from this tab session.
+            let storedOverride: string | null = null;
+
+            try {
+                storedOverride = sessionStorage.getItem(PartnerConnect.SESSION_STORAGE_KEY);
+            } catch {
+                // sessionStorage may be unavailable (e.g. sandboxed iframes)
+            }
+
+            if (storedOverride && this.isOriginInWhitelist(storedOverride)) {
+                this.activeHostOrigin = storedOverride;
+                console.log('[LearnCard SDK] Using stored lc_host_override:', storedOverride);
+                return;
+            }
+
+            // Priority 4/5: fall back to the first configured origin or default.
+            this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+            console.log('[LearnCard SDK] Using configured origin:', this.activeHostOrigin);
         } catch (error) {
             console.error('[LearnCard SDK] Error configuring active origin:', error);
             this.activeHostOrigin = this.hostOrigins[0] || PartnerConnect.DEFAULT_HOST_ORIGIN;
+        }
+    }
+
+    private persistOverride(origin: string): void {
+        try {
+            sessionStorage.setItem(PartnerConnect.SESSION_STORAGE_KEY, origin);
+        } catch {
+            // sessionStorage may be unavailable (e.g. sandboxed iframes)
         }
     }
 
@@ -125,13 +464,101 @@ export class PartnerConnect {
     }
 
     /**
-     * Check if an origin is in the configured whitelist
+     * Internal placeholder substituted in for `*` so that `new URL(...)` can
+     * parse a wildcard pattern. Chosen to be a syntactically-valid DNS label
+     * that cannot collide with a real hostname.
+     */
+    private static readonly WILDCARD_PLACEHOLDER = '__lc_wildcard__';
+
+    /** `*` (any number of occurrences) for replacement in the pattern. */
+    private static readonly WILDCARD_REGEX = /\*/g;
+
+    /** The required leading-label form a wildcard pattern must take. */
+    private static readonly WILDCARD_LEADING_PREFIX = `${PartnerConnect.WILDCARD_PLACEHOLDER}.`;
+
+    /**
+     * Check whether a candidate origin matches a configured whitelist entry.
+     *
+     * Supports exact matches and wildcard patterns. A wildcard entry has the
+     * form `<protocol>://*.<domain>` and matches any origin with the same
+     * protocol, same port, and a host ending in `.<domain>` with at least
+     * one non-empty DNS label in place of the `*`.
+     *
+     * Examples with pattern `https://*.learncard.app`:
+     * - `https://staging.learncard.app`      → match
+     * - `https://pr-1.preview.learncard.app` → match
+     * - `https://learncard.app`              → no match (no subdomain)
+     * - `http://staging.learncard.app`       → no match (protocol mismatch)
+     * - `https://learncard.app.attacker.com` → no match (suffix mismatch)
+     *
+     * Exposed as a public static so it can be unit-tested directly without
+     * standing up a full SDK instance.
+     */
+    public static matchesOriginPattern(candidate: string, pattern: string): boolean {
+        if (candidate === pattern) return true;
+        if (!pattern.includes('*')) return false;
+
+        let patternUrl: URL;
+        let candidateUrl: URL;
+
+        try {
+            // Replace the wildcard labels with a syntactically-valid host so
+            // URL() can parse it; we validate the real shape ourselves below.
+            patternUrl = new URL(
+                pattern.replace(PartnerConnect.WILDCARD_REGEX, PartnerConnect.WILDCARD_PLACEHOLDER)
+            );
+            candidateUrl = new URL(candidate);
+        } catch {
+            return false;
+        }
+
+        // Protocol, port, and (empty) path-origin must match exactly.
+        if (patternUrl.protocol !== candidateUrl.protocol) return false;
+        if (patternUrl.port !== candidateUrl.port) return false;
+
+        const patternHost = patternUrl.hostname;
+        const candidateHost = candidateUrl.hostname;
+
+        // Only allow wildcards as leading label(s): `*.foo.bar`, not `a*.b` or
+        // `foo.*.bar`. This keeps the matching rule predictable and safe.
+        if (!patternHost.startsWith(PartnerConnect.WILDCARD_LEADING_PREFIX)) return false;
+
+        const patternSuffix = patternHost.slice(PartnerConnect.WILDCARD_LEADING_PREFIX.length);
+
+        if (patternSuffix.length === 0) return false;
+        // No further wildcards anywhere else in the pattern.
+        if (patternSuffix.includes(PartnerConnect.WILDCARD_PLACEHOLDER)) return false;
+
+        // Candidate must end with `.<suffix>` and have at least one label
+        // before the suffix (the portion that the `*` stands in for).
+        const required = '.' + patternSuffix;
+
+        if (!candidateHost.endsWith(required)) return false;
+
+        const prefix = candidateHost.slice(0, candidateHost.length - required.length);
+
+        if (prefix.length === 0) return false;
+        // Labels in the prefix must themselves be non-empty (no `..`).
+        if (prefix.startsWith('.') || prefix.endsWith('.')) return false;
+        if (prefix.split('.').some(label => label.length === 0)) return false;
+
+        return true;
+    }
+
+    /**
+     * Check if an origin is in the effective whitelist (exact origins +
+     * wildcard patterns + optional native-app origins).
      */
     private isOriginInWhitelist(origin: string): boolean {
-        return (
-            this.hostOrigins.includes(origin) ||
-            (this.allowNativeAppOrigins && this.isOriginNativeApp(origin))
-        );
+        if (!origin) return false;
+
+        for (const entry of this.hostOrigins) {
+            if (PartnerConnect.matchesOriginPattern(origin, entry)) return true;
+        }
+
+        if (this.allowNativeAppOrigins && this.isOriginNativeApp(origin)) return true;
+
+        return false;
     }
 
     /**
@@ -170,6 +597,14 @@ export class PartnerConnect {
                 return;
             }
 
+            // Only responses may settle a pending request. Without this, an
+            // echoed/looped-back copy of our own outbound request (same
+            // requestId, no type) would evict the entry and leave the caller
+            // hanging with its timeout already cleared.
+            if (data.type !== 'SUCCESS' && data.type !== 'ERROR') {
+                return;
+            }
+
             // Look up the pending request
             const pending = this.pendingRequests.get(data.requestId);
             if (!pending) {
@@ -185,7 +620,12 @@ export class PartnerConnect {
                 pending.resolve(data.data);
             } else if (data.type === 'ERROR') {
                 pending.reject(
-                    data.error || { code: 'UNKNOWN_ERROR', message: 'An unknown error occurred' }
+                    PartnerConnectError.from(
+                        data.error || {
+                            code: 'UNKNOWN_ERROR',
+                            message: 'An unknown error occurred',
+                        }
+                    )
                 );
             }
         };
@@ -202,29 +642,76 @@ export class PartnerConnect {
     }
 
     /**
-     * Send a message to the parent window and return a Promise
+     * Send a message to the parent window and return a Promise. While a host
+     * presence probe is pending, requests queue behind its decision so they
+     * are answered by whichever side (real host or mock) actually exists.
      */
     private sendMessage<T = unknown>(action: string, payload?: unknown): Promise<T> {
-        if (!this.isInitialized) {
-            return Promise.reject({
-                code: 'SDK_NOT_INITIALIZED',
-                message: 'SDK is not initialized',
-            } as LearnCardError);
+        if (this.activation) {
+            return this.activation.then(() => this.dispatchMessage<T>(action, payload));
         }
 
+        return this.dispatchMessage<T>(action, payload);
+    }
+
+    private dispatchMessage<T = unknown>(action: string, payload?: unknown): Promise<T> {
+        if (!this.isInitialized) {
+            return Promise.reject(
+                new PartnerConnectError('SDK_NOT_INITIALIZED', 'SDK is not initialized')
+            );
+        }
+
+        if (this.mockHost) {
+            return this.mockHost
+                .handle(action, payload)
+                .then(data => data as T)
+                .catch(error => {
+                    throw PartnerConnectError.from(error);
+                });
+        }
+
+        // No reachable host and not mocking (standalone page, or embedded in
+        // a non-LearnCard wrapper): no host will ever answer this message, so
+        // fail immediately with an actionable error instead of hanging until
+        // the request timeout fires.
+        if (!this.hostReachable) {
+            if (!this.warnedNoHost) {
+                this.warnedNoHost = true;
+                console.error(
+                    '[LearnCard SDK] No LearnCard host is present (the app is standalone or ' +
+                        'inside a non-LearnCard frame), so SDK calls cannot complete. Embed ' +
+                        'your app in LearnCard, or pass `mock: true` to simulate the host ' +
+                        'during standalone development. Use isEmbedded() to branch your UI ' +
+                        'before calling.'
+                );
+            }
+
+            return Promise.reject(
+                new PartnerConnectError(
+                    'LC_NOT_EMBEDDED',
+                    `Cannot ${action}: the app is not embedded in a LearnCard host.`
+                )
+            );
+        }
+
+        return this.postToHost<T>(action, payload, this.requestTimeout);
+    }
+
+    private postToHost<T = unknown>(action: string, payload: unknown, timeout: number): Promise<T> {
         return new Promise<T>((resolve, reject) => {
             const requestId = this.generateRequestId(action);
 
-            // Set up timeout
             const timeoutId = setTimeout(() => {
                 if (this.pendingRequests.has(requestId)) {
                     this.pendingRequests.delete(requestId);
-                    reject({
-                        code: 'LC_TIMEOUT',
-                        message: `Request ${action} timed out after ${this.requestTimeout}ms`,
-                    } as LearnCardError);
+                    reject(
+                        new PartnerConnectError(
+                            'LC_TIMEOUT',
+                            `Request ${action} timed out after ${timeout}ms`
+                        )
+                    );
                 }
-            }, this.requestTimeout);
+            }, timeout);
 
             // Store the pending request
             this.pendingRequests.set(requestId, {
@@ -305,14 +792,95 @@ export class PartnerConnect {
         ) {
             const templateInput = input as TemplateCredentialInput;
 
-            return this.sendAppEvent({
+            return this.sendAppEvent<TemplateCredentialResponse>({
                 type: 'send-credential',
                 templateAlias: templateInput.templateAlias,
                 templateData: templateInput.templateData,
-            }) as Promise<TemplateCredentialResponse>;
+                preventDuplicateClaim: templateInput.preventDuplicateClaim,
+            });
         }
 
         return this.sendMessage<SendCredentialResponse>('SEND_CREDENTIAL', { credential: input });
+    }
+
+    /**
+     * Check whether the current user already has a credential from a given boost template.
+     * This is a silent, non-interactive status check for installed app integrations.
+     */
+    public checkUserHasCredential(input: CheckCredentialInput): Promise<CheckCredentialResponse> {
+        return this.sendAppEvent<CheckCredentialResponse>({
+            type: 'check-credential',
+            ...input,
+        });
+    }
+
+    /**
+     * Check if the current user has issued/sent a specific template to someone.
+     * Returns issuance status including sent date and claim status.
+     *
+     * @param input - Template identifier (templateAlias or boostUri) and recipient identifier (recipientDid or recipientProfileId)
+     * @returns Promise resolving to issuance status response
+     *
+     * @example
+     * ```typescript
+     * // Check if user already issued 'achievement-badge' to a specific person
+     * const status = await learnCard.getTemplateIssuanceStatus({
+     *   templateAlias: 'achievement-badge',
+     *   recipientProfileId: 'user123'
+     * });
+     *
+     * if (status.sent) {
+     *   console.log('Already issued on:', status.sentDate);
+     *   console.log('Status:', status.status); // 'pending', 'claimed', or 'revoked'
+     * }
+     * ```
+     */
+    public getTemplateIssuanceStatus(
+        input: CheckIssuanceStatusInput
+    ): Promise<TemplateIssuanceStatusResponse> {
+        return this.sendAppEvent<TemplateIssuanceStatusResponse>({
+            type: 'check-issuance-status',
+            ...input,
+        });
+    }
+
+    /**
+     * Get the list of all recipients for a specific template/boost.
+     * Useful for dashboards showing who has received a credential.
+     *
+     * @param input - Template identifier (templateAlias or boostUri) and optional pagination params
+     * @returns Promise resolving to paginated list of recipients
+     *
+     * @example
+     * ```typescript
+     * // Get first 10 recipients of 'achievement-badge'
+     * const recipients = await learnCard.getTemplateRecipients({
+     *   templateAlias: 'achievement-badge',
+     *   limit: 10
+     * });
+     *
+     * console.log(`Found ${recipients.records.length} recipients`);
+     * recipients.records.forEach(r => {
+     *   console.log(`${r.recipientDisplayName}: ${r.status}`);
+     * });
+     *
+     * // Get next page if available
+     * if (recipients.hasMore) {
+     *   const nextPage = await learnCard.getTemplateRecipients({
+     *     templateAlias: 'achievement-badge',
+     *     limit: 10,
+     *     cursor: recipients.cursor
+     *   });
+     * }
+     * ```
+     */
+    public getTemplateRecipients(
+        input: GetTemplateRecipientsInput
+    ): Promise<TemplateRecipientsResponse> {
+        return this.sendAppEvent<TemplateRecipientsResponse>({
+            type: 'get-template-recipients',
+            ...input,
+        });
     }
 
     /**
@@ -389,26 +957,31 @@ export class PartnerConnect {
     /**
      * Request user consent for permissions
      *
-     * @param contractUri - URI of the consent contract
+     * @param contractUri - URI of the consent contract (optional for App Store apps with configured contracts)
+     * @param options - Additional options including redirect behavior
      * @returns Promise resolving to consent response
      *
      * @example
      * ```typescript
-     * // Without redirect (default) - returns VP in response if app owns the contract
+     * // With explicit contract URI (for external/non-app store integrations)
      * const response = await learnCard.requestConsent('lc:network:network.learncard.com/trpc:contract:abc123');
      * if (response.granted) {
      *   console.log('User granted consent');
-     *   if (response.vp) {
-     *     console.log('VP:', response.vp);
-     *   }
+     * }
+     *
+     * // Without contract URI (uses app's configured contract from integration)
+     * // This works for App Store apps that have configured a contract in their integration
+     * const response = await learnCard.requestConsent();
+     * if (response.granted) {
+     *   console.log('User granted consent using listing contract');
      * }
      *
      * // With redirect - redirects to contract's redirectUrl with VP in URL params
-     * const response = await learnCard.requestConsent('lc:network:network.learncard.com/trpc:contract:abc123', { redirect: true });
+     * const response = await learnCard.requestConsent(undefined, { redirect: true });
      * ```
      */
     public requestConsent(
-        contractUri: string,
+        contractUri?: string,
         options: RequestConsentOptions = {}
     ): Promise<ConsentResponse> {
         const { redirect = false } = options;
@@ -449,6 +1022,127 @@ export class PartnerConnect {
     }
 
     /**
+     * Request comprehensive learner context for AI tutoring systems.
+     *
+     * This method retrieves the user's credentials and personal data,
+     * then formats them into an LLM-ready prompt that can be injected directly into
+     * an AI system prompt.
+     *
+     * @param options - Configuration options for what data to include and how to format it
+     * @returns Promise resolving to learner context with prompt and optional raw data
+     *
+     * @example
+     * ```typescript
+     * // Get LLM-ready prompt with credentials and personal data
+     * const context = await learnCard.requestLearnerContext({
+     *   includeCredentials: true,
+     *   includePersonalData: true,
+     *   waitForSync: true,
+     *   format: 'prompt',
+     *   instructions: 'Focus on technical skills and certifications',
+     *   detailLevel: 'expanded'
+     * });
+     *
+     * if (context.status === 'syncing') {
+     *   const unsubscribe = learnCard.onSyncComplete(async () => {
+     *     const readyContext = await learnCard.requestLearnerContext({ waitForSync: true });
+     *     unsubscribe();
+     *   });
+     * }
+     *
+     * // Use in AI system prompt
+     * const systemPrompt = `You are a helpful tutor. ${context.prompt}`;
+     *
+     * // Access structured data if needed
+     * console.log('User DID:', context.did);
+     * console.log('Credentials count:', context.raw?.credentials.length);
+     * ```
+     */
+    public async requestLearnerContext(
+        options?: RequestLearnerContextOptions
+    ): Promise<LearnerContextResponse> {
+        const startedAt = performance.now();
+        const response = await this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
+            includeCredentials: options?.includeCredentials ?? true,
+            includePersonalData: options?.includePersonalData ?? false,
+            format: options?.format ?? 'prompt',
+            instructions: options?.instructions,
+            detailLevel: options?.detailLevel ?? 'compact',
+            waitForSync: options?.waitForSync ?? false,
+        });
+
+        response.metadata ??= {};
+        response.metadata.timings ??= { totalMs: 0 };
+        response.metadata.timings.sdkRoundTripMs = performance.now() - startedAt;
+
+        return response;
+    }
+
+    /**
+     * Get the current LearnCard background data sync status.
+     */
+    public getSyncStatus(): Promise<SyncStatus> {
+        return this.sendMessage<SyncStatus>('GET_SYNC_STATUS');
+    }
+
+    /**
+     * Register a callback that fires when LearnCard reports background sync has reached a
+     * terminal state ('ready' or 'error'). Check `status.status` to distinguish the two.
+     * Polling stops once a terminal state is reached, all callbacks unsubscribe, or the
+     * poll exceeds its maximum duration (reported to callbacks as an 'error' status).
+     * Returns an unsubscribe function.
+     */
+    public onSyncComplete(callback: (status: SyncStatus) => void): () => void {
+        this.syncCompleteCallbacks.add(callback);
+
+        if (!this.syncStatusPollId) {
+            const pollStartedAt = Date.now();
+
+            const stopPolling = () => {
+                if (this.syncStatusPollId) {
+                    clearInterval(this.syncStatusPollId);
+                    this.syncStatusPollId = null;
+                }
+            };
+
+            this.syncStatusPollId = setInterval(() => {
+                if (Date.now() - pollStartedAt > SYNC_STATUS_POLL_MAX_DURATION_MS) {
+                    stopPolling();
+                    const timeoutStatus: SyncStatus = {
+                        status: 'error',
+                        progress: {
+                            totalCredentials: 0,
+                            completedCredentials: 0,
+                            failedCredentials: 0,
+                            retryCount: 0,
+                        },
+                        lastError: 'Timed out waiting for sync to complete',
+                    };
+                    this.syncCompleteCallbacks.forEach(cb => cb(timeoutStatus));
+                    return;
+                }
+
+                this.getSyncStatus()
+                    .then(status => {
+                        if (status.status !== 'ready' && status.status !== 'error') return;
+
+                        stopPolling();
+                        this.syncCompleteCallbacks.forEach(cb => cb(status));
+                    })
+                    .catch(() => undefined);
+            }, 1000);
+        }
+
+        return () => {
+            this.syncCompleteCallbacks.delete(callback);
+            if (this.syncCompleteCallbacks.size === 0 && this.syncStatusPollId) {
+                clearInterval(this.syncStatusPollId);
+                this.syncStatusPollId = null;
+            }
+        };
+    }
+
+    /**
      * Send a generic event to be processed by the brain service on behalf of this app.
      * This is used for backend-like operations such as issuing credentials.
      *
@@ -469,8 +1163,71 @@ export class PartnerConnect {
      * }
      * ```
      */
-    public sendAppEvent(event: AppEvent): Promise<AppEventResponse> {
-        return this.sendMessage<AppEventResponse>('APP_EVENT', event);
+    public sendAppEvent<T = AppEventResponse>(event: AppEvent): Promise<T> {
+        return this.sendMessage<T>('APP_EVENT', event);
+    }
+
+    /**
+     * Create and send an AI Session credential to the user.
+     *
+     * This method manages the AI Topic → AI Session hierarchy:
+     * - Ensures an AI Topic exists for this app (creates one if needed)
+     * - Creates a new AI Session as a child of the topic
+     * - The topic appears in the user's AI Sessions page with the app's name
+     * - All sessions from this app are organized under that topic
+     *
+     * @param input - Session details including title and optional metadata
+     * @returns Promise resolving to topic and session URIs
+     */
+    public sendAiSessionCredential(
+        input: SendAiSessionCredentialInput
+    ): Promise<SendAiSessionCredentialResponse> {
+        return this.sendAppEvent<SendAiSessionCredentialResponse>({
+            type: 'send-ai-session-credential',
+            ...input,
+        });
+    }
+
+    /**
+     * Send a notification to the current user from this app.
+     * The notification appears in the user's LearnCard notification inbox.
+     */
+    public sendNotification(input: AppNotificationInput): Promise<AppNotificationResponse> {
+        return this.sendAppEvent<AppNotificationResponse>({
+            type: 'send-notification',
+            ...input,
+        });
+    }
+
+    /**
+     * Increment or decrement an app-scoped counter for the current user.
+     */
+    public incrementCounter(key: string, amount: number): Promise<IncrementCounterResponse> {
+        return this.sendAppEvent<IncrementCounterResponse>({
+            type: 'increment-counter',
+            key,
+            amount,
+        });
+    }
+
+    /**
+     * Read the current value of an app-scoped counter for the current user.
+     */
+    public getCounter(key: string): Promise<GetCounterResponse> {
+        return this.sendAppEvent<GetCounterResponse>({
+            type: 'get-counter',
+            key,
+        });
+    }
+
+    /**
+     * Read multiple app-scoped counters at once for the current user.
+     */
+    public getCounters(keys?: string[]): Promise<GetCountersResponse> {
+        return this.sendAppEvent<GetCountersResponse>({
+            type: 'get-counters',
+            ...(keys ? { keys } : {}),
+        });
     }
 
     /**
@@ -485,13 +1242,27 @@ export class PartnerConnect {
         // Reject all pending requests
         for (const [requestId, pending] of this.pendingRequests.entries()) {
             clearTimeout(pending.timeoutId);
-            pending.reject({
-                code: 'SDK_DESTROYED',
-                message: 'SDK was destroyed before request completed',
-            });
+            pending.reject(
+                new PartnerConnectError(
+                    'SDK_DESTROYED',
+                    'SDK was destroyed before request completed'
+                )
+            );
         }
 
         this.pendingRequests.clear();
+
+        if (this.syncStatusPollId) {
+            clearInterval(this.syncStatusPollId);
+            this.syncStatusPollId = null;
+        }
+        this.syncCompleteCallbacks.clear();
+
+        if (this.mockHost) {
+            this.mockHost.destroy();
+            this.mockHost = null;
+        }
+
         this.isInitialized = false;
     }
 }

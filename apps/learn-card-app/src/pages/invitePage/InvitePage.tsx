@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('invite-page');
 
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
@@ -8,6 +10,7 @@ import { useWallet, usePathQuery, useIsLoggedIn } from 'learn-card-base';
 import { generatePK } from '../../helpers/privateKeyHelpers';
 
 import { AddressBookContact } from '../addressBook/addressBookHelpers';
+import * as m from '../../paraglide/messages.js';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
 
 const InvitePage: React.FC = () => {
@@ -38,7 +41,7 @@ const InvitePage: React.FC = () => {
         }
 
         if (!profileId || !challenge) {
-            console.log('no handle or challenge detected');
+            log.info('no handle or challenge detected');
             setLoading(false);
             return;
         }
@@ -48,12 +51,12 @@ const InvitePage: React.FC = () => {
                 const profile = await wallet?.invoke?.getProfile(profileId);
                 if (profile) {
                     setLcNetworkProfile(profile);
-                    console.log('handle::profile', profile);
+                    log.info('handle::profile', profile);
                     setLoading(false);
                 }
                 return;
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.info('getLCNeworkProfile::err', err);
                 setLoading(false);
                 return;
             }
@@ -71,7 +74,7 @@ const InvitePage: React.FC = () => {
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <IonSpinner color="black" />
-                        <p className="mt-2 font-bold text-lg">Loading...</p>
+                        <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}
                 {!loading && !lcNetworkProfile && (

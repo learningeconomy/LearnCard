@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+
+import * as m from '../../../../paraglide/messages.js';
 
 import { BoostCategoryOptionsEnum, boostCategoryMetadata, useModal } from 'learn-card-base';
 
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import CredentialGeneralPlus from '../../../svgs/CredentialGeneralPlus';
 import BoostAddressBookContactItem from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBookContactItem';
+import { getTopmostCancelPortal } from '../../boostCMS/boostCMSForms/boostCMSMedia/boostCMSMedia.helpers';
 
-import { BoostCMSState } from '../../boost';
+import { BoostCMSIssueTo, BoostCMSState } from '../../boost';
 import { BoostAddressBookEditMode } from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBook';
-import { BoostCMSIssueTo, ShortBoostState } from '../../boost';
+import { ShortBoostState } from '../../boost';
 
 type ShortBoostSomeoneScreenProps = {
     boostUri: string;
@@ -23,6 +26,12 @@ type ShortBoostSomeoneScreenProps = {
     category: BoostCategoryOptionsEnum;
     showBoostContext?: boolean;
     boostName?: string;
+    /**
+     * Whether the underlying boost's @context supports per-recipient dynamic
+     * evidence (boost context >= 1.0.3). Older boosts must be republished
+     * before recipient-specific media attachments can be signed onto them.
+     */
+    supportsRecipientAttachments?: boolean;
 };
 
 const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
@@ -37,23 +46,37 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
     category,
     showBoostContext = false,
     boostName,
+    supportsRecipientAttachments = false,
 }) => {
+    const setIssuedTo: React.Dispatch<React.SetStateAction<BoostCMSIssueTo[]>> = action => {
+        setState(prevState => ({
+            ...prevState,
+            issueTo: typeof action === 'function' ? action(prevState.issueTo) : action,
+        }));
+    };
+
     const renderIssuedTo = issuedTo?.map((contact, index) => {
         return (
             <BoostAddressBookContactItem
-                state={state}
-                setState={setState}
+                state={state as unknown as BoostCMSState}
+                setState={
+                    setState as unknown as React.Dispatch<React.SetStateAction<BoostCMSState>>
+                }
                 contact={contact}
                 key={index}
                 mode={BoostAddressBookEditMode.delete}
-                // _issueTo={_issueTo}
-                // _setIssueTo={_setIssueTo}
+                _issueTo={issuedTo}
+                _setIssueTo={setIssuedTo}
+                showRecipientAttachments={supportsRecipientAttachments}
                 version="sleek"
             />
         );
     });
     const { closeModal } = useModal();
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(getTopmostCancelPortal());
+    }, []);
 
     const color = boostCategoryMetadata[category]?.color ?? 'grayscale-900';
 
@@ -65,7 +88,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                 {showBoostContext && boostName && (
                     <div className="mb-3 pb-3 border-b border-grayscale-200">
                         <p className="text-xs font-medium text-grayscale-600 uppercase tracking-wide mb-1">
-                            Sending Boost
+                            {m['boost.shortBoost.sendingBoost']()}
                         </p>
                         <div className="flex items-center gap-2">
                             <p className="text-base font-semibold text-grayscale-900 truncate">
@@ -78,7 +101,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                     className="flex items-center gap-[10px] py-[10px] pl-[20px] pr-[10px] bg-grayscale-100 rounded-[20px] text-grayscale-900 font-poppins text-[20px] leading-[130%] tracking-[-0.25px] w-full"
                     onClick={() => handleOpenModal()}
                 >
-                    Select Recipients
+                    {m['boost.shortBoost.selectRecipients']()}
                     <CredentialGeneralPlus className="w-[44px] h-[44px] flex-shrink-0 ml-auto" />
                 </button>
                 {renderIssuedTo.length > 0 && <div className="mt-[10px]">{renderIssuedTo}</div>}
@@ -109,14 +132,14 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                             onClick={handleGenerateLink}
                             className="flex items-center gap-[5px] justify-center bg-white rounded-[30px] px-[20px] py-[10px] text-grayscale-800 font-poppins text-[17px] leading-[130%] tracking-[-0.25px] w-full mt-[10px] shadow-bottom-4-4"
                         >
-                            Generate Link
+                            {m['boost.shortBoost.generateLink']()}
                             <LinkChain className="h-[25px] w-[25px]" version="thin" />
                         </button>
                         <button
                             onClick={closeModal}
                             className="bg-white text-grayscale-800 text-[17px] font-poppins py-2 rounded-[30px] px-[20px] py-[10px] w-full h-full leading-[130%] tracking-[-0.25px] mt-[10px] shadow-bottom-4-4"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     </div>,
                     sectionPortal

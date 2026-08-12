@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
 
 import AiSessionLearningPathwayPreviewFooter from './AiSessionLearningPathwayPreviewFooter';
 import AiSessionLearningPathwayPreviewHeader from './AiSessionLearningPathwayPreviewHeader';
@@ -8,11 +7,13 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import LockSimple from 'learn-card-base/svgs/LockSimple';
 
 import {
+    AiPassportAppContractUri,
     AiPassportAppsEnum,
     getAiAppBackgroundStylesForApp,
     getAiPassportAppByContractUri,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { LaunchPadAppListItem, useGetCurrentLCNUser, useModal } from 'learn-card-base';
+import { LearnCardAiChatBot } from '../LearnCardAiChatBot/LearnCardAiChatBot';
 import { VC } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { LearningPathway } from '../../ai-sessions/AiSessionTopics/aiSession-topics.helpers';
@@ -28,37 +29,45 @@ export const AiSessionLearningPathwayPreview: React.FC<{
 }> = ({ topicRecord, topicBoost, topicVc, learningPathway, pathwayBoost }) => {
     const { closeAllModals } = useModal();
     const { currentLCNUser } = useGetCurrentLCNUser();
-    const history = useHistory();
 
     const [showLoader, setShowLoader] = useState<boolean>(false);
+    const [showInModalChat, setShowInModalChat] = useState<boolean>(false);
 
     const app = getAiPassportAppByContractUri(topicRecord?.contractUri || '');
     const appStyles = getAiAppBackgroundStylesForApp(app as LaunchPadAppListItem);
 
     const handleStartAiSession = async () => {
-        setShowLoader(true);
-        closeAllModals();
-
+        // For LearnCard's internal chat keep the user inside the existing right
+        // modal — same pattern as the New Topic flow's startInternalAiChatBot
+        // and the topic-detail "New Session" gate. Avoids history-pushing to
+        // /chats which on desktop replaces the topic-detail page with a full
+        // width chat.
         if (app?.type === AiPassportAppsEnum.learncardapp) {
-            history.push(
-                `/chats?topicUri=${encodeURIComponent(
-                    topicBoost?.uri || ''
-                )}&did=${encodeURIComponent(currentLCNUser?.did || '')}${
-                    pathwayBoost ? `&pathwayUri=${encodeURIComponent(pathwayBoost?.uri || '')}` : ''
-                }`
-            );
+            setShowInModalChat(true);
             return;
         }
 
+        setShowLoader(true);
+        closeAllModals();
         const url = app?.url;
-
-        // window.location.href = `http://localhost:4321/chats?topicUri=${topicBoost?.uri}&did=${currentLCNUser?.did}`;
         window.location.href = `${url}/chats?topicUri=${encodeURIComponent(
             topicBoost?.uri || ''
         )}&did=${encodeURIComponent(currentLCNUser?.did || '')}${
             pathwayBoost ? `&pathwayUri=${encodeURIComponent(pathwayBoost?.uri || '')}` : ''
         }`;
     };
+
+    if (showInModalChat) {
+        return (
+            <LearnCardAiChatBot
+                initialMessages={[]}
+                initialTopicUri={topicBoost?.uri}
+                initialPathwayUri={pathwayBoost?.uri}
+                contractUri={AiPassportAppContractUri.learncardapp}
+                handleStartOver={closeAllModals}
+            />
+        );
+    }
 
     return (
         <div

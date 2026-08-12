@@ -1,16 +1,39 @@
+import { LCNIntegration } from '@learncard/types';
 import {
     ActionHandler,
     ActionHandlers,
-    ActionContext,
-    RequestIdentityPayload,
-    RequestConsentPayload,
-    SendCredentialPayload,
-    AskCredentialSpecificPayload,
-    AskCredentialSearchPayload,
     VerifiablePresentationRequest,
-    LaunchFeaturePayload,
     AppEvent,
 } from './useLearnCardPostMessage';
+import type { LearnerContextRequestOptions } from './learnerContextCache.helpers';
+
+type LearnerContextResponseData = {
+    prompt: string;
+    raw?: {
+        credentials: unknown[];
+        personalData?: Record<string, unknown>;
+    };
+    did: string;
+    displayName?: string;
+    metadata?: {
+        cacheStatus?:
+            | 'browser-hit'
+            | 'browser-miss'
+            | 'backend-hit'
+            | 'backend-miss'
+            | 'structured';
+        timings?: {
+            totalMs: number;
+            sdkRoundTripMs?: number;
+            appEventMs?: number;
+            credentialReadMs?: number;
+            promptizerMs?: number;
+            cacheLookupMs?: number;
+            prewarmAgeMs?: number;
+        };
+        backendMetadata?: Record<string, unknown>;
+    };
+};
 
 // Re-export types for convenience
 export type { ActionHandler, ActionHandlers };
@@ -98,24 +121,53 @@ export const createRequestConsentHandler = (dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    getContractUri?: () => string | undefined;
+    getIntegrationContractUri?: () => Promise<string | undefined>;
+    prewarmLearnerContext?: (options: LearnerContextRequestOptions) => void | Promise<void>;
 }): ActionHandler<'REQUEST_CONSENT'> => {
     return async ({ payload }) => {
-        const { showConsentModal } = dependencies;
+        const {
+            showConsentModal,
+            getContractUri,
+            getIntegrationContractUri,
+            prewarmLearnerContext,
+        } = dependencies;
 
-        if (!payload.contractUri) {
+        // Use payload contractUri first, then launch config, then guideState fallback
+        const contractUri =
+            payload.contractUri || getContractUri?.() || (await getIntegrationContractUri?.());
+
+        if (!contractUri) {
             return {
                 success: false,
                 error: {
                     code: 'INVALID_PAYLOAD',
-                    message: 'Contract URI is required',
+                    message:
+                        'No contract URI provided and no contract configured for this app listing',
                 },
             };
         }
 
         try {
-            const result = await showConsentModal(payload.contractUri, {
+            const result = await showConsentModal(contractUri, {
                 redirect: payload.redirect,
             });
+
+            if (result.granted) {
+                void prewarmLearnerContext?.({
+                    includeCredentials: true,
+                    includePersonalData: false,
+                    format: 'prompt',
+                    detailLevel: 'compact',
+                });
+
+                void prewarmLearnerContext?.({
+                    includeCredentials: true,
+                    includePersonalData: true,
+                    format: 'prompt',
+                    detailLevel: 'compact',
+                });
+            }
 
             return {
                 success: true,
@@ -424,6 +476,35 @@ export const createInitiateTemplateIssueHandler = (dependencies: {
     };
 };
 
+const normalizeAppEventError = (error: unknown): { code: string; message: string } => {
+    if (typeof error === 'object' && error !== null) {
+        const trpcCode = (error as { data?: { code?: string } }).data?.code;
+        const message = (error as { message?: string }).message ?? 'Failed to process app event';
+
+        if (trpcCode === 'NOT_FOUND') {
+            return { code: 'BOOST_NOT_FOUND', message };
+        }
+
+        if (trpcCode === 'FORBIDDEN' || trpcCode === 'UNAUTHORIZED') {
+            return { code: 'INSUFFICIENT_PERMISSIONS', message };
+        }
+
+        if (trpcCode) {
+            return { code: trpcCode, message };
+        }
+
+        return {
+            code: 'UNKNOWN_ERROR',
+            message,
+        };
+    }
+
+    return {
+        code: 'UNKNOWN_ERROR',
+        message: 'Failed to process app event',
+    };
+};
+
 /**
  * APP_EVENT Handler
  * Generic event handler for backend-like operations from installed apps.
@@ -444,14 +525,79 @@ export const createAppEventHandler = (dependencies: {
         }
 
         try {
-            const result = await sendAppEvent(listingId, payload);
+            const result = await sendAppEvent(listingId, payload.event);
             return { success: true, data: result };
+        } catch (error) {
+            return {
+                success: false,
+                error: normalizeAppEventError(error),
+            };
+        }
+    };
+};
+
+/**
+ * REQUEST_LEARNER_CONTEXT Handler
+ * Partner requests comprehensive learner context for AI tutoring.
+ */
+export const createRequestLearnerContextHandler = (dependencies: {
+    requestLearnerContext: (
+        options: LearnerContextRequestOptions
+    ) => Promise<LearnerContextResponseData>;
+}): ActionHandler<'REQUEST_LEARNER_CONTEXT'> => {
+    return async ({ payload }) => {
+        const { requestLearnerContext } = dependencies;
+
+        try {
+            const format = payload.format === 'structured' ? 'structured' : 'prompt';
+            const detailLevel = payload.detailLevel === 'expanded' ? 'expanded' : 'compact';
+
+            const context = await requestLearnerContext({
+                includeCredentials: payload.includeCredentials,
+                includePersonalData: payload.includePersonalData,
+                format,
+                instructions: payload.instructions,
+                detailLevel,
+                waitForSync: payload.waitForSync,
+            });
+
+            return { success: true, data: context };
         } catch (error) {
             return {
                 success: false,
                 error: {
                     code: 'UNKNOWN_ERROR',
-                    message: error instanceof Error ? error.message : 'Failed to process app event',
+                    message:
+                        error instanceof Error ? error.message : 'Failed to get learner context',
+                },
+            };
+        }
+    };
+};
+
+export const createGetSyncStatusHandler = (dependencies: {
+    getSyncStatus: () => Promise<{
+        status: 'ready' | 'syncing' | 'error';
+        progress: {
+            totalCredentials: number;
+            completedCredentials: number;
+            failedCredentials: number;
+            retryCount: number;
+        };
+        eta?: number;
+        lastError?: string;
+    }>;
+}): ActionHandler<'GET_SYNC_STATUS'> => {
+    return async () => {
+        try {
+            const status = await dependencies.getSyncStatus();
+            return { success: true, data: status };
+        } catch (error) {
+            return {
+                success: false,
+                error: {
+                    code: 'UNKNOWN_ERROR',
+                    message: error instanceof Error ? error.message : 'Failed to get sync status',
                 },
             };
         }
@@ -465,7 +611,7 @@ export function createActionHandlers(dependencies: {
     // Identity
     isUserAuthenticated: () => boolean;
     mintDelegatedToken: (challenge?: string) => Promise<string>;
-    getUserInfo: () => Promise<{ did: string; profile: any }>;
+    getUserInfo: () => Promise<{ did: string; profile: unknown }>;
     showLoginConsentModal: (origin: string, appName?: string) => Promise<boolean>;
 
     // Consent
@@ -473,15 +619,21 @@ export function createActionHandlers(dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    getContractUri?: () => string | undefined;
+    getIntegrationContractUri?: () => Promise<string | undefined>;
+    getIntegrationForListing?: (listingId: string) => Promise<LCNIntegration | undefined>;
+    prewarmLearnerContext?: (options: LearnerContextRequestOptions) => void | Promise<void>;
 
     // Credentials
-    showCredentialAcceptanceModal: (credential: any) => Promise<string | boolean>;
-    saveCredential: (credential: any) => Promise<string | undefined>;
-    getCredentialById: (id: string) => Promise<any | null>;
-    showShareCredentialModal: (credential: any) => Promise<boolean>;
-    showVprModal: (verifiablePresentationRequest: VerifiablePresentationRequest) => Promise<any>;
-    signCredential: (credential: any) => Promise<any>;
-    signPresentation: (presentation: any) => Promise<any>;
+    showCredentialAcceptanceModal: (credential: unknown) => Promise<string | boolean>;
+    saveCredential: (credential: unknown) => Promise<string | undefined>;
+    getCredentialById: (id: string) => Promise<unknown | null>;
+    showShareCredentialModal: (credential: unknown) => Promise<boolean>;
+    showVprModal: (
+        verifiablePresentationRequest: VerifiablePresentationRequest
+    ) => Promise<unknown>;
+    signCredential: (credential: unknown) => Promise<unknown>;
+    signPresentation: (presentation: unknown) => Promise<unknown>;
 
     // Navigation
     navigate: (path: string, params?: Record<string, string>) => void;
@@ -493,6 +645,22 @@ export function createActionHandlers(dependencies: {
     // App events
     sendAppEvent?: (listingId: string, event: AppEvent) => Promise<Record<string, unknown>>;
     getAppListingId?: () => string | undefined;
+
+    // Learner context
+    requestLearnerContext?: (
+        options: LearnerContextRequestOptions
+    ) => Promise<LearnerContextResponseData>;
+    getSyncStatus: () => Promise<{
+        status: 'ready' | 'syncing' | 'error';
+        progress: {
+            totalCredentials: number;
+            completedCredentials: number;
+            failedCredentials: number;
+            retryCount: number;
+        };
+        eta?: number;
+        lastError?: string;
+    }>;
 }): ActionHandlers {
     const handlers: ActionHandlers = {
         REQUEST_IDENTITY: createRequestIdentityHandler(dependencies),
@@ -511,6 +679,17 @@ export function createActionHandlers(dependencies: {
             getAppListingId: dependencies.getAppListingId,
         });
     }
+
+    // Add REQUEST_LEARNER_CONTEXT handler if dependency is provided
+    if (dependencies.requestLearnerContext) {
+        handlers.REQUEST_LEARNER_CONTEXT = createRequestLearnerContextHandler({
+            requestLearnerContext: dependencies.requestLearnerContext,
+        });
+    }
+
+    handlers.GET_SYNC_STATUS = createGetSyncStatusHandler({
+        getSyncStatus: dependencies.getSyncStatus,
+    });
 
     return handlers;
 }

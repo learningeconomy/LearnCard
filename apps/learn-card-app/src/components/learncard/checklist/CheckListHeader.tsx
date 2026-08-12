@@ -1,11 +1,16 @@
 import React from 'react';
 
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
+
 import { useTheme } from '../../../theme/hooks/useTheme';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 export const ChecklistHeader: React.FC = () => {
     const { theme, colors } = useTheme();
     const { buildMyLCIcon } = theme.defaults;
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     return (
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl px-6 py-4 mt-4 rounded-[15px]">
@@ -14,9 +19,11 @@ export const ChecklistHeader: React.FC = () => {
                     <img src={buildMyLCIcon} className="text-white" alt="blocks" />
                 </div>
                 <h2 className="text-[22px] text-grayscale-800 font-notoSans text-center">
-                    Build My
-                    <br />
-                    <span className={`font-semibold text-${primaryColor}`}>LearnCard</span>
+                    <TransP
+                        m={m['passport.buildMyLearnCard.titleMarkup']}
+                        values={{ brand: brandingConfig.name }}
+                        components={[<span className={`font-semibold text-${primaryColor}`} />]}
+                    />
                 </h2>
             </div>
         </div>

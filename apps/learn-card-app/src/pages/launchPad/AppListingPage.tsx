@@ -1,7 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useParams, useHistory } from 'react-router-dom';
 import type { AppStoreListing } from '@learncard/types';
 import numeral from 'numeral';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-listing-page');
 
 import { IonPage, IonContent, IonSpinner, IonToast } from '@ionic/react';
 import {
@@ -16,6 +19,7 @@ import {
     AppStoreAppMetadata,
     AppStoreAppReview,
 } from 'learn-card-base';
+import redirectStore from 'learn-card-base/stores/redirectStore';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
@@ -105,7 +109,7 @@ const AppListingPage: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Guardian gate for child profiles - verify before showing permissions modal
-    const { guardedAction } = useGuardianGate();
+    const { guardedAction, isChildProfile } = useGuardianGate();
 
     // Parse launch config
     const launchConfig = useMemo(() => {
@@ -146,6 +150,60 @@ const AppListingPage: React.FC = () => {
     }, [extendedListing?.screenshots, iosMetadata?.screenshotUrls]);
 
     const [showCopiedToast, setShowCopiedToast] = useState(false);
+    const [showSignInModal, setShowSignInModal] = useState(false);
+
+    const [shouldAutoInstall, setShouldAutoInstall] = useState(false);
+    const installIntent = redirectStore.use.installIntent();
+    const isOnboardingOpen = redirectStore.use.isOnboardingOpen();
+    const didAutoTriggerRef = useRef(false);
+
+    useEffect(() => {
+        // Only run once per mount
+        if (didAutoTriggerRef.current) return;
+        // Must be logged in with resolved install status, listing loaded, intent matching
+        if (!isLoggedIn) return;
+        if (isCheckingInstalled) return;
+        if (!listing) return;
+        if (installIntent?.listingId !== listingId) return;
+        // Wait for onboarding to finish — OnboardingFlow sets this flag
+        if (isOnboardingOpen) return;
+
+        // For new-user path: OnboardingFlow is opened via newModal() (a portal),
+        // so its useEffect fires *after* this one in the same render cycle.
+        // The 300ms delay gives OnboardingFlow time to mount, set isOnboardingOpen=true,
+        // and claim installIntent before we act on it.
+        const timer = setTimeout(() => {
+            // Re-check after delay using fresh store values (avoids stale-closure issues)
+            const currentIntent = redirectStore.get.installIntent();
+            if (currentIntent?.listingId !== listingId) return;
+            if (redirectStore.get.isOnboardingOpen()) return;
+            if (didAutoTriggerRef.current) return;
+
+            didAutoTriggerRef.current = true;
+            redirectStore.set.installIntent(null);
+
+            if (isChildProfile) {
+                // Don't auto-open guardian-gated modal — show a banner for the user to tap
+                setShouldAutoInstall(true);
+            } else if (isInstalled) {
+                void handleLaunch();
+            } else {
+                // isLoggedIn is true here (guarded at effect entry), so handleInstall()
+                // won't re-enter the logout path or set another installIntent
+                handleInstall();
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [
+        installIntent,
+        isOnboardingOpen,
+        isLoggedIn,
+        isCheckingInstalled,
+        listing,
+        isInstalled,
+        isChildProfile,
+    ]);
 
     const handleShareApp = async () => {
         if (!listing) return;
@@ -156,7 +214,7 @@ const AppListingPage: React.FC = () => {
             closeModal();
             setShowCopiedToast(true);
         } catch (err) {
-            console.error('Failed to copy link:', err);
+            log.error('Failed to copy link:', err);
         }
     };
 
@@ -183,8 +241,49 @@ const AppListingPage: React.FC = () => {
 
         try {
             await installMutation.mutateAsync(listing.listing_id);
+
+            // Show success modal asking if user wants to open the app
+            newModal(
+                <div className="p-6 text-center max-w-sm mx-auto">
+                    {listing.icon_url && (
+                        <img
+                            src={listing.icon_url}
+                            alt=""
+                            className="w-16 h-16 rounded-2xl mx-auto mb-4 object-cover shadow-md"
+                        />
+                    )}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {listing.display_name} installed
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-6">Would you like to open it now?</p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => closeModal()}
+                            className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                            Maybe later
+                        </button>
+                        {canLaunch && (
+                            <button
+                                onClick={() => {
+                                    closeModal();
+                                    handleLaunch();
+                                }}
+                                className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+                            >
+                                Open
+                            </button>
+                        )}
+                    </div>
+                </div>,
+                {
+                    sectionClassName: '!max-w-[400px]',
+                    hideButton: true,
+                },
+                { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+            );
         } catch (error) {
-            console.error('Failed to install app:', error);
+            log.error('Failed to install app:', error);
         } finally {
             setIsProcessing(false);
         }
@@ -194,8 +293,12 @@ const AppListingPage: React.FC = () => {
         if (!listing) return;
 
         if (!isLoggedIn) {
-            // Redirect to login with return URL
-            history.push(`/login?returnUrl=/app/${listingId}`);
+            redirectStore.set.installIntent({
+                listingId,
+                appName: listing.display_name,
+                appIcon: listing.icon_url,
+            });
+            setShowSignInModal(true);
             return;
         }
 
@@ -235,14 +338,14 @@ const AppListingPage: React.FC = () => {
                 try {
                     await withdrawConsent(termsUri);
                 } catch (error) {
-                    console.error('Failed to withdraw consent:', error);
+                    log.error('Failed to withdraw consent:', error);
                     // Continue with uninstall even if consent withdrawal fails
                 }
             }
 
             await uninstallMutation.mutateAsync(listing.listing_id);
         } catch (error) {
-            console.error('Failed to uninstall app:', error);
+            log.error('Failed to uninstall app:', error);
         } finally {
             setIsProcessing(false);
         }
@@ -486,7 +589,6 @@ const AppListingPage: React.FC = () => {
         );
     }
 
-    console.log('iosMetadata', listing);
     return (
         <IonPage>
             <IonContent fullscreen>
@@ -498,7 +600,7 @@ const AppListingPage: React.FC = () => {
                             className="flex items-center gap-1 hover:bg-amber-600 rounded-lg px-2 py-1 transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            <span className="text-sm font-medium">Back</span>
+                            <span className="text-sm font-medium">{m['common.back']()}</span>
                         </button>
                         <div className="flex items-center gap-2">
                             <Eye className="w-4 h-4" />
@@ -672,6 +774,23 @@ const AppListingPage: React.FC = () => {
 
                     {/* Content Sections */}
                     <div className="max-w-4xl mx-auto px-4 pb-16">
+                        {shouldAutoInstall && (
+                            <div className="mx-0 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-3">
+                                <p className="text-sm text-blue-800 font-medium">
+                                    Tap to install {listing?.display_name}
+                                </p>
+                                <button
+                                    className="bg-blue-600 text-white text-sm font-semibold px-4 py-1.5 rounded-full"
+                                    onClick={() => {
+                                        setShouldAutoInstall(false);
+                                        handleInstall();
+                                    }}
+                                >
+                                    Install
+                                </button>
+                            </div>
+                        )}
+
                         {/* About Section */}
                         <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
                             <h2 className="text-xl font-semibold text-grayscale-900 mb-4">About</h2>
@@ -830,6 +949,43 @@ const AppListingPage: React.FC = () => {
                     position="bottom"
                     color="success"
                 />
+                {showSignInModal && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white rounded-2xl shadow-2xl p-6 mx-4 max-w-sm w-full text-center">
+                            {listing?.icon_url && (
+                                <img
+                                    src={listing.icon_url}
+                                    alt=""
+                                    className="w-14 h-14 rounded-xl mx-auto mb-4 object-cover"
+                                />
+                            )}
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                Sign in to continue
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-6">
+                                You'll need to sign in or create a LearnCard Network account to
+                                install {listing?.display_name ?? 'this app'}.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowSignInModal(false)}
+                                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowSignInModal(false);
+                                        history.push(`/login?returnUrl=/app/${listingId}`);
+                                    }}
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-gray-900 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+                                >
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </IonContent>
         </IonPage>
     );

@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('external-consent-flow-door');
 
 import queryString from 'query-string';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -17,7 +19,6 @@ import {
     useWallet,
     ProfilePicture,
     pushUtilities,
-    useWeb3Auth,
     useSQLiteStorage,
     useContract,
     redirectStore,
@@ -25,15 +26,25 @@ import {
     useModal,
 } from 'learn-card-base';
 import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
-import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
 import { auth } from '../../firebase/firebase';
+import { getLoginRedirectUrl } from '../../config/bootstrapTenantConfig';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { m } from '../../paraglide/messages.js';
+import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowError from './ConsentFlowError';
+import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
 import useTheme from '../../theme/hooks/useTheme';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 
 enum Step {
     landing,
@@ -42,6 +53,7 @@ enum Step {
 
 const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }) => {
     const currentUser = useCurrentUser();
+    const brandingConfig = useBrandingConfig();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -51,9 +63,12 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const firebaseAuth = auth();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
-    const { logout } = useWeb3Auth();
+    const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
     const { track } = useAnalytics();
+    const acceptedRef = useRef(false);
+    const cancelFiredRef = useRef(false);
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -97,6 +112,18 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 contractName: contractDetails.name,
             });
         }
+    }, [contractDetails?.name]);
+
+    useEffect(() => {
+        return () => {
+            if (contractDetails && !acceptedRef.current && !cancelFiredRef.current) {
+                cancelFiredRef.current = true;
+                track(AnalyticsEvents.CONSENT_FLOW_CANCELLED, {
+                    contractName: contractDetails.name,
+                    step_id: 'landing',
+                });
+            }
+        };
     }, [contractDetails?.name]);
 
     // Handle navigation after user clicks Continue AND consent query completes
@@ -164,8 +191,25 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
             }
         };
 
-        handleNavigation();
-    }, [userClickedContinue, consentedContractLoading, consentedContract, login, returnTo, contractDetails, uri, recipientToken, history]);
+        handleNavigation().catch((error: unknown) => {
+            track(AnalyticsEvents.CONSENT_FLOW_FAILED, {
+                contractName: contractDetails?.name,
+                error_code:
+                    (error as { code?: string })?.code ??
+                    (error instanceof Error && error.name !== 'Error' ? error.name : 'unknown'),
+            });
+        });
+    }, [
+        userClickedContinue,
+        consentedContractLoading,
+        consentedContract,
+        login,
+        returnTo,
+        contractDetails,
+        uri,
+        recipientToken,
+        history,
+    ]);
 
     // TODO duplicated from QRCodeUserCard, should turn into helper
     const handleLogout = async () => {
@@ -177,10 +221,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
             SocialLoginTypes.google,
         ];
 
-        const redirectUrl =
-            IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                ? LOGIN_REDIRECTS[BrandingEnum.learncard].redirectUrl
-                : LOGIN_REDIRECTS[BrandingEnum.learncard].devRedirectUrl;
+        const redirectUrl = getLoginRedirectUrl();
 
         setTimeout(async () => {
             const deviceToken = authStore?.get?.deviceToken();
@@ -193,11 +234,12 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 try {
                     await FirebaseAuthentication?.signOut?.();
                 } catch (e) {
-                    console.log('firebase::signout::error', e);
+                    log.info('firebase::signout::error', e);
                 }
             }
 
-            logout(redirectUrl);
+            resumeBuilderStore.set.resetStore();
+            await coordinatorLogout();
             await queryClient.resetQueries();
 
             await clearDB();
@@ -219,7 +261,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"
                     />
-                    <p className="font-poppins text-grayscale-900">Loading...</p>
+                    <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
                 </div>
             </IonPage>
         );
@@ -276,10 +318,47 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             type="button"
                             disabled={consentedContractLoading}
                             onClick={() => {
+                                acceptedRef.current = true;
                                 track(AnalyticsEvents.CONSENT_FLOW_ACCEPTED, {
                                     contractName: contractDetails?.name,
                                     alreadyConsented: !!consentedContract,
                                 });
+
+                                // LC-1853 (review #2): only fire PROFILE_ITEM_ADDED when
+                                // (a) this is a NEW consent (alreadyConsented → skip; the
+                                // user is just re-entering), AND (b) the contract has a
+                                // `frontDoorBoostUri` indicating a credential will be
+                                // delivered immediately as part of this acceptance.
+                                // Without (b), any credentials that arrive later through
+                                // data-source sync will be caught by
+                                // useFinalizeInboxCredentials and attributed to
+                                // ReceivedBoost — firing here would be a phantom item.
+                                const isNewConsent = !consentedContract;
+                                const hasFrontDoorBoost = !!contractDetails?.frontDoorBoostUri;
+                                if (isNewConsent && hasFrontDoorBoost) {
+                                    // Freeze the pre-mutation snapshot. The credential
+                                    // delivery actually happens in CredFrontDoor (next
+                                    // step) which is wired through the standard claim
+                                    // pipeline; this event records the consent-flow
+                                    // attribution at the moment the user accepts.
+                                    capture();
+                                    const now = Date.now();
+                                    const sessionStart = Number(
+                                        localStorage.getItem(SESSION_START_KEY) ?? now
+                                    );
+                                    const accountCreatedAt = Number(
+                                        localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                                    );
+                                    track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                                        method: ProfileBuildMethod.ConsentFlow,
+                                        itemType: 'credential',
+                                        itemCount: 1,
+                                        totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                                        msSinceAccountCreated: now - accountCreatedAt,
+                                        msSinceSessionStart: now - sessionStart,
+                                    });
+                                }
+
                                 setUserClickedContinue(true);
                             }}
                             className={`bg-emerald-700 text-grayscale-50 text-[16px] font-semibold font-poppins normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom ${
@@ -308,7 +387,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             onClick={redirectToLogin}
                             className="bg-emerald-700 text-grayscale-50 text-[16px] font-semibold font-poppins normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom"
                         >
-                            Sign up for LearnCard
+                            Sign up for {brandingConfig?.name}
                         </button>
                         <div className="text-grayscale-900 text-[14px]">
                             Have an account?{' '}
@@ -325,7 +404,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
 
                 <div className="pt-[20px] border-solid border-t-[1px] border-grayscale-200 w-full flex flex-col items-center gap-[10px]">
                     <span className="text-grayscale-900 text-[14px] font-montserrat normal font-[700] tracking-[7px] uppercase">
-                        LearnCard
+                        {brandingConfig?.name}
                     </span>
                     <span className="text-grayscale-700 text-[14px]">
                         Universal Learning & Work Portfolio
@@ -336,7 +415,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                 onClick={openPP}
                                 className={`text-${primaryColor} font-[600] text-[12px]`}
                             >
-                                Privacy Policy
+                                {m['legal.privacyPolicy']()}
                             </button>
                             <span className="text-grayscale-600 font-bold text-[12px]">
                                 &nbsp;•&nbsp;
@@ -345,7 +424,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                 onClick={openToS}
                                 className={`text-${primaryColor} font-[600] text-[12px]`}
                             >
-                                Terms of Service
+                                {m['legal.termsOfService']()}
                             </button>
                         </IonCol>
                     </IonRow>

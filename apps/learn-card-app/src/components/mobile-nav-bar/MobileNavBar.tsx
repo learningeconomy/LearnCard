@@ -10,15 +10,12 @@ import {
 } from '@ionic/react';
 import CustomSpinner from '../svgs/CustomSpinner';
 import BurgerIcon from '../../components/svgs/Burger';
-import AddToLearnCardMenu from '../../components/add-to-learncard-menu/AddToLearnCardMenu';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 
 import {
     getNavBarColor,
     showNavBar,
     useIsLoggedIn,
-    useModal,
-    ModalTypes,
     walletStore,
     WalletSyncState,
     lazyWithRetry,
@@ -28,66 +25,64 @@ const Routes = lazyWithRetry(() =>
     import('../../Routes').then(module => ({ default: module.Routes }))
 );
 
-import { useGetUnreadUserNotifications } from 'learn-card-base';
-import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
-
 import useTheme from '../../theme/hooks/useTheme';
-import { IconSetEnum } from '../../theme/icons';
+import { IconSetEnum, NavbarIcons } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 
+import * as m from '../../paraglide/messages.js';
+import { getNavBarLinkLabel } from './mobileNavBarI18n';
+
 export enum MobileNavBarLinks {
+    dashboard = 'dashboard',
     wallet = 'wallet',
     plus = '/boost',
     launchpad = 'launchpad',
+    notification = 'notification',
 }
 
 const MobileNavBar: React.FC = () => {
     const { getIconSet, getColorSet, theme } = useTheme();
     const icons = getIconSet(IconSetEnum.navbar);
     const colors = getColorSet(ColorSetEnum.navbar);
-    const { wallet: WalletIcon, plus: PlusIcon, launchPad: LaunchPadIcon } = icons;
+    const {
+        dashboard: DashboardIcon,
+        wallet: WalletIcon,
+        launchPad: LaunchPadIcon,
+    } = icons as NavbarIcons;
 
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
     const isWalletSyncing = walletStore.useTracked.syncState();
 
-    const { newModal } = useModal();
-    const { gate } = useLCNGatedAction();
-    const { data } = useGetUnreadUserNotifications();
-
     const navlinks = theme?.navbar ?? [];
-    const unreadCount = (data?.notifications?.length ?? 0) > 0 ? data?.notifications.length : null;
 
-    const handleBoostButton = async () => {
-        const { prompted } = await gate();
-        if (prompted) return;
-
-        newModal(
-            <AddToLearnCardMenu />,
-            {
-                sectionClassName: '!max-w-[500px]',
-            },
-            {
-                desktop: ModalTypes.Cancel,
-                mobile: ModalTypes.Cancel,
-            }
-        );
-    };
+    // Active tab icon sits in a themed pill (indigo/blue -200 @ 50% + white
+    // border) per the Figma "LearnCard Footer Nav - V3".
+    // Strip only the trailing shade (`-500`) so multi-word families survive,
+    // e.g. `baltic-blue-500` → `baltic-blue` (not `baltic`). Safelist the
+    // resulting `bg-{family}-200/50` in tailwind.config.js.
+    const pillFamily = theme?.colors?.defaults?.primaryColor?.replace(/-\d+$/, '') || 'indigo';
+    const iconPillClass = (active: boolean): string =>
+        `flex items-center justify-center p-[5px] rounded-[40px] ${
+            active ? `border border-solid border-white bg-${pillFamily}-200/50` : ''
+        }`;
 
     const activePathname = location.pathname;
     const isWalletTabActive =
         activePathname === '/wallet' || activePathname === '/passport' || activePathname === '/';
     const isLaunchPadTabActive = activePathname === '/launchpad';
+    const isDashboardTabActive = activePathname === '/dashboard';
 
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
 
-    let walletText = 'Passport';
-    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+    let walletText: string = m['sidemenu.links.passport']();
+    if (isSyncing || isCompleted)
+        walletText = isWalletSyncing?.text ?? m['sidemenu.links.passport']();
 
-    let walletTextStyles = 'mt-[6px]';
-    if (isSyncing) walletTextStyles = `${colors?.syncingColor} mt-[6px] pb-[2px]`;
-    if (isCompleted) walletTextStyles = `${colors?.completedColor} mt-[6px] pb-[2px]`;
+    let walletTextStyles = 'mt-[3px]';
+    if (isSyncing) walletTextStyles = `${colors?.syncingColor} mt-[3px] pb-[2px]`;
+    if (isCompleted) walletTextStyles = `${colors?.completedColor} mt-[3px] pb-[2px]`;
 
     return (
         <GenericErrorBoundary>
@@ -98,9 +93,11 @@ const MobileNavBar: React.FC = () => {
                 {isLoggedIn && showNavBar(activePathname) ? (
                     <IonTabBar
                         slot="bottom"
+                        className="lc-footer-nav"
                         style={{
-                            contain: 'none',
-                            overflow: 'visible',
+                            // Override Ionic's host padding with the design spacing plus
+                            // its live system-bar inset. This updates without a rerender.
+                            paddingBottom: 'calc(15px + var(--ion-safe-area-bottom, 0px))',
                         }}
                     >
                         {/*
@@ -108,29 +105,52 @@ const MobileNavBar: React.FC = () => {
                             set href to # to prevent id undefined errors & rerouting
                         */}
                         <IonTabButton tab="/" href="#" className="mobile-nav-hamburger-button">
-                            {unreadCount && (
-                                <div className="notification-count-mobile alert-indicator-dot">
-                                    {unreadCount}
-                                </div>
-                            )}
                             <IonMenuToggle menu="appSideMenu">
                                 <BurgerIcon className="text-grayscale-900 h-[35px] w-[35px] m-[10px]" />
                             </IonMenuToggle>
                         </IonTabButton>
 
                         {navlinks.map(link => {
+                            if (link.id === MobileNavBarLinks.dashboard) {
+                                return (
+                                    <IonTabButton key={link.id} tab={link.id} href={link.path}>
+                                        <div
+                                            className={`${iconPillClass(
+                                                isDashboardTabActive
+                                            )} relative`}
+                                        >
+                                            {DashboardIcon && (
+                                                <DashboardIcon
+                                                    className={`h-[35px] w-[35px] ${
+                                                        isDashboardTabActive
+                                                            ? colors?.activeColor
+                                                            : colors?.inactiveColor
+                                                    }`}
+                                                />
+                                            )}
+                                            {/* New-items indicator, top-right of the icon (Figma).
+                                                Hidden until the unread/new-items logic exists —
+                                                was hardcoded to always show. */}
+                                            {/* <span className="absolute top-[4px] right-[2px] h-[6px] w-[6px] rounded-full bg-red-500" /> */}
+                                        </div>
+                                        <IonLabel
+                                            className={`font-poppins font-semibold text-[11px] mt-[3px] ${
+                                                isDashboardTabActive
+                                                    ? colors?.activeColor
+                                                    : colors?.inactiveColor
+                                            }`}
+                                        >
+                                            {getNavBarLinkLabel(link)}
+                                        </IonLabel>
+                                    </IonTabButton>
+                                );
+                            }
+
                             if (link.id === MobileNavBarLinks.wallet) {
                                 return (
-                                    <IonTabButton
-                                        key={link.id}
-                                        tab={link.id}
-                                        href={link.path}
-                                        className="mobile-nav-left-button pl-[5px]"
-                                    >
+                                    <IonTabButton key={link.id} tab={link.id} href={link.path}>
                                         {(isSyncing || isCompleted) && (
-                                            <div
-                                                className={`flex items-center justify-center absolute top-[8px] z-50  h-[30px] w-[30px] rounded-[10px]`}
-                                            >
+                                            <div className="flex items-center justify-center absolute top-[8px] z-50 h-[30px] w-[30px] rounded-[10px]">
                                                 {isSyncing && (
                                                     <CustomSpinner
                                                         className={`h-[18px] w-[18px] ${colors?.syncingColor}`}
@@ -138,14 +158,18 @@ const MobileNavBar: React.FC = () => {
                                                 )}
                                             </div>
                                         )}
-                                        <WalletIcon
-                                            isSyncing={isSyncing}
-                                            isCompleted={isCompleted}
-                                            version={isWalletTabActive ? '2' : '1'}
-                                            className={`max-h-[35px] max-w-[35px] h-[35px] w-[35px] min-h-[35px] min-w-[35px]`}
-                                        />
+                                        <div className={iconPillClass(isWalletTabActive)}>
+                                            {WalletIcon && (
+                                                <WalletIcon
+                                                    isSyncing={isSyncing}
+                                                    isCompleted={isCompleted}
+                                                    version={isWalletTabActive ? '2' : '1'}
+                                                    className="h-[35px] w-[35px]"
+                                                />
+                                            )}
+                                        </div>
                                         <IonLabel
-                                            className={`font-notoSans font-bold text-[14px] ${
+                                            className={`font-poppins font-semibold text-[11px] ${
                                                 isWalletTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor
@@ -157,46 +181,25 @@ const MobileNavBar: React.FC = () => {
                                 );
                             }
 
-                            if (link.id === MobileNavBarLinks.plus) {
-                                return (
-                                    <IonTabButton
-                                        key={link.id}
-                                        tab={link.id}
-                                        onClick={handleBoostButton}
-                                        className="mobile-nav-boost-button"
-                                    >
-                                        <div
-                                            style={{
-                                                backgroundImage: `url(${PlusIcon})`,
-                                                backgroundPosition: 'center',
-                                                backgroundSize: 'contain',
-                                            }}
-                                            className="relative rounded-full h-[90px] w-[90px] flex items-center justify-center flex-col border-solid border-[3px] border-grayscale-100"
-                                        />
-                                    </IonTabButton>
-                                );
-                            }
-
                             if (link.id === MobileNavBarLinks.launchpad) {
                                 return (
-                                    <IonTabButton
-                                        key={link.id}
-                                        tab={link.id}
-                                        href={link.path}
-                                        className="mobile-nav-right-button relative pl-[10px] !rounded-[16px]"
-                                    >
-                                        <LaunchPadIcon
-                                            version={isLaunchPadTabActive ? '2' : '1'}
-                                            className="h-[35px] w-[35px] mt-[0px] mb-0"
-                                        />
+                                    <IonTabButton key={link.id} tab={link.id} href={link.path}>
+                                        <div className={iconPillClass(isLaunchPadTabActive)}>
+                                            {LaunchPadIcon && (
+                                                <LaunchPadIcon
+                                                    version={isLaunchPadTabActive ? '2' : '1'}
+                                                    className="h-[35px] w-[35px]"
+                                                />
+                                            )}
+                                        </div>
                                         <IonLabel
-                                            className={`font-notoSans font-bold mt-[6px] text-[14px] ${
+                                            className={`font-poppins font-semibold text-[11px] mt-[3px] ${
                                                 isLaunchPadTabActive
                                                     ? colors?.activeColor
                                                     : colors?.inactiveColor
                                             }`}
                                         >
-                                            {link.label}
+                                            {getNavBarLinkLabel(link)}
                                         </IonLabel>
                                     </IonTabButton>
                                 );
@@ -206,12 +209,7 @@ const MobileNavBar: React.FC = () => {
                         })}
                     </IonTabBar>
                 ) : (
-                    <IonTabBar
-                        slot="bottom"
-                        style={{
-                            display: 'none',
-                        }}
-                    />
+                    <IonTabBar slot="bottom" style={{ display: 'none' }} />
                 )}
             </IonTabs>
         </GenericErrorBoundary>

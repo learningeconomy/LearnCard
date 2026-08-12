@@ -26,7 +26,7 @@ import {
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
 
 export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = ({ chatBotQA }) => {
-    const { newModal } = useModal();
+    const { newModal, closeAllModals } = useModal();
     const { isDesktop } = useDeviceTypeByWidth();
     const history = useHistory();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -41,10 +41,8 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
     const sessions = data?.sessions ?? [];
     const app = getAiPassportAppByContractUri(topicRecord?.contractUri || '');
 
-    const {
-        data: learningPathwaysData,
-        isLoading: isLoadingPathways,
-    } = useGetLearningPathwaysForSession(sessions?.[0]?.boost?.uri || '');
+    const { data: learningPathwaysData, isLoading: isLoadingPathways } =
+        useGetLearningPathwaysForSession(sessions?.[0]?.boost?.uri || '');
 
     if (!sessionUri) return <></>;
 
@@ -57,6 +55,11 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
         const noPathways = (learningPathwaysData?.length ?? 0) === 0;
 
         if (!isLoading && (noSessions || (pathwaysLoaded && noPathways))) {
+            // If this component is rendered inside a modal (topic-aware New
+            // Session flow), dismiss it before navigating so we don't end up
+            // with the chat page sitting under a stale Revisit modal.
+            closeAllModals?.();
+
             if (app?.type === AiPassportAppsEnum.learncardapp) {
                 history.push(`/chats?topicUri=${encodeURIComponent(sessionUri)}`);
             } else {
@@ -79,6 +82,7 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
         history,
         app,
         currentLCNUser?.did,
+        closeAllModals,
     ]);
 
     const handleLearningPathwayPreview = (learningPathway: {
@@ -98,9 +102,13 @@ export const AiSessionLearningPathways: React.FC<{ chatBotQA: ChatBotQA[] }> = (
         );
     };
 
-    if (isLoading) {
+    if (isLoading || isLoadingPathways) {
         return (
-            <div className="w-full bg-grayscale-100 ion-padding">
+            <div
+                className={`w-full bg-grayscale-100 ion-padding ${
+                    isDesktop ? 'rounded-[20px] mt-4' : ''
+                }`}
+            >
                 <Swiper spaceBetween={16} slidesPerView={'auto'} style={{ paddingBottom: '2px' }}>
                     {Array.from({ length: 3 }).map((_, index) => (
                         <SwiperSlide key={index} style={{ width: '240px', height: '194px' }}>

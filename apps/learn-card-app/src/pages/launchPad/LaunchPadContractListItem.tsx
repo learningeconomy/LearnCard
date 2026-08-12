@@ -15,6 +15,7 @@ import useConsentFlow from '../consentFlow/useConsentFlow';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
+import * as m from '../../paraglide/messages.js';
 
 type LaunchPadContractListItemProps = {
     contract?: ConsentFlowContractDetails;
@@ -32,8 +33,8 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
 
     const { openConsentFlowModal, hasConsented } = useConsentFlow(contract);
 
-    if (filterBy === LaunchPadFilterOptionsEnum.unConnectedApps && hasConsented) return <></>;
-    if (filterBy === LaunchPadFilterOptionsEnum.myApps && !hasConsented) return <></>;
+    if (filterBy === LaunchPadFilterOptionsEnum.unConnectedApps && hasConsented) return null;
+    if (filterBy === LaunchPadFilterOptionsEnum.myApps && !hasConsented) return null;
 
     const buttonClass = `flex items-center justify-center rounded-full font-[600] rounded-full px-[20px] py-[5px] normal text-base font-poppins ${colors?.buttons?.unconnected}`;
     const connectedButtonClass = `flex items-center justify-center rounded-full font-[600] rounded-full px-[20px] py-[5px] normal text-base font-poppins ${colors?.buttons?.connected}`;
@@ -89,7 +90,7 @@ const LaunchPadContractListItem: React.FC<LaunchPadContractListItemProps> = ({
                             className={hasConsented ? connectedButtonClass : buttonClass}
                             disabled={isPending}
                         >
-                            {hasConsented ? 'Open' : 'Connect'}
+                            {hasConsented ? m['common.open']() : m['common.connect']()}
                         </button>
                     </div>
                 </div>

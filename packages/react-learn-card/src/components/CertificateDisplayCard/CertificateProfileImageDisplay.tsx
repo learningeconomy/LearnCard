@@ -8,6 +8,9 @@ type CertificateProfileImageDisplayProps = {
     isIssuer?: boolean;
     className?: string;
     userName?: string;
+    avatarColor?: string;
+    avatarFingerprintColor?: string;
+    avatarFallbackVariant?: 'initial' | 'fingerprint';
 };
 
 const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayProps> = ({
@@ -16,27 +19,44 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
     className = '',
     imageComponent,
     userName,
+    avatarColor,
+    avatarFingerprintColor,
+    avatarFallbackVariant = 'initial',
 }) => {
-    const imageClassName = `h-[50px] w-[50px] rounded-full overflow-hidden ${
-        isIssuer ? '!absolute border-[2px] border-solid border-grayscale-200' : ''
-    }`;
+    const imageClassName =
+        'h-[50px] w-[50px] rounded-full overflow-hidden border-[2px] border-solid border-grayscale-200';
+    const fingerprintClassName = isIssuer ? 'h-[38px] w-[38px]' : 'h-[36px] w-[36px]';
+    const silhouetteClassName = 'h-[38px] w-[38px]';
+
+    const profileImage = imageComponent ? (
+        <div className={imageClassName}>{imageComponent}</div>
+    ) : (
+        <UserProfilePicture
+            customContainerClass={imageClassName}
+            customImageClass="h-full w-full object-cover leading-normal bg-white"
+            user={{ image: imageUrl, name: userName }}
+            avatarColor={avatarColor}
+            avatarFingerprintColor={avatarFingerprintColor}
+            avatarIconClassName={fingerprintClassName}
+            avatarSilhouetteClassName={silhouetteClassName}
+            avatarFallbackVariant={avatarFallbackVariant}
+        />
+    );
 
     return (
         <div className={className}>
             {isIssuer && (
-                <div className="bg-white rounded-full p-[5px]">
-                    <IssuerSeal />
+                <div className="relative inline-flex items-center justify-center">
+                    <div className="bg-white rounded-full p-[5px]">
+                        <IssuerSeal />
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        {profileImage}
+                    </div>
                 </div>
             )}
 
-            {imageComponent && <div className={imageClassName}>{imageComponent}</div>}
-            {!imageComponent && (
-                <UserProfilePicture
-                    customContainerClass={`${imageClassName} ${!imageUrl ? 'pt-[6px]' : ''}`}
-                    customImageClass="h-full w-full object-cover"
-                    user={{ image: imageUrl, name: userName }}
-                />
-            )}
+            {!isIssuer && profileImage}
         </div>
     );
 };

@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import AiPathwayCareerGauge from './AiPathwayCareerGauge';
 
 import { type AiPathwayCareer } from './ai-pathway-careers.helpers';
@@ -15,11 +17,11 @@ export const AiPathwayCareerQualitativeInsights: React.FC<{ career: AiPathwayCar
 
             <div className="w-full flex items-center justify-start gap-4 my-2">
                 <AiPathwayCareerGauge
-                    title="Job Stability"
+                    title={m['aiPathways.jobStability']()}
                     score={career?.qualitativeInsights.jobSecurityScore}
                 />
                 <AiPathwayCareerGauge
-                    title="Work-Life Balance"
+                    title={m['aiPathways.workLifeBalance']()}
                     score={career?.qualitativeInsights.workLifeBalanceScore}
                 />
             </div>

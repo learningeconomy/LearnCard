@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { Updater } from 'use-immer';
 import { createPortal } from 'react-dom';
 import { Keyboard } from '@capacitor/keyboard';
@@ -9,6 +9,8 @@ import { IonCol, IonRow, IonInput } from '@ionic/react';
 
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
+import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostCMSMediaLinkAttachmentProps = {
     state: BoostCMSMediaState;
@@ -22,6 +24,7 @@ type BoostCMSMediaLinkAttachmentProps = {
     hideBackButton?: boolean;
     handleCloseModal?: () => void;
     setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
+    hideCloseButton?: boolean;
 };
 
 const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = ({
@@ -35,8 +38,12 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
     hideBackButton,
     handleCloseModal,
     setShowCloseButtonState,
+    hideCloseButton,
 }) => {
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(getTopmostCancelPortal());
+    }, []);
 
     const { title, color, Icon } = boostMediaOptions.find(({ type }) => type === activeMediaType);
 
@@ -64,7 +71,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Title"
+                    placeholder={m['boost.cms.media.titlePlaceholder']()}
                     type="text"
                     value={state.links?.[currentIndex]?.title || newLinkTitle}
                     onIonInput={e => {
@@ -85,7 +92,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Paste link..."
+                    placeholder={m['boost.cms.media.pasteLink']()}
                     type="text"
                     value={state.links?.[currentIndex]?.url || newLinkUrl}
                     onIonInput={e => {
@@ -128,7 +135,7 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                                 }}
                                 className={`flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
                             >
-                                Save
+                                {m['common.save']()}
                             </button>
                         </div>
 
@@ -137,14 +144,16 @@ const BoostCMSMediaLinkAttachment: React.FC<BoostCMSMediaLinkAttachmentProps> = 
                                 onClick={() => {
                                     if (createMode) {
                                         setActiveMediaType(null);
-                                        setShowCloseButtonState?.(true);
+                                        if (!hideCloseButton) {
+                                            setShowCloseButtonState?.(true);
+                                        }
                                     } else {
                                         handleCloseModal?.();
                                     }
                                 }}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Back
+                                {m['common.close']()}
                             </button>
                         </div>
                     </div>,

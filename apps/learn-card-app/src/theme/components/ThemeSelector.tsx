@@ -1,43 +1,49 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import themeStore from '../store/themeStore';
-import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
+import * as m from '../../paraglide/messages.js';
 
-import { useTheme } from '../hooks/useTheme';
-import { ThemeEnum } from '../helpers/theme-helpers';
-import { loadThemeSchema } from '../helpers/loadTheme';
+import { getAllowedThemes, isThemeSwitchingEnabled } from '../store/themeStore';
+
+import { applyTheme, useTheme } from '../hooks/useTheme';
+import { loadThemeSchema, getRegisteredThemeIds } from '../helpers/loadTheme';
 import { ThemeButton } from '../validators/theme.validators';
-import { ViewMode } from '../types/theme.types';
-import {
-    useCreatePreferences,
-    useGetPreferencesForDid,
-    useUpdatePreferences,
-} from 'learn-card-base';
-
-const THEMES: ThemeEnum[] = [ThemeEnum.Colorful, ThemeEnum.Formal];
+import { useUpdatePreferences } from 'learn-card-base';
+import Swatches from '../../components/svgs/Swatches';
 
 export enum themeSelectorViewMode {
     Mini = 'mini',
     Full = 'full',
+    // Compact single-row toggle for the desktop side menu (LC-1921):
+    // swatches icon + "Colorful/Neutral Mode" label + a switch that flips
+    // between the colorful and formal (neutral) themes.
+    Compact = 'compact',
 }
+
+// TODOS:
+// do a native builds ios + android
+// check all existing flows
+
+// checkout google doc, fix easiest items first
+// # https://docs.google.com/document/d/1oBkAlfT-ipRzmndRLev2G_d54g12hwuncFEqS2_H8uA/edit?pli=1&tab=t.0#task=ApQbAo4m6trRc6nu
 
 export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
     viewMode = themeSelectorViewMode.Full,
 }) => {
     const flags = useFlags();
-    const { theme, syncThemeDefaults } = useTheme();
-    const setTheme = themeStore.set.theme;
+    const { theme, colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
 
-    const schemas = useMemo(() => THEMES.map(loadThemeSchema), []);
+    const allowedThemeIds = useMemo(() => {
+        const allowed = new Set(getAllowedThemes());
 
-    const { mutateAsync: createPreferences, isPending: isCreatingPreferences } =
-        useCreatePreferences();
+        return getRegisteredThemeIds().filter(id => allowed.has(id));
+    }, []);
+
+    const schemas = useMemo(() => allowedThemeIds.map(loadThemeSchema), [allowedThemeIds]);
+
     const { mutateAsync: updatePreferences, isPending: isUpdatingPreferences } =
         useUpdatePreferences();
-    const { data: preferences, refetch: refetchPreferences } = useGetPreferencesForDid(
-        flags?.enableThemeToggle
-    );
 
     const themeButtons = useMemo<ThemeButton[]>(() => {
         return schemas.map(schema => ({
@@ -47,47 +53,59 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         }));
     }, [schemas]);
 
-    const handleThemeChange = useCallback((t: ThemeEnum) => setTheme(t), [setTheme]);
-
-    const handleSetViewMode = (themeSelected: ThemeEnum) => {
-        const schema = loadThemeSchema(themeSelected);
-        if (schema?.defaults?.viewMode === ViewMode.Grid) {
-            passportPageStore.set.setViewMode(PassportPageViewMode.grid);
-        } else if (schema?.defaults?.viewMode === ViewMode.List) {
-            passportPageStore.set.setViewMode(PassportPageViewMode.list);
-        }
+    const handleSetTheme = async (themeSelected: string) => {
+        await updatePreferences({
+            theme: themeSelected,
+        });
+        applyTheme(themeSelected);
     };
-
-    const handleSetTheme = async (themeSelected: ThemeEnum) => {
-        if (!preferences?.theme) {
-            await createPreferences({
-                theme: themeSelected,
-            });
-        } else {
-            await updatePreferences({
-                theme: themeSelected,
-            });
-        }
-        handleThemeChange(themeSelected);
-        handleSetViewMode(themeSelected);
-        syncThemeDefaults(themeSelected);
-        refetchPreferences();
-    };
-
-    const syncTheme = useCallback(() => {
-        const cachedTheme = themeStore.get.theme();
-        if (cachedTheme !== preferences?.theme && preferences?.theme !== undefined) {
-            handleSetTheme(preferences?.theme as ThemeEnum);
-        }
-    }, [preferences]);
-
-    // only sync theme if preferences are loaded
-    // && the cached theme is different from the theme stored in the DB
-    useEffect(() => {
-        syncTheme();
-    }, [syncTheme]);
 
     if (flags?.enableThemeToggle === false) return null;
+
+    if (!isThemeSwitchingEnabled()) return null;
+
+    if (viewMode === themeSelectorViewMode.Compact) {
+        const isColorful = theme.id === 'colorful';
+        const targetTheme = isColorful ? 'formal' : 'colorful';
+
+        // Compact toggle only makes sense as a colorful ↔ neutral switch.
+        // If the alternate theme isn't allowed for this tenant, hide it.
+        if (!allowedThemeIds.includes(targetTheme)) return null;
+
+        const label = isColorful ? m['theme.colorfulMode']() : m['theme.neutralMode']();
+        const onColor = primaryColor ? `bg-${primaryColor}` : 'bg-indigo-500';
+
+        return (
+            <div className="w-full px-4">
+                <button
+                    type="button"
+                    onClick={async () => {
+                        await handleSetTheme(targetTheme);
+                    }}
+                    disabled={isUpdatingPreferences}
+                    aria-pressed={isColorful}
+                    aria-label={`Theme: ${label}`}
+                    className="w-full flex items-center gap-[10px] px-[10px] py-[5px] rounded-[10px]"
+                >
+                    <Swatches className="w-[35px] h-[35px] shrink-0" />
+                    <span className="flex-1 text-left text-grayscale-900 font-poppins text-[17px]">
+                        {label}
+                    </span>
+                    <span
+                        className={`relative shrink-0 w-[27px] h-[15px] rounded-full transition-colors ${
+                            isColorful ? onColor : 'bg-grayscale-800'
+                        }`}
+                    >
+                        <span
+                            className={`absolute top-1/2 -translate-y-1/2 w-[11px] h-[11px] bg-white rounded-full transition-all ${
+                                isColorful ? 'right-[2.5px]' : 'left-[2.5px]'
+                            }`}
+                        />
+                    </span>
+                </button>
+            </div>
+        );
+    }
 
     if (viewMode === themeSelectorViewMode.Mini) {
         return (
@@ -102,7 +120,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                             onClick={async () => {
                                 await handleSetTheme(btn.theme);
                             }}
-                            disabled={isCreatingPreferences}
+                            disabled={isUpdatingPreferences}
                             aria-pressed={selected}
                             className={`w-full flex items-center justify-start py-[12px] px-2 text-xs text-grayscale-900 rounded-full ${
                                 selected ? 'bg-white rounded-[16px] shadow-soft-bottom' : ''
@@ -127,10 +145,11 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         <div className="w-full px-4">
             <div className="w-full flex bg-white flex-col items-center justify-start py-4 rounded-[16px] gap-2">
                 <div className="w-full px-4 flex flex-col gap-2">
-                    <h4 className="w-full text-grayscale-900 text-[17px]">Choose Your Theme</h4>
+                    <h4 className="w-full text-grayscale-900 text-[17px]">{m['theme.title']()}</h4>
                     <p className="w-full text-grayscale-600 text-xs">
-                        Switch between our signature, colorful experience and a classic, formal
-                        style.
+                        {allowedThemeIds.includes('colorful') && allowedThemeIds.includes('formal')
+                            ? m['theme.subtitleColorfulFormal']()
+                            : m['theme.subtitleGeneric']()}
                     </p>
                 </div>
 
@@ -148,7 +167,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                                     onClick={async () => {
                                         await handleSetTheme(btn.theme);
                                     }}
-                                    disabled={isCreatingPreferences}
+                                    disabled={isUpdatingPreferences}
                                     aria-pressed={selected}
                                     className={`w-full flex items-center justify-start py-[12px] px-2 text-xs text-grayscale-900 rounded-[10px] ${
                                         selected ? 'bg-white rounded-[16px] shadow-soft-bottom' : ''
@@ -162,7 +181,14 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
                                             className="w-[30px] h-[30px] object-contain"
                                         />
                                     )}
-                                    <span className="ml-1">{btn.label}</span>
+                                    <span className="ml-1">
+                                        {{
+                                            colorful: m['theme.names.colorful'],
+                                            formal: m['theme.names.formal'],
+                                            vetpass: m['theme.names.vetpass'],
+                                        }[btn.theme as 'colorful' | 'formal' | 'vetpass']?.() ??
+                                            btn.label}
+                                    </span>
                                 </button>
                             );
                         })}

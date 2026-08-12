@@ -11,7 +11,7 @@ The SDK determines the active host origin using this priority order:
 ### 1. **Hardcoded Default** (Security Anchor)
 
 ```typescript
-PartnerConnect.DEFAULT_HOST_ORIGIN = 'https://learncard.app'
+PartnerConnect.DEFAULT_HOST_ORIGIN = 'https://learncard.app';
 ```
 
 This is the ultimate fallback and foundational security anchor.
@@ -28,7 +28,7 @@ The LearnCard host app inserts this query parameter into the iframe URL when ser
 
 ```typescript
 const learnCard = createPartnerConnect({
-  hostOrigin: 'https://learncard.app'
+    hostOrigin: 'https://learncard.app',
 });
 ```
 
@@ -39,29 +39,36 @@ First value in the `hostOrigin` array, or the single string value if not an arra
 ### LearnCard Host Behavior
 
 **Production Environment:**
+
 ```html
 <iframe src="https://partner-app.com/"></iframe>
 ```
-- No `lc_host_override` parameter
-- SDK uses configured/default origin
+
+-   No `lc_host_override` parameter
+-   SDK uses configured/default origin
 
 **Staging Environment:**
+
 ```html
 <iframe src="https://partner-app.com/?lc_host_override=https://staging.learncard.app"></iframe>
 ```
-- `lc_host_override` parameter present
-- SDK adopts staging origin for all communication
+
+-   `lc_host_override` parameter present
+-   SDK adopts staging origin for all communication
 
 **Preview Environment:**
+
 ```html
 <iframe src="https://partner-app.com/?lc_host_override=https://pr-123.learncard.app"></iframe>
 ```
-- Dynamically generated override
-- SDK routes to preview environment
+
+-   Dynamically generated override
+-   SDK routes to preview environment
 
 ### Partner App Behavior
 
 The SDK automatically:
+
 1. Reads the `lc_host_override` query parameter
 2. Validates it against the configured whitelist (if provided)
 3. Adopts it as the active origin
@@ -74,7 +81,7 @@ The SDK automatically:
 
 ```typescript
 const learnCard = createPartnerConnect({
-  hostOrigin: 'https://learncard.app'
+    hostOrigin: 'https://learncard.app',
 });
 
 // URL: ?lc_host_override=https://staging.learncard.app
@@ -86,11 +93,11 @@ const learnCard = createPartnerConnect({
 
 ```typescript
 const learnCard = createPartnerConnect({
-  hostOrigin: [
-    'https://learncard.app',
-    'https://staging.learncard.app',
-    'https://preview.learncard.app'
-  ]
+    hostOrigin: [
+        'https://learncard.app',
+        'https://staging.learncard.app',
+        'https://preview.learncard.app',
+    ],
 });
 
 // Scenario 1: Valid override
@@ -114,6 +121,7 @@ const learnCard = createPartnerConnect({
 ### The Validation Rule
 
 **Mathematical Equivalence:**
+
 ```
 Incoming Message Origin ≡ Active Host Origin
 ```
@@ -129,7 +137,7 @@ Even if an attacker manipulates the query parameter:
 // URL: ?lc_host_override=https://evil.com
 
 const learnCard = createPartnerConnect({
-  hostOrigin: ['https://learncard.app']  // Whitelist
+    hostOrigin: ['https://learncard.app'], // Whitelist
 });
 
 // What happens:
@@ -152,10 +160,7 @@ const learnCard = createPartnerConnect({
 ```typescript
 // Production config - same for all environments
 const learnCard = createPartnerConnect({
-  hostOrigin: [
-    'https://learncard.app',
-    'https://staging.learncard.app'
-  ]
+    hostOrigin: ['https://learncard.app', 'https://staging.learncard.app'],
 });
 
 // Production: iframe URL has no query param
@@ -169,16 +174,16 @@ const learnCard = createPartnerConnect({
 
 ```typescript
 const learnCard = createPartnerConnect({
-  hostOrigin: [
-    'https://learncard.app',
-    'https://staging.learncard.app',
-    'https://pr-*.learncard.app'  // ❌ Won't work - no wildcards
-  ]
+    hostOrigin: [
+        'https://learncard.app',
+        'https://staging.learncard.app',
+        'https://pr-*.learncard.app', // ❌ Won't work - no wildcards
+    ],
 });
 
 // Better approach: Don't validate preview origins
 const learnCard = createPartnerConnect({
-  hostOrigin: 'https://learncard.app'  // No whitelist
+    hostOrigin: 'https://learncard.app', // No whitelist
 });
 
 // Any preview origin will be accepted via lc_host_override
@@ -190,10 +195,7 @@ const learnCard = createPartnerConnect({
 
 ```typescript
 const learnCard = createPartnerConnect({
-  hostOrigin: [
-    'https://learncard.app',
-    'http://localhost:3000'
-  ]
+    hostOrigin: ['https://learncard.app', 'http://localhost:3000'],
 });
 
 // LearnCard running locally
@@ -238,7 +240,7 @@ private isValidOrigin(eventOrigin: string): boolean {
 ```typescript
 private sendMessage<T>(action: string, payload?: unknown): Promise<T> {
   const message = { protocol, action, requestId, payload };
-  
+
   // Use active origin (configured or overridden)
   window.parent.postMessage(message, this.activeHostOrigin);
 }
@@ -249,11 +251,13 @@ private sendMessage<T>(action: string, payload?: unknown): Promise<T> {
 The SDK logs origin configuration for debugging:
 
 **Valid Override:**
+
 ```
 [LearnCard SDK] Using lc_host_override: https://staging.learncard.app
 ```
 
 **Invalid Override:**
+
 ```
 [LearnCard SDK] lc_host_override value is not in the configured whitelist: https://evil.com
 Allowed: ['https://learncard.app', 'https://staging.learncard.app']
@@ -261,6 +265,7 @@ Allowed: ['https://learncard.app', 'https://staging.learncard.app']
 ```
 
 **No Override:**
+
 ```
 [LearnCard SDK] Using configured origin: https://learncard.app
 ```
@@ -270,97 +275,106 @@ Allowed: ['https://learncard.app', 'https://staging.learncard.app']
 ### ✅ DO
 
 1. **Use whitelist for known environments:**
-   ```typescript
-   hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
-   ```
+
+    ```typescript
+    hostOrigin: ['https://learncard.app', 'https://staging.learncard.app'];
+    ```
 
 2. **Log validation failures in production:**
-   - Monitor console warnings about invalid overrides
-   - May indicate misconfiguration or attack attempts
+
+    - Monitor console warnings about invalid overrides
+    - May indicate misconfiguration or attack attempts
 
 3. **Test both with and without override:**
-   - Verify fallback behavior
-   - Ensure whitelist validation works
+    - Verify fallback behavior
+    - Ensure whitelist validation works
 
 ### ❌ DON'T
 
-1. **Don't use wildcards (not supported):**
-   ```typescript
-   hostOrigin: ['https://*.learncard.app']  // Won't work
-   ```
+1. **Use wildcards only for label(s) at the start of the host:**
+
+    ```typescript
+    hostOrigin: ['https://*.learncard.app']; // ✅ Supported — matches any subdomain(s)
+    hostOrigin: ['https://learncard.*']; // ❌ Not supported — TLD wildcards
+    hostOrigin: ['https://api-*.example.com']; // ❌ Not supported — partial labels
+    ```
 
 2. **Don't hardcode staging URLs in production:**
-   ```typescript
-   // ❌ Bad
-   const origin = isDev ? 'http://localhost:3000' : 'https://learncard.app';
-   
-   // ✅ Good
-   const origin = ['https://learncard.app', 'https://staging.learncard.app'];
-   ```
+
+    ```typescript
+    // ❌ Bad
+    const origin = isDev ? 'http://localhost:3000' : 'https://learncard.app';
+
+    // ✅ Good
+    const origin = ['https://learncard.app', 'https://staging.learncard.app'];
+    ```
 
 3. **Don't disable validation carelessly:**
-   ```typescript
-   // ⚠️ Insecure if deployed to production
-   hostOrigin: undefined  // Accepts any override
-   ```
+    ```typescript
+    // ⚠️ Insecure if deployed to production
+    hostOrigin: undefined; // Accepts any override
+    ```
 
 ## Testing
 
 ### Manual Testing
 
 1. **Test default behavior:**
-   ```
-   https://partner-app.com/
-   → Should use first configured origin
-   ```
+
+    ```
+    https://partner-app.com/
+    → Should use first configured origin
+    ```
 
 2. **Test valid override:**
-   ```
-   https://partner-app.com/?lc_host_override=https://staging.learncard.app
-   → Should use staging origin
-   → Check console for confirmation log
-   ```
+
+    ```
+    https://partner-app.com/?lc_host_override=https://staging.learncard.app
+    → Should use staging origin
+    → Check console for confirmation log
+    ```
 
 3. **Test invalid override:**
-   ```
-   https://partner-app.com/?lc_host_override=https://evil.com
-   → Should fall back to first configured origin
-   → Check console for warning log
-   ```
+
+    ```
+    https://partner-app.com/?lc_host_override=https://evil.com
+    → Should fall back to first configured origin
+    → Check console for warning log
+    ```
 
 4. **Test message rejection:**
-   - Manually send postMessage from unauthorized origin
-   - Verify SDK silently rejects the message
-   - No errors should be thrown
+    - Manually send postMessage from unauthorized origin
+    - Verify SDK silently rejects the message
+    - No errors should be thrown
 
 ### Automated Testing
 
 ```typescript
 describe('lc_host_override', () => {
-  it('should use override when in whitelist', () => {
-    // Mock window.location.search
-    Object.defineProperty(window, 'location', {
-      value: { search: '?lc_host_override=https://staging.learncard.app' }
+    it('should use override when in whitelist', () => {
+        // Mock window.location.search
+        Object.defineProperty(window, 'location', {
+            value: { search: '?lc_host_override=https://staging.learncard.app' },
+        });
+
+        const sdk = createPartnerConnect({
+            hostOrigin: ['https://learncard.app', 'https://staging.learncard.app'],
+        });
+
+        // Assert: activeHostOrigin === 'https://staging.learncard.app'
     });
 
-    const sdk = createPartnerConnect({
-      hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
+    it('should reject override not in whitelist', () => {
+        Object.defineProperty(window, 'location', {
+            value: { search: '?lc_host_override=https://evil.com' },
+        });
+
+        const sdk = createPartnerConnect({
+            hostOrigin: ['https://learncard.app'],
+        });
+
+        // Assert: activeHostOrigin === 'https://learncard.app'
     });
-
-    // Assert: activeHostOrigin === 'https://staging.learncard.app'
-  });
-
-  it('should reject override not in whitelist', () => {
-    Object.defineProperty(window, 'location', {
-      value: { search: '?lc_host_override=https://evil.com' }
-    });
-
-    const sdk = createPartnerConnect({
-      hostOrigin: ['https://learncard.app']
-    });
-
-    // Assert: activeHostOrigin === 'https://learncard.app'
-  });
 });
 ```
 
@@ -376,7 +390,7 @@ describe('lc_host_override', () => {
 ```typescript
 // This still works
 const learnCard = createPartnerConnect({
-  hostOrigin: 'https://learncard.app'
+    hostOrigin: 'https://learncard.app',
 });
 
 // Now additionally supports:
@@ -389,10 +403,10 @@ If you previously used multiple origins for detection:
 
 ```typescript
 // Before: Used for detection
-hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
+hostOrigin: ['https://learncard.app', 'https://staging.learncard.app'];
 
 // After: Used for whitelist validation
-hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
+hostOrigin: ['https://learncard.app', 'https://staging.learncard.app'];
 // Behavior change: No longer accepts both by default
 // Requires lc_host_override to use staging
 ```
@@ -400,10 +414,10 @@ hostOrigin: ['https://learncard.app', 'https://staging.learncard.app']
 ## FAQ
 
 **Q: Can I use wildcards in the whitelist?**  
-A: No, only exact origin matching is supported for security.
+A: Yes — `hostOrigin` entries of the form `<protocol>://*.<domain>` (e.g. `https://*.learncard.app`) match any non-empty chain of leading DNS labels. Protocol and port must still match exactly.
 
 **Q: What if I don't provide a whitelist?**  
-A: Any `lc_host_override` value will be accepted (less secure).
+A: The SDK still enforces the built-in LearnCard tenant whitelist (`PartnerConnect.DEFAULT_TRUSTED_TENANTS`: `learncard.app`, `*.learncard.app`, `*.learncard.ai`, `vetpass.app`, `*.vetpass.app`), plus native-app origins when `allowNativeAppOrigins` is true. Origins outside those patterns are still rejected. Pass `disableDefaultTenants: true` to disable the built-in list.
 
 **Q: Can attackers use this to hijack communication?**  
 A: No. Even with a malicious override, browser security prevents origin spoofing.

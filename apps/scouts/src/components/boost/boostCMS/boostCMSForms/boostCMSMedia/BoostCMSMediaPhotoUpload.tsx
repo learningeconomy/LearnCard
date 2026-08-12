@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
-import { useFilestack, UploadRes, BoostCMSMediaState } from 'learn-card-base';
+import { useImageUpload, UploadRes, BoostCMSMediaState } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { IonCol, IonRow, IonInput } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -9,6 +9,8 @@ import { Updater } from 'use-immer';
 import { produce } from 'immer';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-cms-media-photo-upload');
 
 type ThumbListItemProps = {
     photoUrl: string;
@@ -73,7 +75,7 @@ const BoostCMSMediaPhotoUpload: React.FC<{
         );
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         // options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -129,7 +131,7 @@ const BoostCMSMediaPhotoUpload: React.FC<{
                 />
             </div>
             {/* {state?.photos && state.photos?.map(photo => {
-                return <ThumbListItem  photoUrl={photo.url} handleDelete={()=>console.log('///delete item')}/>
+                return <ThumbListItem  photoUrl={photo.url} handleDelete={()=>log.debug('///delete item')}/>
             })} */}
             {!imageUploadLoading ? (
                 <button

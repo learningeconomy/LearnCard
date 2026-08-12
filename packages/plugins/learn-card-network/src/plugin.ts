@@ -2,6 +2,7 @@ import { getClient, getApiTokenClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
     LCNProfile,
+    LCNVisibleProfile,
     UnsignedVCValidator,
     VCValidator,
     VPValidator,
@@ -9,10 +10,21 @@ import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
     JWE,
+    UnsignedVC,
+    VC,
+    BitstringCredentialStatusEntry,
+    BitstringCredentialStatusPurpose,
+    StoredCredentialEnvelope,
+    StoredCredentialEnvelopeValidator,
+    isStoredCredentialEnvelope,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
-import { isVC2Format } from '@learncard/helpers';
+import {
+    getCredentialStatusArray,
+    isVC2Format,
+    resolveStorageReadResult,
+} from '@learncard/helpers';
 import Mustache from 'mustache';
 
 import {
@@ -22,63 +34,331 @@ import {
     TrustedBoostRegistryEntry,
 } from './types';
 
+const uint8ArrayToBase64Url = (bytes: Uint8Array): string => {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!);
+    const base64 =
+        typeof btoa === 'function'
+            ? btoa(binary)
+            : Buffer.from(binary, 'binary').toString('base64');
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+type WireEnvelope = StoredCredentialEnvelope & { data: string };
+
+const normalizeEnvelopeForTransport = <T>(
+    value: T
+): Exclude<T, StoredCredentialEnvelope> | WireEnvelope => {
+    if (!isStoredCredentialEnvelope(value)) {
+        return value as Exclude<T, StoredCredentialEnvelope>;
+    }
+    if (typeof value.data === 'string') return value as WireEnvelope;
+    return { ...value, data: uint8ArrayToBase64Url(value.data) };
+};
+
+/* -------------------------------------------------------------------------- *
+ * Boost template rendering helpers
+ * -------------------------------------------------------------------------- *
+ *
+ * A "boost" is stored on the server as a JSON string that may contain Mustache
+ * variables (e.g. `{{recipient_name}}`, `{{#evidence}}...{{/evidence}}`). When
+ * we send a boost to a recipient, we substitute those variables with values
+ * from `templateData` BEFORE the JSON is parsed back into a credential object.
+ *
+ * Because substitution happens against a raw JSON string, any user-supplied
+ * value (names, titles, descriptions, etc.) must be escaped so that control
+ * characters do not corrupt the JSON. The helpers below implement that
+ * escape-then-render pipeline, plus a small evidence-merging step for template
+ * data that carries an `evidence` field.
+ *
+ * The same behavior is implemented server-side in
+ * `brain-service/src/helpers/template.helpers.ts`. If you change the escaping
+ * rules here, mirror the change there (and vice versa) so that client-side
+ * and server-side rendering produce identical output.
+ * -------------------------------------------------------------------------- */
+
 /**
- * Escapes a string value for safe inclusion in a JSON string.
+ * Escapes a single scalar value so it can be safely inlined inside a JSON
+ * string literal.
+ *
+ * The order of replacements matters: backslashes MUST be escaped first,
+ * otherwise subsequent replacements (which themselves introduce backslashes)
+ * would be double-escaped and produce invalid JSON.
+ *
+ * Null / undefined coerce to an empty string so Mustache renders nothing
+ * rather than the literal text "null" / "undefined" inside the JSON.
+ *
+ * @param value - Any scalar value to be rendered into a JSON string position
+ * @returns A string whose characters are valid inside a JSON string literal
  */
 const escapeJsonStringValue = (value: unknown): string => {
     if (value === null || value === undefined) return '';
 
     return String(value)
-        .replace(/\\/g, '\\\\')
-        .replace(/"/g, '\\"')
-        .replace(/\n/g, '\\n')
-        .replace(/\r/g, '\\r')
-        .replace(/\t/g, '\\t')
-        .replace(/\f/g, '\\f')
-        .replace(/[\b]/g, '\\b');
+        .replace(/\\/g, '\\\\') // backslash — must run first
+        .replace(/"/g, '\\"') // double quote — would close the JSON string
+        .replace(/\n/g, '\\n') // newline
+        .replace(/\r/g, '\\r') // carriage return
+        .replace(/\t/g, '\\t') // tab
+        .replace(/\f/g, '\\f') // form feed
+        .replace(/[\b]/g, '\\b'); // backspace (character class to dodge \b word-boundary)
 };
 
 /**
- * Prepares templateData for safe JSON rendering by escaping string values.
+ * Recursively walks a template-data value and escapes every string leaf for
+ * JSON safety, while preserving the original array / object shape.
+ *
+ * Keeping the structure intact is important because Mustache sections such as
+ * `{{#evidence}}...{{/evidence}}` iterate over arrays and read properties off
+ * the objects inside them — we cannot simply flatten everything to strings.
+ *
+ * Non-string primitives (numbers, booleans) are passed through untouched so
+ * that the template author can decide whether to render them quoted or bare.
  */
-const prepareTemplateData = (templateData: Record<string, unknown>): Record<string, string> => {
-    const prepared: Record<string, string> = {};
+const prepareTemplateValue = (value: unknown): unknown => {
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.map(prepareTemplateValue);
+    if (typeof value === 'object') {
+        return Object.fromEntries(
+            Object.entries(value as Record<string, unknown>).map(([key, nestedValue]) => [
+                key,
+                prepareTemplateValue(nestedValue),
+            ])
+        );
+    }
+    if (typeof value === 'string') return escapeJsonStringValue(value);
+
+    return value;
+};
+
+/**
+ * Top-level wrapper around {@link prepareTemplateValue} that returns a new
+ * object with every leaf string escaped for JSON safety.
+ *
+ * Only the direct top-level entries are enumerated here; deeper recursion is
+ * delegated to {@link prepareTemplateValue}.
+ */
+const prepareTemplateData = (templateData: Record<string, unknown>): Record<string, unknown> => {
+    const prepared: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(templateData)) {
-        prepared[key] = escapeJsonStringValue(value);
+        prepared[key] = prepareTemplateValue(value);
     }
 
     return prepared;
 };
 
 /**
- * Renders a Mustache template with JSON-safe escaping.
+ * Renders a Mustache-templated JSON string using `templateData`, with two
+ * LearnCard-specific adjustments on top of stock Mustache:
+ *
+ * 1. `templateData` is pre-escaped via {@link prepareTemplateData} so that
+ *    user-supplied strings do not break the surrounding JSON.
+ * 2. Plain `{{var}}` tags are rewritten to triple-mustache `{{{var}}}` to
+ *    disable Mustache's built-in HTML escaping. We want our own JSON escaping
+ *    (from step 1), not `&amp;` / `&quot;` HTML entities.
+ *
+ * Section / comment / partial / unescaped tags — anything starting with
+ * `#`, `^`, `/`, `!`, `>`, `&`, or `=` — are left alone; Mustache already
+ * handles those correctly.
+ *
+ * @param jsonString - The raw boost JSON string containing `{{variables}}`
+ * @param templateData - Values to substitute, keyed by variable name
+ * @returns The rendered JSON string, ready to be `JSON.parse`'d
  */
 const renderTemplateJson = (jsonString: string, templateData: Record<string, unknown>): string => {
     const preparedData = prepareTemplateData(templateData);
-    const unescapedTemplate = jsonString.replace(/\{\{([^{}]+)\}\}/g, '{{{$1}}}');
+
+    // Rewrite `{{var}}` → `{{{var}}}` so Mustache skips its HTML escaping.
+    // Anything with a control sigil (#, ^, /, !, >, &, =) is a section /
+    // comment / partial / unescaped tag and must be passed through verbatim.
+    const unescapedTemplate = jsonString.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (match, tag) => {
+        const trimmedTag = tag.trim();
+
+        return /^[#^/!>&=]/.test(trimmedTag) ? match : `{{{${trimmedTag}}}}`;
+    });
 
     return Mustache.render(unescapedTemplate, preparedData);
 };
+
+/**
+ * Returns `true` if the boost template itself already references `evidence`
+ * as a Mustache variable / section (e.g. `{{evidence}}`, `{{#evidence}}`,
+ * `{{evidence.id}}`).
+ *
+ * The trailing `[.\s}]|$` boundary prevents false positives on tokens that
+ * merely START with the word `evidence`, such as `{{evidenceList}}` or
+ * `{{evidenceItem.foo}}` — those should NOT count as the author handling
+ * evidence themselves.
+ *
+ * When this returns `true` the caller should skip the auto-append step in
+ * {@link appendTemplateEvidence} to avoid duplicating entries (the template
+ * author is already placing evidence wherever they want it in the output).
+ */
+const hasDynamicEvidenceTemplate = (jsonString: string): boolean => {
+    return /\{\{\s*[#^/]?\s*evidence(?:[.\s}]|$)/.test(jsonString);
+};
+
+/**
+ * Merges any `evidence` entries supplied in `templateData` onto the boost's
+ * top-level `evidence` array.
+ *
+ * This exists because not every boost template opts into rendering evidence
+ * via a `{{evidence}}` section. For those templates we still want evidence
+ * supplied at send-time (e.g. a recipient-specific media attachment) to land
+ * on the final credential — so we append it as a post-render step.
+ *
+ * Behavior:
+ * - Skipped entirely when `allowAutoAppend` is `false`. The caller typically
+ *   derives that flag from {@link hasDynamicEvidenceTemplate} — if the
+ *   template renders evidence itself, we must NOT also append it here, or the
+ *   recipient would see the same evidence twice.
+ * - Accepts either a single evidence object or an array of them under
+ *   `templateData.evidence` and normalizes to an array.
+ * - Strips the internal `last` marker used by upstream list-rendering code;
+ *   that field is a rendering hint and should never land on the credential.
+ * - Preserves any evidence already present on the boost and appends the new
+ *   entries after it.
+ *
+ * @param boost - The parsed credential object produced by `JSON.parse`
+ * @param templateData - The same template data used for rendering; may contain an `evidence` field
+ * @param allowAutoAppend - Set to `false` when the template already renders evidence itself
+ * @returns A new boost object (or the original reference when nothing changed)
+ */
+const appendTemplateEvidence = (
+    boost: any,
+    templateData?: Record<string, unknown>,
+    allowAutoAppend: boolean = true
+) => {
+    if (!allowAutoAppend) return boost;
+
+    const templateEvidence = templateData?.evidence;
+
+    if (!templateEvidence) return boost;
+
+    // Accept either a single evidence object or an array; drop the `last`
+    // marker that upstream rendering code uses for iteration hints.
+    const normalizedTemplateEvidence = (
+        Array.isArray(templateEvidence) ? templateEvidence : [templateEvidence]
+    ).map(evidenceItem => {
+        if (evidenceItem && typeof evidenceItem === 'object' && 'last' in evidenceItem) {
+            const { last, ...rest } = evidenceItem as Record<string, unknown>;
+
+            return rest;
+        }
+
+        return evidenceItem;
+    });
+
+    if (normalizedTemplateEvidence.length === 0) return boost;
+
+    // Preserve any evidence the template already baked in, normalizing a
+    // single-object shape to an array so we can spread it.
+    const existingEvidence = boost.evidence
+        ? Array.isArray(boost.evidence)
+            ? boost.evidence
+            : [boost.evidence]
+        : [];
+
+    return {
+        ...boost,
+        evidence: [...existingEvidence, ...normalizedTemplateEvidence],
+    };
+};
+
+const hasDid = (profile: LCNProfile | LCNVisibleProfile | undefined): profile is LCNProfile => {
+    return (
+        !!profile && 'did' in profile && typeof profile.did === 'string' && profile.did.length > 0
+    );
+};
+
+const appendNetworkCredentialStatus = async (
+    client: any,
+    credential: UnsignedVC,
+    statusPurposes: BitstringCredentialStatusPurpose[] = ['revocation']
+): Promise<UnsignedVC> => {
+    if (!isVC2Format(credential)) return credential;
+
+    const existingStatuses = getCredentialStatusArray(credential);
+    const missingPurposes = statusPurposes.filter(statusPurpose => {
+        return !existingStatuses.some(
+            status =>
+                status.type === 'BitstringStatusListEntry' && status.statusPurpose === statusPurpose
+        );
+    });
+
+    if (missingPurposes.length === 0) return credential;
+
+    const entries = (await client.boost.allocateCredentialStatus.mutate({
+        statusPurposes: missingPurposes,
+    })) as BitstringCredentialStatusEntry[];
+
+    const credentialStatuses = [...existingStatuses, ...entries];
+    credential.credentialStatus = (
+        credentialStatuses.length === 1 ? credentialStatuses[0] : credentialStatuses
+    ) as UnsignedVC['credentialStatus'];
+
+    return credential;
+};
+
+const issueCredentialWithNetworkStatus = async (
+    learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
+    client: any,
+    credential: UnsignedVC,
+    statusPurposes?: BitstringCredentialStatusPurpose[]
+): Promise<VC> => {
+    return learnCard.invoke.issueCredential(
+        await appendNetworkCredentialStatus(client, credential, statusPurposes)
+    );
+};
+
 export * from './types';
+
+export type GuardianApprovalGetter = () => string | undefined | Promise<string | undefined>;
 
 /**
  * @group Plugins
  */
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
-    url: string
+    url: string,
+    apiTokenOrOptions?: {
+        guardianApprovalGetter?: GuardianApprovalGetter;
+        extraHeaders?: Record<string, string>;
+    }
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiToken: string
+    apiToken: string,
+    options?: {
+        guardianApprovalGetter?: GuardianApprovalGetter;
+        extraHeaders?: Record<string, string>;
+    }
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiToken?: string
+    apiTokenOrOptions?:
+        | string
+        | {
+              guardianApprovalGetter?: GuardianApprovalGetter;
+              extraHeaders?: Record<string, string>;
+          },
+    options?: {
+        guardianApprovalGetter?: GuardianApprovalGetter;
+        extraHeaders?: Record<string, string>;
+    }
 ): Promise<LearnCardNetworkPlugin> {
+    const apiToken = typeof apiTokenOrOptions === 'string' ? apiTokenOrOptions : undefined;
+    const guardianApprovalGetter =
+        (typeof apiTokenOrOptions === 'object'
+            ? apiTokenOrOptions?.guardianApprovalGetter
+            : undefined) ?? options?.guardianApprovalGetter;
+
+    const extraHeaders =
+        (typeof apiTokenOrOptions === 'object' ? apiTokenOrOptions?.extraHeaders : undefined) ??
+        options?.extraHeaders;
     // Initialize DID safely: in API-key mode there may be no local ID plane provider
     let did = '';
     try {
@@ -92,14 +372,22 @@ export async function getLearnCardNetworkPlugin(
 
     learnCard?.debug?.('Adding LearnCardNetwork Plugin');
     const client = apiToken
-        ? await getApiTokenClient(url, apiToken)
-        : await getClient(url, async challenge => {
-            const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+        ? await getApiTokenClient(url, apiToken, guardianApprovalGetter, extraHeaders)
+        : await getClient(
+              url,
+              async challenge => {
+                  const jwt = await learnCard.invoke.getDidAuthVp({
+                      proofFormat: 'jwt',
+                      challenge,
+                  });
 
-            if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+                  if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-            return jwt;
-        });
+                  return jwt;
+              },
+              guardianApprovalGetter,
+              extraHeaders
+          );
 
     let userData: LCNProfile | undefined;
 
@@ -129,10 +417,12 @@ export async function getLearnCardNetworkPlugin(
             // ignore; initialQuery errors are non-fatal in API-key mode
         }
 
-        // Retry once in API-token mode in case the initial query raced with method calls
-        if (!userData && apiToken) {
+        // Retry once in case the initial query raced with method calls or failed transiently
+        if (!userData) {
             try {
-                learnCard?.debug?.('LCN ensureUser: retrying getProfile with apiToken');
+                learnCard?.debug?.('LCN ensureUser: retrying getProfile', {
+                    hasApiToken: !!apiToken,
+                });
                 const res = await client.profile.getProfile.query();
                 userData = res;
                 if (userData?.did) did = userData.did;
@@ -160,6 +450,68 @@ export async function getLearnCardNetworkPlugin(
             );
             return _learnCard.invoke.resolveFromLCN(boostUri);
         }
+    };
+
+    const getInboxEndpointForDid = async (
+        _learnCard: any,
+        recipientDid: string
+    ): Promise<string> => {
+        const serviceUrl = new URL(url);
+        const serviceDomain = `${serviceUrl.hostname}${
+            serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+        }`;
+        const localServiceDid = `did:web:${serviceDomain}`;
+
+        const getInferredServiceDid = (did: string): string | null => {
+            if (!did.startsWith('did:web:')) return null;
+
+            const parts = did.split(':');
+            if (parts.length < 3) return null;
+
+            const pathMarkerIndex = parts.findIndex((part, index) => {
+                if (index < 3) return false;
+                return part === 'users' || part === 'app' || part === 'manager';
+            });
+
+            if (pathMarkerIndex === -1) {
+                return did;
+            }
+
+            return `did:web:${parts.slice(2, pathMarkerIndex).join(':')}`;
+        };
+
+        const getInboxService = (didDoc: {
+            service?: Array<{
+                type: string | string[];
+                serviceEndpoint?: string;
+                serviceDid?: string;
+            }>;
+        }) =>
+            didDoc.service?.find(service => {
+                const type = Array.isArray(service.type) ? service.type[0] : service.type;
+                return type === 'UniversalInboxService' || type === 'LearnCardInboxService';
+            });
+
+        const inferredServiceDid = getInferredServiceDid(recipientDid);
+
+        if (inferredServiceDid === localServiceDid) {
+            return `${serviceUrl.origin}/api/inbox/receive`;
+        }
+
+        const didDoc = await _learnCard.invoke.resolveDid(recipientDid);
+        const inboxService = getInboxService(didDoc);
+
+        if ((inboxService?.serviceDid || inferredServiceDid) === localServiceDid) {
+            return `${serviceUrl.origin}/api/inbox/receive`;
+        }
+
+        if (!inboxService?.serviceEndpoint) {
+            throw new Error(
+                `Recipient DID ${recipientDid} does not have a UniversalInboxService endpoint in its DID document`
+            );
+        }
+
+        return inboxService.serviceEndpoint;
     };
 
     return {
@@ -204,7 +556,10 @@ export async function getLearnCardNetworkPlugin(
                         }
                     }
 
-                    return await VCValidator.or(VPValidator).parseAsync(result);
+                    const parsed = await VCValidator.or(VPValidator)
+                        .or(StoredCredentialEnvelopeValidator)
+                        .parseAsync(result);
+                    return resolveStorageReadResult(parsed);
                 } catch (error) {
                     _learnCard.debug?.(error);
                     return undefined;
@@ -215,7 +570,9 @@ export async function getLearnCardNetworkPlugin(
             upload: async (_learnCard, credential) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                return client.storage.store.mutate({ item: credential });
+                return client.storage.store.mutate({
+                    item: normalizeEnvelopeForTransport(credential),
+                });
             },
             uploadEncrypted: async (
                 _learnCard,
@@ -235,9 +592,17 @@ export async function getLearnCardNetworkPlugin(
                     );
                 }
 
-                const jwe = await _learnCard.invoke.createDagJwe(credential, recipientsList);
+                const jwe = await _learnCard.invoke.createDagJwe(
+                    normalizeEnvelopeForTransport(credential),
+                    recipientsList
+                );
 
                 return client.storage.store.mutate({ item: jwe });
+            },
+            delete: async (_learnCard, uri) => {
+                await ensureUser();
+
+                return client.credential.deleteCredential.mutate({ uri });
             },
         },
         methods: {
@@ -310,6 +675,22 @@ export async function getLearnCardNetworkPlugin(
             getManagedProfiles: async (_learnCard, options = {}) => {
                 return client.profileManager.getManagedProfiles.query(options);
             },
+            claimPendingGuardianLinks: async () => {
+                await ensureUser();
+                return client.inbox.claimPendingGuardianLinks.mutate({});
+            },
+            getMyManagedChildren: async () => {
+                await ensureUser();
+                return client.profileManager.getMyManagedChildren.query();
+            },
+            getMyGuardians: async () => {
+                await ensureUser();
+                return client.profileManager.getMyGuardians.query();
+            },
+            removeManagesRelationship: async (_learnCard, profileId) => {
+                await ensureUser();
+                return client.profileManager.removeManagesRelationship.mutate({ profileId });
+            },
             getManagedServiceProfiles: async (_learnCard, options = {}) => {
                 await ensureUser();
 
@@ -347,7 +728,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch { }
+                } catch {}
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -487,6 +868,62 @@ export async function getLearnCardNetworkPlugin(
             sendCredential: async (_learnCard, profileId, vc, metadataOrEncrypt, encrypt) => {
                 await ensureUser();
 
+                if (profileId.startsWith('did:web:')) {
+                    const inboxEndpoint = await getInboxEndpointForDid(_learnCard, profileId);
+
+                    // Handle metadata parameter
+                    let metadata: Record<string, unknown> | undefined;
+                    if (typeof metadataOrEncrypt === 'object') {
+                        metadata = metadataOrEncrypt;
+                    }
+
+                    const myProfile = await client.profile.getProfile.query();
+                    const issuerDid = myProfile?.did || (await client.utilities.getDid.query());
+                    const issuerDisplayName = myProfile?.displayName || 'Unknown Issuer';
+                    const signedCredential = await issueCredentialWithNetworkStatus(
+                        _learnCard,
+                        client,
+                        vc
+                    );
+                    const didAuthJwt = await _learnCard.invoke.getDidAuthVp({
+                        proofFormat: 'jwt',
+                        challenge: `inbox-federation-${crypto.randomUUID()}`,
+                    });
+
+                    let receiveUrl = inboxEndpoint;
+
+                    if (receiveUrl.includes('localhost')) {
+                        receiveUrl = receiveUrl.replace('https://', 'http://');
+                    }
+
+                    const response = await fetch(receiveUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${didAuthJwt}`,
+                        },
+                        body: JSON.stringify({
+                            recipientDid: profileId,
+                            credential: signedCredential,
+                            issuerDid,
+                            issuerDisplayName,
+                            configuration: {
+                                ...metadata,
+                                federatedFrom: issuerDid,
+                            },
+                        }),
+                        signal: AbortSignal.timeout(30000),
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(`Federation failed: ${error}`);
+                    }
+
+                    const result = await response.json();
+                    return result.issuanceId;
+                }
+
                 // Handle backward compatibility: if metadataOrEncrypt is a boolean, it's the encrypt flag
                 let metadata: Record<string, unknown> | undefined;
                 let shouldEncrypt = true;
@@ -511,6 +948,7 @@ export async function getLearnCardNetworkPlugin(
                 const target = await _learnCard.invoke.getProfile(profileId);
 
                 if (!target) throw new Error('Could not find target account');
+                if (!hasDid(target)) throw new Error('Could not find target DID');
 
                 const credential = await _learnCard.invoke.createDagJwe(vc, [
                     _learnCard.id.did(),
@@ -567,6 +1005,7 @@ export async function getLearnCardNetworkPlugin(
                 const target = await _learnCard.invoke.getProfile(profileId);
 
                 if (!target) throw new Error('Could not find target account');
+                if (!hasDid(target)) throw new Error('Could not find target DID');
 
                 const presentation = await _learnCard.invoke.createDagJwe(vp, [
                     _learnCard.id.did(),
@@ -841,7 +1280,7 @@ export async function getLearnCardNetworkPlugin(
                     updates: { ...(credential && { credential }), ...restUpdates },
                 };
 
-                if (Array.isArray(skills) && skills.length > 0) payload.skills = skills;
+                if (Array.isArray(skills)) payload.skills = skills;
 
                 return client.boost.updateBoost.mutate(payload);
             },
@@ -905,10 +1344,49 @@ export async function getLearnCardNetworkPlugin(
 
                 return result;
             },
-            revokeBoostRecipient: async (_learnCard, boostUri, recipientProfileId) => {
+            allocateCredentialStatus: async (_learnCard, options = {}) => {
                 await ensureUser();
 
-                return client.boost.revokeBoostRecipient.mutate({ boostUri, recipientProfileId });
+                return client.boost.allocateCredentialStatus.mutate(options);
+            },
+            revokeBoostRecipient: async (
+                _learnCard,
+                boostUri,
+                recipientProfileId,
+                credentialUri
+            ) => {
+                await ensureUser();
+
+                const input = { boostUri, recipientProfileId };
+                if (credentialUri !== undefined) Object.assign(input, { credentialUri });
+
+                return client.boost.revokeBoostRecipient.mutate(input);
+            },
+            suspendBoostRecipient: async (
+                _learnCard,
+                boostUri,
+                recipientProfileId,
+                credentialUri
+            ) => {
+                await ensureUser();
+
+                const input = { boostUri, recipientProfileId };
+                if (credentialUri !== undefined) Object.assign(input, { credentialUri });
+
+                return client.boost.suspendBoostRecipient.mutate(input);
+            },
+            unsuspendBoostRecipient: async (
+                _learnCard,
+                boostUri,
+                recipientProfileId,
+                credentialUri
+            ) => {
+                await ensureUser();
+
+                const input = { boostUri, recipientProfileId };
+                if (credentialUri !== undefined) Object.assign(input, { credentialUri });
+
+                return client.boost.unsuspendBoostRecipient.mutate(input);
             },
             deleteBoost: async (_learnCard, uri) => {
                 await ensureUser();
@@ -931,6 +1409,7 @@ export async function getLearnCardNetworkPlugin(
                 const targetProfile = await _learnCard.invoke.getProfile(profileId);
 
                 if (!targetProfile) throw new Error('Target profile not found');
+                if (!hasDid(targetProfile)) throw new Error('Target profile has no DID');
 
                 let boost = data.data;
 
@@ -959,15 +1438,23 @@ export async function getLearnCardNetworkPlugin(
                     options.templateData &&
                     Object.keys(options.templateData).length > 0
                 ) {
+                    const boostString = JSON.stringify(boost);
+                    const allowAutoAppendEvidence = !hasDynamicEvidenceTemplate(boostString);
+
                     try {
-                        const boostString = JSON.stringify(boost);
                         const rendered = renderTemplateJson(boostString, options.templateData);
                         boost = JSON.parse(rendered);
+                        boost = appendTemplateEvidence(
+                            boost,
+                            options.templateData,
+                            allowAutoAppendEvidence
+                        );
                     } catch (error) {
                         throw new Error(
-                            `Template substitution failed: ${error instanceof Error ? error.message : 'Unknown error'
+                            `Template substitution failed: ${
+                                error instanceof Error ? error.message : 'Unknown error'
                             }. ` +
-                            `Please check your templateData variables and ensure the rendered output is valid JSON.`
+                                `Please check your templateData variables and ensure the rendered output is valid JSON.`
                         );
                     }
                 }
@@ -976,7 +1463,14 @@ export async function getLearnCardNetworkPlugin(
                     boost = options.overideFn(boost);
                 }
 
-                const vc = await _learnCard.invoke.issueCredential(boost);
+                const statusPurposes =
+                    typeof options === 'object' ? options.statusPurposes : undefined;
+                const vc = await issueCredentialWithNetworkStatus(
+                    _learnCard,
+                    client,
+                    boost,
+                    statusPurposes
+                );
 
                 // options is allowed to be a boolean to maintain backwards compatibility
                 if ((typeof options === 'object' && !options.encrypt) || !options) {
@@ -1064,9 +1558,79 @@ export async function getLearnCardNetworkPlugin(
                     const isDid = recipient.startsWith('did:');
                     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
                     const isPhone = /^\+?[\d\s-]{10,}$/.test(recipient.replace(/[\s-]/g, ''));
+                    const serviceUrl = new URL(url);
+                    const serviceDomain = `${serviceUrl.hostname}${
+                        serviceUrl.port ? `%3A${serviceUrl.port}` : ''
+                    }`;
+                    const recipientDomain = recipient.startsWith('did:web:')
+                        ? recipient.split(':')[2]
+                        : undefined;
+                    const isRemoteDidWebRecipient =
+                        recipient.startsWith('did:web:') && recipientDomain !== serviceDomain;
 
-                    // For DID/profileId recipients with local signing capability, sign client-side
-                    // This optimization reduces round trips by signing locally before sending
+                    if (isRemoteDidWebRecipient && input.templateUri) {
+                        const boostRecord = await _learnCard.invoke.getBoost(input.templateUri);
+                        let boost = boostRecord.boost;
+                        const boostString = JSON.stringify(boost);
+                        const allowAutoAppendEvidence = !hasDynamicEvidenceTemplate(boostString);
+
+                        if (input.templateData && Object.keys(input.templateData).length > 0) {
+                            const rendered = renderTemplateJson(boostString, input.templateData);
+                            boost = JSON.parse(rendered);
+                            boost = appendTemplateEvidence(
+                                boost,
+                                input.templateData,
+                                allowAutoAppendEvidence
+                            );
+                        }
+
+                        if (isVC2Format(boost)) {
+                            boost.validFrom = new Date().toISOString();
+                        } else {
+                            boost.issuanceDate = new Date().toISOString();
+                        }
+
+                        boost.issuer = _learnCard.id.did();
+
+                        if (Array.isArray(boost.credentialSubject)) {
+                            boost.credentialSubject = boost.credentialSubject.map(subject => ({
+                                ...subject,
+                                id: recipient,
+                            }));
+                        } else {
+                            boost.credentialSubject = {
+                                ...boost.credentialSubject,
+                                id: recipient,
+                            };
+                        }
+
+                        if (boost.type?.includes('BoostCredential')) {
+                            boost.boostId = input.templateUri;
+                        }
+
+                        const signedCredential = await issueCredentialWithNetworkStatus(
+                            _learnCard,
+                            client,
+                            boost
+                        );
+                        const credentialUri = await _learnCard.invoke.sendCredential(
+                            recipient,
+                            signedCredential,
+                            {
+                                boostUri: input.templateUri,
+                                templateData: input.templateData,
+                                integrationId: input.integrationId,
+                            }
+                        );
+
+                        return {
+                            type: 'boost' as const,
+                            credentialUri,
+                            uri: input.templateUri,
+                            activityId: '',
+                        };
+                    }
+
                     const canIssueLocally = 'issueCredential' in _learnCard.invoke;
                     const isDirectRecipient = isDid || (!isEmail && !isPhone);
 
@@ -1085,25 +1649,33 @@ export async function getLearnCardNetworkPlugin(
                             } else {
                                 const targetProfile = await _learnCard.invoke.getProfile(recipient);
 
-                                if (!targetProfile) return client.boost.send.mutate(input);
+                                if (!hasDid(targetProfile)) return client.boost.send.mutate(input);
 
                                 targetDid = targetProfile.did;
                             }
 
                             let boost = data.data;
+                            const boostString = JSON.stringify(boost);
+                            const allowAutoAppendEvidence =
+                                !hasDynamicEvidenceTemplate(boostString);
 
                             // Apply templateData if provided
                             if (input.templateData && Object.keys(input.templateData).length > 0) {
                                 try {
-                                    const boostString = JSON.stringify(boost);
                                     const rendered = renderTemplateJson(
                                         boostString,
                                         input.templateData
                                     );
                                     boost = JSON.parse(rendered);
+                                    boost = appendTemplateEvidence(
+                                        boost,
+                                        input.templateData,
+                                        allowAutoAppendEvidence
+                                    );
                                 } catch (error) {
                                     throw new Error(
-                                        `Failed to apply template data: ${error instanceof Error ? error.message : 'Unknown error'
+                                        `Failed to apply template data: ${
+                                            error instanceof Error ? error.message : 'Unknown error'
                                         }`
                                     );
                                 }
@@ -1132,7 +1704,30 @@ export async function getLearnCardNetworkPlugin(
                             if (boost?.type?.includes('BoostCredential'))
                                 boost.boostId = input.templateUri;
 
-                            const signedCredential = await _learnCard.invoke.issueCredential(boost);
+                            const signedCredential = await issueCredentialWithNetworkStatus(
+                                _learnCard,
+                                client,
+                                boost
+                            );
+
+                            if (isDid && recipient.startsWith('did:web:')) {
+                                const credentialUri = await _learnCard.invoke.sendCredential(
+                                    recipient,
+                                    signedCredential,
+                                    {
+                                        boostUri: input.templateUri,
+                                        templateData: input.templateData,
+                                        integrationId: input.integrationId,
+                                    }
+                                );
+
+                                return {
+                                    type: 'boost' as const,
+                                    credentialUri,
+                                    uri: input.templateUri,
+                                    activityId: '',
+                                };
+                            }
 
                             return client.boost.send.mutate({
                                 ...input,
@@ -1264,6 +1859,12 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.getTermsTransactionHistory.query({ uri, ...options });
             },
 
+            getHolderExportMetadata: async _learnCard => {
+                await ensureUser();
+
+                return client.credential.getHolderExportMetadata.query({});
+            },
+
             getCredentialsForContract: async (_learnCard, termsUri, options = {}) => {
                 await ensureUser();
 
@@ -1288,6 +1889,14 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.syncCredentialsToContract.mutate({
                     termsUri,
                     categories,
+                });
+            },
+
+            deleteCredentialFromAllContracts: async (_learnCard, deletedUris) => {
+                await ensureUser();
+
+                return client.contracts.deleteCredentialFromAllContracts.mutate({
+                    deletedUris,
                 });
             },
 
@@ -1348,6 +1957,14 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.contracts.getAllContractRequestsForProfile.query({
+                    targetProfileId,
+                });
+            },
+
+            getSharedInsightsRequestsForProfile: async (_learnCard, targetProfileId) => {
+                await ensureUser();
+
+                return client.contracts.getSharedInsightsRequestsForProfile.query({
                     targetProfileId,
                 });
             },
@@ -1528,6 +2145,30 @@ export async function getLearnCardNetworkPlugin(
             approveGuardianRequestByPath: async (_learnCard, token) => {
                 // Open route; no auth required
                 return client.inbox.approveGuardianRequestByPath.query({ token });
+            },
+            getGuardianPendingCredential: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.getGuardianPendingCredential.query({ token });
+            },
+            sendGuardianChallenge: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.sendGuardianChallenge.mutate({ token });
+            },
+            approveGuardianCredential: async (_learnCard, token, otpCode) => {
+                // Open route; no auth required
+                return client.inbox.approveGuardianCredential.mutate({ token, otpCode });
+            },
+            rejectGuardianCredential: async (_learnCard, token, otpCode) => {
+                // Open route; no auth required
+                return client.inbox.rejectGuardianCredential.mutate({ token, otpCode });
+            },
+            approveGuardianCredentialInApp: async (_learnCard, inboxCredentialId) => {
+                await ensureUser();
+                return client.inbox.approveGuardianCredentialInApp.mutate({ inboxCredentialId });
+            },
+            rejectGuardianCredentialInApp: async (_learnCard, inboxCredentialId) => {
+                await ensureUser();
+                return client.inbox.rejectGuardianCredentialInApp.mutate({ inboxCredentialId });
             },
             addContactMethod: async (_learnCard, contactMethod) => {
                 await ensureUser();
@@ -1768,6 +2409,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.appStore.getListingSigningAuthority.query({ listingId });
             },
+            getIntegrationForListing: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.getIntegrationForListing.query({ listingId });
+            },
 
             getAppStoreListing: async (_learnCard, listingId) => {
                 await ensureUser();
@@ -1791,6 +2437,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.submitForReview.mutate({ listingId });
+            },
+
+            unsubmitAppStoreListing: async (_learnCard, listingId) => {
+                await ensureUser();
+
+                return client.appStore.unsubmitForReview.mutate({ listingId });
             },
 
             getListingsForIntegration: async (_learnCard, integrationId, options = {}) => {
@@ -1854,6 +2506,12 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.isAppInstalled.query({ listingId });
             },
 
+            getMyCredentialsFromApp: async (_learnCard, listingId, options = {}) => {
+                await ensureUser();
+
+                return client.appStore.getMyCredentialsFromApp.query({ listingId, ...options });
+            },
+
             isAppStoreAdmin: async _learnCard => {
                 await ensureUser();
 
@@ -1883,6 +2541,16 @@ export async function getLearnCardNetworkPlugin(
 
             // App Store Boost Management
             addBoostToApp: async (_learnCard, listingId, boostUri, templateAlias) => {
+                await ensureUser();
+
+                return client.appStore.addBoostToListing.mutate({
+                    listingId,
+                    boostUri,
+                    templateAlias,
+                });
+            },
+
+            associateBoostWithListing: async (_learnCard, listingId, boostUri, templateAlias) => {
                 await ensureUser();
 
                 return client.appStore.addBoostToListing.mutate({
@@ -1931,6 +2599,12 @@ export async function getLearnCardNetworkPlugin(
                 return client.activity.getMyActivities.query(options);
             },
 
+            getMyCredentialLifecycleStatuses: async (_learnCard, options) => {
+                await ensureUser();
+
+                return client.activity.getMyCredentialLifecycleStatuses.query(options);
+            },
+
             getActivityStats: async (_learnCard, options = {}) => {
                 await ensureUser();
 
@@ -1947,6 +2621,15 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.activity.getActivityChain.query(options);
+            },
+
+            isServiceTrusted: async (_learnCard, serviceDid) => {
+                const trustedServices = await client.federation.getTrustedServices.query({});
+                return trustedServices.some(s => s.did === serviceDid);
+            },
+
+            getTrustedServices: async () => {
+                return client.federation.getTrustedServices.query({});
             },
         },
     };
@@ -1997,7 +2680,6 @@ export const getVerifyBoostPlugin = async (
         if (!issuerDID) return;
         return boostRegistry.find(o => o.did === issuerDID);
     };
-
     return {
         name: 'VerifyBoost',
         displayName: 'Verify Boost Extension',
@@ -2014,15 +2696,33 @@ export const getVerifyBoostPlugin = async (
                         const verifyBoostCredential = await learnCard.invoke.verifyCredential(
                             boostCredential
                         );
+                        const boostCredentialErrors = verifyBoostCredential.errors ?? [];
+                        if (verifyBoostCredential.status?.length) {
+                            verificationCheck.status = [
+                                ...(verificationCheck.status ?? []),
+                                ...verifyBoostCredential.status,
+                            ];
+                        }
+
                         if (!boostCredential?.boostId && !credential?.boostId) {
                             verificationCheck.warnings.push(
                                 'Boost Authenticity could not be verified: Boost ID metadata is missing.'
                             );
                         }
 
-                        if (verifyBoostCredential.errors?.length > 0) {
+                        if (boostCredentialErrors.length > 0) {
+                            if (
+                                boostCredentialErrors.some(error =>
+                                    /revoked|suspend|status/i.test(error)
+                                )
+                            ) {
+                                verificationCheck.checks = verificationCheck.checks.filter(
+                                    check => check !== 'status'
+                                );
+                            }
+
                             verificationCheck.errors = [
-                                ...(verifyBoostCredential.errors || []),
+                                ...boostCredentialErrors,
                                 ...(verificationCheck.errors || []),
                                 'Boost Credential could not be verified.',
                             ];

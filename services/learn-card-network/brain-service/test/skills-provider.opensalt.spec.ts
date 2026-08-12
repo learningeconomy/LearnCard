@@ -72,9 +72,9 @@ describe('OpenSALT skills provider', () => {
         const root = skills.find(skill => skill.id === ROOT_SKILL_ID);
         const child = skills.find(skill => skill.id === CHILD_SKILL_ID);
 
-        expect(root?.type).toBe('container');
+        expect(root?.type).toBe('competency');
         expect(root?.parentId).toBeNull();
-        expect(child?.type).toBe('skill');
+        expect(child?.type).toBe('competency');
         expect(child?.parentId).toBe(ROOT_SKILL_ID);
     });
 

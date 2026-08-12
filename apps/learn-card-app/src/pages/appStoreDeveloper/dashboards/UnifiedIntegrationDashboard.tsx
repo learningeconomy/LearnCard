@@ -19,8 +19,10 @@ import {
     Link as LinkIcon,
     Settings,
     FileSpreadsheet,
+    ChevronDown,
 } from 'lucide-react';
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
@@ -28,6 +30,9 @@ import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import { DashboardLayout, QuickStats, StatItem } from './shared';
 import { AppDidUpgradeDialog } from '../components/AppDidUpgradeDialog';
 import { useDeveloperPortal } from '../useDeveloperPortal';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('unified-integration-dashboard');
 
 // Lazy load tab components for better code splitting
 // Only the active tab is loaded, reducing initial bundle by ~250KB
@@ -42,6 +47,9 @@ const ApiTokensTab = lazy(() =>
 );
 const EmbedCodeTab = lazy(() =>
     import('./tabs/EmbedCodeTab').then(m => ({ default: m.EmbedCodeTab }))
+);
+const EmbedConfigTab = lazy(() =>
+    import('./tabs/EmbedConfigTab').then(m => ({ default: m.EmbedConfigTab }))
 );
 const ContractsTab = lazy(() =>
     import('./tabs/ContractsTab').then(m => ({ default: m.ContractsTab }))
@@ -72,6 +80,12 @@ const AppConfigTab = lazy(() =>
 const CsvUploadTab = lazy(() =>
     import('./tabs/CsvUploadTab').then(m => ({ default: m.CsvUploadTab }))
 );
+const ConsentFlowCodeTab = lazy(() =>
+    import('./tabs/ConsentFlowCodeTab').then(m => ({ default: m.ConsentFlowCodeTab }))
+);
+const ConsentFlowTestingTab = lazy(() =>
+    import('./tabs/ConsentFlowTestingTab').then(m => ({ default: m.ConsentFlowTestingTab }))
+);
 import {
     DashboardConfig,
     DashboardStats,
@@ -85,55 +99,123 @@ import { useIntegrationActivity } from './hooks/useIntegrationActivity';
 
 function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
     const tabs: DashboardTabConfig[] = [
-        { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+        {
+            id: 'overview',
+            label: m['developerPortal.dashboards.nav.overview'](),
+            icon: LayoutDashboard,
+        },
     ];
 
     if (config.showTemplates) {
-        tabs.push({ id: 'templates', label: 'Templates', icon: Award });
+        tabs.push({
+            id: 'templates',
+            label: m['developerPortal.dashboards.nav.templates'](),
+            icon: Award,
+        });
     }
 
     if (config.showApiTokens) {
-        tabs.push({ id: 'tokens', label: 'API Tokens', icon: Key });
+        tabs.push({
+            id: 'tokens',
+            label: m['developerPortal.dashboards.nav.apiTokens'](),
+            icon: Key,
+        });
+    }
+
+    if (config.showEmbedConfig) {
+        tabs.push({
+            id: 'embed-config',
+            label: m['developerPortal.dashboards.nav.config'](),
+            icon: Settings,
+        });
     }
 
     if (config.showEmbedCode) {
-        tabs.push({ id: 'embed-code', label: 'Embed Code', icon: Code });
+        tabs.push({
+            id: 'embed-code',
+            label: m['developerPortal.dashboards.nav.embedCode'](),
+            icon: Code,
+        });
     }
 
     if (config.showContracts) {
-        tabs.push({ id: 'contracts', label: 'Contracts', icon: FileText });
+        tabs.push({
+            id: 'contracts',
+            label: m['developerPortal.dashboards.nav.contracts'](),
+            icon: FileText,
+        });
     }
 
     if (config.showConnections) {
-        tabs.push({ id: 'connections', label: 'Connections', icon: Users });
+        tabs.push({
+            id: 'connections',
+            label: m['developerPortal.dashboards.nav.connections'](),
+            icon: Users,
+        });
     }
 
     if (config.showSigningAuthority) {
-        tabs.push({ id: 'signing', label: 'Signing', icon: Shield });
+        tabs.push({
+            id: 'signing',
+            label: m['developerPortal.dashboards.nav.signing'](),
+            icon: Shield,
+        });
     }
 
     if (config.showBranding) {
-        tabs.push({ id: 'branding', label: 'Branding', icon: Palette });
+        tabs.push({
+            id: 'branding',
+            label: m['developerPortal.dashboards.nav.branding'](),
+            icon: Palette,
+        });
     }
 
     // embed-app specific tabs
     if (config.showAppListings) {
-        tabs.push({ id: 'app-listings', label: 'App Listings', icon: Layout });
+        tabs.push({
+            id: 'app-listings',
+            label: m['developerPortal.dashboards.nav.appListings'](),
+            icon: Layout,
+        });
     }
 
     if (config.showPartnerConnect) {
-        tabs.push({ id: 'partner-connect', label: 'Partner Connect', icon: LinkIcon });
+        tabs.push({
+            id: 'partner-connect',
+            label: m['developerPortal.dashboards.nav.partnerConnect'](),
+            icon: LinkIcon,
+        });
     }
 
     if (config.showAppConfig) {
-        tabs.push({ id: 'app-config', label: 'App Config', icon: Settings });
+        tabs.push({
+            id: 'app-config',
+            label: m['developerPortal.dashboards.nav.appConfig'](),
+            icon: Settings,
+        });
     }
 
-    // course-catalog specific tabs (API code + CSV upload + testing)
-    if (config.showTemplates && !config.showAppListings) {
-        tabs.push({ id: 'code', label: 'Code', icon: FileCode });
-        tabs.push({ id: 'csv-upload', label: 'CSV Upload', icon: FileSpreadsheet });
-        tabs.push({ id: 'testing', label: 'Testing', icon: TestTube2 });
+    // API-based integration tabs (code snippets, CSV upload, testing)
+    // Excluded for embed-claim which has its own live preview in the Embed Code tab
+    if (config.showTemplates && !config.showAppListings && !config.showEmbedCode) {
+        tabs.push({
+            id: 'code',
+            label: m['developerPortal.dashboards.nav.code'](),
+            icon: FileCode,
+        });
+        // CSV upload only for non-consent-flow (consent-flow sends via API after redirect)
+        if (!config.showConnections) {
+            tabs.push({
+                id: 'csv-upload',
+                label: m['developerPortal.dashboards.nav.csvUpload'](),
+                icon: FileSpreadsheet,
+            });
+        }
+        tabs.push({
+            id: 'testing',
+            label: m['developerPortal.dashboards.nav.testing'](),
+            icon: TestTube2,
+        });
     }
 
     // Analytics tab hidden for now - will add back when we have time-series data
@@ -165,7 +247,6 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const [activeTab, setActiveTab] = useState<string>('overview');
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [refreshKey, setRefreshKey] = useState(0);
 
     const [authGrants, setAuthGrants] = useState<AuthGrant[]>([]);
     const [templates, setTemplates] = useState<CredentialTemplate[]>([]);
@@ -187,6 +268,9 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
     const [hasDeclinedUpgrade, setHasDeclinedUpgrade] = useState(false);
     const [listingToUpgrade, setListingToUpgrade] = useState<AppStoreListing | null>(null);
+
+    // Dashboard-level app listing filter (affects both QuickStats and OverviewTab)
+    const [selectedListingId, setSelectedListingId] = useState<string | undefined>(undefined);
 
     // Hooks for app DID upgrade detection
     const { useListingsForIntegration, useUpgradeAppToAppDid, checkAppNeedsUpgrade } =
@@ -218,7 +302,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     }
                 }
             } catch (error) {
-                console.warn('Failed to check listing signing authorities:', error);
+                log.warn('Failed to check listing signing authorities:', error);
             }
         };
 
@@ -236,14 +320,14 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
             await upgradeAppMutation.mutateAsync({
                 listingId: listingToUpgrade.listing_id,
             });
-            presentToast('App upgraded successfully!', {
+            presentToast(m['developerPortal.dashboards.appUpgraded'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
             return true;
         } catch (error) {
-            console.error('Upgrade failed:', error);
-            presentToast('Failed to upgrade app', {
+            log.error('Upgrade failed:', error);
+            presentToast(m['developerPortal.dashboards.appUpgradeFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -279,7 +363,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                         setAuthGrants(validGrants);
                         activeTokenCount = validGrants.filter(g => g.status === 'active').length;
                     } catch (err) {
-                        console.warn('Could not load auth grants:', err);
+                        log.warn('Could not load auth grants:', err);
                     }
                 }
 
@@ -307,19 +391,17 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
 
                 setTemplates(basicTemplates);
 
-                // Fetch consent contracts if needed
+                // Count contracts configured for this integration (from guide state)
                 let activeContractsCount = 0;
                 if (config.showContracts) {
-                    try {
-                        const contractsResult = await wallet.invoke.getConsentedContracts?.({
-                            limit: 50,
-                        });
-                        const contractList = contractsResult?.records || [];
-                        setContracts(contractList);
-                        activeContractsCount = contractList.length;
-                    } catch (err) {
-                        console.warn('Could not load contracts:', err);
-                    }
+                    const guideState = integration?.guideState as any;
+                    const gsConfig = guideState?.config || {};
+
+                    // Count contracts from different guide type configs
+                    if (gsConfig.consentFlowConfig?.contractUri) activeContractsCount++;
+                    const embedFeatures = gsConfig.embedAppConfig?.featureConfig || {};
+                    if (embedFeatures['request-data-consent']?.contractUri) activeContractsCount++;
+                    if (embedFeatures['issue-credentials']?.contractUri) activeContractsCount++;
                 }
 
                 // Load branding from profile
@@ -336,7 +418,28 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                             });
                         }
                     } catch (err) {
-                        console.warn('Could not load profile:', err);
+                        log.warn('Could not load profile:', err);
+                    }
+                }
+
+                // Fetch connection count for consent-flow dashboards
+                let connectionCount = 0;
+                if (config.showConnections && integration.guideType === 'consent-flow') {
+                    try {
+                        const guideState = integration?.guideState as any;
+                        const contractUri = guideState?.config?.consentFlowConfig?.contractUri;
+                        if (contractUri) {
+                            const consentData = await wallet.invoke.getConsentFlowData(
+                                contractUri,
+                                { limit: 100 }
+                            );
+                            const records = Array.isArray(consentData)
+                                ? consentData
+                                : consentData?.records || [];
+                            connectionCount = records.length;
+                        }
+                    } catch (err) {
+                        log.warn('Could not load consent flow data:', err);
                     }
                 }
 
@@ -347,11 +450,11 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     activeTokens: activeTokenCount,
                     templateCount: templates.length || boostsResult?.records?.length || 0,
                     activeContracts: activeContractsCount,
-                    totalConnections: 0,
+                    totalConnections: connectionCount,
                 }));
             } catch (err) {
-                console.error('Failed to load dashboard data:', err);
-                presentToast('Failed to load dashboard data', {
+                log.error('Failed to load dashboard data:', err);
+                presentToast(m['developerPortal.dashboards.errorLoadFailed'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -386,15 +489,15 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     }, [integration.id]);
 
     // Fetch credential activity stats using the unified API
-    // Stats are filtered by integrationId for accurate per-integration metrics
+    // Stats are filtered by integrationId and optionally by listingId for per-app metrics
     const { stats: activityStats, refetch: refetchActivity } = useIntegrationActivity(templates, {
         integrationId: integration.id,
+        listingId: selectedListingId,
     });
 
     const handleRefresh = () => {
         loadDashboardData(true);
         refetchActivity();
-        setRefreshKey(k => k + 1);
     };
 
     // Combine activity stats (credential metrics) with loaded stats (tokens, contracts, etc.)
@@ -406,44 +509,78 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
         claimRate: activityStats.claimRate,
     };
 
-    // Stats use event type terminology: Created + Delivered = Sent, then Claimed, Pending (unclaimed), Claim Rate
-    const quickStats: StatItem[] = [
-        {
-            label: 'Credentials Sent',
-            value: mergedStats.totalIssued,
-            icon: Zap,
-            iconBgColor: 'bg-cyan-100',
-            iconColor: 'text-cyan-600',
-        },
-        {
-            label: 'Claimed',
-            value: mergedStats.totalClaimed,
-            icon: CheckCircle2,
-            iconBgColor: 'bg-emerald-100',
-            iconColor: 'text-emerald-600',
-        },
-        {
-            label: 'Pending',
-            value: mergedStats.pendingClaims,
-            icon: AlertCircle,
-            iconBgColor: 'bg-amber-100',
-            iconColor: 'text-amber-600',
-        },
-        {
-            label: 'Claim Rate',
-            value: `${mergedStats.claimRate.toFixed(1)}%`,
-            icon: BarChart3,
-            iconBgColor: 'bg-violet-100',
-            iconColor: 'text-violet-600',
-        },
-    ];
+    // Build stats bar — consent-flow uses connection-based metrics, others use credential metrics
+    const quickStats: StatItem[] =
+        integration.guideType === 'consent-flow'
+            ? [
+                  {
+                      label: m['developerPortal.dashboards.stats.connections'](),
+                      value: mergedStats.totalConnections,
+                      icon: Users,
+                      iconBgColor: 'bg-blue-100',
+                      iconColor: 'text-blue-600',
+                  },
+                  {
+                      label: m['developerPortal.dashboards.stats.contracts'](),
+                      value: mergedStats.activeContracts,
+                      icon: FileText,
+                      iconBgColor: 'bg-emerald-100',
+                      iconColor: 'text-emerald-600',
+                  },
+                  {
+                      label: m['developerPortal.dashboards.stats.apiTokens'](),
+                      value: mergedStats.activeTokens,
+                      icon: Key,
+                      iconBgColor: 'bg-cyan-100',
+                      iconColor: 'text-cyan-600',
+                  },
+                  {
+                      label: m['developerPortal.dashboards.stats.templates'](),
+                      value: mergedStats.templateCount,
+                      icon: Award,
+                      iconBgColor: 'bg-violet-100',
+                      iconColor: 'text-violet-600',
+                  },
+              ]
+            : [
+                  {
+                      label: m['developerPortal.dashboards.stats.credentialsSent'](),
+                      value: mergedStats.totalIssued,
+                      icon: Zap,
+                      iconBgColor: 'bg-cyan-100',
+                      iconColor: 'text-cyan-600',
+                  },
+                  {
+                      label: m['developerPortal.dashboards.stats.claimed'](),
+                      value: mergedStats.totalClaimed,
+                      icon: CheckCircle2,
+                      iconBgColor: 'bg-emerald-100',
+                      iconColor: 'text-emerald-600',
+                  },
+                  {
+                      label: m['developerPortal.dashboards.stats.pending'](),
+                      value: mergedStats.pendingClaims,
+                      icon: AlertCircle,
+                      iconBgColor: 'bg-amber-100',
+                      iconColor: 'text-amber-600',
+                  },
+                  {
+                      label: m['developerPortal.dashboards.stats.claimRate'](),
+                      value: `${mergedStats.claimRate.toFixed(1)}%`,
+                      icon: BarChart3,
+                      iconBgColor: 'bg-violet-100',
+                      iconColor: 'text-violet-600',
+                  },
+              ];
 
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                    <p className="text-sm text-gray-500 mt-3">Loading dashboard...</p>
+                    <p className="text-sm text-gray-500 mt-3">
+                        {m['developerPortal.dashboards.loadingDashboard']()}
+                    </p>
                 </div>
             </div>
         );
@@ -452,16 +589,16 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const getSubtitle = () => {
         switch (integration.guideType) {
             case 'issue-credentials':
-                return 'Issue Credentials Dashboard';
+                return m['developerPortal.dashboards.subtitle.issueCredentials']();
             case 'embed-claim':
             case 'embed-app':
-                return 'Embed Integration Dashboard';
+                return m['developerPortal.dashboards.subtitle.embed']();
             case 'consent-flow':
-                return 'Consent Flow Dashboard';
+                return m['developerPortal.dashboards.subtitle.consentFlow']();
             case 'course-catalog':
-                return 'Course Catalog Dashboard';
+                return m['developerPortal.dashboards.subtitle.courseCatalog']();
             default:
-                return 'Integration Dashboard';
+                return m['developerPortal.dashboards.subtitle.default']();
         }
     };
 
@@ -492,8 +629,10 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                         config={config}
                         stats={stats}
                         templates={templates}
+                        appListings={appListings}
+                        selectedListingId={selectedListingId}
+                        onListingFilterChange={setSelectedListingId}
                         onNavigate={setActiveTab}
-                        refreshKey={refreshKey}
                     />
                 )}
 
@@ -514,11 +653,17 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                     />
                 )}
 
-                {activeTab === 'embed-code' && <EmbedCodeTab integration={integration} />}
+                {activeTab === 'embed-config' && (
+                    <EmbedConfigTab integration={integration} templates={templates} />
+                )}
+
+                {activeTab === 'embed-code' && (
+                    <EmbedCodeTab integration={integration} templates={templates} />
+                )}
 
                 {activeTab === 'contracts' && <ContractsTab integration={integration} />}
 
-                {activeTab === 'connections' && <ConnectionsTab />}
+                {activeTab === 'connections' && <ConnectionsTab integration={integration} />}
 
                 {activeTab === 'signing' && <SigningTab integration={integration} />}
 
@@ -532,21 +677,27 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
 
                 {activeTab === 'app-config' && <AppConfigTab integration={integration} />}
 
-                {activeTab === 'code' && (
-                    <IntegrationCodeTab integration={integration} templates={templates} />
-                )}
+                {activeTab === 'code' &&
+                    (integration.guideType === 'consent-flow' ? (
+                        <ConsentFlowCodeTab integration={integration} templates={templates} />
+                    ) : (
+                        <IntegrationCodeTab integration={integration} templates={templates} />
+                    ))}
 
                 {activeTab === 'csv-upload' && (
                     <CsvUploadTab integration={integration} templates={templates} />
                 )}
 
-                {activeTab === 'testing' && (
-                    <TestingTab
-                        integration={integration}
-                        templates={templates}
-                        branding={branding}
-                    />
-                )}
+                {activeTab === 'testing' &&
+                    (integration.guideType === 'consent-flow' ? (
+                        <ConsentFlowTestingTab integration={integration} templates={templates} />
+                    ) : (
+                        <TestingTab
+                            integration={integration}
+                            templates={templates}
+                            branding={branding}
+                        />
+                    ))}
 
                 {/* Analytics tab hidden for now
                 {activeTab === 'analytics' && (

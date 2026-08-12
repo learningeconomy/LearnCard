@@ -1,68 +1,74 @@
 import React, { useState, useEffect } from 'react';
+import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
-import { ProfilePicture } from 'learn-card-base';
-import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
-import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import CheckListContainer from '../../../components/learncard/checklist/CheckListContainer';
+import AiPassportPersonalizationContainer from '../../../components/ai-passport/AiPassportPersonalizationContainer';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
-import AISessionsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AISessionsQuickNav';
-import BoostsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/BoostsQuickNav';
-import CredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CredentialQuickNav';
-import ClaimCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ClaimCredentialQuickNav';
+import AISessionsQuickNav from '../../../components/svgs/quicknav/AISessionsQuickNav';
+import BoostsQuickNav from '../../../components/svgs/quicknav/BoostsQuickNav';
+import CredentialQuickNav from '../../../components/svgs/quicknav/CredentialQuickNav';
+import ClaimCredentialQuickNav from '../../../components/svgs/quicknav/ClaimCredentialQuickNav';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
-import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
+import ResumeQuickNav from '../../../components/svgs/quicknav/ResumeQuickNav';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
-import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
-import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ShareInsightsQuickNav';
-import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/UnderstandSkillsQuickNav';
+import StudiesQuickNav from '../../../components/svgs/quicknav/StudiesQuickNav';
+import ShareInsightsQuickNav from '../../../components/svgs/quicknav/ShareInsightsQuickNav';
+import UnderstandSkillsQuickNav from '../../../components/svgs/quicknav/UnderstandSkillsQuickNav';
 import X from 'learn-card-base/svgs/X';
-import FamiliesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/FamiliesQuickNav';
-import RequestInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/RequestInsightsQuickNav';
+import FamiliesQuickNav from '../../../components/svgs/quicknav/FamiliesQuickNav';
+import RequestInsightsQuickNav from '../../../components/svgs/quicknav/RequestInsightsQuickNav';
+import AddToLearnCardQuickNav from '../../../components/svgs/quicknav/AddToLearnCardQuickNav';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
-import AddUserQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddUserQuickNav';
-import ImportCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ImportCredentialQuickNav';
-import SwitchAccountQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchAccountQuickNav';
-import CreateApiTokenQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateApiTokenQuickNav';
-import CreateSigningAuthorityQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateSigningAuthorityQuickNav';
-import CreateConsentFlowQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateConsentFlowQuickNav';
-import SwitchNetworksQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchNetworksQuickNav';
-import ReadDocsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ReadDocsQuickNav';
-import AddChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddChildQuickNav';
-import SwitchChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchChildQuickNav';
-import NavBarPassportIcon from 'apps/learn-card-app/src/components/svgs/NavBarPassportIcon';
-import NavBarLaunchPadIcon from 'apps/learn-card-app/src/components/svgs/NavBarLaunchPadIcon';
-import LaunchPadRoleSelector from './LaunchPadRoleSelector';
+import AddUserQuickNav from '../../../components/svgs/quicknav/AddUserQuickNav';
+import ImportCredentialQuickNav from '../../../components/svgs/quicknav/ImportCredentialQuickNav';
+import SwitchAccountQuickNav from '../../../components/svgs/quicknav/SwitchAccountQuickNav';
+import CreateApiTokenQuickNav from '../../../components/svgs/quicknav/CreateApiTokenQuickNav';
+import CreateSigningAuthorityQuickNav from '../../../components/svgs/quicknav/CreateSigningAuthorityQuickNav';
+import CreateConsentFlowQuickNav from '../../../components/svgs/quicknav/CreateConsentFlowQuickNav';
+import SwitchNetworksQuickNav from '../../../components/svgs/quicknav/SwitchNetworksQuickNav';
+import ReadDocsQuickNav from '../../../components/svgs/quicknav/ReadDocsQuickNav';
+import AddChildQuickNav from '../../../components/svgs/quicknav/AddChildQuickNav';
+import SwitchChildQuickNav from '../../../components/svgs/quicknav/SwitchChildQuickNav';
+import NavBarPassportIcon from '../../../components/svgs/NavBarPassportIcon';
+import NavBarLaunchPadIcon from '../../../components/svgs/NavBarLaunchPadIcon';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
 import { AiInsightsTabsEnum } from '../../ai-insights/ai-insight-tabs/ai-insights-tabs.helpers';
 import { RequestInsightsModal } from '../../ai-insights/request-insights/RequestInsightsModal';
 import ShareInsightsModal from '../../ai-insights/share-insights/ShareInsightsModal';
 import { createTeacherStudentContract } from '../../ai-insights/request-insights/request-insights.helpers';
 import { createAiInsightsService } from '../../ai-insights/learner-insights/learner-insights.helpers';
-import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
-import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.png';
-import TeacherIcon from '../../../assets/images/quicknavroles/teacherappleicon.png';
-import AdminIcon from '../../../assets/images/quicknavroles/adminshieldicon.png';
-import DeveloperIcon from '../../../assets/images/quicknavroles/developeralienicon.png';
-import { useTheme } from 'apps/learn-card-app/src/theme/hooks/useTheme';
-import { IconSetEnum } from 'apps/learn-card-app/src/theme/icons/index';
-import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
-import { SwitcherStepEnum } from 'apps/learn-card-app/src/components/learncard/switcher.helpers';
-import FamilyBoostPreviewWrapper from 'apps/learn-card-app/src/components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
-import useGetFamilyCredential from 'apps/learn-card-app/src/hooks/useGetFamilyCredential';
-import AdminToolsOptionsContainer from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/AdminToolsOptionsContainer';
+import {
+    roleIcons,
+    iconBgColors,
+} from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
+import LaunchPadRoleSelector from './LaunchPadRoleSelector';
+import { useTheme } from '../../../theme/hooks/useTheme';
+import { IconSetEnum } from '../../../theme/icons/index';
+import AccountSwitcherModal from '../../../components/learncard/AccountSwitcherModal';
+import { SwitcherStepEnum } from '../../../components/learncard/switcher.helpers';
+import FamilyBoostPreviewWrapper from '../../../components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
+import useGetFamilyCredential from '../../../hooks/useGetFamilyCredential';
+import AdminToolsOptionsContainer from '../../adminToolsPage/AdminToolsModal/AdminToolsOptionsContainer';
 import {
     adminToolOptions,
     AdminToolOptionsEnum,
     developerToolOptions,
-} from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/admin-tools.helpers';
-import AdminToolsCreateProfileSimple from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
-import useBoostModal from 'apps/learn-card-app/src/components/boost/hooks/useBoostModal';
-import { openDeveloperDocs } from 'apps/learn-card-app/src/helpers/externalLinkHelpers';
+} from '../../adminToolsPage/AdminToolsModal/admin-tools.helpers';
+import AdminToolsCreateProfileSimple from '../../adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
+import useBoostModal from '../../../components/boost/hooks/useBoostModal';
+import useBoostRecoveryCheck from '../../../hooks/useBoostRecoveryCheck';
+import { openDeveloperDocs } from '../../../helpers/externalLinkHelpers';
 import {
     LearnCardRolesEnum,
     LearnCardRoles,
 } from '../../../components/onboarding/onboarding.helpers';
+import { getRoleTitle } from '../../../components/onboarding/onboardingRoles/onboardingRolesI18n';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import {
     useWallet,
@@ -76,8 +82,48 @@ import {
     useGetCredentialList,
     CredentialCategoryEnum,
     switchedProfileStore,
+    useDeviceTypeByWidth,
+    getFirstName,
+    useCurrentUser,
 } from 'learn-card-base';
+import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
+import AddToPassportMenu from '../../../components/add-to-passport/AddToPassportMenu';
+import * as m from '../../../paraglide/messages.js';
+
+// Translation map: internal ID → translated display label
+const ACTION_LABELS: Record<string, () => string> = {
+    'Add to LearnCard': () => m['launchpad.actions.addToLearnCard'](),
+    'Build My LearnCard': () => m['launchpad.actions.buildMyLearnCard'](),
+    'New AI Tutoring Session': () => m['launchpad.actions.newAiTutoringSession'](),
+    'Understand My Skills': () => m['launchpad.actions.understandMySkills'](),
+    'Customize AI Sessions': () => m['launchpad.actions.customizeAiSessions'](),
+    'Share Insights with Teacher': () => m['launchpad.actions.shareInsightsWithTeacher'](),
+    'View Learner Insights': () => m['launchpad.actions.viewLearnerInsights'](),
+    'Request Learner Insights': () => m['launchpad.actions.requestLearnerInsights'](),
+    'Issue Credential': () => m['launchpad.actions.issueCredential'](),
+    'Create Credential': () => m['launchpad.actions.createCredential'](),
+    'Edit Skills Frameworks': () => m['launchpad.actions.editSkillsFrameworks'](),
+    'Manage Skills Frameworks': () => m['launchpad.actions.manageSkillsFrameworks'](),
+    'Create Family': () => m['launchpad.actions.createFamily'](),
+    'View Family': () => m['launchpad.actions.viewFamily'](),
+    'Boost Child': () => m['launchpad.actions.boostChild'](),
+    'Add Child': () => m['launchpad.actions.addChild'](),
+    'Switch Child': () => m['launchpad.actions.switchChild'](),
+    'View Child Insights': () => m['launchpad.actions.viewChildInsights'](),
+    'Create API Token': () => m['launchpad.actions.createApiToken'](),
+    'Create Signing Authority': () => m['launchpad.actions.createSigningAuthority'](),
+    'Create ConsentFlow': () => m['launchpad.actions.createConsentFlow'](),
+    'Switch Network': () => m['launchpad.actions.switchNetwork'](),
+    'Read Docs': () => m['launchpad.actions.readDocs'](),
+    'Import Credentials': () => m['launchpad.actions.importCredentials'](),
+    'Create Organization': () => m['launchpad.actions.createOrganization'](),
+    'Switch Account': () => m['launchpad.actions.switchAccount'](),
+    'Claim Credential': () => m['launchpad.actions.claimCredential'](),
+};
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('launch-pad-action-modal');
 
 const getIconForActionButton = (
     label: string,
@@ -142,6 +188,8 @@ const getIconForActionButton = (
             return <ShareInsightsQuickNav className="w-[50px] h-auto" />;
         case 'Request Learner Insights':
             return <RequestInsightsQuickNav className="w-[50px] h-auto" />;
+        case 'Add to LearnCard':
+            return <AddToLearnCardQuickNav className="w-[50px] h-auto" />;
         case 'Boost Child':
             return <BoostsQuickNav className="w-[50px] h-auto" />;
         case 'Create API Token':
@@ -162,14 +210,20 @@ const getIconForActionButton = (
 const ActionButton: React.FC<{
     label: string;
     bg: string;
+    bgHex?: string;
+    textColor?: string;
+    borderColor?: string;
     to?: string;
     onClick?: () => void;
     role?: string;
-}> = ({ label, bg, to, onClick, role }) => {
+}> = ({ label, bg, bgHex, textColor, borderColor, to, onClick, role }) => {
     const history = useHistory();
+    const flags = useFlags();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
+    const { checkAndPromptRecovery } = useBoostRecoveryCheck();
     const { theme, getIconSet } = useTheme();
+    const brandingConfig = useBrandingConfig();
     const buildMyLCIcon = theme?.defaults?.buildMyLCIcon;
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const AiInsightsIcon = sideMenuIcons[CredentialCategoryEnum.aiInsight];
@@ -287,6 +341,13 @@ const ActionButton: React.FC<{
                 );
                 return;
             case 'Create Credential':
+                if (flags?.enableSimpleSend) {
+                    checkAndPromptRecovery(() => {
+                        closeAllModals();
+                        history.push('/issue');
+                    });
+                    return;
+                }
                 closeModal();
                 handlePresentBoostModal();
                 return;
@@ -387,13 +448,26 @@ const ActionButton: React.FC<{
         <button
             type="button"
             onClick={handleClick}
-            className={`${bg} w-full text-left flex px-5 py-4  text-[18px] font-poppins font-semibold text-grayscale-900 rounded-[20px] border border-solid border-[3px] border-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            className={`${
+                !bgHex ? bg : ''
+            } w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] flex flex-col items-center justify-center px-[13px] py-[10px] text-[16px] font-poppins font-semibold ${
+                !textColor ? 'text-grayscale-900' : ''
+            } rounded-[20px] text-center border-solid border-[3px] ${
+                !borderColor ? 'border-white' : ''
+            } shadow-[0_2px_6px_0_rgba(0,0,0,0.25)]`}
+            style={{
+                ...(bgHex ? { backgroundColor: bgHex } : {}),
+                ...(textColor ? { color: textColor } : {}),
+                ...(borderColor ? { borderColor } : {}),
+            }}
         >
-            <div className="flex items-center justify-center">
-                <span className="mr-2">
+            <div className="flex flex-col items-center justify-center">
+                <span className="mr-2 pb-[5px]">
                     {getIconForActionButton(label, { buildMyLCIcon, AiInsightsIcon })}
                 </span>{' '}
-                {label}
+                {label === 'Build My LearnCard'
+                    ? `Build My ${brandingConfig.name}`
+                    : ACTION_LABELS[label]?.() ?? label}
             </div>
         </button>
     );
@@ -403,13 +477,25 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     const { newModal, closeModal } = useModal();
     const history = useHistory();
     const { initWallet } = useWallet();
-    const { data: lcNetworkProfile } = useGetProfile();
+    const { colors: themeColors } = useTheme();
+    const actionModalButtonColors = themeColors?.defaults?.actionModalButtonColors;
+    const actionModalTextColor = themeColors?.defaults?.actionModalTextColor;
+    const actionModalCardBgColor = themeColors?.defaults?.actionModalCardBgColor;
+    const actionModalCardTextColor = themeColors?.defaults?.actionModalCardTextColor;
+    const actionModalButtonBorderColor = themeColors?.defaults?.actionModalButtonBorderColor;
+    const { data: lcNetworkProfile, refetch: refetchProfile } = useGetProfile();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { data: contractsData, refetch: refetchContracts } = useGetContracts();
     const { presentToast } = useToast();
     const { familyCredential } = useGetFamilyCredential();
     const { data: familyList } = useGetCredentialList(CredentialCategoryEnum.family);
     const familyUri = (familyList?.pages?.[0]?.records?.[0]?.uri as string) || undefined;
+    const { isDesktop } = useDeviceTypeByWidth();
+
+    const currentUser = useCurrentUser();
+    const currentHour = moment().hour();
+    const { emoji, greeting } = getGreetingAndEmoji(currentHour);
+    const name = getFirstName(currentUser?.name ?? '');
 
     type ConsentFlowContractLike = { name?: string; uri?: string };
 
@@ -419,6 +505,53 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const [role, setRole] = useState<LearnCardRolesEnum | null>(null);
     const [optimisticRole, setOptimisticRole] = useState<LearnCardRolesEnum | null>(null);
+
+    const handleRoleChange = async (newRole: LearnCardRolesEnum) => {
+        setRole(newRole);
+        setOptimisticRole(newRole);
+
+        // The wallet write is the only step whose failure means the role did
+        // NOT actually change. Roll back optimistic state + surface an error
+        // toast only if THIS step throws — cache-refresh failures below
+        // should not trigger a rollback (the server state already reflects
+        // the new role at that point).
+        try {
+            const wallet = await initWallet();
+            await wallet?.invoke?.updateProfile({
+                role: newRole,
+            });
+        } catch (e) {
+            setOptimisticRole(null);
+            setRole((lcNetworkProfile?.role as LearnCardRolesEnum) ?? LearnCardRolesEnum.learner);
+            presentToast(m['launchpad.modal.unableToUpdateRole'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+            return;
+        }
+
+        // useGetProfile has a 5-minute staleTime and wallet.invoke.updateProfile
+        // does not invalidate its cache — explicitly refetch so subsequent
+        // mounts of LaunchPadActionModal see the new role (otherwise the
+        // dropdown reverts to the stale cached value on next "+" open). If the
+        // refetch itself fails (transient network blip, etc.) the role has
+        // still been updated on the server — don't roll back, don't alarm the
+        // user; the cache will re-sync on next reload or staleTime expiry.
+        try {
+            await refetchProfile();
+        } catch (e) {
+            log.error('Failed to refresh profile cache after role change', e);
+        }
+
+        const newRoleTitle = getRoleTitle(newRole);
+        presentToast(m['launchpad.modal.nowRole']({ role: newRoleTitle }), {
+            title: m['launchpad.modal.roleUpdated'](),
+            type: ToastTypeEnum.Success,
+            hasDismissButton: true,
+            hasCheckmark: true,
+            autoDismiss: false,
+        });
+    };
 
     useEffect(() => {
         if (lcNetworkProfile?.role && optimisticRole === lcNetworkProfile.role) {
@@ -435,40 +568,54 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
 
     const profileType = switchedProfileStore.use.profileType();
     const isChildProfile = profileType === 'child';
-    const { isAiEnabled } = useAiFeatureGate();
+    const { isAiEnabled, isLoading: isAiFeatureLoading } = useAiFeatureGate();
 
     const activeRole = (
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
-    const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
-    const roleIcons: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: LearnerIcon,
-        [LearnCardRolesEnum.guardian]: GuardianIcon,
-        [LearnCardRolesEnum.teacher]: TeacherIcon,
-        [LearnCardRolesEnum.admin]: AdminIcon,
-        [LearnCardRolesEnum.counselor]: TeacherIcon,
-        [LearnCardRolesEnum.developer]: DeveloperIcon,
-    };
-    const iconBgColors: Record<LearnCardRolesEnum, string> = {
-        [LearnCardRolesEnum.learner]: 'var(--teal-200, #99F6E4)',
-        [LearnCardRolesEnum.guardian]: 'var(--ion-color-violet-200)',
-        [LearnCardRolesEnum.teacher]: 'var(--ion-color-amber-100)',
-        [LearnCardRolesEnum.admin]: 'var(--ion-color-cyan-100)',
-        [LearnCardRolesEnum.counselor]: 'var(--ion-color-violet-200)',
-        [LearnCardRolesEnum.developer]: 'var(--lime-300, #BEF264)',
-    };
+
+    const roleLabel = getRoleTitle(activeRole);
     const roleIconSrc = roleIcons[activeRole];
     const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
 
+    // Counselor is hidden from the role picker on the launchpad — OnboardingRoles
+    // already filters it for the mobile bottom-sheet path, and we replicate that
+    // here for the desktop Menu so both surfaces show the same five roles.
+    const visibleRoles = LearnCardRoles.filter(r => r.type !== LearnCardRolesEnum.counselor);
+
+    // Pill button contents shared between the desktop MenuButton and the mobile
+    // trigger so the trigger looks identical across breakpoints.
+    const rolePillContents = (
+        <span className="p-[3px] pr-[8px] flex items-center justify-center gap-2">
+            <span
+                className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
+                style={roleIconBgStyle}
+            >
+                <img
+                    src={roleIconSrc}
+                    alt={`${roleLabel} icon`}
+                    className="h-[20px] w-[20px] object-contain"
+                />
+            </span>
+            <span>{roleLabel}</span>
+            {!isChildProfile && <CaretDown className="ml-[2px]" />}
+        </span>
+    );
+    const rolePillClassName = `rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold ${
+        isChildProfile ? 'cursor-not-allowed' : 'cursor-pointer'
+    }`;
+
     const RoleActions: Record<LearnCardRolesEnum, string[]> = {
         [LearnCardRolesEnum.learner]: [
+            'Add to LearnCard',
+            'Build My LearnCard',
             'New AI Tutoring Session',
             'Understand My Skills',
             'Customize AI Sessions',
             'Share Insights with Teacher',
-            'Build My LearnCard',
         ],
         [LearnCardRolesEnum.teacher]: [
+            'Add to LearnCard',
             'View Learner Insights',
             'Request Learner Insights',
             'Issue Credential',
@@ -476,6 +623,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Edit Skills Frameworks',
         ],
         [LearnCardRolesEnum.guardian]: [
+            'Add to LearnCard',
             'Create Family',
             'Boost Child',
             'Add Child',
@@ -483,6 +631,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'View Child Insights',
         ],
         [LearnCardRolesEnum.developer]: [
+            'Add to LearnCard',
             'Create API Token',
             'Create Signing Authority',
             'Create ConsentFlow',
@@ -490,6 +639,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Read Docs',
         ],
         [LearnCardRolesEnum.admin]: [
+            'Add to LearnCard',
             'Edit Skills Frameworks',
             'Import Credentials',
             'Create Organization',
@@ -497,6 +647,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             'Switch Account',
         ],
         [LearnCardRolesEnum.counselor]: [
+            'Add to LearnCard',
             'Manage Skills Frameworks',
             'Import Credentials',
             'Create Organization',
@@ -508,7 +659,11 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     let actions = RoleActions[activeRole] ?? [];
     if (activeRole === LearnCardRolesEnum.guardian) {
         if (familyCredential) {
-            actions = ['View Family', ...actions.filter(a => a !== 'Create Family')];
+            actions = [
+                'Add to LearnCard',
+                'View Family',
+                ...actions.filter(a => a !== 'Create Family' && a !== 'Add to LearnCard'),
+            ];
         } else {
             actions = actions.filter(a => a !== 'View Family');
         }
@@ -571,6 +726,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         'Create ConsentFlow': 'bg-[var(--ion-color-lime-300)]',
         'Switch Network': 'bg-[var(--ion-color-yellow-300)]',
         'Read Docs': 'bg-[var(--ion-color-teal-200)]',
+        'Add to LearnCard': 'bg-[var(--ion-color-grayscale-100)]',
     };
 
     const handleViewChildInsights = () => {
@@ -593,7 +749,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             const wallet = await initWallet();
 
             if (!wallet || !currentLCNUser) {
-                presentToast('Unable to open Request Insights', {
+                presentToast(m['launchpad.modal.unableToOpenRequestInsights'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -630,137 +786,194 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 }
             );
         } catch (e) {
-            presentToast('Unable to open Request Insights', {
+            presentToast(m['launchpad.modal.unableToOpenRequestInsights'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
         }
     };
 
+    const handleAddToLearnCard = () => {
+        newModal(
+            <AddToPassportMenu />,
+            { sectionClassName: '!max-w-[500px]' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
+        );
+    };
+
     return (
-        <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[500px]">
-            <button
-                type="button"
-                aria-label="Close modal"
-                onClick={closeModal}
-                className="self-end mt-[8px] h-[20px] w-[40px] rounded-full bg-transparent text-[#2A2F55] flex items-center justify-center"
+        <div className="relative w-full h-full flex flex-col items-stretch p-4 gap-3 max-w-[500px] mt-[20px]">
+            <div
+                className={`relative text-center rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] p-[20px] ${
+                    !actionModalCardBgColor ? 'bg-white' : ''
+                }`}
+                style={
+                    actionModalCardBgColor ? { backgroundColor: actionModalCardBgColor } : undefined
+                }
             >
-                <X className="w-[20px] h-[20px]" />
-            </button>
-            <div className="rounded-[15px] bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] px-[10px] py-[15px]">
-                <div className="w-full flex items-center justify-center">
-                    <ProfilePicture
-                        customContainerClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[48px] min-h-[48px]"
-                        customImageClass="flex justify-center items-center h-[48px] w-[48px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[48px] min-h-[48px]"
-                        customSize={120}
-                    />
-                </div>
-
-                <div className="w-full flex items-center justify-center">
-                    <button
-                        type="button"
-                        disabled={isChildProfile}
-                        onClick={
-                            isChildProfile
-                                ? undefined
-                                : () =>
-                                      newModal(
-                                          <LaunchPadRoleSelector
-                                              role={role}
-                                              setRole={newRole => {
-                                                  setRole(newRole);
-                                                  setOptimisticRole(newRole);
-                                                  (async () => {
-                                                      try {
-                                                          const wallet = await initWallet();
-                                                          await wallet?.invoke?.updateProfile({
-                                                              role: newRole,
-                                                          });
-                                                          presentToast('Role updated', {
-                                                              type: ToastTypeEnum.Success,
-                                                              hasDismissButton: true,
-                                                          });
-                                                      } catch (e) {
-                                                          setOptimisticRole(null);
-                                                          setRole(
-                                                              (lcNetworkProfile?.role as LearnCardRolesEnum) ??
-                                                                  LearnCardRolesEnum.learner
-                                                          );
-                                                          presentToast('Unable to update role', {
-                                                              type: ToastTypeEnum.Error,
-                                                              hasDismissButton: true,
-                                                          });
-                                                      }
-                                                  })();
-                                              }}
-                                          />,
-                                          {
-                                              sectionClassName:
-                                                  '!max-w-[600px] !mx-auto !max-h-[100%]',
-                                          },
-                                          {
-                                              mobile: ModalTypes.Freeform,
-                                              desktop: ModalTypes.Freeform,
-                                          }
-                                      )
-                        }
-                        className="rounded-[10px] border border-solid border-[#E2E3E9] bg-grayscale-white text-grayscale-700 text-sm font-poppins font-semibold"
-                    >
-                        <span className="p-[3px] flex items-center justify-center gap-2">
-                            <span
-                                className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
-                                style={roleIconBgStyle}
+                <button
+                    type="button"
+                    aria-label="Close modal"
+                    onClick={closeModal}
+                    className="absolute top-3 right-3 h-[30px] w-[30px] rounded-full bg-transparent flex items-center justify-center"
+                    style={{ color: actionModalCardTextColor ?? '#2A2F55' }}
+                >
+                    <X className="w-[30px] h-[30px] text-grayscale-600" />
+                </button>
+                <p className="text-grayscale-700 font-normal text-[16px] font-poppins pt-[20px] pb-[12px]">
+                    <span className="mr-2">{emoji}</span>
+                    <span>
+                        {greeting}
+                        {name ? `, ${name}` : ''}
+                    </span>
+                </p>
+                <div className="w-full flex items-center justify-center pb-[12px]">
+                    {isChildProfile ? (
+                        // Child profiles are pinned to Learner — render the pill
+                        // as a non-interactive label.
+                        <button type="button" disabled className={rolePillClassName}>
+                            {rolePillContents}
+                        </button>
+                    ) : isDesktop ? (
+                        // Desktop: inline HeadlessUI Menu — true dropdown UI.
+                        <Menu as="div" className="relative inline-block">
+                            <MenuButton className={rolePillClassName}>
+                                {rolePillContents}
+                            </MenuButton>
+                            <MenuItems
+                                anchor="bottom"
+                                className="bg-white rounded-[15px] shadow-[0_2px_6px_0_rgba(0,0,0,0.25)] p-[8px] my-[6px] focus:outline-none z-[1000] min-w-[200px] flex flex-col gap-[4px]"
                             >
-                                <img
-                                    src={roleIconSrc}
-                                    alt={`${roleLabel} icon`}
-                                    className="h-[20px] w-[20px] object-contain"
-                                />
-                            </span>
-                            <span>{roleLabel}</span>
-                            {!isChildProfile && <CaretDown className="ml-[5px]" />}
-                        </span>
-                    </button>
+                                {visibleRoles.map(roleItem => {
+                                    const isSelected = roleItem.type === activeRole;
+                                    return (
+                                        <MenuItem key={roleItem.id}>
+                                            {({ focus }) => (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRoleChange(roleItem.type)}
+                                                    className={`w-full flex items-center gap-2 p-[8px] rounded-[10px] font-poppins font-semibold text-[14px] text-grayscale-900 ${
+                                                        focus ? 'bg-grayscale-100' : ''
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className="flex items-center justify-center h-[22px] w-[22px] rounded-full"
+                                                        style={{
+                                                            backgroundColor:
+                                                                iconBgColors[roleItem.type],
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={roleIcons[roleItem.type]}
+                                                            alt={`${getRoleTitle(
+                                                                roleItem.type
+                                                            )} icon`}
+                                                            className="h-[20px] w-[20px] object-contain"
+                                                        />
+                                                    </span>
+                                                    <span className="flex-1 text-left">
+                                                        {getRoleTitle(roleItem.type)}
+                                                    </span>
+                                                    {isSelected && (
+                                                        <Checkmark className="w-[15px] h-[15px] text-[#2A2F55]" />
+                                                    )}
+                                                </button>
+                                            )}
+                                        </MenuItem>
+                                    );
+                                })}
+                            </MenuItems>
+                        </Menu>
+                    ) : (
+                        // Mobile/native: bottom-sheet modal, tap-to-pick.
+                        <button
+                            type="button"
+                            onClick={() =>
+                                newModal(
+                                    <LaunchPadRoleSelector
+                                        role={activeRole}
+                                        setRole={handleRoleChange}
+                                    />,
+                                    {
+                                        sectionClassName: '!max-w-[600px] !mx-auto !max-h-[100%]',
+                                    },
+                                    {
+                                        mobile: ModalTypes.BottomSheet,
+                                        desktop: ModalTypes.BottomSheet,
+                                    }
+                                )
+                            }
+                            className={rolePillClassName}
+                        >
+                            {rolePillContents}
+                        </button>
+                    )}
                 </div>
-
-                <h3 className="text-center text-[22px] font-poppins font-semibold text-grayscale-900 mt-[12px]">
-                    What would you like to do?
+                <h3
+                    className={`text-[20px] font-poppins font-semibold ${
+                        !actionModalCardTextColor ? 'text-grayscale-800' : ''
+                    }`}
+                    style={
+                        actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined
+                    }
+                >
+                    {m['launchpad.modal.whatWouldYouLikeToDo']()}
                 </h3>
             </div>
 
-            <div className="mt-1 flex flex-col gap-3">
-                {actions.map((label, i) => (
-                    <ActionButton
-                        key={`${label}-${i}`}
-                        label={label}
-                        bg={colorByLabel[label] ?? bgColors[i % bgColors.length]}
-                        role={activeRole}
-                        onClick={
-                            label === 'View Family' && familyUri
-                                ? () => {
-                                      closeModal();
-                                      newModal(
-                                          <FamilyBoostPreviewWrapper uri={familyUri} />,
-                                          {},
-                                          {
-                                              desktop: ModalTypes.FullScreen,
-                                              mobile: ModalTypes.FullScreen,
-                                          }
-                                      );
-                                      history.push('/families');
-                                  }
-                                : label === 'View Learner Insights'
-                                ? handleViewLearnerInsights
-                                : label === 'View Child Insights'
-                                ? handleViewChildInsights
-                                : label === 'Edit Skills Frameworks'
-                                ? handleEditSkillsFrameworks
-                                : label === 'Request Learner Insights'
-                                ? () => void handleRequestLearnerInsights()
-                                : undefined
-                        }
-                    />
-                ))}
+            <div className="mt-1 flex flex-wrap justify-center gap-4">
+                {isAiFeatureLoading
+                    ? Array.from({ length: 6 }).map((_, i) => (
+                          <div
+                              key={`skeleton-${i}`}
+                              className="w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.67rem)] h-[160px] rounded-[20px] bg-grayscale-200 animate-pulse"
+                          />
+                      ))
+                    : actions.map((label, i) => (
+                          <ActionButton
+                              key={`${label}-${i}`}
+                              label={label}
+                              bg={
+                                  !actionModalButtonColors
+                                      ? colorByLabel[label] ?? bgColors[i % bgColors.length]
+                                      : ''
+                              }
+                              bgHex={
+                                  actionModalButtonColors
+                                      ? actionModalButtonColors[i % actionModalButtonColors.length]
+                                      : undefined
+                              }
+                              textColor={actionModalTextColor}
+                              borderColor={actionModalButtonBorderColor}
+                              role={activeRole}
+                              onClick={
+                                  label === 'View Family' && familyUri
+                                      ? () => {
+                                            closeModal();
+                                            newModal(
+                                                <FamilyBoostPreviewWrapper uri={familyUri} />,
+                                                {},
+                                                {
+                                                    desktop: ModalTypes.FullScreen,
+                                                    mobile: ModalTypes.FullScreen,
+                                                }
+                                            );
+                                            history.push('/families');
+                                        }
+                                      : label === 'View Learner Insights'
+                                      ? handleViewLearnerInsights
+                                      : label === 'View Child Insights'
+                                      ? handleViewChildInsights
+                                      : label === 'Edit Skills Frameworks'
+                                      ? handleEditSkillsFrameworks
+                                      : label === 'Request Learner Insights'
+                                      ? () => void handleRequestLearnerInsights()
+                                      : label === 'Add to LearnCard'
+                                      ? handleAddToLearnCard
+                                      : undefined
+                              }
+                          />
+                      ))}
             </div>
             {showFooterNav && (
                 <div className="mt-1 grid grid-cols-2 gap-3">
@@ -776,7 +989,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                             version="2"
                             className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
                         />
-                        <span className="text-base font-poppins font-semibold">Passport</span>
+                        <span className="text-base font-poppins font-semibold">
+                            {m['launchpad.passport']()}
+                        </span>
                     </button>
                     <button
                         type="button"
@@ -794,7 +1009,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                             version="2"
                             className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
                         />
-                        <span className="text-base font-poppins font-semibold">Launchpad</span>
+                        <span className="text-base font-poppins font-semibold">
+                            {m['launchpad.launchpad']()}
+                        </span>
                     </button>
                 </div>
             )}

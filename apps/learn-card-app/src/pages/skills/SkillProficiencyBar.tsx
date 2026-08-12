@@ -2,62 +2,27 @@ import React, { useEffect, useRef, useState } from 'react';
 import EyeSlash from 'learn-card-base/svgs/EyeSlash';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import SelfVerifiedCertIcon from 'learn-card-base/svgs/SelfVerifiedCertIcon';
+import { SkillLevel, SkillProficiencyBarModeEnum, SKILL_LEVEL_META, LEVELS } from './skillTypes';
+import * as m from '../../paraglide/messages.js';
 
-export enum SkillLevel {
-    Hidden = 0,
-    Novice = 1,
-    Beginner = 2,
-    Proficient = 3,
-    Advanced = 4,
-    Expert = 5,
-}
-
-const SKILL_LEVEL_META = {
-    [SkillLevel.Hidden]: {
-        name: 'Hidden',
-        color: 'grayscale-500',
-        description: 'Do not display your proficiency status.',
-    },
-    [SkillLevel.Novice]: {
-        name: 'Novice',
-        color: 'grayscale-700',
-        description: 'Just starting and needs guidance.',
-    },
-    [SkillLevel.Beginner]: {
-        name: 'Beginner',
-        color: 'orange-400',
-        description: 'Handles simple tasks without support.',
-    },
-    [SkillLevel.Proficient]: {
-        name: 'Proficient',
-        color: 'violet-500',
-        description: 'Works independently on routine tasks.',
-    },
-    [SkillLevel.Advanced]: {
-        name: 'Advanced',
-        color: 'light-blue-500',
-        description: 'Solves complex tasks efficiently.',
-    },
-    [SkillLevel.Expert]: {
-        name: 'Expert',
-        color: 'emerald-500',
-        description: 'Deep mastery; can lead and mentor others.',
-    },
+// Level name/description live in skillTypes.ts (SKILL_LEVEL_META) as static English
+// data accessed dynamically, so we translate at the render layer keyed by SkillLevel.
+const LEVEL_KEYS: Record<SkillLevel, string> = {
+    [SkillLevel.Hidden]: 'hidden',
+    [SkillLevel.Novice]: 'novice',
+    [SkillLevel.Beginner]: 'beginner',
+    [SkillLevel.Proficient]: 'proficient',
+    [SkillLevel.Advanced]: 'advanced',
+    [SkillLevel.Expert]: 'expert',
 };
-
-const LEVELS: SkillLevel[] = [
-    SkillLevel.Hidden,
-    SkillLevel.Novice,
-    SkillLevel.Beginner,
-    SkillLevel.Proficient,
-    SkillLevel.Advanced,
-    SkillLevel.Expert,
-];
-
-export enum SkillProficiencyBarModeEnum {
-    Slider,
-    Display,
-}
+const tProf = (key: string): string => {
+    const fn = (m as Record<string, unknown>)[key];
+    return typeof fn === 'function' ? (fn as () => string)() : '';
+};
+const levelName = (lvl: SkillLevel): string =>
+    tProf(`skills.proficiency.levels.${LEVEL_KEYS[lvl]}.name`) || SKILL_LEVEL_META[lvl].name;
+const levelDesc = (lvl: SkillLevel): string =>
+    tProf(`skills.proficiency.levels.${LEVEL_KEYS[lvl]}.desc`) || SKILL_LEVEL_META[lvl].description;
 
 type SkillProficiencyBarProps = {
     proficiencyLevel?: SkillLevel;
@@ -211,19 +176,22 @@ const SkillProficiencyBar: React.FC<SkillProficiencyBarProps> = ({
                 <div className="flex items-center gap-[5px]">
                     <SelfVerifiedCertIcon className="h-[20px] w-[20px" />
                     <p className="text-grayscale-900 font-poppins font-[600] text-[14px]">
-                        Self Attested Skill Level -{' '}
-                        <span className={`text-${color}`}>{SKILL_LEVEL_META[skillLevel].name}</span>
+                        {m['skills.proficiency.selfAttested']()}{' '}
+                        <span className={`text-${color}`}>{levelName(skillLevel)}</span>
                     </p>
                 </div>
             )}
             {!isDisplayMode && (
                 <div className="flex flex-col">
                     <p className="text-grayscale-800 font-poppins font-[600] text-[14px]">
-                        Skill Level -{' '}
-                        <span className={`text-${color}`}>{SKILL_LEVEL_META[skillLevel].name}</span>
+                        <span className={`text-${color}`}>
+                            {skillLevel === SkillLevel.Hidden &&
+                                `${m['skills.proficiency.skillLevelPrefix']()} `}
+                            {levelName(skillLevel)}
+                        </span>
                     </p>
                     <p className="text-grayscale-700 font-poppins text-[12px]">
-                        {SKILL_LEVEL_META[skillLevel].description}
+                        {levelDesc(skillLevel)}
                     </p>
                 </div>
             )}
@@ -317,7 +285,7 @@ const SkillProficiencyBar: React.FC<SkillProficiencyBarProps> = ({
                                     onChange?.(next);
                                 }
                             }}
-                            aria-label="Skill level"
+                            aria-label={m['skills.proficiency.skillLevel']()}
                             className="absolute inset-0 w-full h-[29px] opacity-0 pointer-events-none"
                         />
                     </>

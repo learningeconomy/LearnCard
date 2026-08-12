@@ -7,7 +7,7 @@ This plugin implements the [Index Plane](/broken/pages/plqXXrKGsTzgtcePKceH).
 ### Installation
 
 ```bash
-pnpm i @learncard/idx-plugin
+bun add @learncard/idx-plugin
 ```
 
 ### General Use

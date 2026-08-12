@@ -7,6 +7,7 @@ import {
     getActivityById,
     getActivityChain,
 } from '@accesslayer/credential-activity/read';
+import { getLifecycleStatusesForCredentialUris } from '@accesslayer/credential/read';
 import {
     CredentialActivityEventTypeValidator,
     PaginatedCredentialActivitiesValidator,
@@ -35,12 +36,26 @@ export const activityRouter = t.router({
                 boostUri: z.string().optional(),
                 eventType: CredentialActivityEventTypeValidator.optional(),
                 integrationId: z.string().optional(),
+                listingId: z.string().optional(),
+                startDate: z.string().datetime().optional(),
+                endDate: z.string().datetime().optional(),
+                groupByLatestStatus: z.boolean().optional(), // When true, returns unique credentials filtered by current status (for CSV export)
             })
         )
         .output(PaginatedCredentialActivitiesValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { limit, cursor, boostUri, eventType, integrationId } = input;
+            const {
+                limit,
+                cursor,
+                boostUri,
+                eventType,
+                integrationId,
+                listingId,
+                startDate,
+                endDate,
+                groupByLatestStatus,
+            } = input;
 
             const records = await getActivitiesForProfile(profile.profileId, {
                 limit: limit + 1,
@@ -48,6 +63,10 @@ export const activityRouter = t.router({
                 boostUri,
                 eventType,
                 integrationId,
+                listingId,
+                startDate,
+                endDate,
+                groupByLatestStatus,
             });
 
             const hasMore = records.length > limit;
@@ -58,6 +77,26 @@ export const activityRouter = t.router({
                 hasMore,
                 cursor: hasMore ? returnRecords.at(-1)?.timestamp : undefined,
             };
+        }),
+
+    getMyCredentialLifecycleStatuses: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/activity/credentials/lifecycle-statuses',
+                tags: ['Activity'],
+                summary: 'Get Credential Lifecycle Statuses',
+                description:
+                    "Returns the authoritative lifecycle status ('active' | 'revoked' | 'suspended') for the authenticated holder's credentials, keyed by URI. URIs the holder did not receive are omitted.",
+            },
+            requiredScope: 'activity:read',
+        })
+        .input(z.object({ uris: z.array(z.string()).max(100) }))
+        .output(z.record(z.string(), z.enum(['active', 'revoked', 'suspended'])))
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            return getLifecycleStatusesForCredentialUris(profile.profileId, input.uris);
         }),
 
     getActivityStats: profileRoute
@@ -77,16 +116,24 @@ export const activityRouter = t.router({
             z.object({
                 boostUris: z.array(z.string()).optional(),
                 integrationId: z.string().optional(),
+                listingId: z.string().optional(),
+                eventType: CredentialActivityEventTypeValidator.optional(),
+                startDate: z.string().datetime().optional(),
+                endDate: z.string().datetime().optional(),
             })
         )
         .output(CredentialActivityStatsValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUris, integrationId } = input;
+            const { boostUris, integrationId, listingId, eventType, startDate, endDate } = input;
 
             return getActivityStatsForProfile(profile.profileId, {
                 boostUris,
                 integrationId,
+                listingId,
+                eventType,
+                startDate,
+                endDate,
             });
         }),
 

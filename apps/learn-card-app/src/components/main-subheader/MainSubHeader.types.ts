@@ -30,6 +30,7 @@ export enum SubheaderTypeEnum {
     Achievement = 'achievement',
     Accomplishment = 'accomplishment',
     Skill = 'skill',
+    AiSessions = 'aiSessions',
     AiPathways = 'aiPathways',
     AiInsights = 'aiInsights',
     Experience = 'experience',
@@ -64,6 +65,7 @@ export const SubheaderContentType: Record<
         bgColor: string;
         helperText?: string;
         helperTextClickable?: string;
+        showBetaLabel?: boolean;
     }
 > = {
     [SubheaderTypeEnum.Learning]: {
@@ -77,7 +79,7 @@ export const SubheaderContentType: Record<
         helperTextClickable: 'learning journey',
     },
     [SubheaderTypeEnum.SocialBadge]: {
-        title: 'Boosts',
+        title: 'Badges',
         IconComponent: BoostsIcon,
         iconColor: 'text-blue-700',
         iconPadding: 'pt-[3.75px] pr-[6.75px] pb-[4.622px] pl-[5.75px]',
@@ -115,23 +117,35 @@ export const SubheaderContentType: Record<
         helperText: 'Your',
         helperTextClickable: 'skills library',
     },
+    [SubheaderTypeEnum.AiSessions]: {
+        title: 'AI Sessions',
+        IconComponent: AiSessionsIcon,
+        iconColor: 'text-indigo-500',
+        textColor: 'text-grayscale-900',
+        bgColor: 'bg-white',
+        helperText: '100% Optimized',
+        helperTextClickable: 'Personalize my tutor',
+        showBetaLabel: true,
+    },
     [SubheaderTypeEnum.AiInsights]: {
-        title: 'AI Insights',
+        title: 'Insights',
         IconComponent: AiInsightsIcon,
         iconColor: 'text-lime-700',
         textColor: 'text-white',
         bgColor: 'bg-white',
         helperText: 'Explore',
         helperTextClickable: 'your progress',
+        showBetaLabel: true,
     },
     [SubheaderTypeEnum.AiPathways]: {
-        title: 'AI Pathways',
+        title: 'Pathways',
         IconComponent: AiPathwaysIcon,
         iconColor: 'text-lime-700',
         textColor: 'text-white',
         bgColor: 'bg-white',
-        helperText: 'Your',
-        helperTextClickable: 'Lessons and careers.',
+        helperText: 'Grow your skills & find new roles',
+        // helperTextClickable: 'Lessons and Careers',
+        showBetaLabel: true,
     },
     [SubheaderTypeEnum.Job]: {
         title: 'Experiences',

@@ -25,9 +25,11 @@ import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import { UnsignedVC, VC } from '@learncard/types';
 import { useGetSearchProfiles, useGetBoostRecipients } from 'learn-card-base';
 
+import { useBrandingConfig } from 'learn-card-base';
+
 import Lottie from 'react-lottie-player';
 const Pulpo = '/lotties/cuteopulpo.json';
-const HourGlass = '/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 type BoostSearchProps = {
     handleCloseModal: () => void;
@@ -61,6 +63,8 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
     const [search, setSearch] = useState('');
     const [connections, setConnections] = useState<LCNProfile[]>([]);
     const [_issueTo, _setIssueTo] = useState<BoostCMSIssueTo[]>(state?.issueTo ?? []);
+
+    const brandingConfig = useBrandingConfig();
 
     const { data: searchResults, isLoading: searchLoading } = useGetSearchProfiles(search ?? '');
     const loadConnections = async () => {
@@ -128,7 +132,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                 <div className="flex items-center justify-start w-full">
                                     <IonInput
                                         autocapitalize="on"
-                                        placeholder="Search LearnCard Network..."
+                                        placeholder={`Search ${brandingConfig?.name} Network...`}
                                         value={search}
                                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base"
                                         onIonInput={e => handleSearch(e?.detail?.value ?? '')}
@@ -145,19 +149,18 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                 {loading && !searchLoading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <div className="max-w-[150px]">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner />
                         </div>
                     </section>
                 )}
                 {!loading && connections.length > 0 && search?.length === 0 && (
                     <BoostAddressBookContactList
                         state={state as unknown as BoostCMSState}
-                        setState={setState as unknown as React.Dispatch<React.SetStateAction<BoostCMSState>>}
+                        setState={
+                            setState as unknown as React.Dispatch<
+                                React.SetStateAction<BoostCMSState>
+                            >
+                        }
                         contacts={connections}
                         mode={BoostAddressBookEditMode.edit}
                         _issueTo={_issueTo}
@@ -181,12 +184,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                 {searchLoading && search?.length > 0 && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <div className="max-w-[150px]">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner />
                         </div>
                     </section>
                 )}
@@ -196,7 +194,11 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                     !searchLoading && (
                         <BoostAddressBookContactList
                             state={state as unknown as BoostCMSState}
-                            setState={setState as unknown as React.Dispatch<React.SetStateAction<BoostCMSState>>}
+                            setState={
+                                setState as unknown as React.Dispatch<
+                                    React.SetStateAction<BoostCMSState>
+                                >
+                            }
                             contacts={searchResults}
                             mode={BoostAddressBookEditMode.edit}
                             _issueTo={_issueTo}

@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { auth } from '../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { z } from 'zod';
-import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('new-join-network-prompt');
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import {
@@ -18,6 +19,7 @@ import {
     getNotificationsEndpoint,
     BrandingEnum,
     SocialLoginTypes,
+    useNetworkConsentMutation,
 } from 'learn-card-base';
 
 import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
@@ -26,11 +28,12 @@ import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBran
 import ErrorLogout from './ErrorLogout';
 import Pencil from '../svgs/Pencil';
 
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { m } from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -112,7 +115,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -157,11 +160,15 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
             name: name ?? currentUser?.name ?? '',
             profileImage: photo ?? currentUser?.profileImage ?? '',
         });
-        currentUserStore.set.currentUser({
-            ...currentUser,
-            name: name ?? currentUser?.name ?? '',
-            profileImage: photo ?? currentUser?.profileImage ?? '',
-        });
+        currentUserStore.set.currentUser(
+            currentUser
+                ? {
+                      ...currentUser,
+                      name: name ?? currentUser.name,
+                      profileImage: photo ?? currentUser.profileImage,
+                  }
+                : null
+        );
     };
 
     const handleJoinLearnCardNetwork = async () => {
@@ -171,9 +178,10 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 setIsCreateLoading(true);
                 const wallet = await initWallet();
                 const didWeb = await wallet.invoke.createProfile({
-                    did: wallet.id.did(),
                     profileId: profileId,
                     displayName: name,
+                    shortBio: '',
+                    bio: '',
                     image: photo,
                     notificationsWebhook: getNotificationsEndpoint(),
                 });
@@ -186,7 +194,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             queryClient,
                         });
                     } catch (consentErr) {
-                        console.warn('Network consent error:', consentErr);
+                        log.warn('Network consent error:', consentErr);
                     }
                     await refetchIsCurrentUserLCNUser();
                     await wallet.invoke.resetLCAClient();
@@ -196,9 +204,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     setIsLoading(false);
                     setIsCreateLoading(false);
                 }
-            } catch (err) {
-                console.log('createProfile::error', err);
-                setError(err?.message);
+            } catch (err: unknown) {
+                log.info('createProfile::error', err);
+                setError(err instanceof Error ? err.message : String(err));
                 setIsLoading(false);
                 setIsCreateLoading(false);
             }
@@ -214,7 +222,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 image: photo,
                 notificationsWebhook: getNotificationsEndpoint(),
             });
-            console.log('updatedProfile::res', updatedProfile);
+            log.info('updatedProfile::res', updatedProfile);
         } else {
             await handleJoinLearnCardNetwork();
         }
@@ -226,7 +234,14 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         // ! APPLE HOT FIX
         if (typeOfLogin === SocialLoginTypes.apple) {
             // ! apple's guidelines: name should NOT be required
-            await updateProfile(auth()?.currentUser, {
+            const firebaseUser = auth()?.currentUser;
+            if (!firebaseUser) {
+                presentLogoutErrorModal();
+                setIsLoading(false);
+                return;
+            }
+
+            await updateProfile(firebaseUser, {
                 displayName: name ?? '',
                 photoURL: photo ?? '',
             });
@@ -258,13 +273,25 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     } else {
                         // update firebase profile
                         try {
-                            await updateProfile(auth()?.currentUser, {
+                            const firebaseUser = auth()?.currentUser;
+                            if (!firebaseUser) {
+                                presentLogoutErrorModal();
+                                setIsLoading(false);
+                                setIsCreateLoading(false);
+                                return;
+                            }
+
+                            await updateProfile(firebaseUser, {
                                 displayName: name,
                                 photoURL: photo,
                             });
-                        } catch (e) {
+                        } catch (e: unknown) {
                             presentLogoutErrorModal();
-                            setError(`There was a firebase error: ${e?.toString?.()}`);
+                            setError(
+                                `There was a firebase error: ${
+                                    e instanceof Error ? e.message : String(e)
+                                }`
+                            );
                         }
                         // update LC network profile
                         await handleLCNetworkProfileUpdate();
@@ -277,7 +304,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     }
                 } catch (error) {
                     setIsLoading(false);
-                    console.log('updateProfile::error', error);
+                    log.info('updateProfile::error', error);
                 }
             }
         }
@@ -331,8 +358,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px]"
                                 customImageClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[70px] min-h-[70px]"
                                 customSize={500}
-                                overrideSrc={photo?.length > 0}
-                                overrideSrcURL={photo}
+                                overrideSrc={Boolean(photo)}
+                                overrideSrcURL={photo ?? ''}
                             >
                                 {imageUploadLoading && (
                                     <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-white">
@@ -462,7 +489,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 font-poppins text-xl w-full shadow-lg normal disabled:opacity-70"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Loading...' : "Let's Go!"}
+                            {isLoading ? m['common.loading']() : m['common.letsGo']()}
                         </button>
                     </IonRow>
                 </div>
@@ -470,11 +497,13 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 <IonRow className="flex items-center justify-center mt-4 w-full">
                     <IonCol className="flex flex-col items-center justify-center text-center">
                         <p className="text-center text-sm font-normal px-16 text-grayscale-600">
-                            You own your own data.
+                            {m['legal.dataOwnership']()}
                             <br />
                             All connections are encrypted.
                         </p>
-                        <button className={`text-${primaryColor} font-bold`}>Learn More</button>
+                        <button className={`text-${primaryColor} font-bold`}>
+                            {m['common.learnMore']()}
+                        </button>
                     </IonCol>
                 </IonRow>
 
@@ -484,14 +513,14 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             onClick={openPP}
                             className={`text-${primaryColor} font-bold text-sm`}
                         >
-                            Privacy Policy
+                            {m['legal.privacyPolicy']()}
                         </button>
                         <span className={`text-${primaryColor} font-bold text-sm`}>•</span>
                         <button
                             onClick={openToS}
                             className={`text-${primaryColor} font-bold text-sm`}
                         >
-                            Terms of Service
+                            {m['legal.termsOfService']()}
                         </button>
                     </IonCol>
                 </IonRow>

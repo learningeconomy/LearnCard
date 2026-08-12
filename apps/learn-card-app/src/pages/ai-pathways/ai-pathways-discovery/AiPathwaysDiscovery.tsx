@@ -9,7 +9,6 @@ import AiPathwayCourses from '../ai-pathway-courses/AiPathwayCourses';
 import AiPathwaysEmptyPlaceholder from '../AiPathwaysEmptyPlaceholder';
 
 import ExploreAiInsightsButton from '../../ai-insights/ExploreAiInsightsButton';
-import ExperimentalFeatureBox from '../../../components/generic/ExperimentalFeatureBox';
 import ErrorBoundaryFallback from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiPathwayExploreContent from '../ai-pathway-explore-content/AiPathwayExploreContent';
 
@@ -23,6 +22,8 @@ import {
     useTrainingProgramsByKeyword,
 } from 'learn-card-base/react-query/queries/careerOneStop';
 import { normalizeSchoolPrograms } from '../ai-pathway-courses/ai-pathway-courses.helpers';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 
 const AiPathwaysDiscovery: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
@@ -63,10 +64,6 @@ const AiPathwaysDiscovery: React.FC = () => {
                     />
                     <AiFeatureGate>
                         <div className="flex items-center justify-center flex-col relative w-full pt-[50px] pb-[50px] gap-4">
-                            <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
-                                <ExperimentalFeatureBox className="shadow-box-bottom" />
-                            </div>
-
                             {/* Search Input Section */}
                             <AiPathwaysDiscoverySearch
                                 keywordInput={keywordInput}
@@ -81,7 +78,11 @@ const AiPathwaysDiscovery: React.FC = () => {
                                         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px]">
                                             <div className="w-full flex-col flex items-center justify-center gap-4">
                                                 <p className="text-center text-lg font-semibold text-gray-600">
-                                                    No results found for "{searchKeyword}"
+                                                    <TransP
+                                                        m={m['common.searchResults.noResultsFor']}
+                                                        values={{ query: searchKeyword }}
+                                                        components={[<span className="italic" />]}
+                                                    />
                                                 </p>
                                             </div>
                                         </div>

@@ -9,6 +9,8 @@ import LoadingPage from '../loadingPage/LoadingPage';
 
 import VprDIDAuth from './vpr/VprDIDAuth';
 import VprQueryByExample from './vpr/VprQueryByExample';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('credential-storage-get');
 
 export const getCredentialFromVp = (vp: VP): VC => {
     const vcField = vp.verifiableCredential;
@@ -24,7 +26,7 @@ const CredentialStorageGet: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             if (!currentUser?.privateKey) {
-                console.warn('🤔 Current user still loading...');
+                log.warn('🤔 Current user still loading...');
                 return;
             }
 

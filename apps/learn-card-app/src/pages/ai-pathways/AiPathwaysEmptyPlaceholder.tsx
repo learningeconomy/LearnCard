@@ -4,16 +4,24 @@ import { useHistory } from 'react-router-dom';
 import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
 import CheckListButton from '../../components/learncard/checklist/CheckListButton';
 
+import useTheme from '../../theme/hooks/useTheme';
 import { useIsLoggedIn } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../paraglide/messages.js';
 
 export const AiPathwaysEmptyPlaceholder: React.FC = () => {
     const history = useHistory();
     const isLoggedIn = useIsLoggedIn();
+    const brandingConfig = useBrandingConfig();
+    const { colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
 
-    let title = isLoggedIn ? 'No AI Pathways yet.' : 'Join LearnCard\nto unlock AI Pathways';
+    let title = isLoggedIn
+        ? m['aiPathways.discovery.noPathwaysYet']()
+        : m['aiPathways.discovery.joinToUnlock']({ brand: brandingConfig?.name ?? '' });
     const text = isLoggedIn
-        ? `Build your LearnCard to unlock personalized pathways to discover career routes and learning experiences aligned with your skills.`
-        : 'AI Pathways connect your skills to relevant courses, careers, salaries, and learning content.';
+        ? m['aiPathways.discovery.buildToUnlock']({ brand: brandingConfig?.name ?? '' })
+        : m['aiPathways.discovery.connectDescription']();
 
     return (
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px]">
@@ -31,9 +39,9 @@ export const AiPathwaysEmptyPlaceholder: React.FC = () => {
                         onClick={() => {
                             history.push('/');
                         }}
-                        className="p-[11px] bg-emerald-700 rounded-full text-white flex-1 font-poppins text-[17px] font-semibold w-full"
+                        className={`p-[11px] bg-${primaryColor} rounded-full text-white flex-1 font-poppins text-[17px] font-semibold w-full`}
                     >
-                        Join LearnCard
+                        {m['aiPathways.discovery.joinBrand']({ brand: brandingConfig?.name ?? '' })}
                     </button>
                 )}
             </div>

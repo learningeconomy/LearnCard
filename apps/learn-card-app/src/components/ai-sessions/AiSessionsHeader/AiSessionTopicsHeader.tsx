@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import AiSessionsDesktopHeader from './AiSessionsDesktopHeader';
@@ -24,7 +26,10 @@ export const AiSessionTopicsHeader: React.FC<{
 
     const title = isShowAll ? (
         <p className={`text-[25px] font-semibold text-${primaryColor} font-poppins ml-4`}>
-            Ai Sessions
+            {m['ai.aiSessions']()}
+            <span className="ml-[6px] text-[15px] font-normal text-grayscale-400 leading-[100%]">
+                beta
+            </span>
         </p>
     ) : (
         <p className="text-[25px] font-semibold text-grayscale-900 font-poppins ml-4">

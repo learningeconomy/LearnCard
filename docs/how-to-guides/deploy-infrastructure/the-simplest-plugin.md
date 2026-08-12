@@ -15,10 +15,11 @@ If you don't have aqu installed, you can install it globally with `npm i -g aqu.
 {% endhint %}
 
 {% tabs %}
-{% tab title="pnpm" %}
-<pre class="language-bash"><code class="lang-bash"><strong>pnpm dlx aqu create simple-plugin
+{% tab title="Bun" %}
+
+<pre class="language-bash"><code class="lang-bash"><strong>bunx aqu create simple-plugin
 </strong>
-? Pick package manager: pnpm
+? Pick package manager: bun
 ? Specify package description: ()
 ? Package author:
 ? Git repository (only for package.json information):
@@ -27,9 +28,11 @@ If you don't have aqu installed, you can install it globally with `npm i -g aqu.
 </strong>
 cd simple-plugin
 </code></pre>
+
 {% endtab %}
 
 {% tab title="yarn" %}
+
 <pre class="language-bash"><code class="lang-bash"><strong>yarn dlx aqu create simple-plugin
 </strong>
 ? Pick package manager: yarn
@@ -41,9 +44,11 @@ cd simple-plugin
 </strong>
 cd simple-plugin
 </code></pre>
+
 {% endtab %}
 
 {% tab title="npm" %}
+
 <pre class="language-bash"><code class="lang-bash"><strong>npx aqu create simple-plugin
 </strong>
 ? Pick package manager: npm
@@ -55,6 +60,7 @@ cd simple-plugin
 </strong>
 cd simple-plugin
 </code></pre>
+
 {% endtab %}
 {% endtabs %}
 
@@ -67,22 +73,28 @@ If you'd like to publish your plugin to npm for others to use, please see our do
 Using your preferred package manager, install `@learncard/core` (for the `Plugin` type) and `@learncard/init` (for initializing LearnCard):
 
 {% tabs %}
-{% tab title="pnpm" %}
+{% tab title="Bun" %}
+
 ```bash
-pnpm i @learncard/core @learncard/init
+bun add @learncard/core @learncard/init
 ```
+
 {% endtab %}
 
 {% tab title="yarn" %}
+
 ```bash
 yarn add @learncard/core @learncard/init
 ```
+
 {% endtab %}
 
 {% tab title="npm" %}
+
 ```bash
 npm i @learncard/core @learncard/init
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -91,6 +103,7 @@ npm i @learncard/core @learncard/init
 To ease plugin development, it's best to start by defining the interface for your plugin. This can be done quite easily using [the `Plugin` type](../../sdks/learncard-core/writing-plugins.md#the-plugin-type):
 
 {% code title="src/types.ts" lineNumbers="true" %}
+
 ```typescript
 import { Plugin } from '@learncard/core';
 
@@ -100,6 +113,7 @@ export type MyPluginMethods = {
 
 export type MyPluginType = Plugin<'MyPluginName', any, MyPluginMethods>;
 ```
+
 {% endcode %}
 
 The preceding file defines a plugin named `MyPluginName` that exposes one method: `getFavoriteNumber`
@@ -107,6 +121,7 @@ The preceding file defines a plugin named `MyPluginName` that exposes one method
 ### Create the Plugin
 
 {% code title="src/index.ts" lineNumbers="true" %}
+
 ```typescript
 import { MyPluginType } from './types';
 
@@ -115,6 +130,7 @@ export const MyPlugin: MyPluginType = {
     methods: { getFavoriteNumber: () => 4 },
 };
 ```
+
 {% endcode %}
 
 ### Create a Test for Your Plugin
@@ -122,46 +138,54 @@ export const MyPlugin: MyPluginType = {
 It's important to write tests for your plugins, so others can rely on them :thumbsup:
 
 {% tabs %}
-{% tab title="pnpm" %}
+{% tab title="Bun" %}
+
 ```bash
-pnpm i --save-dev jest @types/jest
+bun add --dev jest @types/jest
 ```
+
 {% endtab %}
 
 {% tab title="yarn" %}
+
 ```bash
 yarn add jest @types/jest --dev
 ```
+
 {% endtab %}
 
 {% tab title="npm" %}
+
 ```bash
 npm i --save-dev jest @types/jest
 ```
+
 {% endtab %}
 {% endtabs %}
 
 Then, write your test:
 
 {% code title="test/index.test.ts" lineNumbers="true" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 import { MyPlugin } from '../src/index';
 
 describe('MyPlugin', () => {
-	it('should return my favorite number', async () => {
-		const learnCard = await initLearnCard();
-		const learnCardWithMyPlugin = await learnCard.addPlugin(MyPlugin);
+    it('should return my favorite number', async () => {
+        const learnCard = await initLearnCard();
+        const learnCardWithMyPlugin = await learnCard.addPlugin(MyPlugin);
 
-		const favoriteNumber = learnCardWithMyPlugin.invoke.getFavoriteNumber();
-		
-		expect(favoriteNumber).toBe(4);
-	});
+        const favoriteNumber = learnCardWithMyPlugin.invoke.getFavoriteNumber();
+
+        expect(favoriteNumber).toBe(4);
+    });
 });
 ```
+
 {% endcode %}
 
-If all looks good, you should be able to `pnpm test` and successfully pass the test:
+If all looks good, you should be able to `bun test` and successfully pass the test:
 
 <img src="../../.gitbook/assets/Screen Shot 2022-11-11 at 4.19.56 PM.png" alt="" data-size="original">
 
@@ -193,10 +217,11 @@ If you haven't yet, [follow these short steps to create an npm account](https://
 As noted in our docs on [The Simplest Plugin](the-simplest-plugin.md#boilerplate), if you've never set up a TS/node package before, we greatly recommend using [aqu](https://www.npmjs.com/package/aqu)!
 
 {% tabs %}
-{% tab title="pnpm" %}
-<pre class="language-bash"><code class="lang-bash"><strong>yarn dlx aqu create learn-card-example-plugin
-</strong>
-? Pick package manager: yarn
+{% tab title="Bun" %}
+
+<pre class="language-bash"><code class="lang-bash"><strong>bunx aqu create learn-card-example-plugin
+:</strong>
+? Pick package manager: bun
 ? Specify package description: () # Describe your plugin!
 ? Package author: # Who are you?
 ? Git repository (only for package.json information): 
@@ -205,36 +230,41 @@ As noted in our docs on [The Simplest Plugin](the-simplest-plugin.md#boilerplate
 </strong>
 cd learn-card-example-plugin
 </code></pre>
+
 {% endtab %}
 
 {% tab title="yarn" %}
-```bash
-pnpm dlx aqu create learn-card-example-plugin
 
-? Pick package manager: pnpm
+```bash
+yarn dlx aqu create learn-card-example-plugin
+
+? Pick package manager: yarn
 ? Specify package description: () # Describe your plugin!
 ? Package author: # Who are you?
-? Git repository (only for package.json information): 
+? Git repository (only for package.json information):
 ? Pick license: MIT # See https://choosealicense.com/
 ? Pick template: typescript
 
 cd learn-card-example-plugin
 ```
+
 {% endtab %}
 
 {% tab title="npm" %}
+
 ```bash
 npx aqu create learn-card-example-plugin
 
 ? Pick package manager: npm
 ? Specify package description: () # Describe your plugin!
 ? Package author: # Who are you?
-? Git repository (only for package.json information): 
+? Git repository (only for package.json information):
 ? Pick license: MIT # See https://choosealicense.com/
 ? Pick template: typescript
 
 cd learn-card-example-plugin
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -276,12 +306,14 @@ gh repo create
 After getting a repo up, it's a good idea to add the URL (shown above as `{REPOSITORY_URL}`) to the `package.json`!
 
 {% code title="package.json" %}
+
 ```json
   "repository": {
     "type": "git",
     "url": {REPOSITORY_URL}
   },
 ```
+
 {% endcode %}
 
 ## Release the Package
@@ -289,23 +321,27 @@ After getting a repo up, it's a good idea to add the URL (shown above as `{REPOS
 With everything set up, you may run the release command!
 
 {% tabs %}
-{% tab title="pnpm" %}
+{% tab title="Bun" %}
+
 ```bash
-pnpm release
+bun run release
 ```
+
 {% endtab %}
 
 {% tab title="yarn" %}
+
 ```bash
 yarn release
 ```
+
 {% endtab %}
 
 {% tab title="npm" %}
+
 ```bash
 npm run release
 ```
-
 
 {% endtab %}
 {% endtabs %}
@@ -313,22 +349,28 @@ npm run release
 If you didn't use aqu to create your package, you may need to use the `publish` command directly:
 
 {% tabs %}
-{% tab title="pnpm" %}
+{% tab title="Bun" %}
+
 ```bash
-pnpm publish
+bun publish
 ```
+
 {% endtab %}
 
 {% tab title="yarn" %}
+
 ```bash
 yarn publish
 ```
+
 {% endtab %}
 
 {% tab title="npm" %}
+
 ```bash
 npm publish
 ```
+
 {% endtab %}
 {% endtabs %}
 

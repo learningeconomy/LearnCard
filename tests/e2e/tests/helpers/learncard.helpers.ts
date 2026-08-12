@@ -1,18 +1,16 @@
-import { readFile } from 'fs/promises';
+import { readFile } from 'node:fs/promises';
 
-import { AddPlugin } from '@learncard/core';
-import {
-    initLearnCard,
-    NetworkLearnCardFromSeed,
-    NetworkLearnCardFromApiKey,
-} from '@learncard/init';
-import { getSimpleSigningPlugin, SimpleSigningPlugin } from '@learncard/simple-signing-plugin';
+import type { AddPlugin } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
+import type { NetworkLearnCardFromSeed, NetworkLearnCardFromApiKey } from '@learncard/init';
+import { getLCAPlugin } from '@learncard/lca-api-plugin';
+import type { LCAPlugin } from '@learncard/lca-api-plugin';
 
 const didkit = readFile(
     require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
 );
 
-export type LearnCard = AddPlugin<NetworkLearnCardFromSeed['returnValue'], SimpleSigningPlugin>;
+export type LearnCard = AddPlugin<NetworkLearnCardFromSeed['returnValue'], LCAPlugin>;
 
 export type ApiKeyLearnCard = NetworkLearnCardFromApiKey['returnValue'];
 
@@ -31,8 +29,11 @@ export const getLearnCard = async (
     });
 
     return learnCard.addPlugin(
-        await getSimpleSigningPlugin(learnCard, 'http://localhost:4200/trpc')
-    ) as any;
+        await getLCAPlugin(
+            learnCard as unknown as Parameters<typeof getLCAPlugin>[0],
+            'http://localhost:5200/trpc'
+        )
+    ) as unknown as LearnCard;
 };
 
 export const USERS = {
@@ -41,7 +42,7 @@ export const USERS = {
     c: { seed: 'c'.repeat(64), profileId: 'testc', displayName: 'User C' },
     d: { seed: 'd'.repeat(64), profileId: 'testd', displayName: 'User D' },
     e: { seed: 'e'.repeat(64), profileId: 'teste', displayName: 'User E' },
-    f: { seed: 'e'.repeat(62) + '00', profileId: 'testf', displayName: 'User F' },
+    f: { seed: `${'e'.repeat(62)}00`, profileId: 'testf', displayName: 'User F' },
 } as const satisfies Record<string, { seed: string; profileId: string; displayName: string }>;
 
 export const getLearnCardForUser = async (userKey: keyof typeof USERS) => {
@@ -50,20 +51,15 @@ export const getLearnCardForUser = async (userKey: keyof typeof USERS) => {
     const learnCard = await getLearnCard(user.seed);
 
     try {
-        // Avoid creating a duplicate profile if it already exists
-        const existing = await learnCard.invoke.getProfile();
-
-        if (!existing) {
-            await learnCard.invoke.createProfile({
-                profileId: user.profileId,
-                displayName: user.displayName,
-                bio: '',
-                shortBio: '',
-            });
-        }
-    } catch (error) {
+        await learnCard.invoke.createProfile({
+            profileId: user.profileId,
+            displayName: user.displayName,
+            bio: '',
+            shortBio: '',
+        });
+    } catch (error: unknown) {
         // Swallow only known "already exists" scenarios; rethrow unexpected errors
-        const msg = (error as any)?.message ?? String(error);
+        const msg = error instanceof Error ? error.message : String(error);
         if (!/already exists/i.test(msg)) throw error;
     }
 

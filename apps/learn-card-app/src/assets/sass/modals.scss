@@ -51,6 +51,17 @@ ion-modal.center-modal {
     }
 }
 
+.data-sharing-modal-shell {
+    max-width: 450px !important;
+    width: 100% !important;
+    height: 80vh !important;
+    max-height: 80vh !important;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
 ion-modal.mobile-modal {
     &::part(content) {
         border-top-right-radius: 24px;
@@ -262,6 +273,13 @@ ion-datetime {
 ion-popover {
     --z-index: 100002 !important;
     z-index: 100002 !important;
+}
+
+.resume-history-popover::part(content) {
+    width: min(960px, calc(100vw - 12px)) !important;
+    max-width: min(960px, calc(100vw - 12px)) !important;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
 }
 
 ion-picker {

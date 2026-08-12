@@ -8,8 +8,53 @@
 npx @learncard/cli
 
 # Optionally specify a deterministic seed to instantiate the wallet with
-npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2h
+npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2
 ```
+
+### Holder Continuity Export
+
+The CLI also provides REPL helpers from `@learncard/holder-continuity` for holder-controlled continuity exports. These helpers create a standard ZIP with a readable manifest and encrypted payload files for keys, credentials, presentations, consent records, and status-list snapshots.
+
+```javascript
+const password = await getLearnCardBundlePassword();
+
+await exportLearnCardBundle(learnCard, {
+    out: './learncard-export.zip',
+    password,
+});
+
+const freshWallet = await initLearnCard({ seed: '0'.repeat(64), network: true });
+await importLearnCardBundle('./learncard-export.zip', {
+    password,
+    wallet: freshWallet,
+    verifyBeforeImport: true,
+});
+```
+
+```javascript
+const restoredWallet = await restoreLearnCardFromBundle('./learncard-export.zip', { password });
+```
+
+`getLearnCardBundlePassword()` prompts without echoing the password into the REPL, which avoids saving it in REPL history. You can still pass a password string directly for local scripts.
+
+`restoreLearnCardFromBundle(...)` decrypts the exported seed and returns a wallet with the original DID. It does not upload bundle payloads or recreate index records; use `importLearnCardBundle(...)` when copying credentials into another wallet.
+
+If you omit the first argument, the CLI exports the default `learnCard` wallet it created at startup:
+
+```javascript
+const password = await getLearnCardBundlePassword();
+await exportLearnCardBundle({ out: './learncard-export.zip', password });
+```
+
+Lower-level helpers are also available in the REPL:
+
+```javascript
+const password = await getLearnCardBundlePassword();
+await createLearnCardBundle(learnCard, { password });
+await readLearnCardBundle('./learncard-export.zip', { password });
+```
+
+For the data model and portability caveats, see [Holder Continuity](../core-concepts/holder-continuity.md) and the `@learncard/holder-continuity` package `BUNDLE_SPEC.md`.
 
 ### Getting Started
 
@@ -24,7 +69,7 @@ From within the CLI, you should be able to start playing around with a basic Lea
 One of the easiest ways to interact with your LearnCard is to get its DID:
 
 ```javascript
-learnCard.id.did()
+learnCard.id.did();
 // 'did:key:z6MkuWb1dvhvime3BZdiuRGi1Q41o4h4hS5ZUizwBiGw3SU6'
 
 learnCard.id.did('pkh:sol');
@@ -58,7 +103,9 @@ const unsignedVerifiableCredential = learnCard.invoke.getTestVc();
 */
 
 // Then, issue the credential to yourself (i.e. sign the credential to turn it into a verifiable credential)
-const signedVerifiableCredential = await learnCard.invoke.issueCredential(unsignedVerifiableCredential);
+const signedVerifiableCredential = await learnCard.invoke.issueCredential(
+    unsignedVerifiableCredential
+);
 /** 
 {
   '@context': [ 'https://www.w3.org/2018/credentials/v1' ],
@@ -77,7 +124,7 @@ const signedVerifiableCredential = await learnCard.invoke.issueCredential(unsign
 }
 **/
 
-// Then, verify the credential! 
+// Then, verify the credential!
 // This verifies that the credential is valid, has not been tampered with, and was issued by the correct DID
 await learnCard.invoke.verifyCredential(signedVerifiableCredential);
 /**

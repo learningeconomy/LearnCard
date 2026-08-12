@@ -6,8 +6,14 @@ const firstStartupStore = createStore('firstStartup')<{
     firstStart: boolean;
     introSlidesCompleted: boolean;
     version: string;
+    dashboardGetStartedDismissed: boolean;
 }>(
-    { firstStart: true, introSlidesCompleted: false, version: '' },
+    {
+        firstStart: true,
+        introSlidesCompleted: false,
+        version: '',
+        dashboardGetStartedDismissed: false,
+    },
     { persist: { name: 'firstStartup', enabled: true } }
 );
 

@@ -7,10 +7,9 @@ import useBoostModal from '../hooks/useBoostModal';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 import { EmptyState } from '../boost-select-menu/NewBoostSelectMenu';
 import { IonRow, IonGrid, IonSpinner } from '@ionic/react';
-import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
+import BoostManagedCard, { BoostManagedCardSkeleton } from './BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
-// @ts-ignore
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 import {
     CredentialCategoryEnum,
     BoostPageViewModeType,
@@ -20,13 +19,9 @@ import {
     searchManagedBoostsFromCache,
     pluralize,
     BoostCategoryOptionsEnum,
-    useModal,
-    ModalTypes,
 } from 'learn-card-base';
 import { BoostQuery } from '@learncard/types';
 
-import Lottie from 'react-lottie-player';
-import NewBoostSelectMenu from '../boost-select-menu/NewBoostSelectMenuOld';
 import NewBoostSelectMenuCustomTypeButton from '../boost-select-menu/NewBoostSelectMenuCustomTypeButton';
 import {
     credentialCategoryToSubheaderType,
@@ -47,7 +42,10 @@ type BoostManagedListProps = {
     enableCreateButton?: boolean;
     includeExtendedFamily?: boolean;
     handleCloseModal?: () => void;
+    returnToParentAfterSave?: boolean;
+    useManagedCardSkeleton?: boolean;
 };
+const INITIAL_SKELETON_COUNT = 4;
 
 const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     parentUri,
@@ -61,11 +59,13 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     includeExtendedFamily,
     enableCreateButton = true,
     handleCloseModal,
+    returnToParentAfterSave = false,
+    useManagedCardSkeleton = false,
 }) => {
     const history = useHistory();
     /*
         * start **
-        Managed boosts query + pagination 
+        Managed boosts query + pagination
     */
     const managedBoostInfiniteScrollRef = useRef<HTMLDivElement>(null);
 
@@ -96,20 +96,6 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
 
-    const { newModal, closeModal } = useModal({
-        desktop: ModalTypes.Cancel,
-        mobile: ModalTypes.Cancel,
-    });
-
-    const openNewBoostSelector = () => {
-        newModal(
-            <NewBoostSelectMenu
-                handleCloseModal={() => closeModal()}
-                category={category}
-            />
-        );
-    };
-
     useEffect(() => {
         if (managedBoostsOnScreen && managedBoostsHasNextPage) managedBoostsFetchNextPage();
     }, [
@@ -119,7 +105,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
         managedBoostInfiniteScrollRef,
     ]);
     /*
-        Managed boosts query + pagination 
+        Managed boosts query + pagination
          * end **
     */
 
@@ -154,8 +140,24 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                         />
                     ))
             ) ?? [],
-        [managedBoosts, searchResults, category, viewMode, managedBoostsLoading, managedBoostsRefetch, defaultImg]
+        [
+            managedBoosts,
+            searchResults,
+            category,
+            viewMode,
+            managedBoostsLoading,
+            managedBoostsRefetch,
+            defaultImg,
+        ]
     );
+    const loadingManagedBoosts = Array.from({ length: INITIAL_SKELETON_COUNT }, (_, index) => (
+        <BoostManagedCardSkeleton
+            key={`managed-child-skeleton-${category}-${index}`}
+            categoryType={category}
+            boostPageViewMode={viewMode}
+            branding={BrandingEnum.scoutPass}
+        />
+    ));
 
     const handleRefetch = async () => {
         try {
@@ -185,18 +187,30 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
 
     return (
         <>
-            {managedBoostsLoading && !boostError && (
-                <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                    <div className="max-w-[280px] mt-[40px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                    </div>
-                </section>
-            )}
+            {managedBoostsLoading &&
+                !boostError &&
+                (useManagedCardSkeleton ? (
+                    <section
+                        className="w-full"
+                        role="status"
+                        aria-label={`Loading managed ${category}`}
+                    >
+                        {isCardView ? (
+                            <IonGrid className="max-w-[600px]">
+                                <IonRow>{loadingManagedBoosts}</IonRow>
+                            </IonGrid>
+                        ) : (
+                            <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px] pt-[25px]">
+                                {loadingManagedBoosts}
+                            </div>
+                        )}
+                    </section>
+                ) : (
+                    <CredentialListSkeleton
+                        viewMode={isCardView ? 'card' : 'list'}
+                        cardSize="credential"
+                    />
+                ))}
 
             {!managedBoostsLoading && !boostError && managedBoostsList && (
                 <>
@@ -210,6 +224,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                                         handleCloseModal={handleCloseModal}
                                         useCMSModal
                                         parentUri={parentUri}
+                                        returnToParentAfterSave={returnToParentAfterSave}
                                     />
                                 )}
                                 {managedBoostsList}

@@ -1,13 +1,14 @@
 import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay } from 'swiper';
+import { Autoplay } from 'swiper/modules';
 
 import { IonSpinner } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base';
 import Sparkles from '../../assets/images/purple-sparkles.gif';
-import LearncardLogo from '../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 // Import styles
 import 'swiper/css';
@@ -38,7 +39,9 @@ const GenericLoader: React.FC<{
     showCloseButton = false,
     closeButtonHandler = () => {},
 }) => {
-    let text: string | string[] = 'Loading...';
+    const { appIcon } = useTenantBrandingAssets();
+
+    let text: string | string[] = m['common.loading']();
     if (overrideText) text = overrideText;
 
     const containerStyles = isInline
@@ -96,7 +99,7 @@ const GenericLoader: React.FC<{
                         />
                     ) : (
                         <img
-                            src={img ?? LearncardLogo}
+                            src={img ?? appIcon}
                             className="h-[70px] w-[70px] rounded-full object-cover z-50 bg-white border-white border-solid border-[6px] box-content"
                         />
                     )}

@@ -1,15 +1,15 @@
 import React, { Suspense } from 'react';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { connectivityStore } from 'learn-card-base';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
 
 import AppRouter from './AppRouter';
 import {
-    useInitLoading,
     sqliteInit,
     PushNotificationListener,
     QRCodeScannerOverlay,
@@ -17,25 +17,63 @@ import {
     useSQLiteInitWeb,
     sqliteStore,
     ensureReactQueryTableExists,
+    getLogger,
+    InAppMessageHost,
 } from 'learn-card-base';
-
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
+import CredentialSyncListener from './components/credential-sync-listener/CredentialSyncListener';
+import NotificationToastListener from './components/notification-toast-listener/NotificationToastListener';
+import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgressReactorMount';
+import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGlobals';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
+
+// Install `window.__pathwaysDev` at the app-root level rather than
+// waiting for the /pathways shell to mount. The dev-panel inspector
+// expects these globals to be available on any route (including the
+// `/claim/...` landing surface, the app-store, credential detail,
+// etc.) so developers can run `__pathwaysDev.inspectPathway()` /
+// `listDispatches()` to debug pathway-progress dispatches without
+// first having to navigate to /pathways.
+//
+// The installer is idempotent + guarded by `import.meta.env.DEV`,
+// so this is a no-op in production builds. See
+// `src/pages/pathways/dev/pathwaysDevGlobals.ts`.
+installPathwaysDevGlobals();
 
 import { AnalyticsContextProvider } from '@analytics';
 import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator';
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
+import DevDebugPanel from './components/debug/DevDebugPanel';
+import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
+import { useInitializeTheme } from './theme/hooks/useTheme';
+
+const log = getLogger('cache');
 
 const history = createBrowserHistory();
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
+
+// Drive React Query's online state from our connectivity model (fed by
+// Capacitor Network on native) instead of the default `navigator.onLine`, which
+// is unreliable in the Android webview. This makes every query refetch on
+// reconnect and mutations resume — so data that went stale offline (feature
+// flags, notifications, etc.) reloads automatically when connectivity returns.
+onlineManager.setEventListener(setOnline => {
+    setOnline(connectivityStore.get.status() !== 'offline');
+
+    const unsubscribe = connectivityStore.store.subscribe(({ status }) => {
+        setOnline(status !== 'offline');
+    });
+
+    return unsubscribe;
+});
 
 const persister = createAsyncStoragePersister({
     storage: {
@@ -64,7 +102,7 @@ const persister = createAsyncStoragePersister({
 
                 return result.values![0].cache;
             } catch (error) {
-                console.error('Error getting from cache', { key, error });
+                log.error('Error getting from cache', error, { key });
                 // Fallback to localforage on error
                 return localforage.getItem(key);
             }
@@ -96,12 +134,12 @@ const persister = createAsyncStoragePersister({
                     await db.close();
                 }
             } catch (error) {
-                console.error('Error setting in cache', { key, value, error });
+                log.error('Error setting in cache', error, { key });
                 // Fallback to localforage on error
                 try {
                     return localforage.setItem(key, value);
                 } catch (fallbackError) {
-                    console.error('Fallback cache error', fallbackError);
+                    log.error('Fallback cache error', fallbackError);
                 }
             }
         },
@@ -129,22 +167,27 @@ const persister = createAsyncStoragePersister({
                     await db.close();
                 }
             } catch (error) {
-                console.error('Error removing from cache', { key, error });
+                log.error('Error removing from cache', error, { key });
                 // Fallback to localforage on error
                 try {
                     await localforage.removeItem(key);
                 } catch (fallbackError) {
-                    console.error('Fallback cache removal error', fallbackError);
+                    log.error('Fallback cache removal error', fallbackError);
                 }
             }
         },
     },
 });
 
+const ThemeInitializer: React.FC = () => {
+    useInitializeTheme();
+
+    return null;
+};
+
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
     sqliteInit(); // initializes SQLite on native
-    const initLoading = useInitLoading();
     const showScannerOverlay = QRCodeScannerStore?.use?.showScanner();
 
     return (
@@ -157,24 +200,37 @@ const FullApp: React.FC = () => {
                 {/* <ReactQueryDevtools /> */}
                 <IonReactRouter history={history}>
                     <Suspense fallback={<LoadingPageDumb />}>
-                        <ExternalAuthServiceProvider>
-                            <ModalsProvider>
-                                <IonApp>
-                                    <div id="modal-mid-root"></div>
-                                    <Toast />
-                                    <SdkActivityIndicator />
-                                    <NetworkListener />
-                                    <AppUrlListener />
-                                    <PushNotificationListener />
-                                    <PresentVcModalListener />
-                                    {/* <UserProfileSetupListener loading={initLoading} /> */}
-                                    <AppRouter initLoading={initLoading} />
-                                    <QRCodeScannerListener />
+                        <AuthCoordinatorProvider>
+                            <ThemeInitializer />
+                            <ExternalAuthServiceProvider>
+                                <ModalsProvider>
+                                    <IonApp>
+                                        <div id="modal-mid-root"></div>
+                                        <Toast />
+                                        <SdkActivityIndicator />
+                                        <NetworkListener />
+                                        <AppUrlListener />
+                                        <PushNotificationListener />
+                                        <PresentVcModalListener />
+                                        <CredentialSyncListener />
+                                        <NotificationToastListener />
+                                        {/* Subscribes the pathway-progress reactor to
+                                            the wallet event bus. Placed alongside the
+                                            other app-level listeners so every claim
+                                            and session-end event — wherever it's
+                                            published — flows through one reactor. */}
+                                        <PathwayProgressReactorMount />
+                                        <AppRouter />
+                                        <InAppMessageHost />
+                                        <QRCodeScannerListener />
 
-                                    {showScannerOverlay && <QRCodeScannerOverlay />}
-                                </IonApp>
-                            </ModalsProvider>
-                        </ExternalAuthServiceProvider>
+                                        {showScannerOverlay && <QRCodeScannerOverlay />}
+
+                                        <DevDebugPanel />
+                                    </IonApp>
+                                </ModalsProvider>
+                            </ExternalAuthServiceProvider>
+                        </AuthCoordinatorProvider>
                     </Suspense>
                 </IonReactRouter>
             </AnalyticsContextProvider>

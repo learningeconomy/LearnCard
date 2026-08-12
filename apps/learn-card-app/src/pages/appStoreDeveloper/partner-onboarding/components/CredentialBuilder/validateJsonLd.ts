@@ -1,0 +1,181 @@
+/**
+ * Client-side JSON-LD credential validator.
+ *
+ * Uses jsonld.expand() with bundled context files to catch "key expansion failed"
+ * and "boost expansion failed" errors before hitting the server.
+ */
+
+import { bundledDocumentLoader, createDocumentLoader } from './contexts';
+
+export interface JsonLdValidationResult {
+    valid: boolean;
+    errors: string[];
+}
+
+export interface ValidateCredentialOptions {
+    allowRemoteContexts?: boolean;
+}
+
+/**
+ * Validate a credential JSON object by attempting JSON-LD expansion.
+ * This catches the same errors that the server would return, but client-side.
+ *
+ * With `allowRemoteContexts`, non-standard `@context` URLs are fetched live
+ * rather than rejected, so any credential whose contexts genuinely resolve is
+ * accepted — matching what `issueCredential` can actually sign.
+ */
+export const validateCredentialJsonLd = async (
+    credential: Record<string, unknown>,
+    { allowRemoteContexts = false }: ValidateCredentialOptions = {}
+): Promise<JsonLdValidationResult> => {
+    try {
+        const jsonld = (await import('@digitalcredentials/jsonld')).default;
+
+        // Replace Mustache variables with placeholder values so expansion
+        // doesn't choke on `{{variable_name}}` strings.
+        const sanitized = replaceMustacheForValidation(credential);
+
+        // Strip embedded verifiableCredential from CLR credentialSubject before
+        // expansion. These are pre-signed VCs with their own @context arrays that
+        // our bundled document loader doesn't cover. They're already validated by
+        // their original issuers — we only need to validate the CLR wrapper.
+        const forExpansion = stripEmbeddedVCs(sanitized as Record<string, unknown>);
+
+        const documentLoader = allowRemoteContexts
+            ? createDocumentLoader({ allowRemote: true })
+            : bundledDocumentLoader;
+
+        await jsonld.expand(forExpansion, { documentLoader });
+
+        return { valid: true, errors: [] };
+    } catch (e) {
+        const message = (e as Error).message || String(e);
+        const errors = parseJsonLdError(message);
+        return { valid: false, errors };
+    }
+};
+
+/**
+ * Deep-clone a credential, removing credentialSubject.verifiableCredential if present.
+ * Embedded signed VCs reference their own @context arrays (VC v1, signing contexts, etc.)
+ * that our bundled document loader doesn't cover. Since they're pre-signed and already
+ * validated by their issuers, we only need to validate the CLR wrapper structure.
+ */
+function stripEmbeddedVCs(credential: Record<string, unknown>): Record<string, unknown> {
+    const subject = credential.credentialSubject;
+
+    if (!subject || typeof subject !== 'object' || Array.isArray(subject)) {
+        return credential;
+    }
+
+    const subjectObj = subject as Record<string, unknown>;
+
+    if (!('verifiableCredential' in subjectObj)) {
+        return credential;
+    }
+
+    const { verifiableCredential: _stripped, ...restSubject } = subjectObj;
+
+    return {
+        ...credential,
+        credentialSubject: restSubject,
+    };
+}
+
+/**
+ * Deep-clone a credential object, replacing Mustache template variables
+ * (e.g. `{{issuer_did}}`) with placeholder values that won't break JSON-LD expansion.
+ */
+function replaceMustacheForValidation(obj: unknown): unknown {
+    if (typeof obj === 'string') {
+        // Replace {{variable}} with a valid placeholder
+        if (/\{\{.*?\}\}/.test(obj)) {
+            // For @id-like fields that need a URI, use a placeholder URI
+            return 'https://placeholder.example.com/dynamic';
+        }
+        return obj;
+    }
+
+    if (Array.isArray(obj)) {
+        return obj.map(replaceMustacheForValidation);
+    }
+
+    if (obj !== null && typeof obj === 'object') {
+        const result: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(obj)) {
+            result[key] = replaceMustacheForValidation(value);
+        }
+        return result;
+    }
+
+    return obj;
+}
+
+/**
+ * Parse jsonld expansion errors into user-friendly messages.
+ */
+function parseJsonLdError(message: string): string[] {
+    const errors: string[] = [];
+
+    // Pattern: "Invalid JSON-LD syntax; ... is not valid"
+    const invalidPropMatch = message.match(/Invalid JSON-LD syntax;[^.]*?"([^"]+)"[^.]*?is not/i);
+    if (invalidPropMatch) {
+        errors.push(
+            `Property "${invalidPropMatch[1]}" is not valid in this context. ` +
+                'Check that the property name matches the OBv3 specification.'
+        );
+    }
+
+    // Pattern: protected term redefinition
+    if (/protected.*term|redefine.*protected/i.test(message)) {
+        const termMatch = message.match(/term "([^"]+)"/);
+        const term = termMatch ? termMatch[1] : 'unknown';
+        errors.push(
+            `Property "${term}" conflicts with a protected term in the JSON-LD context. ` +
+                'This property cannot be used on this type.'
+        );
+    }
+
+    // Pattern: CLR-specific invalid properties
+    if (
+        /ClrSubject|ClrCredential|association|Association/i.test(message) &&
+        /not valid|expansion failed/i.test(message)
+    ) {
+        const clrPropMatch = message.match(/"([^"]+)"/);
+        errors.push(
+            `CLR 2.0 property "${clrPropMatch ? clrPropMatch[1] : 'unknown'}" is not valid. ` +
+                'Check that the property name matches the CLR 2.0 specification.'
+        );
+    }
+
+    // Pattern: invalid @id / IRI
+    if (/@id.*invalid|invalid.*IRI|compaction.*IRI/i.test(message)) {
+        errors.push(
+            'A field that requires a URL contains an invalid value. ' +
+                'Ensure all URL fields start with https:// or urn:.'
+        );
+    }
+
+    // Pattern: a context URL could not be resolved (bundled-only rejection,
+    // remote fetch failure, or timeout). Such a credential can't be issued.
+    if (
+        /unable to load JSON-LD context|timed out loading JSON-LD context|unknown JSON-LD context|loading.*remote.*context|dereferencing|could not retrieve/i.test(
+            message
+        )
+    ) {
+        const urlMatch = message.match(/(https?:\/\/[^\s"]+)/);
+        errors.push(
+            `A JSON-LD @context couldn’t be loaded${urlMatch ? `: ${urlMatch[1]}` : ''}. ` +
+                'Make sure every @context URL is reachable so the credential can be issued.'
+        );
+    }
+
+    // Fallback: include the raw error
+    if (errors.length === 0) {
+        // Clean up the message for display
+        const cleaned = message.replace(/^jsonld\./, '').replace(/Error:\s*/i, '');
+        errors.push(`JSON-LD validation error: ${cleaned}`);
+    }
+
+    return errors;
+}

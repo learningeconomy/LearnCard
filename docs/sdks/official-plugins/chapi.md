@@ -7,5 +7,5 @@ For detailed usage of this plugin, please see the [CHAPI guides](../../how-to-gu
 ### Installation
 
 ```bash
-pnpm i @learncard/chapi-plugin
+bun add @learncard/chapi-plugin
 ```

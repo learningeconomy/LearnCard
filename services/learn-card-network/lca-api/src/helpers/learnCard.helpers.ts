@@ -1,4 +1,6 @@
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { initLearnCard } from '@learncard/init';
 import type { EmptyLearnCard, LearnCardFromSeed, DidWebLearnCardFromSeed } from '@learncard/init';
@@ -19,12 +21,28 @@ const saCardsCache = getLRUCache<
 const didWebCardsCache = getLRUCache<DidWebLearnCardFromSeed['returnValue']>();
 const ephemeralCardsCache = getLRUCache<LearnCardFromSeed['returnValue']>();
 
+// The DIDKit WASM is copied next to the compiled handler at build time (see
+// esbuildPlugins.cjs). The Lambda bundle's node_modules layout doesn't match what
+// require.resolve expects (the package is a hoisted workspace symlink), so prefer the
+// co-located copy and fall back to package resolution for local dev / Docker.
+const DIDKIT_WASM_SPECIFIER = '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm';
+
+const resolveDidkitWasmPath = (): string => {
+    const colocated = join(__dirname, 'didkit_wasm_bg.wasm');
+    if (existsSync(colocated)) return colocated;
+
+    return require.resolve(DIDKIT_WASM_SPECIFIER);
+};
+
+// Which DIDKit engine actually loaded — exposed via the deep health check so
+// native-vs-wasm is observable from an HTTP probe instead of CloudWatch spelunking.
+let didKitEngine: 'native' | 'wasm' | 'unloaded' = 'unloaded';
+export const getDidKitEngine = (): 'native' | 'wasm' | 'unloaded' => didKitEngine;
+
 // Try native plugin first, fall back to WASM
 let didKitInitPromise: Promise<'node' | Buffer> | null = null;
 
-const resolveDidKitPluginFactory = (
-    module: Record<string, unknown>
-): (() => Promise<unknown>) => {
+const resolveDidKitPluginFactory = (module: Record<string, unknown>): (() => Promise<unknown>) => {
     const factory =
         (module as { getDidKitPlugin?: unknown }).getDidKitPlugin ??
         (module as { default?: { getDidKitPlugin?: unknown } }).default?.getDidKitPlugin;
@@ -40,22 +58,24 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
     if (didKitInitPromise) return didKitInitPromise;
 
     didKitInitPromise = (async () => {
+        if (process.env.SKIP_DIDKIT_NAPI) {
+            const wasmBuffer = await readFile(resolveDidkitWasmPath());
+            didKitEngine = 'wasm';
+            return wasmBuffer;
+        }
+
         try {
-            // Check if native plugin is available by trying to load it
             const didkitModule = await import('@learncard/didkit-plugin-node');
             const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
-
-            // Test that it actually works
             await getNativePlugin();
+            didKitEngine = 'native';
             return 'node' as const;
-        } catch (e) {
-            console.log('Native DIDKit plugin not available, falling back to WASM');
-
-            // Return the WASM buffer for initLearnCard to use
-            const wasmBuffer = await readFile(
-                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
-            );
-
+        } catch (error) {
+            // Surface the fallback — a silent catch here hid a months-long "native never
+            // actually loads in Lambda" gap (see PR #1341 investigation).
+            console.warn('[didkit] native plugin unavailable, falling back to WASM:', error);
+            const wasmBuffer = await readFile(resolveDidkitWasmPath());
+            didKitEngine = 'wasm';
             return wasmBuffer;
         }
     })();
@@ -91,28 +111,49 @@ export const getSigningAuthorityLearnCard = async (
     ownerDID: string,
     name: string
 ): Promise<DidWebLearnCardFromSeed['returnValue'] | LearnCardFromSeed['returnValue']> => {
-    const seed = (await getSigningAuthorityForDid(ownerDID, name))?.seed;
+    console.log('[LCA getSigningAuthorityLearnCard] Looking up SA:', { ownerDID, name });
 
-    if (!seed) throw new Error('No seed set for SA!');
+    const sa = await getSigningAuthorityForDid(ownerDID, name);
 
-    const cachedValue = saCardsCache.get(seed);
+    if (!sa?.seed) {
+        console.error('[LCA getSigningAuthorityLearnCard] SA not found or has no seed:', {
+            ownerDID,
+            name,
+            saFound: !!sa,
+            hasSeed: !!sa?.seed,
+        });
+        throw new Error(`No signing authority found for ownerDID="${ownerDID}" name="${name}"`);
+    }
+    const cacheKey = `${sa.seed}|${ownerDID}`;
 
-    if (cachedValue) return cachedValue;
+    const cachedValue = saCardsCache.get(cacheKey);
+
+    if (cachedValue) {
+        console.log('[LCA getSigningAuthorityLearnCard] Using cached SA LearnCard');
+        return cachedValue;
+    }
+
+    console.log('[LCA getSigningAuthorityLearnCard] Initializing SA LearnCard:', {
+        isDidWeb: ownerDID.startsWith('did:web:'),
+        ownerDID,
+    });
 
     const saLearnCard = ownerDID.startsWith('did:web:')
         ? await initLearnCard({
               didkit: await getDidKitInit(),
-              seed,
+              seed: sa.seed,
               didWeb: ownerDID,
               cloud,
+              allowRemoteContexts: true,
           })
         : await initLearnCard({
               didkit: await getDidKitInit(),
-              seed,
+              seed: sa.seed,
               cloud,
+              allowRemoteContexts: true,
           });
 
-    saCardsCache.add(seed, saLearnCard);
+    saCardsCache.add(cacheKey, saLearnCard);
 
     return saLearnCard;
 };
@@ -122,7 +163,7 @@ export const getServerDidWebDID = (): string => {
     const domain =
         !domainName || process.env.IS_OFFLINE
             ? `localhost%3A${process.env.PORT || 3000}`
-            : domainName.replace(/:/g, '%3A');
+            : domainName;
     return `did:web:${domain}`;
 };
 

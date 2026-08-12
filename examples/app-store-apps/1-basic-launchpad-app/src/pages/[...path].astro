@@ -1,0 +1,143 @@
+---
+/**
+ * Catch-all route for testing actionPath deep links.
+ *
+ * Any path that doesn't match a specific page (i.e. anything other than `/`)
+ * lands here, displaying the current route prominently so you can verify that
+ * notification actionPath and inbox deep links navigate correctly.
+ */
+const path = '/' + (Astro.params.path ?? '');
+const timestamp = new Date().toLocaleTimeString();
+const query = Object.fromEntries(Astro.url.searchParams.entries());
+const hasQuery = Object.keys(query).length > 0;
+---
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deep Link: {path}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            padding: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            padding: 3rem;
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            backdrop-filter: blur(12px);
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.35rem 1rem;
+            border-radius: 999px;
+            margin-bottom: 1.5rem;
+        }
+
+        .path {
+            font-size: 2rem;
+            font-weight: 800;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            color: #a5b4fc;
+            word-break: break-all;
+            margin-bottom: 1rem;
+            line-height: 1.3;
+        }
+
+        .meta {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+        }
+
+        .query-section {
+            margin-top: 1.5rem;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+        }
+
+        .query-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+
+        .query-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.3rem 0;
+            font-size: 0.85rem;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+
+        .query-key { color: #86efac; }
+        .query-val { color: #e2e8f0; }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 2rem;
+            color: #818cf8;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .back-link:hover { text-decoration: underline; }
+
+        .check {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="check">&#x2714;&#xFE0F;</div>
+        <div class="badge">Deep Link Reached</div>
+        <div class="path">{path}</div>
+        <div class="meta">Loaded at {timestamp}</div>
+
+        {hasQuery && (
+            <div class="query-section">
+                <div class="query-title">Query Parameters</div>
+                {Object.entries(query).map(([key, val]) => (
+                    <div class="query-row">
+                        <span class="query-key">{key}</span>
+                        <span class="query-val">{val}</span>
+                    </div>
+                ))}
+            </div>
+        )}
+
+        <a class="back-link" href="/">&larr; Back to main app</a>
+    </div>
+</body>
+</html>

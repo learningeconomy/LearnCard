@@ -3,6 +3,8 @@ import { cloneDeep } from 'lodash-es';
 import { v4 as uuidv4 } from 'uuid';
 import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('admin-tools-create-profile-simple');
 
 import ChildInviteModalSimple from '../../../components/familyCMS/FamilyCMSInviteModal/ChildInviteModal/ChildInviteModalSimple';
 import AdminToolsFamilySelectorButton from './AdminToolsFamilySelectorButton';
@@ -16,7 +18,7 @@ import {
     useWallet,
     useToast,
     useModal,
-    useFilestack,
+    useImageUpload,
     useCreateBoost,
     useCurrentUser,
     useGetCurrentLCNUser,
@@ -51,33 +53,32 @@ import { LCNBoostStatusEnum } from '../../../components/boost/boost';
 import { LearnCardIDCMSTabsEnum } from 'apps/learn-card-app/src/components/learncardID-CMS/LearnCardIDCMSTabs';
 import { useCreateChildAccount } from 'apps/learn-card-app/src/hooks/useCreateChildAccount';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
-
-const StateValidator = z.object({
-    name: z
-        .string()
-        .nonempty(' Name is required.')
-        .min(3, ' Must contain at least 3 character(s).')
-        .max(30, ' Must contain at most 30 character(s).')
-        .regex(/^[A-Za-z0-9 ]+$/, ' Alpha numeric characters(s) only'),
-});
-
-const ProfileIDStateValidator = z.object({
-    profileId: z
-        .string()
-        .nonempty(' User ID is required.')
-        .min(3, ' Must contain at least 3 character(s).')
-        .max(25, ' Must contain at most 25 character(s).')
-        .regex(
-            /^[a-zA-Z0-9-]+$/,
-            ` Alpha numeric characters(s) and dashes '-' only, no spaces allowed.`
-        ),
-});
+import * as m from '../../../paraglide/messages.js';
 
 type AdminToolsCreateProfileSimpleProps = { profileType: 'child' | 'organization' };
 
 const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps> = ({
     profileType,
 }) => {
+    // Defined in-component so validation messages resolve in the active locale.
+    const StateValidator = z.object({
+        name: z
+            .string()
+            .nonempty(m['createProfile.validation.nameRequired']())
+            .min(3, m['createProfile.validation.minChars']())
+            .max(30, m['createProfile.validation.nameMaxChars']())
+            .regex(/^[A-Za-z0-9 ]+$/, m['createProfile.validation.nameFormat']()),
+    });
+
+    const ProfileIDStateValidator = z.object({
+        profileId: z
+            .string()
+            .nonempty(m['createProfile.validation.userIdRequired']())
+            .min(3, m['createProfile.validation.minChars']())
+            .max(25, m['createProfile.validation.profileIdMaxChars']())
+            .regex(/^[a-zA-Z0-9-]+$/, m['createProfile.validation.profileIdFormat']()),
+    });
+
     const { closeModal } = useModal();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -139,7 +140,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
         }
     }, [families]);
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data: UploadRes) => {
             setImage(data?.url);
@@ -328,14 +329,17 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
             const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
             await addCredentialToWallet({ uri: issuedVcUri });
 
-            presentToast(`Profile "${name}" created successfully!`);
+            presentToast(m['toasts.family.profileCreated']({ name }));
             closeModal();
         } catch (e) {
-            presentToast(`Failed to create "${name}": ${e?.message}`, {
-                type: ToastTypeEnum.Error,
-            });
-            console.log('🔥🔥 Error in createManagedServiceProfile 🔥🔥');
-            console.error(e);
+            presentToast(
+                m['toasts.family.profileCreateFailed']({ name, error: e?.message ?? '' }),
+                {
+                    type: ToastTypeEnum.Error,
+                }
+            );
+            log.info('🔥🔥 Error in createManagedServiceProfile 🔥🔥');
+            log.error(e);
         } finally {
             setIsLoading(false);
         }
@@ -357,13 +361,13 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                 });
 
                 closeModal();
-                presentToast(`Profile "${name}" created successfully!`);
+                presentToast(m['toasts.family.profileCreated']({ name }));
                 return;
             } catch (e) {
                 presentToast(`Failed to create "${name}": ${e?.message}`, {
                     type: ToastTypeEnum.Error,
                 });
-                console.error(e);
+                log.error(e);
             } finally {
                 setIsLoading(false);
             }
@@ -394,8 +398,8 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
             <section className="text-grayscale-900 px-[20px] py-[30px] flex flex-col gap-[20px] items-center relative bg-white rounded-[20px]">
                 <h1 className="text-center text-[24px]">
                     {profileType === 'organization'
-                        ? 'Create New Organization'
-                        : 'Create a New Profile'}
+                        ? m['createProfile.organizationTitle']()
+                        : m['createProfile.profileTitle']()}
                 </h1>
 
                 <div className="bg-grayscale-100/40 relative flex items-center justify-between rounded-[40px] pb-[3px] pr-[10px] pt-[3px] max-w-[140px]">
@@ -440,9 +444,13 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                             setName(e.detail.value);
                         }}
                         value={name}
-                        placeholder={profileType === 'child' ? 'Name' : 'Organization Name'}
+                        placeholder={
+                            profileType === 'child'
+                                ? m['createProfile.namePlaceholder']()
+                                : m['createProfile.organizationNamePlaceholder']()
+                        }
                         type="text"
-                        aria-label="Full Name"
+                        aria-label={m['createProfile.fullNameAria']()}
                         disabled={isLoading}
                     />
                     {errors.name && (
@@ -465,9 +473,9 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                                 setShortBio(e.detail.value);
                             }}
                             value={shortBio}
-                            placeholder="Tagline"
+                            placeholder={m['createProfile.taglinePlaceholder']()}
                             type="text"
-                            aria-label="Tagline"
+                            aria-label={m['createProfile.taglinePlaceholder']()}
                             disabled={isLoading}
                         />
                         {errors.shortBio && (
@@ -499,8 +507,8 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                                         handleProfileIdInput(e.detail.value);
                                     }}
                                     value={profileId}
-                                    placeholder="Organization Profile ID"
-                                    aria-label="Organization Profile ID"
+                                    placeholder={m['createProfile.organizationProfileId']()}
+                                    aria-label={m['createProfile.organizationProfileId']()}
                                     type="text"
                                     disabled={isLoading}
                                 />
@@ -520,7 +528,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                                 ) : (
                                     <X className="w-[20px] h-auto scale-[0.9]" />
                                 )}
-                                Must be between 3 to 25 characters.
+                                {m['createProfile.rules.length']()}
                             </p>
 
                             <p className="flex items-center gap-1 text-grayscale-700 text-xs font-normal min-h-[20px] h-[20px]">
@@ -529,7 +537,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                                 ) : (
                                     <X className="w-[20px] h-auto scale-[0.9]" />
                                 )}
-                                Letters, numbers, and dashes (-) only.
+                                {m['createProfile.rules.format']()}
                             </p>
 
                             <p className="flex items-center gap-1 text-grayscale-700 text-xs font-normal min-h-[20px] h-[20px]">
@@ -545,7 +553,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                                 {!isUniqueValid && !isCheckingUnique && (
                                     <X className="w-[20px] h-auto scale-[0.9]" />
                                 )}
-                                Must be unique.
+                                {m['createProfile.rules.unique']()}
                             </p>
                         </div>
                     </div>
@@ -558,7 +566,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                     onClick={closeModal}
                     className="flex-1 rounded-full bg-white text-grayscale-800 py-2 shadow-sm"
                 >
-                    Close
+                    {m['common.close']()}
                 </button>
                 <button
                     type="button"
@@ -570,7 +578,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
                     }
                     className="flex-1 rounded-full bg-grayscale-900 text-white py-2 shadow-sm disabled:bg-grayscale-500"
                 >
-                    {isLoading ? 'Creating...' : 'Create'}
+                    {isLoading ? m['common.creating']() : m['common.create']()}
                 </button>
             </div>
         </>

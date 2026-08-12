@@ -1,0 +1,23 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "openid4vc-plugin",
+    "sourceRoot": "packages/plugins/openid4vc/src",
+    "projectType": "library",
+    "root": "packages/plugins/openid4vc",
+    "tags": [],
+    "implicitDependencies": ["types", "core", "didkit-plugin", "vc-plugin"],
+    "namedInputs": {
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "scripts"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}

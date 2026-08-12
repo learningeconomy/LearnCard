@@ -1,12 +1,14 @@
 import React from 'react';
 import {
-    ProfilePicture,
+    UserProfilePicture,
     switchedProfileStore,
     useCurrentUser,
     useGetCurrentLCNUser,
     walletStore,
 } from 'learn-card-base';
-import LearnCardBrandmark from '../svgs/LearnCardBrandmark';
+import { useTenantBrandingAssets, DEFAULT_BRAND_MARK } from '../../config/brandingAssets';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
 import { getIdBackgroundStyles } from '../learncardID-CMS/learncard-cms.helpers';
 import { LCNProfile } from '@learncard/types';
 
@@ -15,8 +17,10 @@ type LearnCardIdViewProps = {
 };
 
 const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
+    const brandingConfig = useBrandingConfig();
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { brandMark } = useTenantBrandingAssets();
 
     const { displayName, profileId } = currentLCNUser ?? {};
 
@@ -30,18 +34,18 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
     const backgroundStyles = getIdBackgroundStyles(user?.display ?? currentLCNUser?.display);
 
     const displayStyles = user?.display ?? currentLCNUser?.display;
+
     return (
         <div className="rounded-[15px] flex flex-col overflow-hidden relative shadow-bottom-4-4 min-w-[305px]">
             <div
                 className="flex gap-[10px] px-[10px] py-[27.5px] bg-contain items-center bg-grayscale-900"
                 style={{ ...backgroundStyles, color: displayStyles?.fontColor }}
             >
-                <ProfilePicture
+                <UserProfilePicture
                     customContainerClass="h-[80px] w-[80px] shrink-0 text-[40px]"
                     customImageClass="h-[80px] w-[80px] shrink-0 text-[40px] object-cover"
                     customSize={120}
-                    overrideSrc={!!user}
-                    overrideSrcURL={user?.image}
+                    user={user ?? currentLCNUser}
                 />
 
                 <div className="flex flex-col items-start pr-[10px] overflow-hidden text-white">
@@ -72,7 +76,7 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                                 credential={credential}
                                 iconClassName="!h-[17px] !w-[17px]"
                             /> */}
-                    LearnCard
+                    {brandingConfig?.name}
                 </span>
             </div>
 
@@ -80,7 +84,17 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                 className="rounded-full h-[54px] w-[54px] absolute right-[10px] bottom-[10px] flex items-center justify-center bg-white"
                 // style={{ backgroundColor: credential?.boostID?.accentColor }}
             >
-                <LearnCardBrandmark className="rounded-full h-[50px] w-[50px]" />
+                <img
+                    src={brandMark}
+                    alt="Brand mark"
+                    className="rounded-full h-[50px] w-[50px]"
+                    onError={e => {
+                        if (!e.currentTarget.dataset.fallbackApplied) {
+                            e.currentTarget.dataset.fallbackApplied = 'true';
+                            e.currentTarget.src = DEFAULT_BRAND_MARK;
+                        }
+                    }}
+                />
             </div>
         </div>
     );

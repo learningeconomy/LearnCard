@@ -3,7 +3,43 @@ const colors = require('tailwindcss/colors');
 module.exports = {
     content: [
         './src/**/*.{js,jsx,ts,tsx}',
+        './src/theme/schemas/*/theme.json',
         '../../packages/learn-card-base/src/**/*.{js,jsx,ts,tsx}',
+    ],
+    safelist: [
+        'text-[var(--sdm-c,inherit)]',
+        'dark:text-[var(--shiki-dark,var(--sdm-c,inherit))]',
+        'bg-[var(--sdm-tbg)]',
+        'dark:bg-[var(--shiki-dark-bg,var(--sdm-tbg))]',
+        // VetPass theme: dynamic classes built via `bg-${secondaryColor}`, `text-${indicatorColor}`, etc.
+        'bg-navy-700',
+        'text-baltic-blue-400',
+        'bg-baltic-blue-50',
+        'bg-navy-50',
+        'bg-army-green-50',
+        'bg-sand-50',
+        'bg-vp-red-50',
+        'bg-baltic-blue-500',
+        // LC-1921 side-menu Build-My-LearnCard card + theme toggle: tints built
+        // via `bg-${family}-{50,200,500}` from the active theme primary color.
+        'bg-indigo-50',
+        'bg-indigo-200',
+        'bg-indigo-200/50',
+        'bg-indigo-500',
+        'bg-blue-50',
+        'bg-blue-200',
+        'bg-blue-200/50',
+        'bg-blue-500',
+        // VetPass default family is multi-word (`baltic-blue-500`).
+        'bg-baltic-blue-50',
+        'bg-baltic-blue-200',
+        'bg-baltic-blue-200/50',
+        // Build-My-LearnCard side-menu spinner tint built via `text-${primaryColor}`
+        // (LC-1924). One entry per theme `defaults.primaryColor`; without these the
+        // interpolated class silently produces no styling.
+        'text-indigo-500',
+        'text-blue-500',
+        'text-baltic-blue-500',
     ],
     theme: {
         fontFamily: {
@@ -31,6 +67,13 @@ module.exports = {
                 'chat-in': 'chat-in 250ms ease-out forwards',
                 'chat-in-mine': 'chat-in-mine 250ms ease-out forwards',
                 'spin-custom': 'spin-custom 1s linear infinite',
+                'card-pop': 'card-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                'glow-pulse': 'glow-pulse 900ms ease-out',
+                'image-drop': 'image-drop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                'confetti-fall': 'confetti-fall 1600ms ease-in forwards',
+                'reveal-card': 'reveal-card 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards',
+                'pop-in': 'pop-in 0.4s ease-out forwards',
+                'shimmer': 'shimmer 1.2s ease-in-out forwards',
             },
             keyframes: {
                 'pulse-opacity': {
@@ -81,6 +124,42 @@ module.exports = {
                 'spin-custom': {
                     '0%': { transform: 'rotate(0deg)' },
                     '100%': { transform: 'rotate(360deg)' },
+                },
+                'sdk-bar': {
+                    '0%': { transform: 'translateX(-100%)' },
+                    '100%': { transform: 'translateX(300%)' },
+                },
+                'card-pop': {
+                    '0%': { transform: 'scale(1)' },
+                    '40%': { transform: 'scale(0.985)' },
+                    '100%': { transform: 'scale(1)' },
+                },
+                'glow-pulse': {
+                    '0%': { boxShadow: '0 0 0 0 rgba(16, 185, 129, 0)' },
+                    '30%': { boxShadow: '0 0 0 6px rgba(16, 185, 129, 0.18)' },
+                    '100%': { boxShadow: '0 0 0 0 rgba(16, 185, 129, 0)' },
+                },
+                'image-drop': {
+                    '0%': { opacity: '0', transform: 'translateY(-8px) scale(0.92)' },
+                    '60%': { opacity: '1', transform: 'translateY(2px) scale(1.02)' },
+                    '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                },
+                'confetti-fall': {
+                    '0%': { opacity: '1', transform: 'translateY(-10px) rotate(0deg)' },
+                    '100%': { opacity: '0', transform: 'translateY(70vh) rotate(720deg)' },
+                },
+                'reveal-card': {
+                    '0%': { opacity: '0', transform: 'translateY(16px) scale(0.86) rotate(-4deg)' },
+                    '55%': { opacity: '1', transform: 'translateY(0) scale(1.03) rotate(1.5deg)' },
+                    '100%': { opacity: '1', transform: 'translateY(0) scale(1) rotate(0deg)' },
+                },
+                'pop-in': {
+                    '0%': { opacity: '0', transform: 'translateY(6px) scale(0.96)' },
+                    '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                },
+                'shimmer': {
+                    '0%': { transform: 'translateX(-100%)' },
+                    '100%': { transform: 'translateX(200%)' },
                 },
             },
             boxShadow: {
@@ -135,6 +214,9 @@ module.exports = {
                     800: '#353E64',
                     900: '#18224E',
                     line: '#E3E5E8',
+                },
+                gray: {
+                    600: '#4B5563',
                 },
                 emerald: {
                     50: '#ECFDF5',
@@ -197,10 +279,12 @@ module.exports = {
                     900: '#312E81',
                 },
                 violet: {
+                    50: '#F5F3FF',
                     200: '#DDD6FE',
                     300: '#C4B5FD',
                     400: '#A78BFA',
                     500: '#8B5CF6',
+                    600: '#7C3AED',
                     700: '#6D28D9',
                 },
                 teal: {
@@ -214,6 +298,18 @@ module.exports = {
                     700: '#0f766e',
                     800: '#115e59',
                     900: '#312E81',
+                },
+                sky: {
+                    50: '#F0F9FF',
+                    100: '#E0F2FE',
+                    200: '#BAE6FD',
+                    300: '#7DD3FC',
+                    400: '#38BDF8',
+                    500: '#0EA5E9',
+                    600: '#0284C7',
+                    700: '#0369A1',
+                    800: '#075985',
+                    900: '#0C4A6E',
                 },
                 lime: {
                     50: '#F7FEE7',
@@ -266,6 +362,7 @@ module.exports = {
                     dark: '#05B65D',
                 },
                 orange: {
+                    50: '#FFF7ED',
                     200: '#FED7AA',
                     300: '#FDBA74',
                     400: '#FB923C',
@@ -293,6 +390,66 @@ module.exports = {
                         midnight: '#4D006E',
                         soft: '#9969C2',
                     },
+                },
+                navy: {
+                    50: '#F0F5F7',
+                    100: '#D6E1E8',
+                    200: '#BCCDD8',
+                    300: '#87A4B8',
+                    400: '#537C98',
+                    500: '#396888',
+                    600: '#1E5378',
+                    700: '#184463',
+                    800: '#11354E',
+                    900: '#0B2232',
+                },
+                'baltic-blue': {
+                    50: '#EBF5FF',
+                    100: '#CCE7FF',
+                    200: '#99CFFF',
+                    300: '#66B8FF',
+                    400: '#33A0FF',
+                    500: '#0089EE',
+                    600: '#006DCC',
+                    700: '#0055A3',
+                    800: '#003D7A',
+                    900: '#002551',
+                },
+                'vp-red': {
+                    50: '#FEF2F2',
+                    100: '#FDE3E4',
+                    200: '#FBC6C8',
+                    300: '#F7999C',
+                    400: '#E45A5E',
+                    500: '#C3323C',
+                    600: '#A52830',
+                    700: '#872025',
+                    800: '#69181C',
+                    900: '#4B1013',
+                },
+                'army-green': {
+                    50: '#F4F5EE',
+                    100: '#E4E7D5',
+                    200: '#C9CEAB',
+                    300: '#ADB682',
+                    400: '#929D58',
+                    500: '#78852F',
+                    600: '#5F6A25',
+                    700: '#47501C',
+                    800: '#2F3512',
+                    900: '#181B09',
+                },
+                sand: {
+                    50: '#FAF8F5',
+                    100: '#F2EDE6',
+                    200: '#E5DBCD',
+                    300: '#D8C9B4',
+                    400: '#CBB79B',
+                    500: '#BEA582',
+                    600: '#A08A6A',
+                    700: '#7A6A51',
+                    800: '#544937',
+                    900: '#2E281E',
                 },
                 'primary-default': '#0094F6',
             },

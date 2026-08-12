@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useImmer } from 'use-immer';
 import { useHistory } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('credential-sync-confirmation');
 
 import { useModal, useToast, ToastTypeEnum, useCurrentUser, ModalTypes } from 'learn-card-base';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
@@ -10,20 +12,34 @@ import Refresh from 'learn-card-base/svgs/Refresh';
 import LoadingIcon from 'learn-card-base/svgs/LoadingIcon';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
-import LearnCardAppIcon from '../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 import ConsentFlowEditAccess from '../launchPad/ConsentFlowEditAccess';
 import { Checkmark } from '@learncard/react';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import { getContractTermsInfo, getMinimumTermsForContract } from '../../helpers/contract.helpers';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 enum SyncStateEnum {
-    notSynced = 'Accept & Sync',
-    syncing = 'Syncing...',
-    synced = 'Done!',
-    error = 'Try Again',
+    notSynced = 'notSynced',
+    syncing = 'syncing',
+    synced = 'synced',
+    error = 'error',
 }
+
+const getSyncStateLabel = (state: SyncStateEnum): string => {
+    switch (state) {
+        case SyncStateEnum.notSynced:
+            return m['consentFlow.acceptAndSync']();
+        case SyncStateEnum.syncing:
+            return m['consentFlow.syncing']();
+        case SyncStateEnum.synced:
+            return m['consentFlow.synced']();
+        case SyncStateEnum.error:
+            return m['consentFlow.tryAgain']();
+    }
+};
 
 export type CredentialSyncConfirmationProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -68,7 +84,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
                 presentToast(`Something went wrong: ${e.message}`, {
                     type: ToastTypeEnum.Error,
                 });
-                console.error(e);
+                log.error(e);
                 setSyncState(SyncStateEnum.error);
             }
         });
@@ -136,8 +152,8 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
                         ) : ( */}
                         <div className="w-[44px] h-[44px] rounded-[10px] overflow-hidden border-b-solid border-white border-[2px] absolute bottom-[0px] right-[-40px] drop-shadow-bottom bg-white">
                             <img
-                                src={LearnCardAppIcon}
-                                alt="LearnCard App Icon"
+                                src={useTenantBrandingAssets().appIcon}
+                                alt="App Icon"
                                 className="h-full w-full object-contain"
                             />
                         </div>
@@ -154,7 +170,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
             {(requestingRead || requestingWrite) && (
                 <div className="flex flex-col gap-[10px] items-center w-full">
                     <span className="text-grayscale-900 text-[20px] font-poppins font-[600] leading-[160%]">
-                        Requesting Permissions
+                        {m['consentFlow.requestingPermissions']()}
                     </span>
                     <button
                         type="button"
@@ -162,7 +178,9 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
                         onClick={handleEditAccess}
                     >
                         <div className="flex flex-col text-white font-poppins grow">
-                            <span className="text-[17px] font-[600]">Edit Access</span>
+                            <span className="text-[17px] font-[600]">
+                                {m['consentFlow.editAccess']()}
+                            </span>
                         </div>
                     </button>
                 </div>
@@ -170,7 +188,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
 
             <div className="flex flex-col gap-[10px] items-center w-full">
                 <span className="text-grayscale-900 text-[20px] font-poppins font-[600] leading-[160%]">
-                    Adding New Credentials
+                    {m['consentFlow.addingNewCredentials']()}
                 </span>
 
                 <button
@@ -188,7 +206,9 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
                     </div>
                     <div className="flex flex-col text-white font-poppins grow">
                         {/* <span className="line-clamp-1 text-[14px]">{name}</span> */}
-                        <span className="text-[17px] font-[600]">{syncState}</span>
+                        <span className="text-[17px] font-[600]">
+                            {getSyncStateLabel(syncState)}
+                        </span>
                     </div>
                     <div
                         className={`h-[45px] w-[45px] rounded-full flex items-center justify-center shrink-0 ${
@@ -206,7 +226,7 @@ const CredentialSyncConfirmation: React.FC<CredentialSyncConfirmationProps> = ({
                     onClick={closeModal}
                     className={`text-${primaryColor} font-[600]`}
                 >
-                    Close
+                    {m['common.close']()}
                 </button>
             </div>
         </section>

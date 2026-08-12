@@ -1,4 +1,3 @@
-
 export type SkillRenderData = {
     skill: {
         id: string;
@@ -16,33 +15,34 @@ export type SkillRenderData = {
 export const renderSkillPage = (data: SkillRenderData): string => {
     const { skill, framework } = data;
     const title = `${skill.statement} | ${framework.name}`;
-    const description = skill.description || `Explore the ${skill.statement} skill in the ${framework.name} framework.`;
-    
+    const description =
+        skill.description ||
+        `Explore the ${skill.statement} skill in the ${framework.name} framework.`;
+
     const domain = process.env.DOMAIN_NAME || 'scoutnetwork.org';
     const isScouts = domain.includes('scout');
     const sanitizedDomain = domain.replace(/^https?:\/\//, '');
     const skillUrl = `https://${sanitizedDomain}/frameworks/${framework.id}/skills/${skill.id}`;
 
-
     const theme = isScouts
         ? {
-            bgColor: '#5b2994',
-            cardBg: '#ffffff',
-            primary: '#5b2994',
-            text: '#000000',
-            textMuted: '#666666',
-            logoUrl: 'https://cdn.filestackcontent.com/bVO0X4JITFypGBTNSOjE', // Scouts Logo
-            logoAlt: 'ScoutPass'
-        }
+              bgColor: '#5b2994',
+              cardBg: '#ffffff',
+              primary: '#5b2994',
+              text: '#000000',
+              textMuted: '#666666',
+              logoUrl: 'https://cdn.filestackcontent.com/bVO0X4JITFypGBTNSOjE', // Scouts Logo
+              logoAlt: 'ScoutPass',
+          }
         : {
-            bgColor: '#00ba88',
-            cardBg: '#ffffff',
-            primary: '#00ba88',
-            text: '#000000',
-            textMuted: '#666666',
-            logoUrl: 'https://cdn.filestackcontent.com/S2N8iyiaQNaRPiqijnq7', // LCA Logo
-            logoAlt: 'LearnCard'
-        };
+              bgColor: '#00ba88',
+              cardBg: '#ffffff',
+              primary: '#00ba88',
+              text: '#000000',
+              textMuted: '#666666',
+              logoUrl: 'https://cdn.filestackcontent.com/S2N8iyiaQNaRPiqijnq7', // LCA Logo
+              logoAlt: 'LearnCard',
+          };
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -167,7 +167,11 @@ export const renderSkillPage = (data: SkillRenderData): string => {
     <div class="container">
         <div class="card">
             <div class="logo">
-                <img src="${theme.logoUrl}" alt="${theme.logoAlt}" onerror="this.onerror=null; this.parentElement.innerHTML='<span style=\'font-weight:800; color:${theme.primary}; font-size: 20px;\'>${theme.logoAlt}</span>'">
+                <img src="${theme.logoUrl}" alt="${
+        theme.logoAlt
+    }" onerror="this.onerror=null; this.parentElement.innerHTML='<span style=\'font-weight:800; color:${
+        theme.primary
+    }; font-size: 20px;\'>${theme.logoAlt}</span>'">
             </div>
 
             <div class="skill-icon">

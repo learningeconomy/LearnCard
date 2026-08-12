@@ -1,0 +1,24 @@
+{
+    "@context": {
+        "@version": 1.1,
+        "id": "@id",
+        "type": "@type",
+        "TrustedCareerProfile": "https://ctx.learncard.com/tcp#TrustedCareerProfile",
+        "ResumePackage": "https://ctx.learncard.com/tcp#ResumePackage",
+        "pdfUrl": {
+            "@id": "https://ctx.learncard.com/tcp#pdfUrl",
+            "@type": "@id"
+        },
+        "pdfHash": "https://ctx.learncard.com/tcp#pdfHash",
+        "hashAlgorithm": "https://ctx.learncard.com/tcp#hashAlgorithm",
+        "includedCredentials": {
+            "@id": "https://ctx.learncard.com/tcp#includedCredentials",
+            "@container": "@set"
+        },
+        "category": "https://ctx.learncard.com/tcp#category",
+        "generatedAt": {
+            "@id": "https://ctx.learncard.com/tcp#generatedAt",
+            "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+        }
+    }
+}

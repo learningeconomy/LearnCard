@@ -12,8 +12,14 @@ import { AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
 import { ContactMethodType } from '@learncard/types';
 
 import { RegExpTransformer } from '@learncard/helpers';
+import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
 
-import { getProfileByDid } from '@accesslayer/profile/read';
+import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
+import {
+    isProfileManaged,
+    getProfilesThatManageAProfile,
+} from '@accesslayer/profile/relationships/read';
+import { getDidWeb } from '@helpers/did.helpers';
 import { getEmptyLearnCard, isServersDidWebDID } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 import { ProfileType } from 'types/profile';
@@ -44,6 +50,15 @@ export type Context = {
     };
     contactMethod?: ContactMethodType;
     domain: string;
+    tenant: ResolvedTenant;
+    _guardianApprovalToken?: string;
+    /**
+     * Caller IP, when the transport exposes one. Used to scope abuse limits on
+     * pre-auth routes, where there is no DID to key a limit on. Best-effort:
+     * absent for transports without a request context (e.g. direct in-process
+     * callers), so treat `undefined` as "unknown caller", not "trusted".
+     */
+    sourceIp?: string;
 };
 
 export type RequiredScope = { requiredScope?: string };
@@ -72,6 +87,10 @@ export const createContext = async (
         'get' in event.headers
             ? (event.headers as Map<string, string>).get('authorization')
             : event.headers.authorization;
+    const _guardianApprovalToken =
+        'get' in event.headers
+            ? (event.headers as Map<string, string>).get('x-guardian-approval')
+            : (event.headers as Record<string, string | undefined>)['x-guardian-approval'];
     const domainName = 'requestContext' in event ? event.requestContext.domainName : '';
 
     const _domain =
@@ -80,6 +99,25 @@ export const createContext = async (
             : domainName.replace(/:/g, '%3A');
 
     const domain = process.env.DOMAIN_NAME || _domain;
+
+    // API Gateway v2 puts the caller IP on requestContext.http.sourceIp. Other
+    // transports (Fastify/NodeHTTP/in-process) may not carry one at all.
+    const sourceIp =
+        'requestContext' in event
+            ? (event.requestContext as { http?: { sourceIp?: string } }).http?.sourceIp
+            : undefined;
+
+    // Resolve tenant from request headers (X-Tenant-Id → Origin → env → default)
+    const rawHeaders =
+        'event' in options
+            ? (options.event.headers as Record<string, string | undefined>)
+            : 'get' in event.headers
+            ? Object.fromEntries(event.headers as Map<string, string>)
+            : (event.headers as Record<string, string | string[] | undefined>);
+
+    const tenant = resolveTenantFromRequest(
+        rawHeaders as Record<string, string | string[] | undefined>
+    );
 
     if (authHeader && authHeader.split(' ').length === 2) {
         const [scheme, jwt] = authHeader.split(' ');
@@ -103,6 +141,8 @@ export const createContext = async (
                     return {
                         user: { did, isChallengeValid: false, scope: AUTH_GRANT_NO_ACCESS_SCOPE },
                         domain,
+                        tenant,
+                        sourceIp,
                     };
 
                 let isChallengeValid = false;
@@ -119,6 +159,8 @@ export const createContext = async (
                         return {
                             contactMethod,
                             domain,
+                            tenant,
+                            sourceIp,
                         };
                     }
                     // If the user is using a real auth grant i.e. an API Token.
@@ -138,12 +180,18 @@ export const createContext = async (
 
                 Sentry.setUser({ id: did });
 
-                return { user: { did, isChallengeValid, scope }, domain };
+                return {
+                    user: { did, isChallengeValid, scope },
+                    domain,
+                    tenant,
+                    _guardianApprovalToken,
+                    sourceIp,
+                };
             }
         }
     }
 
-    return { domain };
+    return { domain, tenant, _guardianApprovalToken, sourceIp };
 };
 
 export const openRoute = t.procedure
@@ -167,6 +215,14 @@ export const resolveProfileFromContextDid = async (
     // User authenticated with their did:web. Resolve it and use their controller did to find profile.
     if (didParts[1] === 'web' && didParts[2] === domain) {
         if (didParts[3] === 'manager') return null;
+
+        // For managed profiles (did:web:domain:users:profileId), try direct profileId lookup first.
+        // Managed DID docs have a `controller` pointing to the parent, so following controller
+        // would incorrectly resolve to the parent's profile instead of the managed one.
+        if (didParts[3] === 'users' && didParts[4]) {
+            const directProfile = await getProfileByProfileId(didParts[4]);
+            if (directProfile) return directProfile;
+        }
 
         const learnCard = await getEmptyLearnCard();
         const didDoc = await learnCard.invoke.resolveDid(
@@ -311,4 +367,104 @@ export const verifiedContactRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.contactMethod) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
     return next({ ctx: { ...ctx, contactMethod: ctx.contactMethod } });
+});
+
+export type GuardianApprovalToken = {
+    iss: string;
+    sub: string;
+    iat: number;
+    exp: number;
+    scope: string;
+};
+
+export const guardianGatedRoute = profileRoute.use(async ({ ctx, next }) => {
+    const { profile } = ctx.user;
+    const guardianApprovalToken = ctx._guardianApprovalToken;
+
+    const isChildAccount = await isProfileManaged(profile.profileId);
+
+    if (!isChildAccount) {
+        return next({
+            ctx: { ...ctx, isChildAccount: false, hasGuardianApproval: false },
+        });
+    }
+
+    if (!guardianApprovalToken) {
+        return next({
+            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+        });
+    }
+
+    try {
+        const learnCard = await getEmptyLearnCard();
+
+        const result = await learnCard.invoke.verifyPresentation(guardianApprovalToken, {
+            proofFormat: 'jwt',
+        });
+
+        if (result.errors.length > 0 || !result.checks.includes('JWS')) {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        const jwtPayload = jwtDecode<{ vp?: { proof?: { challenge?: string } }; nonce?: string }>(
+            guardianApprovalToken
+        );
+
+        const challengeStr = jwtPayload.vp?.proof?.challenge ?? jwtPayload.nonce;
+        if (!challengeStr) {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        let guardianClaims: GuardianApprovalToken;
+        try {
+            guardianClaims = JSON.parse(challengeStr);
+        } catch {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        if (!guardianClaims.exp || guardianClaims.exp * 1000 < Date.now()) {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        if (guardianClaims.scope !== 'guardian-approval') {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        const childDidWeb = getDidWeb(ctx.domain, profile.profileId);
+        if (guardianClaims.sub !== childDidWeb) {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        const managers = await getProfilesThatManageAProfile(profile.profileId);
+        const guardianProfile = managers.find(manager => {
+            const managerDidWeb = getDidWeb(ctx.domain, manager.profileId);
+            return guardianClaims.iss === managerDidWeb || guardianClaims.iss === manager.did;
+        });
+
+        if (!guardianProfile) {
+            return next({
+                ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+            });
+        }
+
+        return next({
+            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: true },
+        });
+    } catch {
+        return next({
+            ctx: { ...ctx, isChildAccount: true, hasGuardianApproval: false },
+        });
+    }
 });

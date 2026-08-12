@@ -6,11 +6,11 @@ import {
     // oxlint-disable-next-line no-unused-vars
     CredentialCategoryEnum,
     getBaseUrl,
+    getCategoryForCredential,
+    queueAiInsightCredentialRefresh,
     switchedProfileStore,
     useDeleteCredentialRecord,
     useGetProfile,
-    useGetSelfAssignedSkillsBoost,
-    useGetSelfAssignedSkillsCredential,
     useWallet,
     VC_WITH_URI,
 } from 'learn-card-base';
@@ -29,13 +29,16 @@ import { BoostCMSState } from 'learn-card-base/components/boost/boost';
 import {
     SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
     SELF_ASSIGNED_SKILLS_BOOST_NAME,
-    getDefaultCategoryForCredential,
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { insertItem } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
 import { LCR } from 'learn-card-base/types/credential-records';
+import { deleteCredentialFromAllContracts } from './pruneConsentFlowDeletedCredentials';
+import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('boosts');
 
 type SharedCredentialsIndex = {
     type: 'shared-credentials';
@@ -47,7 +50,6 @@ type SharedCredentialsIndex = {
 
 export const baseBoostShareRouteName = 'share-boost';
 
-const baseUrl = getBaseUrl();
 /* creates a VP that wraps a boost, returns a published vp and a sharable link*/
 export const useShareBoostMutation = () => {
     const { initWallet } = useWallet();
@@ -56,10 +58,14 @@ export const useShareBoostMutation = () => {
         mutationFn: async ({
             credential,
             credentialUri,
+            shareRouteName = baseBoostShareRouteName,
         }: {
             credential: VC | UnsignedVC;
             credentialUri: string;
+            shareRouteName?: string;
         }) => {
+            const baseUrl = getBaseUrl();
+
             // get current index data stored on ceramic for user
             // currentUser's wallet
             const myWallet = await initWallet();
@@ -77,7 +83,7 @@ export const useShareBoostMutation = () => {
 
             //If it already exists than we don't have to do it all again....
             if (extantCredentialIndex && endorsementVCs.length === 0) {
-                const link = `https://${baseUrl}/${baseBoostShareRouteName}?uri=${extantCredentialIndex?.uri}&seed=${extantCredentialIndex?.randomSeed}&pin=${extantCredentialIndex?.pin}`;
+                const link = `https://${baseUrl}/${shareRouteName}?uri=${extantCredentialIndex?.uri}&seed=${extantCredentialIndex?.randomSeed}&pin=${extantCredentialIndex?.pin}`;
                 return {
                     link,
                 };
@@ -134,7 +140,7 @@ export const useShareBoostMutation = () => {
                 uri: publishedVpUri,
                 type: 'shared-credentials',
             });
-            const link = `https://${baseUrl}/${baseBoostShareRouteName}?uri=${publishedVpUri}&seed=${randomKey}&pin=${pin}`;
+            const link = `https://${baseUrl}/${shareRouteName}?uri=${publishedVpUri}&seed=${randomKey}&pin=${pin}`;
 
             return {
                 link,
@@ -264,7 +270,7 @@ export const useCreateBoost = () => {
             //         unsignedCredential.credentialSubject.achievement.alignment = alignments;
             //     }
             // } catch (e) {
-            //     console.warn('Failed to set alignments on unsignedCredential', e);
+            //     log.warn('Failed to set alignments on unsignedCredential', e);
             // }
 
             /// CREATE BOOST
@@ -276,7 +282,10 @@ export const useCreateBoost = () => {
                 boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: state?.basicInfo?.name,
                     type: state?.basicInfo.achievementType ?? '',
-                    category: state?.basicInfo?.type,
+                    category:
+                        state?.basicInfo?.type ||
+                        getDefaultCategoryForCredential(unsignedCredential) ||
+                        'Achievement',
                     status,
                     claimPermissions: defaultClaimPermissions,
                     defaultPermissions,
@@ -295,7 +304,10 @@ export const useCreateBoost = () => {
                 boostUri = await wallet.invoke.createChildBoost(parentUri, unsignedCredential, {
                     name: state?.basicInfo?.name,
                     type: state?.basicInfo.achievementType ?? '',
-                    category: state?.basicInfo?.type,
+                    category:
+                        state?.basicInfo?.type ||
+                        getDefaultCategoryForCredential(unsignedCredential) ||
+                        'Achievement',
                     status,
                     claimPermissions: defaultClaimPermissions,
                     defaultPermissions,
@@ -513,11 +525,8 @@ export const useCreateChildBoost = () => {
 export const useManageSelfAssignedSkillsBoost = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
-
+    const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
     const { data: profile } = useGetProfile();
-    const { data: sasBoost, isLoading: isLoadingSasBoost } = useGetSelfAssignedSkillsBoost();
-    const { data: sasCred, isLoading: isLoadingSasCred } = useGetSelfAssignedSkillsCredential();
-
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     return useMutation({
@@ -526,13 +535,8 @@ export const useManageSelfAssignedSkillsBoost = () => {
         }: {
             skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }) => {
-            if (isLoadingSasBoost || isLoadingSasCred) {
-                console.log('Loading self-assigned skills boost/credential... please try again.');
-                return { boostUri: undefined };
-            }
             if (!profile) {
-                console.log('No profile found, please try again.');
-                return { boostUri: undefined };
+                throw new Error('No profile found, please try again.');
             }
 
             const wallet = await initWallet();
@@ -549,6 +553,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                     : undefined;
 
             const sasBoostExists = !!freshSasBoost;
+            const deletedUris: string[] = [];
 
             // If boost exists, delete ALL old credential records BEFORE updating
             // Query by multiple criteria to catch records with or without boostUri
@@ -559,30 +564,40 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 });
 
                 // Also find by category and title (catches old records without boostUri)
-                const recordsByCategory = await wallet.index.LearnCloud.get<LCR>({
+                const recordsBySkillCategory = await wallet.index.LearnCloud.get<LCR>({
                     category: CredentialCategoryEnum.skill,
+                    title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
+                });
+                const recordsBySasCategory = await wallet.index.LearnCloud.get<LCR>({
+                    category: CredentialCategoryEnum.selfAssignedSkills,
                     title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                 });
 
                 // Combine and deduplicate by id
                 const allRecordsMap = new Map<string, LCR>();
-                [...recordsByBoostUri, ...recordsByCategory].forEach(record => {
-                    if (record?.id) {
-                        allRecordsMap.set(record.id, record);
+                [...recordsByBoostUri, ...recordsBySkillCategory, ...recordsBySasCategory].forEach(
+                    record => {
+                        if (record?.id) {
+                            allRecordsMap.set(record.id, record);
+                        }
                     }
-                });
+                );
 
                 // Delete ALL matching records
                 for (const record of allRecordsMap.values()) {
                     try {
-                        await deleteCredentialRecord(record);
+                        const deletionResult = await deleteCredentialRecord({
+                            ...record,
+                            skipPostDeleteCleanup: true,
+                        });
+                        deletedUris.push(...deletionResult.deletedUris);
                     } catch (e) {
-                        console.warn('Failed to delete credential record:', e);
+                        log.warn('Failed to delete credential record:', e);
                     }
                 }
             }
 
-            const walletDid = wallet?.id?.did();
+            const walletDid = wallet.id.did();
             const currentDate = new Date()?.toISOString();
 
             const credentialPayload: Record<string, any> = {
@@ -627,7 +642,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 const updatedBoostBoolean = await wallet?.invoke?.updateBoost(freshSasBoost.uri, {
                     name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                     type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE, // in boost CMS: 'ext:Artowork'
-                    category: CredentialCategoryEnum.skill, // in boost CMS: "Achievement", "Accomplishment", etc.
+                    category: CredentialCategoryEnum.selfAssignedSkills, // in boost CMS: "Achievement", "Accomplishment", etc.
                     status: 'PROVISIONAL',
                     credential: unsignedCredential,
                     skills,
@@ -642,28 +657,29 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 boostUri = await wallet.invoke.createBoost(unsignedCredential, {
                     name: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                     type: SELF_ASSIGNED_SKILLS_ACHIEVEMENT_TYPE,
-                    category: CredentialCategoryEnum.skill,
+                    category: CredentialCategoryEnum.selfAssignedSkills,
                     status: 'PROVISIONAL',
                     skills,
                 });
             }
 
-            const sentCredentialUri = await wallet?.invoke?.sendBoost(
-                profile?.profileId,
-                boostUri,
-                {
-                    skipNotification: true,
-                    encrypt: true,
-                }
-            );
+            const sentCredentialUri = await wallet.invoke.sendBoost(profile.profileId, boostUri, {
+                skipNotification: true,
+                encrypt: true,
+            });
 
-            const sentCredential = await wallet?.read?.get(sentCredentialUri);
-            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentCredential);
+            if (!sentCredentialUri)
+                throw new Error('Failed to issue self-assigned skills credential.');
+
+            const sentCredential = await wallet.read.get(sentCredentialUri);
+            const issuedVcUri = await wallet.store.LearnCloud.uploadEncrypted?.(sentCredential);
+
+            if (!issuedVcUri) throw new Error('Failed to store self-assigned skills credential.');
 
             // addCredentialToWallet
             const vc = await VCValidator.parseAsync(await wallet.read.get(issuedVcUri));
 
-            const category = getDefaultCategoryForCredential(vc) || 'Skill';
+            const category = await getCategoryForCredential(vc, wallet);
 
             const res = await wallet.index.LearnCloud.add({
                 id: uuidv4(),
@@ -675,13 +691,17 @@ export const useManageSelfAssignedSkillsBoost = () => {
 
             return {
                 boostUri,
+                credentialUri: issuedVcUri,
+                category,
+                profileDid: walletDid,
+                deletedUris: [...new Set(deletedUris)],
                 // name: state.basicInfo.name,
                 // type: state.basicInfo.achievementType ?? '',
                 // category: state.basicInfo.type,
                 // status,
             };
         },
-        onSuccess: async ({ boostUri }) => {
+        onSuccess: ({ boostUri, credentialUri, category, profileDid, deletedUris }) => {
             const switchedDid = switchedProfileStore.get.switchedDid();
             queryClient.invalidateQueries({
                 queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
@@ -707,6 +727,34 @@ export const useManageSelfAssignedSkillsBoost = () => {
             queryClient.refetchQueries({
                 queryKey: ['useGetBoostSkills', boostUri],
             });
+            queryClient.invalidateQueries({
+                queryKey: ['useSyncConsentFlow'],
+            });
+
+            void (async () => {
+                try {
+                    const wallet = await initWallet();
+
+                    if (deletedUris.length > 0) {
+                        await deleteCredentialFromAllContracts({
+                            wallet,
+                            queryClient,
+                            deletedUris,
+                        });
+                    }
+
+                    await syncAllCredentialsToContracts.mutateAsync();
+                    await queueAiInsightCredentialRefresh({
+                        wallet,
+                        queryClient,
+                    });
+                } catch (error) {
+                    log.warn(
+                        'Failed to complete post-save contract sync or AI refresh for self-assigned skills:',
+                        error
+                    );
+                }
+            })();
         },
     });
 };
@@ -924,7 +972,9 @@ export const useDeleteEarnedBoostMutation = () => {
                     return index?.uri === boostUri;
                 });
 
-                const sqliteIndex = await wallet.index.SQLite?.get?.().catch(console.error);
+                const sqliteIndex = await wallet.index.SQLite?.get?.().catch(err =>
+                    log.error('SQLite index get failed', err)
+                );
                 const foundIndex = sqliteIndex?.find(index => {
                     return index?.uri === boostUri;
                 });

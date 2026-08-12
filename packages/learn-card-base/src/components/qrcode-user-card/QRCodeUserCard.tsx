@@ -9,52 +9,25 @@ import {
     IonRow,
     IonCol,
 } from '@ionic/react';
-import { Capacitor } from '@capacitor/core';
-
 import { QRCodeCard } from '@learncard/react';
-import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
-import Mail from 'learn-card-base/svgs/Mail';
-import Print from 'learn-card-base/assets/images/print.png';
-import Share from 'learn-card-base/svgs/Share';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
 
-import useWeb3Auth from 'learn-card-base/hooks/useWeb3Auth';
+import { useAuthCoordinator } from 'learn-card-base/auth-coordinator';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 
-import authStore from 'learn-card-base/stores/authStore';
-import firebaseAuthStore from 'learn-card-base/stores/firebaseAuthStore';
-
-import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
-import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
-import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 const QrCodeUserCard: React.FC<{
     handleQRCodeCardModal: () => void;
-    branding: BrandingEnum;
-}> = ({ handleQRCodeCardModal, branding }) => {
-    const { logout } = useWeb3Auth();
+}> = ({ handleQRCodeCardModal }) => {
+    const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
     const currentUser = useCurrentUser();
-    const firebaseAuthentication = firebaseAuthStore.get.firebaseAuth();
+    const brandingConfig = useBrandingConfig();
 
-    let brandingText: React.ReactNode | null = null;
-
-    if (branding === BrandingEnum.learncard) {
-        brandingText = (
-            <h6 className="text-base tracking-[6px] font-bold text-black w-full text-center">
-                LEARNCARD
-            </h6>
-        );
-    } else if (branding === BrandingEnum.metaversity) {
-        brandingText = (
-            <h6 className="text-base tracking-[6px] font-bold text-mv_red-700 w-full text-center">
-                META
-                <span className="text-mv_blue-700">VERSITY</span>
-            </h6>
-        );
-    }
+    const brandingText = brandingConfig.headerText ?? undefined;
 
     return (
         <>
@@ -92,32 +65,9 @@ const QrCodeUserCard: React.FC<{
                             <span> • </span> */}
                             <button
                                 onClick={async () => {
-                                    const typeOfLogin = authStore?.get?.typeOfLogin();
-                                    const nativeSocialLogins = [
-                                        SocialLoginTypes.apple,
-                                        SocialLoginTypes.sms,
-                                        SocialLoginTypes.passwordless,
-                                        SocialLoginTypes.google
-                                    ];
-
-                                    const redirectUrl =
-                                        IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                                            ? LOGIN_REDIRECTS[branding].redirectUrl
-                                            : LOGIN_REDIRECTS[branding].devRedirectUrl;
-
                                     handleQRCodeCardModal();
 
-                                    if (
-                                        nativeSocialLogins.includes(typeOfLogin) &&
-                                        Capacitor.isNativePlatform()
-                                    ) {
-                                        try {
-                                            await firebaseAuthentication?.signOut?.();
-                                        } catch (e) {
-                                            console.log('firebase::signout::error', e);
-                                        }
-                                    }
-                                    logout(redirectUrl);
+                                    await coordinatorLogout();
                                     await clearDB();
                                 }}
                                 className="mr-1 text-indigo-500 font-semibold text-lg text-center"

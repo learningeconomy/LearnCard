@@ -12,12 +12,20 @@ import {
     getCredentialReceivedByProfile,
     getBoostIdForCredentialInstance,
 } from '@accesslayer/credential/relationships/read';
+import { getOwnerProfileForListing } from '@accesslayer/app-store-listing/relationships/read';
 import { constructUri, getDomainFromUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
+import { getNotificationMessage } from './notificationMessages';
+import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { logCredentialClaimed } from './activity.helpers';
 import { ProfileType } from 'types/profile';
+import { AppStoreListingType } from 'types/app-store-listing';
 import { processClaimHooks } from './claim-hooks.helpers';
 import { ensureConnectionsForCredentialAcceptance } from './connection.helpers';
+
+const isProfileType = (source: ProfileType | AppStoreListingType): source is ProfileType => {
+    return 'profileId' in source;
+};
 
 export const getCredentialUri = (id: string, domain: string): string =>
     constructUri('credential', id, domain);
@@ -33,26 +41,30 @@ export const sendCredential = async (
 ): Promise<string> => {
     const credentialInstance = await storeCredential(credential);
 
-    await createSentCredentialRelationship(from, to, credentialInstance, metadata, activityId, integrationId);
+    await createSentCredentialRelationship(
+        { type: 'profile', profile: from },
+        to,
+        credentialInstance,
+        metadata,
+        activityId,
+        integrationId
+    );
 
-    let uri = getCredentialUri(credentialInstance.id, domain);
+    const uri = getCredentialUri(credentialInstance.id, domain);
 
     const isEndorsement = metadata?.type === 'endorsement';
 
-    const notificationTitle = isEndorsement ? 'New Endorsement Received' : 'Credential Received';
-
-    const notificationBody = isEndorsement
-        ? `${from.displayName} has endorsed your credential`
-        : `${from.displayName} has sent you a credential`;
+    const message = getNotificationMessage(
+        isEndorsement ? 'endorsementReceived' : 'credentialReceived',
+        resolveRecipientLocale(to),
+        { from: from.displayName }
+    );
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
         to,
         from,
-        message: {
-            title: notificationTitle,
-            body: notificationBody,
-        },
+        message,
         data: {
             vcUris: [uri],
             ...(metadata ? { metadata } : {}),
@@ -62,9 +74,6 @@ export const sendCredential = async (
     return uri;
 };
 
-/**
- * Accepts a VC
- */
 export const acceptCredential = async (
     profile: ProfileType,
     uri: string,
@@ -87,7 +96,20 @@ export const acceptCredential = async (
         });
     }
 
-    // Check if credential has already been received by this profile
+    if (pendingVc.relationship.status === 'revoked') {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential has been revoked',
+        });
+    }
+
+    if (pendingVc.relationship.status === 'suspended') {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential is suspended',
+        });
+    }
+
     const alreadyReceived = await getCredentialReceivedByProfile(id, profile);
     if (alreadyReceived) {
         throw new TRPCError({
@@ -107,34 +129,44 @@ export const acceptCredential = async (
 
     await setDefaultClaimedRole(profile, pendingVc.target);
 
-    // Persist explicit CONNECTED_WITH edges (with sources) for auto-connect mechanics
     await ensureConnectionsForCredentialAcceptance(profile, pendingVc.target.id);
+
+    const sourceProfile = isProfileType(pendingVc.source)
+        ? pendingVc.source
+        : await getOwnerProfileForListing(pendingVc.source.listing_id);
+
+    if (!sourceProfile) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Could not determine credential issuer',
+        });
+    }
 
     if (!options?.skipNotification) {
         await addNotificationToQueue({
             type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
-            to: pendingVc.source,
+            to: sourceProfile,
             from: profile,
-            message: {
-                title: 'Boost Accepted',
-                body: `${profile.displayName} has accepted your boost!`,
-            },
+            message: getNotificationMessage(
+                'boostAccepted',
+                resolveRecipientLocale(sourceProfile),
+                {
+                    name: profile.displayName,
+                }
+            ),
             data: { vcUris: [uri], ...(options?.metadata ? { metadata: options.metadata } : {}) },
         });
     }
 
-    // Log credential activity for claim - chain to original activityId/integrationId if available
-    // activityId and integrationId are stored as separate fields on the relationship
     const originalActivityId = pendingVc.relationship.activityId;
     const integrationId = pendingVc.relationship.integrationId;
 
-    // Get boostUri if this credential is associated with a boost
     const boostId = await getBoostIdForCredentialInstance(pendingVc.target);
     const boostUri = boostId ? constructUri('boost', boostId, getDomainFromUri(uri)) : undefined;
 
     await logCredentialClaimed({
         activityId: originalActivityId,
-        actorProfileId: pendingVc.source.profileId,
+        actorProfileId: sourceProfile.profileId,
         recipientType: 'profile',
         recipientIdentifier: profile.profileId,
         recipientProfileId: profile.profileId,

@@ -46,6 +46,10 @@ export const updateAppStoreListing = async (
         updatesToPersist.hero_background_color = updates.hero_background_color;
     if (typeof updates.min_age !== 'undefined') updatesToPersist.min_age = updates.min_age;
     if (typeof updates.age_rating !== 'undefined') updatesToPersist.age_rating = updates.age_rating;
+    if (typeof updates.submitted_at !== 'undefined')
+        updatesToPersist.submitted_at = updates.submitted_at;
+    if (typeof updates.contact_email !== 'undefined')
+        updatesToPersist.contact_email = updates.contact_email;
 
     const params: Partial<FlatAppStoreListingType> = updatesToPersist;
 

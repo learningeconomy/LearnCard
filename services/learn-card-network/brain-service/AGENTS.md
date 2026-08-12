@@ -2,20 +2,30 @@
 
 ## Build & Development Commands
 
--   Build: `pnpm build` or `pnpm build:docker`
--   Dev: `pnpm dev` - Watches files and rebuilds
--   Start server: `pnpm start` - Runs local server on port 3000
--   Start on port 4000: `pnpm start-p-4000`
--   Deploy: `pnpm serverless-deploy`
+-   Build: `bun run build` or `bun run build:docker`
+-   Dev: `bun run dev` - Watches files and rebuilds
+-   Start server: `bun run start` - Runs local server on port 3000
+-   Start on port 4000: `bun run start-p-4000`
+-   Deploy: `bun run serverless-deploy`
+
+### Skill Framework Seeding
+
+-   Auto-bootstrap seeds default public skill frameworks in non-production when the database has no `SkillFramework` nodes.
+-   Disable auto-bootstrap with `SKIP_SKILL_FRAMEWORK_SEED=true`.
+-   Re-seed manually with `bun run skill-frameworks seed [local|staging]` from `services/learn-card-network/brain-service`.
+-   Grant framework admin access to an existing profile with `bun run skill-frameworks add-admin [local|staging]` and enter the profile id when prompted.
+-   If no stage is provided, the CLI defaults to `local` and prints a note.
+-   Use `SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID` to override the default `network-seed` owner profile when needed.
+-   The seed command is idempotent and will not duplicate framework or skill nodes.
 
 ## Test Commands
 
--   Run all tests: `pnpm test`
--   Run all tests once (non-watch): `pnpm test -- run` (equivalent to `vitest run`)
--   Watch mode: `pnpm test:watch`
--   Run single test: `pnpm test test/consentflow.spec.ts`
--   Run single test once (non-watch): `pnpm test -- run test/consentflow.spec.ts`
--   Run specific test: `pnpm test -t "should allow setting and retrieving the image field for a contract"`
+-   Run all tests: `bun run test`
+-   Run all tests once (non-watch): `bun run test -- run` (equivalent to `vitest run`)
+-   Watch mode: `bun run test:watch`
+-   Run single test: `bun run test test/consentflow.spec.ts`
+-   Run single test once (non-watch): `bun run test -- run test/consentflow.spec.ts`
+-   Run specific test: `bun run test -t "should allow setting and retrieving the image field for a contract"`
 
 ## Code Style Guidelines
 
@@ -418,13 +428,14 @@ import { trace, traceDb, traceHttp, traceCrypto, traceInternal } from '@tracing'
 
 Providers are registered automatically on startup based on environment variables:
 
-| Provider  | Env Variable      | Default   | Output Format                                |
-| --------- | ----------------- | --------- | -------------------------------------------- |
-| Console   | `TRACE_CONSOLE`   | `true`    | Indented tree with timing: `✓ db:query 45ms` |
-| JSON      | `TRACE_JSON`      | `false`   | Structured JSON per span (for log ingestion) |
-| Sentry    | `SENTRY_DSN`      | disabled  | Sentry performance transactions              |
+| Provider | Env Variable    | Default  | Output Format                                |
+| -------- | --------------- | -------- | -------------------------------------------- |
+| Console  | `TRACE_CONSOLE` | `true`   | Indented tree with timing: `✓ db:query 45ms` |
+| JSON     | `TRACE_JSON`    | `false`  | Structured JSON per span (for log ingestion) |
+| Sentry   | `SENTRY_DSN`    | disabled | Sentry performance transactions              |
 
 **Console output example:**
+
 ```
 [TRACE:a1b2c3]✓ route:send 234ms
 [TRACE:a1b2c3]  ✓ db:getBoostByUri 12ms
@@ -433,8 +444,18 @@ Providers are registered automatically on startup based on environment variables
 ```
 
 **JSON output example:**
+
 ```json
-{"type":"TRACE_SPAN","traceId":"a1b2c3","spanId":"d4e5f6","op":"db","name":"getBoostByUri","durationMs":12,"status":"ok","timestamp":"2024-01-15T10:30:00.000Z"}
+{
+    "type": "TRACE_SPAN",
+    "traceId": "a1b2c3",
+    "spanId": "d4e5f6",
+    "op": "db",
+    "name": "getBoostByUri",
+    "durationMs": 12,
+    "status": "ok",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+}
 ```
 
 ### Configuration
@@ -487,3 +508,365 @@ Register in `src/tracing/index.ts`:
 ```typescript
 manager.register(new MyProvider());
 ```
+
+## Credential Revocation System
+
+### Purpose
+
+Allows issuers to revoke credentials from recipients. When revoked:
+
+1. Recipient removed from member/recipient lists
+2. Permissions granted via claim hooks reversed
+3. Connections created via auto-connect cleaned up
+4. Credential marked as revoked (not deleted) for audit
+
+### Neo4j Data Model
+
+#### CREDENTIAL_RECEIVED relationship
+
+```
+(Credential)-[:CREDENTIAL_RECEIVED]->(Profile)
+```
+
+| Property    | Type     | Description                                                   |
+| ----------- | -------- | ------------------------------------------------------------- |
+| `status`    | string   | `null` (claimed), `'pending'` (not yet accepted), `'revoked'` |
+| `date`      | datetime | When received/claimed                                         |
+| `revokedAt` | datetime | When revoked (if revoked)                                     |
+
+#### CONNECTED_WITH relationship
+
+```
+(Profile)-[:CONNECTED_WITH]->(Profile)
+```
+
+| Property  | Type     | Description                                       |
+| --------- | -------- | ------------------------------------------------- |
+| `sources` | string[] | Source keys like `['boost:uuid1', 'boost:uuid2']` |
+
+### Key Queries
+
+```cypher
+-- Get recipients (excluding revoked)
+MATCH (c:Credential)-[r:CREDENTIAL_RECEIVED]->(p:Profile)
+WHERE c.boostId = $boostId
+  AND (r.status IS NULL OR r.status <> 'revoked')
+  AND ($includeUnacceptedBoosts = true OR r.status IS NULL)
+RETURN p
+
+-- Set revoked status
+MATCH (credential:Credential { id: $credentialId })
+MATCH (profile:Profile { profileId: $profileId })
+MERGE (credential)-[received:CREDENTIAL_RECEIVED]->(profile)
+ON CREATE SET received.status = "revoked", received.revokedAt = $revokedAt, received.date = $revokedAt
+ON MATCH SET received.status = "revoked", received.revokedAt = $revokedAt
+```
+
+### Revoke Hooks (`src/helpers/revoke-hooks.helpers.ts`)
+
+| Hook                            | Purpose                                                           |
+| ------------------------------- | ----------------------------------------------------------------- |
+| `processPermissionsRevokeHooks` | Removes HAS_ROLE relationships from GRANT_PERMISSIONS claim hooks |
+| `processAutoConnectRevokeHooks` | Removes AUTO_CONNECT_RECIPIENT relationships                      |
+| `processAdminRevokeHooks`       | Removes admin roles from ADD_ADMIN claim hooks                    |
+| `processConnectionRevoke`       | Removes CONNECTED_WITH relationships sourced from the boost       |
+
+### Connection Source Keys
+
+-   Pattern: `boost:${boostId}`
+-   Connections can have multiple sources (from multiple boosts)
+-   On revoke, only the source key from the revoked boost is removed
+-   Connection deleted only when all source keys are removed
+
+### Parent Boost Handling
+
+`processConnectionRevoke` checks:
+
+1. Direct boost (if `autoConnectRecipients=true`)
+2. All parent boosts with `autoConnectRecipients=true`
+3. All boosts targeted by AUTO_CONNECT claim hooks
+
+### getRevokedCredentials Endpoint
+
+```typescript
+// In credentials.ts router — returns revoked credential URIs for authenticated user
+getRevokedCredentials: profileRoute
+    .input(z.object({}).default({}))
+    .output(z.array(z.string()))
+    .query(async ({ ctx }) => {
+        return getRevokedCredentialUrisForProfile(ctx.domain, ctx.user.profile);
+    });
+```
+
+### Key Files
+
+| File                                  | Purpose                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `src/accesslayer/credential/read.ts`  | `getReceivedCredentialsForProfile` (filters revoked), `getRevokedCredentialUrisForProfile` |
+| `src/routes/credentials.ts`           | `getRevokedCredentials` endpoint                                                           |
+| `src/helpers/revoke-hooks.helpers.ts` | All revoke hook processors                                                                 |
+| `test/revoke-credential.spec.ts`      | Revocation tests                                                                           |
+| `test/claim-hooks.spec.ts`            | Claim hook tests                                                                           |
+
+## App Notifications
+
+Apps can send notifications to users via the `APP_NOTIFICATION` type. There are two delivery paths:
+
+### 1. SDK Self-Notification (via `appEvent`)
+
+When the user has the app open in LearnCard, the Partner Connect SDK can trigger a self-notification via the `send-notification` app event type. This is handled by `handleSendNotificationEvent` in `src/routes/app-store.ts`.
+
+-   **Rate limit**: 10 notifications per user per app per hour (Redis key: `app-notif-rate:{listingId}:{profileId}`)
+-   **Auth**: User must have the app installed or own the integration
+
+### 2. Server-to-Server Route (Primary)
+
+App backends send notifications to arbitrary users who have the app installed.
+
+-   **Route**: `POST /app-store/listing/{listingId}/notify`
+-   **Scope**: `app-store:write`
+-   **Auth**: Caller must own the listing's integration (`verifyListingOwnership`)
+
+**Input:**
+
+```json
+{
+    "listingId": "my-app-id",
+    "recipient": "user123",
+    "title": "New content available!",
+    "body": "Check out the latest challenge",
+    "actionPath": "/challenges",
+    "category": "announcement",
+    "priority": "normal"
+}
+```
+
+-   `recipient`: Accepts a profileId, `did:web:...`, or `did:key:...` (resolved via `getProfileIdFromString`)
+-   `title` / `body`: At least one required
+-   `actionPath`: Deep link path within the app
+-   `category`: Grouping category (e.g. `'reward'`, `'announcement'`)
+-   `priority`: `'normal'` (default) or `'high'`
+
+**Guards:**
+
+-   Recipient must have the app installed (`hasProfileInstalledApp`)
+-   Rate limit: 60 notifications per listing per hour (Redis key: `app-notif-server-rate:{listingId}`)
+
+**Notification shape:**
+
+```json
+{
+    "type": "APP_NOTIFICATION",
+    "to": { "did": "did:web:...:users:user123", "profileId": "user123" },
+    "from": { "did": "did:web:...:apps:my-app", "displayName": "My App" },
+    "message": { "title": "...", "body": "..." },
+    "data": {
+        "metadata": {
+            "listingId": "...",
+            "listingSlug": "...",
+            "actionPath": "/challenges",
+            "category": "announcement",
+            "priority": "normal"
+        }
+    }
+}
+```
+
+### Querying App Notifications (lca-api)
+
+Notifications can be filtered by app using the `data.metadata.listingId` field in the `queryNotifications` endpoint on `lca-api`.
+
+### Key Files
+
+| File                                   | Purpose                                                                                   |
+| -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src/routes/app-store.ts`              | `sendAppNotification` route + `handleSendNotificationEvent` handler                       |
+| `src/helpers/notifications.helpers.ts` | `addNotificationToQueue` — SQS / webhook delivery                                         |
+| `@learncard/types` `lcn.ts`            | `LCNNotificationTypeEnumValidator` (`APP_NOTIFICATION`), `SendNotificationEventValidator` |
+
+## App Counters
+
+Apps can store per-user, per-app counters (e.g. coins, streaks, levels) via `APP_COUNTER` relationships in Neo4j.
+
+### Data Model
+
+Counters are stored as `APP_COUNTER` relationships between `Profile` and `AppStoreListing`:
+
+```
+(Profile)-[:APP_COUNTER {key, value, createdAt, updatedAt}]->(AppStoreListing)
+```
+
+Multiple parallel `APP_COUNTER` relationships (one per key) can exist between the same Profile and AppStoreListing.
+
+### Event Types
+
+| Event               | Validator                        | Purpose                                                   |
+| ------------------- | -------------------------------- | --------------------------------------------------------- |
+| `increment-counter` | `IncrementCounterEventValidator` | Atomic increment/decrement via `MERGE ON CREATE/ON MATCH` |
+| `get-counter`       | `GetCounterEventValidator`       | Read single counter (returns `{ value: 0 }` if missing)   |
+| `get-counters`      | `GetCountersEventValidator`      | Read multiple or all counters for a (user, app) pair      |
+
+### Limits
+
+-   Max **50 counter keys** per user per app (`MAX_COUNTER_KEYS_PER_USER_PER_APP`)
+-   Max **100 writes** per user per app per minute (Redis rate limit key: `app-counter-rate:{listingId}:{profileId}`)
+-   Counter keys: alphanumeric + `_` / `-`, max 64 chars
+-   Amount: any finite integer
+
+### Key Files
+
+| File                                    | Purpose                                                                                   |
+| --------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `src/accesslayer/app-counter/create.ts` | `incrementAppCounter` — atomic `MERGE`-based upsert                                       |
+| `src/accesslayer/app-counter/read.ts`   | `getAppCounter`, `getAppCounters`, `countAppCounterKeys`                                  |
+| `src/helpers/app-counter.helpers.ts`    | Event handlers with validation + rate limiting                                            |
+| `src/types/app-counter.ts`              | TypeScript types for counter I/O                                                          |
+| `@learncard/types` `lcn.ts`             | `IncrementCounterEventValidator`, `GetCounterEventValidator`, `GetCountersEventValidator` |
+| `test/app-counters.spec.ts`             | Counter tests                                                                             |
+
+### Useful Cypher Queries
+
+```cypher
+-- List all counters for a user in an app
+MATCH (p:Profile {profileId: 'user123'})-[c:APP_COUNTER]->(l:AppStoreListing {listing_id: 'abc'})
+RETURN c.key, c.value, c.updatedAt
+
+-- Delete all counters (test cleanup)
+MATCH ()-[r:APP_COUNTER]->() DELETE r
+```
+
+## Seed Dev App Script
+
+Location: `scripts/seed-dev-app.ts`
+
+An idempotent script that seeds a fully functional partner app listing into the local Neo4j + MongoDB databases for development and testing. It creates all the infrastructure needed to test notifications, counters, and credential issuance.
+
+### What It Creates
+
+1. **Profile** — owner profile (default: `dev-owner`)
+2. **Integration** — integration node linked to the owner
+3. **AppStoreListing** — listed app with embed URL, slug, display name, icon
+4. **Signing Authority** — in MongoDB, linked to the listing via Neo4j relationship
+5. **Boost Template** — credential template attached to the listing
+6. **(Optional) Install** — installs the app for another profile via `--install-for`
+7. **(Optional) Rate Limit Reset** — clears Redis rate limit keys via `--reset-rate-limits`
+
+### Usage
+
+```bash
+cd services/learn-card-network/brain-service
+
+# Basic (defaults to http://localhost:4321)
+bun run seed:dev-app
+
+# Custom app URL
+bun run seed:dev-app -- --app-url http://localhost:4321
+
+# Install for a specific user (needed for notifications)
+bun run seed:dev-app -- --install-for my-profile-id
+
+# Reset rate limits (useful when testing repeatedly)
+bun run seed:dev-app -- --reset-rate-limits
+
+# Custom name, slug, permissions
+bun run seed:dev-app -- --app-name "My Game" --slug my-game
+bun run seed:dev-app -- --permissions request_identity,send_credential
+
+# Custom signing authority endpoint
+bun run seed:dev-app -- --sa-endpoint http://localhost:5100/api
+
+# Custom promotion level
+bun run seed:dev-app -- --promotion FEATURED_CAROUSEL
+```
+
+### All Flags
+
+| Flag                  | Default                     | Description                              |
+| --------------------- | --------------------------- | ---------------------------------------- |
+| `--app-url`           | `http://localhost:4321`     | Embed URL for the partner app            |
+| `--app-name`          | `Dev Partner App`           | Display name                             |
+| `--slug`              | derived from app-name       | URL slug                                 |
+| `--profile`           | `dev-owner`                 | Owner profile ID                         |
+| `--install-for`       | _(none)_                    | Profile ID to install the app for        |
+| `--domain`            | hostname from app-url       | Domain for DID construction              |
+| `--app-image`         | _(none)_                    | Custom app icon URL                      |
+| `--template-alias`    | `default`                   | Alias for the boost template             |
+| `--sa-endpoint`       | `http://localhost:5100/api` | Signing authority endpoint               |
+| `--sa-seed`           | `'d'.repeat(64)`            | Seed for signing authority key           |
+| `--permissions`       | all permissions             | Comma-separated permission list          |
+| `--promotion`         | `FEATURED_CAROUSEL`         | Promotion level for app store visibility |
+| `--reset-rate-limits` | _(flag)_                    | Clear Redis rate limit keys for this app |
+
+### Prerequisites
+
+-   Neo4j running (`bun run dev:services` from `apps/learn-card-app` or local Docker)
+-   Redis running (same)
+-   MongoDB running (same)
+-   Falls back to local docker-compose defaults if no `.env` is present
+
+### Re-running
+
+The script is **idempotent** — it uses slug-based lookup and updates existing nodes rather than creating duplicates. Safe to re-run at any time.
+
+## Debugging
+
+### Docker Logs
+
+```bash
+docker logs lcn-brain-service --tail 100 -f
+```
+
+### Useful Cypher Queries
+
+```cypher
+-- Check connection sources
+MATCH (p:Profile {profileId: 'some-id'})-[r:CONNECTED_WITH]-(other)
+RETURN other.profileId, r.sources
+
+-- Check credential status
+MATCH (c:Credential)-[r:CREDENTIAL_RECEIVED]->(p:Profile {profileId: 'some-id'})
+RETURN c.id, r.status, r.revokedAt
+```
+
+## Email Delivery & Tenant Branding
+
+Transactional emails (inbox-claim, endorsement-request, guardian-approval, account-approved, contact-method-verification, credential-awaiting-guardian, guardian-credential-approval, guardian-approved-claim, guardian-rejected-credential, guardian-email-otp) are rendered locally via [`@learncard/email-templates`](../../../packages/email-templates/README.md) and sent as raw HTML through Postmark.
+
+### Architecture
+
+```
+route handler → deliveryService.send({ templateAlias, templateModel, branding, ... })
+                    │
+                    ▼
+           PostmarkAdapter.send()
+                    │
+                    ├─ LOCAL_TEMPLATE_MAP[alias] → local TemplateId?
+                    │     │ yes
+                    │     ▼
+                    │  renderEmail(id, branding, data) → { html, text, subject }
+                    │     │
+                    │     ▼
+                    │  Postmark.sendEmail (raw HTML)
+                    │
+                    └─ no → Postmark.sendEmailWithTemplate (legacy fallback)
+```
+
+### Tenant Resolution
+
+Tenant is resolved once per request in `createContext` via `resolveTenantFromRequest(headers)` from `@learncard/email-templates` and attached as `ctx.tenant`. Priority: `X-Tenant-Id` header → `Origin` / `Referer` → `DEFAULT_TENANT_ID` env → `'learncard'`.
+
+### Rules for Route Authors
+
+-   **Always pass `branding: ctx.tenant?.emailBranding`** to `deliveryService.send()`. Emails sent without it render with LearnCard defaults regardless of the caller's tenant.
+-   **Use `getFrom({ mailbox, branding })`** for the from-address so the domain matches the tenant (e.g. `recovery@vetpass.app` for VetPass).
+-   **Use the local template ID as the `templateAlias`** (e.g. `'inbox-claim'`, `'guardian-approval'`). These are pre-registered as sentinels in `LOCAL_TEMPLATE_MAP` — env-var overrides are optional, never required.
+-   **Do not write plain-text fallbacks.** If local rendering fails for a sentinel alias, the adapter re-throws so the error surfaces — don't silently send unbranded text.
+
+### Adding a New Template
+
+1. Add the template to `@learncard/email-templates` (see that package's `AGENTS.md`).
+2. Register the alias in `LOCAL_TEMPLATE_MAP` in `src/services/delivery/adapters/postmark.adapter.ts`.
+3. If the service's `templateModel` shape differs from the package's `TemplateDataMap` shape, extend `mapTemplateModel()` in the adapter.
+4. Call `deliveryService.send()` from the route, passing `branding: ctx.tenant?.emailBranding`.
+
+See [Tenant-Branded Emails (architecture)](../../../docs/core-concepts/tenant-branded-emails.md) for the end-to-end flow and [Configure Tenant-Branded Emails](../../../docs/how-to-guides/configure-tenant-branded-emails.md) for operator-facing setup.

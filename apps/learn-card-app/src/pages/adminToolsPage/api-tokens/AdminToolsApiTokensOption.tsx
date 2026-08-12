@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('admin-tools-api-tokens-option');
 
 import CreateAPITokenModal from './CreateAPITokenModal';
 import AdminToolApiTokenItem from './AdminToolApiTokenItem';
@@ -134,13 +136,13 @@ const AdminToolsApiTokensOption: React.FC<{ option: AdminToolOption; showFooter?
             }
         } catch (err) {
             if (status === 'active') {
-                console.error(`Failed to revoke API Token`, err);
+                log.error(`Failed to revoke API Token`, err);
                 presentToast(`Unable to revoke API Token`, {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
             } else if (status === 'revoked') {
-                console.error(`Failed to delete API Token`, err);
+                log.error(`Failed to delete API Token`, err);
                 presentToast(`Unable to delete API Token`, {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,

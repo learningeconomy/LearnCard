@@ -36,6 +36,8 @@ import { LCNBoostStatusEnum } from '../boost/boost';
 import { useAddCredentialToWallet } from '../boost/mutations';
 import { getPermissionsByRole } from './troops.helpers';
 import { cloneDeep } from 'lodash';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('troops-cms');
 
 const StateValidator = z.object({
     name: z.string().min(1, 'Name is required!'),
@@ -130,8 +132,8 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
             const uris = await Promise.all(
                 profileIDs.map(async profileId => {
                     // handle self boosting
-                    console.log('profileId', profileId);
-                    console.log('currentLCNUser?.profileId', currentLCNUser?.profileId);
+                    log.debug('profileId', profileId);
+                    log.debug('currentLCNUser?.profileId', currentLCNUser?.profileId);
                     if (profileId === currentLCNUser?.profileId) {
                         // oxlint-disable-next-line no-unused-vars
                         const { sentBoost, sentBoostUri } = await sendBoostCredential(
@@ -141,7 +143,9 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                         );
 
                         // Auto-accept the credential on LCN so it's not stuck in "pending" state
-                        await wallet.invoke.acceptCredential(sentBoostUri, { skipNotification: true });
+                        await wallet.invoke.acceptCredential(sentBoostUri, {
+                            skipNotification: true,
+                        });
 
                         const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
                             sentBoost
@@ -156,7 +160,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
             );
         } catch (e) {
             setIsLoading(false);
-            console.error('handleIssueBoost::error', e);
+            log.error('handleIssueBoost::error', e);
         }
     };
 
@@ -180,7 +184,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                 );
             }
         } catch (e) {
-            console.error('handleAddAdmins::error', e);
+            log.error('handleAddAdmins::error', e);
         }
     };
 
@@ -204,7 +208,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                 })
             );
         } catch (error) {
-            console.log('handleUpdatePermissions::error', error);
+            log.debug('handleUpdatePermissions::error', error);
         }
     };
 
@@ -239,7 +243,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
             if (viewMode === TroopsCMSViewModeEnum.global) {
                 setIsPublishLoading(true);
                 admins = [...admins, currentUserProfileID];
-                console.log('networkIDPayload', networkIDPayload);
+                log.debug('networkIDPayload', networkIDPayload);
                 // create boost
                 const { boostUri } = await createBoost({
                     state: networkIDPayload,
@@ -248,10 +252,10 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                     ...(networkMeta ? { meta: networkMeta } : {}),
                 });
 
-                console.log('boostUri', boostUri);
+                log.debug('boostUri', boostUri);
                 // oxlint-disable-next-line no-extra-non-null-assertion
-                console.log('boost', await wallet.invoke.getBoost(boostUri!));
-                console.log('admins', admins);
+                log.debug('boost', await wallet.invoke.getBoost(boostUri!));
+                log.debug('admins', admins);
 
                 if (boostUri) {
                     if (admins?.length > 0) {
@@ -296,7 +300,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                         },
                     });
                 } catch (e) {
-                    console.error('Create network claim hook error', e);
+                    log.error('Create network claim hook error', e);
                 }
 
                 if (boostUri) {
@@ -344,7 +348,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                         },
                     });
                 } catch (e) {
-                    console.error('Create claim hook error', e);
+                    log.error('Create claim hook error', e);
                 }
 
                 try {
@@ -359,7 +363,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
                         },
                     });
                 } catch (e) {
-                    console.error('Create claim hook error', e);
+                    log.error('Create claim hook error', e);
                 }
 
                 if (troopIdUri) {
@@ -385,7 +389,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
             }
         } catch (e) {
             setIsPublishLoading(false);
-            console.error('handlePublishBoost::error', e);
+            log.error('handlePublishBoost::error', e);
             presentToast(`Error issuing boost`, {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -468,7 +472,7 @@ export const TroopsCMS: React.FC<TroopsCMSProps> = ({
             handleCloseModal();
         } catch (e) {
             setIsPublishLoading(false);
-            console.error('handleEditBoost::error', e);
+            log.error('handleEditBoost::error', e);
             presentToast(`Error editing boost`, {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,

@@ -1,9 +1,9 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import RevisitIcon from 'learn-card-base/svgs/RevisitIcon';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
-import ExperimentalFeatureBox from '../../generic/ExperimentalFeatureBox';
-
 import { NewAiSessionStepEnum } from '../newAiSession.helpers';
 
 import { useHistory } from 'react-router-dom';
@@ -42,7 +42,6 @@ export const AiSessionTypeSelector: React.FC<{
 
     return (
         <div className="w-full flex flex-col gap-[20px] items-center justify-center bg-white ion-padding !py-[30px] px-[20px]">
-            <ExperimentalFeatureBox className="mb-[10px] max-w-[375px]" />
             <button
                 className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px]`}
                 onClick={() => {
@@ -56,7 +55,7 @@ export const AiSessionTypeSelector: React.FC<{
                     setActiveStep(NewAiSessionStepEnum.newTopic);
                 }}
             >
-                New Topic
+                {m['ai.newSession']()}
                 <NewAiSessionIcon className="ml-1" />
             </button>
             <button
@@ -75,7 +74,7 @@ export const AiSessionTypeSelector: React.FC<{
                     setActiveStep(NewAiSessionStepEnum.revisitTopic);
                 }}
             >
-                Revisit Topic
+                {m['ai.revisitTopic']()}
                 <RevisitIcon version="2" className="ml-1 h-auto w-[31px] text-white" />
             </button>
         </div>

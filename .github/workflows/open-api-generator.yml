@@ -1,11 +1,11 @@
 name: Generate Client SDKs for LearnCard Network API
 
 on:
-  workflow_call:
-    inputs:
-      affected:
-        required: true
-        type: string
+    workflow_call:
+        inputs:
+            affected:
+                required: true
+                type: string
 
 env:
     working-directory: packages/open-api-lcn-clients
@@ -20,10 +20,13 @@ jobs:
                 generator-name: [python]
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
-                  token: '${{ secrets.GITHUB_TOKEN }}'
+                  # create-pull-request manages its own git auth; persisting the
+                  # checkout extraheader causes a "Duplicate header: Authorization"
+                  # 400 with newer git (2.54+). See peter-evans/create-pull-request.
+                  persist-credentials: false
 
             - name: Git config
               run: |
@@ -41,14 +44,17 @@ jobs:
                   openapi-url: https://network.learncard.com/docs/openapi.json
                   command-args: -o ${{ env.working-directory }}/${{ matrix.generator-name }}-client/ --skip-validate-spec
 
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+
             - name: Get version from package.json
               id: package-version
               run: |
-                  PACKAGE_VERSION="$(node -p "require('./services/learn-card-network/brain-service/package.json').version")"
+                  PACKAGE_VERSION="$(bun -e "console.log(require('./services/learn-card-network/brain-service/package.json').version)")"
                   echo "version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Create or update PR
-              uses: peter-evans/create-pull-request@v6
+              uses: peter-evans/create-pull-request@v7
               with:
                   commit-message: Update ${{ matrix.generator-name }}-client SDK to version ${{ steps.package-version.outputs.version }}
                   title: Update Open API Client SDKs to version ${{ steps.package-version.outputs.version }}

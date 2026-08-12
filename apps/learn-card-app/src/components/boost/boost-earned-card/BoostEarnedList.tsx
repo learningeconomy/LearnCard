@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
+import * as m from '../../../paraglide/messages.js';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
@@ -14,7 +15,7 @@ import {
     BoostPageViewMode,
     BoostPageViewModeType,
     searchCredentialsFromCache,
-    pluralize,
+    CredentialListSkeleton,
 } from 'learn-card-base';
 import {
     credentialCategoryToSubheaderType,
@@ -48,6 +49,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         data: records,
         isLoading: credentialsLoading,
         isFetching: credentialsFetching,
+        isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
         refetch: earnedBoostsRefetch,
@@ -90,10 +92,16 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         * end **
     */
 
-    const { bgColor: noResultsLineColor, title: categoryTitle } =
+    const { bgColor: noResultsLineColor } =
         SubheaderContentType[credentialCategoryToSubheaderType(category)];
 
-    const credentialsBackgroundFetching = credentialsFetching && !credentialsLoading;
+    const hasCredentialRecords =
+        records?.pages?.some(page => (page?.records?.length ?? 0) > 0) ?? false;
+    const showSkeleton =
+        !earnedBoostsError &&
+        (credentialsLoading || (credentialsFetching && !hasCredentialRecords));
+    const credentialsBackgroundFetching =
+        credentialsFetching && !credentialsLoading && !isFetchingNextPage && hasCredentialRecords;
 
     useLoadingLine(credentialsBackgroundFetching);
 
@@ -162,14 +170,15 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     const searchResultsElement = (
         <div className={`flex flex-col gap-[5px] mt-[6px] ${isCardView ? 'px-[15px]' : ''}`}>
             <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
-                {searchString?.trim?.() === '' && `Search ${searchResultsCount} earned boosts`}
-                {noSearchResults && `No earned ${categoryTitle} titled "${searchString}"`}
+                {searchString?.trim?.() === '' &&
+                    m['boost.search.searchEarned']({ count: searchResultsCount })}
+                {noSearchResults && m['boost.search.noResultsTitled']({ query: searchString })}
                 {searchResultsCount > 0 &&
                     searchString?.trim?.() !== '' &&
-                    `Found ${searchResultsCount} ${pluralize(
-                        'result',
-                        searchResultsCount
-                    )} for "${searchString}" `}
+                    m['boost.search.foundResults']({
+                        count: searchResultsCount,
+                        query: searchString,
+                    })}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>
@@ -177,29 +186,18 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     return (
         <>
-            {(credentialsLoading ||
-                (credentials?.length === 0 && !credentialsLoading && !searchActive)) &&
-                !boostError && (
-                    <section className="flex relative  min-h-[200px]  flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                        <CategoryEmptyPlaceholder category={category} />
-                        <div className="text-black mt-10">
-                            <strong>
-                                <span
-                                    className={`flex justify-center ${
-                                        credentialsLoading ? 'animate-pulse' : 'normal'
-                                    }`}
-                                >
-                                    {credentialsLoading ? (
-                                        <p className={`loader text-${textColor}`}></p>
-                                    ) : (
-                                        <p className="font-montserrat text-[14px] font-[700] text-grayscale-900">{`No ${title} yet.`}</p>
-                                    )}
-                                </span>
-                            </strong>
-                        </div>
-                    </section>
-                )}
-            {!credentialsLoading && !boostError && records && (
+            {showSkeleton && <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />}
+            {credentials?.length === 0 && !showSkeleton && !searchActive && !boostError && (
+                <section className="flex relative min-h-[200px] flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
+                    <CategoryEmptyPlaceholder category={category} />
+                    <div className="text-black mt-10">
+                        <strong>
+                            <p className="font-montserrat text-[14px] font-[700] text-grayscale-900">{`No ${title} yet.`}</p>
+                        </strong>
+                    </div>
+                </section>
+            )}
+            {!showSkeleton && !boostError && records && (
                 <>
                     <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
                         {isCardView && (
@@ -218,7 +216,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                                 <div role="presentation" ref={infiniteScrollRef} />
                             </>
                         )}
-                        {credentialsFetching && (
+                        {isFetchingNextPage && (
                             <div className="w-full flex items-center justify-center">
                                 <IonSpinner
                                     name="crescent"

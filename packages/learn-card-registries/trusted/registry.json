@@ -1,7 +1,7 @@
 {
     "meta": {
         "created": "2022-10-27T17:57:31+00:00",
-        "updated": "2025-08-11T22:53:34.881Z"
+        "updated": "2026-03-21T22:53:34.881Z"
     },
     "registry": {
         "did:web:network.learncard.com:users:learn-cloud": {
@@ -25,6 +25,11 @@
             "url": "https://pass.scout.org/"
         },
         "did:web:scoutnetwork.org:users:worldscouting": {
+            "name": "World Scouting",
+            "location": "Kuala Lumpur, Malaysia",
+            "url": "https://www.scout.org/"
+        },
+        "did:web:scoutnetwork.org:users:world-scouting": {
             "name": "World Scouting",
             "location": "Kuala Lumpur, Malaysia",
             "url": "https://www.scout.org/"
@@ -53,6 +58,11 @@
             "name": "DCC did:key for testing a did in four registries",
             "location": "Cambridge, MA, USA",
             "url": "https://digitalcredentials.mit.edu"
+        },
+        "did:key:z6MkpTTKmRmcQfYRqjZs4uA1LactrSNB1vTCjBYMhG8E7u9Y": {
+            "name": "LER Interoperability Test Suite",
+            "location": "Cambridge, MA, USA",
+            "url": "https://ler-tests.prettygoodskills.com/"
         },
         "did:key:z6MkpLDL3RoAoMRTwTgo3rs39ZwssfaPKtGdZw7AGRN7CK4W": {
             "name": "(Example) My University",
@@ -213,6 +223,21 @@
             "name": "Whitehall Demo",
             "location": "Washington, DC, USA",
             "url": "https://www.learncard.com/"
+        },
+        "did:key:z6MkjQCNHNfmdQ59AkcxH721E86YvkhPd1YmPojTdLoaTjLW": {
+            "name": "LAiSER",
+            "location": "Washington, DC, USA",
+            "url": "https://laiser.gwu.edu"
+        },
+        "did:web:network.learncard.com:users:laiser-gwu": {
+            "name": "LAiSER",
+            "location": "Washington, DC, USA",
+            "url": "https://laiser.gwu.edu"
+        },
+        "did:web:network.learncard.com:users:lefasugsv": {
+            "name": "LEF @ ASU-GSV",
+            "location": "Washington, DC, USA",
+            "url": "https://learningeconomy.io/"
         }
     }
 }

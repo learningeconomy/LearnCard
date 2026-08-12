@@ -3,6 +3,7 @@ import { LearnCardPluginDependentMethods, LearnCardPlugin } from './types';
 import { verifyCredential } from './verify';
 
 export * from './types';
+export * from './verificationPrettifier';
 
 /**
  * @group Plugins

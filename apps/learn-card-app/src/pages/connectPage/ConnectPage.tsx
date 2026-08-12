@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useHistory } from 'react-router';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('connect-page');
 
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 
+import * as m from '../../paraglide/messages.js';
 import { useWallet, usePathQuery, useIsLoggedIn } from 'learn-card-base';
 import { generatePK } from '../../helpers/privateKeyHelpers';
 
@@ -24,6 +27,17 @@ const ConnectPage: React.FC = () => {
     );
     const [loading, setLoading] = useState<boolean>(false);
 
+    const handleFetchedProfile = (profile?: AddressBookContact | null) => {
+        // Private or missing profiles can come back as an empty object-like payload.
+        // Treat anything without a profileId as "not found" so we render the empty state.
+        if (profile?.profileId) {
+            setLcNetworkProfile(profile);
+            return;
+        }
+
+        setLcNetworkProfile(null);
+    };
+
     const getLCNeworkProfile = async () => {
         setLoading(true);
 
@@ -38,7 +52,7 @@ const ConnectPage: React.FC = () => {
         }
 
         if (!profileId && !userDid) {
-            console.log('no handle or userDid detected!');
+            log.info('no handle or userDid detected!');
             setLoading(false);
             return;
         }
@@ -46,14 +60,12 @@ const ConnectPage: React.FC = () => {
         if (profileId) {
             try {
                 const profile = await wallet?.invoke?.getProfile(profileId);
-                if (profile) {
-                    setLcNetworkProfile(profile);
-                    console.log('handle::profile', profile);
-                    setLoading(false);
-                }
+                handleFetchedProfile(profile);
+                log.info('handle::profile', profile);
+                setLoading(false);
                 return;
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.info('getLCNeworkProfile::err', err);
                 setLoading(false);
                 return;
             }
@@ -71,19 +83,19 @@ const ConnectPage: React.FC = () => {
             if (profileId) {
                 try {
                     const profile = await wallet?.invoke?.getProfile(profileId);
-                    if (profile) {
-                        setLcNetworkProfile(profile);
-                        console.log('userDid::profile', profile);
-                        setLoading(false);
-                    }
+                    handleFetchedProfile(profile);
+                    log.info('userDid::profile', profile);
+                    setLoading(false);
                     return;
                 } catch (err) {
-                    console.log('getLCNeworkProfile::err', err);
+                    log.info('getLCNeworkProfile::err', err);
                     setLoading(false);
                     return;
                 }
             }
         }
+
+        setLoading(false);
     };
 
     useEffect(() => {
@@ -97,11 +109,11 @@ const ConnectPage: React.FC = () => {
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <IonSpinner color="black" />
-                        <p className="mt-2 font-bold text-lg">Loading...</p>
+                        <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}
                 {!loading && !lcNetworkProfile && (
-                    <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
+                    <section className="flex flex-col h-full pt-[10px] px-[20px] text-center justify-center items-center">
                         <h1 className="text-center text-xl font-bold text-grayscale-800">Eeek!</h1>
                         <strong className="text-center font-medium text-grayscale-600">
                             Unable to find user

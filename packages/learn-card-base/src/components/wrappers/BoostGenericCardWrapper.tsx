@@ -12,6 +12,7 @@ import {
     BoostPageViewModeType,
 } from '../earned-and-managed-tabs/EarnedAndManagedTabs';
 import CredentialVerificationDisplay from '../CredentialBadge/CredentialVerificationDisplay';
+import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
 
 type BoostGenericCardWrapperProps = {
@@ -45,6 +46,11 @@ type BoostGenericCardWrapperProps = {
     uri?: string;
     indicatorColor?: string;
     unknownVerifierTitle?: string;
+    relativeDate?: boolean;
+    compact?: boolean;
+    isCLR?: boolean;
+    lifecycleStatus?: CredentialLifecycleStatus;
+    trustedVerifierOnly?: boolean;
 };
 
 export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = ({
@@ -78,6 +84,11 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     uri,
     indicatorColor,
     unknownVerifierTitle,
+    relativeDate,
+    compact,
+    isCLR,
+    lifecycleStatus = 'active',
+    trustedVerifierOnly,
 }) => {
     if (boostPageViewMode === BoostPageViewMode.List) {
         return (
@@ -96,6 +107,10 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 indicatorColor={indicatorColor}
                 uri={uri}
                 unknownVerifierTitle={unknownVerifierTitle}
+                relativeDate={relativeDate}
+                compact={compact}
+                lifecycleStatus={lifecycleStatus}
+                trustedVerifierOnly={trustedVerifierOnly}
             />
         );
     }
@@ -107,7 +122,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
             showChecked={showChecked}
             checkStatus={checkStatus}
             optionsTriggerOnClick={optionsTriggerOnClick}
-            className={`${className} !shadow-[0px_2px_4px_0px_rgba(0,0,0,0.25)]`}
+            className={`${className} !h-[275px] !shadow-[0px_2px_4px_0px_rgba(0,0,0,0.25)]`}
             customHeaderClass={customHeaderClass}
             customThumbClass={customThumbClass}
             thumbImgSrc={thumbImgSrc}
@@ -122,16 +137,19 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
             customDateDisplay={customDateDisplay}
             customIssuerName={customIssuerName}
             verifierBadge={
-                loading ? null : (
+                loading || isCLR ? null : (
                     <CredentialVerificationDisplay
                         credential={credential}
-                        iconClassName="!w-[15px] !h-[15px] mr-1"
+                        iconClassName="!w-[15px] !h-[15px]"
                         showText={!!unknownVerifierTitle}
                         unknownVerifierTitle={unknownVerifierTitle}
+                        lifecycleStatus={lifecycleStatus}
+                        trustedOnly={trustedVerifierOnly}
                     />
                 )
             }
             credential={credential}
+            lifecycleStatus={lifecycleStatus}
             isInSkillsModal={isInSkillsModal}
             linkedCredentialsCount={linkedCredentialsCount ?? 0}
             linkedCredentialsClassName={linkedCredentialsClassName}

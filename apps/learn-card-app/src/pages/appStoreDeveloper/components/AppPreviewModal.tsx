@@ -1,13 +1,20 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { IonPage, IonContent, IonToast } from '@ionic/react';
 import { X, Maximize2, Play, AlertCircle } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-preview-modal');
 
-import { useModal } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
+import { TransP } from '../../../i18n/TransP';
+
+import { useModal, appendQueryParams } from 'learn-card-base';
 import { useLearnCardPostMessage } from '../../../hooks/post-message/useLearnCardPostMessage';
 import { useLearnCardMessageHandlers } from '../../../hooks/post-message/useLearnCardMessageHandlers';
 
 import { DiagnosticsPanel, DiagnosticEvent, ACTION_TO_PERMISSION } from './DiagnosticsPanel';
 import { CredentialClaimModal } from '../../launchPad/CredentialClaimModal';
+import { AppCredentialDashboard } from '../../launchPad/AppCredentialDashboard';
 import type {
     AppPermission,
     LaunchConfig as LocalLaunchConfig,
@@ -40,11 +47,15 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     const [pendingCredential, setPendingCredential] = useState<{
         credentialUri: string;
         boostUri?: string;
+        credential?: any;
     } | null>(null);
 
-    const handleCredentialIssued = useCallback((credentialUri: string, boostUri?: string) => {
-        setPendingCredential({ credentialUri, boostUri });
-    }, []);
+    const handleCredentialIssued = useCallback(
+        (credentialUri: string, boostUri?: string, credential?: any) => {
+            setPendingCredential({ credentialUri, boostUri, credential });
+        },
+        []
+    );
 
     const handleDismissClaimModal = useCallback(() => {
         setPendingCredential(null);
@@ -73,7 +84,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
             const url = new URL(embedUrl);
             return url.origin;
         } catch (error) {
-            console.error('[Preview] Invalid embedUrl:', embedUrl);
+            log.error('Invalid embedUrl', embedUrl);
             setErrorMessage(`Invalid embed URL: ${embedUrl}`);
             setShowErrorToast(true);
             return '';
@@ -143,7 +154,10 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                 } catch (error) {
                     updateDiagnosticEvent(eventId, {
                         status: 'error',
-                        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                        errorMessage:
+                            error instanceof Error
+                                ? error.message
+                                : m['developerPortal.components.appPreviewModal.unknownError'](),
                     });
                     throw error;
                 }
@@ -152,7 +166,6 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
 
         return wrapped;
     }, [baseHandlers, addDiagnosticEvent, updateDiagnosticEvent]);
-
 
     // Initialize the PostMessage listener
     useLearnCardPostMessage({
@@ -167,7 +180,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     };
 
     const embedUrlWithOverride = embedUrl
-        ? `${embedUrl}?lc_host_override=${window.location.origin}`
+        ? appendQueryParams(embedUrl, { lc_host_override: window.location.origin })
         : '';
 
     if (!isEmbeddable) {
@@ -187,16 +200,27 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                     <h2 className="text-lg font-semibold text-gray-700">
                                         {listing.display_name}
                                     </h2>
-                                    <span className="text-xs text-gray-500">Preview Mode</span>
+                                    <span className="text-xs text-gray-500">
+                                        {m[
+                                            'developerPortal.components.appPreviewModal.previewMode'
+                                        ]()}
+                                    </span>
                                 </div>
                             </div>
 
-                            <button
-                                onClick={handleClose}
-                                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <AppCredentialDashboard
+                                    appId={listing.slug || listing.listing_id}
+                                    appName={listing.display_name}
+                                    pendingCredential={pendingCredential}
+                                />
+                                <button
+                                    onClick={handleClose}
+                                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Non-embeddable message */}
@@ -207,13 +231,25 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 </div>
 
                                 <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                                    Preview Not Available
+                                    {m[
+                                        'developerPortal.components.appPreviewModal.previewNotAvailable'
+                                    ]()}
                                 </h3>
 
                                 <p className="text-gray-500 mb-4">
-                                    This app uses{' '}
-                                    <strong>{LAUNCH_TYPE_INFO[listing.launch_type]?.label}</strong>{' '}
-                                    launch type which cannot be previewed in an embedded view.
+                                    <TransP
+                                        m={
+                                            m[
+                                                'developerPortal.components.appPreviewModal.previewNotAvailableDesc'
+                                            ]
+                                        }
+                                        values={{
+                                            type: mDynamic(
+                                                LAUNCH_TYPE_INFO[listing.launch_type]?.labelKey
+                                            ),
+                                        }}
+                                        components={[<strong />]}
+                                    />
                                 </p>
 
                                 {launchConfig.url && (
@@ -224,7 +260,9 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                         className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                                     >
                                         <Play className="w-4 h-4" />
-                                        Open App URL
+                                        {m[
+                                            'developerPortal.components.appPreviewModal.openAppUrl'
+                                        ]()}
                                     </a>
                                 )}
                             </div>
@@ -251,16 +289,25 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 <h2 className="text-lg font-semibold text-gray-700">
                                     {listing.display_name}
                                 </h2>
-                                <span className="text-xs text-gray-500">Preview Mode</span>
+                                <span className="text-xs text-gray-500">
+                                    {m['developerPortal.components.appPreviewModal.previewMode']()}
+                                </span>
                             </div>
                         </div>
 
-                        <button
-                            onClick={handleClose}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <AppCredentialDashboard
+                                appId={listing.slug || listing.listing_id}
+                                appName={listing.display_name}
+                                pendingCredential={pendingCredential}
+                            />
+                            <button
+                                onClick={handleClose}
+                                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Main Content */}
@@ -276,10 +323,14 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                         </div>
                                         <div className="text-center">
                                             <p className="text-lg font-semibold text-gray-800">
-                                                Loading {listing.display_name}...
+                                                {m[
+                                                    'developerPortal.components.appPreviewModal.loadingApp'
+                                                ]({ name: listing.display_name })}
                                             </p>
                                             <p className="text-sm text-gray-600 mt-1">
-                                                Please wait
+                                                {m[
+                                                    'developerPortal.components.appPreviewModal.pleaseWait'
+                                                ]()}
                                             </p>
                                         </div>
                                     </div>
@@ -327,6 +378,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                 <CredentialClaimModal
                     credentialUri={pendingCredential.credentialUri}
                     boostUri={pendingCredential.boostUri}
+                    credential={pendingCredential.credential}
                     onDismiss={handleDismissClaimModal}
                 />
             )}

@@ -6,13 +6,15 @@ import X from 'learn-card-base/svgs/X';
 
 import { useModal } from 'learn-card-base';
 import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
+import * as m from '../../../paraglide/messages.js';
 
 const EndorsementReviewFooter: React.FC<{
     isDisabled?: boolean;
+    isLoading?: boolean;
     className?: string;
     showDeleteButton?: boolean;
     handleSaveEndorsement?: () => void;
-}> = ({ isDisabled, className, showDeleteButton = true, handleSaveEndorsement }) => {
+}> = ({ isDisabled, isLoading, className, showDeleteButton = true, handleSaveEndorsement }) => {
     const { closeModal } = useModal();
     const safeArea = useSafeArea();
 
@@ -45,21 +47,26 @@ const EndorsementReviewFooter: React.FC<{
                             onClick={closeModal}
                             className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-poppins text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
                     )}
                     {showDeleteButton && !isDisabled && (
                         <button className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-poppins text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2">
-                            Delete
+                            {m['common.delete']()}
                         </button>
                     )}
                     <button
-                        onClick={isDisabled ? undefined : handleSaveEndorsement}
+                        onClick={isDisabled || isLoading ? undefined : handleSaveEndorsement}
+                        disabled={isLoading}
                         className={`py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-poppins text-[17px] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] justify-center mr-2 ${
-                            isDisabled ? 'bg-grayscale-300' : 'bg-emerald-700'
+                            isDisabled || isLoading ? 'bg-grayscale-300' : 'bg-emerald-700'
                         }`}
                     >
-                        {isDisabled ? 'Approved' : 'Approve'}
+                        {isDisabled
+                            ? m['endorsement.reviewFooter.approved']()
+                            : isLoading
+                            ? m['endorsement.reviewFooter.approving']()
+                            : m['endorsement.reviewFooter.approve']()}
                     </button>
                 </div>
             </div>

@@ -1,5 +1,7 @@
 import React from 'react';
 import { ModalTypes, useGetSkill, useGetSkillFrameworkById, useModal } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('skill-display');
 
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SkillInfoModal from './SkillInfoModal';
@@ -24,7 +26,7 @@ const SkillDisplay: React.FC<SkillDisplayProps> = ({ skill }) => {
     const { data: skillData } = useGetSkill(frameworkId!, skillId!);
     const { data: frameworkData } = useGetSkillFrameworkById(frameworkId!);
 
-    // console.log('skillData:', skillData);
+    // log.info('skillData:', skillData);
 
     const openSkillInfoModal = () => {
         newModal(

@@ -5,27 +5,10 @@ import { inflateObject } from '@helpers/objects.helpers';
 import { Integration } from '@models';
 import { IntegrationType } from 'types/integration';
 import { ProfileType } from 'types/profile';
-import {
-    convertObjectRegExpToNeo4j,
-    buildWhereClause,
-} from '@helpers/neo4j.helpers';
+import { convertObjectRegExpToNeo4j, buildWhereClause } from '@helpers/neo4j.helpers';
 import { LCNIntegrationQueryType } from '@learncard/types';
 import { neogma } from '@instance';
-
-/**
- * Parse guideState from JSON string to object if present
- */
-const parseIntegration = (integration: IntegrationType): IntegrationType => {
-    if (integration.guideState && typeof integration.guideState === 'string') {
-        try {
-            return { ...integration, guideState: JSON.parse(integration.guideState) };
-        } catch {
-            return integration;
-        }
-    }
-
-    return integration;
-};
+import { parseIntegration } from '@helpers/integrations.helpers';
 
 export const readIntegrationById = async (id: string): Promise<IntegrationType | null> => {
     const result = await new QueryBuilder(new BindParam({ id }))
@@ -41,7 +24,9 @@ export const readIntegrationById = async (id: string): Promise<IntegrationType |
     return parseIntegration(inflateObject<IntegrationType>(integration as any));
 };
 
-export const readIntegrationByPublishableKey = async (publishableKey: string): Promise<IntegrationType | null> => {
+export const readIntegrationByPublishableKey = async (
+    publishableKey: string
+): Promise<IntegrationType | null> => {
     const result = await new QueryBuilder(new BindParam({ publishableKey }))
         .match({ model: Integration, identifier: 'integration', where: { publishableKey } })
         .return('integration')
@@ -78,7 +63,10 @@ export const getIntegrationsForProfile = async (
     }: { limit: number; cursor?: string; query?: LCNIntegrationQueryType }
 ): Promise<IntegrationType[]> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
-    const { whereClause, params: queryParams } = buildWhereClause('integration', convertedQuery as any);
+    const { whereClause, params: queryParams } = buildWhereClause(
+        'integration',
+        convertedQuery as any
+    );
 
     const result = await neogma.queryRunner.run(
         `MATCH (p:Profile {profileId: $profileId})<-[:CREATED_BY]-(integration:Integration)
@@ -106,7 +94,10 @@ export const countIntegrationsForProfile = async (
     { query: matchQuery = {} }: { query?: LCNIntegrationQueryType }
 ): Promise<number> => {
     const convertedQuery = convertObjectRegExpToNeo4j(matchQuery);
-    const { whereClause, params: queryParams } = buildWhereClause('integration', convertedQuery as any);
+    const { whereClause, params: queryParams } = buildWhereClause(
+        'integration',
+        convertedQuery as any
+    );
 
     const result = await neogma.queryRunner.run(
         `MATCH (p:Profile {profileId: $profileId})<-[:CREATED_BY]-(integration:Integration)

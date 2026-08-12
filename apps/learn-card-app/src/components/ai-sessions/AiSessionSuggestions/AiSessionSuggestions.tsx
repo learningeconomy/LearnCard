@@ -1,7 +1,6 @@
 import React from 'react';
 
 import AiSessionSuggestionsList from './AiSessionSuggestionsList';
-import ExperimentalFeatureBox from 'apps/learn-card-app/src/components/generic/ExperimentalFeatureBox';
 import NewAiSessionButton, {
     NewAiSessionButtonEnum,
 } from '../../new-ai-session/NewAiSessionButton/NewAiSessionButton';
@@ -17,8 +16,6 @@ export const AiSessionSuggestions: React.FC<{
     return (
         <div className="w-full flex items-center justify-center h-full">
             <div className="w-full max-w-[80%] flex items-center justify-center flex-col">
-                <ExperimentalFeatureBox className="max-w-[325px] mb-[15px]" />
-
                 {/* title */}
                 <div className="w-full flex items-center justify-center flex-col">
                     <h1 className="text-xl text-grayscale-900 font-semibold text-center">

@@ -15,7 +15,7 @@ import {
     ProfilePicture,
     useGetCurrentUserTroopIds,
 } from 'learn-card-base';
-import { getScoutsRole, getScoutsNounForRole } from '../../helpers/troop.helpers';
+import { getScoutsRole, getScoutsRoleLabelForCred } from '../../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { useCanInviteTroop } from './useCanInviteTroop';
 import InviteSelectionModal from './InviteSelectionModal';
@@ -24,7 +24,7 @@ import { VC } from '@learncard/types';
 export enum MemberTabsEnum {
     All = 'All',
     Scouts = 'Scout',
-    Leaders = 'Leader',
+    Leaders = 'Troop Leader',
 }
 
 type TroopPageMembersBoxProps = {
@@ -40,7 +40,10 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
     credential,
     userRole,
 }) => {
-    const { newModal, closeModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
     const inputRef = useRef<HTMLIonInputElement>(null);
 
     const [tab, setTab] = useState<MemberTabsEnum>(MemberTabsEnum.All);
@@ -58,13 +61,15 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
         scoutBoostUri,
         troopBoostUri,
         boostPermissionsData,
-    } = useCanInviteTroop({ credential, boostUri });
+        scoutId,
+        troopId,
+    } = useCanInviteTroop({ credential, boostUri: boostUri ?? credential.boostId ?? '' });
 
     // Derived state
     const isScout = role === ScoutsRoleEnum.scout;
     const isLeader = role === ScoutsRoleEnum.leader;
     const isScoutOrLeader = isScout || isLeader;
-    let showInviteButton = (!!_showInviteButton) && !myTroopIds?.isScout;
+    let showInviteButton = !!_showInviteButton && !myTroopIds?.isScout;
 
     // temp fix until permissions are more sorted out
     if (
@@ -108,14 +113,23 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
     const handleInviteClick = useCallback(() => {
         const canInviteScout = myTroopIds?.isTroopLeader || scoutPermissionsData?.canIssue;
         const canInviteLeader = boostPermissionsData?.canIssue;
+        const leaderImage = troopId?.boostID?.idThumbnail;
+        const scoutImage = scoutId?.boostID?.idThumbnail;
 
         if (canInviteScout && canInviteLeader) {
             newModal(
                 <InviteSelectionModal
-                    onInviteLeader={() => handleOpenScoutConnectModal(currentBoostUri, 'Troop Leader')}
+                    onInviteLeader={() =>
+                        handleOpenScoutConnectModal(
+                            currentBoostUri,
+                            getScoutsRoleLabelForCred(credential)
+                        )
+                    }
                     onInviteScout={() => handleOpenScoutConnectModal(scoutBoostUri, 'Scout')}
                     handleCloseModal={closeModal}
                     scoutNoun={scoutNoun}
+                    leaderImage={leaderImage}
+                    scoutImage={scoutImage}
                 />,
                 { sectionClassName: '!max-w-[450px]' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
@@ -123,7 +137,7 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
         } else if (canInviteScout) {
             handleOpenScoutConnectModal(scoutBoostUri, 'Scout');
         } else if (canInviteLeader) {
-            handleOpenScoutConnectModal(currentBoostUri, 'Troop Leader');
+            handleOpenScoutConnectModal(currentBoostUri, getScoutsRoleLabelForCred(credential));
         }
     }, [
         myTroopIds?.isTroopLeader,
@@ -132,6 +146,7 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
         scoutBoostUri,
         currentBoostUri,
         scoutNoun,
+        credential,
         handleOpenScoutConnectModal,
         newModal,
         closeModal,

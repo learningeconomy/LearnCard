@@ -1,14 +1,41 @@
 import { TRPCError } from '@trpc/server';
+import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
-import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import {
+    AppEventValidator,
+    LCNNotificationTypeEnumValidator,
+    SendNotificationEventValidator,
+} from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
-import { isVC2Format } from '@learncard/helpers';
+import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
+import type { ProfileType } from 'types/profile';
 
-import { t, openRoute, profileRoute } from '@routes';
+import { neogma } from '@instance';
+import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
+import type { CredentialIssuer } from '../types/issuer';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
+import { PerfTracker } from '@helpers/perf';
+import cache from '@cache';
+import {
+    getBoostForListingCached,
+    readAppStoreListingByIdCached,
+    getIntegrationForListingCached,
+    getOwnerProfileForIntegrationCached,
+    getPrimarySigningAuthorityForListingCached,
+    getPrimarySigningAuthorityForIntegrationCached,
+} from '@cache/app-store.caches';
 import { logCredentialSent } from '@helpers/activity.helpers';
+import { getCredentialUri } from '@helpers/credential.helpers';
+import { resolveUri } from '@helpers/uri.helpers';
+import { inflateObject } from '@helpers/objects.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
+import {
+    getContractUriFromLaunchConfig,
+    getContractUriFromGuideState,
+} from '@helpers/integrations.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 
@@ -20,6 +47,7 @@ import {
     getListingsForIntegration,
     countListingsForIntegration,
     getListedApps,
+    getListedAppsWithSubmitter,
     getInstalledAppsForProfile,
     countInstalledAppsForProfile,
     checkIfProfileInstalledApp,
@@ -28,6 +56,7 @@ import { updateAppStoreListing } from '@accesslayer/app-store-listing/update';
 import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
     associateListingWithIntegration,
+    associateListingWithSubmitter,
     installAppForProfile,
     associateBoostWithListing,
 } from '@accesslayer/app-store-listing/relationships/create';
@@ -42,8 +71,11 @@ import {
     getBoostForListingByTemplateAlias,
     getBoostsForListing,
     hasTemplateAliasForListing,
+    getCredentialsSentByListingToProfile,
+    countCredentialsSentByListingToProfile,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { readIntegrationById } from '@accesslayer/integration/read';
+import { IntegrationValidator } from 'types/integration';
 import { isIntegrationAssociatedWithProfile } from '@accesslayer/integration/relationships/read';
 import {
     getPrimarySigningAuthorityForListing,
@@ -66,10 +98,42 @@ import type {
     AppStoreListingUpdateType,
 } from 'types/app-store-listing';
 import { getBoostByUri } from '@accesslayer/boost/read';
-import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
+import {
+    sendBoost,
+    getBoostUri,
+    isDraftBoost,
+    appendTemplateEvidenceToCredential,
+} from '@helpers/boost.helpers';
+import { createBoostForListing } from '@accesslayer/boost/create';
+import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
-import { renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
-import { getAppDidWeb, getDidWeb } from '@helpers/did.helpers';
+import {
+    renderBoostTemplate,
+    parseRenderedTemplate,
+    shouldAutoAppendTemplateEvidence,
+} from '@helpers/template.helpers';
+import {
+    getAppDidWeb,
+    getDidWeb,
+    getProfileIdFromDid,
+    getProfileIdFromString,
+} from '@helpers/did.helpers';
+import {
+    getCredentialStatusForBoostAndProfile,
+    getCredentialInstanceForBoostAndProfile,
+} from '@accesslayer/credential/read';
+import {
+    getContractTermsForProfile,
+    getContractDetailsByUri,
+} from '@accesslayer/consentflowcontract/relationships/read';
+import { getBoostPermissions, getBoostRecipients } from '@accesslayer/boost/relationships/read';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import type { BoostInstance } from '@models';
+import {
+    handleIncrementCounterEvent,
+    handleGetCounterEvent,
+    handleGetCountersEvent,
+} from '@helpers/app-counter.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -211,6 +275,7 @@ const AppStoreListingBaseSchema = z.object({
         .optional(),
     min_age: z.number().optional(),
     age_rating: AgeRating.optional(),
+    contact_email: z.string().email().optional(),
 });
 
 // Iframe URL validation refinement (applied to schemas that include launch_type)
@@ -249,6 +314,14 @@ type ListingStorageInput<T extends Record<string, unknown>> = Omit<
 > & {
     highlights_json?: string;
     screenshots_json?: string;
+};
+
+// Helper to strip sensitive fields (contact_email) from listings for public responses
+const stripSensitiveFields = <T extends Record<string, unknown>>(
+    listing: T
+): Omit<T, 'contact_email'> => {
+    const { contact_email, ...rest } = listing;
+    return rest as Omit<T, 'contact_email'>;
 };
 
 // Helper to transform listing for API response (JSON strings -> arrays)
@@ -355,10 +428,18 @@ const AppStoreListingCreateInputValidator = AppStoreListingBaseSchema.omit({
     promotion_level: true,
 }).superRefine(iframeUrlRefinement);
 
+// Submitter info for admin responses
+const AppStoreListingSubmitterValidator = z.object({
+    profileId: z.string(),
+    displayName: z.string(),
+    email: z.string().optional(),
+});
+
 // Extended validator that includes the transformed array fields for API responses
 const AppStoreListingResponseValidator = AppStoreListingValidator.extend({
     highlights: z.array(z.string()).optional(),
     screenshots: z.array(z.string()).optional(),
+    submitter: AppStoreListingSubmitterValidator.optional(),
 }).omit({
     highlights_json: true,
     screenshots_json: true,
@@ -378,6 +459,23 @@ const PaginatedInstalledAppsValidator = z.object({
     hasMore: z.boolean(),
     cursor: z.string().optional(),
     records: z.array(InstalledAppValidator),
+});
+
+const AppCredentialRecordValidator = z.object({
+    credentialId: z.string(),
+    credentialUri: z.string(),
+    date: z.string(),
+    status: z.enum(['pending', 'claimed', 'revoked', 'suspended']),
+    boostName: z.string().optional(),
+    boostCategory: z.string().optional(),
+    activityId: z.string().optional(),
+});
+
+const PaginatedAppCredentialsValidator = z.object({
+    hasMore: z.boolean(),
+    cursor: z.string().optional(),
+    records: z.array(AppCredentialRecordValidator),
+    totalCount: z.number(),
 });
 
 // Helper to verify integration ownership
@@ -402,13 +500,13 @@ const verifyIntegrationOwnership = async (integrationId: string, profileId: stri
 
 // Helper to verify listing ownership via integration
 const verifyListingOwnership = async (listingId: string, profileId: string) => {
-    const listing = await readAppStoreListingById(listingId);
+    const listing = await readAppStoreListingByIdOrSlug(listingId);
 
     if (!listing) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
     }
 
-    const integration = await getIntegrationForListing(listingId);
+    const integration = await getIntegrationForListing(listing.listing_id);
 
     if (!integration) {
         throw new TRPCError({
@@ -443,31 +541,86 @@ const getListingOrThrow = async (listingId: string) => {
     return listing;
 };
 
-// Helper to handle send-credential app event
-const handleSendCredentialEvent = async (
+// LC-1644 cache layer: see src/cache/app-store.caches.ts for the LRU-backed
+// helpers used by the hot handleSendCredentialEvent path below.
+
+// Helper to handle send-credential app event.
+// Exported so the bench router (mounted behind ENABLE_BENCH_ROUTES) can drive
+// repeated invocations against an arbitrary listing/recipient.
+export const handleSendCredentialEvent = async (
     ctx: { domain: string },
     profile: { profileId: string },
     listingId: string,
-    event: Record<string, unknown>
+    event: Record<string, unknown>,
+    perfTracker?: PerfTracker
 ): Promise<Record<string, unknown>> => {
+    const perf = perfTracker ?? new PerfTracker('handleSendCredentialEvent');
+
     const templateAlias = event.templateAlias as string | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
+    const preventDuplicateClaim = Boolean(event.preventDuplicateClaim);
 
     if (!templateAlias) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
     }
 
-    // Get the boost associated with this app (templateAlias maps to internal boost)
-    const boostResult = await getBoostForListingByTemplateAlias(
-        listingId,
-        templateAlias,
-        ctx.domain
-    );
+    // LC-1644 Phase 1b: Fire the four input-only lookups in parallel. All depend only on
+    // listingId / templateAlias / profileId — none depend on each other. At staging each
+    // query is 0-3ms (local Neo4j), but production Neo4j adds ~10-50ms per query and the
+    // parallel batching + 30s LRU cache on the first three below compounds to ~50-150ms
+    // saved on warm lambda invocations. targetProfile is keyed by the requester's
+    // profileId (varies per user) so it's not cached.
+    const [boostResult, listing, integration, targetProfile] = await Promise.all([
+        getBoostForListingCached(listingId, templateAlias, ctx.domain),
+        readAppStoreListingByIdCached(listingId),
+        getIntegrationForListingCached(listingId),
+        getProfilesByProfileIds([profile.profileId]),
+    ]);
+    perf.mark('parallelReads');
+
     if (!boostResult) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
     }
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+    }
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+    const target = targetProfile[0];
+    if (!targetProfile.length || !target) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
 
     const { boost, boostUri } = boostResult;
+
+    // NOTE: This is best-effort duplicate prevention, not a guarantee.
+    // There is a race condition window between checking and creating the credential
+    // where concurrent requests could both pass this check. This is acceptable for
+    // UI-level duplicate prevention. For hard guarantees, database-level constraints
+    // would be needed, but users CAN legitimately have multiple credentials from
+    // the same boost (e.g., renewed certifications), so we don't enforce uniqueness.
+    if (preventDuplicateClaim) {
+        const existingCredential = await getCredentialStatusForBoostAndProfile(
+            boost.id,
+            profile.profileId
+        );
+
+        if (existingCredential && existingCredential.status !== 'revoked') {
+            perf.mark('duplicateCheck');
+            perf.done({ listingId, boostUri, duplicate: true });
+            return {
+                hasCredential: true,
+                alreadyClaimed: true,
+                credentialUri: getCredentialUri(existingCredential.credential.id, ctx.domain),
+                receivedDate: existingCredential.receivedDate ?? existingCredential.sentDate,
+                status: existingCredential.status,
+                boostUri,
+                // credential not included — frontend skips modal when alreadyClaimed=true
+            };
+        }
+        perf.mark('duplicateCheck');
+    }
 
     if (isDraftBoost(boost)) {
         throw new TRPCError({
@@ -476,33 +629,30 @@ const handleSendCredentialEvent = async (
         });
     }
 
-    const listing = await readAppStoreListingById(listingId);
-    if (!listing) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
-    }
+    // LC-1644 Phase 1b (cont.): Batch 2 — three lookups that only depend on the Batch 1
+    // results (integration / listing). Run them concurrently; we pick the first non-null SA
+    // by priority (listing > integration > owner). The owner-level SA lookup depends on
+    // integrationOwner, so it runs in a final stage only if neither listingSa nor
+    // integrationSa resolved. All three reads are cached with 30s TTL; in steady-state
+    // production traffic this batch becomes an in-memory lookup.
+    const [integrationOwner, listingSa, integrationSa] = await Promise.all([
+        getOwnerProfileForIntegrationCached(integration.id),
+        getPrimarySigningAuthorityForListingCached(listing),
+        getPrimarySigningAuthorityForIntegrationCached(integration.id),
+    ]);
+    perf.mark('ownerAndSaReads');
 
-    // Get the integration that owns this listing
-    const integration = await getIntegrationForListing(listingId);
-    if (!integration) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
-    }
-
-    // Get integration owner for signing
-    const integrationOwner = await getOwnerProfileForIntegration(integration.id);
     if (!integrationOwner) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
     }
 
-    // Get signing authority for the listing, falling back to legacy integration SA or owner SA
-    const listingSa = await getPrimarySigningAuthorityForListing(listing);
-    const integrationSa = listingSa
-        ? undefined
-        : await getPrimarySigningAuthorityForIntegration(integration.id);
     const ownerSa =
         listingSa || integrationSa
             ? undefined
             : await getPrimarySigningAuthorityForUser(integrationOwner);
     const sa = listingSa ?? integrationSa ?? ownerSa;
+
+    perf.mark('saResolve');
 
     if (!sa) {
         throw new TRPCError({
@@ -511,29 +661,19 @@ const handleSendCredentialEvent = async (
         });
     }
 
-    // Get the target profile (the user making the request)
-    const targetProfile = await getProfilesByProfileIds([profile.profileId]);
-    if (!targetProfile.length) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-    }
-
-    const target = targetProfile[0];
-
-    if (!target) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
-    }
-
     // Build unsigned credential from boost template
     let unsignedVc: UnsignedVC;
 
     try {
         let boostJsonString = boost.boost;
+        const allowAutoAppendEvidence = shouldAutoAppendTemplateEvidence(boostJsonString);
 
         if (templateData && Object.keys(templateData).length > 0) {
             boostJsonString = renderBoostTemplate(boostJsonString, templateData);
         }
 
         unsignedVc = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+        appendTemplateEvidenceToCredential(unsignedVc, templateData, allowAutoAppendEvidence);
 
         if (isVC2Format(unsignedVc)) {
             unsignedVc.validFrom = new Date().toISOString();
@@ -574,56 +714,986 @@ const handleSendCredentialEvent = async (
         });
     }
 
+    perf.mark('buildCredential');
+
+    // Create CredentialIssuer from the listing
+    const issuer: CredentialIssuer = {
+        type: 'appStoreListing',
+        listing,
+        ownerProfile: integrationOwner,
+    };
+
     // Issue via signing authority
     let credential: VC | JWE;
 
     try {
+        const ownerDidOverride = listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined;
+        console.log('[appEvent] Issuing credential via SA', {
+            integrationOwner: integrationOwner.profileId,
+            saName: sa.relationship.name,
+            saDid: sa.relationship.did,
+            saEndpoint: sa.signingAuthority.endpoint,
+            ownerDidOverride,
+            domain: ctx.domain,
+            boostUri,
+            templateAlias,
+        });
         credential = await issueCredentialWithSigningAuthority(
-            integrationOwner,
+            issuer,
             unsignedVc,
             sa,
             ctx.domain,
             true,
-            listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined
+            ownerDidOverride
         );
     } catch (e) {
-        console.error('Failed to issue VC with signing authority', e);
+        const errMsg = e instanceof Error ? e.message : String(e);
+        console.error('[appEvent] Failed to issue VC with signing authority:', {
+            error: errMsg,
+            stack: e instanceof Error ? e.stack : undefined,
+            integrationOwner: integrationOwner.profileId,
+            saName: sa.relationship.name,
+            saEndpoint: sa.signingAuthority.endpoint,
+        });
+        perf.done({ listingId, boostUri, error: errMsg });
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Could not issue credential with signing authority',
+            message: `Could not issue credential with signing authority: ${errMsg}`,
         });
     }
 
-    // Log credential activity FIRST to get activityId for chaining
-    const activityId = await logCredentialSent({
-        actorProfileId: integrationOwner.profileId,
-        recipientType: 'profile',
-        recipientIdentifier: target.profileId,
-        recipientProfileId: target.profileId,
-        boostUri,
-        integrationId: integration.id,
-        listingId,
-        source: 'appEvent',
-        metadata: { listingId, templateAlias },
-    });
+    perf.mark('saIssue');
 
-    // Send to user's wallet
-    const credentialUri = await sendBoost({
-        from: integrationOwner,
-        to: target,
-        boost,
-        credential,
-        domain: ctx.domain,
-        skipNotification: false,
-        activityId,
-        integrationId: integration.id,
-        listingId,
-    });
+    // LC-1644 Phase 1d: run logCredentialSent + sendBoost in parallel. They previously
+    // ran serially because sendBoost needed activityId as a foreign key on the
+    // SentCredential relationship. We now pre-generate the activityId upfront (matching
+    // the uuid the activity log would have chosen itself) and pass it to both calls.
+    // Both writes produce the same Neo4j linkage as before; we just fan them out.
+    // At staging this saves ~40ms on the serial sum (logActivity 40ms + sendBoost 50ms).
+    const activityId = uuid();
+    const [, credentialUri] = await Promise.all([
+        logCredentialSent({
+            actorProfileId: integrationOwner.profileId,
+            recipientType: 'profile',
+            recipientIdentifier: target.profileId,
+            recipientProfileId: target.profileId,
+            boostUri,
+            integrationId: integration.id,
+            listingId,
+            source: 'appEvent',
+            metadata: { listingId, templateAlias },
+            activityId,
+        }),
+        sendBoost({
+            from: issuer,
+            to: target,
+            boost,
+            credential,
+            domain: ctx.domain,
+            skipNotification: false,
+            activityId,
+            integrationId: integration.id,
+            listingId,
+        }),
+    ]);
+
+    perf.mark('logActivityAndSendBoost');
+
+    // LC-1644 fast-path enrichment: pre-resolve the credential via the same code
+    // path wallet.read.get(uri) uses on the client. This pays the wallet's
+    // resolution latency once on the backend (typically ~20-100ms — local Neo4j
+    // lookup, no external network) so the response payload's `credential` field
+    // is the same enriched version the wallet would have produced.
+    //
+    // Without this step, the frontend modal renders with the raw SA-signed VC
+    // which lacks the wallet's display-field hydration (issuer name, achievement
+    // metadata expansion), forcing a frontend shimmer + background re-fetch.
+    // With this step, the modal renders the enriched credential immediately on
+    // the fast path.
+    //
+    // Non-fatal: if resolution fails, fall back to the freshly-signed VC. The
+    // frontend's background-enrichment safety net still kicks in for any
+    // remaining unhydrated fields.
+    // Cast to any to bridge between learn-card-types VC and brain-service-local VC —
+    // both have the same shape but TypeScript treats them as nominally distinct
+    // because they're imported from different package roots.
+    let responseCredential: unknown = undefined;
+    if (typeof credential !== 'string') {
+        try {
+            const resolved = await resolveUri(credentialUri, ctx.domain);
+            responseCredential = resolved ?? credential;
+        } catch (e) {
+            console.warn('[appEvent] fast-path credential pre-resolution failed:', e);
+            responseCredential = credential;
+        }
+    }
+    perf.mark('preResolveCredential');
+
+    perf.done({ listingId, boostUri });
 
     return {
         credentialUri,
         boostUri,
+        // LC-1644: pre-resolved (enriched) credential so the frontend modal
+        // can render the proper title + issuer info without shimmer or
+        // background re-fetch. See enrichment block above for details.
+        credential: responseCredential,
     };
+};
+
+const handleCheckCredentialEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const templateAlias = event.templateAlias as string | undefined;
+    const boostUriInput = event.boostUri as string | undefined;
+
+    if (!templateAlias && !boostUriInput) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias or boostUri required' });
+    }
+
+    if (templateAlias && boostUriInput) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Provide either templateAlias or boostUri, not both',
+        });
+    }
+
+    let boost: { id: string } | null = null;
+    let boostUri: string;
+
+    if (templateAlias) {
+        const boostResult = await getBoostForListingByTemplateAlias(
+            listingId,
+            templateAlias,
+            ctx.domain
+        );
+
+        if (!boostResult) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+        }
+
+        boost = boostResult.boost;
+        boostUri = boostResult.boostUri;
+    } else {
+        boostUri = boostUriInput as string;
+        const boosts = await getBoostsForListing(listingId, ctx.domain);
+        const hasBoostAccess = boosts.some(item => item.boostUri === boostUri);
+
+        if (!hasBoostAccess) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Boost is not associated with this app',
+            });
+        }
+
+        boost = await getBoostByUri(boostUri);
+
+        if (!boost) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+        }
+    }
+
+    const credentialStatus = await getCredentialStatusForBoostAndProfile(
+        boost.id,
+        profile.profileId
+    );
+
+    if (!credentialStatus) {
+        return {
+            hasCredential: false,
+            boostUri,
+        };
+    }
+
+    const credentialUri = getCredentialUri(credentialStatus.credential.id, ctx.domain);
+    const receivedDate = credentialStatus.receivedDate ?? credentialStatus.sentDate;
+    const hasCredential = credentialStatus.status !== 'revoked';
+
+    return {
+        hasCredential,
+        boostUri,
+        credentialUri,
+        receivedDate,
+        status: credentialStatus.status,
+    };
+};
+
+const handleCheckIssuanceStatusEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const templateAlias = event.templateAlias as string | undefined;
+    const boostUriInput = event.boostUri as string | undefined;
+    const recipient = event.recipient as string | undefined;
+
+    if (!templateAlias && !boostUriInput) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias or boostUri required' });
+    }
+
+    if (templateAlias && boostUriInput) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Provide either templateAlias or boostUri, not both',
+        });
+    }
+
+    if (!recipient) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'recipient required',
+        });
+    }
+
+    let boost: BoostInstance | null = null;
+    let boostUri: string;
+
+    if (templateAlias) {
+        const boostResult = await getBoostForListingByTemplateAlias(
+            listingId,
+            templateAlias,
+            ctx.domain
+        );
+
+        if (!boostResult) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+        }
+
+        boost = boostResult.boost;
+        boostUri = boostResult.boostUri;
+    } else {
+        boostUri = boostUriInput as string;
+        boost = await getBoostByUri(boostUri);
+
+        if (!boost) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+        }
+    }
+
+    const fullProfile = await getProfileByProfileId(profile.profileId);
+    if (!fullProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
+
+    const permissions = await getBoostPermissions(boost, fullProfile);
+    if (!permissions.canView) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Profile does not have permission to view this boost',
+        });
+    }
+
+    let targetProfileId: string;
+    if (recipient.startsWith('did:')) {
+        const parsedId = getProfileIdFromDid(recipient);
+        if (!parsedId) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Invalid DID format. Expected did:web:domain:users:profileId',
+            });
+        }
+        targetProfileId = parsedId;
+    } else {
+        targetProfileId = recipient;
+    }
+
+    const credentialStatus = await getCredentialStatusForBoostAndProfile(boost.id, targetProfileId);
+
+    if (!credentialStatus) {
+        return {
+            sent: false,
+            boostUri,
+        };
+    }
+
+    const credentialUri = getCredentialUri(credentialStatus.credential.id, ctx.domain);
+
+    return {
+        sent: true,
+        boostUri,
+        credentialUri,
+        sentDate: credentialStatus.sentDate,
+        claimedDate: credentialStatus.receivedDate,
+        status: credentialStatus.status,
+    };
+};
+
+const handleGetTemplateRecipientsEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const templateAlias = event.templateAlias as string | undefined;
+    const boostUriInput = event.boostUri as string | undefined;
+    const limit = Math.min(Math.max(Number(event.limit) || 10, 1), 100);
+    const cursor = event.cursor as string | undefined;
+
+    if (!templateAlias && !boostUriInput) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias or boostUri required' });
+    }
+
+    if (templateAlias && boostUriInput) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Provide either templateAlias or boostUri, not both',
+        });
+    }
+
+    let boost: BoostInstance | null = null;
+    let boostUri: string;
+
+    if (templateAlias) {
+        const boostResult = await getBoostForListingByTemplateAlias(
+            listingId,
+            templateAlias,
+            ctx.domain
+        );
+
+        if (!boostResult) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+        }
+
+        boost = boostResult.boost;
+        boostUri = boostResult.boostUri;
+    } else {
+        boostUri = boostUriInput as string;
+        boost = await getBoostByUri(boostUri);
+
+        if (!boost) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+        }
+    }
+
+    const fullProfile = await getProfileByProfileId(profile.profileId);
+    if (!fullProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+    }
+
+    const permissions = await getBoostPermissions(boost, fullProfile);
+    if (!permissions.canView) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Profile does not have permission to view this boost',
+        });
+    }
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing {listing_id: $listingId})-[sent:CREDENTIAL_SENT]->(credential:Credential)
+         MATCH (credential)-[:INSTANCE_OF]->(boost:Boost {id: $boostId})
+         WHERE ${cursor ? 'sent.date < $cursor' : 'true'}
+         OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile {profileId: sent.to})
+         WITH sent, received, credential
+         WHERE coalesce(sent.status, received.status, '') <> 'revoked'
+         OPTIONAL MATCH (target:Profile {profileId: sent.to})
+         RETURN sent, received, credential.id AS credentialId, target.profileId AS recipientProfileId, target.displayName AS recipientDisplayName
+         ORDER BY sent.date DESC
+         LIMIT ${limit + 1}`,
+        {
+            listingId,
+            boostId: boost.id,
+            cursor: cursor ?? null,
+        }
+    );
+
+    const rawRecords = result.records
+        .map((record: { get: (key: string) => unknown }) => {
+            const sent = inflateObject<Record<string, unknown>>(
+                (record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {}
+            );
+            const receivedNode = record.get('received') as {
+                properties?: Record<string, unknown>;
+            } | null;
+            const received = receivedNode?.properties
+                ? inflateObject<Record<string, unknown>>(receivedNode.properties)
+                : undefined;
+
+            return {
+                recipientProfileId: record.get('recipientProfileId') as string | undefined,
+                recipientDisplayName: record.get('recipientDisplayName') as string | undefined,
+                sentDate: sent.date as string,
+                claimedDate: received?.date as string | undefined,
+                credentialUri: getCredentialUri(record.get('credentialId') as string, ctx.domain),
+                status:
+                    sent.status === 'suspended'
+                        ? ('suspended' as const)
+                        : received
+                        ? ('claimed' as const)
+                        : ('pending' as const),
+            };
+        })
+        .filter(
+            (
+                record
+            ): record is {
+                recipientProfileId: string;
+                recipientDisplayName: string | undefined;
+                sentDate: string;
+                claimedDate: string | undefined;
+                credentialUri: string;
+                status: 'pending' | 'claimed' | 'suspended';
+            } => Boolean(record.recipientProfileId)
+        );
+
+    const directProfileRecords = await getBoostRecipients(boost, {
+        limit: limit + 1,
+        cursor,
+        includeUnacceptedBoosts: true,
+        domain: ctx.domain,
+        from: profile.profileId,
+    });
+
+    const combinedRecords = [
+        ...rawRecords,
+        ...directProfileRecords.map(record => ({
+            recipientProfileId: record.to.profileId,
+            recipientDisplayName: record.to.displayName,
+            sentDate: record.sent,
+            claimedDate: record.received,
+            credentialUri: record.uri,
+            status:
+                record.status === 'revoked'
+                    ? ('revoked' as const)
+                    : record.status === 'suspended'
+                    ? ('suspended' as const)
+                    : record.received
+                    ? ('claimed' as const)
+                    : ('pending' as const),
+        })),
+    ]
+        .filter(record => Boolean(record.credentialUri))
+        .filter(
+            (record, index, self) =>
+                index ===
+                self.findIndex(existing => existing.credentialUri === record.credentialUri)
+        )
+        .sort((a, b) => b.sentDate.localeCompare(a.sentDate));
+
+    const hasMore = combinedRecords.length > limit;
+    const records = hasMore ? combinedRecords.slice(0, limit) : combinedRecords;
+    const lastRecord = records.length > 0 ? records[records.length - 1] : undefined;
+    const nextCursor = hasMore && lastRecord ? lastRecord.sentDate : undefined;
+
+    return {
+        records,
+        hasMore,
+        cursor: nextCursor,
+        total: records.length,
+    };
+};
+
+const handleRequestLearnerContextEvent = async (
+    ctx: { domain: string },
+    profile: ProfileType,
+    listingId: string,
+    event: Record<string, unknown>,
+    listing?: { launch_config_json?: string }
+): Promise<Record<string, unknown>> => {
+    const { instructions, detailLevel = 'compact' } = event as {
+        instructions?: string;
+        detailLevel?: string;
+    };
+
+    const credentialUris: string[] = [];
+    let personalData: Record<string, string> = {};
+
+    const sentCredentials = await getCredentialsSentByListingToProfile(
+        listingId,
+        profile.profileId,
+        { limit: 100 }
+    );
+
+    for (const sentCred of sentCredentials) {
+        const credentialUri = getCredentialUri(sentCred.credentialId, ctx.domain);
+        credentialUris.push(credentialUri);
+    }
+
+    // Resolve contractUri from launch_config_json or guideState
+    let contractUri = getContractUriFromLaunchConfig(listing);
+
+    if (!contractUri) {
+        const integration = await getIntegrationForListing(listingId);
+        contractUri = getContractUriFromGuideState(integration);
+    }
+
+    if (contractUri) {
+        try {
+            const contractDetails = await getContractDetailsByUri(contractUri);
+
+            if (contractDetails?.contract) {
+                const terms = await getContractTermsForProfile(profile, contractDetails.contract);
+
+                if (event.includeCredentials && terms?.terms?.read?.credentials) {
+                    const uris = Object.values(terms.terms.read.credentials.categories).flatMap(
+                        (category: unknown) => (category as { shared?: string[] })?.shared ?? []
+                    );
+
+                    credentialUris.push(...uris);
+                }
+
+                if (event.includePersonalData && terms?.terms?.read?.personal) {
+                    personalData = terms.terms.read.personal;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching contract credentials:', error);
+        }
+    }
+
+    return {
+        credentialUris,
+        personalData,
+        instructions,
+        detailLevel,
+        maxCredentials: credentialUris.length,
+        did: `did:web:${ctx.domain}:${profile.profileId}`,
+    };
+};
+
+const handleSendAiSessionCredentialEvent = async (
+    ctx: { domain: string },
+    profile: ProfileType,
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const aiTopicBoostCategories = ['AI Topic', 'ai-topic'];
+    const aiSummaryBoostCategory = 'ai-summary';
+
+    const {
+        sessionTitle,
+        summaryData,
+        metadata: _metadata,
+    } = event as {
+        sessionTitle: string;
+        summaryData: {
+            title: string;
+            summary: string;
+            learned: string[];
+            skills: { title: string; description: string }[];
+            nextSteps: { title: string; description: string; keywords: unknown }[];
+            reflections: { title: string; description: string }[];
+        };
+        metadata?: Record<string, unknown>;
+    };
+
+    if (!sessionTitle) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'sessionTitle is required' });
+    }
+
+    if (!summaryData) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'summaryData is required' });
+    }
+
+    const listing = await readAppStoreListingById(listingId);
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+    }
+
+    const integration = await getIntegrationForListing(listingId);
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+
+    const integrationOwner = await getOwnerProfileForIntegration(integration.id);
+    if (!integrationOwner) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+    }
+
+    const issuer: CredentialIssuer = {
+        type: 'appStoreListing',
+        listing,
+        ownerProfile: integrationOwner,
+    };
+
+    const listingSa = await getPrimarySigningAuthorityForListing(listing);
+    const integrationSa = listingSa
+        ? undefined
+        : await getPrimarySigningAuthorityForIntegration(integration.id);
+    const ownerSa =
+        listingSa || integrationSa
+            ? undefined
+            : await getPrimarySigningAuthorityForUser(integrationOwner);
+    const sa = listingSa ?? integrationSa ?? ownerSa;
+
+    if (!sa) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No signing authority configured for this app',
+        });
+    }
+
+    const appBoosts = await getBoostsForListing(listingId, ctx.domain);
+
+    let topicBoost: BoostInstance | null = null;
+    let topicUri: string | null = null;
+    let topicCredentialUri: string | null = null;
+    let isNewTopic = false;
+
+    for (const appBoost of appBoosts) {
+        const boost = await getBoostByUri(appBoost.boostUri);
+        if (boost?.category && aiTopicBoostCategories.includes(boost.category)) {
+            topicBoost = boost;
+            topicUri = appBoost.boostUri;
+            break;
+        }
+    }
+
+    const appDid = listing.slug
+        ? getAppDidWeb(ctx.domain, listing.slug)
+        : getDidWeb(ctx.domain, listing.listing_id);
+
+    if (topicBoost && topicUri) {
+        // Look up the topic credential by boostId + profileId directly rather
+        // than scanning recent sent credentials. This is O(1) and race-safe for
+        // users who may have many sessions over time.
+        const existingTopicCredential = await getCredentialInstanceForBoostAndProfile(
+            topicBoost.id,
+            profile.profileId
+        );
+
+        if (existingTopicCredential) {
+            topicCredentialUri = getCredentialUri(existingTopicCredential.id, ctx.domain);
+        }
+    }
+
+    if (!topicBoost) {
+        isNewTopic = true;
+
+        // JSON-LD context for TopicCredential is intentionally inlined rather
+        // than hosted at a stable URL. Inline contexts are valid JSON-LD and
+        // allow schema evolution without deploying a hosted contexts service,
+        // at the cost of a few KB per credential. If/when this credential type
+        // stabilizes and is consumed by many external verifiers, consider
+        // publishing at e.g. https://ctx.learncard.com/ai-topic/1.0.0.json and
+        // referencing it by URL instead.
+        const topicCredential: UnsignedVC = {
+            '@context': [
+                'https://www.w3.org/ns/credentials/v2',
+                {
+                    type: '@type',
+                    xsd: 'https://www.w3.org/2001/XMLSchema#',
+                    lcn: 'https://docs.learncard.com/definitions#',
+                    BoostCredential: 'lcn:boostCredential',
+                    TopicCredential: {
+                        '@id': 'lcn:topicCredential',
+                        '@context': {
+                            boostId: {
+                                '@id': 'lcn:boostId',
+                                '@type': 'xsd:string',
+                            },
+                            topicInfo: {
+                                '@id': 'lcn:topicInfo',
+                                '@context': {
+                                    title: {
+                                        '@id': 'lcn:title',
+                                        '@type': 'xsd:string',
+                                    },
+                                    threadId: {
+                                        '@id': 'lcn:threadId',
+                                        '@type': 'xsd:string',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            ],
+            type: ['VerifiableCredential', 'TopicCredential', 'BoostCredential'],
+            issuer: { id: appDid },
+            credentialSubject: {
+                id: getDidWeb(ctx.domain, profile.profileId),
+                name: listing.display_name,
+                description: `AI tutoring sessions from ${listing.display_name}`,
+            },
+            topicInfo: {
+                title: listing.display_name,
+                threadId: listingId,
+            },
+            validFrom: new Date().toISOString(),
+        };
+
+        topicBoost = await createBoostForListing(
+            topicCredential,
+            listing,
+            { category: 'ai-topic', status: 'LIVE' },
+            ctx.domain
+        );
+
+        topicUri = getBoostUri(topicBoost.id, ctx.domain);
+
+        topicCredential.boostId = topicUri;
+
+        const topicVc = await issueCredentialWithSigningAuthority(
+            issuer,
+            topicCredential,
+            sa,
+            ctx.domain,
+            true,
+            appDid
+        );
+
+        topicCredentialUri = await sendBoost({
+            from: issuer,
+            to: profile,
+            boost: topicBoost,
+            credential: topicVc,
+            domain: ctx.domain,
+            skipNotification: true,
+            autoAcceptCredential: true,
+        });
+    }
+
+    // See the note on the TopicCredential @context above: the SummaryCredential
+    // context is likewise inlined intentionally. When this schema stabilizes,
+    // consider publishing at https://ctx.learncard.com/ai-session/1.0.0.json.
+    const sessionCredential: UnsignedVC = {
+        '@context': [
+            'https://www.w3.org/ns/credentials/v2',
+            {
+                type: '@type',
+                xsd: 'https://www.w3.org/2001/XMLSchema#',
+                lcn: 'https://docs.learncard.com/definitions#',
+                BoostCredential: 'lcn:boostCredential',
+                SummaryCredential: {
+                    '@id': 'lcn:summaryCredential',
+                    '@context': {
+                        boostId: {
+                            '@id': 'lcn:boostId',
+                            '@type': 'xsd:string',
+                        },
+                        summaryInfo: {
+                            '@id': 'lcn:summaryInfo',
+                            '@context': {
+                                title: {
+                                    '@id': 'lcn:title',
+                                    '@type': 'xsd:string',
+                                },
+                                summary: {
+                                    '@id': 'lcn:summary',
+                                    '@type': 'xsd:string',
+                                },
+                                learned: {
+                                    '@id': 'lcn:learned',
+                                    '@container': '@set',
+                                    '@type': 'xsd:string',
+                                },
+                                skills: {
+                                    '@id': 'lcn:skillsSummary',
+                                    '@container': '@set',
+                                    '@context': {
+                                        title: {
+                                            '@id': 'lcn:skillsSummaryTitle',
+                                            '@type': 'xsd:string',
+                                        },
+                                        description: {
+                                            '@id': 'lcn:skillsSummaryDescription',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                                reflections: {
+                                    '@id': 'lcn:reflections',
+                                    '@container': '@set',
+                                    '@context': {
+                                        title: {
+                                            '@id': 'lcn:reflectionTitle',
+                                            '@type': 'xsd:string',
+                                        },
+                                        description: {
+                                            '@id': 'lcn:reflectionDescription',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                                nextSteps: {
+                                    '@id': 'lcn:nextSteps',
+                                    '@container': '@set',
+                                    '@context': {
+                                        title: {
+                                            '@id': 'lcn:nextStepsTitle',
+                                            '@type': 'xsd:string',
+                                        },
+                                        description: {
+                                            '@id': 'lcn:nextStepsDescription',
+                                            '@type': 'xsd:string',
+                                        },
+                                        keywords: {
+                                            '@id': 'lcn:nextStepsKeywords',
+                                            '@context': {
+                                                occupations: {
+                                                    '@id': 'lcn:nextStepsOccupationKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                careers: {
+                                                    '@id': 'lcn:nextStepsCareerKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                jobs: {
+                                                    '@id': 'lcn:nextStepsJobKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                skills: {
+                                                    '@id': 'lcn:nextStepsSkillKeywords',
+                                                    '@type': 'xsd:string',
+                                                    '@container': '@set',
+                                                },
+                                                fieldOfStudy: {
+                                                    '@id': 'lcn:nextStepsFieldOfStudy',
+                                                    '@type': 'xsd:string',
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        ],
+        type: ['VerifiableCredential', 'SummaryCredential', 'BoostCredential'],
+        issuer: { id: appDid },
+        credentialSubject: { id: getDidWeb(ctx.domain, profile.profileId) },
+        summaryInfo: summaryData,
+    };
+
+    const sessionBoost = await createBoostForListing(
+        sessionCredential,
+        listing,
+        { category: aiSummaryBoostCategory, status: 'LIVE', name: 'Conversation Summary' },
+        ctx.domain
+    );
+
+    await setBoostAsParent(topicBoost, sessionBoost);
+
+    const sessionBoostUri = getBoostUri(sessionBoost.id, ctx.domain);
+
+    sessionCredential.boostId = sessionBoostUri;
+
+    const issuedSessionVc = await issueCredentialWithSigningAuthority(
+        issuer,
+        sessionCredential,
+        sa,
+        ctx.domain,
+        true,
+        appDid
+    );
+
+    const activityId = await logCredentialSent({
+        recipientType: 'profile',
+        recipientIdentifier: profile.profileId,
+        recipientProfileId: profile.profileId,
+        boostUri: sessionBoostUri,
+        integrationId: integration.id,
+        listingId,
+        source: 'appEvent',
+        metadata: { listingId, sessionTitle, topicUri, isNewTopic },
+    });
+
+    const sessionCredentialUri = await sendBoost({
+        from: issuer,
+        to: profile,
+        boost: sessionBoost,
+        credential: issuedSessionVc,
+        domain: ctx.domain,
+        skipNotification: true,
+        activityId,
+        autoAcceptCredential: true,
+    });
+
+    return {
+        topicUri,
+        topicCredentialUri,
+        sessionCredentialUri,
+        sessionBoostUri,
+        isNewTopic,
+    };
+};
+
+// Helper to handle send-notification app event
+const handleSendNotificationEvent = async (
+    ctx: { domain: string },
+    profile: { profileId: string; notificationsWebhook?: string },
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<Record<string, unknown>> => {
+    const parsed = SendNotificationEventValidator.safeParse(event);
+
+    if (!parsed.success) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Invalid notification event: ${parsed.error.message}`,
+        });
+    }
+
+    const { title, body, actionPath, category, priority = 'normal' } = parsed.data;
+
+    if (!title && !body) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
+    }
+
+    // Rate limit: max 10 notifications per user per app per hour (atomic increment)
+    const rateLimitKey = `app-notif-rate:${listingId}:${profile.profileId}`;
+    const count = await cache.incr(rateLimitKey, 3600);
+
+    if (count === undefined) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Rate limiting service unavailable',
+        });
+    }
+
+    if (count > 10) {
+        // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
+        // while keeping the semantic code in the message for clients.
+        throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+            message: 'Rate limit exceeded: max 10 notifications per user per app per hour',
+        });
+    }
+
+    const listing = await readAppStoreListingById(listingId);
+
+    if (!listing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+    }
+
+    const profileDid = getDidWeb(ctx.domain, profile.profileId);
+
+    await addNotificationToQueue({
+        type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+        to: {
+            did: profileDid,
+            profileId: profile.profileId,
+            ...(profile.notificationsWebhook && {
+                notificationsWebhook: profile.notificationsWebhook,
+            }),
+        },
+        from: {
+            did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
+            profileId: listing.slug ?? listingId,
+            displayName: listing.display_name,
+        },
+        message: { title, body },
+        data: {
+            metadata: {
+                listingId,
+                listingSlug: listing.slug,
+                actionPath,
+                category,
+                priority,
+            },
+        },
+    });
+
+    return { sent: true };
 };
 
 export const appStoreRouter = t.router({
@@ -667,6 +1737,7 @@ export const appStoreRouter = t.router({
             });
 
             await associateListingWithIntegration(listing.listing_id, input.integrationId);
+            await associateListingWithSubmitter(listing.listing_id, ctx.user.profile.profileId);
 
             return listing.listing_id;
         }),
@@ -891,6 +1962,24 @@ export const appStoreRouter = t.router({
             };
         }),
 
+    getIntegrationForListing: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/listing/{listingId}/integration',
+                tags: ['App Store'],
+                summary: 'Get Integration for Listing',
+                description: 'Get the integration associated with an App Store Listing',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(IntegrationValidator.optional())
+        .query(async ({ input }) => {
+            return (await getIntegrationForListing(input.listingId)) ?? undefined;
+        }),
+
     submitForReview: profileRoute
         .meta({
             openapi: {
@@ -919,9 +2008,19 @@ export const appStoreRouter = t.router({
                 });
             }
 
+            const submittedAt = new Date().toISOString();
+
+            // Update status on the listing node
             const result = await updateAppStoreListing(listing, {
                 app_listing_status: 'PENDING_REVIEW',
             });
+
+            // Create or update SUBMITTED_LISTING relationship with submitted_at
+            await associateListingWithSubmitter(
+                listing.listing_id,
+                ctx.user.profile.profileId,
+                submittedAt
+            );
 
             // Notify all App Store admins about the new submission
             if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
@@ -932,10 +2031,70 @@ export const appStoreRouter = t.router({
                         type: LCNNotificationTypeEnumValidator.enum.APP_LISTING_SUBMITTED,
                         to: adminProfile,
                         from: ctx.user.profile,
-                        message: {
-                            title: 'New App Listing Submitted',
-                            body: `"${listing.display_name}" has been submitted for review.`,
+                        message: getNotificationMessage(
+                            'appListingSubmitted',
+                            resolveRecipientLocale(adminProfile),
+                            { displayName: listing.display_name }
+                        ),
+                        data: {
+                            metadata: {
+                                listingId: listing.listing_id,
+                                listingName: listing.display_name,
+                            },
                         },
+                    });
+                }
+            }
+
+            return result;
+        }),
+
+    unsubmitForReview: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/unsubmit-for-review',
+                tags: ['App Store'],
+                summary: 'Unsubmit Listing from Review',
+                description: 'Withdraw a PENDING_REVIEW listing back to DRAFT status',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { listing } = await verifyListingOwnership(
+                input.listingId,
+                ctx.user.profile.profileId
+            );
+
+            // Only PENDING_REVIEW listings can be unsubmitted
+            if (listing.app_listing_status !== 'PENDING_REVIEW') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `Cannot unsubmit listing with status "${listing.app_listing_status}". Only PENDING_REVIEW listings can be unsubmitted.`,
+                });
+            }
+
+            const result = await updateAppStoreListing(listing, {
+                app_listing_status: 'DRAFT',
+            });
+
+            // Notify all App Store admins that the submission was withdrawn
+            if (APP_STORE_ADMIN_PROFILE_IDS.length > 0) {
+                const adminProfiles = await getProfilesByProfileIds(APP_STORE_ADMIN_PROFILE_IDS);
+
+                for (const adminProfile of adminProfiles) {
+                    await addNotificationToQueue({
+                        type: 'APP_LISTING_WITHDRAWN',
+                        to: adminProfile,
+                        from: ctx.user.profile,
+                        message: getNotificationMessage(
+                            'appListingWithdrawn',
+                            resolveRecipientLocale(adminProfile),
+                            { displayName: listing.display_name }
+                        ),
                         data: {
                             metadata: {
                                 listingId: listing.listing_id,
@@ -1006,7 +2165,9 @@ export const appStoreRouter = t.router({
 
             const hasMore = results.length > limit;
             const rawRecords = hasMore ? results.slice(0, limit) : results;
-            const records = rawRecords.map(transformListingForResponse);
+            const records = rawRecords.map(l =>
+                stripSensitiveFields(transformListingForResponse(l))
+            );
             const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.listing_id : undefined;
 
             return { hasMore, cursor, records };
@@ -1032,7 +2193,7 @@ export const appStoreRouter = t.router({
                 return undefined;
             }
 
-            return transformListingForResponse(listing);
+            return stripSensitiveFields(transformListingForResponse(listing));
         }),
 
     getPublicListingBySlug: openRoute
@@ -1055,7 +2216,7 @@ export const appStoreRouter = t.router({
                 return undefined;
             }
 
-            return transformListingForResponse(listing);
+            return stripSensitiveFields(transformListingForResponse(listing));
         }),
 
     getListingInstallCount: openRoute
@@ -1083,7 +2244,7 @@ export const appStoreRouter = t.router({
 
     // ==================== User Install/Uninstall Routes ====================
 
-    installApp: profileRoute
+    installApp: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,
@@ -1105,6 +2266,53 @@ export const appStoreRouter = t.router({
                     code: 'NOT_FOUND',
                     message: 'Listing not found or not available',
                 });
+            }
+
+            // Check age restrictions using shared helper
+            const userAge = calculateAgeFromDob(ctx.user.profile.dob);
+
+            // Parse launch config to check for contract
+            let hasContract = false;
+            try {
+                const launchConfig = listing.launch_config_json
+                    ? JSON.parse(listing.launch_config_json)
+                    : {};
+                hasContract = Boolean(launchConfig?.contractUri);
+            } catch {
+                // Invalid JSON, assume no contract
+            }
+
+            const eligibilityResult = checkAppInstallEligibility({
+                isChildProfile: ctx.isChildAccount,
+                userAge,
+                minAge: listing.min_age,
+                ageRating: listing.age_rating,
+                hasContract,
+                hasGuardianApproval: ctx.hasGuardianApproval,
+            });
+
+            switch (eligibilityResult.action) {
+                case 'hard_blocked':
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: eligibilityResult.reason,
+                    });
+
+                case 'require_dob':
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: eligibilityResult.reason,
+                    });
+
+                case 'require_guardian_approval':
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: eligibilityResult.reason,
+                    });
+
+                case 'proceed':
+                    // Continue with installation
+                    break;
             }
 
             const alreadyInstalled = await checkIfProfileInstalledApp(
@@ -1186,7 +2394,9 @@ export const appStoreRouter = t.router({
 
             const hasMore = results.length > limit;
             const rawRecords = hasMore ? results.slice(0, limit) : results;
-            const records = rawRecords.map(transformListingForResponse);
+            const records = rawRecords.map(l =>
+                stripSensitiveFields(transformListingForResponse(l))
+            );
             const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.installed_at : undefined;
 
             return { hasMore, cursor, records };
@@ -1226,6 +2436,69 @@ export const appStoreRouter = t.router({
         .output(z.boolean())
         .query(async ({ input, ctx }) => {
             return checkIfProfileInstalledApp(ctx.user.profile.profileId, input.listingId);
+        }),
+
+    getMyCredentialsFromApp: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/{listingId}/my-credentials',
+                tags: ['App Store'],
+                summary: 'Get credentials earned from an app',
+                description: 'Get all credentials that have been sent to you from a specific app',
+            },
+            requiredScope: 'credentials:read',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                limit: z.number().int().min(1).max(100).default(25),
+                cursor: z.string().optional(),
+            })
+        )
+        .output(PaginatedAppCredentialsValidator)
+        .query(async ({ input, ctx }) => {
+            const { listingId, limit, cursor } = input;
+            const profileId = ctx.user.profile.profileId;
+
+            // Verify listing exists
+            const listing = await readAppStoreListingByIdOrSlug(listingId);
+            if (!listing) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
+            }
+
+            const resolvedListingId = listing.listing_id;
+
+            // Get credentials with pagination
+            const results = await getCredentialsSentByListingToProfile(
+                resolvedListingId,
+                profileId,
+                { limit: limit + 1, cursor }
+            );
+
+            // Get total count
+            const totalCount = await countCredentialsSentByListingToProfile(
+                resolvedListingId,
+                profileId
+            );
+
+            const hasMore = results.length > limit;
+            const slicedResults = hasMore ? results.slice(0, limit) : results;
+            const nextCursor = hasMore ? slicedResults[slicedResults.length - 1]?.date : undefined;
+
+            // Construct credential URIs from IDs using the domain
+            const records = slicedResults.map(record => ({
+                ...record,
+                credentialUri: getCredentialUri(record.credentialId, ctx.domain),
+            }));
+
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records,
+                totalCount,
+            };
         }),
 
     // ==================== App Boost Management Routes ====================
@@ -1356,6 +2629,117 @@ export const appStoreRouter = t.router({
             return getBoostsForListing(input.listingId, ctx.domain);
         }),
 
+    // ==================== App Notification Route ====================
+
+    sendAppNotification: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/listing/{listingId}/notify',
+                tags: ['App Store'],
+                summary: 'Send App Notification',
+                description:
+                    'Send a notification to a user on behalf of an app. Caller must own the listing. Recipient must have the app installed.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                listingId: z.string(),
+                recipient: z.string(),
+                title: z.string().optional(),
+                body: z.string().optional(),
+                actionPath: z.string().optional(),
+                category: z.string().optional(),
+                priority: z.enum(['normal', 'high']).default('normal'),
+            })
+        )
+        .output(z.object({ sent: z.boolean() }))
+        .mutation(async ({ input, ctx }) => {
+            const { listingId, recipient, title, body, actionPath, category, priority } = input;
+
+            if (!title && !body) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'title or body is required' });
+            }
+
+            // Verify caller owns the listing
+            const { listing } = await verifyListingOwnership(listingId, ctx.user.profile.profileId);
+
+            // Resolve recipient to profileId (accepts profileId or DID)
+            const recipientProfileId = await getProfileIdFromString(recipient, ctx.domain);
+
+            if (!recipientProfileId) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not resolve recipient to a profile',
+                });
+            }
+
+            // Verify recipient has the app installed
+            const isInstalled = await hasProfileInstalledApp(recipientProfileId, listingId);
+
+            if (!isInstalled) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Recipient does not have this app installed',
+                });
+            }
+
+            // Rate limit: max 60 notifications per listing per hour (atomic increment)
+            const rateLimitKey = `app-notif-server-rate:${listingId}`;
+            const count = await cache.incr(rateLimitKey, 3600);
+
+            if (count === undefined) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Rate limiting service unavailable',
+                });
+            }
+
+            if (count > 60) {
+                // tRPC does not support HTTP 429 natively, so we cast to BAD_REQUEST
+                // while keeping the semantic code in the message for clients.
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS' as 'BAD_REQUEST',
+                    message: 'Rate limit exceeded: max 60 notifications per app per hour',
+                });
+            }
+
+            const recipientDid = getDidWeb(ctx.domain, recipientProfileId);
+
+            // Look up recipient profile to get notificationsWebhook for delivery
+            const recipientProfile = await getProfileByProfileId(recipientProfileId);
+
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.APP_NOTIFICATION,
+                to: {
+                    did: recipientDid,
+                    profileId: recipientProfileId,
+                    ...(recipientProfile?.notificationsWebhook && {
+                        notificationsWebhook: recipientProfile.notificationsWebhook,
+                    }),
+                },
+                from: {
+                    did: getAppDidWeb(ctx.domain, listing.slug ?? listingId),
+                    profileId: listing.slug ?? listingId,
+                    displayName: listing.display_name,
+                },
+                message: { title, body },
+                data: {
+                    metadata: {
+                        listingId,
+                        listingSlug: listing.slug,
+                        actionPath,
+                        category,
+                        priority,
+                    },
+                },
+            });
+
+            return { sent: true };
+        }),
+
     // ==================== Generic App Event Route ====================
 
     appEvent: profileRoute
@@ -1373,7 +2757,12 @@ export const appStoreRouter = t.router({
         .input(
             z.object({
                 listingId: z.string(),
-                event: z.record(z.string(), z.unknown()),
+                // Deep-validate the event payload via the discriminated union from
+                // @learncard/types. This rejects malformed events (e.g. wrong
+                // summaryData shape on send-ai-session-credential) at the route
+                // boundary with a clear zod error, instead of silently producing
+                // a broken credential downstream.
+                event: AppEventValidator,
             })
         )
         .output(z.record(z.string(), z.unknown()))
@@ -1408,6 +2797,48 @@ export const appStoreRouter = t.router({
 
             if (eventType === 'send-credential') {
                 return handleSendCredentialEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'check-credential') {
+                return handleCheckCredentialEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'check-issuance-status') {
+                return handleCheckIssuanceStatusEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-template-recipients') {
+                return handleGetTemplateRecipientsEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'request-learner-context') {
+                return handleRequestLearnerContextEvent(
+                    ctx,
+                    profile,
+                    resolvedListingId,
+                    event,
+                    listing
+                );
+            }
+
+            if (eventType === 'send-ai-session-credential') {
+                return handleSendAiSessionCredentialEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'send-notification') {
+                return handleSendNotificationEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'increment-counter') {
+                return handleIncrementCounterEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-counter') {
+                return handleGetCounterEvent(ctx, profile, resolvedListingId, event);
+            }
+
+            if (eventType === 'get-counters') {
+                return handleGetCountersEvent(ctx, profile, resolvedListingId, event);
             }
 
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unknown event type' });
@@ -1458,10 +2889,11 @@ export const appStoreRouter = t.router({
                                 type: LCNNotificationTypeEnumValidator.enum.APP_LISTING_APPROVED,
                                 to: ownerProfile,
                                 from: ctx.user.profile,
-                                message: {
-                                    title: 'App Listing Approved!',
-                                    body: `"${listing.display_name}" has been approved and is now live in the App Store.`,
-                                },
+                                message: getNotificationMessage(
+                                    'appListingApproved',
+                                    resolveRecipientLocale(ownerProfile),
+                                    { displayName: listing.display_name }
+                                ),
                                 data: {
                                     metadata: {
                                         listingId: listing.listing_id,
@@ -1477,10 +2909,11 @@ export const appStoreRouter = t.router({
                                 type: LCNNotificationTypeEnumValidator.enum.APP_LISTING_REJECTED,
                                 to: ownerProfile,
                                 from: ctx.user.profile,
-                                message: {
-                                    title: 'App Listing Needs Changes',
-                                    body: `"${listing.display_name}" was not approved. Please review and resubmit.`,
-                                },
+                                message: getNotificationMessage(
+                                    'appListingRejected',
+                                    resolveRecipientLocale(ownerProfile),
+                                    { displayName: listing.display_name }
+                                ),
                                 data: {
                                     metadata: {
                                         listingId: listing.listing_id,
@@ -1552,8 +2985,8 @@ export const appStoreRouter = t.router({
             const limit = input?.limit ?? 25;
 
             // Get listings with optional status filter, or all statuses if not specified
-            // Admin can see all listings including demoted ones
-            const results = await getListedApps({
+            // Admin can see all listings including demoted ones, with submitter info
+            const results = await getListedAppsWithSubmitter({
                 limit: limit + 1,
                 cursor: input?.cursor,
                 status: input?.status,

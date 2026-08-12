@@ -7,6 +7,9 @@ import {
     PaginatedConsentFlowDataForDid,
 } from '@learncard/types';
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-contract');
+
 export const useContract = (uri: string | undefined, enabled = true) => {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
@@ -85,7 +88,7 @@ export const useContractRequestStatusForProfile = (
                         contractUri
                     );
                 } catch (error) {
-                    console.error(error);
+                    log.error(error);
                     return null;
                 }
 
@@ -114,6 +117,28 @@ export const useAllContractRequestsForProfile = (targetProfileId: string, enable
         queryFn: async () => {
             const wallet = await initWallet();
             return wallet.invoke.getAllContractRequestsForProfile(targetProfileId) ?? [];
+        },
+        enabled: enabled && Boolean(targetProfileId),
+    });
+};
+
+export const useSharedInsightsRequestsForProfile = (targetProfileId: string, enabled = true) => {
+    const { initWallet } = useWallet();
+
+    return useQuery<
+        | {
+              profile: LCNProfile;
+              status: 'pending' | 'accepted' | 'denied' | null;
+              readStatus?: 'unseen' | 'seen' | null;
+              contractUri?: string;
+          }[]
+        | undefined
+    >({
+        queryKey: ['useSharedInsightsRequestsForProfile', targetProfileId],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            const result = await wallet.invoke.getSharedInsightsRequestsForProfile(targetProfileId);
+            return result ?? [];
         },
         enabled: enabled && Boolean(targetProfileId),
     });

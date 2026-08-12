@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 
 import careerOneStopLogo from '../../../assets/images/career-one-stop-logo.png';
 import timeMachineIcon from '../../../assets/images/time-machine.icon.png';
@@ -8,10 +8,11 @@ import { useModal } from 'learn-card-base';
 
 import { ModalTypes } from 'learn-card-base';
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
-import { getOccupationTags } from './ai-pathway-courses.helpers';
+import { getOccupationTags, getProgramLengthDisplay } from './ai-pathway-courses.helpers';
 
 const AiPathwaySchoolProgramItem: React.FC<{ program: TrainingProgram }> = ({ program }) => {
     const { newModal } = useModal();
+    const programLengthDisplay = getProgramLengthDisplay(program);
 
     const openCourseDetailsModal = () => {
         newModal(<AiPathwaySchoolProgramDetails program={program} />, undefined, {
@@ -53,7 +54,7 @@ const AiPathwaySchoolProgramItem: React.FC<{ program: TrainingProgram }> = ({ pr
                     </div>
                     <div className="flex flex-col items-start justify-end">
                         <span className="text-xs text-grayscale-700 font-medium text-left max-w-[90%]">
-                            Total: {program?.ProgramLength?.[0]?.Value} to complete
+                            Total: <span className="capitalize">{programLengthDisplay}</span>
                         </span>
                     </div>
                 </div>

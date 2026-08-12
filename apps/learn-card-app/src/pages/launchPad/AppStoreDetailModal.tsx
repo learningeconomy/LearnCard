@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import type { AppStoreListing, InstalledApp } from '@learncard/types';
 import numeral from 'numeral';
+import type { AppStoreListing, InstalledApp } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-store-detail-modal');
 
 import { IonPage, IonContent, IonSpinner, IonFooter, IonHeader, IonToast } from '@ionic/react';
 import {
@@ -17,6 +19,8 @@ import {
     useGetCurrentLCNUser,
     calculateAge,
     useDeviceTypeByWidth,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
@@ -25,6 +29,7 @@ import { useAnalytics, AnalyticsEvents } from '@analytics';
 import useAppStore from './useAppStore';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import useTheme from '../../theme/hooks/useTheme';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
 import Checkmark from '../../components/svgs/Checkmark';
 import StaticStarRating from '../../components/ai-passport-apps/helpers/StaticStarRating';
@@ -37,6 +42,8 @@ import AiTutorConnectedView from './AiTutorConnectedView';
 import { Settings, ShieldAlert } from 'lucide-react';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
 import DatePickerInput from '../../components/date-picker/DatePickerInput';
+import { checkAppInstallEligibility, AGE_RATING_TO_MIN_AGE } from '@learncard/helpers';
+import * as m from '../../paraglide/messages.js';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -47,14 +54,6 @@ type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
     hero_background_color?: string;
     min_age?: number;
     age_rating?: '4+' | '9+' | '12+' | '17+';
-};
-
-// Map age_rating to numeric minimum age
-const AGE_RATING_TO_MIN_AGE: Record<string, number> = {
-    '4+': 4,
-    '9+': 9,
-    '12+': 12,
-    '17+': 17,
 };
 
 // Helper to convert YouTube/Vimeo URLs to embed URLs
@@ -87,8 +86,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     onInstallSuccess,
     isPreview = false,
 }) => {
-    const { closeModal, replaceModal, newModal } = useModal();
     const confirm = useConfirmation();
+    const { presentToast } = useToast();
+    const { closeModal, replaceModal, newModal } = useModal();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -176,6 +176,8 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     // Separate min_age (hard block) from age_rating (soft block with guardian approval)
     const minAge: number | undefined = listing.min_age;
     const ageRating: string | undefined = listing.age_rating;
+
+    // Map age_rating to numeric value for display purposes
     const ageRatingMinAge = ageRating ? AGE_RATING_TO_MIN_AGE[ageRating] ?? 0 : 0;
 
     // Calculate user's age from DOB
@@ -205,14 +207,20 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             });
             onInstallSuccess?.();
         } catch (error) {
-            console.error('Failed to install app:', error);
+            log.error('Failed to install app:', error);
+            if (error?.message) {
+                presentToast(m['launchpad.detail.installFailed']({ error: error?.message ?? '' }), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            }
         } finally {
             setIsProcessing(false);
         }
     };
 
     // Show the consent modal and proceed with install
-    const showInstallConsentModal = () => {
+    const showInstallConsentModal = (enteredAge?: number) => {
         const permissions: string[] = launchConfig?.permissions || [];
         const consentContractUri: string | undefined = launchConfig?.contractUri;
 
@@ -223,6 +231,12 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 permissions={permissions}
                 contractUri={consentContractUri}
                 isPreview={isPreview}
+                ageRestriction={{
+                    isChildProfile,
+                    userAge: enteredAge ?? userAge,
+                    minAge,
+                    ageRating: listing.age_rating,
+                }}
                 onAccept={() => {
                     closeModal();
                     doInstall();
@@ -332,7 +346,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     showAgeBlockedModal();
                 } else {
                     // Child meets age requirement - proceed to install
-                    showInstallConsentModal();
+                    showInstallConsentModal(enteredAge);
                 }
             };
 
@@ -430,22 +444,29 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     };
 
     const handleInstall = () => {
-        // Case 1: Hard block - min_age violation (block completely)
-        if (isHardBlocked) {
-            showAgeBlockedModal();
-            return;
-        }
+        const result = checkAppInstallEligibility({
+            isChildProfile,
+            userAge,
+            minAge,
+            ageRating,
+            hasContract: Boolean(contractUri),
+        });
 
-        // Case 2: Child profile - check age restrictions
-        if (isChildProfile) {
-            const noAgeRating = ageRatingMinAge === 0;
-            const childAgeUnknown = userAge === null;
-            const childTooYoung = userAge !== null && userAge < ageRatingMinAge;
+        switch (result.action) {
+            case 'hard_blocked':
+                showAgeBlockedModal();
+                return;
 
-            // Case 2a: No age rating specified - require guardian approval
-            // Case 2b: Child age unknown - require guardian approval
-            // Case 2c: Child too young - require guardian approval
-            if (noAgeRating || childAgeUnknown || childTooYoung) {
+            case 'require_dob':
+                guardedAction(
+                    () => {
+                        showDobEntryModal();
+                    },
+                    { ignorePriorVerification: true }
+                );
+                return;
+
+            case 'require_guardian_approval':
                 guardedAction(
                     () => {
                         showInstallConsentModal();
@@ -453,13 +474,11 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     { ignorePriorVerification: true }
                 );
                 return;
-            }
 
-            // Case 2d: Child old enough - proceed directly without guardian approval
+            case 'proceed':
+                showInstallConsentModal();
+                return;
         }
-
-        // Case 3: User is old enough - proceed directly
-        showInstallConsentModal();
     };
 
     const handleUninstall = async () => {
@@ -471,15 +490,30 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 try {
                     await withdrawConsent(termsUri);
                 } catch (error) {
-                    console.error('Failed to withdraw consent:', error);
+                    log.error('Failed to withdraw consent:', error);
                     // Continue with uninstall even if consent withdrawal fails
                 }
             }
 
             await uninstallMutation.mutateAsync(listing.listing_id);
+            track(AnalyticsEvents.LAUNCHPAD_APP_UNINSTALLED, {
+                appName: listing.display_name,
+                appId: listing.listing_id,
+                result: 'success',
+            });
             closeModal();
         } catch (error) {
-            console.error('Failed to uninstall app:', error);
+            log.error('Failed to uninstall app:', error);
+            track(AnalyticsEvents.LAUNCHPAD_APP_UNINSTALLED, {
+                appName: listing.display_name,
+                appId: listing.listing_id,
+                result: 'failure',
+                error_code:
+                    (error as { code?: string })?.code ??
+                    (error instanceof Error && (error as Error).name !== 'Error'
+                        ? (error as Error).name
+                        : 'unknown'),
+            });
         } finally {
             setIsProcessing(false);
         }
@@ -499,16 +533,14 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const [showCopiedToast, setShowCopiedToast] = useState(false);
 
     const handleShareApp = async () => {
-        const appUrl = !IS_PRODUCTION
-            ? `${window.location.origin}/app/${listing.listing_id}`
-            : `https://learncard.app/app/${listing.listing_id}`;
+        const appUrl = `${getAppBaseUrl()}/app/${listing.listing_id}`;
 
         try {
             await navigator.clipboard.writeText(appUrl);
             closeModal();
             setShowCopiedToast(true);
         } catch (err) {
-            console.error('Failed to copy link:', err);
+            log.error('Failed to copy link:', err);
         }
     };
 
@@ -538,7 +570,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         type="button"
                         onClick={handleShareApp}
                     >
-                        <p className="text-grayscale-900">Share App</p>
+                        <p className="text-grayscale-900">{m['launchpad.detail.shareApp']()}</p>
                         <svg
                             className="w-5 h-5 text-grayscale-600"
                             fill="none"
@@ -562,7 +594,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             type="button"
                             onClick={handleEditPermissions}
                         >
-                            <p className="text-grayscale-900">Edit Permissions</p>
+                            <p className="text-grayscale-900">
+                                {m['launchpad.detail.editPermissions']()}
+                            </p>
                             <Settings className="w-5 h-5 text-grayscale-600" />
                         </button>
                     </li>
@@ -577,7 +611,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             handleUninstallConfirm();
                         }}
                     >
-                        <p className="text-red-600">Uninstall</p>
+                        <p className="text-red-600">{m['launchpad.detail.uninstall']()}</p>
                         <TrashBin className="text-red-600" />
                     </button>
                 </li>
@@ -593,6 +627,13 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             showAgeBlockedModal();
             return;
         }
+
+        track(AnalyticsEvents.LAUNCHPAD_APP_OPENED, {
+            appName: listing.display_name,
+            appId: listing.listing_id,
+            appType: listing.launch_type,
+            entry_point: 'detail_modal',
+        });
 
         await proceedWithLaunch();
     };
@@ -807,7 +848,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* Screenshots Section */}
                     {screenshots.length > 0 && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">Preview</h3>
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">
+                                {m['common.preview']()}
+                            </h3>
 
                             <AppScreenshotsSlider appScreenshots={screenshots} />
                         </div>
@@ -815,7 +858,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
                     {/* About Section */}
                     <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                        <h3 className="text-xl text-gray-900 font-notoSans">About</h3>
+                        <h3 className="text-xl text-gray-900 font-notoSans">
+                            {m['common.about']()}
+                        </h3>
 
                         <p
                             ref={textRef}
@@ -830,7 +875,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 onClick={() => setIsExpanded(!isExpanded)}
                                 className="underline text-grayscale-700 text-sm font-notoSans mt-2 font-normal whitespace-pre-wrap"
                             >
-                                {isExpanded ? 'Read Less' : 'Read More'}
+                                {isExpanded
+                                    ? m['launchpad.detail.readLess']()
+                                    : m['launchpad.detail.readMore']()}
                             </button>
                         )}
                     </div>
@@ -839,7 +886,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {listing.highlights && listing.highlights.length > 0 && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
                             <h3 className="text-xl text-gray-900 font-notoSans">
-                                Why Use This App?
+                                {m['launchpad.detail.whyUseThisApp']()}
                             </h3>
 
                             {listing.highlights.map((highlight: string, index: number) => (
@@ -857,13 +904,15 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* Promo Video Section */}
                     {listing.promo_video_url && getEmbedUrl(listing.promo_video_url) && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">Watch</h3>
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">
+                                {m['launchpad.detail.watch']()}
+                            </h3>
 
                             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                                 <iframe
                                     className="absolute top-0 left-0 w-full h-full rounded-lg"
                                     src={getEmbedUrl(listing.promo_video_url)!}
-                                    title="Promo Video"
+                                    title={m['launchpad.detail.promoVideo']()}
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen
                                 />
@@ -874,7 +923,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* Links Section */}
                     {(listing.privacy_policy_url || listing.terms_url) && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans mb-3">Links</h3>
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-3">
+                                {m['launchpad.detail.links']()}
+                            </h3>
 
                             <div className="space-y-3">
                                 {listing.privacy_policy_url && (
@@ -949,7 +1000,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             onClick={closeModal}
                             className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 shadow-button-bottom flex gap-[5px] justify-center flex-1"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         {isCheckingInstalled ? (
@@ -959,24 +1010,26 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             >
                                 <IonSpinner name="dots" className="w-5 h-5" />
                             </button>
-                        ) : isInstalled ? (
+                        ) : isInstalled || launchConfig.skipInstallation ? (
                             <>
                                 {canLaunch && (
                                     <button
                                         onClick={handleLaunch}
                                         className={`bg-${primaryColor} py-[9px] px-[20px] rounded-[30px] text-white font-notoSans text-[17px] shadow-button-bottom flex items-center justify-center flex-1`}
                                     >
-                                        Open
+                                        {m['common.open']()}
                                     </button>
                                 )}
 
-                                <button
-                                    onClick={handleOpenOptionsMenu}
-                                    className="p-2 rounded-full bg-white shadow-button-bottom flex items-center justify-center"
-                                    aria-label="More options"
-                                >
-                                    <ThreeDotVertical className="w-6 h-6 text-grayscale-600" />
-                                </button>
+                                {isInstalled && (
+                                    <button
+                                        onClick={handleOpenOptionsMenu}
+                                        className="p-2 rounded-full bg-white shadow-button-bottom flex items-center justify-center"
+                                        aria-label={m['launchpad.detail.moreOptions']()}
+                                    >
+                                        <ThreeDotVertical className="w-6 h-6 text-grayscale-600" />
+                                    </button>
+                                )}
                             </>
                         ) : (
                             <button
@@ -987,7 +1040,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 {isProcessing ? (
                                     <IonSpinner name="dots" className="w-5 h-5" />
                                 ) : (
-                                    'Install'
+                                    m['launchpad.detail.install']()
                                 )}
                             </button>
                         )}
@@ -998,7 +1051,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             <IonToast
                 isOpen={showCopiedToast}
                 onDidDismiss={() => setShowCopiedToast(false)}
-                message="Link copied to clipboard!"
+                message={m['launchpad.detail.linkCopied']()}
                 duration={2000}
                 position="bottom"
                 color="success"

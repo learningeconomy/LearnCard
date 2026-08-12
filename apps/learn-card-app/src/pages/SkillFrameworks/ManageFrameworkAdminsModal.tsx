@@ -4,6 +4,8 @@ import { IonSpinner, IonInput } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LCNProfile } from '@learncard/types';
 import CaretDown from 'apps/learn-card-app/src/components/svgs/CaretDown';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('manage-framework-admins-modal');
 // import ScoutsTroopIcon from 'apps/learn-card-app/src/assets/icons/ScoutsTroopIcon';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
 
@@ -42,7 +44,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
             setNewAdminProfileId('');
         },
         onError: error => {
-            console.error('Failed to add admin:', error);
+            log.error('Failed to add admin:', error);
             alert('Failed to add admin. Please check the Profile ID and try again.');
         },
     });
@@ -57,7 +59,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
             queryClient.invalidateQueries({ queryKey: ['frameworkAdmins', frameworkId] });
         },
         onError: error => {
-            console.error('Failed to remove admin:', error);
+            log.error('Failed to remove admin:', error);
             alert('Failed to remove admin. Please try again.');
         },
     });

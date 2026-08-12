@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
-import { useLocation, useHistory } from 'react-router-dom';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-address-book-contact-options');
 
 import {
     IonCol,
@@ -17,6 +18,7 @@ import {
     useIonModal,
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import Camera from 'learn-card-base/svgs/Camera';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
@@ -32,14 +34,14 @@ import {
 
 import { ModalTypes, QRCodeScannerStore, useModal, useToast, ToastTypeEnum } from 'learn-card-base';
 import { BoostCMSIssueTo, BoostCMSState } from '../../../boost';
-
+import useTheme from '../../../../../theme/hooks/useTheme';
 import { useWallet } from 'learn-card-base';
-import { usePathQuery } from 'learn-card-base';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 
 import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostAddressBookContactOptionsProps = {
     state: BoostCMSState;
@@ -78,14 +80,13 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal();
     const { initWallet } = useWallet();
+    const { colors } = useTheme();
+    const primaryColor = colors?.defaults?.primaryColor;
 
     const { presentToast } = useToast();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const [_issueTo, _setIssueTo] = useState<BoostCMSIssueTo[]>(state?.[collectionPropName]);
     const [walletDid, setWalletDid] = useState<string>('');
-    const query = usePathQuery();
-    const history = useHistory();
-    const location = useLocation();
 
     useEffect(() => {
         const getWalletDid = async () => {
@@ -194,14 +195,14 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     const copyToClipBoard = async () => {
         try {
             await Clipboard.write({
-                string: `https://learncard.app/connect?did=${walletDid}`,
+                string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(m['toasts.boost.contactLinkCopied'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Success,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(m['toasts.boost.contactLinkCopyFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -211,9 +212,9 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     const handleShare = async () => {
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['boost.cms.issueTo.addContact'](),
                 text: '',
-                url: `https://learncard.app/connect?did=${walletDid}`,
+                url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',
             });
         } else {
@@ -252,7 +253,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                 handleCloseModal();
                 // closeModal();
             } catch (e) {
-                console.log('///Add yourself error', e);
+                log.info('///Add yourself error', e);
                 throw new Error('There was an error', e);
             }
         }
@@ -260,16 +261,6 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
 
     const handleAddSomeoneElse = () => {
         setIssueMode?.(BoostUserTypeEnum.someone);
-
-        if (history) {
-            let searchParams = new URLSearchParams(window.location.search);
-            searchParams.set('boostUserType', BoostUserTypeEnum.someone);
-
-            history.replace({
-                pathname: location?.pathname,
-                search: searchParams.toString(),
-            });
-        }
 
         presentAddressBook();
         // newModal(
@@ -322,19 +313,31 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                 <IonGrid className="ion-padding">
                     <IonRow className="w-full flex items-center justify-center mt-8">
                         <button
-                            onClick={() => handleAddYoself()}
-                            className="bg-gradient-rainbow text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom"
+                            onClick={event => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                handleAddYoself();
+                            }}
+                            className={`${
+                                primaryColor ? `bg-${primaryColor}` : 'bg-grayscale-900'
+                            } text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom`}
                         >
-                            Boost Myself
+                            {m['boost.cms.issueTo.boostMyself']()}
                             <GearPlusIcon className="ml-1 text-grayscale-800" />
                         </button>
                     </IonRow>
                     <IonRow className="w-full flex items-center justify-center mt-4">
                         <button
-                            onClick={() => handleAddSomeoneElse()}
-                            className="bg-gradient-rainbow text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom"
+                            onClick={event => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                handleAddSomeoneElse();
+                            }}
+                            className={`${
+                                primaryColor ? `bg-${primaryColor}` : 'bg-grayscale-900'
+                            } text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom`}
                         >
-                            Boost Others
+                            {m['boost.cms.issueTo.boostOthers']()}
                             <GearPlusIcon className="ml-1 text-grayscale-800" />
                         </button>
                     </IonRow>
@@ -368,10 +371,15 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                     {Capacitor.isNativePlatform() && (
                         <IonCol className="w-full flex items-center justify-center mt-1">
                             <button
-                                onClick={handleScan}
+                                onClick={event => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    handleScan();
+                                }}
                                 className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg modal-btn-mobile normal tracking-wide"
                             >
-                                <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> Scan Code
+                                <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                                {m['contacts.scanCode']()}
                             </button>
                         </IonCol>
                     )}
@@ -388,7 +396,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                             onClick={() => handleCloseModal()}
                             className="text-grayscale-900 text-center text-sm"
                         >
-                            Cancel
+                            {m['common.cancel']()}
                         </button>
                     </div>
                 </IonGrid>
@@ -423,7 +431,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         onClick={() => handleAddYoself()}
                         className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal"
                     >
-                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Boost Myself
+                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['boost.cms.issueTo.boostMyself']()}
                     </button>
                 </IonRow>
                 <IonRow className="w-full flex items-center justify-center mt-4">
@@ -432,7 +441,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         onClick={() => handleAddSomeoneElse()}
                         className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal"
                     >
-                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Boost Others
+                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['boost.cms.issueTo.boostOthers']()}
                     </button>
                 </IonRow>
                 {/* <IonCol className="w-full flex items-center justify-center">
@@ -468,7 +478,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                             onClick={handleScan}
                             className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg modal-btn-mobile normal tracking-wide"
                         >
-                            <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> Scan Code
+                            <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                            {m['contacts.scanCode']()}
                         </button>
                     </IonCol>
                 )}
@@ -485,7 +496,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         onClick={() => closeModal()}
                         className="text-grayscale-900 text-center text-sm"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </IonGrid>

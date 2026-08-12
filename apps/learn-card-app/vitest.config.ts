@@ -14,6 +14,7 @@ export default defineConfig({
     resolve: {
         alias: {
             'learn-card-base': path.resolve(__dirname, '../../packages/learn-card-base/src'),
+            'apps/learn-card-app': path.resolve(__dirname),
         },
     },
 });

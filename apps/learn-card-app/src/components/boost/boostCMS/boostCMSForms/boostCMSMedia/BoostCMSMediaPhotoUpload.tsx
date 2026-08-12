@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
 import { createPortal } from 'react-dom';
 import { Updater } from 'use-immer';
@@ -6,11 +6,13 @@ import { produce } from 'immer';
 
 import { IonCol, IonRow, IonInput } from '@ionic/react';
 
-import { useFilestack, UploadRes, BoostCMSMediaState, useModal } from 'learn-card-base';
+import { useImageUpload, UploadRes, BoostCMSMediaState, useModal } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment } from 'learn-card-base';
+import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostCMSMediaPhotoUploadProps = {
     state: BoostCMSMediaState;
@@ -25,6 +27,7 @@ type BoostCMSMediaPhotoUploadProps = {
     handleCloseModal?: () => void;
     createMode?: boolean;
     setShowCloseButtonState?: React.Dispatch<React.SetStateAction<boolean>>;
+    hideCloseButton?: boolean;
 };
 
 const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
@@ -39,8 +42,12 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
     handleCloseModal,
     createMode,
     setShowCloseButtonState,
+    hideCloseButton,
 }) => {
-    const sectionPortal = document.getElementById('section-cancel-portal');
+    const [sectionPortal, setSectionPortal] = useState<HTMLElement | null>(null);
+    useLayoutEffect(() => {
+        setSectionPortal(getTopmostCancelPortal());
+    }, []);
     const { closeModal } = useModal();
 
     const { id, type, title, color, Icon } = boostMediaOptions.find(
@@ -59,7 +66,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
         );
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
     });
@@ -82,7 +89,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
             <div className="flex flex-col items-center justify-center w-full mb-4 px-[20px] pb-[20px]">
                 <div className="image-preview max-h-[250px] mb-[20px]">
                     <img
-                        alt="Uploaded Image Preview"
+                        alt={m['boost.cms.media.uploadedImagePreview']()}
                         className="max-h-[250px]"
                         src={photoSrc}
                         onClick={handleImageSelect}
@@ -93,7 +100,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Title"
+                    placeholder={m['boost.cms.media.titlePlaceholder']()}
                     type="text"
                     value={state.photos?.[currentIndex]?.title}
                     onIonInput={e => {
@@ -120,11 +127,13 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                                     }}
                                     className={`flex flex-1  items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
                                 >
-                                    Save
+                                    {m['common.save']()}
                                 </button>
                             ) : (
                                 <button className="flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide">
-                                    {imageUploadLoading ? 'Uploading...' : 'Upload'}
+                                    {imageUploadLoading
+                                        ? m['boost.cms.media.uploading']()
+                                        : m['common.upload']()}
                                 </button>
                             )}
 
@@ -133,7 +142,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                                     onClick={handleImageSelect}
                                     className="flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
                                 >
-                                    Change Photo
+                                    {m['boost.cms.media.changePhoto']()}
                                 </button>
                             )}
                         </div>
@@ -143,14 +152,16 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                                 onClick={() => {
                                     if (createMode) {
                                         setActiveMediaType(null);
-                                        setShowCloseButtonState?.(true);
+                                        if (!hideCloseButton) {
+                                            setShowCloseButtonState?.(true);
+                                        }
                                     } else {
                                         handleCloseModal?.();
                                     }
                                 }}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Back
+                                {m['common.close']()}
                             </button>
                         </div>
                     </div>,

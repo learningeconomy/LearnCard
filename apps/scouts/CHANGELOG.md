@@ -1,5 +1,342 @@
 # Changelog
 
+## 1.90.26
+
+### Patch Changes
+
+-   [#1440](https://github.com/learningeconomy/LearnCard/pull/1440) [`54bdfbee2960f0c38c7faa801ca82911fb3fcf03`](https://github.com/learningeconomy/LearnCard/commit/54bdfbee2960f0c38c7faa801ca82911fb3fcf03) Thanks [@gerardopar](https://github.com/gerardopar)! - Keep credential-card padding aligned with the rendered card variant and improve responsive ribbon-title fitting.
+
+-   [#1431](https://github.com/learningeconomy/LearnCard/pull/1431) [`ddc5662b01d3c4f2f684357d939544ddaf2b90de`](https://github.com/learningeconomy/LearnCard/commit/ddc5662b01d3c4f2f684357d939544ddaf2b90de) Thanks [@smurflo2](https://github.com/smurflo2)! - Improve Network/Troop -> Badge/Boost creation flow
+
+-   Updated dependencies [[`b61fb6c6ae83838549078a538ca765776ba46b5e`](https://github.com/learningeconomy/LearnCard/commit/b61fb6c6ae83838549078a538ca765776ba46b5e), [`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4), [`54bdfbee2960f0c38c7faa801ca82911fb3fcf03`](https://github.com/learningeconomy/LearnCard/commit/54bdfbee2960f0c38c7faa801ca82911fb3fcf03), [`306855bd45eacd131f5803ba74c87519ab316ff5`](https://github.com/learningeconomy/LearnCard/commit/306855bd45eacd131f5803ba74c87519ab316ff5)]:
+    -   @learncard/react@2.12.0
+    -   @learncard/helpers@1.3.11
+    -   @learncard/lca-api-plugin@1.2.23
+    -   @learncard/sss-key-manager@0.1.19
+
+## 1.90.25
+
+### Patch Changes
+
+-   [#1432](https://github.com/learningeconomy/LearnCard/pull/1432) [`0ec072538d67ebf48af55e427426717420de6e62`](https://github.com/learningeconomy/LearnCard/commit/0ec072538d67ebf48af55e427426717420de6e62) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1970] - hide sidenav scroll bar
+
+-   [#1400](https://github.com/learningeconomy/LearnCard/pull/1400) [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24) Thanks [@Custard7](https://github.com/Custard7)! - feat: inAppMessage Nudge
+
+-   [#1425](https://github.com/learningeconomy/LearnCard/pull/1425) [`378217a4923e5ea4dc70ff0acff0463534810307`](https://github.com/learningeconomy/LearnCard/commit/378217a4923e5ea4dc70ff0acff0463534810307) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: Deploy ScoutPass Staging from `main`
+
+-   [#1436](https://github.com/learningeconomy/LearnCard/pull/1436) [`3fb7cc7a994e39985151ed9020922e8a59bee347`](https://github.com/learningeconomy/LearnCard/commit/3fb7cc7a994e39985151ed9020922e8a59bee347) Thanks [@smurflo2](https://github.com/smurflo2)! - Polish loading states across LearnCard and ScoutPass with credential skeletons and accessible spinners
+
+-   Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`0f93889aeebd38203ec57c44ed888d25f8d75f4f`](https://github.com/learningeconomy/LearnCard/commit/0f93889aeebd38203ec57c44ed888d25f8d75f4f)]:
+    -   @learncard/react@2.11.0
+    -   @learncard/lca-api-plugin@1.2.22
+    -   @learncard/helpers@1.3.10
+    -   @learncard/sss-key-manager@0.1.18
+
+## 1.90.24
+
+### Patch Changes
+
+-   [#1419](https://github.com/learningeconomy/LearnCard/pull/1419) [`2e5f5dba1b8b95a0fbdc24cd431d8826dc180852`](https://github.com/learningeconomy/LearnCard/commit/2e5f5dba1b8b95a0fbdc24cd431d8826dc180852) Thanks [@smurflo2](https://github.com/smurflo2)! - Implement logged out claim flow for Scouts, fix network join prompt, and various Scouts bugs
+
+-   [#1411](https://github.com/learningeconomy/LearnCard/pull/1411) [`b52a22224f41c61c180668893fc7055c5fdbd976`](https://github.com/learningeconomy/LearnCard/commit/b52a22224f41c61c180668893fc7055c5fdbd976) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1956][LC-1957] - Setup Scouts Staging
+
+-   [#1315](https://github.com/learningeconomy/LearnCard/pull/1315) [`9b853ae7aace370a527ac11ba2ae46ae025f22dd`](https://github.com/learningeconomy/LearnCard/commit/9b853ae7aace370a527ac11ba2ae46ae025f22dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add tenant-configured image upload providers and replace Filestack-specific upload hook usage with `useImageUpload`.
+
+-   Updated dependencies [[`2e5f5dba1b8b95a0fbdc24cd431d8826dc180852`](https://github.com/learningeconomy/LearnCard/commit/2e5f5dba1b8b95a0fbdc24cd431d8826dc180852)]:
+    -   @learncard/react@2.10.8
+    -   @learncard/lca-api-plugin@1.2.21
+
+## 1.90.23
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.20
+    -   @learncard/react@2.10.7
+
+## 1.90.22
+
+### Patch Changes
+
+-   [#1401](https://github.com/learningeconomy/LearnCard/pull/1401) [`86557d270445ebc7cdb192adf2256306e6ab84fe`](https://github.com/learningeconomy/LearnCard/commit/86557d270445ebc7cdb192adf2256306e6ab84fe) Thanks [@Custard7](https://github.com/Custard7)! - feat: Rich Tags
+
+## 1.90.21
+
+### Patch Changes
+
+-   [#1354](https://github.com/learningeconomy/LearnCard/pull/1354) [`1164a61bc9e43c76b4a13960f6c6a3c2a9d0900e`](https://github.com/learningeconomy/LearnCard/commit/1164a61bc9e43c76b4a13960f6c6a3c2a9d0900e) Thanks [@goblincore](https://github.com/goblincore)! - Add tenant/stage environment support to the ScoutPass lc CLI (LC-1943)
+
+    -   New `environments/scoutpass/` config with a base (production) config and a `local` stage overlay, mirroring learn-card-app's environments schema
+    -   `bun run lc dev|start|docker-start` accept an optional stage arg and inject the resolved env (LCN_URL, LCN_API_URL, CLOUD_URL, LEARN_CLOUD_XAPI_URL, API_URL, SENTRY_ENV); dev commands default to the `local` stage
+    -   New `bun run lc resolve [stage]` prints the merged config and the env vars that would be injected
+    -   compose.yaml / compose-local.yaml env now uses `${VAR:-default}` substitution so lc-injected env flows through while bare `docker compose up` keeps today's defaults
+
+-   [#1367](https://github.com/learningeconomy/LearnCard/pull/1367) [`f1e7b459a4650cf2fb9236369950efcaea935c3f`](https://github.com/learningeconomy/LearnCard/commit/f1e7b459a4650cf2fb9236369950efcaea935c3f) Thanks [@smurflo2](https://github.com/smurflo2)! - Revive Scouts, fix various bugs
+
+-   Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    -   @learncard/react@2.10.6
+    -   @learncard/helpers@1.3.9
+    -   @learncard/lca-api-plugin@1.2.19
+    -   @learncard/sss-key-manager@0.1.17
+
+## 1.90.20
+
+### Patch Changes
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/helpers@1.3.8
+    -   @learncard/react@2.10.5
+    -   @learncard/sss-key-manager@0.1.16
+    -   @learncard/lca-api-plugin@1.2.18
+
+## 1.90.19
+
+### Patch Changes
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299)]:
+    -   @learncard/helpers@1.3.7
+    -   @learncard/lca-api-plugin@1.2.17
+    -   @learncard/react@2.10.4
+    -   @learncard/sss-key-manager@0.1.15
+
+## 1.90.18
+
+### Patch Changes
+
+-   Updated dependencies [[`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/helpers@1.3.6
+    -   @learncard/lca-api-plugin@1.2.16
+    -   @learncard/react@2.10.3
+    -   @learncard/sss-key-manager@0.1.14
+
+## 1.90.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.3.5
+    -   @learncard/lca-api-plugin@1.2.15
+    -   @learncard/react@2.10.2
+    -   @learncard/sss-key-manager@0.1.13
+
+## 1.90.16
+
+### Patch Changes
+
+-   [#1305](https://github.com/learningeconomy/LearnCard/pull/1305) [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1895] - Issuer Detail Popover
+
+-   Updated dependencies [[`ff998efc079ad82dec633353927dfa0dd3f6054c`](https://github.com/learningeconomy/LearnCard/commit/ff998efc079ad82dec633353927dfa0dd3f6054c), [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9), [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095), [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340)]:
+    -   @learncard/react@2.10.1
+    -   @learncard/lca-api-plugin@1.2.14
+
+## 1.90.15
+
+### Patch Changes
+
+-   [#1283](https://github.com/learningeconomy/LearnCard/pull/1283) [`4bf986418f6477a7659faa348307ae7af199182a`](https://github.com/learningeconomy/LearnCard/commit/4bf986418f6477a7659faa348307ae7af199182a) Thanks [@smurflo2](https://github.com/smurflo2)! - Add commands for seeding skill-frameworks (locally + staging)
+
+-   Updated dependencies [[`e4e315614f49ff96190c7ef60e9796a486d3e661`](https://github.com/learningeconomy/LearnCard/commit/e4e315614f49ff96190c7ef60e9796a486d3e661), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`fd0cac0b78add9150cc5256a984188c32b6f4b2f`](https://github.com/learningeconomy/LearnCard/commit/fd0cac0b78add9150cc5256a984188c32b6f4b2f), [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c93e603d42c7aeb7e433bb4ba6a3374af18dde74`](https://github.com/learningeconomy/LearnCard/commit/c93e603d42c7aeb7e433bb4ba6a3374af18dde74), [`357ba3615d69cf28412ac779ddc4858139b46929`](https://github.com/learningeconomy/LearnCard/commit/357ba3615d69cf28412ac779ddc4858139b46929)]:
+    -   @learncard/react@2.10.0
+    -   @learncard/helpers@1.3.4
+    -   @learncard/lca-api-plugin@1.2.13
+    -   @learncard/sss-key-manager@0.1.12
+
+## 1.90.14
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/helpers@1.3.3
+    -   @learncard/lca-api-plugin@1.2.12
+    -   @learncard/react@2.9.29
+    -   @learncard/sss-key-manager@0.1.11
+
+## 1.90.13
+
+### Patch Changes
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278)]:
+    -   @learncard/helpers@1.3.2
+    -   @learncard/lca-api-plugin@1.2.11
+    -   @learncard/react@2.9.28
+    -   @learncard/sss-key-manager@0.1.10
+
+## 1.90.12
+
+### Patch Changes
+
+-   [#1261](https://github.com/learningeconomy/LearnCard/pull/1261) [`57d7724515a064256037827dffc3e79b72b9186f`](https://github.com/learningeconomy/LearnCard/commit/57d7724515a064256037827dffc3e79b72b9186f) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1844 - Central Logging System (LCA/ScoutPass)
+
+## 1.90.11
+
+### Patch Changes
+
+-   [#1201](https://github.com/learningeconomy/LearnCard/pull/1201) [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1794]
+
+-   Updated dependencies [[`cf6c5db6aa03842674427441301cf4a8633bbe88`](https://github.com/learningeconomy/LearnCard/commit/cf6c5db6aa03842674427441301cf4a8633bbe88)]:
+    -   @learncard/react@2.9.27
+    -   @learncard/helpers@1.3.1
+    -   @learncard/lca-api-plugin@1.2.10
+    -   @learncard/sss-key-manager@0.1.9
+
+## 1.90.10
+
+### Patch Changes
+
+-   Updated dependencies [[`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
+    -   @learncard/helpers@1.3.0
+    -   @learncard/lca-api-plugin@1.2.9
+    -   @learncard/react@2.9.26
+    -   @learncard/sss-key-manager@0.1.8
+
+## 1.90.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.8
+    -   @learncard/react@2.9.25
+
+## 1.90.8
+
+### Patch Changes
+
+-   [#1150](https://github.com/learningeconomy/LearnCard/pull/1150) [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 3 directories with 6 updates
+
+-   [#1203](https://github.com/learningeconomy/LearnCard/pull/1203) [`a5382de5e8dec3d3c3128e00c93be3b162babe45`](https://github.com/learningeconomy/LearnCard/commit/a5382de5e8dec3d3c3128e00c93be3b162babe45) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: [LC-1803] - Add IOS(26) native support
+
+-   Updated dependencies [[`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0)]:
+    -   @learncard/react@2.9.24
+    -   @learncard/helpers@1.2.17
+    -   @learncard/lca-api-plugin@1.2.7
+    -   @learncard/sss-key-manager@0.1.7
+
+## 1.90.7
+
+### Patch Changes
+
+-   Updated dependencies [[`98edecaa4348a95b67753b084da91ee38a3813d2`](https://github.com/learningeconomy/LearnCard/commit/98edecaa4348a95b67753b084da91ee38a3813d2)]:
+    -   @learncard/sss-key-manager@0.1.6
+    -   @learncard/helpers@1.2.16
+    -   @learncard/lca-api-plugin@1.2.6
+    -   @learncard/react@2.9.23
+
+## 1.90.6
+
+### Patch Changes
+
+-   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d)]:
+    -   @learncard/lca-api-plugin@1.2.5
+    -   @learncard/helpers@1.2.15
+    -   @learncard/react@2.9.22
+    -   @learncard/sss-key-manager@0.1.5
+
+## 1.90.5
+
+### Patch Changes
+
+-   [#1137](https://github.com/learningeconomy/LearnCard/pull/1137) [`73e56c14d03c7117ab509c025170c88f5a0cc989`](https://github.com/learningeconomy/LearnCard/commit/73e56c14d03c7117ab509c025170c88f5a0cc989) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1727] Update @capgo/capacitor-updater from 8.41.12 to 8.45.0
+
+## 1.90.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.14
+    -   @learncard/lca-api-plugin@1.2.4
+    -   @learncard/react@2.9.21
+    -   @learncard/sss-key-manager@0.1.4
+
+## 1.90.3
+
+### Patch Changes
+
+-   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    -   @learncard/lca-api-plugin@1.2.3
+    -   @learncard/helpers@1.2.13
+    -   @learncard/react@2.9.20
+    -   @learncard/sss-key-manager@0.1.3
+
+## 1.90.2
+
+### Patch Changes
+
+-   [#1120](https://github.com/learningeconomy/LearnCard/pull/1120) [`00976e097128d18c25c8016a75be9580cd3a7050`](https://github.com/learningeconomy/LearnCard/commit/00976e097128d18c25c8016a75be9580cd3a7050) Thanks [@smurflo2](https://github.com/smurflo2)! - OpenSALT import enhancements - proper classification of tier/competency, icons, pagination, and more!
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.2.12
+    -   @learncard/lca-api-plugin@1.2.2
+    -   @learncard/react@2.9.19
+    -   @learncard/sss-key-manager@0.1.2
+
+## 1.90.1
+
+### Patch Changes
+
+-   Updated dependencies [[`26de4ce53c2e8b6c2bb3e461789e976178250179`](https://github.com/learningeconomy/LearnCard/commit/26de4ce53c2e8b6c2bb3e461789e976178250179)]:
+    -   @learncard/react@2.9.18
+    -   @learncard/helpers@1.2.11
+    -   @learncard/lca-api-plugin@1.2.1
+    -   @learncard/sss-key-manager@0.1.1
+
+## 1.90.0
+
+### Minor Changes
+
+-   [#986](https://github.com/learningeconomy/LearnCard/pull/986) [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c) Thanks [@Custard7](https://github.com/Custard7)! - ### SSS Key Management & AuthCoordinator
+
+    **New packages:**
+
+    -   `@learncard/types` — Added provider-agnostic auth and key derivation interfaces (`src/auth.ts`)
+    -   `@learncard/sss-key-manager` — Shamir Secret Sharing key manager replacing Web3Auth SFA
+
+    **LCA API (`@learncard/lca-api-service`):**
+
+    -   Added SSS key management routes (`/keys/*`): store/retrieve encrypted auth shares, add/remove recovery methods (passkey, backup, phrase, email), share versioning
+    -   Added recovery email verification flow with 6-digit OTP codes
+    -   Added email backup share relay (fire-and-forget, share never persisted)
+    -   Added QR-based cross-device login routes (`/qr-login/*`)
+    -   Added contact method upgrade route for phone→email transitions
+    -   Added provider-agnostic delivery service abstraction (Postmark adapter + log adapter for dev)
+    -   Added optional Postmark template support for recovery emails (`POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS`, `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS`) with plain-text fallback
+    -   Renamed `POSTMARK_LOGIN_CODE_TEMPLATE_ID` → `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS` and `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID` → `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS`
+    -   Added Sentry integration for error tracking
+    -   Added share encryption helpers (AES-256-GCM with HKDF-derived keys)
+
+    **Brain Service (`@learncard/network-brain-service`):**
+
+    -   Added skill embedding support with Google AI model integration
+    -   Added background backfill for skill embeddings on startup
+    -   Added Sentry integration for error tracking
+
+    **Apps (learn-card-app, scoutpass-app):**
+
+    -   Integrated AuthCoordinator for unified auth and key lifecycle management
+    -   Added account recovery flows (passkey, email backup, recovery phrase)
+    -   Added QR-based cross-device login
+    -   Replaced Web3Auth key derivation with SSS as default (`VITE_KEY_DERIVATION=sss`)
+    -   Added automatic Web3Auth → SSS migration for existing users
+    -   Removed deprecated `REACT_APP_ENABLE_SSS_MIGRATION` env var (migration is now automatic)
+    -   Removed stale `WEB3AUTH_MAINNET_CLIENT_ID` / `WEB3AUTH_TESTNET_CLIENT_ID` from vite config
+    -   Added `.env.example` files documenting all environment variables
+    -   Added SSS/auth VITE environment variables to all CI workflows (deploy, capgo, fastlane)
+
+    **CI/CD:**
+
+    -   Propagated `VITE_AUTH_PROVIDER`, `VITE_KEY_DERIVATION`, `VITE_SSS_SERVER_URL`, `VITE_ENABLE_EMAIL_BACKUP_SHARE`, `VITE_ENABLE_AUTH_DEBUG_WIDGET`, `VITE_REQUIRE_EMAIL_FOR_PHONE_USERS` as `vars` across all app build workflows
+    -   Fixed Postmark template env var renames in deploy workflow
+    -   Added `.env.example` for lca-api service
+
+### Patch Changes
+
+-   [#1054](https://github.com/learningeconomy/LearnCard/pull/1054) [`b8f9581422406f78d3738c4c3a6d9f335725b745`](https://github.com/learningeconomy/LearnCard/commit/b8f9581422406f78d3738c4c3a6d9f335725b745) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1603} Add playwright tests for app listings + fix broken credential tests + clean up agents project context
+
+-   Updated dependencies [[`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322), [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c)]:
+    -   @learncard/helpers@1.2.10
+    -   @learncard/sss-key-manager@0.1.0
+    -   @learncard/lca-api-plugin@1.2.0
+    -   @learncard/react@2.9.17
+
 ## 1.89.26
 
 ### Patch Changes

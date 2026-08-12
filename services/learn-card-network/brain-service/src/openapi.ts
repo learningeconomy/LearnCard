@@ -1,5 +1,5 @@
 import { generateOpenApiDocument } from 'trpc-to-openapi';
-import express from 'express';
+import express, { type Express } from 'express';
 
 import { appRouter } from './app';
 
@@ -8,7 +8,7 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
     title: 'LearnCloud Network API',
     description: 'API for interacting with LearnCloud Network',
     version: '1.0.0',
-    baseUrl: '../api',
+    baseUrl: '/api',
     docsUrl: 'https://docs.learncard.com',
     tags: [
         'Profiles',
@@ -38,7 +38,7 @@ const SCALAR_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
-export const app = express();
+export const app: Express = express();
 
 app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
 

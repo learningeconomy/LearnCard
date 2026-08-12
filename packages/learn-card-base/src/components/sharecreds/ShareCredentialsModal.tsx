@@ -26,8 +26,8 @@ import {
 } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import ShareCredentials from './ShareCredentials';
-
-export const baseUrl = getBaseUrl();
+import { getLogger } from '../../logging/logger';
+const log = getLogger('share-credentials-modal');
 
 const ShareCredentialsModal = ({
     onDismiss,
@@ -167,7 +167,7 @@ const ShareCredentialsModal = ({
             setLoading(false);
             setPage('success');
         } catch (e) {
-            console.debug('///handleSubmit create credential bundle Error', e);
+            log.debug('///handleSubmit create credential bundle Error', e);
             presentAlert({
                 header: 'Error',
                 subHeader: 'Create Credential Bundle error',
@@ -179,6 +179,7 @@ const ShareCredentialsModal = ({
         }
     };
 
+    const baseUrl = getBaseUrl();
     const link = `https://${baseUrl}/share-creds/${vpUri}/${randomSeed}`;
 
     const handleCopy = async () => {

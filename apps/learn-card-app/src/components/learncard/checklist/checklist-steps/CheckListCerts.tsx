@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-certs');
 
 import TrashBin from '../../../svgs/TrashBin';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -10,13 +12,18 @@ import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
+    useDeleteCredentialRecord,
     useConfirmation,
+    useToast,
+    ToastTypeEnum,
     checklistStore,
     useGetCheckListStatus,
     UploadTypesEnum,
 } from 'learn-card-base';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
+import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type CertType = {
     id: string;
@@ -24,6 +31,15 @@ export type CertType = {
     fileSize: string;
     fileType: string;
     type: string;
+};
+
+type CertificateCredential = {
+    recordId: string;
+    rawArtifact?: {
+        fileName?: string;
+        fileSize?: string;
+        fileType?: string;
+    };
 };
 
 export const CheckListCerts: React.FC = () => {
@@ -34,12 +50,13 @@ export const CheckListCerts: React.FC = () => {
         useUploadFile(UploadTypesEnum.Certificate);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
+    const { presentToast } = useToast();
+    const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const [certs, setCert] = useState<CertType[]>([]);
 
@@ -73,7 +90,7 @@ export const CheckListCerts: React.FC = () => {
                 return;
             }
 
-            const certCredentials = await Promise.all(
+            const certCredentials: CertificateCredential[] = await Promise.all(
                 recordUris.map(async ({ uri, id }: { uri: string; id: string }) => {
                     return {
                         ...(await wallet.read.get(uri)),
@@ -82,11 +99,11 @@ export const CheckListCerts: React.FC = () => {
                 })
             );
 
-            const _certs = certCredentials.map(({ recordId, rawArtifact }: any) => ({
+            const _certs = certCredentials.map(({ recordId, rawArtifact }) => ({
                 id: recordId,
-                fileName: rawArtifact?.fileName,
-                fileSize: rawArtifact?.fileSize,
-                fileType: rawArtifact?.fileType,
+                fileName: rawArtifact?.fileName ?? '',
+                fileSize: rawArtifact?.fileSize ?? '',
+                fileType: rawArtifact?.fileType ?? '',
                 type: UploadTypesEnum.Certificate,
             }));
 
@@ -94,43 +111,64 @@ export const CheckListCerts: React.FC = () => {
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
-            console.error('handleSetCert::error', error);
+            log.error('handleSetCert::error', error);
         }
     };
 
-    const handleDeleteCert = async (id: string) => {
-        try {
-            setIsDeleting(true);
-            const wallet = await initWallet();
+    const handleDeleteCert = (id: string) => {
+        const deleted = certs.find(cert => cert?.id === id);
+        if (!deleted) return;
 
-            await wallet.index.LearnCloud.remove(id);
-            await refetchCheckListStatus();
-            setCert(prevCerts => prevCerts.filter(cert => cert?.id !== id));
-            setIsDeleting(false);
-        } catch (error) {
-            setIsDeleting(false);
-            console.error('Failed to delete certificate', error);
-        }
+        // Optimistic synchronous UI update
+        setCert(prev => prev.filter(cert => cert?.id !== id));
+
+        // Fire-and-forget background work
+        void (async () => {
+            try {
+                const wallet = await initWallet();
+                const record = await wallet.index.LearnCloud.get({ id });
+                const targetRecord = record?.[0] as unknown as LCR | undefined;
+
+                if (!targetRecord) return;
+
+                await deleteCredentialRecord(targetRecord);
+                refetchCheckListStatus();
+            } catch (error) {
+                log.error('Failed to delete certificate', error);
+                // Re-insert only the failed item so concurrent deletions aren't clobbered
+                setCert(prev => (prev.some(c => c?.id === id) ? prev : [...prev, deleted]));
+                presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
+                    title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
+                    duration: 5000,
+                });
+            }
+        })();
     };
 
     const confirmDelete = async (id: string) => {
         if (
             await confirm({
-                text: `Are you sure you want remove your uploaded certificate?`,
+                text: m['passport.buildMyLearnCard.managers.confirmRemove.certificate'](),
                 cancelButtonClassName:
                     'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                 confirmButtonClassName:
                     'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
             })
         ) {
-            await handleDeleteCert(id);
+            handleDeleteCert(id);
         }
     };
 
     const triggerFileInput = () => fileInputRef.current?.click();
 
-    let buttonText = certs?.length > 0 ? 'Add More' : 'Add';
-    buttonText = isUploading ? 'Uploading...' : buttonText;
+    let buttonText =
+        certs?.length > 0
+            ? m['passport.buildMyLearnCard.managers.addMore']()
+            : m['passport.buildMyLearnCard.managers.addButton']();
+    buttonText = isUploading ? m['passport.buildMyLearnCard.managers.uploading']() : buttonText;
     const buttonIcon = <UploadIcon className="w-[25px] h-[26px] text-white mr-2" />;
 
     return (
@@ -141,16 +179,16 @@ export const CheckListCerts: React.FC = () => {
             <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
                 <div className="flex flex-col items-start justify-center py-2 w-full">
                     <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
-                        Certificates
+                        {m['passport.buildMyLearnCard.managers.certs.title']()}
                     </h4>
                     <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                        Upload academic, professional, and extracurricular certificates.
+                        {m['passport.buildMyLearnCard.managers.certs.description']()}
                     </p>
 
                     <input
                         multiple
                         type="file"
-                        accept=".pdf,.txt,.docx"
+                        accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         onChange={async e => {
                             await getFiles(e, UploadTypesEnum.Certificate);
                         }}
@@ -168,10 +206,9 @@ export const CheckListCerts: React.FC = () => {
                     </button>
                 </div>
 
-                {(isLoading || isDeleting) && <CheckListItemSkeleton />}
+                {isLoading && <CheckListItemSkeleton />}
 
                 {!isLoading &&
-                    !isDeleting &&
                     certs?.length > 0 &&
                     certs?.map?.((cert: CertType) => {
                         return (

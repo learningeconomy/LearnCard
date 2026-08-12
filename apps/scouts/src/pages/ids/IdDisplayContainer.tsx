@@ -1,11 +1,10 @@
 import React from 'react';
-import Lottie from 'react-lottie-player';
 
 import { IonRow, IonCol } from '@ionic/react';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import MembershipSleeve from 'learn-card-base/assets/images/troops-sleeve.svg';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
-import HourGlass from '../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import BoostPreviewBody from '../../components/boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostListItem from 'learn-card-base/components/boost/BoostListItem';
 import TroopPage from '../troop/TroopPage';
@@ -136,7 +135,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
         idBody = (
             <div
                 style={{
-                    backgroundImage: `url(${credSleeve})`,
+                    backgroundImage: `url("${credSleeve}")`,
                     backgroundRepeat: 'no-repeat',
                     position: 'absolute',
                     bottom: -65,
@@ -199,12 +198,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
             recipientsEl = (
                 <div className="relative ml-8 text-center flex flex-col items-center justify-center">
                     <div className="max-w-[50px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                        <LoadingSpinner />
                     </div>
                 </div>
             );
@@ -225,7 +219,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
         idBody = (
             <div
                 style={{
-                    backgroundImage: `url(${credSleeve})`,
+                    backgroundImage: `url("${credSleeve}")`,
                     backgroundRepeat: 'no-repeat',
                     position: 'absolute',
                     bottom: -65,

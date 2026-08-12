@@ -1,5 +1,98 @@
 # @welibraryos/lca-api-client
 
+## 1.2.3
+
+### Patch Changes
+
+-   [#1394](https://github.com/learningeconomy/LearnCard/pull/1394) [`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05) Thanks [@goblincore](https://github.com/goblincore)! - perf: eagerly prefetch DID-Auth challenges with single-flight refills so client setup overlaps network latency without duplicate pools when the first request races construction.
+
+## 1.2.2
+
+### Patch Changes
+
+-   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+
+## 1.2.1
+
+### Patch Changes
+
+-   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+
+-   [#1335](https://github.com/learningeconomy/LearnCard/pull/1335) [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930) Thanks [@goblincore](https://github.com/goblincore)! - fix(packaging): ship ESM-clean named exports from the tRPC client packages and route `@learncard/init`'s Node ESM entry at the real ESM bundle
+
+    The four generated tRPC client packages (`lca-api-client`, `simple-signing-client`,
+    `network-brain-client`, `learn-cloud-client`) previously exposed only a CJS
+    `main` (a `NODE_ENV`-switching `mixedEntrypoint`) with no `exports` map. Under
+    Node's native ESM loader this bound to the CJS entry, whose named exports
+    (`getClient`, `getApiTokenClient`) the CommonJS lexer could not see through the
+    `module.exports = require(...)` indirection — so `import { getClient } from ...`
+    threw "getClient not found". Each package now declares `"type": "module"`, emits
+    its CJS bundles with a `.cjs` extension, and publishes a dual `exports` map
+    (`import` → real ESM build, `require` → CJS entry) mirroring `@learncard/types`
+    and `@learncard/helpers`. Each also gains the `files: ["dist"]` field it was
+    previously missing (with `dist` gitignored, `pnpm pack` shipped zero build
+    artifacts — now caught by `scripts/validate-packages.mjs`, which also gates the
+    three network clients going forward).
+
+    With the leaf clients resolving cleanly as ESM, `@learncard/init` no longer needs
+    the `createRequire(import.meta.url)` shim (`node-esm.mjs`) that routed Node ESM
+    consumers back through the CJS bundle — a shape that crashed when bundled
+    (`esbuild --platform=node` compiles `import.meta` away → `createRequire(undefined)`).
+    `init`'s `node.import` condition now points directly at `init.esm.js`, which loads
+    natively under Node ESM and bundles cleanly under esbuild/Vite. The didkit backend
+    is unchanged: it is still selected at call-time via the `didkit: 'node'` argument
+    (lazy `import('@learncard/didkit-plugin-node')`), independent of the entry module
+    format. This repairs the esbuild bundler job of the daily published-packages
+    smoketest and clears the clients' "known broken" advisory list.
+
+## 1.2.0
+
+### Minor Changes
+
+-   [#986](https://github.com/learningeconomy/LearnCard/pull/986) [`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c) Thanks [@Custard7](https://github.com/Custard7)! - ### SSS Key Management & AuthCoordinator
+
+    **New packages:**
+
+    -   `@learncard/types` — Added provider-agnostic auth and key derivation interfaces (`src/auth.ts`)
+    -   `@learncard/sss-key-manager` — Shamir Secret Sharing key manager replacing Web3Auth SFA
+
+    **LCA API (`@learncard/lca-api-service`):**
+
+    -   Added SSS key management routes (`/keys/*`): store/retrieve encrypted auth shares, add/remove recovery methods (passkey, backup, phrase, email), share versioning
+    -   Added recovery email verification flow with 6-digit OTP codes
+    -   Added email backup share relay (fire-and-forget, share never persisted)
+    -   Added QR-based cross-device login routes (`/qr-login/*`)
+    -   Added contact method upgrade route for phone→email transitions
+    -   Added provider-agnostic delivery service abstraction (Postmark adapter + log adapter for dev)
+    -   Added optional Postmark template support for recovery emails (`POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS`, `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS`) with plain-text fallback
+    -   Renamed `POSTMARK_LOGIN_CODE_TEMPLATE_ID` → `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS` and `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID` → `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS`
+    -   Added Sentry integration for error tracking
+    -   Added share encryption helpers (AES-256-GCM with HKDF-derived keys)
+
+    **Brain Service (`@learncard/network-brain-service`):**
+
+    -   Added skill embedding support with Google AI model integration
+    -   Added background backfill for skill embeddings on startup
+    -   Added Sentry integration for error tracking
+
+    **Apps (learn-card-app, scoutpass-app):**
+
+    -   Integrated AuthCoordinator for unified auth and key lifecycle management
+    -   Added account recovery flows (passkey, email backup, recovery phrase)
+    -   Added QR-based cross-device login
+    -   Replaced Web3Auth key derivation with SSS as default (`VITE_KEY_DERIVATION=sss`)
+    -   Added automatic Web3Auth → SSS migration for existing users
+    -   Removed deprecated `REACT_APP_ENABLE_SSS_MIGRATION` env var (migration is now automatic)
+    -   Removed stale `WEB3AUTH_MAINNET_CLIENT_ID` / `WEB3AUTH_TESTNET_CLIENT_ID` from vite config
+    -   Added `.env.example` files documenting all environment variables
+    -   Added SSS/auth VITE environment variables to all CI workflows (deploy, capgo, fastlane)
+
+    **CI/CD:**
+
+    -   Propagated `VITE_AUTH_PROVIDER`, `VITE_KEY_DERIVATION`, `VITE_SSS_SERVER_URL`, `VITE_ENABLE_EMAIL_BACKUP_SHARE`, `VITE_ENABLE_AUTH_DEBUG_WIDGET`, `VITE_REQUIRE_EMAIL_FOR_PHONE_USERS` as `vars` across all app build workflows
+    -   Fixed Postmark template env var renames in deploy workflow
+    -   Added `.env.example` for lca-api service
+
 ## 1.1.13
 
 ### Patch Changes
@@ -102,7 +195,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

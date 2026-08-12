@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('admin-tools-signing-authority-option');
 
 import AdminToolsSigningAuthorityItemSkeleton from './AdminToolsSigningAuthorityItemSkeleton';
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';
@@ -63,7 +65,7 @@ const AdminToolsSigningAuthorityOption: React.FC<{
             await fetchSigningAuthorities();
             setLoading(false);
         } catch (error) {
-            console.error(error);
+            log.error(error);
             setLoading(false);
         }
     };

@@ -8,10 +8,12 @@ import {
 } from 'learn-card-base';
 
 import { IonSpinner } from '@ionic/react';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowFooter from './ConsentFlowFooter';
 import ConsentFlowHeader from './ConsentFlowHeader';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowGetAnAdultPromptProps = {
     contractDetails?: ConsentFlowContractDetails;
@@ -27,6 +29,7 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
     app,
 }) => {
     const { closeModal } = useModal();
+    const brandingConfig = useBrandingConfig();
 
     const parentUser = currentUserStore.use.parentUser();
     const { name: parentName } = parentUser || {};
@@ -35,7 +38,7 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
         return (
             <div className="w-full flex flex-col items-center justify-center min-h-[300px]">
                 <IonSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
-                <p className="font-poppins text-grayscale-900">Loading...</p>
+                <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
             </div>
         );
     }
@@ -48,7 +51,7 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
 
                     <div className="flex flex-col">
                         <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[30px] leading-[130%] tracking-[-0.25px]">
-                            Add to LearnCard.
+                            Add to {brandingConfig.name}.
                         </div>
                         <div className="w-full text-center text-grayscale-900 text-[17px] font-poppins px-[10px] leading-[130%] tracking-[-0.25px]">
                             Save your progress and skills.
@@ -73,9 +76,9 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
             </div>
 
             <ConsentFlowFooter
-                actionButtonText="That's me!"
+                actionButtonText={m['common.continue']()}
                 onActionButtonClick={handleNextStep}
-                secondaryButtonText="Cancel"
+                secondaryButtonText={m['common.cancel']()}
                 onSecondaryButtonClick={closeModal}
             />
         </>

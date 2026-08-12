@@ -10,9 +10,12 @@ import careerOneStopLogo from '../../../assets/images/career-one-stop-logo.png';
 import { useModal } from 'learn-card-base';
 
 import { TrainingProgram } from 'learn-card-base/types/careerOneStop';
+import { getProgramLengthDisplay } from './ai-pathway-courses.helpers';
+import GrowSkillsSkillChips from '../GrowSkillsSkillChips';
 
 const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({ program }) => {
     const { closeModal } = useModal();
+    const programLengthDisplay = getProgramLengthDisplay(program);
 
     const schoolUrl = program?.school?.url;
     const schoolImage = program?.school?.image_url;
@@ -35,56 +38,76 @@ const AiPathwaySchoolProgramDetails: React.FC<{ program: TrainingProgram }> = ({
             <div className="h-full relative overflow-hidden bg-grayscale-200">
                 <div className="h-full overflow-y-auto pb-[150px] px-[20px] flex flex-col items-center justify-start">
                     <section className="bg-white rounded-[24px] flex flex-col overflow-y-auto shadow-box-bottom max-w-[600px] mx-auto min-w-[300px] shrink-0 mt-[60px] w-full">
-                        {/* header */}
-                        <div className="flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
-                            <img
-                                src={CareerLaptopIcon}
-                                alt="career icon"
-                                className="w-[80px] h-[80px]"
-                            />
+                        <div className="border-b-[1px] border-grayscale-200 border-solid">
+                            {/* header */}
+                            <div className="flex flex-col gap-[10px] items-center px-[20px] py-[20px]">
+                                <img
+                                    src={CareerLaptopIcon}
+                                    alt="career icon"
+                                    className="w-[80px] h-[80px]"
+                                />
 
-                            <h2 className="text-[20px] text-grayscale-900 font-poppins text-center">
-                                {program.ProgramName}
-                            </h2>
+                                <h2 className="text-[20px] text-grayscale-900 font-poppins text-center">
+                                    {program.ProgramName}
+                                </h2>
+                            </div>
                         </div>
 
-                        {/* details */}
-                        <div className="flex gap-[10px] items-center justify-start p-[20px]">
-                            <div className="flex flex-col items-start w-full">
+                        <div className="px-[20px]">
+                            {/* details */}
+                            <div className="flex gap-[10px] items-center justify-start py-[20px]">
+                                <div className="flex flex-col items-start w-full">
+                                    <p className="text-grayscale-600 font-poppins font-semibold text-sm tracking-[-0.25px]">
+                                        Provided by
+                                    </p>
+
+                                    <p className="text-grayscale-900 font-poppins text-base tracking-[-0.25px]">
+                                        {program.SchoolName}
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <img
+                                        src={logo}
+                                        alt="Logo"
+                                        className="w-12 h-12 object-contain"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-[10px] items-start justify-start py-[20px]">
                                 <p className="text-grayscale-600 font-poppins font-semibold text-sm tracking-[-0.25px]">
-                                    Provided by
+                                    Duration
                                 </p>
-
-                                <p className="text-grayscale-900 font-poppins text-base tracking-[-0.25px]">
-                                    {program.SchoolName}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    <TimeCircle className="w-6 h-6 text-yellow-500" />
+                                    <p className="text-base text-grayscale-800 font-semibold font-notoSans">
+                                        Total:{' '}
+                                        <span className="capitalize">{programLengthDisplay}</span>
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="flex items-center justify-between">
-                                <img src={logo} alt="Logo" className="w-12 h-12 object-contain" />
-                            </div>
-                        </div>
-                        <div className="flex flex-col gap-[10px] items-start justify-start p-[20px]">
-                            <p className="text-grayscale-600 font-poppins font-semibold text-sm tracking-[-0.25px]">
-                                Duration
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <TimeCircle className="w-6 h-6 text-yellow-500" />
-                                <p className="text-base text-grayscale-800 font-semibold font-notoSans">
-                                    Total: {program?.ProgramLength?.[0]?.Value} to complete
-                                </p>
-                            </div>
-                        </div>
+                            {program?.occupationDetails?.OnetDescription && (
+                                <>
+                                    <div className="flex flex-col gap-[10px] items-start justify-start pb-1">
+                                        <div className="w-full border-b-[1px] border-grayscale-200 border-solid" />
+                                    </div>
 
-                        <div className="flex flex-col gap-[10px] items-start justify-start px-[20px] pb-1">
-                            <div className="w-full border-b-[1px] border-grayscale-200 border-solid" />
-                        </div>
+                                    {/* description */}
+                                    <div className="flex flex-col gap-[10px] items-start justify-start py-[20px]">
+                                        <p className="text-grayscale-600 font-poppins text-base tracking-[-0.25px]">
+                                            {program?.occupationDetails?.OnetDescription || ''}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
 
-                        {/* description */}
-                        <div className="flex flex-col gap-[10px] items-start justify-start p-[20px]">
-                            <p className="text-grayscale-600 font-poppins text-base tracking-[-0.25px]">
-                                {program?.occupationDetails?.OnetDescription || ''}
-                            </p>
+                            <GrowSkillsSkillChips
+                                searchQuery={program?.ProgramName || ''}
+                                layout="wrap"
+                                className="border-t-[1px] border-grayscale-200 py-[20px]"
+                            />
                         </div>
                     </section>
                 </div>

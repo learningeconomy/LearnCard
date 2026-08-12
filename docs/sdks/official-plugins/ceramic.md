@@ -7,7 +7,7 @@ This plugin implements the [Read](/broken/pages/s13FerGAbkHnrN13v85i) and [Store
 ### Install
 
 ```bash
-pnpm i @learncard/ceramic-plugin
+bun add @learncard/ceramic-plugin
 ```
 
 ### Uploading to Ceramic
@@ -18,7 +18,7 @@ To upload a credential to Ceramic, you may use the [Store Plane](/broken/pages/A
 const uri = await learnCard.store.Ceramic.upload(vc);
 ```
 
-### Uploading  to Ceramic with Encryption
+### Uploading to Ceramic with Encryption
 
 To upload a credential to Ceramic using encryption, you may use the [Store Plane](/broken/pages/AacoBhj2Q6kUaK1EVNnj):
 
@@ -59,11 +59,11 @@ As indicated above, when using `learnCard.store.Ceramic.uploadEncrypted(vc),` up
 #### Upload & Get Encrypted Credential:
 
 ```typescript
-const user = await initLearnCard({ seed: '123', debug: console.log })
+const user = await initLearnCard({ seed: '123', debug: console.log });
 const malicious = await initLearnCard({ seed: '666', debug: console.log });
 
-const uvc = user.invoke.getTestVc();   
-const vc = await  user.invoke.issueCredential(uvc);
+const uvc = user.invoke.getTestVc();
+const vc = await user.invoke.issueCredential(uvc);
 const streamId = await user.store.Ceramic.uploadEncrypted(vc);
 
 // Should properly retrieve credential!  ✅
@@ -87,11 +87,13 @@ type EncryptionParams = {
 You can play with the following examples in the[ LearnCard CLI](../learncard-cli.md):
 
 ```typescript
-const user = await initLearnCard({ seed: '123', debug: console.log })
+const user = await initLearnCard({ seed: '123', debug: console.log });
 const malicious = await initLearnCard({ seed: '666', debug: console.log });
 const friend = await initLearnCard({ seed: '808', debug: console.log });
 
-const sharedStreamId = await user.store.Ceramic.uploadEncrypted(vc, { recipients: [friend.id.did()] });
+const sharedStreamId = await user.store.Ceramic.uploadEncrypted(vc, {
+    recipients: [friend.id.did()],
+});
 
 // Should properly retrieve credential!  ✅
 await user.read.get(sharedStreamId);
@@ -118,11 +120,15 @@ export type CeramicEncryptionParams = {
 ```
 
 ```typescript
-const user = await initLearnCard({ seed: '123', debug: console.log })
+const user = await initLearnCard({ seed: '123', debug: console.log });
 const malicious = await initLearnCard({ seed: '666', debug: console.log });
 const friend = await initLearnCard({ seed: '808', debug: console.log });
 
-const unidirectionalStreamId = await user.invoke.publishContentToCeramic(vc, { encrypt: true, controllersCanDecrypt: false, recipients: [friend.id.did()] });
+const unidirectionalStreamId = await user.invoke.publishContentToCeramic(vc, {
+    encrypt: true,
+    controllersCanDecrypt: false,
+    recipients: [friend.id.did()],
+});
 
 // Should properly retrieve credential!  ✅
 await friend.read.get(unidirectionalStreamId);

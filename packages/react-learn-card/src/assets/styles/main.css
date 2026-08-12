@@ -1,4 +1,6 @@
-@import 'tailwindcss/utilities';
+@config "../../../tailwind.config.js";
+
+@tailwind utilities;
 
 .scrollbar-hide {
     -ms-overflow-style: none;
@@ -367,6 +369,16 @@
 
 .vc-display-card {
     font-family: 'Mouse Memoirs';
+}
+
+/*
+ * Ribbon tails extend 30px beyond the card. Keep that overhang plus an 8px
+ * visible gutter inside VCDisplayCard2 so every preview host gets the same fit.
+ */
+.vc-display-card-ribbon-safe-area {
+    box-sizing: border-box;
+    /* Hosts that already reserve ribbon-tail space can set this custom property to 0px. */
+    padding-inline: var(--vc-display-card-ribbon-safe-area, 38px);
 }
 
 .vc-toggle-side-button {

@@ -7,6 +7,8 @@ import GamePromptHeader from './GamePromptHeader';
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useWallet } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../../paraglide/messages.js';
 
 type ReturnToGamePromptProps = {
     contractDetails?: ConsentFlowContractDetails;
@@ -18,6 +20,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
     returnToPrevStep,
 }) => {
     const history = useHistory();
+    const brandingConfig = useBrandingConfig();
     const { returnTo: urlReturnTo } = queryString.parse(location.search);
 
     const { data: consentedContracts } = useConsentedContracts();
@@ -78,7 +81,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
                 <div className="w-full text-center text-grayscale-900 text-[17px] font-notoSans px-[30px]">
                     <span>If you return to</span>{' '}
                     <span className="font-[600] leading-[24px] tracking-[0.25px]">{gameTitle}</span>
-                    <span>, your progress on LearnCard will be lost.</span>
+                    <span>, your progress on {brandingConfig?.name} will be lost.</span>
                 </div>
             </div>
 
@@ -87,21 +90,21 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom"
             >
-                Return to Game
+                {m['consentFlow.continueToGame']()}
             </button>
             <button
                 onClick={() => history.push('/wallet')}
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom"
             >
-                Exit to LearnCard
+                Exit to {brandingConfig?.name}
             </button>
             <button
                 onClick={returnToPrevStep}
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
             >
-                Back
+                {m['common.back']()}
             </button>
         </div>
     );

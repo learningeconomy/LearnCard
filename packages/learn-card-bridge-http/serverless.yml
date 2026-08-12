@@ -10,8 +10,7 @@ plugins:
 
 custom:
     esbuild:
-        packager: pnpm
-        plugins: esbuildWasmPlugin.cjs
+        packager: bun
     warmup:
         default:
             enabled: true
@@ -26,6 +25,10 @@ provider:
         cors: true
     environment:
         WALLET_SEED: ${env:WALLET_SEED}
+
+package:
+    patterns:
+        - src/didkit_wasm_bg.wasm
 
 functions:
     api:

@@ -4,11 +4,10 @@ import {
     ApiSkillNode,
     convertApiSkillNodeToSkillTreeNode,
 } from '../../helpers/skillFramework.helpers';
-import SkillProficiencyBar, {
-    SkillLevel,
-    SkillProficiencyBarModeEnum,
-} from './SkillProficiencyBar';
+import SkillProficiencyBar from './SkillProficiencyBar';
+import { SkillLevel, SkillProficiencyBarModeEnum } from './skillTypes';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
+import * as m from '../../paraglide/messages.js';
 
 type MainSkillInfoBoxProps = {
     frameworkId: string;
@@ -45,7 +44,7 @@ const MainSkillInfoBox: React.FC<MainSkillInfoBoxProps> = ({ frameworkId, skillI
                         version="filled"
                     />
                     <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                        Skill
+                        {m['skills.skill']()}
                     </p>
                 </div>
             </div>

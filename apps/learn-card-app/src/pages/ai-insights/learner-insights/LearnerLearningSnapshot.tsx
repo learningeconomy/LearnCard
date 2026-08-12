@@ -86,7 +86,7 @@ const AiInsightsLearningSnapshots: React.FC<{ isLoading: boolean; aiInsightCrede
     }
 
     return (
-        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px] mb-4">
+        <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 p-[15px] rounded-[15px] mt-4">
             <div className="w-full flex items-center justify-start">
                 <AiPathwaysIconWithShape className="w-auto h-[40px]" />
                 <h2 className="text-xl text-grayscale-800 font-notoSans">Learning Snapshots</h2>

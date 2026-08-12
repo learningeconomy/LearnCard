@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute, openRoute } from '@routes';
+import { t, profileRoute, openRoute, guardianGatedRoute } from '@routes';
 import { ConsentFlowContract } from '@models';
 
 import {
@@ -55,6 +55,7 @@ import {
     getRequestedForForUser,
     getContractById,
     getAllRequestsForTargetProfile,
+    getSharedInsightsRequestsForTargetProfile,
 } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
@@ -63,7 +64,9 @@ import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile, getProfileIdFromString } from '@helpers/did.helpers';
 import {
     syncCredentialsToContract,
+    updateRequestedForStatusIfExists,
     updateTerms,
+    pruneDeletedUrisFromConsentTerms,
     upsertRequestedForRelationship,
     withdrawTerms,
 } from '@accesslayer/consentflowcontract/relationships/update';
@@ -89,10 +92,16 @@ import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { resolveAndValidateDeniedWriters } from '@helpers/consentflow.helpers';
 import {
+    sanitizeProfileForTier,
+    stripSensitiveProfileListFields,
+} from '@helpers/profile-privacy.helpers';
+import {
     addAutoBoostsToContractDb,
     removeAutoBoostsFromContractDb,
 } from '@accesslayer/consentflowcontract/relationships/manageAutoboosts';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { ProfileType } from 'types/profile';
 
 export const contractsRouter = t.router({
@@ -665,7 +674,7 @@ export const contractsRouter = t.router({
 
             // Use the sendBoost helper to issue the credential with contract relationship
             return sendBoost({
-                from: profile,
+                from: { type: 'profile', profile },
                 to: otherProfile,
                 boost,
                 credential,
@@ -847,7 +856,7 @@ export const contractsRouter = t.router({
             let credential: VC | JWE;
             try {
                 credential = await issueCredentialWithSigningAuthority(
-                    profile,
+                    { type: 'profile', profile },
                     unsignedVc,
                     sa,
                     ctx.domain
@@ -862,7 +871,7 @@ export const contractsRouter = t.router({
 
             // Send the boost
             return sendBoost({
-                from: profile,
+                from: { type: 'profile', profile },
                 to: otherProfile,
                 boost,
                 credential,
@@ -873,7 +882,7 @@ export const contractsRouter = t.router({
             });
         }),
 
-    consentToContract: profileRoute
+    consentToContract: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,
@@ -897,6 +906,14 @@ export const contractsRouter = t.router({
         .output(z.object({ termsUri: z.string(), redirectUrl: z.string().optional() }))
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
+            const { isChildAccount, hasGuardianApproval } = ctx;
+
+            if (isChildAccount && !hasGuardianApproval) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Child accounts require guardian approval to consent to contracts',
+                });
+            }
 
             const { terms, contractUri, expiresAt, oneTime, recipientToken } = input;
 
@@ -907,6 +924,13 @@ export const contractsRouter = t.router({
             }
 
             if (await hasProfileConsentedToContract(profile, contractDetails.contract)) {
+                try {
+                    await upsertRequestedForRelationship(
+                        contractDetails.contract.id,
+                        profile.profileId,
+                        'accepted'
+                    );
+                } catch {}
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: "You've already consented to this contract!",
@@ -1056,6 +1080,14 @@ export const contractsRouter = t.router({
                 ctx.domain
             );
 
+            try {
+                await updateRequestedForStatusIfExists(
+                    contractDetails.contract.id,
+                    profile.profileId,
+                    'accepted'
+                );
+            } catch {}
+
             const relationship = await getContractTermsForProfile(
                 profile,
                 contractDetails.contract
@@ -1140,7 +1172,7 @@ export const contractsRouter = t.router({
             };
         }),
 
-    updateConsentedContractTerms: profileRoute
+    updateConsentedContractTerms: guardianGatedRoute
         .meta({
             openapi: {
                 protect: true,
@@ -1163,6 +1195,15 @@ export const contractsRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
+            const { isChildAccount, hasGuardianApproval } = ctx;
+
+            if (isChildAccount && !hasGuardianApproval) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message:
+                        'Child accounts require guardian approval to update consented contract terms',
+                });
+            }
 
             const { uri, terms, expiresAt, oneTime } = input;
 
@@ -1205,6 +1246,78 @@ export const contractsRouter = t.router({
             ]);
 
             return true;
+        }),
+
+    deleteCredentialFromAllContracts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/consent/prune-deleted-uris',
+                tags: ['Contracts'],
+                summary: 'Delete credential references from all consent terms',
+                description:
+                    'Removes deleted credential URIs from any live consent terms that still reference them',
+            },
+            requiredScope: 'contracts:write',
+        })
+        .input(
+            z.object({
+                deletedUris: z.string().array().min(1),
+            })
+        )
+        .output(
+            z.object({
+                contractsUpdated: z.number(),
+                removedSharedUris: z.number(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { deletedUris } = input;
+
+            const uniqueDeletedUris = [...new Set(deletedUris.filter(uri => Boolean(uri)))];
+            if (!uniqueDeletedUris.length) {
+                return { contractsUpdated: 0, removedSharedUris: 0 };
+            }
+
+            const pageSize = 100;
+            const allContracts: Awaited<ReturnType<typeof getConsentedContractsForProfile>> = [];
+            let contractsUpdated = 0;
+            let removedSharedUris = 0;
+            let cursor: string | undefined = undefined;
+
+            do {
+                const results = await getConsentedContractsForProfile(profile, {
+                    query: {},
+                    limit: pageSize + 1,
+                    cursor,
+                    domain: ctx.domain,
+                });
+
+                const contracts = results.slice(0, pageSize);
+                allContracts.push(...contracts);
+
+                cursor = results.length > pageSize ? contracts.at(-1)?.terms.updatedAt : undefined;
+            } while (cursor);
+
+            for (const contract of allContracts) {
+                if (contract.terms.status && contract.terms.status !== 'live') {
+                    continue;
+                }
+
+                const removed = await pruneDeletedUrisFromConsentTerms(
+                    contract.terms,
+                    uniqueDeletedUris
+                );
+
+                if (!removed) continue;
+
+                contractsUpdated += 1;
+                removedSharedUris += removed;
+            }
+
+            return { contractsUpdated, removedSharedUris };
         }),
 
     withdrawConsent: profileRoute
@@ -1751,10 +1864,11 @@ export const contractsRouter = t.router({
                 type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
                 from: profile,
                 to: targetProfile as ProfileType,
-                message: {
-                    title: 'AI Insights',
-                    body: `${profile?.displayName} has requested to view your insights.`,
-                },
+                message: getNotificationMessage(
+                    'consentFlowViewRequest',
+                    resolveRecipientLocale(targetProfile as ProfileType),
+                    { name: profile?.displayName }
+                ),
                 data: {
                     metadata: {
                         type: 'AI Insight',
@@ -1836,10 +1950,11 @@ export const contractsRouter = t.router({
                 type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
                 from: fromProfile,
                 to: targetProfile as ProfileType,
-                message: {
-                    title: 'AI Insights',
-                    body: `${fromProfile?.displayName} is inviting you to view their insights. Request access to continue.`,
-                },
+                message: getNotificationMessage(
+                    'consentFlowInvite',
+                    resolveRecipientLocale(targetProfile as ProfileType),
+                    { name: fromProfile?.displayName }
+                ),
                 data: {
                     metadata: {
                         type: 'AI Insight',
@@ -1898,7 +2013,17 @@ export const contractsRouter = t.router({
 
             const requests = await getRequestedForList(contractByUri.id);
 
-            return requests;
+            return Promise.all(
+                requests.map(async request => {
+                    const updatedProfile = updateDidForProfile(ctx.domain, request.profile);
+                    return {
+                        ...request,
+                        profile: stripSensitiveProfileListFields(
+                            sanitizeProfileForTier(updatedProfile, 'authenticated')
+                        ),
+                    };
+                })
+            );
         }),
 
     getRequestStatusForProfile: profileRoute
@@ -1968,7 +2093,16 @@ export const contractsRouter = t.router({
 
             const requests = await getRequestedForForUser(contract.id, resolvedTargetProfileId);
 
-            return requests?.[0] ?? null;
+            if (!requests?.[0]) return null;
+
+            const updatedProfile = updateDidForProfile(ctx.domain, requests[0].profile);
+
+            return {
+                ...requests[0],
+                profile: stripSensitiveProfileListFields(
+                    sanitizeProfileForTier(updatedProfile, 'authenticated')
+                ),
+            };
         }),
 
     markContractRequestAsSeen: profileRoute
@@ -2161,12 +2295,79 @@ export const contractsRouter = t.router({
             const requests = await getAllRequestsForTargetProfile(resolvedTargetProfileId);
 
             // Construct URIs for contracts
-            return requests.map(request => ({
-                ...request,
-                contract: {
-                    ...request.contract,
-                    uri: constructUri('contract', request.contract.id, ctx.domain),
-                },
+            return Promise.all(
+                requests.map(async request => {
+                    const updatedProfile = updateDidForProfile(ctx.domain, request.profile);
+
+                    return {
+                        ...request,
+                        profile: stripSensitiveProfileListFields(
+                            sanitizeProfileForTier(updatedProfile, 'authenticated')
+                        ),
+                        contract: {
+                            ...request.contract,
+                            uri: constructUri('contract', request.contract.id, ctx.domain),
+                        },
+                    };
+                })
+            );
+        }),
+
+    getSharedInsightsRequestsForProfile: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contracts/shared-insights-requests-for-profile',
+                tags: ['Contracts'],
+                summary: 'Get profiles a user has shared insights with',
+                description:
+                    'Gets profiles with REQUESTED_FOR relationships targeting the current user, including request status.',
+            },
+        })
+        .input(
+            z.object({
+                targetProfileId: z.string(),
+            })
+        )
+        .output(
+            z.array(
+                z.object({
+                    profile: LCNProfileValidator,
+                    status: z.enum(['pending', 'accepted', 'denied']).nullable(),
+                    readStatus: z.enum(['unseen', 'seen']).nullable().optional(),
+                    contractUri: z.string().optional(),
+                })
+            )
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { targetProfileId } = input;
+
+            const resolvedTargetProfileId = await getProfileIdFromString(
+                targetProfileId,
+                ctx.domain
+            );
+            if (!resolvedTargetProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const isCheckingOwnRequests = profile.profileId === resolvedTargetProfileId;
+
+            if (!isCheckingOwnRequests) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You can only query your own shared insights requests.',
+                });
+            }
+
+            const results = await getSharedInsightsRequestsForTargetProfile(
+                resolvedTargetProfileId
+            );
+
+            return results.map(({ contractId, ...rest }) => ({
+                ...rest,
+                contractUri: constructUri('contract', contractId, ctx.domain),
             }));
         }),
 
@@ -2233,10 +2434,11 @@ export const contractsRouter = t.router({
                 type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
                 from: profile,
                 to: parentProfile as ProfileType,
-                message: {
-                    title: 'AI Insights',
-                    body: `${profile?.displayName} would like to share their insights with ${targetProfile?.displayName}.`,
-                },
+                message: getNotificationMessage(
+                    'consentFlowShare',
+                    resolveRecipientLocale(parentProfile as ProfileType),
+                    { name: profile?.displayName, targetName: targetProfile?.displayName }
+                ),
                 data: {
                     metadata: {
                         type: 'AI Insight',

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-diplomas');
 
 import TrashBin from '../../../svgs/TrashBin';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -10,13 +12,18 @@ import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
+    useDeleteCredentialRecord,
     useConfirmation,
+    useToast,
+    ToastTypeEnum,
     checklistStore,
     useGetCheckListStatus,
     UploadTypesEnum,
 } from 'learn-card-base';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
+import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type DiplomaType = {
     id: string;
@@ -24,6 +31,15 @@ export type DiplomaType = {
     fileSize: string;
     fileType: string;
     type: string;
+};
+
+type DiplomaCredential = {
+    recordId: string;
+    rawArtifact?: {
+        fileName?: string;
+        fileSize?: string;
+        fileType?: string;
+    };
 };
 
 export const CheckListDiplomas: React.FC = () => {
@@ -34,12 +50,13 @@ export const CheckListDiplomas: React.FC = () => {
         useUploadFile(UploadTypesEnum.Diploma);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
+    const { presentToast } = useToast();
+    const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const [diplomas, setDiplomas] = useState<DiplomaType[]>([]);
 
@@ -73,7 +90,7 @@ export const CheckListDiplomas: React.FC = () => {
                 return;
             }
 
-            const diplomaCredentials = await Promise.all(
+            const diplomaCredentials: DiplomaCredential[] = await Promise.all(
                 recordUris.map(async ({ uri, id }: { uri: string; id: string }) => {
                     return {
                         ...(await wallet.read.get(uri)),
@@ -82,11 +99,11 @@ export const CheckListDiplomas: React.FC = () => {
                 })
             );
 
-            const _diplomas = diplomaCredentials.map(({ recordId, rawArtifact }: any) => ({
+            const _diplomas = diplomaCredentials.map(({ recordId, rawArtifact }) => ({
                 id: recordId,
-                fileName: rawArtifact?.fileName,
-                fileSize: rawArtifact?.fileSize,
-                fileType: rawArtifact?.fileType,
+                fileName: rawArtifact?.fileName ?? '',
+                fileSize: rawArtifact?.fileSize ?? '',
+                fileType: rawArtifact?.fileType ?? '',
                 type: UploadTypesEnum.Diploma,
             }));
 
@@ -94,43 +111,64 @@ export const CheckListDiplomas: React.FC = () => {
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
-            console.error('handleSetDiploma::error', error);
+            log.error('handleSetDiploma::error', error);
         }
     };
 
-    const handleDeleteDiploma = async (id: string) => {
-        try {
-            setIsDeleting(true);
-            const wallet = await initWallet();
+    const handleDeleteDiploma = (id: string) => {
+        const deleted = diplomas.find(diploma => diploma?.id === id);
+        if (!deleted) return;
 
-            await wallet.index.LearnCloud.remove(id);
-            await refetchCheckListStatus();
-            setDiplomas(prevCerts => prevCerts.filter(cert => cert?.id !== id));
-            setIsDeleting(false);
-        } catch (error) {
-            setIsDeleting(false);
-            console.error('handleDeleteDiploma::error', error);
-        }
+        // Optimistic synchronous UI update
+        setDiplomas(prev => prev.filter(diploma => diploma?.id !== id));
+
+        // Fire-and-forget background work
+        void (async () => {
+            try {
+                const wallet = await initWallet();
+                const record = await wallet.index.LearnCloud.get({ id });
+                const targetRecord = record?.[0] as unknown as LCR | undefined;
+
+                if (!targetRecord) return;
+
+                await deleteCredentialRecord(targetRecord);
+                refetchCheckListStatus();
+            } catch (error) {
+                log.error('handleDeleteDiploma::error', error);
+                // Re-insert only the failed item so concurrent deletions aren't clobbered
+                setDiplomas(prev => (prev.some(d => d?.id === id) ? prev : [...prev, deleted]));
+                presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
+                    title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
+                    hasDismissButton: true,
+                    type: ToastTypeEnum.Error,
+                    hasX: true,
+                    duration: 5000,
+                });
+            }
+        })();
     };
 
     const confirmDelete = async (id: string) => {
         if (
             await confirm({
-                text: `Are you sure you want remove your uploaded diploma?`,
+                text: m['passport.buildMyLearnCard.managers.confirmRemove.diploma'](),
                 cancelButtonClassName:
                     'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                 confirmButtonClassName:
                     'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
             })
         ) {
-            await handleDeleteDiploma(id);
+            handleDeleteDiploma(id);
         }
     };
 
     const triggerFileInput = () => fileInputRef.current?.click();
 
-    let buttonText = diplomas?.length > 0 ? 'Add More' : 'Add';
-    buttonText = isUploading ? 'Uploading...' : buttonText;
+    let buttonText =
+        diplomas?.length > 0
+            ? m['passport.buildMyLearnCard.managers.addMore']()
+            : m['passport.buildMyLearnCard.managers.addButton']();
+    buttonText = isUploading ? m['passport.buildMyLearnCard.managers.uploading']() : buttonText;
     const buttonIcon = <UploadIcon className="w-[25px] h-[26px] text-white mr-2" />;
 
     return (
@@ -141,16 +179,16 @@ export const CheckListDiplomas: React.FC = () => {
             <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
                 <div className="flex flex-col items-start justify-center py-2 w-full">
                     <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
-                        Diplomas
+                        {m['passport.buildMyLearnCard.managers.diplomas.title']()}
                     </h4>
                     <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                        Upload academic diploma files.
+                        {m['passport.buildMyLearnCard.managers.diplomas.description']()}
                     </p>
 
                     <input
                         multiple
                         type="file"
-                        accept=".pdf,.txt,.docx"
+                        accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp"
                         onChange={async e => {
                             await getFiles(e, UploadTypesEnum.Diploma);
                         }}
@@ -168,10 +206,9 @@ export const CheckListDiplomas: React.FC = () => {
                     </button>
                 </div>
 
-                {(isLoading || isDeleting) && <CheckListItemSkeleton />}
+                {isLoading && <CheckListItemSkeleton />}
 
                 {!isLoading &&
-                    !isDeleting &&
                     diplomas?.length > 0 &&
                     diplomas?.map?.((diploma: DiplomaType) => {
                         return (

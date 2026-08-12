@@ -1,42 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import queryString from 'query-string';
 import { useLocation, useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
-import {
-    IonContent,
-    IonFooter,
-    IonRow,
-    IonPage,
-    useIonAlert,
-    IonHeader,
-    IonToolbar,
-    useIonModal,
-} from '@ionic/react';
+import { getVCDisplayCardVariant } from '@learncard/react';
+import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import { IonContent, IonPage, useIonAlert, IonHeader, IonToolbar, useIonModal } from '@ionic/react';
 import SharedBoostVerificationBlock, {
     SharedBoostVerificationBlockViewMode,
 } from './SharedBoostVerificationBlock';
-import Lottie from 'react-lottie-player';
-const HourGlass = '/lotties/hourglass.json';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import MainHeader from '../main-header/MainHeader';
 import EndorsementRequestModal from '../boost-endorsements/EndorsementRequestModal/EndorsementRequestModal';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import SharedBoostPageFooter from './SharedBoostPageFooter';
+import ClrTranscriptFullPage from '../clr-transcript/surfaces/ClrTranscriptFullPage';
 
 import { VC, VerificationItem, VP } from '@learncard/types';
 import {
     getDefaultCategoryForCredential,
     getEndorsementsFromPresentations,
+    isClrCredential,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    ClrTranscriptSurface,
+    normalizeClrTranscriptDisplayModel,
+} from '../../helpers/clrRenderer.helpers';
 import { BrandingEnum, useGetCredentialWithEdits, useIsLoggedIn } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import {
+    deriveLifecycleStatus,
+    CredentialLifecycleStatus,
+} from '../../hooks/deriveLifecycleStatus';
 import endorsementsRequestStore from '../../stores/endorsementsRequestStore';
 import EndorsementDraftRequestSuccess from '../boost-endorsements/EndorsementRequestForm/EndorsementDraftRequestSuccess';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import { createEndorsementShareLinkInfo } from '../boost-endorsements/EndorsementRequestForm/endorsement-request.helpers';
+import * as m from '../../paraglide/messages.js';
 
-const websiteLink = 'https://learncard.app/login';
+const websiteLink = `${getAppBaseUrl()}/login`;
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('view-shared-boost');
 
 const ViewSharedBoost: React.FC<{
     showEndorsementRequest?: boolean;
@@ -48,8 +56,8 @@ const ViewSharedBoost: React.FC<{
     const { uri: _uri, seed: _seed, pin: _pin } = queryString.parse(location.search);
     const [isFront, setIsFront] = useState(true);
     const [vc, setVC] = useState<VP>();
-    const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
+    const [lifecycleStatus, setLifecycleStatus] = useState<CredentialLifecycleStatus>('active');
     const [tryRefetch, setTryRefetch] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -72,6 +80,19 @@ const ViewSharedBoost: React.FC<{
 
     const { credentialWithEdits } = useGetCredentialWithEdits(boost, uri);
     let _boost = credentialWithEdits ?? boost;
+    const sharedCredential = Array.isArray(_boost) ? _boost[0] : _boost;
+    const isSharedClrCredential = sharedCredential
+        ? isClrCredential(sharedCredential as VC)
+        : false;
+    const clrModel = useMemo(
+        () =>
+            isSharedClrCredential && sharedCredential
+                ? normalizeClrTranscriptDisplayModel(
+                      sharedCredential as unknown as Record<string, unknown>
+                  )
+                : null,
+        [sharedCredential, isSharedClrCredential]
+    );
 
     // Get credential from ceramic
     const fetchCredential = async (uri: string) => {
@@ -84,15 +105,32 @@ const ViewSharedBoost: React.FC<{
             setWallet(wallet);
             const resolvedVc = await wallet.read.get(uri);
 
+            const credentialToVerify = Array.isArray(resolvedVc?.verifiableCredential)
+                ? resolvedVc?.verifiableCredential[0]
+                : resolvedVc?.verifiableCredential;
+
             const verifications = await wallet?.invoke?.verifyCredential(
-                Array.isArray(resolvedVc?.verifiableCredential)
-                    ? resolvedVc?.verifiableCredential[0]
-                    : resolvedVc?.verifiableCredential,
+                credentialToVerify,
                 {},
                 true
             );
 
             setVerificationItems(verifications);
+
+            // Derive revoked/suspended lifecycle status from a raw verification check
+            // (prettify=false) using the same bespoke wallet, so the shared card can reflect
+            // it. Fail-open to 'active' so a check error never renders a valid credential as
+            // revoked.
+            try {
+                const rawCheck = await (wallet?.invoke?.verifyCredential as any)?.(
+                    credentialToVerify,
+                    {},
+                    false
+                );
+                setLifecycleStatus(deriveLifecycleStatus(rawCheck));
+            } catch {
+                setLifecycleStatus('active');
+            }
 
             setVC(resolvedVc);
             if (resolvedVc?.verifiableCredential) {
@@ -113,14 +151,14 @@ const ViewSharedBoost: React.FC<{
             }
             setLoading(false);
             return vc;
-        } catch (e) {
+        } catch (error) {
             setLoading(false);
-            setErrMsg(`Error: wrong PIN: ${e}`);
+            log.warn('Unable to open shared credential', error);
 
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: `Error fetching credential: ${e}`,
+                header: m['endorsement.viewRequest.errorOpening'](),
                 buttons: [
                     {
                         text: 'OK',
@@ -133,22 +171,31 @@ const ViewSharedBoost: React.FC<{
                         text: 'Cancel',
                         role: 'cancel',
                         handler: () => {
-                            console.log('Cancel clicked');
+                            log.info('Cancel clicked');
                         },
                     },
                 ],
             });
 
-            throw new Error(`Error fetching credential: ${e}`);
+            return undefined;
         }
     };
 
     useEffect(() => {
-        if (pin && uri) {
-            fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
-            setShareLinkInfo(`uri=${uri}&seed=${seed}&pin=${pin}`);
+        if (pin && seed && uri) {
+            setBoost(undefined);
+            setVC(undefined);
+            setExistingEndorsements(null);
+            setShareLinkInfo(
+                createEndorsementShareLinkInfo({
+                    uri: String(uri),
+                    seed: String(seed),
+                    pin: String(pin),
+                })
+            );
+            void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
         }
-    }, [pin, tryRefetch]);
+    }, [pin, seed, uri, tryRefetch]);
 
     const [presentModal, dismissModal] = useIonModal(SharedBoostVerificationBlock, {
         handleCloseModal: () => dismissModal(),
@@ -167,6 +214,27 @@ const ViewSharedBoost: React.FC<{
 
     const redirectHome = () => history.push('/');
 
+    // Revoked/suspended visual treatment for the shared card. Mirrors the shared
+    // getLifecycleTreatment helper (kept inline here to avoid a cross-package import
+    // for a distinct card surface). Inline filter style so it applies regardless of
+    // Tailwind scanning.
+    const isInactiveCredential = lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended';
+    const inactiveMediaStyle: React.CSSProperties | undefined = isInactiveCredential
+        ? { filter: 'grayscale(1) brightness(0.9)' }
+        : undefined;
+    const lifecyclePillBg = lifecycleStatus === 'suspended' ? '#D97706' : '#DC2626';
+    const lifecyclePillLabel =
+        lifecycleStatus === 'suspended' ? m['issue.suspended']() : m['issue.revoked']();
+    const isRibbonDisplayCard =
+        sharedCredential && getVCDisplayCardVariant(sharedCredential as VC, category) === 'ribbon';
+    let previewHorizontalPaddingClass = 'px-[32px]';
+
+    if (category === 'ID') {
+        previewHorizontalPaddingClass = 'px-[12px]';
+    } else if (isRibbonDisplayCard) {
+        previewHorizontalPaddingClass = 'px-0';
+    }
+
     if (showEndorsementRequest) {
         return (
             <EndorsementRequestModal
@@ -178,7 +246,9 @@ const ViewSharedBoost: React.FC<{
     }
 
     if (showDraftSuccess) {
-        return <EndorsementDraftRequestSuccess credential={_boost} categoryType={category} />;
+        return (
+            <EndorsementDraftRequestSuccess credential={_boost} categoryType={category} autoSend />
+        );
     }
 
     return (
@@ -215,67 +285,86 @@ const ViewSharedBoost: React.FC<{
                 </IonHeader>
             )}
             {isLoggedIn && <MainHeader showSideMenuButton />}
-            <IonContent fullscreen className="share-page">
-                {/* verification block */}
-                {boost && wallet && !loading && (
-                    <SharedBoostVerificationBlock
-                        verificationItems={verificationItems}
-                        boost={boost}
-                    />
-                )}
-
-                {loading && (
-                    <div className="relative w-full h-full text-center flex flex-col items-center justify-center">
-                        <div className="max-w-[200px] mt-[-50px]">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
-                        </div>
-                    </div>
-                )}
-                {boost && wallet && !loading && (
-                    <section
-                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${
-                            category === 'ID' ? 'px-[12px]' : 'px-[32px]'
-                        } ]`}
-                    >
-                        {/* 
-                           // TODO: FIX THE NAV BUTTON FOR CERTIFICATES  
-                        */}
+            <BoostFooterLayout
+                contentOwnsScroll
+                footerProps={{
+                    handleDetails: isFront ? () => setIsFront(false) : undefined,
+                    handleBack: isFront ? undefined : () => setIsFront(true),
+                }}
+            >
+                <IonContent fullscreen className="share-page h-full">
+                    {/* verification block */}
+                    {boost && wallet && !loading && (
                         <SharedBoostVerificationBlock
-                            mode={SharedBoostVerificationBlockViewMode.mini}
                             verificationItems={verificationItems}
                             boost={boost}
-                            handleOnClick={presentModal}
                         />
+                    )}
 
-                        <VCDisplayCardWrapper2
-                            credential={_boost}
-                            lc={wallet}
-                            hideNavButtons
-                            hideQRCode
-                            hideFrontFaceDetails
-                            isFrontOverride={isFront}
-                            setIsFrontOverride={setIsFront}
-                        />
-                    </section>
-                )}
+                    {loading && (
+                        <div className="relative w-full h-full text-center flex flex-col items-center justify-center">
+                            <div className="max-w-[200px] mt-[-50px]">
+                                <LoadingSpinner />
+                            </div>
+                        </div>
+                    )}
+                    {boost && wallet && !loading && (
+                        <section
+                            className={`relative w-full min-h-full text-left flex flex-col items-center justify-start pt-4 ${previewHorizontalPaddingClass}`}
+                        >
+                            {/*
+                               // TODO: FIX THE NAV BUTTON FOR CERTIFICATES
+                            */}
+                            <SharedBoostVerificationBlock
+                                mode={SharedBoostVerificationBlockViewMode.mini}
+                                verificationItems={verificationItems}
+                                boost={boost}
+                                handleOnClick={presentModal}
+                            />
 
-                <IonFooter
-                    mode="ios"
-                    className="w-full flex justify-center items-center ion-no-border absolute bottom-0"
-                >
-                    <IonRow className="relative z-10 w-full flex justify-center items-center gap-8">
-                        <BoostFooter
-                            handleDetails={isFront ? () => setIsFront(!isFront) : undefined}
-                            handleBack={!isFront ? () => setIsFront(!isFront) : undefined}
-                        />
-                    </IonRow>
-                </IonFooter>
-            </IonContent>
+                            {isSharedClrCredential && clrModel && sharedCredential ? (
+                                <ClrTranscriptFullPage
+                                    model={clrModel}
+                                    boost={sharedCredential as VC}
+                                    boostUri={typeof uri === 'string' ? uri : undefined}
+                                    options={{
+                                        viewer: 'student',
+                                        surface: ClrTranscriptSurface.Full,
+                                    }}
+                                />
+                            ) : (
+                                <div className="relative w-full flex flex-col items-center">
+                                    {/* Keep the status pill outside the filtered wrapper. */}
+                                    {isInactiveCredential && (
+                                        <span
+                                            className="mb-3 rounded-full px-[14px] py-[4px] text-[12px] font-extrabold uppercase tracking-wide text-white shadow-[0_2px_6px_rgba(0,0,0,0.2)]"
+                                            style={{ backgroundColor: lifecyclePillBg }}
+                                            data-testid="shared-boost-lifecycle-pill"
+                                        >
+                                            {lifecyclePillLabel}
+                                        </span>
+                                    )}
+                                    <div
+                                        className="w-full flex flex-col items-center"
+                                        style={inactiveMediaStyle}
+                                    >
+                                        <VCDisplayCardWrapper2
+                                            credential={_boost}
+                                            lc={wallet}
+                                            hideNavButtons
+                                            hideQRCode
+                                            hideFrontFaceDetails
+                                            isFrontOverride={isFront}
+                                            setIsFrontOverride={setIsFront}
+                                            lifecycleStatus={lifecycleStatus}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </section>
+                    )}
+                </IonContent>
+            </BoostFooterLayout>
         </IonPage>
     );
 };

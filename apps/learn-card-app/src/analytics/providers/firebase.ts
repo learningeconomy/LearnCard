@@ -1,4 +1,6 @@
 import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('firebase');
 
 import type { AnalyticsProvider } from '../types';
 import type { AnalyticsEventName, EventPayload } from '../events';
@@ -13,9 +15,9 @@ export class FirebaseProvider implements AnalyticsProvider {
     async init(): Promise<void> {
         try {
             await FirebaseAnalytics.setEnabled({ enabled: true });
-            console.debug('[Analytics:Firebase] Initialized');
+            log.debug('[Analytics:Firebase] Initialized');
         } catch (error) {
-            console.error('[Analytics:Firebase] Failed to initialize', error);
+            log.error('[Analytics:Firebase] Failed to initialize', error);
         }
     }
 
@@ -23,18 +25,21 @@ export class FirebaseProvider implements AnalyticsProvider {
         try {
             await FirebaseAnalytics.setUserId({ userId });
         } catch (error) {
-            console.error('[Analytics:Firebase] identify error', error);
+            log.error('[Analytics:Firebase] identify error', error);
         }
     }
 
-    async track<E extends AnalyticsEventName>(event: E, properties: EventPayload<E>): Promise<void> {
+    async track<E extends AnalyticsEventName>(
+        event: E,
+        properties: EventPayload<E>
+    ): Promise<void> {
         try {
             await FirebaseAnalytics.logEvent({
                 name: event,
                 params: properties as Record<string, unknown>,
             });
         } catch (error) {
-            console.error('[Analytics:Firebase] track error', error);
+            log.error('[Analytics:Firebase] track error', error);
         }
     }
 
@@ -45,7 +50,7 @@ export class FirebaseProvider implements AnalyticsProvider {
                 screenClassOverride: name,
             });
         } catch (error) {
-            console.error('[Analytics:Firebase] page error', error);
+            log.error('[Analytics:Firebase] page error', error);
         }
     }
 
@@ -53,7 +58,7 @@ export class FirebaseProvider implements AnalyticsProvider {
         try {
             await FirebaseAnalytics.setUserId({ userId: null as unknown as string });
         } catch (error) {
-            console.error('[Analytics:Firebase] reset error', error);
+            log.error('[Analytics:Firebase] reset error', error);
         }
     }
 
@@ -61,7 +66,7 @@ export class FirebaseProvider implements AnalyticsProvider {
         try {
             await FirebaseAnalytics.setEnabled({ enabled });
         } catch (error) {
-            console.error('[Analytics:Firebase] setEnabled error', error);
+            log.error('[Analytics:Firebase] setEnabled error', error);
         }
     }
 }

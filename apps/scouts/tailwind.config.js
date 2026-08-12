@@ -1,5 +1,27 @@
 const colors = require('tailwindcss/colors');
 
+const lineClampPlugin = require('tailwindcss/plugin')(({ addUtilities }) => {
+    const utilities = {
+        '.line-clamp-none': {
+            overflow: 'visible',
+            display: 'block',
+            WebkitBoxOrient: 'horizontal',
+            WebkitLineClamp: 'unset',
+        },
+    };
+
+    for (let lineCount = 1; lineCount <= 6; lineCount += 1) {
+        utilities[`.line-clamp-${lineCount}`] = {
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: `${lineCount}`,
+        };
+    }
+
+    addUtilities(utilities);
+});
+
 module.exports = {
     content: [
         './src/**/*.{js,jsx,ts,tsx}',
@@ -178,14 +200,25 @@ module.exports = {
             },
             animation: {
                 'fade-in': 'fadeIn 0.5s ease-in-out',
+                'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
             },
             keyframes: {
                 fadeIn: {
                     '0%': { opacity: '0' },
                     '100%': { opacity: '1' },
                 },
+                'fade-in-up': {
+                    '0%': {
+                        opacity: '0',
+                        transform: 'translateY(10px)',
+                    },
+                    '100%': {
+                        opacity: '1',
+                        transform: 'translateY(0)',
+                    },
+                },
             },
         },
     },
-    plugins: [require('@tailwindcss/line-clamp'), require('tailwind-gradient-mask-image')],
+    plugins: [lineClampPlugin, require('tailwind-gradient-mask-image')],
 };

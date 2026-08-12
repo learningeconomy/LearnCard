@@ -17,6 +17,12 @@ import {
 
 export type AppStoreListingRelationships = {
     publishedBy: ModelRelatedNodesI<typeof Integration, IntegrationInstance>;
+    submittedBy: ModelRelatedNodesI<
+        typeof Profile,
+        ProfileInstance,
+        { submitted_at?: string },
+        { submitted_at?: string }
+    >;
     installedBy: ModelRelatedNodesI<
         typeof Profile,
         ProfileInstance,
@@ -29,6 +35,12 @@ export type AppStoreListingRelationships = {
         { templateAlias: string; createdAt: string },
         { templateAlias: string; createdAt: string }
     >;
+    createdBoost: ModelRelatedNodesI<
+        typeof Boost,
+        BoostInstance,
+        { date: string },
+        { date: string }
+    >;
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
         CredentialInstance,
@@ -38,6 +50,10 @@ export type AppStoreListingRelationships = {
             metadata?: Record<string, unknown>;
             activityId?: string;
             integrationId?: string;
+            status?: 'revoked' | 'suspended';
+            revokedAt?: string;
+            suspendedAt?: string;
+            unsuspendedAt?: string;
         },
         {
             to: string;
@@ -45,6 +61,10 @@ export type AppStoreListingRelationships = {
             metadata?: Record<string, unknown>;
             activityId?: string;
             integrationId?: string;
+            status?: 'revoked' | 'suspended';
+            revokedAt?: string;
+            suspendedAt?: string;
+            unsuspendedAt?: string;
         }
     >;
     usesSigningAuthority: ModelRelatedNodesI<
@@ -93,9 +113,21 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
             hero_background_color: { type: 'string', required: false },
             min_age: { type: 'number', required: false },
             age_rating: { type: 'string', enum: AgeRating.options, required: false },
+            contact_email: { type: 'string', required: false },
         } as any,
         relationships: {
             publishedBy: { model: Integration, direction: 'in', name: 'PUBLISHES_LISTING' },
+            submittedBy: {
+                model: Profile,
+                direction: 'in',
+                name: 'SUBMITTED_LISTING',
+                properties: {
+                    submitted_at: {
+                        property: 'submitted_at',
+                        schema: { type: 'string', required: false },
+                    },
+                },
+            },
             installedBy: {
                 model: Profile,
                 direction: 'in',
@@ -126,6 +158,17 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
                     },
                 },
             },
+            createdBoost: {
+                model: Boost,
+                direction: 'out',
+                name: 'CREATED_BY',
+                properties: {
+                    date: {
+                        property: 'date',
+                        schema: { type: 'string', required: true },
+                    },
+                },
+            },
             credentialSent: {
                 model: Credential,
                 direction: 'out',
@@ -133,6 +176,19 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
                 properties: {
                     to: { property: 'to', schema: { type: 'string', required: true } },
                     date: { property: 'date', schema: { type: 'string', required: true } },
+                    status: { property: 'status', schema: { type: 'string', required: false } },
+                    revokedAt: {
+                        property: 'revokedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    suspendedAt: {
+                        property: 'suspendedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    unsuspendedAt: {
+                        property: 'unsuspendedAt',
+                        schema: { type: 'string', required: false },
+                    },
                 },
             },
             usesSigningAuthority: {

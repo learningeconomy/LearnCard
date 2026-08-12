@@ -7,6 +7,7 @@ import {
     LCNNotificationTypeEnumValidator,
     LCNNotificationValidator,
     LCNProfile,
+    LCNVisibleProfile,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -72,18 +73,27 @@ export enum ThemeEnum {
 }
 
 export const PreferencesValidator = z.object({
-    theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]),
+    theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]).optional(),
+    aiEnabled: z.boolean().optional(),
+    aiAutoDisabled: z.boolean().optional(),
+    analyticsEnabled: z.boolean().optional(),
+    analyticsAutoDisabled: z.boolean().optional(),
+    bugReportsEnabled: z.boolean().optional(),
+    isMinor: z.boolean().optional(),
 });
 
 export type PreferencesType = z.infer<typeof PreferencesValidator>;
+export type CreatePreferencesType = {
+    theme: ThemeEnum;
+};
 
 /** @group LCA API Plugin */
 export const SigningAuthorityValidator = z.object({
     _id: z.string().optional(),
     ownerDid: z.string(),
     name: z.string(),
-    did: z.string().optional(),
-    endpoint: z.string().optional(),
+    did: z.string(),
+    endpoint: z.string(),
 });
 
 /** @group LCA API Plugin */
@@ -171,6 +181,7 @@ export const NotificationQueryInputValidator = z
         'from.profileId': z.string().optional(),
         'data.vcUris': z.union([z.string(), z.array(z.string())]).optional(),
         'data.vpUris': z.union([z.string(), z.array(z.string())]).optional(),
+        'data.metadata.listingId': z.string().optional(),
         read: z.boolean().optional(),
         archived: z.boolean().optional(),
         actionStatus: NotificationActionStatusEnumValidator.optional(),
@@ -181,10 +192,58 @@ export const NotificationQueryInputValidator = z
 export type NotificationQueryInputType = z.infer<typeof NotificationQueryInputValidator>;
 /** END Synced Types**/
 
+/** @group LCA API Plugin - SSS Key Management */
+export const AuthProviderTypeValidator = z.enum(['firebase', 'supertokens', 'keycloak', 'oidc']);
+export type AuthProviderType = z.infer<typeof AuthProviderTypeValidator>;
+
+export const ServerEncryptedShareValidator = z.object({
+    encryptedData: z.string(),
+    encryptedDek: z.string(),
+    iv: z.string(),
+});
+export type ServerEncryptedShare = z.infer<typeof ServerEncryptedShareValidator>;
+
+export const EncryptedShareValidator = z.object({
+    encryptedData: z.string(),
+    iv: z.string(),
+    salt: z.string().optional(),
+});
+export type EncryptedShare = z.infer<typeof EncryptedShareValidator>;
+
+export const RecoveryMethodTypeValidator = z.enum(['passkey', 'backup', 'phrase', 'email']);
+export type RecoveryMethodType = z.infer<typeof RecoveryMethodTypeValidator>;
+
+export const SecurityLevelValidator = z.enum(['basic', 'enhanced', 'advanced']);
+export type SecurityLevel = z.infer<typeof SecurityLevelValidator>;
+
+export const KeyProviderValidator = z.enum(['web3auth', 'sss']);
+export type KeyProvider = z.infer<typeof KeyProviderValidator>;
+
+export const RecoveryMethodInfoValidator = z.object({
+    type: RecoveryMethodTypeValidator,
+    createdAt: z.string(),
+    credentialId: z.string().optional(),
+    shareVersion: z.number().optional(),
+});
+export type RecoveryMethodInfo = z.infer<typeof RecoveryMethodInfoValidator>;
+
+export const GetAuthShareResponseValidator = z
+    .object({
+        authShare: ServerEncryptedShareValidator.nullable(),
+        primaryDid: z.string().nullable(),
+        securityLevel: SecurityLevelValidator,
+        recoveryMethods: z.array(RecoveryMethodInfoValidator),
+        keyProvider: KeyProviderValidator,
+        shareVersion: z.number(),
+        maskedRecoveryEmail: z.string().nullable(),
+    })
+    .nullable();
+export type GetAuthShareResponse = z.infer<typeof GetAuthShareResponseValidator>;
+
 /** @group LCA API Plugin */
 export type LCAPluginDependentMethods = {
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
-    getProfile: () => Promise<LCNProfile | undefined>;
+    getProfile: () => Promise<LCNVisibleProfile | undefined>;
     generateEd25519KeyFromBytes: (bytes: Uint8Array) => JWKWithPrivateKey;
     keyToDid: (type: 'key', keypair: JWKWithPrivateKey) => string;
     resolveDid: (did: string) => Promise<DidDocument>;
@@ -224,7 +283,10 @@ export type LCAPluginMethods = {
     ) => Promise<PaginatedNotificationsType | false>;
     updateNotificationMeta: (_id: string, meta: NotificationMetaType) => Promise<boolean>;
     markAllNotificationsRead: () => Promise<boolean>;
-    createSigningAuthority: (name: string, ownerDid?: string) => Promise<SigningAuthorityType | false>;
+    createSigningAuthority: (
+        name: string,
+        ownerDid?: string
+    ) => Promise<SigningAuthorityType | false>;
     getSigningAuthorities: () => Promise<SigningAuthorityType[] | false>;
     authorizeSigningAuthority: (
         name: string,
@@ -258,7 +320,10 @@ export type LCAPluginMethods = {
         username: string,
         password: string
     ) => Promise<ScoutSSOResponseType | null>;
-    sendLoginVerificationCode: (email: string) => Promise<{ success: boolean; message?: string }>;
+    sendLoginVerificationCode: (
+        email: string,
+        locale?: string
+    ) => Promise<{ success: boolean; message?: string }>;
     verifyLoginCode: (
         email: string,
         code: string
@@ -270,7 +335,7 @@ export type LCAPluginMethods = {
         token: string
     ) => Promise<{ success: boolean; error?: string; vp?: string }>;
     updatePreferences: (preferences: PreferencesType) => Promise<boolean>;
-    createPreferences: (preferences: PreferencesType) => Promise<boolean>;
+    createPreferences: (preferences: CreatePreferencesType) => Promise<boolean>;
     getPreferencesForDid: () => Promise<PreferencesType>;
     sendEndorsementShareLink: (
         email: string,
@@ -283,6 +348,45 @@ export type LCAPluginMethods = {
         },
         message: string
     ) => Promise<boolean>;
+
+    // SSS Key Management Methods
+    getAuthShare: (
+        authToken: string,
+        providerType: AuthProviderType
+    ) => Promise<GetAuthShareResponse>;
+
+    storeAuthShare: (
+        authToken: string,
+        providerType: AuthProviderType,
+        authShare: ServerEncryptedShare,
+        primaryDid: string,
+        securityLevel?: SecurityLevel
+    ) => Promise<{ success: boolean }>;
+
+    addRecoveryMethod: (
+        authToken: string,
+        providerType: AuthProviderType,
+        type: RecoveryMethodType,
+        encryptedShare?: EncryptedShare,
+        credentialId?: string
+    ) => Promise<{ success: boolean }>;
+
+    getRecoveryShare: (
+        authToken: string,
+        providerType: AuthProviderType,
+        type: RecoveryMethodType,
+        credentialId?: string
+    ) => Promise<{ encryptedShare?: EncryptedShare; shareVersion?: number } | null>;
+
+    markMigrated: (
+        authToken: string,
+        providerType: AuthProviderType
+    ) => Promise<{ success: boolean }>;
+
+    deleteUserKey: (
+        authToken: string,
+        providerType: AuthProviderType
+    ) => Promise<{ success: boolean }>;
 };
 
 /** @group LearnCardNetwork Plugin */
@@ -292,4 +396,7 @@ export type LCAPlugin = Plugin<
     LCAPluginMethods,
     'id',
     LCAPluginDependentMethods
->;
+> & {
+    /** Whether the plugin fell back because its initial LCA API setup failed. */
+    isOffline: boolean;
+};

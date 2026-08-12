@@ -2,16 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import useLaunchPadApps from './useLaunchPadApps';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
+
 import {
     LaunchPadAppListItem as LaunchPadAppListItemType,
     LaunchPadAppType,
     useAiFeatureGate,
 } from 'learn-card-base';
-import { UseQueryResult } from '@tanstack/react-query';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import useAppConnectModal from '../../hooks/useConnectAppModal';
-import { useLaunchPadContracts } from './useLaunchPadContracts';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 
 import { IonPage, IonContent, IonList } from '@ionic/react';
@@ -21,43 +21,72 @@ import LaunchPadAppListItem from './LaunchPadAppListItem';
 import LaunchPadContractListItem from './LaunchPadContractListItem';
 import MainHeader from '../../components/main-header/MainHeader';
 import LaunchPadSearch from './LaunchPadSearch/LaunchPadSearch';
-import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadAppTabs';
+import LaunchPadAppTabs, {
+    LaunchPadTabEnum,
+    getTabTranslationKey,
+} from './LaunchPadHeader/LaunchPadAppTabs';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
+import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
-import {
-    aiPassportApps,
-    areAiPassportAppsAvailable,
-} from '../../components/ai-passport-apps/aiPassport-apps.helpers';
 import {
     LaunchPadFilterOptionsEnum,
     LaunchPadSortOptionsEnum,
 } from './LaunchPadSearch/launchpad-search.helpers';
 
 import useAppStore, { mapTabToCategory } from './useAppStore';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import AppStoreListItem from './AppStoreListItem';
+import { AppStoreListSkeleton } from './AppStoreListItemSkeleton';
 import FeaturedCarousel from './FeaturedCarousel';
-
-type LaunchPadItem = Partial<LaunchPadAppListItemType> &
-    Partial<UseQueryResult> & {
-        launchPadTab?: LaunchPadTabEnum[];
-        url?: string;
-        pending?: boolean;
-        data?: any;
-    };
+import { NavBarLaunchPadIcon } from '../../components/svgs/NavBarLaunchPadIcon';
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
+
+    // Local tab→message map. Duplicated from LaunchPadAppTabs.tsx to
+    // avoid coupling to that module's internals now that getTabTranslationKey
+    // has been replaced by Paraglide's direct message functions.
+    const tabLabel = (tab: LaunchPadTabEnum): string =>
+        ({
+            [LaunchPadTabEnum.myApps]: m['launchpad.tabs.myApps'],
+            [LaunchPadTabEnum.ai]: m['launchpad.tabs.ai'],
+            [LaunchPadTabEnum.learning]: m['launchpad.tabs.learning'],
+            [LaunchPadTabEnum.games]: m['launchpad.tabs.games'],
+            [LaunchPadTabEnum.tools]: m['launchpad.tabs.tools'],
+            [LaunchPadTabEnum.employment]: m['launchpad.tabs.employment'],
+            [LaunchPadTabEnum.credentials]: m['launchpad.tabs.credentials'],
+            [LaunchPadTabEnum.other]: m['launchpad.tabs.other'],
+            [LaunchPadTabEnum.plugins]: m['launchpad.tabs.plugins'],
+            [LaunchPadTabEnum.all]: m['launchpad.tabs.all'],
+        }[tab]());
+
+    const { recoveryMethodCount, openRecoverySetup, capabilities } = useAppAuth();
     const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
     const { search } = useLocation();
-    const { connectTo, challenge, uri, suppressContractModal, embedUrl, appName, appImage } =
-        queryString.parse(search);
+    const {
+        connectTo,
+        challenge,
+        uri,
+        suppressContractModal,
+        embedUrl,
+        appName,
+        appImage,
+        tab: tabParam,
+    } = queryString.parse(search);
     const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
     const embedUrlParam = Array.isArray(embedUrl) ? embedUrl[0] ?? '' : embedUrl ?? '';
     const appNameParam = Array.isArray(appName) ? appName[0] ?? '' : appName ?? '';
     const appImageParam = Array.isArray(appImage) ? appImage[0] ?? '' : appImage ?? '';
 
-    const [tab, setTab] = useState(LaunchPadTabEnum.all);
+    const initialTab = (() => {
+        const raw = Array.isArray(tabParam) ? tabParam[0] : tabParam;
+        const match = Object.values(LaunchPadTabEnum).find(option => option === raw);
+        return match ?? LaunchPadTabEnum.myApps;
+    })();
+
+    const [tab, setTab] = useState(initialTab);
     const [filterBy, setFilterBy] = useState<LaunchPadFilterOptionsEnum>(
         LaunchPadFilterOptionsEnum.allApps
     );
@@ -70,6 +99,11 @@ const LaunchPad: React.FC = () => {
     // App Store hooks
     const { useBrowseAppStore, useFeaturedCarouselApps, useCuratedListApps, useInstalledApps } =
         useAppStore();
+
+    // Tab-mode flags for section gating
+    const isMyApps = tab === LaunchPadTabEnum.myApps;
+    const isAll = tab === LaunchPadTabEnum.all;
+    const isCategory = !isMyApps && !isAll;
 
     // Get category filter based on current tab
     const appStoreCategory = useMemo(() => mapTabToCategory(tab), [tab]);
@@ -87,25 +121,31 @@ const LaunchPad: React.FC = () => {
         limit: 50,
     });
 
-    // Fetch featured carousel apps
-    const { data: featuredCarouselApps } = useFeaturedCarouselApps();
+    // Fetch featured carousel apps. On My Apps / All, appStoreCategory is undefined → cross-category.
+    // On category tabs, the carousel is scoped to that category.
+    const { data: featuredCarouselApps } = useFeaturedCarouselApps(appStoreCategory);
 
     // Fetch curated list apps
-    const { data: curatedListApps } = useCuratedListApps();
+    const { data: curatedListApps, isLoading: isLoadingCuratedApps } = useCuratedListApps();
 
     const installedApps = installedAppsData?.records ?? [];
     const browseApps = browseAppsData?.records ?? [];
 
-    // Filter browse apps that aren't already installed
+    // Filter browse apps that aren't already installed (only on My Apps tab, and only when not searching)
     const installedListingIds = new Set(installedApps.map(app => app.listing_id));
 
-    const availableApps = browseApps.filter(app => !installedListingIds.has(app.listing_id));
+    const isSearching = searchInput.trim().length > 0;
 
-    // Curated apps that aren't installed (for "Featured Apps" section)
-    const curatedAppsNotInstalled = useMemo(
-        () => (curatedListApps ?? []).filter(app => !installedListingIds.has(app.listing_id)),
-        [curatedListApps, installedListingIds]
+    const availableApps = useMemo(
+        () =>
+            isMyApps && !isSearching
+                ? browseApps.filter(app => !installedListingIds.has(app.listing_id))
+                : browseApps,
+        [browseApps, installedListingIds, isMyApps, isSearching]
     );
+
+    // Curated apps: never filter installed out — Suggested shows them with "Open" CTA on every tab.
+    const curatedApps = useMemo(() => curatedListApps ?? [], [curatedListApps]);
 
     const connectToProfileId = (!Array.isArray(connectTo) ? connectTo : undefined) || '';
     const connectChallenge = (!Array.isArray(challenge) ? challenge : undefined) || '';
@@ -145,104 +185,7 @@ const LaunchPad: React.FC = () => {
         }
     }, [contractDetails, suppressContractModal, consentedContractLoading]);
 
-    const aiAppsAvailable = areAiPassportAppsAvailable();
-
-    let aiApps: LaunchPadItem[] =
-        flags?.enableLaunchPadUpdates && aiAppsAvailable && isAiEnabled
-            ? (aiPassportApps as unknown as LaunchPadItem[])
-            : [];
-    let apps: LaunchPadItem[] = useLaunchPadApps() as unknown as LaunchPadItem[];
-    let contracts: LaunchPadItem[] = useLaunchPadContracts() as any;
-
-    aiApps = aiApps.map(app => ({ ...app, launchPadTab: [LaunchPadTabEnum.ai] }));
-    apps = apps.map(app => ({ ...app, launchPadTab: [LaunchPadTabEnum.tools] }));
-    contracts = contracts.map(contract => ({
-        ...contract,
-        launchPadTab: contract.data?.needsGuardianConsent
-            ? [LaunchPadTabEnum.games]
-            : [LaunchPadTabEnum.tools],
-    }));
-
-    const aiAppContracts = aiApps.map(app => app.contractUri);
-
-    // Separate legacy apps from coming soon apps
-    const legacyAppsAndContracts = useMemo<LaunchPadItem[]>(() => {
-        return [
-            ...aiApps,
-            ...apps,
-            ...contracts?.filter(contract => !aiAppContracts.includes(contract?.data?.uri)),
-        ];
-    }, [aiApps, apps, contracts, aiAppContracts]);
-
-    // Coming soon apps from LaunchDarkly flag
-    const comingSoonApps = useMemo<LaunchPadItem[]>(() => {
-        return (flags.comingSoonApps || []) as unknown as LaunchPadItem[];
-    }, [flags.comingSoonApps]);
-
-    // Combined for backwards compatibility with existing filtering
-    const appsAndContracts = useMemo<LaunchPadItem[]>(() => {
-        return [...legacyAppsAndContracts, ...comingSoonApps];
-    }, [legacyAppsAndContracts, comingSoonApps]);
-
-    const filteredAppsAndContracts = useMemo(() => {
-        const lowerSearch = searchInput?.toLowerCase() || '';
-
-        return appsAndContracts.filter(item => {
-            const contractName = item?.data?.name?.toLowerCase() || '';
-            const appName = item?.name?.toLowerCase() || '';
-
-            if (
-                tab === LaunchPadTabEnum.ai &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.ai) &&
-                !item?.appType?.includes(LaunchPadAppType.AI)
-            ) {
-                return false;
-            }
-            if (
-                tab === LaunchPadTabEnum.learning &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.learning) &&
-                !item?.appType?.includes(LaunchPadAppType.LEARNING)
-            ) {
-                return false;
-            }
-            if (
-                tab === LaunchPadTabEnum.games &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.games) &&
-                !item?.appType?.includes(LaunchPadAppType.GAME)
-            ) {
-                return false;
-            }
-            if (
-                tab === LaunchPadTabEnum.tools &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.tools) &&
-                !item?.appType?.includes(LaunchPadAppType.INTEGRATION)
-            ) {
-                return false;
-            }
-
-            if (item?.displayInLaunchPad === false) return false; // for apps
-
-            return contractName?.includes(lowerSearch) || appName?.includes(lowerSearch);
-        });
-    }, [appsAndContracts, searchInput]);
-
-    const sortedAppsAndContracts = useMemo(() => {
-        const withDemoFirst = filteredAppsAndContracts.slice().sort((a, b) => {
-            const nameA = (a?.name || a?.data?.name || '')?.toLowerCase();
-            const nameB = (b?.name || b?.data?.name || '')?.toLowerCase();
-
-            if (nameA === 'demo school') return -1;
-            if (nameB === 'demo school') return 1;
-
-            if (sortBy === LaunchPadSortOptionsEnum.alphabetical) {
-                return nameA.localeCompare(nameB);
-            }
-
-            return 0; // default: no sort for other modes
-        });
-
-        return withDemoFirst;
-    }, [filteredAppsAndContracts, sortBy]);
+    const onHeaderScroll = useHeaderScrollSync();
 
     // Filter app store apps based on search and category
     const filteredInstalledApps = useMemo(() => {
@@ -269,13 +212,15 @@ const LaunchPad: React.FC = () => {
         });
     }, [installedApps, searchInput, appStoreCategory]);
 
-    // Set of featured carousel and curated app IDs (to avoid duplicates in regular browse)
-    const featuredAndCuratedIds = useMemo(() => {
+    // Set of curated (Suggested Apps) IDs — used to avoid duplicating curated picks
+    // in the "All {Category}"/"All Apps" list (they already have their own section).
+    // Featured carousel apps intentionally still appear in the list so users can find
+    // them by browsing as well as in the carousel.
+    const curatedIds = useMemo(() => {
         const ids = new Set<string>();
-        (featuredCarouselApps ?? []).forEach(app => ids.add(app.listing_id));
         (curatedListApps ?? []).forEach(app => ids.add(app.listing_id));
         return ids;
-    }, [featuredCarouselApps, curatedListApps]);
+    }, [curatedListApps]);
 
     const filteredAvailableApps = useMemo(() => {
         const lowerSearch = searchInput?.toLowerCase() || '';
@@ -293,11 +238,11 @@ const LaunchPad: React.FC = () => {
         });
     }, [availableApps, searchInput]);
 
-    // Filtered curated apps (for Featured Apps section)
+    // Filtered curated apps (for Suggested Apps section)
     const filteredCuratedApps = useMemo(() => {
         const lowerSearch = searchInput?.toLowerCase() || '';
 
-        return curatedAppsNotInstalled.filter(app => {
+        return curatedApps.filter(app => {
             // Filter by category if one is selected
             if (
                 appStoreCategory &&
@@ -314,103 +259,12 @@ const LaunchPad: React.FC = () => {
 
             return true;
         });
-    }, [curatedAppsNotInstalled, searchInput, appStoreCategory]);
+    }, [curatedApps, searchInput, appStoreCategory]);
 
     // Non-promoted available apps (for Discover More section)
     const nonPromotedAvailableApps = useMemo(() => {
-        return filteredAvailableApps.filter(app => !featuredAndCuratedIds.has(app.listing_id));
-    }, [filteredAvailableApps, featuredAndCuratedIds]);
-
-    // Filter legacy apps (non-coming-soon) for display
-    const filteredLegacyApps = useMemo(() => {
-        const lowerSearch = searchInput?.toLowerCase() || '';
-
-        return legacyAppsAndContracts.filter(item => {
-            const contractName = item?.data?.name?.toLowerCase() || '';
-            const appName = item?.name?.toLowerCase() || '';
-
-            // Tab filtering
-            if (
-                tab === LaunchPadTabEnum.ai &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.ai) &&
-                !item?.appType?.includes(LaunchPadAppType.AI)
-            ) {
-                return false;
-            }
-
-            if (
-                tab === LaunchPadTabEnum.learning &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.learning) &&
-                !item?.appType?.includes(LaunchPadAppType.LEARNING)
-            ) {
-                return false;
-            }
-
-            if (
-                tab === LaunchPadTabEnum.games &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.games) &&
-                !item?.appType?.includes(LaunchPadAppType.GAME)
-            ) {
-                return false;
-            }
-
-            if (
-                tab === LaunchPadTabEnum.tools &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.tools) &&
-                !item?.appType?.includes(LaunchPadAppType.INTEGRATION)
-            ) {
-                return false;
-            }
-
-            if (item?.displayInLaunchPad === false) return false;
-
-            return contractName?.includes(lowerSearch) || appName?.includes(lowerSearch);
-        });
-    }, [legacyAppsAndContracts, searchInput, tab]);
-
-    // Filter coming soon apps for display
-    const filteredComingSoonApps = useMemo(() => {
-        const lowerSearch = searchInput?.toLowerCase() || '';
-
-        return comingSoonApps.filter(item => {
-            const appName = item?.name?.toLowerCase() || '';
-
-            // Tab filtering
-            if (
-                tab === LaunchPadTabEnum.ai &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.ai) &&
-                !item?.appType?.includes(LaunchPadAppType.AI)
-            ) {
-                return false;
-            }
-
-            if (
-                tab === LaunchPadTabEnum.learning &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.learning) &&
-                !item?.appType?.includes(LaunchPadAppType.LEARNING)
-            ) {
-                return false;
-            }
-
-            if (
-                tab === LaunchPadTabEnum.games &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.games) &&
-                !item?.appType?.includes(LaunchPadAppType.GAME)
-            ) {
-                return false;
-            }
-
-            if (
-                tab === LaunchPadTabEnum.tools &&
-                !item?.launchPadTab?.includes(LaunchPadTabEnum.tools) &&
-                !item?.appType?.includes(LaunchPadAppType.INTEGRATION)
-            ) {
-                return false;
-            }
-
-            return appName?.includes(lowerSearch);
-        });
-    }, [comingSoonApps, searchInput, tab]);
+        return filteredAvailableApps.filter(app => !curatedIds.has(app.listing_id));
+    }, [filteredAvailableApps, curatedIds]);
 
     // Create custom app from query params if provided
     const customAppFromQueryParams: LaunchPadAppListItemType | null = useMemo(() => {
@@ -434,18 +288,20 @@ const LaunchPad: React.FC = () => {
 
     return (
         <IonPage className="bg-white">
-            <MainHeader customClassName="bg-white" />
+            <MainHeader customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
             <GenericErrorBoundary>
-                <IonContent fullscreen scrollY={true} color="grayscale-100">
+                <IonContent
+                    fullscreen
+                    scrollY={true}
+                    color="grayscale-100"
+                    scrollEvents
+                    onIonScroll={onHeaderScroll}
+                >
                     <div className="flex flex-col items-center w-full">
                         <LaunchPadHeader>
-                            <div className="flex flex-col gap-3 w-full max-w-[600px] px-3">
-                                {/* Section Header */}
-                                <h2 className="text-grayscale-900 font-bold text-xl relative z-10 mt-[-30px] sm:mt-[-50px]">
-                                    App Store
-                                </h2>
-
-                                {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level */}
+                            <div className="flex flex-col gap-3 w-full max-w-[600px] pl-3">
+                                <LaunchPadAppTabs tab={tab} setTab={setTab} />
+                                {/* Featured Carousel - shows apps with FEATURED_CAROUSEL promotion level on every tab */}
                                 {featuredCarouselApps && featuredCarouselApps.length > 0 && (
                                     <FeaturedCarousel
                                         apps={featuredCarouselApps}
@@ -454,7 +310,6 @@ const LaunchPad: React.FC = () => {
                                         hideScrollDots={true}
                                     />
                                 )}
-                                <LaunchPadAppTabs tab={tab} setTab={setTab} />
                                 <LaunchPadSearch
                                     searchInput={searchInput}
                                     setSearchInput={setSearchInput}
@@ -468,6 +323,13 @@ const LaunchPad: React.FC = () => {
                             </div>
                         </LaunchPadHeader>
                         <div className="flex-grow flex flex-col items-center justify-start w-full pb-8 px-4 bg-grayscale-100">
+                            {capabilities.recovery && (
+                                <RecoveryBanner
+                                    recoveryMethodCount={recoveryMethodCount}
+                                    onSetup={openRecoverySetup}
+                                />
+                            )}
+
                             {tab === LaunchPadTabEnum.ai && !isAiEnabled ? (
                                 <div className="w-full max-w-[600px] flex flex-col items-center justify-center text-center px-6 py-12">
                                     <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-6 max-w-[450px]">
@@ -495,65 +357,36 @@ const LaunchPad: React.FC = () => {
                                             />
                                         )}
 
-                                        {/* Installed App Store Apps (shown first) */}
-                                        {filteredInstalledApps.length > 0 && (
-                                            <>
-                                                <div className="px-2 pt-4 pb-2">
-                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Your Apps
-                                                    </p>
-                                                </div>
-                                                {filteredInstalledApps.map(app => (
-                                                    <AppStoreListItem
-                                                        key={`installed-${app.listing_id}`}
-                                                        listing={app}
-                                                        isInstalled={true}
-                                                        onInstallSuccess={refetchInstalledApps}
-                                                    />
-                                                ))}
-                                            </>
-                                        )}
-
-                                        {/* Legacy Apps and Contracts */}
-                                        {sortedAppsAndContracts?.map((item, index) => {
-                                            if (item?.data) {
-                                                const data = item?.data;
-                                                const isPending = item?.pending;
-
-                                                return (
-                                                    <LaunchPadContractListItem
-                                                        key={`contract-${index}`}
-                                                        contract={data}
-                                                        isPending={isPending}
-                                                        filterBy={filterBy}
-                                                    />
-                                                );
-                                            }
-
-                                            const app = item as LaunchPadAppListItemType;
-
-                                            return (
-                                                <LaunchPadAppListItem
-                                                    key={`app-${index}`}
-                                                    app={app}
-                                                    filterBy={filterBy}
-                                                />
-                                            );
-                                        })}
-
-                                        {/* Available App Store Apps (discovery) */}
+                                        {/* Search results header + list */}
                                         {filteredAvailableApps.length > 0 && (
                                             <>
                                                 <div className="px-2 pt-6 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Discover More Apps
+                                                        {tab === LaunchPadTabEnum.plugins ||
+                                                        filteredAvailableApps.every(
+                                                            app => app.category === 'plugin'
+                                                        )
+                                                            ? `${filteredAvailableApps.length} ${
+                                                                  filteredAvailableApps.length === 1
+                                                                      ? 'Plugin'
+                                                                      : 'Plugins'
+                                                              }`
+                                                            : `${
+                                                                  filteredAvailableApps.length
+                                                              } Search ${
+                                                                  filteredAvailableApps.length === 1
+                                                                      ? 'Result'
+                                                                      : 'Results'
+                                                              }`}
                                                     </p>
                                                 </div>
                                                 {filteredAvailableApps.map(app => (
                                                     <AppStoreListItem
                                                         key={`available-${app.listing_id}`}
                                                         listing={app}
-                                                        isInstalled={false}
+                                                        isInstalled={installedListingIds.has(
+                                                            app.listing_id
+                                                        )}
                                                         onInstallSuccess={refetchInstalledApps}
                                                     />
                                                 ))}
@@ -561,17 +394,31 @@ const LaunchPad: React.FC = () => {
                                         )}
                                     </IonList>
 
-                                    {filteredAppsAndContracts.length === 0 &&
-                                        filteredInstalledApps.length === 0 &&
-                                        filteredAvailableApps.length === 0 &&
+                                    {/*
+                                     * Show "no results" when nothing actually renders in this branch.
+                                     * Installed apps are not rendered as a separate section in search
+                                     * mode (any installed matches surface via browseApps in
+                                     * filteredAvailableApps), so don't gate the message on
+                                     * filteredInstalledApps — otherwise a search for an installed-but-
+                                     * delisted app (in installedApps but not in browseApps) would
+                                     * suppress the message while rendering nothing.
+                                     */}
+                                    {filteredAvailableApps.length === 0 &&
                                         !customAppFromQueryParams && (
                                             <div className="w-full flex items-center justify-center z-10">
                                                 <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
                                                     <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                                        No results found for{' '}
-                                                        <span className="text-black italic">
-                                                            {searchInput}
-                                                        </span>
+                                                        <TransP
+                                                            m={
+                                                                m[
+                                                                    'common.searchResults.noResultsFor'
+                                                                ]
+                                                            }
+                                                            values={{ query: searchInput }}
+                                                            components={[
+                                                                <span className="text-black italic" />,
+                                                            ]}
+                                                        />
                                                     </p>
                                                 </div>
                                             </div>
@@ -582,12 +429,26 @@ const LaunchPad: React.FC = () => {
                                     lines="none"
                                     className="w-full max-w-[600px] bg-grayscale-100"
                                 >
-                                    {/* Installed App Store Apps (shown at top) */}
-                                    {filteredInstalledApps.length > 0 && (
+                                    {/* My Apps tab: Installed Apps loading skeletons (cold load, no data yet) */}
+                                    {isMyApps &&
+                                        isLoadingInstalledApps &&
+                                        filteredInstalledApps.length === 0 && (
+                                            <>
+                                                <div className="px-2 pt-4 pb-2">
+                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                        Installed Apps
+                                                    </p>
+                                                </div>
+                                                <AppStoreListSkeleton idPrefix="installed-skeleton" />
+                                            </>
+                                        )}
+
+                                    {/* My Apps tab: Installed Apps (hidden if none) */}
+                                    {isMyApps && filteredInstalledApps.length > 0 && (
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Your Installed Apps
+                                                    {m['launchpad.sections.installedApps']()}
                                                 </p>
                                             </div>
                                             {filteredInstalledApps.map(app => (
@@ -601,39 +462,73 @@ const LaunchPad: React.FC = () => {
                                         </>
                                     )}
 
-                                    {/* Featured Apps (Curated List apps) */}
+                                    {/* Suggested Apps loading skeletons (cold load, no data yet) */}
+                                    {isLoadingCuratedApps && filteredCuratedApps.length === 0 && (
+                                        <>
+                                            <div className="px-2 pt-4 pb-2">
+                                                <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                    Suggested Apps
+                                                </p>
+                                            </div>
+                                            <AppStoreListSkeleton idPrefix="suggested-skeleton" />
+                                        </>
+                                    )}
+
+                                    {/* Suggested Apps (CURATED_LIST) — all tabs */}
                                     {filteredCuratedApps.length > 0 && (
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Featured Apps
+                                                    {m['launchpad.sections.suggestedApps']()}
                                                 </p>
                                             </div>
                                             {filteredCuratedApps.map(app => (
                                                 <AppStoreListItem
                                                     key={`curated-${app.listing_id}`}
                                                     listing={app}
-                                                    isInstalled={false}
+                                                    isInstalled={installedListingIds.has(
+                                                        app.listing_id
+                                                    )}
                                                     onInstallSuccess={refetchInstalledApps}
                                                 />
                                             ))}
                                         </>
                                     )}
 
-                                    {/* Discover More (Standard apps - only show when searching) */}
-                                    {searchInput.length > 0 &&
+                                    {/* Category/All tabs: browse list loading skeletons (cold load, no data yet) */}
+                                    {(isCategory || isAll) &&
+                                        isLoadingBrowseApps &&
+                                        nonPromotedAvailableApps.length === 0 && (
+                                            <>
+                                                <div className="px-2 pt-4 pb-2">
+                                                    <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
+                                                        {isAll ? 'All Apps' : `All ${tab}`}
+                                                    </p>
+                                                </div>
+                                                <AppStoreListSkeleton idPrefix="browse-skeleton" />
+                                            </>
+                                        )}
+
+                                    {/* Category/All tabs: browse list (include installed apps with Open CTA) */}
+                                    {(isCategory || isAll) &&
                                         nonPromotedAvailableApps.length > 0 && (
                                             <>
                                                 <div className="px-2 pt-4 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        Search Results
+                                                        {isAll
+                                                            ? m['launchpad.sections.allApps']()
+                                                            : m['launchpad.sections.allCategory']({
+                                                                  category: tabLabel(tab),
+                                                              })}
                                                     </p>
                                                 </div>
                                                 {nonPromotedAvailableApps.map(app => (
                                                     <AppStoreListItem
                                                         key={`available-${app.listing_id}`}
                                                         listing={app}
-                                                        isInstalled={false}
+                                                        isInstalled={installedListingIds.has(
+                                                            app.listing_id
+                                                        )}
                                                         onInstallSuccess={refetchInstalledApps}
                                                     />
                                                 ))}
@@ -655,82 +550,77 @@ const LaunchPad: React.FC = () => {
                                         />
                                     )}
 
-                                    {/* Legacy Apps and Contracts (non-coming-soon) */}
-                                    {filteredLegacyApps.length > 0 && (
-                                        <>
-                                            <div className="px-2 pt-4 pb-2">
-                                                <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    {filteredInstalledApps.length > 0 ||
-                                                    filteredAvailableApps.length > 0
-                                                        ? 'More Apps'
-                                                        : 'Apps'}
-                                                </p>
-                                            </div>
-                                            {filteredLegacyApps.map((item, index) => {
-                                                if (
-                                                    item?.data &&
-                                                    (tab === LaunchPadTabEnum.all ||
-                                                        tab === LaunchPadTabEnum.tools ||
-                                                        tab === LaunchPadTabEnum.games)
-                                                ) {
-                                                    const data = item?.data;
-                                                    const isPending = item?.pending;
+                                    {/* Empty state — no apps in any section on this tab */}
+                                    {(() => {
+                                        const hasCarousel = (featuredCarouselApps?.length ?? 0) > 0;
+                                        const hasInstalled =
+                                            isMyApps && filteredInstalledApps.length > 0;
+                                        const hasSuggested = filteredCuratedApps.length > 0;
+                                        const hasBrowse =
+                                            (isCategory || isAll) &&
+                                            nonPromotedAvailableApps.length > 0;
+                                        const hasContract =
+                                            !!contractDetails &&
+                                            !hasConsented &&
+                                            tab === LaunchPadTabEnum.all;
+                                        const hasCustomApp = !!customAppFromQueryParams;
 
-                                                    if (
-                                                        tab === LaunchPadTabEnum.games &&
-                                                        !data.needsGuardianConsent
-                                                    )
-                                                        return undefined;
+                                        const isEmpty =
+                                            !hasCarousel &&
+                                            !hasInstalled &&
+                                            !hasSuggested &&
+                                            !hasBrowse &&
+                                            !hasContract &&
+                                            !hasCustomApp &&
+                                            !isLoadingBrowseApps &&
+                                            !isLoadingInstalledApps &&
+                                            !isLoadingCuratedApps;
 
-                                                    if (
-                                                        tab === LaunchPadTabEnum.tools &&
-                                                        data.needsGuardianConsent
-                                                    )
-                                                        return undefined;
+                                        if (!isEmpty) return null;
 
-                                                    return (
-                                                        <LaunchPadContractListItem
-                                                            key={`contract-${index}`}
-                                                            contract={data}
-                                                            isPending={isPending}
-                                                            filterBy={filterBy}
-                                                        />
-                                                    );
-                                                }
+                                        const tabLabelStr = tabLabel(tab);
+                                        const title = isMyApps
+                                            ? m['launchpad.emptyStates.noInstalledApps']()
+                                            : isAll
+                                            ? m['launchpad.emptyStates.noAppsAvailable']()
+                                            : m['launchpad.emptyStates.nothingInCategory']({
+                                                  category: tabLabelStr,
+                                              });
 
-                                                const app = item as LaunchPadAppListItemType;
+                                        const subtitle = isMyApps
+                                            ? m['launchpad.emptyStates.installSomething']()
+                                            : isAll
+                                            ? m['launchpad.emptyStates.checkBackLater']()
+                                            : m['launchpad.emptyStates.checkBackSoon']();
 
-                                                return (
-                                                    <LaunchPadAppListItem
-                                                        key={`app-${index}`}
-                                                        app={app}
-                                                        filterBy={filterBy}
-                                                    />
-                                                );
-                                            })}
-                                        </>
-                                    )}
+                                        const showCta = !isAll;
 
-                                    {/* Coming Soon Apps (shown last) */}
-                                    {filteredComingSoonApps.length > 0 && (
-                                        <>
-                                            <div className="px-2 pt-4 pb-2">
-                                                <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Coming Soon
-                                                </p>
-                                            </div>
-                                            {filteredComingSoonApps.map((app, index) => (
-                                                <LaunchPadAppListItem
-                                                    key={`coming-soon-${index}`}
-                                                    app={app as LaunchPadAppListItemType}
-                                                    filterBy={filterBy}
+                                        return (
+                                            <div className="w-full flex flex-col items-center justify-center py-16 px-6 text-center">
+                                                <NavBarLaunchPadIcon
+                                                    version="2"
+                                                    className="w-20 h-20 mb-4"
                                                 />
-                                            ))}
-                                        </>
-                                    )}
+                                                <p className="text-base font-semibold text-grayscale-900 mb-1 font-poppins">
+                                                    {title}
+                                                </p>
+                                                <p className="text-sm text-grayscale-600 max-w-[280px] font-notoSans">
+                                                    {subtitle}
+                                                </p>
+                                                {showCta && (
+                                                    <button
+                                                        onClick={() => setTab(LaunchPadTabEnum.all)}
+                                                        className="mt-5 px-5 py-2 rounded-full bg-grayscale-900 text-white text-sm font-semibold font-poppins"
+                                                    >
+                                                        Browse all apps
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
 
                                     {filterBy === LaunchPadFilterOptionsEnum.allApps &&
-                                        tab === LaunchPadTabEnum.all && <LaunchPadBecomeAnApp />}
+                                        (isMyApps || isAll) && <LaunchPadBecomeAnApp />}
                                 </IonList>
                             )}
                         </div>

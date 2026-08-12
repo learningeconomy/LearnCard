@@ -17,12 +17,24 @@ export type InboxCredentialType = {
     webhookUrl?: string;
     boostUri?: string; // URI of the boost this credential is an instance of
     activityId?: string; // Links to CredentialActivity for lifecycle tracking
+    integrationId?: string; // Links to the integration that issued this credential
     'signingAuthority.endpoint'?: string;
     'signingAuthority.name'?: string;
+    'signingAuthority.listingSlug'?: string;
+    // Guardian gate fields
+    guardianEmail?: string;
+    guardianStatus?: 'AWAITING_GUARDIAN' | 'GUARDIAN_APPROVED' | 'GUARDIAN_REJECTED';
+    guardianApprovedAt?: string;
+    guardianApprovedByDid?: string;
 };
 
 export type InboxCredentialRelationships = {
-    addressedTo: ModelRelatedNodesI<typeof ContactMethod, ContactMethodInstance, { timestamp: string }, { timestamp: string }>;
+    addressedTo: ModelRelatedNodesI<
+        typeof ContactMethod,
+        ContactMethodInstance,
+        { timestamp: string },
+        { timestamp: string }
+    >;
     createdBy: ModelRelatedNodesI<
         typeof Profile,
         ProfileInstance,
@@ -61,7 +73,10 @@ export type InboxCredentialRelationships = {
     >;
 };
 
-export type InboxCredentialInstance = NeogmaInstance<InboxCredentialType, InboxCredentialRelationships>;
+export type InboxCredentialInstance = NeogmaInstance<
+    InboxCredentialType,
+    InboxCredentialRelationships
+>;
 
 export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredentialRelationships>(
     {
@@ -70,10 +85,16 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
             id: { type: 'string', required: true, uniqueItems: true },
             credential: { type: 'string', required: true },
             isSigned: { type: 'boolean', required: true },
-            currentStatus: { 
-                type: 'string', 
-                required: true, 
-                enum: ['PENDING', 'ISSUED', 'EXPIRED', /* DEPRECATED — use ISSUED */'DELIVERED', /* DEPRECATED — use ISSUED */'CLAIMED'] 
+            currentStatus: {
+                type: 'string',
+                required: true,
+                enum: [
+                    'PENDING',
+                    'ISSUED',
+                    'EXPIRED',
+                    /* DEPRECATED — use ISSUED */ 'DELIVERED',
+                    /* DEPRECATED — use ISSUED */ 'CLAIMED',
+                ],
             },
             isAccepted: { type: 'boolean', required: false, default: false },
             expiresAt: { type: 'string', required: true },
@@ -82,16 +103,29 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
             webhookUrl: { type: 'string', required: false },
             boostUri: { type: 'string', required: false },
             activityId: { type: 'string', required: false },
+            integrationId: { type: 'string', required: false },
             'signingAuthority.endpoint': { type: 'string', required: false },
             'signingAuthority.name': { type: 'string', required: false },
+            'signingAuthority.listingSlug': { type: 'string', required: false },
+            guardianEmail: { type: 'string', required: false },
+            guardianStatus: {
+                type: 'string',
+                required: false,
+                enum: ['AWAITING_GUARDIAN', 'GUARDIAN_APPROVED', 'GUARDIAN_REJECTED'],
+            },
+            guardianApprovedAt: { type: 'string', required: false },
+            guardianApprovedByDid: { type: 'string', required: false },
         },
         relationships: {
-            addressedTo: { 
-                model: ContactMethod, 
-                direction: 'out', 
-                name: 'ADDRESSED_TO', 
+            addressedTo: {
+                model: ContactMethod,
+                direction: 'out',
+                name: 'ADDRESSED_TO',
                 properties: {
-                    timestamp: { property: 'timestamp', schema: { type: 'string', required: true } },
+                    timestamp: {
+                        property: 'timestamp',
+                        schema: { type: 'string', required: true },
+                    },
                 },
             },
             createdBy: {
@@ -99,7 +133,10 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
                 direction: 'in',
                 name: 'CREATED_INBOX_CREDENTIAL',
                 properties: {
-                    timestamp: { property: 'timestamp', schema: { type: 'string', required: true } },
+                    timestamp: {
+                        property: 'timestamp',
+                        schema: { type: 'string', required: true },
+                    },
                 },
             },
             deliveredBy: {
@@ -107,9 +144,18 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
                 direction: 'in',
                 name: 'DELIVERED_INBOX_CREDENTIAL',
                 properties: {
-                    timestamp: { property: 'timestamp', schema: { type: 'string', required: true } },
-                    recipientDid: { property: 'recipientDid', schema: { type: 'string', required: true } },
-                    deliveryMethod: { property: 'deliveryMethod', schema: { type: 'string', required: true } },
+                    timestamp: {
+                        property: 'timestamp',
+                        schema: { type: 'string', required: true },
+                    },
+                    recipientDid: {
+                        property: 'recipientDid',
+                        schema: { type: 'string', required: true },
+                    },
+                    deliveryMethod: {
+                        property: 'deliveryMethod',
+                        schema: { type: 'string', required: true },
+                    },
                 },
             },
             claimedBy: {
@@ -117,8 +163,14 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
                 direction: 'in',
                 name: 'CLAIMED_INBOX_CREDENTIAL',
                 properties: {
-                    timestamp: { property: 'timestamp', schema: { type: 'string', required: true } },
-                    claimToken: { property: 'claimToken', schema: { type: 'string', required: true } },
+                    timestamp: {
+                        property: 'timestamp',
+                        schema: { type: 'string', required: true },
+                    },
+                    claimToken: {
+                        property: 'claimToken',
+                        schema: { type: 'string', required: true },
+                    },
                 },
             },
             expiredBy: {
@@ -126,7 +178,10 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
                 direction: 'in',
                 name: 'EXPIRED_INBOX_CREDENTIAL',
                 properties: {
-                    timestamp: { property: 'timestamp', schema: { type: 'string', required: true } },
+                    timestamp: {
+                        property: 'timestamp',
+                        schema: { type: 'string', required: true },
+                    },
                 },
             },
             emailSentBy: {
@@ -134,8 +189,14 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
                 direction: 'in',
                 name: 'SENT_EMAIL',
                 properties: {
-                    timestamp: { property: 'timestamp', schema: { type: 'string', required: true } },
-                    emailAddress: { property: 'emailAddress', schema: { type: 'string', required: true } },
+                    timestamp: {
+                        property: 'timestamp',
+                        schema: { type: 'string', required: true },
+                    },
+                    emailAddress: {
+                        property: 'emailAddress',
+                        schema: { type: 'string', required: true },
+                    },
                     token: { property: 'token', schema: { type: 'string', required: true } },
                 },
             },
@@ -144,7 +205,10 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
                 direction: 'in',
                 name: 'SENT_WEBHOOK',
                 properties: {
-                    timestamp: { property: 'timestamp', schema: { type: 'string', required: true } },
+                    timestamp: {
+                        property: 'timestamp',
+                        schema: { type: 'string', required: true },
+                    },
                     url: { property: 'url', schema: { type: 'string', required: true } },
                     status: { property: 'status', schema: { type: 'string', required: true } },
                     response: { property: 'response', schema: { type: 'string', required: false } },

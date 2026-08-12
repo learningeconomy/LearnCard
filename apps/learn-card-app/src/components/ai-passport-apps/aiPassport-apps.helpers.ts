@@ -1,7 +1,7 @@
 import ChatGPTAppBG from '../../assets/images/chatGpt-app-bg.png';
 
-import { LaunchPadAppListItem, LEARNCARD_AI_URL } from 'learn-card-base';
-import { LEARNCARD_NETWORK_URL } from 'learn-card-base/constants/Networks';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI, LaunchPadAppListItem } from 'learn-card-base';
+import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 // this is an internal app ranking
@@ -33,19 +33,11 @@ export enum AiPassportAppContractUri {
     chatGPT = 'lc:network:network.learncard.com/trpc:contract:469524d4-264c-4fc3-99e4-0c9f06c805e8',
     claude = 'lc:network:network.learncard.com/trpc:contract:5d5447fc-9197-45ac-859a-5f068ff12938',
     gemini = 'lc:network:network.learncard.com/trpc:contract:fa97a6ae-4020-446d-ae63-298bd7c65d85',
-    learncardapp = 'lc:network:network.learncard.com/trpc:contract:2ed7b889-c06e-47c4-835b-d924c17e9891',
+    learncardapp = LEARNCARD_AI_PASSPORT_CONTRACT_URI,
 }
 
-export const areAiPassportAppsAvailable = (): boolean => {
-    const overriddenNetworkUrl = typeof LCN_URL === 'string' ? LCN_URL : undefined;
-    const storedNetworkUrl = networkStore.get.networkUrl();
-
-    const effectiveNetworkUrl = overriddenNetworkUrl?.trim()
-        ? overriddenNetworkUrl
-        : storedNetworkUrl;
-
-    return effectiveNetworkUrl === LEARNCARD_NETWORK_URL;
-};
+/** @deprecated Use `isProductionNetwork` from `learn-card-base/helpers/networkHelpers` instead. */
+export const areAiPassportAppsAvailable = (): boolean => isProductionNetwork();
 
 export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
     {
@@ -61,7 +53,7 @@ export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
         appStoreID: AiPassportAppStoreIDs.learncardapp,
         contractUri: AiPassportAppContractUri.learncardapp,
         privacyPolicyUrl: 'https://openai.com/policies/row-privacy-policy/',
-        url: LEARNCARD_AI_URL,
+        url: networkStore.get.aiServiceUrl(),
     },
     {
         id: 2,
@@ -115,6 +107,13 @@ export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
         url: 'https://gemini.learncard.ai',
     },
 ];
+
+export const getSelectableAiPassportApps = (
+    allAppsAvailable = areAiPassportAppsAvailable()
+): (LaunchPadAppListItem & { url: string })[] =>
+    allAppsAvailable
+        ? aiPassportApps
+        : aiPassportApps.filter(app => app.type === AiPassportAppsEnum.learncardapp);
 
 export const getAiAppBackgroundStylesForApp = (app?: LaunchPadAppListItem) => {
     if (app?.type === AiPassportAppsEnum.chatGPT) {

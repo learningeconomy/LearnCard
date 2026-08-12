@@ -18,9 +18,13 @@ import { skillsRouter, SkillsRouter } from '@routes/skills';
 import { integrationsRouter, IntegrationsRouter } from '@routes/integrations';
 import { appStoreRouter, AppStoreRouter } from '@routes/app-store';
 import { activityRouter, ActivityRouter } from '@routes/activity';
+import { federationRouter, FederationRouter } from '@routes/federation';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
+
+/** Perf bench routes — only mounted when ENABLE_BENCH_ROUTES is set */
+import { benchRouter, BenchRouter } from '@routes/bench';
 
 export { createContext } from '@routes';
 
@@ -44,7 +48,9 @@ export const appRouter = t.router<{
     integrations: IntegrationsRouter;
     appStore: AppStoreRouter;
     activity: ActivityRouter;
+    federation: FederationRouter;
     test?: TestRouter;
+    bench?: BenchRouter;
 }>({
     boost: boostsRouter,
     claimHook: claimHooksRouter,
@@ -65,7 +71,9 @@ export const appRouter = t.router<{
     integrations: integrationsRouter,
     appStore: appStoreRouter,
     activity: activityRouter,
-    test: !!process.env.IS_E2E_TEST ? testRouter : undefined,
+    federation: federationRouter,
+    test: process.env.IS_E2E_TEST ? testRouter : undefined,
+    bench: process.env.ENABLE_BENCH_ROUTES ? benchRouter : undefined,
 });
 
 export type AppRouter = typeof appRouter;

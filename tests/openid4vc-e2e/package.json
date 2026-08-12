@@ -1,0 +1,20 @@
+{
+    "name": "@workspace/openid4vc-e2e-tests",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:ci": "vitest run"
+    },
+    "dependencies": {
+        "@learncard/openid4vc-plugin": "workspace:*",
+        "@learncard/types": "workspace:*",
+        "jose": "^5.9.6"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.0",
+        "typescript": "5.6.2",
+        "vitest": "^3.0.0"
+    }
+}

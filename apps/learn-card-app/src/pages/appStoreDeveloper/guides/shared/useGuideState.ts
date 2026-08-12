@@ -52,6 +52,22 @@ export function useGuideState(
     const { useUpdateIntegration } = useDeveloperPortal();
     const updateIntegrationMutation = useUpdateIntegration();
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const pendingSaveRef = useRef<GuideState | null>(null);
+
+    // Flush any pending save immediately on unmount so state isn't lost on navigation
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+            if (pendingSaveRef.current && integration) {
+                updateIntegrationMutation.mutate({
+                    id: integration.id,
+                    updates: { guideState: pendingSaveRef.current },
+                });
+            }
+        };
+    }, [integration?.id]);
 
     // Load initial state from integration's guideState or defaults
     const loadState = useCallback((): GuideState => {
@@ -62,9 +78,10 @@ export function useGuideState(
 
         if (serverState) {
             return {
-                currentStep: urlStep !== null && urlStep < totalSteps 
-                    ? urlStep 
-                    : (serverState.currentStep ?? 0),
+                currentStep:
+                    urlStep !== null && urlStep < totalSteps
+                        ? urlStep
+                        : serverState.currentStep ?? 0,
                 completedSteps: serverState.completedSteps || [],
                 config: serverState.config || {},
             };
@@ -79,73 +96,95 @@ export function useGuideState(
 
     const [state, setState] = useState<GuideState>(loadState);
 
-    // Sync state when integration changes (e.g., after server refresh)
+    // Only sync from server when the integration itself changes (e.g., switching integrations).
+    // Do NOT sync on guideState changes — client state is authoritative once loaded,
+    // and server saves happen in the background. This prevents stale server data from
+    // overwriting rapid local state changes (e.g., fast back/forward clicks).
+    const prevIntegrationId = useRef(integration?.id);
     useEffect(() => {
-        const newState = loadState();
-
-        setState(newState);
-    }, [integration?.id, integration?.guideState]);
-
-    // Save state to server (debounced)
-    const saveState = useCallback((newState: GuideState) => {
-        if (!integration) return;
-
-        // Debounce saves to avoid too many API calls
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
+        if (integration?.id !== prevIntegrationId.current) {
+            prevIntegrationId.current = integration?.id;
+            setState(loadState());
         }
+    }, [integration?.id]);
 
-        saveTimeoutRef.current = setTimeout(() => {
-            updateIntegrationMutation.mutate({
-                id: integration.id,
-                updates: {
-                    guideState: newState,
-                },
+    // Save state to server (debounced, fire-and-forget)
+    const saveState = useCallback(
+        (newState: GuideState) => {
+            if (!integration) return;
+
+            pendingSaveRef.current = newState;
+
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+
+            saveTimeoutRef.current = setTimeout(() => {
+                pendingSaveRef.current = null;
+                updateIntegrationMutation.mutate({
+                    id: integration.id,
+                    updates: {
+                        guideState: newState,
+                    },
+                });
+            }, 500);
+        },
+        [integration, updateIntegrationMutation]
+    );
+
+    const isStepComplete = useCallback(
+        (stepId: string) => {
+            return state.completedSteps.includes(stepId);
+        },
+        [state.completedSteps]
+    );
+
+    const markStepComplete = useCallback(
+        (stepId: string) => {
+            setState(prev => {
+                if (prev.completedSteps.includes(stepId)) return prev;
+
+                const newState = {
+                    ...prev,
+                    completedSteps: [...prev.completedSteps, stepId],
+                };
+
+                saveState(newState);
+
+                return newState;
             });
-        }, 500);
-    }, [integration, updateIntegrationMutation]);
+        },
+        [saveState]
+    );
 
-    const isStepComplete = useCallback((stepId: string) => {
-        return state.completedSteps.includes(stepId);
-    }, [state.completedSteps]);
+    const markStepIncomplete = useCallback(
+        (stepId: string) => {
+            setState(prev => {
+                const newState = {
+                    ...prev,
+                    completedSteps: prev.completedSteps.filter(id => id !== stepId),
+                };
 
-    const markStepComplete = useCallback((stepId: string) => {
-        setState(prev => {
-            if (prev.completedSteps.includes(stepId)) return prev;
+                saveState(newState);
 
-            const newState = {
-                ...prev,
-                completedSteps: [...prev.completedSteps, stepId],
-            };
+                return newState;
+            });
+        },
+        [saveState]
+    );
 
-            saveState(newState);
+    const goToStep = useCallback(
+        (step: number) => {
+            if (step < 0 || step >= totalSteps) return;
 
-            return newState;
-        });
-    }, [saveState]);
-
-    const markStepIncomplete = useCallback((stepId: string) => {
-        setState(prev => {
-            const newState = {
-                ...prev,
-                completedSteps: prev.completedSteps.filter(id => id !== stepId),
-            };
-
-            saveState(newState);
-
-            return newState;
-        });
-    }, [saveState]);
-
-    const goToStep = useCallback((step: number) => {
-        if (step < 0 || step >= totalSteps) return;
-
-        setState(prev => {
-            const newState = { ...prev, currentStep: step };
-            saveState(newState);
-            return newState;
-        });
-    }, [totalSteps, saveState]);
+            setState(prev => {
+                const newState = { ...prev, currentStep: step };
+                saveState(newState);
+                return newState;
+            });
+        },
+        [totalSteps, saveState]
+    );
 
     const nextStep = useCallback(() => {
         goToStep(state.currentStep + 1);
@@ -155,22 +194,28 @@ export function useGuideState(
         goToStep(state.currentStep - 1);
     }, [state.currentStep, goToStep]);
 
-    const updateConfig = useCallback((key: string, value: unknown) => {
-        setState(prev => {
-            const newState = {
-                ...prev,
-                config: { ...prev.config, [key]: value },
-            };
+    const updateConfig = useCallback(
+        (key: string, value: unknown) => {
+            setState(prev => {
+                const newState = {
+                    ...prev,
+                    config: { ...prev.config, [key]: value },
+                };
 
-            saveState(newState);
+                saveState(newState);
 
-            return newState;
-        });
-    }, [saveState]);
+                return newState;
+            });
+        },
+        [saveState]
+    );
 
-    const getConfig = useCallback(<T,>(key: string, defaultValue?: T): T | undefined => {
-        return (state.config[key] as T) ?? defaultValue;
-    }, [state.config]);
+    const getConfig = useCallback(
+        <T>(key: string, defaultValue?: T): T | undefined => {
+            return (state.config[key] as T) ?? defaultValue;
+        },
+        [state.config]
+    );
 
     const resetGuide = useCallback(() => {
         const newState: GuideState = {
@@ -183,30 +228,33 @@ export function useGuideState(
         saveState(newState);
     }, [saveState]);
 
-    return useMemo(() => ({
-        state,
-        currentStep: state.currentStep,
-        totalSteps,
-        isStepComplete,
-        markStepComplete,
-        markStepIncomplete,
-        goToStep,
-        nextStep,
-        prevStep,
-        updateConfig,
-        getConfig,
-        resetGuide,
-    }), [
-        state,
-        totalSteps,
-        isStepComplete,
-        markStepComplete,
-        markStepIncomplete,
-        goToStep,
-        nextStep,
-        prevStep,
-        updateConfig,
-        getConfig,
-        resetGuide,
-    ]);
+    return useMemo(
+        () => ({
+            state,
+            currentStep: state.currentStep,
+            totalSteps,
+            isStepComplete,
+            markStepComplete,
+            markStepIncomplete,
+            goToStep,
+            nextStep,
+            prevStep,
+            updateConfig,
+            getConfig,
+            resetGuide,
+        }),
+        [
+            state,
+            totalSteps,
+            isStepComplete,
+            markStepComplete,
+            markStepIncomplete,
+            goToStep,
+            nextStep,
+            prevStep,
+            updateConfig,
+            getConfig,
+            resetGuide,
+        ]
+    );
 }

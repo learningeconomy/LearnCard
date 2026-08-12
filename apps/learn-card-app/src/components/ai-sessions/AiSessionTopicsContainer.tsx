@@ -1,25 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 
 import useAiSession from '../../hooks/useAiSession';
-import sideMenuStore from 'learn-card-base/stores/sideMenuStore';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
-import { useGetCredentialList, useIsCollapsed } from 'learn-card-base';
+import { useGetCredentialList } from 'learn-card-base';
 
-import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 import { AiFeatureGate } from '../ai-feature-gate/AiFeatureGate';
-import AiSessionsLayout from './layout/AiSessionsLayout';
-import AiSessionSuggestions from './AiSessionSuggestions/AiSessionSuggestions';
-import AiSessionTopics from './AiSessionTopics/AiSessionTopics';
-import AiSessionTopicsHeader from './AiSessionsHeader/AiSessionTopicsHeader';
+import AiSessionsPage from '../../pages/ai-sessions/AiSessionsPage';
 import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
-import { AiSessionsTabsEnum } from './aiSessions.helpers';
-import {
-    AiSessionsFilterOptionsEnum,
-    AiSessionsSortOptionsEnum,
-} from './AiSessionsSearch/aiSessions-search.helpers';
 
 import { NewAiSessionStepEnum } from '../new-ai-session/newAiSession.helpers';
 
@@ -41,21 +31,28 @@ export const AiSessionTopicsContainer: React.FC = () => {
     const startNewSession: boolean = _startNewSession === 'true';
     const shortCircuitStep: NewAiSessionStepEnum = _shortCircuitStep as NewAiSessionStepEnum;
 
-    const isCollapsed = useIsCollapsed();
-    const [isMobileModalOpen, setIsMobileModalOpen] = useState<boolean>(false);
-    const { isDesktop, isMobile } = useDeviceTypeByWidth();
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const { isDesktop } = useDeviceTypeByWidth();
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
-    const existingTopics = topics?.pages?.[0]?.records || [];
+    const existingTopics = useMemo(() => topics?.pages?.[0]?.records ?? [], [topics]);
 
     const chatBotSelected = chatBotStore.useTracked.chatBotSelected();
     const setChatBotSelected = chatBotStore.set.setChatBotSelected;
 
     // const [chatBotSelected, setChatBotSelected] = useState<NewAiSessionStepEnum | null>(null);
-    const handleSetChatBotSelected = (chatBotType: NewAiSessionStepEnum) => {
+    const handleSetChatBotSelected = useCallback((chatBotType: NewAiSessionStepEnum) => {
         setChatBotSelected(chatBotType);
-    };
-    const handleStartOver = () => setChatBotSelected(null);
+    }, []);
+    const handleStartOver = useCallback(() => {
+        closeAllModals();
+        chatBotStore.set.resetStore();
+        setChatBotSelected(null);
+    }, [closeAllModals]);
+    const handleModalClose = useCallback(() => {
+        setChatBotSelected(null);
+        setIsModalOpen(false);
+    }, []);
 
     const { openNewAiSessionModal } = useAiSession();
 
@@ -82,99 +79,50 @@ export const AiSessionTopicsContainer: React.FC = () => {
     }, [shortCircuitStep]);
 
     useEffect(() => {
-        if (!isCollapsed) {
-            sideMenuStore.set.isCollapsed(true);
-        }
-    }, []);
-
-    useEffect(() => {
         newCredsStore.set.clearNewCreds('AI Topic');
     }, []);
 
-    const newAiSessionComponent = (
-        <NewAiSessionContainer
-            existingTopics={existingTopics}
-            showAiAppSelector
-            shortCircuitStep={chatBotSelected}
-            handleStartOver={handleStartOver}
-        />
-    );
-
     useEffect(() => {
-        if (isMobile && !isMobileModalOpen && chatBotSelected) {
-            newModal(
-                newAiSessionComponent,
-                {
-                    hideButton: true,
-                },
-                {
-                    mobile: ModalTypes.Right,
-                    desktop: ModalTypes.Right,
-                }
-            );
-            setIsMobileModalOpen(true);
+        if (!chatBotSelected) {
+            if (isModalOpen) setIsModalOpen(false);
             return;
         }
 
-        if (isMobileModalOpen && isDesktop && chatBotSelected) {
-            closeAllModals();
-            setIsMobileModalOpen(false);
-            return;
-        }
-    }, [isMobile, isMobileModalOpen, isDesktop, chatBotSelected]);
+        // Ionic stores the React element passed to newModal rather than re-rendering
+        // it with this component. Wait for topics so the modal does not permanently
+        // capture the loading render's empty list.
+        if (topicsLoading || isModalOpen) return;
 
-    const [activeTab, setActiveTab] = useState<AiSessionsTabsEnum>(AiSessionsTabsEnum.all);
-
-    const [filterBy, setFilterBy] = useState<AiSessionsFilterOptionsEnum>(
-        AiSessionsFilterOptionsEnum.showAll
-    );
-    const [sortBy, setSortBy] = useState<AiSessionsSortOptionsEnum>(
-        AiSessionsSortOptionsEnum.newlyAdded
-    );
-    const [searchInput, setSearchInput] = useState<string>('');
-
-    const styles = isDesktop ? 'pt-[150px] ion-padding' : 'pt-[103px]';
-
-    const leftColumn = (
-        <div className="h-full w-full relative flex items-center justify-center">
-            <AiSessionTopicsHeader activeTab={activeTab} />
-
-            <div
-                className={`flex flex-col max-w-[600px] w-full h-full overflow-x-hidden scrollbar-hide ${styles}`}
-            >
-                <GenericErrorBoundary>
-                    <AiSessionTopics
-                        activeTab={activeTab}
-                        setActiveTab={setActiveTab}
-                        searchInput={searchInput}
-                        setSearchInput={setSearchInput}
-                        filterBy={filterBy}
-                        setFilterBy={setFilterBy}
-                        sortBy={sortBy}
-                        setSortBy={setSortBy}
-                    />
-                </GenericErrorBoundary>
-            </div>
-        </div>
-    );
-
-    let rightColumn = <AiSessionSuggestions handleSetChatBotSelected={handleSetChatBotSelected} />;
-
-    if (
-        chatBotSelected === NewAiSessionStepEnum.newTopic ||
-        chatBotSelected === NewAiSessionStepEnum.revisitTopic ||
-        chatBotSelected === NewAiSessionStepEnum.aiAppSelector
-    ) {
-        rightColumn = newAiSessionComponent;
-    }
+        newModal(
+            <NewAiSessionContainer
+                existingTopics={existingTopics}
+                showAiAppSelector
+                shortCircuitStep={chatBotSelected}
+                handleStartOver={handleStartOver}
+            />,
+            {
+                hideButton: true,
+                onClose: handleModalClose,
+            },
+            {
+                mobile: ModalTypes.Right,
+                desktop: ModalTypes.Right,
+            }
+        );
+        setIsModalOpen(true);
+    }, [
+        chatBotSelected,
+        existingTopics,
+        handleModalClose,
+        handleStartOver,
+        isModalOpen,
+        newModal,
+        topicsLoading,
+    ]);
 
     return (
         <AiFeatureGate>
-            <AiSessionsLayout
-                handleSetChatBotSelected={handleSetChatBotSelected}
-                leftColumn={leftColumn}
-                rightColumn={rightColumn}
-            />
+            <AiSessionsPage />
         </AiFeatureGate>
     );
 };

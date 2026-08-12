@@ -11,6 +11,9 @@ import {
 
 import useTheme from '../../theme/hooks/useTheme';
 
+import * as m from '../../paraglide/messages.js';
+import { NEW_LABEL_KEYS } from './newBoostButtonI18n';
+
 type NewBoostButtonProps = {
     credentialType: CredentialCategoryEnum;
     onClick: () => void;
@@ -26,27 +29,13 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
 
     let { backgroundPrimaryColor, primaryColor, secondaryColor, headerTextColor } =
         getThemedCategoryColors(credentialType);
-    let typeName: string = credentialType;
 
     const isId = credentialType === CredentialCategoryEnum.id;
 
-    switch (credentialType) {
-        case CredentialCategoryEnum.learningHistory:
-            typeName = 'Study';
-            break;
-        case CredentialCategoryEnum.workHistory:
-            typeName = 'Experience';
-            break;
-        case CredentialCategoryEnum.accommodation:
-            typeName = 'Assistance';
-            break;
-        case CredentialCategoryEnum.accomplishment:
-            typeName = 'Portfolio';
-            break;
-        case CredentialCategoryEnum.socialBadge:
-            typeName = 'Boost';
-            break;
-    }
+    const labelKey = NEW_LABEL_KEYS[credentialType];
+    const newLabel = labelKey
+        ? (m as unknown as Record<string, () => string>)[labelKey]()
+        : m['boost.newBoost.generic']({ type: credentialType });
 
     if (viewMode === BoostPageViewMode.Card) {
         return (
@@ -65,10 +54,9 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
                         <Plus className={`h-[20px] w-[20px]`} />
                     </div>
                     <div
-                        className={`flex flex-col text-[17px] ${headerTextColor} font-notoSans font-[700] leading-[normal]`}
+                        className={`flex flex-col text-center text-[17px] ${headerTextColor} font-notoSans font-[700] leading-[normal]`}
                     >
-                        <span>New</span>
-                        <span>{typeName}</span>
+                        <span>{newLabel}</span>
                     </div>
                 </button>
             </IonCol>
@@ -86,7 +74,7 @@ const NewBoostButton: React.FC<NewBoostButtonProps> = ({
             <div className={`bg-white rounded-full p-[10px] w-fit h-fit shadow-soft-bottom`}>
                 <Plus className={`h-[20px] w-[20px]`} />
             </div>
-            <span className={`text-[17px] ${headerTextColor}`}>New {typeName}</span>
+            <span className={`text-[17px] ${headerTextColor}`}>{newLabel}</span>
         </IonRow>
     );
 };

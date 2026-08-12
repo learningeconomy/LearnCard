@@ -50,7 +50,7 @@
         "test:watch": {
             "executor": "./tools/executors/workspace:run-command",
             "options": {
-                "command": "pnpm test:watch",
+                "command": "bun run test:watch",
                 "cwd": "{root}/packages/learn-card-init"
             }
         }

@@ -1,5 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import type { AppEvent, SendCredentialEvent } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-learn-card-post-message');
 
 import sdkActivityStore from '../../stores/sdkActivityStore';
 
@@ -20,7 +22,9 @@ export type LearnCardAction =
     | 'ASK_CREDENTIAL_SEARCH'
     | 'LAUNCH_FEATURE'
     | 'INITIATE_TEMPLATE_ISSUE'
-    | 'APP_EVENT';
+    | 'APP_EVENT'
+    | 'REQUEST_LEARNER_CONTEXT'
+    | 'GET_SYNC_STATUS';
 
 export type ResponseType = 'SUCCESS' | 'ERROR';
 
@@ -62,7 +66,7 @@ export interface RequestIdentityPayload {
 }
 
 export interface RequestConsentPayload {
-    contractUri: string;
+    contractUri?: string;
     redirect?: boolean;
 }
 
@@ -104,6 +108,17 @@ export interface InitiateTemplateIssuePayload {
     draftRecipients?: string[]; // Optional list of profile IDs/DIDs
 }
 
+export interface RequestLearnerContextPayload {
+    includeCredentials?: boolean;
+    includePersonalData?: boolean;
+    format?: 'prompt' | 'structured';
+    instructions?: string;
+    detailLevel?: 'compact' | 'expanded';
+    waitForSync?: boolean;
+}
+
+export interface GetSyncStatusPayload {}
+
 // AppEvent and SendCredentialEvent are imported from @learncard/types above
 
 export type AppEventPayload = AppEvent;
@@ -120,6 +135,8 @@ export interface ActionPayloadMap {
     LAUNCH_FEATURE: LaunchFeaturePayload;
     INITIATE_TEMPLATE_ISSUE: InitiateTemplateIssuePayload;
     APP_EVENT: AppEventPayload;
+    REQUEST_LEARNER_CONTEXT: RequestLearnerContextPayload;
+    GET_SYNC_STATUS: GetSyncStatusPayload;
 }
 
 // ============================================================================
@@ -147,6 +164,8 @@ export interface ActionHandlers {
     LAUNCH_FEATURE?: ActionHandler<'LAUNCH_FEATURE'>;
     INITIATE_TEMPLATE_ISSUE?: ActionHandler<'INITIATE_TEMPLATE_ISSUE'>;
     APP_EVENT?: ActionHandler<'APP_EVENT'>;
+    REQUEST_LEARNER_CONTEXT?: ActionHandler<'REQUEST_LEARNER_CONTEXT'>;
+    GET_SYNC_STATUS?: ActionHandler<'GET_SYNC_STATUS'>;
 }
 
 // ============================================================================
@@ -239,20 +258,20 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
             // ================================================================
 
             if (debug) {
-                //console.log('[LearnCard PostMessage] Received message:', event);
+                //log.info('[LearnCard PostMessage] Received message:', event);
             }
 
             // Validate message structure and protocol
             if (!isValidLearnCardMessage(event)) {
                 //if (debug) {
-                //    console.log('[LearnCard PostMessage] Invalid message format, ignoring');
+                //    log.info('[LearnCard PostMessage] Invalid message format, ignoring');
                 //}
                 return;
             }
 
             // CRITICAL SECURITY: Check origin
             if (!isTrustedOrigin(event.origin, trustedOrigins)) {
-                console.warn(
+                log.warn(
                     `[LearnCard PostMessage] Rejected message from untrusted origin: ${event.origin}`
                 );
                 return;
@@ -261,7 +280,7 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
             const { action, requestId, payload } = event.data;
 
             if (debug) {
-                console.log(
+                log.info(
                     `[LearnCard PostMessage] Processing action: ${action}, requestId: ${requestId}`
                 );
             }
@@ -273,7 +292,7 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
             const handler = handlersRef.current[action];
 
             if (!handler) {
-                console.warn(`[LearnCard PostMessage] No handler registered for action: ${action}`);
+                log.warn(`[LearnCard PostMessage] No handler registered for action: ${action}`);
                 sendResponse(event.source!, event.origin, requestId, 'ERROR', undefined, {
                     code: 'UNKNOWN_ERROR',
                     message: `No handler registered for action: ${action}`,
@@ -297,7 +316,7 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
 
                 if (result.success) {
                     if (debug) {
-                        console.log(
+                        log.info(
                             `[LearnCard PostMessage] Action ${action} succeeded:`,
                             result.data
                         );
@@ -305,10 +324,7 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
                     sendResponse(event.source!, event.origin, requestId, 'SUCCESS', result.data);
                 } else {
                     if (debug) {
-                        console.log(
-                            `[LearnCard PostMessage] Action ${action} failed:`,
-                            result.error
-                        );
+                        log.info(`[LearnCard PostMessage] Action ${action} failed:`, result.error);
                     }
                     sendResponse(
                         event.source!,
@@ -320,15 +336,17 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
                     );
                 }
             } catch (error) {
-                console.error(`[LearnCard PostMessage] Error handling action ${action}:`, error);
+                log.error(`[LearnCard PostMessage] Error handling action ${action}:`, error);
                 sendResponse(event.source!, event.origin, requestId, 'ERROR', undefined, {
                     code: 'UNKNOWN_ERROR',
                     message: error instanceof Error ? error.message : 'Unknown error occurred',
                 });
-                // Hide activity indicator on error
+            } finally {
+                // Always hide the activity indicator when the handler completes.
+                // Some handlers call endActivity() early (before showing a modal);
+                // the store already guards against going below 0 via Math.max().
                 sdkActivityStore.set.endActivity();
             }
-            // Note: endActivity() is called by handlers when they show their UI
         },
         [trustedOrigins, debug]
     );
@@ -339,14 +357,14 @@ export function useLearnCardPostMessage(config: UseLearnCardPostMessageConfig) {
 
     useEffect(() => {
         if (debug) {
-            console.log('[LearnCard PostMessage] Registering message listener');
+            log.info('[LearnCard PostMessage] Registering message listener');
         }
 
         window.addEventListener('message', handleMessage);
 
         return () => {
             if (debug) {
-                console.log('[LearnCard PostMessage] Unregistering message listener');
+                log.info('[LearnCard PostMessage] Unregistering message listener');
             }
             window.removeEventListener('message', handleMessage);
         };

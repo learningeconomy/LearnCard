@@ -1,14 +1,17 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-import { IonIcon } from '@ionic/react';
-import { trashOutline } from 'ionicons/icons';
+import TrashBin from '../../../components/svgs/TrashBin';
+
+import * as m from '../../../paraglide/messages.js';
 
 type ResumePreviewEditableTextBlockProps = {
     value: string;
     placeholder: string;
     isEditing: boolean;
     isSelfAttested: boolean;
-    onChange: (val: string) => void;
+    showDefaultSummaryDecoration?: boolean;
+    onRestoreDefault?: () => void;
+    onChange?: (val: string) => void;
     onRemove?: () => void;
     multiline?: boolean;
 };
@@ -18,14 +21,21 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
     placeholder,
     isEditing,
     isSelfAttested,
+    showDefaultSummaryDecoration,
+    onRestoreDefault,
     onChange,
     onRemove,
     multiline,
 }) => {
     const [draft, setDraft] = useState(value);
     const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
+    const showDecoration = multiline && showDefaultSummaryDecoration;
 
-    const commit = () => onChange(draft.trim());
+    const commit = () => onChange?.(draft.trim());
+
+    useEffect(() => {
+        setDraft(value);
+    }, [value]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !multiline) {
@@ -42,27 +52,59 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
             onKeyDown: handleKeyDown,
             onChange: (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
                 setDraft(e.target.value);
-                onChange(e.target.value);
+                onChange?.(e.target.value);
             },
-            className:
-                'w-full text-xs text-grayscale-700 bg-indigo-50/45 rounded-lg px-2 py-1.5 outline-none resize-none leading-relaxed',
+            className: `w-full text-xs text-grayscale-700 px-2 py-1.5 outline-none resize-none leading-relaxed ${
+                showDecoration ? 'bg-transparent rounded-none' : 'bg-indigo-50 rounded-lg'
+            }`,
         };
 
         return (
             <div className="flex items-start justify-center gap-2 w-full my-1">
-                {multiline ? (
-                    <textarea {...(sharedProps as any)} rows={3} />
-                ) : (
-                    <input {...(sharedProps as any)} type="text" />
-                )}
+                <div className="flex-1">
+                    {showDecoration ? (
+                        <div className="bg-indigo-50 rounded-lg overflow-hidden">
+                            <textarea {...(sharedProps as any)} rows={3} />
+                            <div className="flex justify-end px-2 pb-1.5">
+                                {isSelfAttested ? (
+                                    <span className="text-grayscale-600 font-semibold text-xs">
+                                        {m['passport.resumeBuilder.editable.edited']()}
+                                        {onRestoreDefault && (
+                                            <>
+                                                <span className="mx-1 text-grayscale-600">•</span>
+                                                <button
+                                                    type="button"
+                                                    className="text-indigo-600 font-semibold text-xs"
+                                                    onClick={onRestoreDefault}
+                                                >
+                                                    {m[
+                                                        'passport.resumeBuilder.editable.restoreDefault'
+                                                    ]()}
+                                                </button>
+                                            </>
+                                        )}
+                                    </span>
+                                ) : (
+                                    <span className="text-grayscale-600 font-semibold text-xs">
+                                        {m['passport.resumeBuilder.editable.defaultSummary']()}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ) : multiline ? (
+                        <textarea {...(sharedProps as any)} rows={2} />
+                    ) : (
+                        <input {...(sharedProps as any)} type="text" />
+                    )}
+                </div>
                 {onRemove && (
-                    <div className="flex items-center justify-center h-full mt-[4px]">
+                    <div className="flex items-center justify-center h-full">
                         <button
                             onClick={onRemove}
-                            className="shrink-0 text-grayscale-300 leading-none"
-                            title="Remove"
+                            className="shrink-0 text-grayscale-700 bg-grayscale-100 rounded-[10px] p-1 leading-none"
+                            title={m['passport.resumeBuilder.remove']()}
                         >
-                            <IonIcon icon={trashOutline} className="w-[24px] h-[24px]" />
+                            <TrashBin className="w-[24px] h-[24px]" />
                         </button>
                     </div>
                 )}
@@ -73,16 +115,13 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
     if (!value) return null;
 
     return (
-        <div className="flex items-start gap-1 w-full">
-            <span className="text-xs text-grayscale-600 leading-relaxed shrink-0">–</span>
-            <span
-                className={`text-xs text-left leading-relaxed flex-1 ${
-                    isSelfAttested ? 'text-grayscale-600' : 'text-grayscale-600'
-                }`}
-            >
-                {value}
-            </span>
-        </div>
+        <span
+            className={`block w-full text-xs text-left leading-relaxed ${
+                isSelfAttested ? 'text-grayscale-600' : 'text-grayscale-600'
+            }`}
+        >
+            {value}
+        </span>
     );
 };
 

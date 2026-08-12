@@ -16,13 +16,13 @@ Before the Universal Inbox, issuing a credential involved significant friction f
 
 ### **For the Issuer (the Developer):**
 
-* **The Old Problem:** To send a credential, a developer first had to solve a complex "chicken-and-egg" problem. Do they ask the user for their LearnCard DID? What if the user doesn't have one? Do they build a UI to manage one-off "claim links"? This forced every integrating partner to become an expert in decentralized identity concepts just to perform a simple action.
-* **The Solution:** The Universal Inbox removes this burden entirely. It provides a single, simple API endpoint (`POST /inbox/issue`). The developer only needs to provide the credential data and the recipient's email. Our system handles the rest, abstracting away the complexity of whether the user is new or existing.
+-   **The Old Problem:** To send a credential, a developer first had to solve a complex "chicken-and-egg" problem. Do they ask the user for their LearnCard DID? What if the user doesn't have one? Do they build a UI to manage one-off "claim links"? This forced every integrating partner to become an expert in decentralized identity concepts just to perform a simple action.
+-   **The Solution:** The Universal Inbox removes this burden entirely. It provides a single, simple API endpoint (`POST /inbox/issue`). The developer only needs to provide the credential data and the recipient's email. Our system handles the rest, abstracting away the complexity of whether the user is new or existing.
 
 ### **For the Recipient (the End-User):**
 
-* **The Old Problem:** The user had to be educated about what a LearnCard Passport was _before_ they could receive their first credential. This created a learning curve and a barrier to entry.
-* **The Solution:** The Universal Inbox meets the user where they already are: their email inbox or text messages. The first interaction they have is a simple, familiar notification: "State University has sent you a digital record." The experience of creating a passport becomes a natural and necessary step to claiming something of value, not an abstract concept they have to learn upfront.
+-   **The Old Problem:** The user had to be educated about what a LearnCard Passport was _before_ they could receive their first credential. This created a learning curve and a barrier to entry.
+-   **The Solution:** The Universal Inbox meets the user where they already are: their email inbox or text messages. The first interaction they have is a simple, familiar notification: "State University has sent you a digital record." The experience of creating a passport becomes a natural and necessary step to claiming something of value, not an abstract concept they have to learn upfront.
 
 ## Why It Matters
 
@@ -33,3 +33,13 @@ The Universal Inbox is more than just a feature; it's a strategic pillar for ado
 3. **It Upholds Our Core Principles Without Compromise:** Despite its simplicity, the Universal Inbox never compromises on self-sovereignty. The partner never creates a passport on the user's behalf. The user, and only the user, creates their account and controls their private keys. The system simplifies the _invitation and delivery_, not the fundamental principles of ownership and control.
 
 In short, the Universal Inbox makes the powerful and complex world of verifiable credentials feel simple, intuitive, and accessible to everyone.
+
+## Guardian-Gated Credentials
+
+When issuing credentials to minors or managed accounts, the Universal Inbox supports **guardian gating**. By specifying a `guardianEmail` when sending a credential, the system requires a trusted guardian to approve the credential before the recipient can claim it.
+
+-   The guardian receives an approval email with a secure OTP challenge
+-   The credential remains in `AWAITING_GUARDIAN` status until the guardian acts
+-   Once a guardian creates a LearnCard account and establishes a MANAGES relationship with the child, all future credentials to that child are automatically guardian-gated — no `guardianEmail` needed from the issuer
+
+This enables COPPA-friendly credential issuance workflows where parental consent is required. See the [Guardian-Gated Credentials](../../how-to-guides/implement-flows/guardian-gated-credentials.md) guide for implementation details.

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
-import { AiInsightsTabsEnum, aiInsightsTabs } from './ai-insights-tabs.helpers';
+import { m } from '../../../paraglide/messages.js';
+
+import { AiInsightsTabsEnum, getAiInsightsTabs } from './ai-insights-tabs.helpers';
 
 import { useGetCurrentUserRole, useContractSentRequests, useGetContracts } from 'learn-card-base';
 import { LearnCardRolesEnum } from 'apps/learn-card-app/src/components/onboarding/onboarding.helpers';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, useEngagementSignal } from '@analytics';
 
 export const AiInsightsTabs: React.FC<{
     className?: string;
@@ -30,21 +32,26 @@ export const AiInsightsTabs: React.FC<{
     const newInsightsCount = requests.filter(r => r.readStatus === 'unseen').length ?? 0;
 
     const { track } = useAnalytics();
+    const fireEngagement = useEngagementSignal();
 
     const handleSetSelectedTab = (tab: AiInsightsTabsEnum) => {
         track(AnalyticsEvents.AI_INSIGHTS_TAB_SWITCHED, { tab });
+
+        // LC-1853 (review #7): per-session gate. Subsequent tab switches in
+        // the same session won't re-fire — only the first AI Insights view
+        // counts as an engagement signal for Q4 activation-threshold analysis.
+        fireEngagement('ai_insights');
+
         setSelectedTab?.(tab);
     };
 
     const currentUserRole = useGetCurrentUserRole();
 
-    if (currentUserRole === LearnCardRolesEnum.learner) {
-        return null;
-    }
-
     return (
-        <div className={`${className} flex items-center gap-[10px]`}>
-            {aiInsightsTabs.map(tab => {
+        <div
+            className={`${className} flex items-center gap-[10px] overflow-x-auto scrollbar-hide flex-nowrap`}
+        >
+            {getAiInsightsTabs().map(tab => {
                 if (
                     tab.value === AiInsightsTabsEnum.LearnerInsights &&
                     currentUserRole !== LearnCardRolesEnum.teacher
@@ -63,7 +70,7 @@ export const AiInsightsTabs: React.FC<{
                     <button
                         key={tab.value}
                         onClick={() => handleSetSelectedTab(tab.value)}
-                        className={`text-sm font-medium flex items-center justify-center gap-[5px] px-[14px] py-[7px] rounded-[5px]  ${
+                        className={`text-sm font-medium flex items-center justify-center gap-[5px] px-[14px] py-[7px] rounded-[5px] whitespace-nowrap ${
                             isSelectedTab(tab.value)
                                 ? 'bg-white text-grayscale-900'
                                 : 'text-grayscale-600'
@@ -74,7 +81,7 @@ export const AiInsightsTabs: React.FC<{
                             newInsightsCount > 0 && (
                                 <span className="text-sm text-emerald-700 font-bold">
                                     {' '}
-                                    • {newInsightsCount} New
+                                    • {m['aiInsights.tabs.newCount']({ count: newInsightsCount })}
                                 </span>
                             )}
                     </button>

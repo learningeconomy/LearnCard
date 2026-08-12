@@ -6,7 +6,7 @@ import LeaderIdThumbPlaceholder from '../components/svgs/LeaderIdThumbPlaceholde
 import NationalAdminIdThumbPlaceholder from '../components/svgs/NationalAdminIdThumbPlaceholder';
 import GlobalAdminIdThumbPlaceholder from '../components/svgs/GlobalAdminIdThumbPlaceholder';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
-import { VC, Boost } from '@learncard/types';
+import { VC, CredentialSubject } from '@learncard/types';
 import { ScoutsRoleEnum } from '../stores/troopPageStore';
 import { TroopCMSAppearance, TroopsCMSViewModeEnum } from '../components/troopsCMS/troopCMSState';
 import {
@@ -15,6 +15,10 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 import { insertParamsToFilestackUrl } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('troop.helpers');
+
+type ScoutsCredentialSubject = { achievement?: { achievementType?: string } } & CredentialSubject;
 
 type AllowedBackgroundStylesType = {
     backgroundSize?: string;
@@ -200,12 +204,13 @@ export const getTroopIdThumbOrDefault = (credential: VC, className: string = '')
     return <IdPlaceholder className={className} />;
 };
 
-export const getScoutsRole = (credential: VC | Boost) => {
+export const getScoutsRole = (credential: VC) => {
     if (!credential) return ScoutsRoleEnum.scout;
 
+    const subject = credential?.credentialSubject as ScoutsCredentialSubject | undefined;
     const type =
-        credential.credentialSubject?.achievement?.achievementType ||
-        credential.boostCredential?.credentialSubject?.achievement?.achievementType;
+        subject?.achievement?.achievementType ||
+        credential?.boostCredential?.credentialSubject?.achievement?.achievementType;
 
     switch (type) {
         case AchievementTypes.Global:
@@ -218,7 +223,7 @@ export const getScoutsRole = (credential: VC | Boost) => {
         case AchievementTypes.ScoutMember:
             return ScoutsRoleEnum.scout;
         default:
-            console.error(`Failed to map credential type (${type}) to role. Defaulting to scout`);
+            log.error(`Failed to map credential type (${type}) to role. Defaulting to scout`);
             return ScoutsRoleEnum.scout;
     }
 };
@@ -226,6 +231,23 @@ export const getScoutsRole = (credential: VC | Boost) => {
 export const getScoutsNounForCred = (credential: VC) => {
     const role = getRoleFromCred(credential);
     return getScoutsNounForRole(role);
+};
+
+export const getScoutsRoleLabelForRole = (role: ScoutsRoleEnum) => {
+    switch (role) {
+        case ScoutsRoleEnum.scout:
+            return 'Scout';
+        case ScoutsRoleEnum.leader:
+            return 'Troop Leader';
+        case ScoutsRoleEnum.national:
+            return 'National Admin';
+        case ScoutsRoleEnum.global:
+            return 'Global Admin';
+    }
+};
+
+export const getScoutsRoleLabelForCred = (credential: VC) => {
+    return getScoutsRoleLabelForRole(getRoleFromCred(credential));
 };
 
 export const getScoutsNounForRole = (role: ScoutsRoleEnum, shorten?: boolean) => {
@@ -267,7 +289,9 @@ export const isTroopCredential = (credential: VC) => {
         AchievementTypes.Network,
         AchievementTypes.ScoutMember,
     ];
-    const credType = credential?.credentialSubject?.achievement?.achievementType;
+    const credType = (credential?.credentialSubject as ScoutsCredentialSubject | undefined)
+        ?.achievement?.achievementType;
+    if (!credType) return false;
     return troopTypes.includes(credType);
 };
 

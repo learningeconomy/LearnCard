@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test';
+import { expect, Locator, Page } from '@playwright/test';
 import { TEST_USER_SEED } from './constants';
 
 // This is basically expect(locator).toBeVisible() except it'll actually wait for the timeout if the element isn't visible yet
@@ -18,6 +18,60 @@ export const loginTestAccount = async (page: Page) => {
     // await page.waitForURL(/wallet/);
 };
 
+/** Title used when creating a test credential. Exported so tests can assert on it. */
+export const TEST_CREDENTIAL_TITLE = 'Test Credential';
+
+/**
+ * Completes the "Setup Your Profile" modal to join the LearnCard Network.
+ * If the modal doesn't appear (user already has a profile), this is a no-op.
+ */
+export const joinNetworkIfNeeded = async (page: Page, profileId: string) => {
+    const userIdInput = page.locator('input[placeholder="User ID"]');
+    if (await locatorExists(userIdInput, 15_000)) {
+        await userIdInput.fill(profileId);
+        await page.getByRole('button', { name: "Let's Go!" }).click({ timeout: 30_000 });
+        // Wait for "Joining Network..." to finish and modal to close
+        await page
+            .getByRole('button', { name: "Let's Go!" })
+            .waitFor({ state: 'hidden', timeout: 60_000 });
+    }
+};
+
+const TEST_BADGE_PRESET = 'Vibe Curator';
+
+/** Opens the peer-badge picker from the Launchpad. */
+export const openBoostAFriendBadgePicker = async (page: Page) => {
+    await page.goto('/launchpad');
+    await page.getByRole('button', { name: 'Boost a Friend' }).click({ timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: 'Pick a Badge' })).toBeVisible({
+        timeout: 30_000,
+    });
+};
+
+/** Selects and personalizes the test peer badge, then advances to recipient selection. */
+export const personalizeTestBadge = async (page: Page) => {
+    await page.getByPlaceholder('Search badges...').fill(TEST_BADGE_PRESET);
+    await page.getByRole('button', { name: new RegExp(TEST_BADGE_PRESET) }).click();
+    await page.getByPlaceholder('e.g. Trailblazer').fill(TEST_CREDENTIAL_TITLE);
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Send To' })).toBeVisible({
+        timeout: 30_000,
+    });
+};
+
+/** Issues the personalized peer badge to the current user and opens the Badges list. */
+export const issueBadgeToSelf = async (page: Page, timeout = 60_000) => {
+    await openBoostAFriendBadgePicker(page);
+    await personalizeTestBadge(page);
+    await page.getByRole('button', { name: 'Just me', exact: true }).click();
+    await page.getByRole('button', { name: 'Boost Myself', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Added to your Passport!' })).toBeVisible({
+        timeout,
+    });
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    await page.waitForURL(/\/socialBadges/, { timeout });
+};
+
 /**
  * Logs in via seed phrase and navigates to the specified path.
  *
@@ -34,23 +88,48 @@ export const loginTestAccount = async (page: Page) => {
  */
 export const waitForAuthenticatedState = async (
     page: Page,
-    pathOrOptions: string | { path?: string; seed?: string } = '/',
+    pathOrOptions: string | { path?: string; seed?: string; profileId?: string } = '/',
     timeout = 30000
 ) => {
     // Parse options
-    const options = typeof pathOrOptions === 'string'
-        ? { path: pathOrOptions, seed: TEST_USER_SEED }
-        : { path: pathOrOptions.path ?? '/', seed: pathOrOptions.seed ?? TEST_USER_SEED };
+    const options =
+        typeof pathOrOptions === 'string'
+            ? {
+                  path: pathOrOptions,
+                  seed: TEST_USER_SEED,
+                  profileId: undefined as string | undefined,
+              }
+            : {
+                  path: pathOrOptions.path ?? '/',
+                  seed: pathOrOptions.seed ?? TEST_USER_SEED,
+                  profileId: pathOrOptions.profileId,
+              };
+
+    // Wait for the LCN gate's underlying profile lookup so `Add to LearnCard`
+    // opens the menu rather than the OnboardingContainer. Tolerate timeout
+    // for cache-hit paths where no fresh request fires.
+    const profileFetchPromise = page
+        .waitForResponse(
+            response => /profile\.getProfile/.test(response.url()) && response.status() < 500,
+            { timeout }
+        )
+        .catch(() => undefined);
 
     // Login via seed - this creates a proper user with privateKey
-    await page.goto('/hidden/seed');
+    // If profileId is provided, the seed route will also create a network profile
+    const seedUrl = options.profileId
+        ? `/hidden/seed?profileId=${encodeURIComponent(options.profileId)}`
+        : '/hidden/seed';
+    await page.goto(seedUrl);
 
     // Fill in the seed and submit
     await page.getByRole('textbox').fill(options.seed);
     await page.getByRole('button', { name: /sign in with seed/i }).click();
 
-    // Wait for redirect to wallet (indicates successful login)
+    // Wait for redirect to wallet (indicates successful login + profile creation)
     await page.waitForURL(/\/wallet/, { timeout });
+
+    await profileFetchPromise;
 
     // If a different path was requested, navigate there
     if (options.path !== '/' && options.path !== '/wallet') {

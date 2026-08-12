@@ -1,9 +1,11 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { useModal, useGetProfile } from 'learn-card-base';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useModal, useGetProfile, switchedProfileStore } from 'learn-card-base';
 
 import AdminToolOptionsListItem from './AdminToolsOptionsListItem';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
+import * as m from '../../../paraglide/messages.js';
 
 import {
     adminToolOptions,
@@ -16,24 +18,40 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
     shortCircuitDevTool,
 }) => {
     const history = useHistory();
+    const flags = useFlags();
     const { closeAllModals } = useModal();
     const { data: lcNetworkProfile } = useGetProfile();
+    const profileType = switchedProfileStore.use.profileType();
 
     const userRole = lcNetworkProfile?.role as LearnCardRolesEnum | undefined;
     const canAccessDevTools =
-        userRole === LearnCardRolesEnum.developer || userRole === LearnCardRolesEnum.admin;
+        userRole === LearnCardRolesEnum.developer ||
+        userRole === LearnCardRolesEnum.admin ||
+        profileType === 'service';
+
+    const filteredAdminToolOptions = adminToolOptions.filter(option =>
+        option.type === AdminToolOptionsEnum.GUARDIAN_CREDENTIAL_TEST
+            ? flags.showGuardianCredentialTestAdmin
+            : true
+    );
+
+    const filteredDeveloperToolOptions = developerToolOptions.filter(option =>
+        option.type === AdminToolOptionsEnum.LEARNER_CONTEXT_TEST
+            ? flags.enableLearnerContextTest
+            : true
+    );
 
     return (
         <>
             <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-[15px] mt-4 rounded-[15px]">
                 <div className="w-full flex items-center justify-start">
                     <h4 className="text-xl text-grayscale-900 font-notoSans font-[600]">
-                        Admin Tools
+                        {m['sidemenu.links.adminTools']()}
                     </h4>
                 </div>
                 <div className="w-full flex items-center justify-start">
                     <ul className="w-full">
-                        {adminToolOptions.map(option => (
+                        {filteredAdminToolOptions.map(option => (
                             <AdminToolOptionsListItem
                                 shortCircuitDevTool={shortCircuitDevTool}
                                 option={option}
@@ -51,11 +69,11 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
                         >
                             <div className="flex flex-col items-start">
                                 <p className="text-grayscale-900 text-[17px] font-notoSans font-[600] leading-[24px] tracking-[0.25px] pr-2">
-                                    Partner Portal
+                                    {m['adminTools.partnerPortal.label']()}
                                 </p>
 
                                 <p className="text-grayscale-600 text-[14px] font-notoSans font-[400] leading-[21px] tracking-[0.25px]">
-                                    Publish and manage apps in the App Store.
+                                    {m['adminTools.partnerPortal.description']()}
                                 </p>
                             </div>
 
@@ -69,13 +87,13 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
             <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-[15px] mt-4 rounded-[15px]">
                 <div className="w-full flex items-center justify-start">
                     <h4 className="text-xl text-grayscale-900 font-notoSans font-[600]">
-                        Developer Tools
+                        {m['adminTools.developerTools']()}
                     </h4>
                 </div>
                 {canAccessDevTools ? (
                     <div className="w-full flex items-center justify-start">
                         <ul className="w-full">
-                            {developerToolOptions.map(option => (
+                            {filteredDeveloperToolOptions.map(option => (
                                 <AdminToolOptionsListItem
                                     shortCircuitDevTool={shortCircuitDevTool}
                                     option={option}
@@ -91,11 +109,11 @@ export const AdminToolOptionsList: React.FC<{ shortCircuitDevTool?: AdminToolOpt
 
                             <div>
                                 <p className="text-grayscale-700 text-[14px] font-notoSans font-[500] leading-[21px]">
-                                    Developer tools are limited to users with a Developer or Admin role.
+                                    {m['adminTools.devLocked.title']()}
                                 </p>
 
                                 <p className="text-grayscale-500 text-[12px] font-notoSans font-[400] leading-[18px] mt-1">
-                                    You can update your role in your account settings.
+                                    {m['adminTools.devLocked.subtitle']()}
                                 </p>
                             </div>
                         </div>

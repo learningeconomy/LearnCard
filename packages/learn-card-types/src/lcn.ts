@@ -1,5 +1,5 @@
 import type {} from 'zod-openapi';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
@@ -20,6 +20,12 @@ export const LCNProfileDisplayValidator = z.object({
 });
 export type LCNProfileDisplay = z.infer<typeof LCNProfileDisplayValidator>;
 
+export const ProfileVisibilityEnum = z.enum(['public', 'connections_only', 'private']);
+export type ProfileVisibility = z.infer<typeof ProfileVisibilityEnum>;
+
+export const AllowConnectionRequestsEnum = z.enum(['anyone', 'invite_only']);
+export type AllowConnectionRequests = z.infer<typeof AllowConnectionRequestsEnum>;
+
 export const LCNProfileValidator = z.object({
     profileId: z.string().min(3).max(40).describe('Unique, URL-safe identifier for the profile.'),
     displayName: z.string().default('').describe('Human-readable display name for the profile.'),
@@ -30,6 +36,17 @@ export const LCNProfileValidator = z.object({
         .boolean()
         .optional()
         .describe('Whether the profile is private or not and shows up in search results.'),
+    profileVisibility: ProfileVisibilityEnum.default('public')
+        .optional()
+        .describe("Profile visibility: 'public', 'connections_only', or 'private'."),
+    showEmail: z
+        .boolean()
+        .default(false)
+        .optional()
+        .describe('Whether to show email to connections.'),
+    allowConnectionRequests: AllowConnectionRequestsEnum.default('anyone')
+        .optional()
+        .describe("Who can send connection requests: 'anyone' or 'invite_only'."),
     email: z.string().optional().describe('Contact email address for the profile. (deprecated)'),
     image: z.string().optional().describe('Profile image URL for the profile.'),
     heroImage: z.string().optional().describe('Hero image URL for the profile.'),
@@ -63,9 +80,49 @@ export const LCNProfileValidator = z.object({
         .optional()
         .describe('Date of birth of the profile: e.g. "1990-01-01".'),
     country: z.string().optional().describe('Country for the profile.'),
+    locale: z
+        .string()
+        .optional()
+        .describe(
+            "BCP-47 language tag (e.g. 'es', 'fr', 'ar') — the user's preferred language for server-sent notifications and emails."
+        ),
     approved: z.boolean().optional().describe('Approval status for the profile.'),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
+
+export const LCNPublicProfileValidator = LCNProfileValidator.pick({
+    profileId: true,
+    displayName: true,
+    shortBio: true,
+    image: true,
+    heroImage: true,
+    type: true,
+    isServiceProfile: true,
+    display: true,
+});
+export type LCNPublicProfile = z.infer<typeof LCNPublicProfileValidator>;
+
+export const LCNAuthedProfileValidator = LCNPublicProfileValidator.extend({
+    bio: LCNProfileValidator.shape.bio,
+    websiteLink: LCNProfileValidator.shape.websiteLink,
+    role: LCNProfileValidator.shape.role,
+    highlightedCredentials: LCNProfileValidator.shape.highlightedCredentials,
+    did: LCNProfileValidator.shape.did,
+});
+export type LCNAuthedProfile = z.infer<typeof LCNAuthedProfileValidator>;
+
+export const LCNConnectionProfileValidator = LCNAuthedProfileValidator.extend({
+    email: LCNProfileValidator.shape.email,
+});
+export type LCNConnectionProfile = z.infer<typeof LCNConnectionProfileValidator>;
+
+export const LCNVisibleProfileValidator = z.union([
+    LCNConnectionProfileValidator.strict(),
+    LCNAuthedProfileValidator.strict(),
+    LCNPublicProfileValidator.strict(),
+    LCNProfileValidator,
+]);
+export type LCNVisibleProfile = z.infer<typeof LCNVisibleProfileValidator>;
 
 export const LCNProfileQueryValidator = z
     .object({
@@ -85,6 +142,11 @@ export const PaginatedLCNProfilesValidator = PaginationResponseValidator.extend(
     records: LCNProfileValidator.array(),
 });
 export type PaginatedLCNProfiles = z.infer<typeof PaginatedLCNProfilesValidator>;
+
+export const PaginatedVisibleLCNProfilesValidator = PaginationResponseValidator.extend({
+    records: LCNVisibleProfileValidator.array(),
+});
+export type PaginatedVisibleLCNProfiles = z.infer<typeof PaginatedVisibleLCNProfilesValidator>;
 
 export const LCNProfileConnectionStatusEnum = z.enum([
     'CONNECTED',
@@ -248,6 +310,7 @@ export const BoostValidator = z.object({
     name: z.string().optional(),
     type: z.string().optional(),
     category: z.string().optional(),
+    created: z.string().optional(),
     status: LCNBoostStatus.optional(),
     autoConnectRecipients: z.boolean().optional(),
     meta: z.record(z.string(), z.any()).optional(),
@@ -283,10 +346,11 @@ export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
 export type PaginatedBoostsType = z.infer<typeof PaginatedBoostsValidator>;
 
 export const BoostRecipientValidator = z.object({
-    to: LCNProfileValidator,
+    to: LCNVisibleProfileValidator,
     from: z.string(),
     received: z.string().optional(),
     uri: z.string().optional(),
+    status: z.enum(['active', 'revoked', 'suspended']).optional(),
 });
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
 
@@ -296,11 +360,12 @@ export const PaginatedBoostRecipientsValidator = PaginationResponseValidator.ext
 export type PaginatedBoostRecipientsType = z.infer<typeof PaginatedBoostRecipientsValidator>;
 
 export const BoostRecipientWithChildrenValidator = z.object({
-    to: LCNProfileValidator,
+    to: LCNVisibleProfileValidator,
     from: z.string(),
     received: z.string().optional(),
     boostUris: z.array(z.string()),
     credentialUris: z.array(z.string()).optional(),
+    status: z.enum(['active', 'revoked', 'suspended']).optional(),
 });
 export type BoostRecipientWithChildrenInfo = z.infer<typeof BoostRecipientWithChildrenValidator>;
 
@@ -382,6 +447,13 @@ export const SendBrandingOptionsValidator = z.object({
 });
 export type SendBrandingOptions = z.infer<typeof SendBrandingOptionsValidator>;
 
+export const GuardianStatusValidator = z.enum([
+    'AWAITING_GUARDIAN',
+    'GUARDIAN_APPROVED',
+    'GUARDIAN_REJECTED',
+]);
+export type GuardianStatus = z.infer<typeof GuardianStatusValidator>;
+
 // Options for send method (applies when recipient is email/phone, routes to Universal Inbox)
 export const SendOptionsValidator = z.object({
     webhookUrl: z.string().url().optional().describe('Webhook URL to receive claim notifications'),
@@ -390,6 +462,11 @@ export const SendOptionsValidator = z.object({
         .optional()
         .describe('If true, returns claimUrl without sending email/SMS'),
     branding: SendBrandingOptionsValidator.optional().describe('Branding for email/SMS delivery'),
+    guardianEmail: z
+        .string()
+        .email()
+        .optional()
+        .describe('Guardian email that must approve before student can claim'),
 });
 export type SendOptions = z.infer<typeof SendOptionsValidator>;
 
@@ -408,10 +485,22 @@ export const SendBoostInputValidator = z
         templateData: z.record(z.string(), z.unknown()).optional(),
         integrationId: z.string().optional().describe('Integration ID for activity tracking'),
     })
-    .refine(data => data.templateUri || data.template, {
-        message: 'Either templateUri or template creation data must be provided.',
+    .refine(data => data.templateUri || data.template || data.signedCredential, {
+        message: 'Either templateUri, template, or signedCredential must be provided.',
         path: ['templateUri'],
-    });
+    })
+    .refine(
+        data => {
+            if (data.options?.guardianEmail) {
+                return data.options.guardianEmail.toLowerCase() !== data.recipient.toLowerCase();
+            }
+            return true;
+        },
+        {
+            message: 'guardianEmail must differ from recipient (self-approval not allowed)',
+            path: ['options', 'guardianEmail'],
+        }
+    );
 export type SendBoostInput = z.infer<typeof SendBoostInputValidator>;
 
 // Inbox-specific response fields (only present when sent via email/phone)
@@ -419,6 +508,9 @@ export const SendInboxResponseValidator = z.object({
     issuanceId: z.string(),
     status: z.enum(['PENDING', 'ISSUED', 'EXPIRED', 'DELIVERED', 'CLAIMED']),
     claimUrl: z.string().url().optional().describe('Present when suppressDelivery=true'),
+    guardianStatus: GuardianStatusValidator.optional().describe(
+        'Present when guardianEmail was specified'
+    ),
 });
 export type SendInboxResponse = z.infer<typeof SendInboxResponseValidator>;
 
@@ -515,6 +607,34 @@ export const ConsentFlowContractDetailsValidator = z.object({
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
+
+export const ConsentFlowContractRequestStatusValidator = z
+    .enum(['pending', 'accepted', 'denied'])
+    .nullable();
+export type ConsentFlowContractRequestStatus = z.infer<
+    typeof ConsentFlowContractRequestStatusValidator
+>;
+
+export const ConsentFlowContractRequestReadStatusValidator = z.enum(['unseen', 'seen']).nullable();
+export type ConsentFlowContractRequestReadStatus = z.infer<
+    typeof ConsentFlowContractRequestReadStatusValidator
+>;
+
+export const ConsentFlowContractRequestForProfileValidator = z.object({
+    profile: LCNProfileValidator,
+    status: ConsentFlowContractRequestStatusValidator,
+    readStatus: ConsentFlowContractRequestReadStatusValidator.optional(),
+});
+export type ConsentFlowContractRequestForProfile = z.infer<
+    typeof ConsentFlowContractRequestForProfileValidator
+>;
+
+export const ConsentFlowContractRequestForProfileListValidator = z.array(
+    ConsentFlowContractRequestForProfileValidator
+);
+export type ConsentFlowContractRequestForProfileList = z.infer<
+    typeof ConsentFlowContractRequestForProfileListValidator
+>;
 
 export const PaginatedConsentFlowContractsValidator = PaginationResponseValidator.extend({
     records: ConsentFlowContractDetailsValidator.omit({ owner: true }).array(),
@@ -717,6 +837,28 @@ export const ConsentFlowTransactionValidator = z.object({
 });
 export type ConsentFlowTransaction = z.infer<typeof ConsentFlowTransactionValidator>;
 
+export const HolderExportConsentRecordValidator = z.object({
+    termsUri: z.string(),
+    status: ConsentFlowTermsStatusValidator,
+    contract: ConsentFlowContractDetailsValidator,
+    terms: ConsentFlowTermsValidator,
+    transactions: ConsentFlowTransactionValidator.array(),
+});
+export type HolderExportConsentRecord = z.infer<typeof HolderExportConsentRecordValidator>;
+
+export const HolderExportMetadataValidator = z.object({
+    consentRecords: HolderExportConsentRecordValidator.array(),
+    truncated: z.boolean().optional(),
+    warnings: z.string().array().optional(),
+    limits: z
+        .object({
+            maxConsentRecords: z.number(),
+            maxTransactionsPerConsentRecord: z.number(),
+        })
+        .optional(),
+});
+export type HolderExportMetadata = z.infer<typeof HolderExportMetadataValidator>;
+
 export const PaginatedConsentFlowTransactionsValidator = PaginationResponseValidator.extend({
     records: ConsentFlowTransactionValidator.array(),
 });
@@ -776,6 +918,15 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'APP_LISTING_SUBMITTED',
     'APP_LISTING_APPROVED',
     'APP_LISTING_REJECTED',
+    'APP_LISTING_WITHDRAWN',
+    'DEVICE_LINK_REQUEST',
+    'GUARDIAN_APPROVAL_PENDING',
+    'GUARDIAN_APPROVED',
+    'GUARDIAN_REJECTED',
+    'APP_NOTIFICATION',
+    'CREDENTIAL_REVOKED',
+    'CREDENTIAL_SUSPENDED',
+    'CREDENTIAL_UNSUSPENDED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -829,7 +980,7 @@ export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 export const LCNNotificationValidator = z.object({
     type: LCNNotificationTypeEnumValidator,
     to: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-    from: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
+    from: z.union([z.string(), LCNProfileValidator.partial().and(z.object({ did: z.string() }))]),
     message: LCNNotificationMessageValidator.optional(),
     data: LCNNotificationDataValidator.optional(),
     sent: z.iso.datetime().optional(),
@@ -993,12 +1144,18 @@ export const InboxCredentialValidator = z.object({
     webhookUrl: z.string().optional(),
     boostUri: z.string().optional(),
     activityId: z.string().optional(),
+    integrationId: z.string().optional(),
     signingAuthority: z
         .object({
             endpoint: z.string().optional(),
             name: z.string().optional(),
         })
         .optional(),
+    // Guardian gate fields (all optional — absent on pre-existing credentials)
+    guardianEmail: z.string().email().optional(),
+    guardianStatus: GuardianStatusValidator.optional(),
+    guardianApprovedAt: z.string().optional(),
+    guardianApprovedByDid: z.string().optional(),
 });
 
 export type InboxCredentialType = z.infer<typeof InboxCredentialValidator>;
@@ -1181,10 +1338,14 @@ export type IssueInboxCredentialResponseType = z.infer<
     typeof IssueInboxCredentialResponseValidator
 >;
 
+/** A simple name reference that the server resolves to a boost template */
+export const CredentialNameRefValidator = z.object({ name: z.string() }).passthrough();
+
 export const ClaimInboxCredentialValidator = z.object({
     credential: VCValidator.or(VPValidator)
         .or(UnsignedVCValidator)
-        .describe('The credential to issue.'),
+        .or(CredentialNameRefValidator)
+        .describe('The credential to issue, or a { name } reference to resolve a boost template.'),
     configuration: z
         .object({
             publishableKey: z.string(),
@@ -1677,6 +1838,14 @@ export type PromotionLevel = z.infer<typeof PromotionLevelValidator>;
 export const AgeRatingValidator = z.enum(['4+', '9+', '12+', '17+']);
 export type AgeRating = z.infer<typeof AgeRatingValidator>;
 
+export const AppStoreListingSubmitterValidator = z.object({
+    profileId: z.string(),
+    displayName: z.string(),
+    email: z.string().optional(),
+});
+
+export type AppStoreListingSubmitter = z.infer<typeof AppStoreListingSubmitterValidator>;
+
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
@@ -1699,6 +1868,9 @@ export const AppStoreListingValidator = z.object({
     hero_background_color: z.string().optional(),
     min_age: z.number().int().min(0).max(18).optional(),
     age_rating: AgeRatingValidator.optional(),
+    submitted_at: z.string().optional(),
+    submitter: AppStoreListingSubmitterValidator.optional(),
+    contact_email: z.string().email().optional(),
 });
 
 export type AppStoreListing = z.infer<typeof AppStoreListingValidator>;
@@ -1754,12 +1926,176 @@ export const SendCredentialEventValidator = z.object({
     type: z.literal('send-credential'),
     templateAlias: z.string(),
     templateData: z.record(z.string(), z.unknown()).optional(),
+    preventDuplicateClaim: z.boolean().optional(),
 });
 
 export type SendCredentialEvent = z.infer<typeof SendCredentialEventValidator>;
 
+export const CheckCredentialEventValidator = z
+    .object({
+        type: z.literal('check-credential'),
+        templateAlias: z.string().optional(),
+        boostUri: z.string().optional(),
+    })
+    .refine(input => Boolean(input.templateAlias) !== Boolean(input.boostUri), {
+        message: 'Exactly one of templateAlias or boostUri is required',
+    });
+
+export type CheckCredentialEvent = z.infer<typeof CheckCredentialEventValidator>;
+
+export const CheckIssuanceStatusEventValidator = z
+    .object({
+        type: z.literal('check-issuance-status'),
+        templateAlias: z.string().optional(),
+        boostUri: z.string().optional(),
+        recipient: z.string(),
+    })
+    .refine(input => Boolean(input.templateAlias) !== Boolean(input.boostUri), {
+        message: 'Exactly one of templateAlias or boostUri is required',
+    });
+
+export type CheckIssuanceStatusEvent = z.infer<typeof CheckIssuanceStatusEventValidator>;
+
+export const GetTemplateRecipientsEventValidator = z
+    .object({
+        type: z.literal('get-template-recipients'),
+        templateAlias: z.string().optional(),
+        boostUri: z.string().optional(),
+        limit: z.number().optional(),
+        cursor: z.string().optional(),
+    })
+    .refine(input => Boolean(input.templateAlias) !== Boolean(input.boostUri), {
+        message: 'Exactly one of templateAlias or boostUri is required',
+    });
+
+export type GetTemplateRecipientsEvent = z.infer<typeof GetTemplateRecipientsEventValidator>;
+
+// Request learner context event for AI tutoring systems
+export const RequestLearnerContextEventValidator = z.object({
+    type: z.literal('request-learner-context'),
+    includeCredentials: z.boolean().optional().default(true),
+    includePersonalData: z.boolean().optional().default(false),
+    format: z.enum(['prompt', 'structured']).optional().default('prompt'),
+    instructions: z.string().optional(),
+    detailLevel: z.enum(['compact', 'expanded']).optional().default('compact'),
+    waitForSync: z.boolean().optional().default(false),
+});
+
+export type RequestLearnerContextEvent = z.infer<typeof RequestLearnerContextEventValidator>;
+
+export const SummaryCredentialKeywordValidator = z.object({
+    occupations: z.array(z.string()).nullable(),
+    careers: z.array(z.string()).nullable(),
+    jobs: z.array(z.string()).nullable(),
+    skills: z.array(z.string()).nullable(),
+    fieldOfStudy: z.string().nullable(),
+});
+
+export type SummaryCredentialKeyword = z.infer<typeof SummaryCredentialKeywordValidator>;
+
+export const SummaryCredentialDataValidator = z.object({
+    title: z.string().describe('Short, concise title for the learning session or credential'),
+    summary: z.string().describe('Comprehensive summary of what happened during the session'),
+    learned: z.array(z.string()).describe('Bullet points of key knowledge gained'),
+    skills: z
+        .array(
+            z.object({
+                title: z.string().describe('Name of the skill category'),
+                description: z
+                    .string()
+                    .describe('Detailed description of what this skill category involves'),
+            })
+        )
+        .describe('Categorized skills learned during the session'),
+    nextSteps: z
+        .array(
+            z.object({
+                title: z.string().describe('Title of the suggested next step'),
+                description: z
+                    .string()
+                    .describe('Description explaining why this next step is recommended'),
+                keywords: SummaryCredentialKeywordValidator.optional().describe(
+                    'Optional taxonomy keywords for occupations/careers/jobs/skills/fieldOfStudy. Omit if not relevant.'
+                ),
+            })
+        )
+        .describe('Recommended follow-up activities or learning modules'),
+    reflections: z
+        .array(
+            z.object({
+                title: z.string().describe('Title of the reflection'),
+                description: z
+                    .string()
+                    .describe('Detailed description of what this reflection involves'),
+            })
+        )
+        .describe('Reflections on the learning experience'),
+});
+
+export type SummaryCredentialData = z.infer<typeof SummaryCredentialDataValidator>;
+
+// AI Session credential event for creating AI tutoring sessions
+export const SendAiSessionCredentialEventValidator = z.object({
+    type: z.literal('send-ai-session-credential'),
+    sessionTitle: z.string(),
+    summaryData: SummaryCredentialDataValidator,
+    metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type SendAiSessionCredentialEvent = z.infer<typeof SendAiSessionCredentialEventValidator>;
+
+export const SendNotificationEventValidator = z.object({
+    type: z.literal('send-notification'),
+    title: z.string().optional(),
+    body: z.string().optional(),
+    actionPath: z.string().optional(),
+    category: z.string().optional(),
+    priority: z.enum(['normal', 'high']).optional(),
+});
+
+export type SendNotificationEvent = z.infer<typeof SendNotificationEventValidator>;
+
+const counterKeyValidator = z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Key must be alphanumeric with _ or -');
+
+export const IncrementCounterEventValidator = z.object({
+    type: z.literal('increment-counter'),
+    key: counterKeyValidator,
+    amount: z.number().int().finite(),
+});
+
+export type IncrementCounterEvent = z.infer<typeof IncrementCounterEventValidator>;
+
+export const GetCounterEventValidator = z.object({
+    type: z.literal('get-counter'),
+    key: counterKeyValidator,
+});
+
+export type GetCounterEvent = z.infer<typeof GetCounterEventValidator>;
+
+export const GetCountersEventValidator = z.object({
+    type: z.literal('get-counters'),
+    keys: z.array(counterKeyValidator).min(1).max(50).optional(),
+});
+
+export type GetCountersEvent = z.infer<typeof GetCountersEventValidator>;
+
 // Add new event types here as the union grows
-export const AppEventValidator = z.discriminatedUnion('type', [SendCredentialEventValidator]);
+export const AppEventValidator = z.discriminatedUnion('type', [
+    SendCredentialEventValidator,
+    CheckCredentialEventValidator,
+    CheckIssuanceStatusEventValidator,
+    GetTemplateRecipientsEventValidator,
+    RequestLearnerContextEventValidator,
+    SendAiSessionCredentialEventValidator,
+    SendNotificationEventValidator,
+    IncrementCounterEventValidator,
+    GetCounterEventValidator,
+    GetCountersEventValidator,
+]);
 
 export type AppEvent = z.infer<typeof AppEventValidator>;
 
@@ -1808,7 +2144,7 @@ export const CredentialActivityValidator = z.object({
     activityId: z.string(),
     eventType: CredentialActivityEventTypeValidator,
     timestamp: z.string(),
-    actorProfileId: z.string(),
+    actorProfileId: z.string().optional(),
     recipientType: CredentialActivityRecipientTypeValidator,
     recipientIdentifier: z.string(),
     boostUri: z.string().optional(),
@@ -1817,6 +2153,7 @@ export const CredentialActivityValidator = z.object({
     integrationId: z.string().optional(),
     source: CredentialActivitySourceTypeValidator,
     metadata: z.record(z.string(), z.unknown()).optional(),
+    status: z.enum(['active', 'revoked', 'suspended']).optional(),
 });
 export type CredentialActivityRecord = z.infer<typeof CredentialActivityValidator>;
 

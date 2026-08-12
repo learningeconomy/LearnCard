@@ -3,6 +3,8 @@ import { useHistory, Redirect } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import { Loader2 } from 'lucide-react';
 
+import * as m from '../../paraglide/messages.js';
+
 import { useDeveloperPortal } from './useDeveloperPortal';
 import { useDeveloperPortalContext } from './DeveloperPortalContext';
 import { HeaderIntegrationSelector } from './components/HeaderIntegrationSelector';
@@ -31,12 +33,18 @@ const DeveloperPortal: React.FC = () => {
         useListingsForIntegration,
         useDeleteListing,
         useSubmitForReview,
+        useUnsubmitForReview,
     } = useDeveloperPortal();
 
-    const { data: listings, isLoading: isLoadingListings, refetch: refetchListings } = useListingsForIntegration(currentIntegrationId);
+    const {
+        data: listings,
+        isLoading: isLoadingListings,
+        refetch: refetchListings,
+    } = useListingsForIntegration(currentIntegrationId);
 
     const deleteMutation = useDeleteListing();
     const submitMutation = useSubmitForReview();
+    const unsubmitMutation = useUnsubmitForReview();
 
     // If no integration ID in URL, redirect to landing page
     if (!currentIntegrationId && !isLoadingIntegrations) {
@@ -66,6 +74,10 @@ const DeveloperPortal: React.FC = () => {
         await submitMutation.mutateAsync(listingId);
     };
 
+    const handleUnsubmitForReview = async (listingId: string) => {
+        await unsubmitMutation.mutateAsync(listingId);
+    };
+
     const handleRefresh = () => {
         refetchListings();
     };
@@ -83,13 +95,18 @@ const DeveloperPortal: React.FC = () => {
     if (isLoadingIntegrations) {
         return (
             <IonPage>
-                <AppStoreHeader title="Developer Portal" rightContent={integrationSelector} />
+                <AppStoreHeader
+                    title={m['developerPortal.shell.title']()}
+                    rightContent={integrationSelector}
+                />
 
                 <IonContent className="ion-padding">
                     <div className="flex items-center justify-center min-h-[400px]">
                         <div className="text-center">
                             <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                            <p className="text-sm text-gray-500 mt-3">Loading...</p>
+                            <p className="text-sm text-gray-500 mt-3">
+                                {m['developerPortal.shell.loading']()}
+                            </p>
                         </div>
                     </div>
                 </IonContent>
@@ -99,7 +116,10 @@ const DeveloperPortal: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title="Developer Portal" rightContent={integrationSelector} />
+            <AppStoreHeader
+                title={m['developerPortal.shell.title']()}
+                rightContent={integrationSelector}
+            />
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto">
@@ -122,6 +142,7 @@ const DeveloperPortal: React.FC = () => {
                         onCreateNew={handleCreateNew}
                         onEditListing={handleEditListing}
                         onSubmitForReview={handleSubmitForReview}
+                        onUnsubmitForReview={handleUnsubmitForReview}
                         onDeleteListing={handleDeleteListing}
                     />
                 </div>

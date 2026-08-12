@@ -32,20 +32,17 @@ import {
     useSyncConsentFlow,
     useSyncRevokedCredentials,
     useIsCollapsed,
-    useWeb3Auth,
     LOGIN_REDIRECTS,
     lazyWithRetry,
     useGetUnreadUserNotifications,
-    useIsCurrentUserLCNUser,
     Modals,
     redirectStore,
     BrandingEnum,
 } from 'learn-card-base';
 import { tabRoutes } from './constants';
-import { WALLET_ADAPTERS } from '@web3auth/base';
 
 import { useFirebase } from './hooks/useFirebase';
-import { useJoinLCNetworkModal } from './components/network-prompts/hooks/useJoinLCNetworkModal';
+import { useAppAuth } from './providers/AuthCoordinatorProvider';
 import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyIdentify';
 import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify, initSentry } from './constants/sentry';
@@ -66,8 +63,13 @@ const getBackgroundGradientForNavbar = ({ path }: NavbarGradientProps): string =
     return gradientMap[path] || '';
 };
 
-const AppRouter: React.FC<{ initLoading?: boolean }> = ({ initLoading }) => {
-    const { web3AuthInit } = useWeb3Auth();
+const AppRouter: React.FC = () => {
+    const { isLoading: coordinatorLoading, walletReady } = useAppAuth();
+
+    // The coordinator detects Firebase auth changes via firebaseAuthStore and
+    // handles the full lifecycle (authenticating → deriving_key → ready).
+    // Once walletReady is true, we always show the app regardless of other signals.
+    const initLoading = walletReady ? false : coordinatorLoading;
     const { verifySignInLinkAndLogin } = useFirebase();
     const history = useHistory();
     const location = useLocation();
@@ -97,11 +99,7 @@ const AppRouter: React.FC<{ initLoading?: boolean }> = ({ initLoading }) => {
     const params = queryString.parse(location.search);
 
     // Custom hooks
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
-    const {
-        data: notificationsData,
-    } = useGetUnreadUserNotifications();
+    const { data: notificationsData } = useGetUnreadUserNotifications();
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
 
@@ -134,32 +132,12 @@ const AppRouter: React.FC<{ initLoading?: boolean }> = ({ initLoading }) => {
         );
     };
 
-    const handleLoginAsync = useCallback(async () => {
-        const web3Auth = await web3AuthInit({
-            redirectUrl:
-                IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                    ? LOGIN_REDIRECTS[BrandingEnum.scoutPass].redirectUrl
-                    : LOGIN_REDIRECTS[BrandingEnum.scoutPass].devRedirectUrl,
-            branding: BrandingEnum.scoutPass,
-            showLoading: false,
-        });
-        await (web3Auth as any)?.connectTo((WALLET_ADAPTERS as any).OPENLOGIN);
-    }, [web3AuthInit]);
-
-    useEffect(() => {
-        if (!currentLCNUserLoading && currentLCNUser === false) {
-            handlePresentJoinNetworkModal();
-        }
-    }, [currentLCNUser, currentLCNUserLoading, handlePresentJoinNetworkModal]);
-
     const handleAppUrlOpen = async (data: { url: string }) => {
         const parsedUrl = new URL(data.url);
         const params = new URLSearchParams(parsedUrl.search);
         const isNative = Capacitor?.isNativePlatform();
 
-        if (params.has('loginCompleted') && isNative) {
-            await handleLoginAsync();
-        } else if (params.get('verifyCode') === 'true' && isNative) {
+        if (params.get('verifyCode') === 'true' && isNative) {
             redirectStore.set.email(params.get('email') as string);
             history.replace('/login?verifyCode=true');
         } else if (data.url) {
@@ -182,7 +160,7 @@ const AppRouter: React.FC<{ initLoading?: boolean }> = ({ initLoading }) => {
                 listener.remove();
             }
         };
-    }, [handleLoginAsync, verifySignInLinkAndLogin, savedEmail]);
+    }, [verifySignInLinkAndLogin, savedEmail]);
 
     useEffect(() => {
         if (!Capacitor.isNativePlatform() && savedEmail) {
@@ -201,7 +179,8 @@ const AppRouter: React.FC<{ initLoading?: boolean }> = ({ initLoading }) => {
 
     const unreadCount = notificationsData?.notifications?.length || null;
 
-    const hideSideMenu = location.pathname === '/consent-flow' || location.pathname.includes('/login');
+    const hideSideMenu =
+        location.pathname === '/consent-flow' || location.pathname.includes('/login');
 
     return (
         <>

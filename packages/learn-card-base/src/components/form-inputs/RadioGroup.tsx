@@ -1,0 +1,78 @@
+import React from 'react';
+
+type RadioOption = {
+    value: string;
+    label: string;
+};
+
+type RadioGroupProps = {
+    value: string | null;
+    onChange: (value: string | null) => void;
+    options: RadioOption[];
+    name: string;
+    columns?: 1 | 2 | 3;
+    disabled?: boolean;
+    className?: string;
+    allowDeselect?: boolean;
+};
+
+const RadioGroup: React.FC<RadioGroupProps> = ({
+    value,
+    onChange,
+    options,
+    name,
+    columns = 2,
+    disabled = false,
+    className = '',
+    allowDeselect = false,
+}) => {
+    const gridCols = {
+        1: 'grid-cols-1',
+        2: 'grid-cols-2',
+        3: 'grid-cols-3',
+    };
+
+    return (
+        <div className={`grid ${gridCols[columns]} gap-[10px] ${className}`}>
+            {options.map(option => {
+                const isSelected = value === option.value;
+                return (
+                    <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                            if (disabled) return;
+                            if (allowDeselect && isSelected) {
+                                onChange(null);
+                            } else {
+                                onChange(option.value);
+                            }
+                        }}
+                        className={`flex items-center gap-[10px] cursor-pointer ${
+                            disabled ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                    >
+                        <span
+                            className={`w-[25px] h-[25px] rounded-full flex items-center justify-center flex-shrink-0
+                                ${isSelected ? 'bg-emerald-500' : 'bg-grayscale-300'}
+                            `}
+                        >
+                            {isSelected && (
+                                <div className="w-[12.5px] h-[12.5px] bg-white rounded-full shadow-bottom-2-4" />
+                            )}
+                        </span>
+                        <span
+                            className={`font-poppins text-[14px] leading-[130%] ${
+                                isSelected ? 'text-grayscale-900 font-bold' : 'text-grayscale-600'
+                            }`}
+                        >
+                            {option.label}
+                        </span>
+                    </button>
+                );
+            })}
+        </div>
+    );
+};
+
+export default RadioGroup;

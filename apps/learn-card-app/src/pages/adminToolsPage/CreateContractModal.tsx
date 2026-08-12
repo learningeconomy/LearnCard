@@ -4,6 +4,7 @@ import { useImmer } from 'use-immer';
 import { cloneDeep } from 'lodash-es';
 import { curriedStateSlice } from '@learncard/helpers';
 import { createPortal } from 'react-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import useAutosave from '../../hooks/useAutosave';
 import RecoveryPrompt from '../../components/common/RecoveryPrompt';
@@ -30,15 +31,16 @@ import {
     useModal,
     useToast,
     useWallet,
-    useFilestack,
+    useImageUpload,
     useSigningAuthority,
     useGetCurrentLCNUser,
     isValidISOString,
     currentUserStore,
     ToastTypeEnum,
+    CredentialCategoryEnum,
 } from 'learn-card-base';
 
-import { ConsentFlowContract, LCNProfile } from '@learncard/types';
+import { ConsentFlowContract, ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 
@@ -50,19 +52,86 @@ export enum ContractType {
     frontDoorCred = 'Front Door Cred', // display a Boost instead of the regular ConsentFlow modal
 }
 
+type CreateContractFormState = {
+    contract: ConsentFlowContract;
+    name: string;
+    subtitle?: string;
+    description?: string;
+    image?: string;
+    expiresAt?: string;
+    reasonForAccessing?: string;
+    needsGuardianConsent?: boolean;
+    redirectUrl?: string;
+    frontDoorBoostUri?: string;
+};
+
+const DEFAULT_CONTRACT_STATE: CreateContractFormState = {
+    contract: {
+        read: { anonymize: true, credentials: { categories: {} }, personal: {} },
+        write: { credentials: { categories: {} }, personal: {} },
+    },
+    name: '',
+    subtitle: '',
+    description: '',
+    image: '',
+    expiresAt: '',
+    reasonForAccessing: '',
+    needsGuardianConsent: false,
+    redirectUrl: '',
+    frontDoorBoostUri: '',
+};
+
+const getContractTypeForTemplate = (
+    templateContract?: ConsentFlowContractDetails
+): ContractType => {
+    if (templateContract?.frontDoorBoostUri) return ContractType.frontDoorCred;
+    if (templateContract?.needsGuardianConsent) return ContractType.gameFlow;
+
+    return ContractType.classic;
+};
+
+const getInitialContractState = (
+    templateContract?: ConsentFlowContractDetails
+): CreateContractFormState => {
+    if (!templateContract) {
+        return cloneDeep(DEFAULT_CONTRACT_STATE);
+    }
+
+    return {
+        contract: cloneDeep(templateContract.contract),
+        name: templateContract.name ?? '',
+        subtitle: templateContract.subtitle ?? '',
+        description: templateContract.description ?? '',
+        image: templateContract.image ?? '',
+        expiresAt: templateContract.expiresAt ?? '',
+        reasonForAccessing: templateContract.reasonForAccessing ?? '',
+        needsGuardianConsent: templateContract.needsGuardianConsent ?? false,
+        redirectUrl: templateContract.redirectUrl ?? '',
+        frontDoorBoostUri: templateContract.frontDoorBoostUri ?? '',
+    };
+};
+
 type CreateContractModalProps = {
     onSuccess?: (contractUri?: string) => void;
+    templateContract?: ConsentFlowContractDetails;
 };
 
 // based on CustomWalletCreateContract.tsx
-const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) => {
+const CreateContractModal: React.FC<CreateContractModalProps> = ({
+    onSuccess,
+    templateContract,
+}) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+    const queryClient = useQueryClient();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Center,
         mobile: ModalTypes.Center,
     });
     const sectionPortal = document.getElementById('section-cancel-portal');
+    const autosaveStorageKey = templateContract?.uri
+        ? `lc_contract_autosave:${templateContract.uri}`
+        : 'lc_contract_autosave';
 
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { getRegisteredSigningAuthority } = useSigningAuthority();
@@ -73,12 +142,16 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const [contractType, setContractType] = useState(ContractType.classic);
-    const [autoBoostUris, setAutoBoostUris] = useState<string[]>([]);
+    const [contractType, setContractType] = useState(() =>
+        getContractTypeForTemplate(templateContract)
+    );
+    const [autoBoostUris, setAutoBoostUris] = useState<string[]>(
+        () => templateContract?.autoBoosts ?? []
+    );
     const [expiresAtError, setExpiresAtError] = useState('');
 
     // Autosave hook
-    type ContractStateType = typeof contract;
+    type ContractStateType = CreateContractFormState;
     const {
         hasRecoveredState,
         recoveredState,
@@ -88,13 +161,23 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
         clearLocalSave,
         hasUnsavedChanges,
     } = useAutosave<ContractStateType, string[]>({
-        storageKey: 'lc_contract_autosave',
+        storageKey: autosaveStorageKey,
         hasContent: state => !!(state?.name || state?.description),
     });
 
     const hasShownRecoveryRef = useRef(false);
 
     const [autoBoostIssuers, setAutoBoostIssuers] = useState<Record<string, LCNProfile>>({});
+
+    const [contract, setContract] = useImmer<CreateContractFormState>(
+        getInitialContractState(templateContract)
+    );
+
+    useEffect(() => {
+        setContractType(getContractTypeForTemplate(templateContract));
+        setAutoBoostUris(templateContract?.autoBoosts ?? []);
+        setContract(getInitialContractState(templateContract));
+    }, [setContract, templateContract?.uri]);
 
     useEffect(() => {
         // rebuild issuers when selected autoboosts change
@@ -108,41 +191,15 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
         setAutoBoostIssuers(_autoBoostIssuers);
     }, [autoBoostUris]);
 
-    const emptyContract = {
-        contract: {
-            read: { anonymize: true, credentials: { categories: {} }, personal: {} },
-            write: { credentials: { categories: {} }, personal: {} },
-        },
-        name: '',
-        subtitle: '',
-        description: '',
-        image: '',
-        expiresAt: '',
-        reasonForAccessing: '',
-        needsGuardianConsent: false,
-        redirectUrl: '',
-        frontDoorBoostUri: '',
-    };
-
-    const [contract, setContract] = useImmer<{
-        contract: ConsentFlowContract;
-        name: string;
-        subtitle?: string;
-        description?: string;
-        image?: string;
-        expiresAt?: string;
-        reasonForAccessing?: string;
-        needsGuardianConsent?: boolean;
-        redirectUrl?: string;
-        frontDoorBoostUri?: string;
-    }>(emptyContract);
-
     const updateSlice = curriedStateSlice(setContract);
     const updateContract = curriedStateSlice(updateSlice('contract'));
     const updateRead = curriedStateSlice(updateContract('read'));
     const updateReadCredentials = curriedStateSlice(updateRead('credentials'));
     const updateWrite = curriedStateSlice(updateContract('write'));
     const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
+    const categoryTitleOverrides: Partial<Record<CredentialCategoryEnum, string>> = {
+        [CredentialCategoryEnum.roleExperience]: 'Experience in Role',
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLElement>) => {
         e.preventDefault();
@@ -173,7 +230,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
             const autoboostUrisFromOtherUsers: string[] = [];
             autoBoostUris.forEach(uri => {
                 const issuer = autoBoostIssuers[uri];
-                if (issuer.did === currentLCNUser?.did) {
+                if (issuer.profileId === currentLCNUser?.profileId) {
                     autoboostUrisFromCurrentUser.push(uri);
                 } else {
                     autoboostUrisFromOtherUsers.push(uri);
@@ -236,20 +293,23 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
 
             // Clear autosave on success
             clearLocalSave();
+            await queryClient.invalidateQueries({ queryKey: ['useGetContracts'] });
 
             presentToast(`Contract "${contract.name}" created successfully!`);
             closeModal();
-        } catch (e) {
-            presentToast(`Failed to create "${contract.name}": ${e.message}`, {
+        } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : String(e);
+
+            presentToast(`Failed to create "${contract.name}": ${errorMessage}`, {
                 type: ToastTypeEnum.Error,
             });
-            setError(e.message);
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data: UploadRes) => {
             updateSlice('image', data?.url);
@@ -549,10 +609,15 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
 
                         {isFrontDoorCred && (
                             <div className="flex flex-col gap-[10px] w-full">
+                                <h1 className="text-grayscale-800">Front Door Credential*</h1>
                                 <BulkBoostParentSelector
-                                    labelOverride="Front Door Credential*"
                                     parentUri={contract.frontDoorBoostUri}
-                                    setParentUri={(uri: string) => {
+                                    setParentUri={(value: React.SetStateAction<string>): void => {
+                                        const uri: string =
+                                            typeof value === 'function'
+                                                ? value(contract.frontDoorBoostUri ?? '')
+                                                : value ?? '';
+
                                         if (uri && !autoBoostUris.includes(uri)) {
                                             // add front door cred to auto-claim list
                                             //   they can remove it if they want, but most of the time will probably want the
@@ -614,6 +679,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
                                     onChange={updateReadCredentials('categories') as any}
                                     setContract={setContract}
                                     mode="read"
+                                    categoryTitleOverrides={categoryTitleOverrides}
                                 />
                             </div>
 
@@ -644,6 +710,8 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({ onSuccess }) 
                                     setContract={setContract}
                                     onChange={updateWriteCredentials('categories') as any}
                                     mode="write"
+                                    hideVerifiableDataOnWrite
+                                    categoryTitleOverrides={categoryTitleOverrides}
                                 />
                             </div>
 

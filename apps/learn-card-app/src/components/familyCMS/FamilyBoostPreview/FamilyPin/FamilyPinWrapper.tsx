@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import _ from 'lodash-es';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('family-pin-wrapper');
 
 import FamilyPinModal from './FamilyPinModal';
 import { confirmPinValidator, existingPinValidator, pinValidator } from './familyPin.helpers';
@@ -104,7 +106,7 @@ export const FamilyPinWrapper: React.FC<FamilyPinWrapperProps> = ({
                     setActiveStep(FamilyPinViewModeEnum.create);
                 }
             } catch (e) {
-                console.warn('error', e);
+                log.warn('error', e);
                 validate('existingPin', { pin: existingPin, confirmPin: _existingPin });
             } finally {
                 setIsVerifying(false);

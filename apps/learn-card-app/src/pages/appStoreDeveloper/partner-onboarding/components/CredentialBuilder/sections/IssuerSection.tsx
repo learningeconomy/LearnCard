@@ -1,41 +1,50 @@
 /**
- * IssuerSection - Issuer information (DID only - injected by system)
+ * IssuerSection - Shows the auto-injected DID (read-only) with explanatory note
  */
 
 import React from 'react';
 import { Building2 } from 'lucide-react';
 
-import { systemField } from '../types';
+import * as m from '../../../../../../paraglide/messages.js';
+
+import { OBv3CredentialTemplate, systemField } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
 
 interface IssuerSectionProps {
+    template: OBv3CredentialTemplate;
+    onChange: (template: OBv3CredentialTemplate) => void;
     isExpanded: boolean;
     onToggle: () => void;
+    disableDynamicFields?: boolean;
 }
 
-export const IssuerSection: React.FC<IssuerSectionProps> = ({
-    isExpanded,
-    onToggle,
-}) => {
+export const IssuerSection: React.FC<IssuerSectionProps> = ({ template, isExpanded, onToggle }) => {
+    const issuer = template.issuer;
+
     return (
         <CollapsibleSection
-            title="Issuer"
+            title={m['developerPortal.credentialBuilder.sectionTitles.issuer']()}
             icon={<Building2 className="w-4 h-4 text-blue-600" />}
             isExpanded={isExpanded}
             onToggle={onToggle}
         >
             <FieldEditor
-                label="Issuer (DID)"
-                field={systemField('Your organization\'s Decentralized Identifier (DID) from your LearnCard wallet')}
+                label={m['developerPortal.credentialBuilder.issuer.did']()}
+                field={{
+                    ...(issuer.id ?? systemField('issuer_did')),
+                    systemDescription: m['developerPortal.credentialBuilder.issuer.didHelp'](),
+                }}
                 onChange={() => {}}
-                helpText="Automatically set to your wallet's DID when the credential is issued"
+                helpText={m['developerPortal.credentialBuilder.issuer.didHelp']()}
             />
 
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-2">
-                <p className="text-xs text-blue-700">
-                    <strong>Note:</strong> The issuer is automatically set to your wallet's DID. 
-                    Recipients can verify the credential was issued by you through this identifier.
-                </p>
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p
+                    className="text-sm text-blue-800"
+                    dangerouslySetInnerHTML={{
+                        __html: m['developerPortal.credentialBuilder.issuer.note'](),
+                    }}
+                />
             </div>
         </CollapsibleSection>
     );

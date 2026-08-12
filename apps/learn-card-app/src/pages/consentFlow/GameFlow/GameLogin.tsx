@@ -1,23 +1,29 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 import { ArrowLeft, Mail, Phone } from 'lucide-react';
 
 import useFirebase from '../../../hooks/useFirebase';
-import { LoginTypesEnum } from 'learn-card-base';
+import { LoginTypesEnum, SocialLoginTypes } from 'learn-card-base';
 
 import EmailForm from '../../../pages/login/forms/EmailForm';
 import PhoneForm from '../../../pages/login/forms/PhoneForm';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
-import LearnCardAppIcon from '../../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../../config/brandingAssets';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../../paraglide/messages.js';
 
 type GameLoginProps = {
     handleBackToGame: () => void;
 };
 
 export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
+    const { appIcon } = useTenantBrandingAssets();
+    const brandingConfig = useBrandingConfig();
     const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
     const { appleLogin, googleLogin } = useFirebase();
+    const socialLoginInFlightRef = useRef(false);
+    const [activeSocialLogin, setActiveSocialLogin] = useState<SocialLoginTypes | null>(null);
 
     const [showSocialLogins, setShowSocialLogins] = useState(true);
 
@@ -81,16 +87,40 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
         {
             id: 1,
             src: AppleIcon,
-            alt: 'apple',
+            alt: m['login.social.provider.apple'](),
             onClick: appleLogin,
+            type: SocialLoginTypes.apple,
         },
         {
             id: 2,
             src: GoogleIcon,
-            alt: 'google',
+            alt: m['login.social.provider.google'](),
             onClick: googleLogin,
+            type: SocialLoginTypes.google,
         },
     ];
+
+    const handleSocialLogin = async (
+        type: SocialLoginTypes,
+        login: () => Promise<boolean>
+    ): Promise<void> => {
+        if (socialLoginInFlightRef.current) return;
+
+        socialLoginInFlightRef.current = true;
+        setActiveSocialLogin(type);
+        let keepLoadingUntilNavigation = false;
+
+        try {
+            keepLoadingUntilNavigation = await login();
+        } catch {
+            // Provider handlers own error feedback; this component only owns loading state.
+        } finally {
+            if (!keepLoadingUntilNavigation) {
+                socialLoginInFlightRef.current = false;
+                setActiveSocialLogin(null);
+            }
+        }
+    };
 
     const isPhone = activeLoginType === LoginTypesEnum.phone;
 
@@ -98,13 +128,13 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
         <div className="flex flex-col gap-[10px]">
             <div className="w-full flex flex-col gap-[20px] justify-center items-center bg-white rounded-[20px] pt-[40px] pb-[20px] px-[30px] shadow-soft-bottom">
                 <img
-                    src={LearnCardAppIcon}
-                    alt="LearnCard App Icon"
+                    src={appIcon}
+                    alt="App Icon"
                     className="object-fit h-[50px] w-[50px] rounded-[10px]"
                 />
 
                 <h6 className="tracking-[12px] text-xl font-[800] text-grayscale-900 font-notoSans">
-                    LEARNCARD
+                    {brandingConfig?.name}
                 </h6>
 
                 <p className="text-grayscale-500 font-montserrat text-[14px] font-[500] mr-auto">
@@ -115,8 +145,9 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                     {showSocialLogins && (
                         <div className="w-full flex gap-[20px] border-grayscale-500  border-opacity-30 pb-[30px]">
                             <button
-                                className="flex items-center justify-center bg-grayscale-900 border-solid border-grayscale-100 rounded-full w-[45px] h-[45px]"
+                                className="flex items-center justify-center bg-grayscale-900 border-solid border-grayscale-100 rounded-full w-[45px] h-[45px] transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                                 onClick={handleActiveLoginType}
+                                disabled={activeSocialLogin !== null}
                                 type="button"
                             >
                                 {isPhone ? (
@@ -126,15 +157,33 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                                 )}
                             </button>
                             {socialLogins.map(socialLogin => {
-                                const { id, src, onClick, alt } = socialLogin;
+                                const { id, src, onClick, alt, type } = socialLogin;
+                                const isActiveSocialLogin = activeSocialLogin === type;
+
                                 return (
                                     <button
                                         key={id}
-                                        className="flex items-center justify-center border-solid border-[1px] border-grayscale-100 rounded-full w-[45px] h-[45px]"
-                                        onClick={onClick}
+                                        className="flex items-center justify-center border-solid border-[1px] border-grayscale-100 rounded-full w-[45px] h-[45px] transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                        disabled={activeSocialLogin !== null}
+                                        aria-busy={isActiveSocialLogin}
+                                        onClick={() => void handleSocialLogin(type, onClick)}
                                         type="button"
                                     >
-                                        <img src={src} alt={alt} className="w-[28px] h-[28px]" />
+                                        {isActiveSocialLogin ? (
+                                            <span
+                                                role="status"
+                                                aria-label={m['login.social.signingInWith']({
+                                                    provider: alt,
+                                                })}
+                                                className="w-5 h-5 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin"
+                                            />
+                                        ) : (
+                                            <img
+                                                src={src}
+                                                alt={alt}
+                                                className="w-[28px] h-[28px]"
+                                            />
+                                        )}
                                     </button>
                                 );
                             })}
@@ -153,7 +202,7 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                 className="w-full py-[12px] px-[20px] text-[16px] bg-white rounded-[30px] text-grayscale-800 shadow-box-bottom flex items-center justify-center gap-[10px]"
             >
                 <ArrowLeft className="w-[18px] h-[18px]" />
-                Back to Game
+                {m['common.back']()}
             </button>
         </div>
     );

@@ -7,6 +7,7 @@ import { useModal } from 'learn-card-base';
 import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
 
 const CheckListManagerFooter: React.FC<{ handleSave?: () => void; loading?: boolean }> = ({
     handleSave,
@@ -35,7 +36,7 @@ const CheckListManagerFooter: React.FC<{ handleSave?: () => void; loading?: bool
                         onClick={closeModal}
                         className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                     >
-                        Back
+                        {m['common.back']()}
                     </button>
                     {handleSave && (
                         <button
@@ -51,7 +52,9 @@ const CheckListManagerFooter: React.FC<{ handleSave?: () => void; loading?: bool
                             }}
                             className={`py-[9px] pl-[20px] pr-[15px] bg-${primaryColor} rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] justify-center mr-2`}
                         >
-                            {loading ? 'Saving...' : 'Save'}
+                            {loading
+                                ? m['passport.buildMyLearnCard.misc.saving']()
+                                : m['passport.buildMyLearnCard.misc.save']()}
                         </button>
                     )}
                 </div>

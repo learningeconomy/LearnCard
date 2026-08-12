@@ -1,5 +1,9 @@
 import React from 'react';
 
+import { isStaleChunkError, guardedChunkReload } from '../../helpers/lazyWithRetry';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('index');
+
 type ErrorBoundaryProps = {
     children: React.ReactNode;
     FallbackComponent: React.ReactNode;
@@ -18,7 +22,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasErro
 
     componentDidCatch(error: any, errorInfo: any) {
         // You can also log the error to an error reporting service
-        console.error({ error, errorInfo });
+        log.error({ error, errorInfo });
     }
 
     render() {
@@ -38,14 +42,17 @@ export class ChunkBoundary extends React.Component<
     { hasError: boolean }
 > {
     state = { hasError: false };
+
     static getDerivedStateFromError() {
         return { hasError: true };
     }
+
     componentDidCatch(err: any) {
-        if (/ChunkLoadError|Failed to fetch dynamically imported module/i.test(err?.message)) {
-            window.location.reload();
+        if (isStaleChunkError(err)) {
+            guardedChunkReload();
         }
     }
+
     render() {
         return this.state.hasError ? null : this.props.children;
     }

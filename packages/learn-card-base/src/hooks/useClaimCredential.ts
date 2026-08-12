@@ -4,6 +4,9 @@ import { useIonAlert } from '@ionic/react';
 import { useAcceptCredentialMutation } from 'learn-card-base/react-query/mutations/mutations';
 import { useToast, ToastTypeEnum } from 'learn-card-base';
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-claim-credential');
+
 export const useClaimCredential = (
     uri: string,
     options?: {
@@ -45,7 +48,7 @@ export const useClaimCredential = (
                     }
                 );
             } catch (err) {
-                console.log('acceptCredential::error', err?.message);
+                log.debug('acceptCredential::error', err?.message);
                 presentAlert({
                     backdropDismiss: false,
                     cssClass: 'boost-confirmation-alert',

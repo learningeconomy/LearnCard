@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import moment from 'moment';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('family-invite-guardian');
 
 import {
     BoostCategoryOptionsEnum,
@@ -13,6 +15,7 @@ import {
 } from 'learn-card-base';
 
 import { IonPage, useIonModal } from '@ionic/react';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 import CopyStack from 'apps/learn-card-app/src/components/svgs/CopyStack';
 import BoostShareableQRCode from '../../../boost/boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableQRCode';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
@@ -29,6 +32,7 @@ import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { BoostCMSIssueTo, ShortBoostState } from '../../../boost/boost';
+import * as m from '../../../../paraglide/messages.js';
 
 type FamilyInviteGuardianProps = {
     boostUri: string;
@@ -68,6 +72,31 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
         const wallet = await initWallet(); // re-init wallet after clearing wallet store
 
         try {
+            // Create ADD_ADMIN claim hook so guardians are automatically added as admins when they claim
+            // First check if the hook already exists to avoid duplicate creation errors
+            try {
+                const existingHooksResponse = await wallet?.invoke?.getClaimHooksForBoost({
+                    uri: boostUri,
+                });
+                const existingHooks = existingHooksResponse?.records || [];
+                const hasAdminHook = existingHooks?.some(
+                    (hook: { type: string }) => hook.type === 'ADD_ADMIN'
+                );
+
+                if (!hasAdminHook) {
+                    await wallet?.invoke?.createClaimHook({
+                        type: 'ADD_ADMIN',
+                        data: {
+                            claimUri: boostUri,
+                            targetUri: boostUri,
+                        },
+                    });
+                }
+            } catch (hookError) {
+                // Hook may already exist or user may not have permission, continue with link generation
+                log.info('Claim hook check/creation skipped:', hookError);
+            }
+
             const rsas = await wallet?.invoke?.getRegisteredSigningAuthorities();
 
             if (rsas?.length > 0) {
@@ -95,7 +124,9 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                     );
 
                     setBoostClaimLink(
-                        `https://learncard.app/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                        `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                            _boostClaimLink?.boostUri
+                        }&challenge=${_boostClaimLink?.challenge}`
                     );
                     setIsLinkLoading(false);
                 }
@@ -104,7 +135,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
 
                 // find existing signing authority
                 let sa = signingAuthorities.find(
-                    signingAuthority => signingAuthority?.name === 'lca-sa'
+                    (signingAuthority: { name?: string }) => signingAuthority?.name === 'lca-sa'
                 );
 
                 if (!sa) {
@@ -141,7 +172,9 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                         );
 
                         setBoostClaimLink(
-                            `https://learncard.app/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                            `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                                _boostClaimLink?.boostUri
+                            }&challenge=${_boostClaimLink?.challenge}`
                         );
                         setIsLinkLoading(false);
                     }
@@ -149,7 +182,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
             }
         } catch (error) {
             setIsLinkLoading(false);
-            console.log('error:generateBoostClaimLink', error);
+            log.info('error:generateBoostClaimLink', error);
         }
     });
 
@@ -158,12 +191,12 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
             await Clipboard.write({
                 string: boostClaimLink,
             });
-            presentToast('Boost link copied to clipboard', {
+            presentToast(m['toasts.family.boostLinkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy boost link to clipboard', {
+            presentToast(m['toasts.family.boostLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -173,7 +206,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
     const handleShare = async () => {
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Guardian Invite',
+                title: m['family.guardianInvite.shareTitle'](),
                 text: '',
                 url: boostClaimLink,
                 dialogTitle: '',
@@ -202,6 +235,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
     const [presentClaimQRCode, dismissClaimQRCode] = useIonModal(BoostShareableQRCode, {
         state: shareableCodeState,
         handleCloseModal: () => dismissClaimQRCode(),
+        showCloseButton: true,
         boostClaimLink: boostClaimLink,
         text: 'Scan Code to Join Family',
     });
@@ -276,7 +310,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                                                 : 'text-grayscale-900'
                                         }`}
                                     >
-                                        Show QR Code
+                                        {m['family.guardianInvite.showQrCode']()}
                                     </p>
                                 </div>
                                 <div className="max-w-[30px] max-h-[30px] min-h-[30px] min-w-[30px] object-contain rounded-full bg-white mr-2">
@@ -303,7 +337,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                                                 : 'text-grayscale-900'
                                         }`}
                                     >
-                                        Share Link
+                                        {m['family.guardianInvite.shareLink']()}
                                     </p>
                                 </div>
                                 <div className="max-w-[30px] max-h-[30px] min-h-[30px] min-w-[30px] object-contain rounded-full bg-white mr-2">
@@ -330,7 +364,7 @@ export const FamilyInviteGuardian: React.FC<FamilyInviteGuardianProps> = ({
                                                 : 'text-grayscale-900'
                                         }`}
                                     >
-                                        Browse Contacts
+                                        {m['family.guardianInvite.browseContacts']()}
                                     </p>
                                 </div>
                                 <div className="max-w-[30px] max-h-[30px] min-h-[30px] min-w-[30px] object-contain rounded-full bg-white mr-2">

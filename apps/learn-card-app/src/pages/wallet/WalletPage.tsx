@@ -1,35 +1,47 @@
 import React, { useEffect, useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { Capacitor } from '@capacitor/core';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('wallet-page');
 
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
+import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
 
 import {
     useModal,
     ModalTypes,
-    useGetCredentialList,
     CredentialCategoryEnum,
     newCredsStore,
     lazyWithRetry,
     useAiFeatureGate,
     useToast,
     ToastTypeEnum,
+    useDeviceTypeByWidth,
+    QRCodeScannerStore,
 } from 'learn-card-base';
 
-import ResumeBuilderController from '../../components/resume-builder/ResumeBuilderController';
-import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import WalletActionButton from '../../components/main-subheader/WalletActionButton';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
-import CheckListButton from '../../components/learncard/checklist/CheckListButton';
 import { IonPage, IonContent, IonRow, IonCol, IonModal } from '@ionic/react';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
+import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import WalletPageItemWrapper from './WalletPageItemWrapper';
-import DotIcon from 'learn-card-base/svgs/DotIcon';
+import { filterPassportCategories } from './passportCategories';
+import PassportActivityFeed from './activity-feed/PassportActivityFeed';
+import Plus from 'learn-card-base/svgs/Plus';
+import ScanIcon from 'learn-card-base/svgs/ScanIcon';
+import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
+import NewCredentialsPill from '../../components/main-subheader/NewCredentialsPill';
 
 import { useTheme } from '../../theme/hooks/useTheme';
+import { chatBotStore } from '../../stores/chatBotStore';
+import { prefetchRoutes, ROUTE_PRELOAD } from '../../Routes';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 
 const ViewSharedCredentials = lazyWithRetry(
     () => import('learn-card-base/components/sharecreds/ViewSharedCredentials')
@@ -47,8 +59,12 @@ const WalletPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
 
-    const { theme } = useTheme();
-    const categories = theme.categories;
+    const { theme, colors } = useTheme();
+    const { isMobile } = useDeviceTypeByWidth();
+    const categories = filterPassportCategories(theme.categories ?? []);
+
+    const passportBgColor = colors?.defaults?.passportBgColor;
+    const passportTextColor = colors?.defaults?.passportTextColor ?? 'text-grayscale-900';
 
     const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
     const [viewCredsIsOpen, setViewCredsIsOpen] = useState(false);
@@ -56,19 +72,15 @@ const WalletPage: React.FC = () => {
     const viewMode = passportPageStore.use.viewMode();
     const totalNewCredentialsCount = newCredsStore.use.totalNewCredentialsCount();
 
-    const { data: records } = useGetCredentialList(CredentialCategoryEnum.family);
-
-    const hasFamilyID = records?.pages?.[0]?.records?.length > 0 ?? false;
-    const canCreateFamilies = hasFamilyID || flags?.canCreateFamilies;
-    const hideAiWalletRoutes = flags?.hideAiWalletRoutes;
-    const showAiInsights = flags?.showAiInsights;
-    const hideAiPathways = flags?.hideAiPathways;
+    const showActivityFeed = Boolean(flags?.enablePassportActivityFeed);
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
-    const placeholderCategories = [
-        CredentialCategoryEnum.aiPathway,
-        CredentialCategoryEnum.aiInsight,
-    ];
+
+    useEffect(() => {
+        prefetchRoutes({ aiEnabled: isAiEnabled });
+    }, [isAiEnabled]);
+
+    const onHeaderScroll = useHeaderScrollSync();
 
     useEffect(() => {
         CapacitorUpdater.addListener('updateAvailable', async res => {
@@ -82,12 +94,12 @@ const WalletPage: React.FC = () => {
                         />,
                         {
                             sectionClassName: '!max-w-[400px]',
-                            cancelButtonTextOverride: 'Maybe Later',
+                            cancelButtonTextOverride: m['claim.modal.maybeLater'](),
                         }
                     );
                 }
             } catch (error) {
-                console.log(error);
+                log.info(error);
             }
         });
 
@@ -101,21 +113,7 @@ const WalletPage: React.FC = () => {
     const handleViewModal = () => setViewCredsIsOpen(true);
     const handleCloseViewModal = () => setViewCredsIsOpen(false);
 
-    const categoryToPath: Partial<Record<CredentialCategoryEnum, string>> = {
-        [CredentialCategoryEnum.aiTopic]: '/ai/topics',
-        [CredentialCategoryEnum.aiPathway]: '/ai/pathways', // placeholder
-        [CredentialCategoryEnum.aiInsight]: '/ai/insights', // placeholder
-        [CredentialCategoryEnum.skill]: '/skills',
-        [CredentialCategoryEnum.socialBadge]: '/socialBadges',
-        [CredentialCategoryEnum.achievement]: '/achievements',
-        [CredentialCategoryEnum.learningHistory]: '/learninghistory',
-        [CredentialCategoryEnum.accomplishment]: '/accomplishments',
-        [CredentialCategoryEnum.accommodation]: '/accommodations',
-        [CredentialCategoryEnum.workHistory]: '/workhistory',
-        [CredentialCategoryEnum.family]: '/families',
-        [CredentialCategoryEnum.id]: '/ids',
-        [CredentialCategoryEnum.membership]: '/memberships',
-    };
+    const categoryToPath = CATEGORY_TO_ROUTE;
 
     const AI_CATEGORIES = [
         CredentialCategoryEnum.aiTopic,
@@ -123,76 +121,112 @@ const WalletPage: React.FC = () => {
         CredentialCategoryEnum.aiInsight,
     ];
 
-    const handleClickSquare = (categoryType: CredentialCategoryEnum) => {
+    const handleClickSquare = async (categoryType: CredentialCategoryEnum) => {
         const path = categoryToPath[categoryType];
         if (!path) return;
 
         if (AI_CATEGORIES.includes(categoryType) && !isAiEnabled) {
             const msg =
                 reason === 'disabled_minor'
-                    ? 'AI features are not available for users under 18.'
-                    : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+                    ? m['launchpad.aiDisabledMinor']()
+                    : m['launchpad.aiDisabledPrivacy']();
             presentToast(msg, { type: ToastTypeEnum.Error });
             return;
+        }
+
+        if (path === '/ai/topics') {
+            chatBotStore.set.resetStore();
+        }
+
+        // Await the destination chunk before navigating so WalletPage stays
+        // mounted (no Suspense fallback flash). Idle-prefetch on mount means
+        // this resolves instantly in the common case; on slow networks, cap
+        // the wait so a stalled fetch doesn't block navigation forever.
+        const preload = ROUTE_PRELOAD[path];
+        if (preload) {
+            await Promise.race([
+                preload(),
+                new Promise<void>(resolve => setTimeout(resolve, 4000)),
+            ]).catch(() => undefined);
         }
 
         history.push(path);
     };
 
-    const renderWalletList = categories?.map(category => {
-        const { categoryId: categoryType } = category;
+    const renderWalletList = categories?.map(category => (
+        <GenericErrorBoundary key={category.categoryId}>
+            <WalletPageItemWrapper
+                handleClickSquare={handleClickSquare}
+                walletPageItem={category}
+            />
+        </GenericErrorBoundary>
+    ));
 
-        if (categoryType === CredentialCategoryEnum.family && !canCreateFamilies) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        if (categoryType === CredentialCategoryEnum.aiInsight && !showAiInsights) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        if (categoryType === CredentialCategoryEnum.aiPathway && hideAiPathways) {
-            return <React.Fragment key={categoryType}></React.Fragment>;
-        }
-
-        return (
-            <GenericErrorBoundary key={categoryType}>
-                <WalletPageItemWrapper
-                    handleClickSquare={handleClickSquare}
-                    walletPageItem={category}
-                />
-            </GenericErrorBoundary>
-        );
-    });
-
-    const isGrid = viewMode === PassportPageViewMode.grid;
     const isList = viewMode === PassportPageViewMode.list;
 
     return (
-        <IonPage className="bg-white">
-            <MainHeader customClassName="bg-white" />
+        <IonPage
+            className="bg-grayscale-100"
+            style={passportBgColor ? { backgroundColor: passportBgColor } : undefined}
+        >
+            {/* Desktop hides the header bar entirely (the sidebar carries the LEARNCARD
+                wordmark) and renders the profile/alerts island in the content row below;
+                mobile keeps the frosted MainHeader bar. */}
+            {isMobile && (
+                <MainHeader
+                    customClassName=""
+                    style={{
+                        background:
+                            'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
+                        backdropFilter: 'blur(5px)',
+                        WebkitBackdropFilter: 'blur(5px)',
+                        borderBottom: '1px solid white',
+                    }}
+                />
+            )}
+            {/* Desktop: profile/alerts island pinned to the page's top-right corner
+                (like the other pages), independent of the centered content column. */}
+            {!isMobile && (
+                // Pinned to the exact inset of MainHeader's native island so it
+                // doesn't shift when navigating to/from pages that keep the header:
+                // Ionic grid padding (5px) + col padding (5px) = 10px on each axis.
+                <div className="absolute right-[10px] top-[10px] z-20">
+                    <ProfileAlertsIsland />
+                </div>
+            )}
             <GenericErrorBoundary>
-                <IonContent fullscreen>
-                    <div className="px-[20px]">
-                        <div className="flex flex-col max-w-[600px] mx-auto">
+                <IonContent
+                    fullscreen
+                    color="grayscale-100"
+                    scrollEvents
+                    onIonScroll={onHeaderScroll}
+                    style={
+                        passportBgColor
+                            ? ({ '--background': passportBgColor } as React.CSSProperties)
+                            : undefined
+                    }
+                >
+                    <div className="px-[20px] pt-[16px] pb-[32px] md:pt-[24px] md:pb-[48px]">
+                        <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
-                                <div className="flex justify-between items-center w-full">
-                                    <div className="flex items-center gap-[10px] w-full">
-                                        <h2 className="text-grayscale-900 font-poppins text-[25px] tracking-[0.25px]">
-                                            Passport
+                                <div className="flex justify-between items-center w-full gap-[10px]">
+                                    <div className="flex items-center gap-[8px] min-w-0">
+                                        <h2
+                                            className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
+                                        >
+                                            {m['sidemenu.links.passport']()}
                                         </h2>
 
-                                        {/* 
-                                        // TODOS:
-                                        - add support for new items count based on categories
-                                        */}
-                                        {totalNewCredentialsCount > 0 && (
-                                            <p className="text-emerald-700 font-poppins text-[17px] font-[600] leading-[130%] flex items-center gap-[5px]">
-                                                <DotIcon className="w-[10px] h-[10px]" />{' '}
-                                                {totalNewCredentialsCount} New
-                                            </p>
-                                        )}
+                                        <WalletPageViewModeSelector />
                                     </div>
-                                    <div className="wallet-header-menu-options items-center flex gap-[10px]">
+
+                                    <div className="wallet-header-menu-options items-center flex gap-[10px] shrink-0 [@media(min-width:992px)_and_(max-width:1244px)]:pr-[90px] [@media(min-width:1245px)_and_(max-width:1350px)]:pr-[50px]">
+                                        <NewCredentialsPill
+                                            count={totalNewCredentialsCount}
+                                            label={m['passport.wallet.new']()}
+                                            tone={passportBgColor ? 'onColor' : 'light'}
+                                        />
+
                                         {flags?.boostBundleMenu && (
                                             <WalletActionButton
                                                 location={location}
@@ -201,16 +235,37 @@ const WalletPage: React.FC = () => {
                                             />
                                         )}
 
-                                        <div className="flex items-center justify-end">
-                                            <WalletPageViewModeSelector />
-                                            <ThemeSelector viewMode={themeSelectorViewMode.Mini} />
-                                        </div>
+                                        {Capacitor.isNativePlatform() && (
+                                            <button
+                                                className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
+                                                aria-label={m['passport.wallet.scanQrCode']()}
+                                                onClick={() =>
+                                                    QRCodeScannerStore.set.showScanner(true)
+                                                }
+                                            >
+                                                <ScanIcon className="w-6 h-6 text-grayscale-900" />
+                                            </button>
+                                        )}
+                                        <button
+                                            className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
+                                            aria-label={m['passport.wallet.addToPassport']()}
+                                            onClick={() => {
+                                                newModal(
+                                                    <AddToPassportMenu />,
+                                                    { sectionClassName: '!max-w-[500px]' },
+                                                    {
+                                                        desktop: ModalTypes.Center,
+                                                        mobile: ModalTypes.BottomSheet,
+                                                    }
+                                                );
+                                            }}
+                                        >
+                                            <Plus className="w-5 h-5 text-grayscale-900" />
+                                        </button>
                                     </div>
                                 </div>
                             </IonRow>
-                            <CheckListButton className="mb-[10px] mt-[10px]" />
-                            <ResumeBuilderController className="mb-[10px]" />
-                            <IonRow className="wallet-squares-wrapper max-w-[600px] mx-auto">
+                            <IonRow className="wallet-squares-wrapper max-w-[840px] mx-auto mt-[16px]">
                                 <IonCol
                                     className={`wallet-squares-container ${
                                         isList ? 'list' : 'grid'
@@ -219,6 +274,7 @@ const WalletPage: React.FC = () => {
                                     {renderWalletList}
                                 </IonCol>
                             </IonRow>
+                            {showActivityFeed && <PassportActivityFeed />}
                         </div>
                     </div>
                 </IonContent>

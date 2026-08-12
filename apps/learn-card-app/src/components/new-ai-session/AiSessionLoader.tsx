@@ -1,10 +1,12 @@
 import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay } from 'swiper';
+import { Autoplay } from 'swiper/modules';
+
+import { m } from '../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
 import Sparkles from '../../assets/images/purple-sparkles.gif';
-import LearncardLogo from '../../assets/images/lca-icon-v2.png';
+import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 import {
     ChatBotQuestionsEnum,
@@ -53,6 +55,7 @@ const AiSessionLoader: React.FC<{
     showCloseButton = false,
     closeButtonHandler = () => {},
 }) => {
+    const { appIcon } = useTenantBrandingAssets();
     const { closeModal } = useModal();
     const appSelection = chatBotQA?.find(qa => qa?.type === ChatBotQuestionsEnum.AppSelection);
 
@@ -66,7 +69,7 @@ const AiSessionLoader: React.FC<{
         app = getAiPassportAppByContractUri(contractUri || topicRecord?.contractUri || '');
     }
 
-    let text: string | string[] = 'Launching your session...';
+    let text: string | string[] = m['ai.launchingSession']();
     if (overrideText) text = overrideText;
 
     const containerStyles = isInline
@@ -121,7 +124,7 @@ const AiSessionLoader: React.FC<{
                         />
                     ) : (
                         <img
-                            src={app?.img ?? LearncardLogo}
+                            src={app?.img ?? appIcon}
                             className="h-[70px] w-[70px] rounded-full object-cover z-50 bg-white border-white border-solid border-[6px] box-content"
                         />
                     )}
@@ -176,7 +179,7 @@ const AiSessionLoader: React.FC<{
                             onClick={() => closeButtonHandler()}
                             className="bg-grayscale-100 text-xl text-grayscale-900 flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[325px] mr-2"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     )}
                 </div>

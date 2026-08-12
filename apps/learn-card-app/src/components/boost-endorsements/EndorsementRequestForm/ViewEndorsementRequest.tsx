@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('view-endorsement-request');
 
 import { useIonAlert } from '@ionic/react';
 import EndorsementFormHeader from '../EndorsementForm/EndorsementFormHeader';
@@ -16,6 +18,7 @@ import { useGetCredentialWithEdits } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { EndorsementModeEnum } from '../boost-endorsement.helpers';
 import { LCNNotification } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 const ViewEndorsementRequest: React.FC<{
     sharedLink: { seed: string; pin: string; uri: string };
@@ -23,10 +26,10 @@ const ViewEndorsementRequest: React.FC<{
     endorsementVC?: VC;
     handleSaveEndorsement?: (visibility?: boolean) => void;
     isClaimed?: boolean;
-}> = ({ sharedLink, notification, endorsementVC, handleSaveEndorsement, isClaimed }) => {
+    isLoading?: boolean;
+}> = ({ sharedLink, notification, endorsementVC, handleSaveEndorsement, isClaimed, isLoading }) => {
     const location = useLocation();
     const [vc, setVC] = useState<VP>();
-    const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
     const [tryRefetch, setTryRefetch] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
@@ -79,41 +82,43 @@ const ViewEndorsementRequest: React.FC<{
             }
             setLoading(false);
             return vc;
-        } catch (e) {
+        } catch (error) {
             setLoading(false);
-            setErrMsg(`Error: wrong PIN: ${e}`);
+            log.warn('Unable to open endorsement credential', error);
 
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: `Error fetching credential: ${e}`,
+                header: m['endorsement.viewRequest.errorOpening'](),
                 buttons: [
                     {
-                        text: 'OK',
+                        text: m['endorsement.viewRequest.ok'](),
                         role: 'confirm',
                         handler: async () => {
                             setTryRefetch(!tryRefetch);
                         },
                     },
                     {
-                        text: 'Cancel',
+                        text: m['common.cancel'](),
                         role: 'cancel',
                         handler: () => {
-                            console.log('Cancel clicked');
+                            log.info('Cancel clicked');
                         },
                     },
                 ],
             });
 
-            throw new Error(`Error fetching credential: ${e}`);
+            return undefined;
         }
     };
 
     useEffect(() => {
-        if (pin && uri) {
-            fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
+        if (pin && seed && uri) {
+            setBoost(undefined);
+            setVC(undefined);
+            void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
         }
-    }, [pin, tryRefetch]);
+    }, [pin, seed, uri, tryRefetch]);
 
     return (
         <section className="h-full w-full flex flex-col items-start justify-start overflow-y-scroll bg-grayscale-50 gap-4 pb-[200px]">
@@ -141,6 +146,7 @@ const ViewEndorsementRequest: React.FC<{
             <EndorsementReviewFooter
                 handleSaveEndorsement={() => handleSaveEndorsement?.(visibility)}
                 isDisabled={isClaimed}
+                isLoading={isLoading}
             />
         </section>
     );

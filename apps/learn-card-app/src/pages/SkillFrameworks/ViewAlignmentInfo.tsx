@@ -9,6 +9,7 @@ import {
 
 import X from '../../components/svgs/X';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
+import CompetencyIcon from './CompetencyIcon';
 import FrameworkImage from './FrameworkImage';
 import SkillBreadcrumbText from './SkillBreadcrumbText';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
@@ -111,9 +112,7 @@ const ViewAlignmentInfo: React.FC<ViewAlignmentInfoProps> = ({
                                         : ''
                                 }`}
                             >
-                                <span className="text-[60px] h-[80px] w-[80px] leading-[80px] font-fluentEmoji cursor-none pointer-events-none select-none">
-                                    {alignment?.icon}
-                                </span>
+                                <CompetencyIcon icon={alignment?.icon} size="super-big" />
                             </div>
 
                             <h2 className="text-[20px] text-grayscale-900 font-poppins">

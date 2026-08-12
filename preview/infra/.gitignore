@@ -1,0 +1,7 @@
+.terraform/
+*.tfstate
+*.tfstate.backup
+.build/
+terraform.tfvars
+preview-server
+preview-server.pub

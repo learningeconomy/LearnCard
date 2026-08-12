@@ -3,10 +3,12 @@ import queryString from 'query-string';
 
 import { useHistory, useLocation } from 'react-router-dom';
 import { useModal, useWallet } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import GamePromptHeader from './GamePromptHeader';
 
 import { ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 type GameAccessSuccessPromptProps = {
     user: LCNProfile;
@@ -20,6 +22,7 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
     contractDetails,
 }) => {
     const { closeModal, closeAllModals } = useModal();
+    const brandingConfig = useBrandingConfig();
     const history = useHistory();
     const location = useLocation();
 
@@ -85,7 +88,7 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
                 <div className="w-full text-center text-grayscale-900 text-[17px] font-notoSans px-[30px]">
                     You've added <span className="font-[600] tracking-[0.25px]">{gameTitle}</span>{' '}
                     to <span className="font-[600]">{user?.displayName ?? user?.name}'s</span>{' '}
-                    LearnCard
+                    {brandingConfig?.name}
                 </div>
             </div>
 
@@ -100,9 +103,9 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
             >
-                {isFromGame && 'Continue Playing'}
-                {!isFromGame && returnTo && 'Continue to Game'}
-                {!isFromGame && !returnTo && 'Return to LearnCard'}
+                {isFromGame && m['consentFlow.continuePlaying']()}
+                {!isFromGame && returnTo && m['consentFlow.continueToGame']()}
+                {!isFromGame && !returnTo && `Return to ${brandingConfig?.name}`}
             </button>
         </div>
     );

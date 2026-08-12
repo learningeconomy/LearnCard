@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { VCDisplayCard2 } from '@learncard/react';
+import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
 import { VC, VerificationItem, CredentialRecord } from '@learncard/types';
 import { getCredentialSubject } from '../IssueVC/helpers';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -19,6 +19,11 @@ import {
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { getLogger } from '../../logging/logger';
+import CredentialIssuerPopover, {
+    useCredentialIssuerPopover,
+} from '../CredentialBadge/CredentialIssuerPopover';
+const log = getLogger('vcdisplay-card-wrapper');
 
 const DetailsDisplay: React.FC<VC> = ({ credential }) => {
     const renderDetails = getDetailsFromCredential(credential)?.map(
@@ -72,6 +77,8 @@ export const VCDisplayCardWrapper = ({
     const [VcCategory, setVcCategory] = useState<any | null | undefined>(categoryType ?? '');
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const { initWallet } = useWallet();
+    const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
+        useCredentialIssuerPopover();
 
     useEffect(() => {
         const getCategory = async () => {
@@ -100,7 +107,7 @@ export const VCDisplayCardWrapper = ({
         const verify = async () => {
             const wallet = lc ?? (await initWallet());
             const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
-            console.log('//verifications', verifications);
+            log.debug('//verifications', verifications);
 
             setVCVerifications(verifications);
             setLoading(false);
@@ -198,6 +205,7 @@ export const VCDisplayCardWrapper = ({
 
     const category: CredentialCategory = VcCategory || cr?.category || 'Achievement';
     const categoryImgUrl = categoryMetadata[category].defaultImageSrc;
+    const shouldUseHostCardPadding = getVCDisplayCardVariant(credential, category) !== 'ribbon';
 
     //override default image component in vc display which depends on assumption of a default vc data shape
     const cardImgUrl =
@@ -217,10 +225,16 @@ export const VCDisplayCardWrapper = ({
     return (
         <IonPage>
             <IonContent
-                className="flex items-center justify-center ion-padding boost-cms-preview"
+                className={`flex items-center justify-center ion-padding boost-cms-preview ${
+                    shouldUseHostCardPadding ? '' : '[&::part(scroll)]:px-0'
+                }`}
                 fullscreen
             >
-                <IonRow className="flex flex-col items-center justify-center px-6">
+                <IonRow
+                    className={`flex flex-col items-center justify-center ${
+                        shouldUseHostCardPadding ? 'px-6' : ''
+                    }`}
+                >
                     <div className="flex items-center justify-cente mb-2 vc-preview-modal-safe-area">
                         <button
                             onClick={handleCloseModal}
@@ -229,19 +243,23 @@ export const VCDisplayCardWrapper = ({
                             <X className="text-black w-[30px]" />
                         </button>
                     </div>
-                    <VCDisplayCard2
-                        className={className}
-                        credential={credential}
-                        issueeOverride={issueeText}
-                        issuerOverride={issuerText}
-                        issuerImageComponent={issuerImageComp}
-                        subjectImageComponent={subjectImageComp}
-                        overrideCardImageComponent={cardImgOverride}
-                        verificationItems={vcVerifications}
-                        overrideCardTitle={cardTitle}
-                        overrideDetailsComponent={renderDetailsEl}
-                        categoryType={category}
-                    />
+                    <>
+                        <VCDisplayCard2
+                            className={className}
+                            credential={credential}
+                            issueeOverride={issueeText}
+                            issuerOverride={issuerText}
+                            issuerImageComponent={issuerImageComp}
+                            subjectImageComponent={subjectImageComp}
+                            overrideCardImageComponent={cardImgOverride}
+                            verificationItems={vcVerifications}
+                            overrideCardTitle={cardTitle}
+                            overrideDetailsComponent={renderDetailsEl}
+                            categoryType={category}
+                            onVerifierClick={openCredentialIssuerPopover}
+                        />
+                        <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
+                    </>
                 </IonRow>
             </IonContent>
         </IonPage>

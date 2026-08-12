@@ -66,13 +66,15 @@ export const AiInsightsPromptListItem: React.FC<{ prompt: string }> = ({ prompt 
         <div
             role="button"
             onClick={handlePromptClick}
-            className="w-full flex items-center justify-start bg-indigo-600 px-3 rounded-[10px] h-[62px]"
+            className="w-full flex items-center justify-start bg-grayscale-100 px-3 rounded-[10px] h-[62px]"
         >
             <div className="w-full flex items-center justify-start gap-2">
-                <AiInsightsIconOutline className="text-white w-[25px] h-[25px] min-w-[25px] min-h-[25px]" />
-                <p className="text-left text-sm text-white line-clamp-2 font-semibold">{prompt}</p>
+                <AiInsightsIconOutline className="text-indigo-600 w-[25px] h-[25px] min-w-[25px] min-h-[25px]" />
+                <p className="text-left text-sm text-grayscale-800 line-clamp-2 font-semibold">
+                    {prompt}
+                </p>
             </div>
-            <RightArrow className="text-white w-[20px] h-[20px]" />
+            <RightArrow className="text-grayscale-500 w-[20px] h-[20px]" />
         </div>
     );
 };

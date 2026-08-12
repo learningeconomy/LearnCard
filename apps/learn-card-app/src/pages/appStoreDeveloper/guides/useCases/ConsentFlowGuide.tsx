@@ -1,37 +1,36 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { 
-    FileText, 
-    Link2, 
-    Webhook, 
-    Rocket, 
-    ArrowRight, 
-    ArrowLeft, 
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+    Link2,
+    ArrowRight,
+    ArrowLeft,
     ExternalLink,
     CheckCircle2,
-    Globe,
     Code,
-    Key,
     Package,
     Zap,
-    Award,
     Check,
     Database,
     Copy,
     Info,
-    ChevronDown,
-    ChevronUp,
-    Loader2,
+    Send,
+    Plus,
+    Trash2,
 } from 'lucide-react';
 
-import { useWallet } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 
-import { StepProgress, GoLiveStep } from '../shared';
+import * as m from '../../../../paraglide/messages.js';
+
+import { TransP } from '../../../../i18n/TransP';
+import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
+import { useDeveloperPortal } from '../../useDeveloperPortal';
 
 import { ConsentFlowContractSelector } from '../../components/ConsentFlowContractSelector';
-import { CodeBlock } from '../../components/CodeBlock';
-import OBv3CredentialBuilder from '../../../../components/credentials/OBv3CredentialBuilder';
+import { TemplateListManager } from '../../components/TemplateListManager';
+import type { ManagedTemplate } from '../../dashboards/hooks/useTemplateDetails';
 import type { GuideProps } from '../GuidePage';
+import { getAppBaseUrl } from '../../../../config/bootstrapTenantConfig';
 
 type AuthGrant = {
     id: string;
@@ -43,13 +42,39 @@ type AuthGrant = {
     description?: string;
 };
 
-const STEPS = [
-    { id: 'create-contract', title: 'Create Contract' },
-    { id: 'redirect-handler', title: 'Redirect Handler' },
-    { id: 'api-setup', title: 'API Setup' },
-    { id: 'send-credentials', title: 'Send Credentials' },
-    { id: 'go-live', title: 'Go Live' },
+const getScopeOptions = () => [
+    {
+        label: m['developerPortal.guides.consentFlow.apiSetupStep.fullAccess'](),
+        value: '*:*',
+        description: m['developerPortal.guides.consentFlow.apiSetupStep.fullAccessDesc'](),
+    },
+    {
+        label: m['developerPortal.guides.consentFlow.apiSetupStep.credentialsOnly'](),
+        value: 'credential:* presentation:*',
+        description: m['developerPortal.guides.consentFlow.apiSetupStep.credentialsOnlyDesc'](),
+    },
 ];
+
+const getSteps = () => [
+    {
+        id: 'create-contract',
+        title: m['developerPortal.guides.consentFlow.steps.createContract'](),
+    },
+    {
+        id: 'redirect-handler',
+        title: m['developerPortal.guides.consentFlow.steps.redirectHandler'](),
+    },
+    { id: 'api-setup', title: m['developerPortal.guides.consentFlow.steps.apiSetup']() },
+    {
+        id: 'send-credentials',
+        title: m['developerPortal.guides.consentFlow.steps.sendCredentials'](),
+    },
+    { id: 'test', title: m['developerPortal.guides.consentFlow.steps.test']() },
+    { id: 'go-live', title: m['developerPortal.guides.consentFlow.steps.goLive']() },
+];
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('consent-flow-guide');
 
 // Step Card component for consistent styling
 const StepCard: React.FC<{
@@ -92,25 +117,24 @@ const CreateContractStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create a Consent Flow Contract</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.consentFlow.createContractStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    A consent contract defines what data you&apos;re requesting and why. Users must accept 
-                    the contract before sharing their data.
+                    {m['developerPortal.guides.consentFlow.createContractStep.description']()}
                 </p>
             </div>
 
             <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
                 <p className="text-sm text-indigo-800">
-                    <strong>Consent Redirect Flow:</strong> Collect user consent and credentials from your external application. 
-                    Users will be redirected to LearnCard to grant permissions, then back to your app with their credentials.
+                    {m[
+                        'developerPortal.guides.consentFlow.createContractStep.redirectFlowDescription'
+                    ]()}
                 </p>
             </div>
 
-            <ConsentFlowContractSelector
-                value={contractUri}
-                onChange={setContractUri}
-            />
+            <ConsentFlowContractSelector value={contractUri} onChange={setContractUri} />
 
             {contractUri && (
                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
@@ -119,9 +143,15 @@ const CreateContractStep: React.FC<{
                             <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
 
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-emerald-800">Contract Selected</p>
+                                <p className="text-sm font-medium text-emerald-800">
+                                    {m[
+                                        'developerPortal.guides.consentFlow.createContractStep.contractSelectedTitle'
+                                    ]()}
+                                </p>
 
-                                <p className="text-xs text-emerald-600 font-mono truncate mt-1">{contractUri}</p>
+                                <p className="text-xs text-emerald-600 font-mono truncate mt-1">
+                                    {contractUri}
+                                </p>
                             </div>
                         </div>
 
@@ -136,15 +166,19 @@ const CreateContractStep: React.FC<{
 
                     <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>Important:</strong> Save this Contract URI — you'll need it to send credentials later.
+                            {m[
+                                'developerPortal.guides.consentFlow.createContractStep.saveContractWarning'
+                            ]()}
                         </p>
                     </div>
                 </div>
             )}
 
-            <CodeBlock
-                code={`// Your Contract URI
-const consentFlowContractURI = '${contractUri || 'lc:contract:YOUR_CONTRACT_URI'}';`}
+            <CodeOutputPanel
+                snippets={{
+                    typescript: `// Your Contract URI
+const consentFlowContractURI = '${contractUri || 'lc:contract:YOUR_CONTRACT_URI'}';`,
+                }}
             />
 
             <button
@@ -152,7 +186,7 @@ const consentFlowContractURI = '${contractUri || 'lc:contract:YOUR_CONTRACT_URI'
                 disabled={!contractUri}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-                Continue
+                {m['developerPortal.guides.consentFlow.createContractStep.continueButton']()}
                 <ArrowRight className="w-4 h-4" />
             </button>
         </div>
@@ -170,87 +204,117 @@ const RedirectHandlerStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Your Redirect Handler</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    When users click "Connect with LearnCard" in your app, they'll be redirected to LearnCard to grant consent,
-                    then back to your app with their DID and credentials.
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.description']()}
                 </p>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Your Callback URL</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.callbackUrlLabel']()}
+                </label>
 
                 <input
                     type="url"
                     value={redirectUrl}
-                    onChange={(e) => setRedirectUrl(e.target.value)}
+                    onChange={e => setRedirectUrl(e.target.value)}
                     placeholder="https://your-app.com/api/learncard/callback"
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
-                    Users will be redirected here after granting consent
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.callbackUrlHint']()}
                 </p>
             </div>
 
-            <StepCard step={1} title="Generate Consent URL" icon={<Link2 className="w-4 h-4 text-gray-400 ml-auto" />}>
+            <StepCard
+                step={1}
+                title={m['developerPortal.guides.consentFlow.redirectHandlerStep.step1Title']()}
+                icon={<Link2 className="w-4 h-4 text-gray-400 ml-auto" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
-                    Create a button that redirects users to the consent flow:
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.step1Desc']()}
                 </p>
 
-                <CodeBlock
-                    code={`// When user clicks "Connect with LearnCard"
+                <CodeOutputPanel
+                    snippets={{
+                        typescript: `// When user clicks "Connect with LearnCard"
 const contractUri = '${contractUri || 'YOUR_CONTRACT_URI'}';
-const redirectUri = '${redirectUrl || 'https://your-app.com/api/learncard/callback'}';
+const returnTo = '${redirectUrl || 'https://your-app.com/api/learncard/callback'}';
 
-const consentUrl = \`https://learncard.app/consent-flow?contractUri=\${encodeURIComponent(contractUri)}&redirectUri=\${encodeURIComponent(redirectUri)}\`;
+const consentUrl = \`${getAppBaseUrl()}/consent-flow?uri=\${encodeURIComponent(contractUri)}&returnTo=\${encodeURIComponent(returnTo)}\`;
 
 // Redirect the user
-window.location.href = consentUrl;`}
+window.location.href = consentUrl;`,
+                    }}
                 />
             </StepCard>
 
-            <StepCard step={2} title="Handle the Callback" icon={<Code className="w-4 h-4 text-gray-400 ml-auto" />}>
+            <StepCard
+                step={2}
+                title={m['developerPortal.guides.consentFlow.redirectHandlerStep.step2Title']()}
+                icon={<Code className="w-4 h-4 text-gray-400 ml-auto" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
-                    Create an endpoint to handle the redirect. The user's DID and Delegate VP JWT 
-                    will be included in the URL parameters.
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.step2Desc']()}
                 </p>
 
-                <CodeBlock
-                    code={`// Example: /api/learncard/callback
+                <CodeOutputPanel
+                    snippets={{
+                        typescript: `// Example: /api/learncard/callback
 
 app.get('/api/learncard/callback', async (req, res) => {
-    // Extract the user's DID and Delegate VP from URL params
-    const { did, delegateVpJwt } = req.query;
-    
+    // Extract the user's DID and delegate VP JWT from URL params
+    const { did, vp } = req.query;
+
     // Store these with the user's account in your system
     await saveUserLearnCardCredentials(userId, {
-        did: did,
-        delegateVpJwt: delegateVpJwt
+        did: did as string,
+        vp: vp as string, // VP JWT containing a delegate credential
     });
-    
+
     // Redirect to your app's success page
     res.redirect('/dashboard?connected=true');
-});`}
+});`,
+                    }}
                 />
 
                 <p className="text-xs text-gray-500 mt-3">
-                    Store the <code className="bg-gray-100 px-1.5 py-0.5 rounded">did</code> and{' '}
-                    <code className="bg-gray-100 px-1.5 py-0.5 rounded">delegateVpJwt</code> to identify and 
-                    send credentials to this user later.
+                    <TransP
+                        m={m['developerPortal.guides.consentFlow.redirectHandlerStep.step2Hint']}
+                        components={[
+                            <code className="bg-gray-100 px-1.5 py-0.5 rounded" />,
+                            <code className="bg-gray-100 px-1.5 py-0.5 rounded" />,
+                        ]}
+                    />
                 </p>
             </StepCard>
 
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
-                
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowSummary']()}
+                </h4>
+
                 <ol className="text-xs text-gray-600 space-y-2 list-decimal list-inside">
-                    <li>User clicks "Connect with LearnCard" in your app</li>
-                    <li>User is redirected to LearnCard to grant consent</li>
-                    <li>LearnCard redirects back to your app with their DID</li>
-                    <li>Your backend stores the user's DID</li>
-                    <li>When ready, your backend issues credentials to that DID</li>
+                    <li>
+                        {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep1']()}
+                    </li>
+                    <li>
+                        {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep2']()}
+                    </li>
+                    <li>
+                        {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep3']()}
+                    </li>
+                    <li>
+                        {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep4']()}
+                    </li>
+                    <li>
+                        {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep5']()}
+                    </li>
                 </ol>
             </div>
 
@@ -260,14 +324,14 @@ app.get('/api/learncard/callback', async (req, res) => {
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.backButton']()}
                 </button>
 
                 <button
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Continue
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.continueButton']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -283,164 +347,352 @@ const APISetupStep: React.FC<{
     onTokenChange: (token: string) => void;
 }> = ({ onComplete, onBack, apiToken, onTokenChange }) => {
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
+    const confirm = useConfirmation();
 
-    // API Token selector state
     const [authGrants, setAuthGrants] = useState<Partial<AuthGrant>[]>([]);
     const [loadingGrants, setLoadingGrants] = useState(false);
     const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
-    const [showTokenSelector, setShowTokenSelector] = useState(false);
+    const [fetchError, setFetchError] = useState<string | null>(null);
+    const [creating, setCreating] = useState(false);
+    const [newTokenName, setNewTokenName] = useState('');
+    const [selectedScope, setSelectedScope] = useState('*:*');
+    const [showCreateForm, setShowCreateForm] = useState(false);
+    const [copiedToken, setCopiedToken] = useState(false);
 
-    // Fetch auth grants on mount
+    const fetchAuthGrants = useCallback(async () => {
+        setLoadingGrants(true);
+        setFetchError(null);
+        try {
+            const wallet = await initWallet();
+            const grants = (await wallet.invoke.getAuthGrants()) || [];
+            const activeGrants = grants.filter((g: Partial<AuthGrant>) => g.status === 'active');
+            setAuthGrants(activeGrants);
+        } catch (err) {
+            log.error('Failed to fetch grants:', err);
+            setFetchError('Failed to load API tokens. Please try refreshing the page.');
+        } finally {
+            setLoadingGrants(false);
+        }
+    }, [initWallet]);
+
     useEffect(() => {
-        const fetchGrants = async () => {
-            setLoadingGrants(true);
-            try {
-                const wallet = await initWallet();
-                const grants = await wallet.invoke.getAuthGrants() || [];
-                const activeGrants = grants.filter((g: Partial<AuthGrant>) => g.status === 'active');
-                setAuthGrants(activeGrants);
-            } catch (err) {
-                console.error('Failed to fetch grants:', err);
-            } finally {
-                setLoadingGrants(false);
-            }
-        };
-        fetchGrants();
+        fetchAuthGrants();
     }, []);
 
-    // Select a token
+    const createToken = async () => {
+        if (!newTokenName.trim()) return;
+        try {
+            setCreating(true);
+            const wallet = await initWallet();
+            await wallet.invoke.addAuthGrant({
+                name: newTokenName.trim(),
+                description:
+                    m['developerPortal.guides.consentFlow.apiSetupStep.createdFromGuide'](),
+                scope: selectedScope,
+            });
+            presentToast('API Token created!', { hasDismissButton: true });
+            setNewTokenName('');
+            setShowCreateForm(false);
+            fetchAuthGrants();
+        } catch (err) {
+            log.error('Failed to create token:', err);
+            presentToast('Failed to create token', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setCreating(false);
+        }
+    };
+
     const selectToken = async (grantId: string) => {
         try {
             const wallet = await initWallet();
             const token = await wallet.invoke.getAPITokenForAuthGrant(grantId);
             onTokenChange(token);
             setSelectedGrantId(grantId);
-            setShowTokenSelector(false);
         } catch (err) {
-            console.error('Failed to get token:', err);
+            log.error('Failed to select token:', err);
+            presentToast('Failed to retrieve API token', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
-    // Get selected grant name for display
+    const revokeToken = async (grant: Partial<AuthGrant>) => {
+        const confirmed = await confirm({
+            text: `Delete "${grant.name}"?`,
+            onConfirm: async () => {},
+            cancelButtonClassName:
+                'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px]',
+            confirmButtonClassName:
+                'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
+        });
+        if (!confirmed) return;
+        try {
+            const wallet = await initWallet();
+            if (grant.status === 'active') {
+                await wallet.invoke.revokeAuthGrant(grant.id!);
+            } else {
+                await wallet.invoke.deleteAuthGrant(grant.id!);
+            }
+            presentToast('Token removed', { hasDismissButton: true });
+            fetchAuthGrants();
+        } catch (err) {
+            log.error('Failed to remove token:', err);
+        }
+    };
+
+    const hasActiveToken = authGrants.length > 0;
     const selectedGrant = authGrants.find(g => g.id === selectedGrantId);
-    const displayTokenName = selectedGrant?.name || (apiToken ? 'Selected Token' : 'No token selected');
+    const displayTokenName =
+        selectedGrant?.name || (apiToken ? 'Selected Token' : 'No token selected');
 
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Your Backend</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    Initialize the LearnCard SDK on your backend to send credentials and query consent data.
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.description']()}
                 </p>
             </div>
 
-            {/* API Token Selector */}
-            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                            <Key className="w-5 h-5 text-indigo-600" />
-                        </div>
+            <StatusIndicator
+                status={
+                    apiToken
+                        ? 'ready'
+                        : loadingGrants
+                        ? 'loading'
+                        : fetchError
+                        ? 'warning'
+                        : hasActiveToken
+                        ? 'incomplete'
+                        : 'warning'
+                }
+                label={
+                    apiToken
+                        ? `Token: ${displayTokenName}`
+                        : loadingGrants
+                        ? 'Checking...'
+                        : hasActiveToken
+                        ? `${authGrants.length} token${authGrants.length > 1 ? 's' : ''} ready`
+                        : 'No API tokens found'
+                }
+                description={
+                    fetchError ||
+                    (apiToken
+                        ? 'Ready to use'
+                        : hasActiveToken
+                        ? 'Select a token to use in your code'
+                        : 'Create one to continue')
+                }
+            />
 
-                        <div>
-                            <p className="text-sm font-medium text-gray-700">API Token</p>
+            {/* Create form */}
+            {showCreateForm && (
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {m['developerPortal.guides.consentFlow.apiSetupStep.tokenNameLabel']()}
+                        </label>
 
-                            <p className="text-xs text-gray-500">
-                                {apiToken ? (
-                                    <span className="text-emerald-600 flex items-center gap-1">
-                                        <CheckCircle2 className="w-3 h-3" />
-                                        {displayTokenName}
-                                    </span>
-                                ) : (
-                                    <span className="text-amber-600">Select a token to use</span>
-                                )}
-                            </p>
-                        </div>
+                        <input
+                            type="text"
+                            value={newTokenName}
+                            onChange={e => setNewTokenName(e.target.value)}
+                            placeholder="e.g., Production Server"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
                     </div>
 
-                    <button
-                        onClick={() => setShowTokenSelector(!showTokenSelector)}
-                        className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
-                    >
-                        {showTokenSelector ? 'Hide' : apiToken ? 'Change' : 'Select'}
-                        {showTokenSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {m[
+                                'developerPortal.guides.consentFlow.apiSetupStep.permissionsLabel'
+                            ]()}
+                        </label>
+
+                        <select
+                            value={selectedScope}
+                            onChange={e => setSelectedScope(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                            {getScopeOptions().map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+
+                        <p className="text-xs text-gray-500 mt-1">
+                            {getScopeOptions().find(o => o.value === selectedScope)?.description}
+                        </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={createToken}
+                            disabled={creating || !newTokenName.trim()}
+                            className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+                        >
+                            {creating ? 'Creating...' : 'Create Token'}
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setShowCreateForm(false);
+                                setNewTokenName('');
+                            }}
+                            className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                        >
+                            {m['developerPortal.guides.consentFlow.apiSetupStep.cancelButton']()}
+                        </button>
+                    </div>
                 </div>
+            )}
 
-                {showTokenSelector && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                        {loadingGrants ? (
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Loading tokens...
+            {/* Token list */}
+            {!loadingGrants && authGrants.length > 0 && (
+                <div className="border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
+                    {authGrants.map(grant => (
+                        <button
+                            key={grant.id}
+                            onClick={() => selectToken(grant.id!)}
+                            className={`w-full flex items-center justify-between p-4 transition-colors ${
+                                selectedGrantId === grant.id ? 'bg-indigo-50' : 'hover:bg-gray-50'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                        selectedGrantId === grant.id
+                                            ? 'border-indigo-600 bg-indigo-600'
+                                            : 'border-gray-300'
+                                    }`}
+                                >
+                                    {selectedGrantId === grant.id && (
+                                        <Check className="w-3 h-3 text-white" />
+                                    )}
+                                </div>
+
+                                <div className="text-left">
+                                    <p className="font-medium text-gray-800">{grant.name}</p>
+
+                                    <p className="text-sm text-gray-500">
+                                        {m[
+                                            'developerPortal.guides.consentFlow.apiSetupStep.createdLabel'
+                                        ]({
+                                            date: new Date(grant.createdAt!).toLocaleDateString(),
+                                        })}
+                                    </p>
+                                </div>
                             </div>
-                        ) : authGrants.length === 0 ? (
-                            <div className="text-sm text-gray-500">
-                                <p className="mb-2">No API tokens found.</p>
 
-                                <p className="text-xs text-gray-400">
-                                    Go to <strong>Admin Tools → API Keys</strong> to create one, then come back here.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {authGrants.map((grant) => (
-                                    <button
-                                        key={grant.id}
-                                        onClick={() => selectToken(grant.id!)}
-                                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                                            selectedGrantId === grant.id
-                                                ? 'bg-indigo-50 border-indigo-300'
-                                                : 'bg-white border-gray-200 hover:border-indigo-300'
-                                        }`}
-                                    >
-                                        <div className="text-left">
-                                            <p className="text-sm font-medium text-gray-700">{grant.name}</p>
+                            <button
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    revokeToken(grant);
+                                }}
+                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </button>
+                    ))}
+                </div>
+            )}
 
-                                            <p className="text-xs text-gray-500">
-                                                Created {new Date(grant.createdAt!).toLocaleDateString()}
-                                            </p>
-                                        </div>
+            {/* Selected token display */}
+            {apiToken && selectedGrantId && (
+                <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-medium text-indigo-700">
+                            {m['developerPortal.guides.consentFlow.apiSetupStep.yourApiToken']()}
+                        </p>
 
-                                        {selectedGrantId === grant.id && (
-                                            <CheckCircle2 className="w-5 h-5 text-indigo-600" />
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+                        <button
+                            onClick={async () => {
+                                await navigator.clipboard.writeText(apiToken);
+                                setCopiedToken(true);
+                                setTimeout(() => setCopiedToken(false), 2000);
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors"
+                        >
+                            {copiedToken ? (
+                                <Check className="w-3 h-3" />
+                            ) : (
+                                <Copy className="w-3 h-3" />
+                            )}
+                            {copiedToken ? 'Copied!' : 'Copy'}
+                        </button>
                     </div>
-                )}
+
+                    <p className="text-xs font-mono text-indigo-900 bg-indigo-100 p-2 rounded-lg break-all select-all">
+                        {apiToken}
+                    </p>
+                </div>
+            )}
+
+            {/* Create button */}
+            {!showCreateForm && (
+                <button
+                    onClick={() => setShowCreateForm(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 rounded-xl w-full justify-center font-medium transition-colors"
+                >
+                    <Plus className="w-4 h-4" />
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.createNewButton']()}
+                </button>
+            )}
+
+            {/* Security warning */}
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                <p className="text-sm text-red-800">
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.securityWarning']()}
+                </p>
             </div>
 
-            <StepCard step={1} title="Install LearnCard SDK" icon={<Package className="w-4 h-4 text-gray-400 ml-auto" />}>
+            <StepCard
+                step={1}
+                title={m['developerPortal.guides.consentFlow.apiSetupStep.step1Title']()}
+                icon={<Package className="w-4 h-4 text-gray-400 ml-auto" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
-                    Install the LearnCard SDK in your backend application:
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.step1Desc']()}
                 </p>
 
-                <CodeBlock code="npm install @learncard/init" />
+                <CodeOutputPanel snippets={{ curl: 'npm install @learncard/init' }} />
             </StepCard>
 
-            <StepCard step={2} title="Initialize LearnCard" icon={<Zap className="w-4 h-4 text-gray-400 ml-auto" />}>
+            <StepCard
+                step={2}
+                title={m['developerPortal.guides.consentFlow.apiSetupStep.step2Title']()}
+                icon={<Zap className="w-4 h-4 text-gray-400 ml-auto" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
-                    Initialize with your API token:
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.step2Desc']()}
                 </p>
 
-                <CodeBlock
-                    code={`import { initLearnCard } from '@learncard/init';
+                <CodeOutputPanel
+                    snippets={{
+                        typescript: `import { initLearnCard } from '@learncard/init';
 
-const learnCard = await initLearnCard({ 
+const learnCard = await initLearnCard({
     apiKey: '${apiToken || 'YOUR_API_TOKEN'}',
-    network: true 
+    network: true
 });
 
-console.log('LearnCard DID:', learnCard.id.did());`}
+log.info('LearnCard DID:', learnCard.id.did());`,
+                    }}
                 />
 
                 <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-xs text-amber-800">
-                        <strong>Security:</strong> Store your API token in environment variables, never commit it to code.
+                        {m['developerPortal.guides.consentFlow.apiSetupStep.step2Security']()}
                     </p>
                 </div>
             </StepCard>
@@ -451,14 +703,14 @@ console.log('LearnCard DID:', learnCard.id.did());`}
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.backButton']()}
                 </button>
 
                 <button
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Continue
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.continueButton']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -466,139 +718,114 @@ console.log('LearnCard DID:', learnCard.id.did());`}
     );
 };
 
-// Step 4: Send Credentials
+// Step 4: Create & Send Credentials
 const SendCredentialsStep: React.FC<{
     onBack: () => void;
     onComplete: () => void;
     contractUri: string;
     apiToken?: string;
     integrationId?: string;
-}> = ({ onBack, onComplete, contractUri, apiToken, integrationId }) => {
-    const [showCredentialBuilder, setShowCredentialBuilder] = useState(false);
-    const [builtCredential, setBuiltCredential] = useState<Record<string, unknown> | null>(null);
-
-    // Generate the code sample based on built credential or default
-    const credentialCodeSample = useMemo(() => {
-        if (builtCredential) {
-            const credJson = JSON.stringify(builtCredential, null, 12)
-                .split('\n')
-                .map((line, i) => (i === 0 ? line : `            ${line}`))
-                .join('\n');
-
-            return `// Get the user's DID (stored from Step 2)
-const userDID = await getUserLearnCardDID(userId);
-
-// Send a credential to the user
-await learnCard.invoke.send({
-    type: 'boost',
-    recipient: userDID,
-    contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
-    integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',
-    template: {
-        credential: ${credJson},
-        name: 'Course Completion',
-        category: 'Achievement',
-    }
-});`;
-        }
-
-        return `// Get the user's DID (stored from Step 2)
-const userDID = await getUserLearnCardDID(userId);
-
-// Send a credential to the user
-await learnCard.invoke.send({
-    type: 'boost',
-    recipient: userDID,
-    contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
-    integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',
-    template: {
-        credential: {
-            // Open Badges 3.0 credential
-            '@context': [
-                'https://www.w3.org/2018/credentials/v1',
-                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json'
-            ],
-            type: ['VerifiableCredential', 'OpenBadgeCredential'],
-            name: 'Course Completion',
-            credentialSubject: {
-                achievement: {
-                    name: 'Connected External App',
-                    description: 'Awarded for connecting to our app.',
-                    achievementType: 'Achievement',
-                    image: 'https://placehold.co/400x400?text=Badge'
-                }
-            }
-        },
-        name: 'Course Completion',
-        category: 'Achievement',
-    }
-});`;
-    }, [builtCredential, contractUri]);
+    templates: ManagedTemplate[];
+    onTemplatesChange: (templates: ManagedTemplate[]) => void;
+}> = ({
+    onBack,
+    onComplete,
+    contractUri,
+    apiToken,
+    integrationId,
+    templates,
+    onTemplatesChange,
+}) => {
+    const selectedTemplate = templates[0];
+    const templateUri = selectedTemplate?.boostUri || 'YOUR_TEMPLATE_URI';
 
     return (
         <div className="space-y-6">
-            <OBv3CredentialBuilder
-                isOpen={showCredentialBuilder}
-                onClose={() => setShowCredentialBuilder(false)}
-                onSave={(cred) => setBuiltCredential(cred)}
-            />
-
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Send Credentials to Users</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.consentFlow.sendCredentialsStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    Now you can issue credentials to users who have connected with your app.
+                    {m['developerPortal.guides.consentFlow.sendCredentialsStep.description']()}
                 </p>
             </div>
 
-            <StepCard step={1} title="Build Your Credential" icon={<Award className="w-4 h-4 text-gray-400 ml-auto" />}>
+            <TemplateListManager
+                integrationId={integrationId}
+                featureType="issue-credentials"
+                showCodeSnippets={false}
+                editable={true}
+                onTemplateChange={onTemplatesChange}
+            />
+
+            <StepCard
+                step={2}
+                title={m['developerPortal.guides.consentFlow.sendCredentialsStep.step2Title']()}
+                icon={<Send className="w-4 h-4 text-gray-400 ml-auto" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
-                    Use the credential builder to create your badge or use the code template below.
+                    <TransP
+                        m={m['developerPortal.guides.consentFlow.sendCredentialsStep.step2Desc']}
+                        components={[
+                            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs" />,
+                        ]}
+                    />
                 </p>
 
-                <button
-                    onClick={() => setShowCredentialBuilder(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-medium hover:from-cyan-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
-                >
-                    <Award className="w-4 h-4" />
-                    Build Your Credential
-                </button>
+                <CodeOutputPanel
+                    snippets={{
+                        typescript: `// Get the user's DID (stored from the consent callback)
+const userDID = await getUserLearnCardDID(userId);
 
-                {builtCredential && (
-                    <div className="mt-2 flex items-center gap-2 text-xs text-emerald-600">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Custom credential added to code below</span>
-                    </div>
-                )}
-            </StepCard>
-
-            <StepCard step={2} title="Send Credentials" icon={<Zap className="w-4 h-4 text-gray-400 ml-auto" />}>
-                <p className="text-sm text-gray-600 mb-3">
-                    Use the simplified <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">send</code> method 
-                    to create, sign, and deliver credentials in one call.
-                </p>
-
-                <CodeBlock code={credentialCodeSample} />
+// Send a credential to the user
+await learnCard.invoke.send({
+    type: 'boost',
+    recipient: userDID,
+    contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
+    templateUri: '${templateUri}',
+    integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',
+});`,
+                        curl: `curl -X POST 'https://api.learncard.com/api/boost/send' \\
+  -H 'Authorization: Bearer ${apiToken || 'YOUR_API_TOKEN'}' \\
+  -H 'Content-Type: application/json' \\
+  -d '{
+    "type": "boost",
+    "recipient": "did:web:...",
+    "contractUri": "${contractUri || 'YOUR_CONTRACT_URI'}",
+    "templateUri": "${templateUri}",
+    "integrationId": "${integrationId || 'YOUR_INTEGRATION_ID'}"
+  }'`,
+                    }}
+                />
 
                 <div className="mt-4 p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
                     <p className="text-xs text-cyan-800">
-                        <strong>What this does:</strong> Creates a credential template, issues it to the user, 
-                        and writes it to your consent flow contract — all in one call.
+                        {m['developerPortal.guides.consentFlow.sendCredentialsStep.step2Info']()}
                     </p>
                 </div>
             </StepCard>
 
-            <StepCard step={3} title="Query Consent Data (Optional)" icon={<Database className="w-4 h-4 text-gray-400 ml-auto" />}>
+            <StepCard
+                step={3}
+                title={m['developerPortal.guides.consentFlow.sendCredentialsStep.step3Title']()}
+                icon={<Database className="w-4 h-4 text-gray-400 ml-auto" />}
+            >
                 <p className="text-sm text-gray-600 mb-3">
-                    As the contract owner, you can query consent data and transactions:
+                    {m['developerPortal.guides.consentFlow.sendCredentialsStep.step3Desc']()}
                 </p>
 
                 <div className="space-y-4">
                     <div>
-                        <p className="text-xs text-gray-500 mb-2 font-medium">Get all consented data for your contract:</p>
+                        <p className="text-xs text-gray-500 mb-2 font-medium">
+                            {m[
+                                'developerPortal.guides.consentFlow.sendCredentialsStep.step3Sub1'
+                            ]()}
+                        </p>
 
-                        <CodeBlock
-                            code={`// Query all consent records for your contract
+                        <CodeOutputPanel
+                            snippets={{
+                                typescript: `// Query all consent records for your contract
 const queryOptions = { limit: 50 };
 
 const consentData = await learnCard.invoke.getConsentFlowData(
@@ -606,49 +833,64 @@ const consentData = await learnCard.invoke.getConsentFlowData(
     queryOptions
 );
 
-console.log('Consented records:', consentData.records);`}
+log.info('Consented records:', consentData.records);`,
+                            }}
                         />
                     </div>
 
                     <div>
-                        <p className="text-xs text-gray-500 mb-2 font-medium">Get consent data for a specific user:</p>
+                        <p className="text-xs text-gray-500 mb-2 font-medium">
+                            {m[
+                                'developerPortal.guides.consentFlow.sendCredentialsStep.step3Sub2'
+                            ]()}
+                        </p>
 
-                        <CodeBlock
-                            code={`// Query consent data involving a specific DID
+                        <CodeOutputPanel
+                            snippets={{
+                                typescript: `// Query consent data involving a specific DID
 const userConsentData = await learnCard.invoke.getConsentFlowDataForDid(
     userDID,
     queryOptions
 );
 
-console.log('User consent records:', userConsentData.records);`}
+log.info('User consent records:', userConsentData.records);`,
+                            }}
                         />
                     </div>
                 </div>
             </StepCard>
-
-            <div className="p-6 bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl text-center">
-                <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Rocket className="w-8 h-8 text-emerald-600" />
-                </div>
-
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">Consent Flow Ready!</h4>
-
-                <p className="text-gray-600">
-                    Users can now securely connect and receive credentials from your application.
-                </p>
-            </div>
 
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                 <div className="flex gap-2">
                     <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
 
                     <div>
-                        <h4 className="text-sm font-medium text-amber-800">Integration Tips</h4>
+                        <h4 className="text-sm font-medium text-amber-800">
+                            {m[
+                                'developerPortal.guides.consentFlow.sendCredentialsStep.tipsTitle'
+                            ]()}
+                        </h4>
 
                         <ul className="text-xs text-amber-700 mt-1 space-y-1">
-                            <li>• Store API keys in environment variables, never in code</li>
-                            <li>• Test in sandbox mode before going live</li>
-                            <li>• Store user DIDs securely with their account data</li>
+                            <li>
+                                •{' '}
+                                {m['developerPortal.guides.consentFlow.sendCredentialsStep.tip1']()}
+                            </li>
+                            <li>
+                                •{' '}
+                                <TransP
+                                    m={
+                                        m[
+                                            'developerPortal.guides.consentFlow.sendCredentialsStep.tip2'
+                                        ]
+                                    }
+                                    components={[<code className="bg-amber-100 px-1 rounded" />]}
+                                />
+                            </li>
+                            <li>
+                                •{' '}
+                                {m['developerPortal.guides.consentFlow.sendCredentialsStep.tip3']()}
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -660,14 +902,15 @@ console.log('User consent records:', userConsentData.records);`}
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.guides.consentFlow.sendCredentialsStep.backButton']()}
                 </button>
 
                 <button
                     onClick={onComplete}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-colors"
+                    disabled={templates.length === 0}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue to Go Live
+                    {m['developerPortal.guides.consentFlow.sendCredentialsStep.continueButton']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -675,97 +918,392 @@ console.log('User consent records:', userConsentData.records);`}
     );
 };
 
-// Main component
-const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
-    const guideState = useGuideState('consent-flow', STEPS.length, selectedIntegration);
+// Step 5: Test the Integration
+const TestStep: React.FC<{
+    onBack: () => void;
+    onComplete: () => void;
+    contractUri: string;
+    redirectUrl: string;
+    apiToken: string;
+    templates: ManagedTemplate[];
+    integrationId?: string;
+}> = ({ onBack, onComplete, contractUri, redirectUrl, apiToken, templates, integrationId }) => {
+    const selectedTemplate = templates[0];
+    const templateUri = selectedTemplate?.boostUri || 'YOUR_TEMPLATE_URI';
 
-    const [contractUri, setContractUri] = useState('');
-    const [redirectUrl, setRedirectUrl] = useState('');
-    const [apiToken, setApiToken] = useState('');
-
-    const handleStepComplete = (stepId: string) => {
-        guideState.markStepComplete(stepId);
-        guideState.nextStep();
-    };
-
-    const renderStep = () => {
-        switch (guideState.currentStep) {
-            case 0:
-                return (
-                    <CreateContractStep
-                        onComplete={() => handleStepComplete('create-contract')}
-                        contractUri={contractUri}
-                        setContractUri={setContractUri}
-                    />
-                );
-
-            case 1:
-                return (
-                    <RedirectHandlerStep
-                        onComplete={() => handleStepComplete('redirect-handler')}
-                        onBack={guideState.prevStep}
-                        contractUri={contractUri}
-                        redirectUrl={redirectUrl}
-                        setRedirectUrl={setRedirectUrl}
-                    />
-                );
-
-            case 2:
-                return (
-                    <APISetupStep
-                        onComplete={() => handleStepComplete('api-setup')}
-                        onBack={guideState.prevStep}
-                        apiToken={apiToken}
-                        onTokenChange={setApiToken}
-                    />
-                );
-
-            case 3:
-                return (
-                    <SendCredentialsStep
-                        onBack={guideState.prevStep}
-                        onComplete={() => handleStepComplete('send-credentials')}
-                        contractUri={contractUri}
-                        apiToken={apiToken}
-                        integrationId={selectedIntegration?.id}
-                    />
-                );
-
-            case 4:
-                return (
-                    <GoLiveStep
-                        integration={selectedIntegration}
-                        guideType="consent-flow"
-                        onBack={guideState.prevStep}
-                        completedItems={[
-                            'Created consent flow contract',
-                            'Set up redirect handler',
-                            'Configured API access',
-                            'Tested sending credentials',
-                        ]}
-                        title="Ready to Connect!"
-                        description="You've set up everything needed for consent-based data sharing. Activate your integration to start connecting with users."
-                    />
-                );
-
-            default:
-                return null;
-        }
-    };
+    const consentUrl =
+        contractUri && redirectUrl
+            ? `${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(
+                  contractUri
+              )}&returnTo=${encodeURIComponent(redirectUrl)}`
+            : '';
 
     return (
-        <div className="max-w-3xl mx-auto py-4">
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.consentFlow.testStep.title']()}
+                </h3>
+
+                <p className="text-gray-600">
+                    {m['developerPortal.guides.consentFlow.testStep.description']()}
+                </p>
+            </div>
+
+            <StepCard
+                step={1}
+                title={m['developerPortal.guides.consentFlow.testStep.step1Title']()}
+                icon={<ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    {m['developerPortal.guides.consentFlow.testStep.step1Desc']()}
+                </p>
+
+                {consentUrl ? (
+                    <div className="space-y-3">
+                        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                            <p className="text-xs text-gray-500 mb-1 font-medium">
+                                {m['developerPortal.guides.consentFlow.testStep.consentUrlLabel']()}
+                            </p>
+
+                            <p className="text-xs text-gray-700 font-mono break-all">
+                                {consentUrl}
+                            </p>
+                        </div>
+
+                        <a
+                            href={consentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl text-sm font-medium hover:bg-cyan-600 transition-colors"
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                            {m['developerPortal.guides.consentFlow.testStep.openConsentFlow']()}
+                        </a>
+                    </div>
+                ) : (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-xs text-amber-800">
+                            {m['developerPortal.guides.consentFlow.testStep.missingConfigDesc']()}
+                        </p>
+                    </div>
+                )}
+            </StepCard>
+
+            <StepCard
+                step={2}
+                title={m['developerPortal.guides.consentFlow.testStep.step2Title']()}
+                icon={<Code className="w-4 h-4 text-gray-400 ml-auto" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    {m['developerPortal.guides.consentFlow.testStep.step2Desc']()}
+                </p>
+
+                <div className="space-y-2">
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-semibold text-gray-700">
+                                did
+                            </code>
+
+                            <p className="text-xs text-gray-600">
+                                {m['developerPortal.guides.consentFlow.testStep.didDesc']()}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-semibold text-gray-700">
+                                vp
+                            </code>
+
+                            <p className="text-xs text-gray-600">
+                                {m['developerPortal.guides.consentFlow.testStep.vpDesc']()}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-3">
+                    <p className="text-xs text-gray-500 mb-2 font-medium">
+                        {m['developerPortal.guides.consentFlow.testStep.exampleCallback']()}
+                    </p>
+
+                    <CodeOutputPanel
+                        snippets={{
+                            curl: `GET ${
+                                redirectUrl || 'https://your-app.com/api/learncard/callback'
+                            }?did=did:web:...&vp=eyJhbGciOiJFZDI1NTE5...`,
+                        }}
+                    />
+                </div>
+            </StepCard>
+
+            <StepCard
+                step={3}
+                title={m['developerPortal.guides.consentFlow.testStep.step3Title']()}
+                icon={<Send className="w-4 h-4 text-gray-400 ml-auto" />}
+            >
+                <p className="text-sm text-gray-600 mb-3">
+                    {m['developerPortal.guides.consentFlow.testStep.step3Desc']()}
+                </p>
+
+                <CodeOutputPanel
+                    snippets={{
+                        typescript: `// After receiving the callback with { did, vp }
+const userDID = 'did:web:...'; // From the callback
+
+await learnCard.invoke.send({
+    type: 'boost',
+    recipient: userDID,
+    contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
+    templateUri: '${templateUri}',
+    integrationId: '${integrationId || 'YOUR_INTEGRATION_ID'}',
+});
+
+log.info('Credential sent successfully!');`,
+                    }}
+                />
+
+                <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                    <p className="text-xs text-emerald-800">
+                        {m['developerPortal.guides.consentFlow.testStep.step3Verify']()}
+                    </p>
+                </div>
+            </StepCard>
+
+            <div className="flex gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    {m['developerPortal.guides.consentFlow.testStep.backButton']()}
+                </button>
+
+                <button
+                    onClick={onComplete}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-colors"
+                >
+                    {m['developerPortal.guides.consentFlow.testStep.continueButton']()}
+                    <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Config interface for state persistence
+interface ConsentFlowGuideConfig {
+    contractUri?: string;
+    redirectUrl?: string;
+    apiTokenGrantId?: string;
+    templateUris?: string[];
+}
+
+// Main component
+const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
+    const { useUpdateIntegration } = useDeveloperPortal();
+    const updateIntegrationMutation = useUpdateIntegration();
+    const guideState = useGuideState('consent-flow', getSteps().length, selectedIntegration);
+
+    // Ensure guideType is set to 'consent-flow' when entering this guide
+    useEffect(() => {
+        if (selectedIntegration && selectedIntegration.guideType !== 'consent-flow') {
+            updateIntegrationMutation.mutate({
+                id: selectedIntegration.id,
+                updates: { guideType: 'consent-flow' },
+            });
+        }
+    }, [selectedIntegration?.id, selectedIntegration?.guideType]);
+
+    // Restore persisted config on mount
+    const savedConfig = guideState.getConfig<ConsentFlowGuideConfig>('consentFlowConfig');
+
+    const [contractUri, setContractUri] = useState(savedConfig?.contractUri ?? '');
+    const [redirectUrl, setRedirectUrl] = useState(savedConfig?.redirectUrl ?? '');
+    const [apiToken, setApiToken] = useState(savedConfig?.apiTokenGrantId ?? '');
+    const [templates, setTemplates] = useState<ManagedTemplate[]>([]);
+
+    // Persist config changes
+    const savedConfigRef = useRef(savedConfig);
+    savedConfigRef.current = savedConfig;
+
+    useEffect(() => {
+        if (contractUri) {
+            guideState.updateConfig('consentFlowConfig', {
+                ...savedConfigRef.current,
+                contractUri,
+            });
+        }
+    }, [contractUri]);
+
+    useEffect(() => {
+        if (redirectUrl) {
+            guideState.updateConfig('consentFlowConfig', {
+                ...savedConfigRef.current,
+                redirectUrl,
+            });
+        }
+    }, [redirectUrl]);
+
+    useEffect(() => {
+        if (apiToken) {
+            guideState.updateConfig('consentFlowConfig', {
+                ...savedConfigRef.current,
+                apiTokenGrantId: apiToken,
+            });
+        }
+    }, [apiToken]);
+
+    useEffect(() => {
+        const uris = templates.map(t => t.boostUri).filter(Boolean) as string[];
+        if (uris.length > 0) {
+            guideState.updateConfig('consentFlowConfig', {
+                ...savedConfigRef.current,
+                templateUris: uris,
+            });
+        }
+    }, [templates]);
+
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const guideTopRef = useRef<HTMLDivElement>(null);
+
+    const scrollToTop = useCallback(() => {
+        setTimeout(() => {
+            guideTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+    }, []);
+
+    const handleStepComplete = useCallback(
+        (stepId: string) => {
+            if (isTransitioning) return;
+            setIsTransitioning(true);
+            guideState.markStepComplete(stepId);
+            guideState.nextStep();
+            scrollToTop();
+            // Brief debounce to prevent double-clicks during step transition
+            setTimeout(() => setIsTransitioning(false), 150);
+        },
+        [isTransitioning, guideState, scrollToTop]
+    );
+
+    const handleBack = useCallback(() => {
+        guideState.prevStep();
+        scrollToTop();
+    }, [guideState, scrollToTop]);
+
+    const handleStepClick = useCallback(
+        (step: number) => {
+            guideState.goToStep(step);
+            scrollToTop();
+        },
+        [guideState, scrollToTop]
+    );
+
+    // Integration selection guard — placed after all hooks to respect Rules of Hooks
+    if (!selectedIntegration) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-gray-500">
+                    {m['developerPortal.guides.consentFlow.noIntegration']()}
+                </p>
+            </div>
+        );
+    }
+
+    // Allow navigating to current step, any completed step, or any earlier step.
+    // Forward navigation requires all previous steps to be complete.
+    const canNavigateToStep = useCallback(
+        (index: number) => {
+            if (index === guideState.currentStep) return true;
+            if (index < guideState.currentStep) return true;
+            if (guideState.isStepComplete(getSteps()[index].id)) return true;
+            for (let i = 0; i < index; i++) {
+                if (!guideState.isStepComplete(getSteps()[i].id)) return false;
+            }
+            return true;
+        },
+        [guideState.currentStep, guideState.isStepComplete]
+    );
+
+    return (
+        <div ref={guideTopRef} className="max-w-3xl mx-auto py-4">
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
-                    totalSteps={STEPS.length}
-                    steps={STEPS}
+                    totalSteps={getSteps().length}
+                    steps={getSteps()}
                     completedSteps={guideState.state.completedSteps}
-                    onStepClick={guideState.goToStep}
+                    onStepClick={handleStepClick}
+                    isStepNavigable={canNavigateToStep}
                 />
             </div>
 
-            {renderStep()}
+            {/* All steps rendered but only active one visible — prevents re-mount/re-fetch lag */}
+            <div style={{ display: guideState.currentStep === 0 ? 'block' : 'none' }}>
+                <CreateContractStep
+                    onComplete={() => handleStepComplete('create-contract')}
+                    contractUri={contractUri}
+                    setContractUri={setContractUri}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 1 ? 'block' : 'none' }}>
+                <RedirectHandlerStep
+                    onComplete={() => handleStepComplete('redirect-handler')}
+                    onBack={handleBack}
+                    contractUri={contractUri}
+                    redirectUrl={redirectUrl}
+                    setRedirectUrl={setRedirectUrl}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 2 ? 'block' : 'none' }}>
+                <APISetupStep
+                    onComplete={() => handleStepComplete('api-setup')}
+                    onBack={handleBack}
+                    apiToken={apiToken}
+                    onTokenChange={setApiToken}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 3 ? 'block' : 'none' }}>
+                <SendCredentialsStep
+                    onBack={handleBack}
+                    onComplete={() => handleStepComplete('send-credentials')}
+                    contractUri={contractUri}
+                    apiToken={apiToken}
+                    integrationId={selectedIntegration?.id}
+                    templates={templates}
+                    onTemplatesChange={setTemplates}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 4 ? 'block' : 'none' }}>
+                <TestStep
+                    onBack={handleBack}
+                    onComplete={() => handleStepComplete('test')}
+                    contractUri={contractUri}
+                    redirectUrl={redirectUrl}
+                    apiToken={apiToken}
+                    templates={templates}
+                    integrationId={selectedIntegration?.id}
+                />
+            </div>
+            <div style={{ display: guideState.currentStep === 5 ? 'block' : 'none' }}>
+                <GoLiveStep
+                    integration={selectedIntegration}
+                    guideType="consent-flow"
+                    onBack={handleBack}
+                    completedItems={[
+                        m['developerPortal.guides.consentFlow.goLive.completedItems0'](),
+                        m['developerPortal.guides.consentFlow.goLive.completedItems1'](),
+                        m['developerPortal.guides.consentFlow.goLive.completedItems2'](),
+                        m['developerPortal.guides.consentFlow.goLive.completedItems3'](),
+                        m['developerPortal.guides.consentFlow.goLive.completedItems4'](),
+                    ]}
+                    title={m['developerPortal.guides.consentFlow.goLive.title']()}
+                    description={m['developerPortal.guides.consentFlow.goLive.description']()}
+                />
+            </div>
         </div>
     );
 };

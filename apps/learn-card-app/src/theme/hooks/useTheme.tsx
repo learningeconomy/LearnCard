@@ -1,5 +1,14 @@
 // src/theme/hooks/useTheme.tsx
-import { themeStore } from '../store/themeStore';
+import { useEffect } from 'react';
+
+import {
+    BoostPageViewMode,
+    CredentialCategoryEnum,
+    useGetPreferencesForDid,
+    useIsLoggedIn,
+} from 'learn-card-base';
+
+import { getDefaultTheme, resolveThemeForTenant, themeStore } from '../store/themeStore';
 
 import type { StyleSetEnum, StyleSetMap } from '../styles';
 import type { CategoryIcons, IconSetEnum } from '../icons';
@@ -8,9 +17,7 @@ import type { CategoryColor, ColorSetByEnum, ColorSetEnum } from '../colors';
 import type { ThemeCategory } from '../validators/theme.validators';
 
 import { ViewMode } from '../types/theme.types';
-import { ThemeEnum } from '../helpers/theme-helpers';
 import { loadThemeSchema } from '../helpers/loadTheme';
-import { CredentialCategoryEnum } from 'learn-card-base';
 
 import passportPageStore, { PassportPageViewMode } from '../../stores/passportPageStore';
 
@@ -22,6 +29,60 @@ export type ThemedCategoryPayload = {
 
 const EMPTY_ICONS: CategoryIcons = {};
 const EMPTY_COLORS: CategoryColor = {};
+
+export const syncThemeDefaults = (theme: string): void => {
+    const schema = loadThemeSchema(theme);
+    const { defaults } = schema;
+
+    passportPageStore.set.setViewMode(
+        defaults.passportViewMode === ViewMode.List
+            ? PassportPageViewMode.list
+            : PassportPageViewMode.grid
+    );
+
+    passportPageStore.set.setCredentialViewMode(
+        defaults.credentialViewMode === 'list' ? BoostPageViewMode.List : BoostPageViewMode.Card
+    );
+};
+
+export const applyTheme = (theme: string): string => {
+    const resolvedTheme = loadThemeSchema(theme);
+
+    themeStore.set.theme(resolvedTheme.id);
+    syncThemeDefaults(resolvedTheme.id);
+
+    return resolvedTheme.id;
+};
+
+export const useInitializeTheme = (): void => {
+    const isLoggedIn = useIsLoggedIn();
+    const { data: preferences, isFetched } = useGetPreferencesForDid(isLoggedIn);
+
+    useEffect(() => {
+        if (!isLoggedIn) {
+            const defaultTheme = getDefaultTheme();
+
+            if (themeStore.get.theme() !== defaultTheme) {
+                applyTheme(defaultTheme);
+                return;
+            }
+
+            syncThemeDefaults(defaultTheme);
+            return;
+        }
+
+        if (!isFetched) return;
+
+        const resolvedTheme = resolveThemeForTenant(preferences?.theme);
+
+        if (themeStore.get.theme() !== resolvedTheme) {
+            applyTheme(resolvedTheme);
+            return;
+        }
+
+        syncThemeDefaults(resolvedTheme);
+    }, [isFetched, isLoggedIn, preferences?.theme]);
+};
 
 export const useTheme = () => {
     const selectedTheme = themeStore.use.theme();
@@ -60,16 +121,6 @@ export const useTheme = () => {
                 colors: getThemedCategoryColors(categoryId),
             };
         })();
-
-    const syncThemeDefaults = (theme: ThemeEnum) => {
-        const schema = loadThemeSchema(theme);
-        const { defaults } = schema;
-        passportPageStore.set.setViewMode(
-            defaults.viewMode === ViewMode.List
-                ? PassportPageViewMode.list
-                : PassportPageViewMode.grid
-        );
-    };
 
     return {
         theme,

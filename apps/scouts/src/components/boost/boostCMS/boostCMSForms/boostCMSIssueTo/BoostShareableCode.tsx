@@ -12,7 +12,14 @@ import {
     IonInput,
 } from '@ionic/react';
 
-import { useWallet, walletStore, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
+import {
+    useWallet,
+    walletStore,
+    useToast,
+    ToastTypeEnum,
+    useModal,
+    ModalTypes,
+} from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
 
 import CopyStack from '../../../../svgs/CopyStack';
@@ -23,6 +30,9 @@ import BoostShareableQRCode from './BoostShareableQRCode';
 import InfinityIcon from 'learn-card-base/svgs/Infinity';
 import useDebounce from '../../../../../hooks/useDebounce';
 import useFirebaseAnalytics from '../../../../../hooks/useFirebaseAnalytics';
+import { getLogger } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../../../config/bootstrapTenantConfig';
+const log = getLogger('boost-shareable-code');
 
 export const BoostShareableCode: React.FC<{
     state: BoostCMSState;
@@ -132,7 +142,9 @@ export const BoostShareableCode: React.FC<{
                     );
 
                     setBoostClaimLink(
-                        `https://pass.scout.org/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                        `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                            _boostClaimLink?.boostUri
+                        }&challenge=${_boostClaimLink?.challenge}`
                     );
                     logAnalyticsEvent('generate_claim_link', {
                         category: state?.basicInfo?.type,
@@ -183,7 +195,9 @@ export const BoostShareableCode: React.FC<{
                         );
 
                         setBoostClaimLink(
-                            `https://pass.scout.org/claim/boost?claim=true&boostUri=${_boostClaimLink?.boostUri}&challenge=${_boostClaimLink?.challenge}`
+                            `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                                _boostClaimLink?.boostUri
+                            }&challenge=${_boostClaimLink?.challenge}`
                         );
                         logAnalyticsEvent('generate_claim_link', {
                             category: state?.basicInfo?.type,
@@ -196,7 +210,7 @@ export const BoostShareableCode: React.FC<{
             }
         } catch (error) {
             setIsLinkLoading(false);
-            console.log('error:generateBoostClaimLink', error);
+            log.debug('error:generateBoostClaimLink', error);
         }
     });
 

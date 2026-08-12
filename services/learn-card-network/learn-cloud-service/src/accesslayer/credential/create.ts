@@ -1,9 +1,9 @@
 import { Credentials } from '.';
 import { JWE } from '@learncard/types';
 
-export const createCredential = async (jwe: JWE): Promise<string | false> => {
+export const createCredential = async (jwe: JWE, did?: string): Promise<string | false> => {
     try {
-        return (await Credentials.insertOne({ jwe: jwe })).insertedId.toString();
+        return (await Credentials.insertOne({ jwe, did })).insertedId.toString();
     } catch (e) {
         console.error(e);
         return false;

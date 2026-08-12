@@ -51,7 +51,6 @@
         "start:docker": {
             "executor": "nx:run-script",
             "inputs": ["source"],
-            "dependsOn": ["^build"],
             "options": {
                 "script": "start:docker"
             }
@@ -82,7 +81,7 @@
         "test:watch": {
             "executor": "./tools/executors/workspace:run-command",
             "options": {
-                "command": "pnpm test:watch",
+                "command": "bun run test:watch",
                 "cwd": "{root}/services/learn-card-network/brain-service"
             }
         }

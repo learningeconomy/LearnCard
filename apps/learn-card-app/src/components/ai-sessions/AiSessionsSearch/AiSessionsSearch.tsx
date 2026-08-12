@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { IonInput } from '@ionic/react';
 import Search from 'learn-card-base/svgs/Search';
 import AiSessionsPopOverButton from './AiSessionsPopOverButton';
@@ -19,6 +21,8 @@ export const AiSessionsSearch: React.FC<{
     sortBy: AiSessionsSortOptionsEnum;
     setSortBy: React.Dispatch<React.SetStateAction<AiSessionsSortOptionsEnum>>;
     showFilterOptions?: boolean;
+    className?: string;
+    hidePopover?: boolean;
 }> = ({
     searchInput,
     setSearchInput,
@@ -28,31 +32,35 @@ export const AiSessionsSearch: React.FC<{
     sortBy,
     setSortBy,
     showFilterOptions,
+    className,
+    hidePopover = false,
 }) => {
     return (
         <div className="w-full flex items-center justify-center mt-4">
-            <div className="w-full flex items-center justify-between max-w-[600px] relative">
-                <div className="flex-1 relative mr-2">
+            <div className="w-full flex items-center max-w-[600px] relative gap-2">
+                <div className="w-full flex-1 relative">
                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
                         <Search className="text-grayscale-900 w-[24px] h-[24px]" />
                     </div>
                     <IonInput
                         type="text"
                         value={searchInput}
-                        placeholder="Search"
+                        placeholder={m['common.search']()}
                         onIonInput={e => setSearchInput(e.detail.value)}
-                        className="bg-grayscale-100 text-grayscale-800 rounded-[15px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[48px]"
+                        className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[48px] ${className}`}
                     />
                 </div>
 
-                <AiSessionsPopOverButton
-                    filterBy={filterBy}
-                    setFilterBy={setFilterBy}
-                    sortBy={sortBy}
-                    setSortBy={setSortBy}
-                    showFilteringOptions={showFilterOptions}
-                    filteringType={filteringType}
-                />
+                {!hidePopover && (
+                    <AiSessionsPopOverButton
+                        filterBy={filterBy}
+                        setFilterBy={setFilterBy}
+                        sortBy={sortBy}
+                        setSortBy={setSortBy}
+                        showFilteringOptions={showFilterOptions}
+                        filteringType={filteringType}
+                    />
+                )}
             </div>
         </div>
     );

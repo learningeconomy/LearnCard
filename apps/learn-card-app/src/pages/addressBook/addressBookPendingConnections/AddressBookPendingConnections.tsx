@@ -1,8 +1,11 @@
 import React, { useEffect } from 'react';
 import { useRouteMatch } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('address-book-pending-connections');
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
 
@@ -74,7 +77,7 @@ const AddressBookPendingConnections: React.FC<{
         );
         try {
         } catch (err) {
-            console.log('canceledConnectionReq::error', err);
+            log.info('canceledConnectionReq::error', err);
             presentToast(
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to cancel request',
@@ -113,7 +116,7 @@ const AddressBookPendingConnections: React.FC<{
                 }
             );
         } catch (err) {
-            console.log('blockProfile::error', err);
+            log.info('blockProfile::error', err);
             presentToast(
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to block user',
@@ -130,7 +133,7 @@ const AddressBookPendingConnections: React.FC<{
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-4">
                     <IonSpinner color="black" />
-                    <p className="mt-2 font-bold text-lg">Loading...</p>
+                    <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                 </section>
             )}
             {!isLoading && (

@@ -1,6 +1,19 @@
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import type { TenantBrandingConfig } from '../config/tenantConfig';
+import { getNavBarColorOverride } from '../config/brandingHelpers';
 
-export const getNavBarColor = (path?: string, branding?: BrandingEnum): string => {
+export const getNavBarColor = (
+    path?: string,
+    branding?: BrandingEnum,
+    tenantBranding?: TenantBrandingConfig
+): string => {
+    // Data-driven path: if tenant branding config provides a navBarColors override, use it
+    if (tenantBranding && path) {
+        const override = getNavBarColorOverride(tenantBranding, path);
+
+        if (override) return override;
+    }
+
     if (branding === BrandingEnum.scoutPass) {
         if (path === '/currencies' || path === '/socialBadges' || path === '/badges') {
             return 'bg-sp-purple-lighter';
@@ -8,7 +21,7 @@ export const getNavBarColor = (path?: string, branding?: BrandingEnum): string =
             return 'bg-sp-blue-dark-ocean';
         } else if (path === '/memberships' || path === '/troops') {
             return 'bg-sp-green-light';
-        } else if (path?.includes('/share-boost')) {
+        } else if (path?.includes('/share-boost') || path?.includes('/verify/resume')) {
             return 'bg-sp-purple-base';
         } else if (path === '/notifications') {
             return 'bg-grayscale-100';
@@ -36,7 +49,7 @@ export const getNavBarColor = (path?: string, branding?: BrandingEnum): string =
         return 'bg-emerald-400';
     } else if (path === '/lc-preview') {
         return 'bg-cyan-100';
-    } else if (path?.includes('/share-boost')) {
+    } else if (path?.includes('/share-boost') || path?.includes('/verify/resume')) {
         return 'bg-grayscale-900';
     } else if (path?.includes('/memberships')) {
         return 'bg-teal-300';
@@ -73,10 +86,12 @@ export const showNavBar = (path?: string): boolean => {
         (path?.includes('/boost') && path !== '/boosts') ||
         path?.includes('/select-credentials') ||
         path?.includes('/share-boost') ||
+        path?.includes('/verify/resume') ||
         path?.includes('/app-store') ||
         path?.includes('/cli') ||
         path?.includes('/login') ||
-        path?.includes('/resume-builder')
+        path?.includes('/resume-builder') ||
+        path?.includes('/ai/sessions')
     ) {
         return false;
     }

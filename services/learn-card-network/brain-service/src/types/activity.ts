@@ -32,7 +32,7 @@ export const CredentialActivityValidator = z.object({
     activityId: z.string(),
     eventType: CredentialActivityEventTypeValidator,
     timestamp: z.string(),
-    actorProfileId: z.string(),
+    actorProfileId: z.string().optional(),
     recipientType: CredentialActivityRecipientTypeValidator,
     recipientIdentifier: z.string(),
     boostUri: z.string().optional(),
@@ -41,6 +41,7 @@ export const CredentialActivityValidator = z.object({
     integrationId: z.string().optional(),
     source: CredentialActivitySourceTypeValidator,
     metadata: z.record(z.string(), z.unknown()).optional(),
+    status: z.enum(['active', 'revoked', 'suspended']).optional(),
 });
 export type CredentialActivityRecord = z.infer<typeof CredentialActivityValidator>;
 
@@ -56,6 +57,7 @@ export const CredentialActivityWithDetailsValidator = CredentialActivityValidato
         .object({
             profileId: z.string(),
             displayName: z.string().optional(),
+            image: z.string().optional(),
         })
         .optional(),
 });
@@ -69,18 +71,21 @@ export const PaginatedCredentialActivitiesValidator = z.object({
 export type PaginatedCredentialActivities = z.infer<typeof PaginatedCredentialActivitiesValidator>;
 
 export const CredentialActivityStatsValidator = z.object({
+    totalEvents: z.number(),
     total: z.number(),
     created: z.number(),
     delivered: z.number(),
     claimed: z.number(),
     expired: z.number(),
     failed: z.number(),
+    revoked: z.number(),
+    suspended: z.number(),
     claimRate: z.number(),
 });
 export type CredentialActivityStats = z.infer<typeof CredentialActivityStatsValidator>;
 
 export type LogCredentialActivityParams = {
-    actorProfileId: string;
+    actorProfileId?: string;
     eventType: CredentialActivityEventType;
     recipientType: CredentialActivityRecipientType;
     recipientIdentifier: string;

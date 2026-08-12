@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
+import { useLocale } from '../../../i18n';
 import Countdown from 'react-countdown';
 import { useHistory } from 'react-router-dom';
 import ReactCodeInput from 'react-code-input';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { z } from 'zod';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('email-form');
 
 import useWallet from 'learn-card-base/hooks/useWallet';
+import { useTheme } from '../../../theme/hooks/useTheme';
 import {
     currentUserStore,
     getRandomBaseColor,
@@ -16,7 +22,7 @@ import {
 } from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 
-import { IonCheckbox, IonCol, IonInput, IonToggle, IonRouterLink } from '@ionic/react';
+import { IonCol } from '@ionic/react';
 
 import { setAuthToken } from 'learn-card-base/helpers/authHelpers';
 
@@ -75,6 +81,10 @@ const EmailForm: React.FC<EmailFormProps> = ({
     setShowSocialLogins,
     showSocialLogins,
 }) => {
+    const { theme } = useTheme();
+    const loginButtonBgColor = theme.colors.defaults.loginButtonBgColor;
+    const loginButtonTextColor = theme.colors.defaults.loginButtonTextColor;
+
     const flags = useFlags();
     const query = usePathQuery();
     const history = useHistory();
@@ -89,7 +99,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
     const [email, setEmail] = useState<string>('');
     const [code, setCode] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
     const [currentStep, setCurrentStep] = useState<EmailFormStepsEnum>(EmailFormStepsEnum.email);
 
     const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -98,6 +107,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
     const { mutateAsync: sendLoginVerificationCode } = useSendLoginVerificationCode();
     const { mutateAsync: verifyLoginVerificationCode } = useVerifyLoginVerificationCode();
+    // Active UI locale — sent so the (pre-auth) login-code email matches the
+    // language the user is currently viewing the app in.
+    const locale = useLocale();
 
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
 
@@ -147,6 +159,34 @@ const EmailForm: React.FC<EmailFormProps> = ({
         return false;
     };
 
+    const handleVerifyCode = async () => {
+        if (validateCode()) {
+            try {
+                setCodeError('');
+                setIsLoading(true);
+                const response = await verifyLoginVerificationCode({
+                    email: verificationEmail as string,
+                    code: code,
+                });
+                if (response?.token) {
+                    redirectStore.set.email(null);
+                    await signInWithCustomFirebaseToken(response?.token);
+                }
+                setIsLoading(false);
+            } catch (e) {
+                setIsLoading(false);
+                setCodeError(m['login.email.verification.error']());
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (currentStep === EmailFormStepsEnum.verification && code.length === 6 && !isLoading) {
+            // auto verify code when 6 digits are entered
+            handleVerifyCode();
+        }
+    }, [code, currentStep]);
+
     const handleDemoLogin = async () => {
         setIsLoading(true);
         try {
@@ -195,7 +235,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 // window.location.href = '/wallet';
             }
         } catch (e) {
-            console.log('///login error');
+            log.info('///login error');
         } finally {
             setIsLoading(false);
         }
@@ -206,15 +246,6 @@ const EmailForm: React.FC<EmailFormProps> = ({
         e.stopPropagation();
 
         if (currentStep === EmailFormStepsEnum.email) {
-            // const existingUser = false;
-            // // todo: check response
-            // // if email exists in system redirect user to logging in
-            // // if email does not exist in system redirect user to creating a new account
-            // if (existingUser) {
-            //     setCurrentStep(EmailFormStepsEnum.passwordExistingUser);
-            // } else {
-            //     setCurrentStep(EmailFormStepsEnum.passwordNewUser);
-            // }
             if (validate()) {
                 if (email?.toLowerCase() === 'demo@learningeconomy.io') {
                     handleDemoLogin();
@@ -229,18 +260,18 @@ const EmailForm: React.FC<EmailFormProps> = ({
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
-                            console.log('///sendSignInLink error', e);
+                            log.info('///sendSignInLink error', e);
                         }
                     } else {
                         try {
                             setIsLoading(true);
-                            await sendLoginVerificationCode({ email });
+                            await sendLoginVerificationCode({ email, locale });
                             redirectStore.set.email(email);
                             setCurrentStep(EmailFormStepsEnum.verification);
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
-                            console.log('///sendLoginVerificationCode error', e);
+                            log.info('///sendLoginVerificationCode error', e);
                         }
                     }
 
@@ -248,40 +279,18 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 }
             }
         } else if (currentStep === EmailFormStepsEnum.verification) {
-            if (validateCode()) {
-                try {
-                    setCodeError('');
-                    setIsLoading(true);
-
-                    const response = await verifyLoginVerificationCode({
-                        email: verificationEmail as string,
-                        code: code as string,
-                    });
-                    if (response?.token) {
-                        redirectStore.set.email(null);
-                        await signInWithCustomFirebaseToken(response?.token);
-                    }
-                    setIsLoading(false);
-                } catch (e) {
-                    setIsLoading(false);
-                    setCodeError('Unable to verify code. Please try again.');
-                }
-            }
-        } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
-            // todo: trigger login to existing account
-        } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
-            // todo: trigger creating new account
+            await handleVerifyCode();
         }
     };
 
     const handleResendCode = async () => {
         setIsResendCodeLoading(true);
         try {
-            await sendLoginVerificationCode({ email: verificationEmail as string });
+            await sendLoginVerificationCode({ email: verificationEmail as string, locale });
             setIsResendCodeLoading(false);
         } catch (e) {
             setIsResendCodeLoading(false);
-            console.log('///sendLoginVerificationCode error', e);
+            log.info('///sendLoginVerificationCode error', e);
         }
     };
 
@@ -292,17 +301,18 @@ const EmailForm: React.FC<EmailFormProps> = ({
         }
         redirectStore.set.email(null);
         setEmail('');
-        setPassword('');
     };
 
-    const resendCodeButtonText: string = isResendCodeLoading ? 'Sending Code...' : 'Resend Code';
+    const resendCodeButtonText: string = isResendCodeLoading
+        ? m['common.sendingCode']()
+        : m['common.resendCode']();
 
     let disabled = isLoading;
     if (currentStep === EmailFormStepsEnum.email) {
         formTitle = null;
 
         const defaultEmailInputClassName =
-            'bg-emerald-600 text-white placeholder:text-white white-placeholder';
+            'bg-white/20 text-white placeholder:text-white white-placeholder';
         const resolvedEmailInputClassName = emailInputClassName ?? defaultEmailInputClassName;
 
         const emailError = errors.email?.[0];
@@ -323,14 +333,14 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
         activeStep = (
             <div
-                className={`w-full mb-[20px] ${
+                className={`w-full ${
                     emailErrorPlacement === 'below' ? 'flex flex-col' : 'flex items-center'
                 } justify-center`}
             >
                 <input
-                    aria-label="Email"
+                    aria-label={m['login.email.label']()}
                     className={`${emailInputBaseClassName} ${resolvedEmailInputClassName} ${emailInputErrorClassName}`}
-                    placeholder="Email address"
+                    placeholder={m['login.email.placeholder']()}
                     onChange={e => setEmail(e.target.value)}
                     value={email}
                     type="text"
@@ -344,30 +354,24 @@ const EmailForm: React.FC<EmailFormProps> = ({
             </div>
         );
         // buttonTitle = 'Continue';
-        buttonTitle = buttonTitleOverride ?? 'Sign in with Email';
-        if (isLoading) buttonTitle = 'Sending Code...';
+        buttonTitle = buttonTitleOverride ?? m['login.email.button']();
+        if (isLoading) buttonTitle = m['common.sendingCode']();
         disabled = !email || isLoading;
     } else if (currentStep === EmailFormStepsEnum.verification) {
         formTitle = (
-            <p
-                className={`w-full ${
-                    formTitleClassNameOverride ?? 'text-white text-lg'
-                } text-center`}
-            >
-                Enter verification code or{' '}
-                <span
-                    className={startOverClassNameOverride ?? 'text-white underline font-bold'}
-                    onClick={resetForm}
-                >
-                    start over
-                </span>
-            </p>
+            <TransP
+                m={m['common.enterVerificationCode']}
+                components={[
+                    <span
+                        key="0"
+                        className={startOverClassNameOverride ?? 'text-white underline font-bold'}
+                        onClick={resetForm}
+                    />,
+                ]}
+            />
         );
         activeStep = (
-            <IonCol
-                size="12"
-                className="w-full flex flex-col items-center justify-center ion-no-padding ion-no-margin mb-[20px]"
-            >
+            <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <ReactCodeInput
                     name="phoneVerification"
                     inputMode="numeric"
@@ -388,73 +392,34 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? 'Verifying...' : 'Verify';
+        buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
         disabled = code?.length < 6 || isLoading;
-    } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
-        formTitle = 'Password';
-        activeStep = (
-            <IonCol size="12">
-                <IonInput
-                    autocapitalize="on"
-                    className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    placeholder="Password"
-                    // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value ?? '')}
-                    value={password}
-                    type="password"
-                />
-                <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">Stay Signed In</p>{' '}
-                    <IonToggle />
-                </IonCol>
-            </IonCol>
-        );
-        buttonTitle = 'Login';
-    } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
-        formTitle = 'Password';
-        activeStep = (
-            <IonCol size="12">
-                <IonInput
-                    autocapitalize="on"
-                    className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    placeholder="Password"
-                    // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value ?? '')}
-                    value={password}
-                    type="password"
-                />
-                <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">
-                        Agree to{' '}
-                        <IonRouterLink href="#" className="font-semibold login-terms-span">
-                            Terms
-                        </IonRouterLink>
-                    </p>{' '}
-                    <IonCheckbox />
-                </IonCol>
-            </IonCol>
-        );
-        buttonTitle = 'Create Account';
     }
 
     return (
         <form onSubmit={handleOnClick} className="w-full">
             {formTitle && (
                 <IonCol size="12">
-                    <p
+                    <div
                         className={
                             formTitleClassNameOverride ?? 'w-full font-medium text-white normal'
                         }
                     >
                         {formTitle}
-                    </p>
+                    </div>
                 </IonCol>
             )}
 
             {activeStep}
-            <div className="flex items-center justify-center pb-[20px]">
+            <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
-                    className={`bg-emerald-900 text-white ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${buttonClassName}`}
+                    className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${
+                        !loginButtonBgColor ? 'bg-grayscale-900' : ''
+                    } ${!loginButtonTextColor ? 'text-white' : ''} ${buttonClassName}`}
+                    style={{
+                        ...(loginButtonBgColor ? { backgroundColor: loginButtonBgColor } : {}),
+                        ...(loginButtonTextColor ? { color: loginButtonTextColor } : {}),
+                    }}
                     onClick={handleOnClick}
                     disabled={disabled}
                 >
@@ -489,26 +454,12 @@ const EmailForm: React.FC<EmailFormProps> = ({
                                         'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
                                     }
                                 >
-                                    Resend in {seconds}s
+                                    {m['common.resendIn']({ seconds })}
                                 </button>
                             )
                         }
                     />
                 </div>
-            )}
-            {currentStep === EmailFormStepsEnum.passwordNewUser && (
-                <IonCol
-                    size="12"
-                    className="text-center mt-4 text-gray-700 font-medium text-lg login-existing-account"
-                >
-                    <p>Already have an account?</p>
-                    <button
-                        onClick={resetForm}
-                        className="w-full text-center font-bold text-lg login-reset-btn"
-                    >
-                        Use a different email address
-                    </button>
-                </IonCol>
             )}
         </form>
     );

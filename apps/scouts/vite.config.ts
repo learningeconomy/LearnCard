@@ -1,17 +1,44 @@
 import path from 'path';
+import { readFileSync } from 'fs';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
+import type { UserConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
-export default defineConfig(async ({ mode }) => {
-    const env = loadEnv(mode, process.cwd(), '');
+// App version read directly from this app's package.json.
+// Deliberately NOT `process.env.npm_package_version` — that reflects the package.json
+// of the directory the build was invoked from, so CI builds run from the monorepo root
+// would bake in the root package's version instead of the app's.
+const packageVersion = (
+    JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8')) as {
+        version: string;
+    }
+).version;
+
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, process.cwd(), [
+        'VITE_',
+        'LCN_URL',
+        'LCN_API_URL',
+        'CLOUD_URL',
+        'LEARN_CLOUD_XAPI_URL',
+        'API_URL',
+        'NODE_ENV',
+        'SENTRY_ENV',
+        'SENTRY_DSN',
+        'GOOGLE_MAPS_API_KEY',
+        'REACT_APP_KEY_DERIVATION_PROVIDER',
+        'REACT_APP_SSS_SERVER_URL',
+    ]);
+    const cacheDir = env.VITE_DOCKER_SOURCE === 'true' ? '.vite-docker' : '.vite-local';
 
     return {
+        cacheDir,
         plugins: [
             react(),
             svgr(),
@@ -29,6 +56,8 @@ export default defineConfig(async ({ mode }) => {
             },
         },
         define: {
+            // Only define browser-safe values individually. Defining `process.env` would serialize
+            // the build runner's environment, including credentials, into the browser bundle.
             LCN_URL: env.LCN_URL ? JSON.stringify(env.LCN_URL) : 'undefined',
             LCN_API_URL: env.LCN_API_URL ? JSON.stringify(env.LCN_API_URL) : 'undefined',
             CLOUD_URL: env.CLOUD_URL ? JSON.stringify(env.CLOUD_URL) : 'undefined',
@@ -36,9 +65,9 @@ export default defineConfig(async ({ mode }) => {
                 ? JSON.stringify(env.LEARN_CLOUD_XAPI_URL)
                 : 'undefined',
             API_URL: env.API_URL ? JSON.stringify(env.API_URL) : 'undefined',
-            __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
+            __PACKAGE_VERSION__: JSON.stringify(packageVersion),
+            __APP_VERSION__: JSON.stringify(packageVersion),
             'process.version': '"1.0.0"',
-            'process.env': env,
             IS_PRODUCTION: env.NODE_ENV === 'production',
             SENTRY_ENV: env.SENTRY_ENV ? JSON.stringify(env.SENTRY_ENV) : '"scouts-development"',
             SENTRY_DSN: env.SENTRY_DSN
@@ -47,15 +76,23 @@ export default defineConfig(async ({ mode }) => {
             GOOGLE_MAPS_API_KEY: env.GOOGLE_MAPS_API_KEY
                 ? JSON.stringify(env.GOOGLE_MAPS_API_KEY)
                 : 'undefined',
-
-            WEB3AUTH_MAINNET_CLIENT_ID: env.WEB3AUTH_MAINNET_CLIENT_ID
-                ? JSON.stringify(env.WEB3AUTH_MAINNET_CLIENT_ID)
+            // SSS Key Manager configuration
+            'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': env.REACT_APP_KEY_DERIVATION_PROVIDER
+                ? JSON.stringify(env.REACT_APP_KEY_DERIVATION_PROVIDER)
                 : 'undefined',
-            WEB3AUTH_TESTNET_CLIENT_ID: env.WEB3AUTH_TESTNET_CLIENT_ID
-                ? JSON.stringify(env.WEB3AUTH_TESTNET_CLIENT_ID)
+            'process.env.REACT_APP_SSS_SERVER_URL': env.REACT_APP_SSS_SERVER_URL
+                ? JSON.stringify(env.REACT_APP_SSS_SERVER_URL)
                 : 'undefined',
         },
         resolve: {
+            // The self-host Docker build (docker-build script) sets VITE_DOCKER_SOURCE=true so
+            // vite resolves @learncard/* via their `development` export → TS source, exactly like
+            // the dev server. This lets the container bundle the app in one vite pass without
+            // pre-building every workspace package's dist. Netlify's `build` leaves this unset and
+            // keeps resolving the published dist outputs.
+            ...(process.env.VITE_DOCKER_SOURCE === 'true'
+                ? { conditions: ['development', 'module', 'browser', 'import', 'default'] }
+                : {}),
             alias: [
                 ...Object.entries(stdlibbrowser).map(([find, replacement]) => ({
                     find,
@@ -78,6 +115,18 @@ export default defineConfig(async ({ mode }) => {
             ],
             dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
         },
-        server: { port: 3000 },
-    };
+        server: {
+            port: 3000,
+            proxy: {
+                // Proxy SSS key-manager API requests to the lca-api Docker service.
+                // Used when VITE_SSS_SERVER_URL is set to '/lca-api' (e.g. in docker-start)
+                // to avoid CORS issues during local development.
+                '/lca-api': {
+                    target: 'http://localhost:5100',
+                    changeOrigin: true,
+                    rewrite: path => path.replace(/^\/lca-api/, '/api'),
+                },
+            },
+        },
+    } as UserConfig;
 });

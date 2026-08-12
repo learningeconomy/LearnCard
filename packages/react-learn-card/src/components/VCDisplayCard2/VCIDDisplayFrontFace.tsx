@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flipper, Flipped } from 'react-flip-toolkit';
+import { Flipper, Flipped as UntypedFlipped } from 'react-flip-toolkit';
 
 import IDIcon from '../svgs/IDIcon';
 import IDSleeve from '../../assets/images/id-sleeve.png';
@@ -16,6 +16,18 @@ import { VC } from '@learncard/types';
 import { BoostAchievementCredential } from '../../types';
 import TruncateTextBox from './TruncateTextBox';
 import { KnownDIDRegistryType } from '../../types';
+import {
+    VerifierState,
+    VERIFIER_STATES,
+} from '../CertificateDisplayCard/VerifierStateBadgeAndText';
+
+type FlippedComponentProps = React.PropsWithChildren<{
+    flipId?: string;
+    inverseFlipId?: string;
+    scale?: boolean;
+}>;
+
+const Flipped = UntypedFlipped as unknown as React.FC<FlippedComponentProps>;
 
 type VCIDDisplayFrontFaceProps = {
     isFront: boolean;
@@ -28,16 +40,11 @@ type VCIDDisplayFrontFaceProps = {
     qrCodeOnClick?: () => void;
     customIDDescription?: React.ReactNode;
     unknownVerifierTitle?: string;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
-
-const VERIFIER_STATES = {
-    selfVerified: 'Self Issued',
-    trustedVerifier: 'Trusted Issuer',
-    unknownVerifier: 'Unknown Issuer',
-    appIssuer: 'Trusted App',
-    untrustedVerifier: 'Untrusted Issuer',
-} as const;
-type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
 
 const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
     isFront,
@@ -50,6 +57,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
     qrCodeOnClick,
     customIDDescription,
     unknownVerifierTitle,
+    onVerifierClick,
 }) => {
     const { credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
@@ -139,7 +147,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                             {isFront && showDetailsBtn && (
                                 <button
                                     type="button"
-                                    className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[25px] w-fit select-none"
+                                    className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[24px] py-[8px] rounded-[40px] text-[16px] font-poppins font-medium leading-normal mt-[25px] w-fit select-none"
                                     onClick={() => setIsFront(!isFront)}
                                 >
                                     Details
@@ -150,7 +158,19 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                 <div className="h-[2px] w-full bg-gray-200" />
                             </div>
 
-                            <div className="w-full flex items-center justify-center mt-2">
+                            <button
+                                type="button"
+                                className="w-full flex items-center justify-center mt-2 appearance-none bg-transparent p-0"
+                                onClick={event => {
+                                    event.stopPropagation();
+                                    onVerifierClick?.(event, verifierState);
+                                }}
+                                onMouseDown={event => event.stopPropagation()}
+                                aria-haspopup="dialog"
+                                aria-label={`Open issuer details for ${
+                                    unknownVerifierTitle ?? verifierState
+                                }`}
+                            >
                                 {isSelfVerified && (
                                     <span className="uppercase font-poppins text-base font-[500] text-green-dark flex gap-[3px] items-center">
                                         <PersonBadge className="w-[20px] h-[20px]" />
@@ -171,8 +191,8 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                 )}
                                 {verifierState === VERIFIER_STATES.appIssuer && (
                                     <span className="uppercase font-poppins text-base font-[500] text-cyan-600 flex gap-[3px] items-center">
-                                        <UnknownVerifierBadge className="w-[20px] h-[20px]" />
-                                        Trusted App
+                                        <VerifiedBadge className="w-[20px] h-[20px]" />
+                                        App Issuer
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.untrustedVerifier && (
@@ -181,7 +201,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                         Untrusted Issuer
                                     </span>
                                 )}
-                            </div>
+                            </button>
                         </div>
                     </Flipped>
                 </section>

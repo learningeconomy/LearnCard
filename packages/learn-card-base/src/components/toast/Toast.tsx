@@ -19,7 +19,7 @@ export const Toast = () => {
 
         const timer = setTimeout(() => {
             dismissToast();
-        }, options.duration ?? 3000);
+        }, options.duration);
 
         return () => clearTimeout(timer);
     }, [message, options.duration, options.autoDismiss]);
@@ -28,8 +28,10 @@ export const Toast = () => {
 
     const isError = options.type === ToastTypeEnum.Error;
     const toastTextColor = isError ? 'text-white' : 'text-grayscale-900';
+    const showX = Boolean(options.hasX);
+    const showCheckmark = Boolean(options.hasCheckmark && !showX);
 
-    const zIndex = options.zIndex ?? 999999;
+    const zIndex = options.zIndex;
 
     return (
         <AnimatePresence>
@@ -55,12 +57,18 @@ export const Toast = () => {
                         transition: { duration: 0.2, ease: 'easeInOut' },
                     }}
                     style={{ zIndex }}
-                    className={`fixed top-4 !left-1/2 !-translate-x-1/2 !w-full !px-4 pointer-events-none safe-area-top-margin`}
+                    className={`fixed top-4 right-4 left-auto w-auto phone:left-0 phone:right-0 phone:w-full phone:px-4 pointer-events-none safe-area-top-margin`}
                 >
                     <div
-                        style={{ backgroundColor: isError ? '#f43f5e' : '#FBFBFC' }}
-                        className={`max-w-[600px] mx-auto rounded-[15px] shadow-[0_2px_4px_0_rgba(0,_0,_0,_0.25)] border-2 border-white py-2 px-4 pointer-events-auto relative ${
-                            isError ? 'hover:bg-rose-600' : 'hover:bg-grayscale-100'
+                        style={{
+                            backgroundColor: isError
+                                ? 'rgba(244, 63, 94, 0.85)'
+                                : 'rgba(251, 251, 252, 0.72)',
+                            backdropFilter: 'blur(20px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                        }}
+                        className={`w-[380px] max-w-[calc(100vw-2rem)] phone:w-full phone:max-w-[600px] phone:mx-auto rounded-[18px] border border-white/60 shadow-[0_8px_30px_0_rgba(0,_0,_0,_0.12)] py-2.5 px-4 pointer-events-auto relative transition-[background-color] ${
+                            isError ? 'hover:bg-rose-600/90' : 'hover:bg-white/80'
                         }`}
                     >
                         {isCustomComponent ? (
@@ -74,28 +82,36 @@ export const Toast = () => {
                                 >
                                     <X className="text-grayscale-900 h-[15px] w-[15px] min-w-[15px] min-h-[15px]" />
                                 </button>
-                                <div className="flex items-center justify-between min-h-[40px]">
-                                    <div className="flex items-center justify-start">
-                                        {options.hasCheckmark && (
-                                            <div className="flex items-center justify-center rounded-full bg-emerald-700 p-1 mr-4">
+                                <div className="flex min-w-0 items-center justify-between gap-3 min-h-[40px]">
+                                    <div className="flex min-w-0 flex-1 items-center justify-start">
+                                        {showCheckmark && (
+                                            <div
+                                                data-testid="toast-success-icon"
+                                                className="flex shrink-0 items-center justify-center rounded-full bg-emerald-700 p-1 mr-4"
+                                            >
                                                 <Checkmark className="text-white h-[25px] w-[25px]" />
                                             </div>
                                         )}
-                                        {options.hasX && (
-                                            <div className="flex items-center justify-center rounded-full bg-red-700 p-1 mr-4">
+                                        {showX && (
+                                            <div
+                                                data-testid="toast-error-icon"
+                                                className="flex shrink-0 items-center justify-center rounded-full bg-red-700 p-1 mr-4"
+                                            >
                                                 <X className="text-white h-[25px] w-[25px]" />
                                             </div>
                                         )}
-                                        <div className="flex flex-col">
+                                        <div className="flex min-w-0 flex-1 flex-col">
                                             {options.title && (
                                                 <h4
-                                                    className={`text-sm font-semibold text-left ${toastTextColor}`}
+                                                    className={`text-sm font-semibold text-left whitespace-normal break-words [overflow-wrap:anywhere] ${toastTextColor}`}
                                                 >
                                                     {options.title}
                                                 </h4>
                                             )}
 
-                                            <p className={`text-sm text-left ${toastTextColor}`}>
+                                            <p
+                                                className={`text-sm text-left whitespace-normal break-words [overflow-wrap:anywhere] ${toastTextColor}`}
+                                            >
                                                 {message}
                                             </p>
                                         </div>
@@ -105,7 +121,7 @@ export const Toast = () => {
                                         <button
                                             type="button"
                                             onClick={dismissToast}
-                                            className="border border-grayscale-200 border-solid p-3 rounded-full h-[45px] w-[45px] hidden items-center justify-center bg-white phone:flex"
+                                            className="shrink-0 border border-grayscale-200 border-solid p-3 rounded-full h-[45px] w-[45px] hidden items-center justify-center bg-white phone:flex"
                                         >
                                             <X className="text-grayscale-900 h-[20px] w-[20px]" />
                                         </button>

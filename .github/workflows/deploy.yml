@@ -16,6 +16,7 @@ on:
                     - staging
                     - production
                     - scouts
+                    - scouts-staging
             # Component selection - which things to deploy
             deploy-brain-service:
                 description: 'Deploy Brain Service (Network API)'
@@ -38,7 +39,12 @@ on:
                 default: false
                 type: boolean
             publish-npm:
-                description: 'Publish NPM Packages'
+                description: 'Publish Registry Packages'
+                required: false
+                default: false
+                type: boolean
+            publish-app-stores:
+                description: 'Publish Native Apps to App Stores (iOS + Android)'
                 required: false
                 default: false
                 type: boolean
@@ -52,11 +58,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 env:
     CI: true
-    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    AWS_DEFAULT_REGION: us-east-1
-    SKILL_EMBEDDING_GOOGLE_API_KEY: ${{ secrets.SKILL_EMBEDDING_GOOGLE_API_KEY }}
-
+    MONGOMS_DISABLE_POSTINSTALL: '1'
 
 jobs:
     # ============================================================================
@@ -76,10 +78,12 @@ jobs:
             lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
             native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
             # Dynamic environment names
+            # target_frontend_env is only consumed by publish-native-apps (fastlane);
+            # Netlify/CapGo deploys fan out over frontend_deployment_matrix instead.
             target_frontend_env: ${{ steps.set-env.outputs.frontend_env }}
-            target_brain_service_env: ${{ steps.set-env.outputs.brain_env }}
-            target_learn_cloud_env: ${{ steps.set-env.outputs.cloud_env }}
-            target_lca_api_env: ${{ steps.set-env.outputs.lca_api_env }}
+            service_deployment_matrix: ${{ steps.set-env.outputs.service_deployment_matrix }}
+            frontend_deployment_matrix: ${{ steps.set-env.outputs.frontend_deployment_matrix }}
+            frontend_matrix_has_legs: ${{ steps.set-env.outputs.frontend_matrix_has_legs }}
         steps:
             # Check these first - no dependencies needed
             - name: Check if this is a manual dispatch
@@ -95,43 +99,20 @@ jobs:
             - name: Check if this is a release commit
               id: check_release
               if: github.event_name != 'workflow_dispatch'
+              env:
+                  COMMIT_MSG: ${{ github.event.head_commit.message }}
               run: |
-                  if [[ "${{ github.event.head_commit.message }}" == *"chore(release):"* ]]; then
+                  if [[ "$COMMIT_MSG" == *"chore(release):"* ]]; then
                     echo "is_release=true" >> $GITHUB_OUTPUT
                     echo "This is a release commit"
                   else
                     echo "is_release=false" >> $GITHUB_OUTPUT
                   fi
 
-            - name: Determine Deployment Environments
-              id: set-env
-              run: |
-                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
-                    echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=scout-network-api-production" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=scout-storage-api-production" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=scout-app-api-production" >> "$GITHUB_OUTPUT"
-                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
-                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=learn-cloud-network-api-production" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=learn-cloud-storage-api-production" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=learn-card-app-api-production" >> "$GITHUB_OUTPUT"
-                  elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
-                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=learn-cloud-network-api-production" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=learn-cloud-storage-api-production" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=learn-card-app-api-production" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=learn-cloud-network-api-staging" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=learn-cloud-storage-api-staging" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=learn-card-app-api-staging" >> "$GITHUB_OUTPUT"
-                  fi
-
             # Skip heavy steps for manual dispatch - we already know what to deploy
             - name: Checkout Repo
               if: github.event_name != 'workflow_dispatch'
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
@@ -147,8 +128,9 @@ jobs:
               if: github.event_name != 'workflow_dispatch'
               id: affected
               run: |
-                  affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
-                  echo "affected=$affected" >> $GITHUB_OUTPUT
+                  set -o pipefail
+                  affected="$(bunx nx show projects --affected --base=HEAD~1 --head=HEAD | paste -sd, -)"
+                  echo "affected=$affected" >> "$GITHUB_OUTPUT"
                   echo "Affected projects: $affected"
 
             - name: Check version changes for release
@@ -193,6 +175,88 @@ jobs:
                     echo "native_plugin_changed=false" >> $GITHUB_OUTPUT
                   fi
 
+            - name: Determine Deployment Environments
+              id: set-env
+              run: |
+                  LC_STAGING='{"name":"LearnCard Staging","brain_env":"learn-cloud-network-api-staging","cloud_env":"learn-cloud-storage-api-staging","lca_api_env":"learn-card-app-api-staging"}'
+                  LC_PRODUCTION='{"name":"LearnCard Production","brain_env":"learn-cloud-network-api-production","cloud_env":"learn-cloud-storage-api-production","lca_api_env":"learn-card-app-api-production"}'
+                  SCOUTS_STAGING='{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
+                  SCOUTS_PRODUCTION='{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
+
+                  # Frontend legs mirror the service matrix, one Netlify site per GitHub
+                  # Environment. capgo=false on ALL staging legs (automatic and manual): the
+                  # LearnCard staging OTA is owned by capgo-staging.yml — it must be built with
+                  # PROD config or it breaks auth on installed prod binaries (rationale
+                  # documented there) — and ScoutPass staging has no OTA channel.
+                  LC_FE_STAGING='{"name":"LearnCard Staging","environment":"learn-card-app-staging","capgo":false}'
+                  LC_FE_PRODUCTION='{"name":"LearnCard Production","environment":"learn-card-app-production","capgo":true}'
+                  SCOUTS_FE_STAGING='{"name":"ScoutPass Staging","environment":"scout-app-staging","capgo":false,"stage":"staging"}'
+                  SCOUTS_FE_PRODUCTION='{"name":"ScoutPass Production","environment":"scout-app-production","capgo":true,"stage":"production"}'
+
+                  set_service_matrix() {
+                    local legs
+                    legs=$(IFS=,; echo "$*")
+                    echo "service_deployment_matrix={\"include\":[${legs}]}" >> "$GITHUB_OUTPUT"
+                  }
+
+                  set_frontend_matrix() {
+                    local legs
+                    legs=$(IFS=,; echo "$*")
+                    echo "frontend_deployment_matrix={\"include\":[${legs}]}" >> "$GITHUB_OUTPUT"
+                    if [[ -n "$legs" ]]; then
+                      echo "frontend_matrix_has_legs=true" >> "$GITHUB_OUTPUT"
+                    else
+                      echo "frontend_matrix_has_legs=false" >> "$GITHUB_OUTPUT"
+                    fi
+                  }
+
+                  AFFECTED="${{ steps.affected.outputs.affected }}"
+
+                  is_affected() {
+                    tr ',' '\n' <<< "$AFFECTED" | grep -qx "$1"
+                  }
+
+                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
+                    echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$SCOUTS_PRODUCTION"
+                    set_frontend_matrix "$SCOUTS_FE_PRODUCTION"
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts-staging' ]]; then
+                    echo "frontend_env=scout-app-staging" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$SCOUTS_STAGING"
+                    set_frontend_matrix "$SCOUTS_FE_STAGING"
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
+                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_PRODUCTION"
+                    set_frontend_matrix "$LC_FE_PRODUCTION"
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+                    echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_STAGING"
+                    set_frontend_matrix "$LC_FE_STAGING"
+                  elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
+                    # ScoutPass production is deliberately excluded from release
+                    # pushes — it deploys only via the manual 'scouts' dispatch.
+                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_PRODUCTION"
+                    if [[ "${{ steps.check_versions.outputs.lca_app_changed }}" == 'true' ]]; then
+                      set_frontend_matrix "$LC_FE_PRODUCTION"
+                    else
+                      set_frontend_matrix
+                    fi
+                  else
+                    echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_STAGING" "$SCOUTS_STAGING"
+                    # Normal main push: staging front-ends deploy from CI (replacing
+                    # Netlify branch builds), only when their Nx project is affected.
+                    FE_LEGS=()
+                    if is_affected learn-card-app; then
+                      FE_LEGS+=("$LC_FE_STAGING")
+                    fi
+                    if is_affected scouts; then
+                      FE_LEGS+=("$SCOUTS_FE_STAGING")
+                    fi
+                    set_frontend_matrix "${FE_LEGS[@]}"
+                  fi
+
     # ============================================================================
     # BUILD NATIVE PLUGIN (for Lambda deploys - Linux x64)
     # ============================================================================
@@ -201,19 +265,20 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   submodules: true
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 24.12.0
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
 
-            - name: Install pnpm
-              uses: pnpm/action-setup@v2
+            - name: Setup Bun cache
+              uses: actions/cache@v6
               with:
-                  version: 9
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
 
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
@@ -222,7 +287,7 @@ jobs:
                   targets: x86_64-unknown-linux-gnu
 
             - name: Cache cargo
-              uses: actions/cache@v4
+              uses: actions/cache@v6
               with:
                   path: |
                       ~/.cargo/registry/index/
@@ -232,14 +297,14 @@ jobs:
                   key: linux-x64-cargo-${{ hashFiles('**/Cargo.lock') }}
 
             - name: Install dependencies
-              run: pnpm install --no-frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Build native plugin
               working-directory: packages/plugins/didkit-plugin-node
               env:
                   BUILD_DIDKIT_NAPI: true
               run: |
-                  pnpm exec nx build didkit-plugin-node
+                  bunx nx build didkit-plugin-node
                   strip -x *.node
 
             - name: Upload native binary
@@ -266,7 +331,7 @@ jobs:
         environment: ci-tests
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
@@ -284,7 +349,7 @@ jobs:
               with:
                   timeout_minutes: 10
                   max_attempts: 3
-                  command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+                  command: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
               env:
                   SEED: ${{ secrets.SEED }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
@@ -297,7 +362,7 @@ jobs:
     #   - Manual: Deploy to selected environment if selected
     # ============================================================================
     deploy-brain-service:
-        name: Deploy Brain Service (Network API)
+        name: Deploy Brain Service (${{ matrix.name }})
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -308,10 +373,13 @@ jobs:
               (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'network-brain-service'))
             )
         runs-on: ubuntu-latest
-        environment: ${{ needs.determine-affected.outputs.target_brain_service_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
+        environment: ${{ matrix.brain_env }}
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             - name: Download native plugin binary
               uses: actions/download-artifact@v4
@@ -322,12 +390,15 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Install Serverless packager
+              run: npm install -g pnpm@9.12.3
+
             - name: Validate deployment target
               run: |
                   echo "========================================"
                   echo "DEPLOYMENT TARGET VALIDATION"
                   echo "========================================"
-                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_brain_service_env }}"
+                  echo "GitHub Environment: ${{ matrix.brain_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
                   echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
@@ -338,23 +409,23 @@ jobs:
                   FAILED=false
 
                   if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
 
@@ -364,8 +435,12 @@ jobs:
                   fi
 
             - name: Deploy Brain Service Lambda
-              run: pnpm exec nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
+              run: bunx nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
+                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
+                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  AWS_DEFAULT_REGION: us-east-1
                   CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
                   POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
                   SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
@@ -399,9 +474,16 @@ jobs:
                   SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${{ secrets.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS }}
                   SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE }}
                   SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
+                  OIDC_TRUSTED_ISSUERS: ${{ vars.OIDC_TRUSTED_ISSUERS }}
+                  OIDC_EXPECTED_AUDIENCE: ${{ vars.OIDC_EXPECTED_AUDIENCE }}
+                  # LC-1644 perf bench backend telemetry (admin-only). POSTHOG_HOST is a var (non-secret),
+                  # POSTHOG_API_KEY is a secret. GIT_SHA is the deploy commit for tagging events.
+                  POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+                  POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
+                  GIT_SHA: ${{ github.sha }}
 
     deploy-learn-cloud:
-        name: Deploy LearnCloud (Storage API)
+        name: Deploy LearnCloud (${{ matrix.name }})
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -412,10 +494,13 @@ jobs:
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'learn-cloud-service'))
             )
         runs-on: ubuntu-latest
-        environment: ${{ needs.determine-affected.outputs.target_learn_cloud_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
+        environment: ${{ matrix.cloud_env }}
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             - name: Download native plugin binary
               uses: actions/download-artifact@v4
@@ -426,12 +511,15 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Install Serverless packager
+              run: npm install -g pnpm@9.12.3
+
             - name: Validate deployment target
               run: |
                   echo "========================================"
                   echo "DEPLOYMENT TARGET VALIDATION"
                   echo "========================================"
-                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_learn_cloud_env }}"
+                  echo "GitHub Environment: ${{ matrix.cloud_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
                   echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
@@ -442,23 +530,23 @@ jobs:
                   FAILED=false
 
                   if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
 
@@ -468,8 +556,12 @@ jobs:
                   fi
 
             - name: Deploy LearnCloud Lambda
-              run: pnpm exec nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
+              run: bunx nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
+                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
+                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  AWS_DEFAULT_REGION: us-east-1
                   SERVER_URL: ${{ vars.SERVER_URL }}
                   SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
@@ -492,7 +584,7 @@ jobs:
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
 
     deploy-lca-api:
-        name: Deploy LCA API Service
+        name: Deploy LCA API (${{ matrix.name }})
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -503,10 +595,13 @@ jobs:
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'lca-api-service'))
             )
         runs-on: ubuntu-latest
-        environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
+        environment: ${{ matrix.lca_api_env }}
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
 
             - name: Download native plugin binary
               uses: actions/download-artifact@v4
@@ -517,12 +612,15 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            - name: Install Serverless packager
+              run: npm install -g pnpm@9.12.3
+
             - name: Validate deployment target
               run: |
                   echo "========================================"
                   echo "DEPLOYMENT TARGET VALIDATION"
                   echo "========================================"
-                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}"
+                  echo "GitHub Environment: ${{ matrix.lca_api_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
                   echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
@@ -533,23 +631,23 @@ jobs:
                   FAILED=false
 
                   if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
 
@@ -559,8 +657,12 @@ jobs:
                   fi
 
             - name: Deploy LCA API Service Lambda
-              run: pnpm exec nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
+              run: bunx nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
+                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
+                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  AWS_DEFAULT_REGION: us-east-1
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
                   SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
@@ -569,8 +671,10 @@ jobs:
                   SEED: ${{ secrets.SEED }}
                   METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
                   POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
-                  POSTMARK_LOGIN_CODE_TEMPLATE_ID: ${{ secrets.POSTMARK_LOGIN_CODE_TEMPLATE_ID }}
-                  POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID: ${{ secrets.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID }}
+                  POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS: ${{ vars.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS }}
+                  POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: ${{ vars.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS }}
+                  POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS: ${{ vars.POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS }}
+                  POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: ${{ vars.POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS }}
                   POSTMARK_FROM_EMAIL: ${{ secrets.POSTMARK_FROM_EMAIL }}
                   POSTMARK_BRAND_NAME: ${{ secrets.POSTMARK_BRAND_NAME }}
                   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -604,87 +708,201 @@ jobs:
 
     # ============================================================================
     # FRONTEND DEPLOYMENTS
-    # For production: Wait for any services that are deploying to complete first
+    # Triggers:
+    #   - Push: Deploy affected front-ends to their staging Netlify sites
+    #   - Release: Deploy LearnCard production if version changed
+    #   - Manual: Deploy to selected environment if selected
+    # Waits for any services that are deploying to complete first.
     # ============================================================================
     deploy-frontend:
-        name: Deploy Frontend
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+        name: Deploy Frontend (${{ matrix.name }})
+        needs:
+            [
+                determine-affected,
+                test-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+            ]
         if: |
             always() &&
             !cancelled() &&
+            needs.determine-affected.outputs.frontend_matrix_has_legs == 'true' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts') ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts')
+                (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success')
             ) &&
             !contains(needs.deploy-brain-service.result, 'failure') &&
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
             !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
-        permissions:
-            contents: write
-        environment: ${{ needs.determine-affected.outputs.target_frontend_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.frontend_deployment_matrix) }}
+        environment: ${{ matrix.environment }}
         steps:
             - name: Set Deployment Variables
               id: vars
               run: |
                   echo "app_id=${{ vars.DEPLOY_APP_ID }}" >> "$GITHUB_OUTPUT"
                   echo "project_name=${{ vars.DEPLOY_PROJECT_NAME }}" >> "$GITHUB_OUTPUT"
-                  echo "netlify_branch=${{ vars.NETLIFY_BRANCH }}" >> "$GITHUB_OUTPUT"
+                  echo "netlify_site_id=${{ vars.NETLIFY_SITE_ID }}" >> "$GITHUB_OUTPUT"
                   echo "capgo_id=${{ vars.APP_ID }}" >> "$GITHUB_OUTPUT"
                   echo "build_path=${{ vars.DEPLOY_BUILD_PATH }}" >> "$GITHUB_OUTPUT"
-                  echo "force_push=${{ vars.DEPLOY_FORCE_PUSH }}" >> "$GITHUB_OUTPUT"
 
             - name: Checkout Repo
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-                  token: ${{ secrets.GITHUB_TOKEN }}
+              uses: actions/checkout@v7
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            # Deploy to Netlify by pushing to production branch (Netlify auto-deploys from it)
-            - name: Push to production branch
-              if: |
-                  needs.determine-affected.outputs.is_release == 'true' ||
-                  (github.event_name == 'workflow_dispatch' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
-              run: |
-                  if [[ "${{ steps.vars.outputs.force_push }}" == 'true' ]]; then
-                    git push --force origin HEAD:${{ steps.vars.outputs.netlify_branch }}
-                  else
-                    git push origin HEAD:${{ steps.vars.outputs.netlify_branch }}
-                  fi
-
             - name: Get App Version
               id: app-version
+              if: matrix.capgo
               run: |
-                  VERSION=$(node -p "require('./apps/${{ steps.vars.outputs.project_name }}/package.json').version")
+                  VERSION=$(bun -e "console.log(require('./apps/${{ steps.vars.outputs.project_name }}/package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Get CapGo Channel
               id: capgo-channel
+              if: matrix.capgo
               run: |
-                  CHANNEL=$(node tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
+                  CHANNEL=$(bun tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
                   echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
 
+            # Prepare tenant config for learn-card-app builds.
+            # Uses TENANT and STAGE vars from the GitHub Environment (defaults: learncard, no stage).
+            # Scouts app does not use the tenant config system yet — skip for non-LCA projects.
+            - name: Prepare tenant config
+              if: steps.vars.outputs.project_name == 'learn-card-app'
+              working-directory: apps/learn-card-app
+              run: |
+                  TENANT="${{ vars.TENANT || 'learncard' }}"
+                  STAGE="${{ vars.STAGE || '' }}"
+                  STAGE_FLAG=""
+                  if [[ -n "$STAGE" ]]; then
+                    STAGE_FLAG="--stage $STAGE"
+                  fi
+                  echo "Preparing tenant config: $TENANT $STAGE_FLAG"
+                  bunx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
+
+            # Generate the resolved per-tenant configs consumed by the Netlify edge
+            # function (netlify/edge-functions/shared/resolved-tenant-configs.generated.json).
+            # This previously ran inside Netlify's own build command; now that CI builds the
+            # artifact and deploys it with `--no-build`, we must generate it here so the
+            # edge function bundles the up-to-date data. LCA only — Scouts has no edge config.
+            - name: Generate edge tenant configs
+              if: steps.vars.outputs.project_name == 'learn-card-app'
+              working-directory: apps/learn-card-app
+              run: bun scripts/generate-edge-tenant-configs.ts
+
+            # Scouts backend URLs come from the checked-in stage configs
+            # (environments/scoutpass/config[.<stage>].json) via the same resolution local
+            # dev uses, so CI and dev share one source of truth instead of duplicating URLs
+            # as GitHub Environment vars. The stage is baked into the matrix leg (not an ops
+            # var, so it can't be forgotten); unknown stages fail the build rather than
+            # silently building against production.
+            - name: Resolve Scouts stage env
+              id: scouts-stage-env
+              if: steps.vars.outputs.project_name == 'scouts'
+              working-directory: apps/scouts
+              run: bun scripts/lc.ts stage-env "${{ matrix.stage || 'production' }}" | tee -a "$GITHUB_OUTPUT"
+
             - name: Build App
-              run: pnpm exec nx build ${{ steps.vars.outputs.project_name }}
+              run: bunx nx build ${{ steps.vars.outputs.project_name }}
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
-                  SENTRY_ENV: ${{ vars.SENTRY_ENV }}
+                  SENTRY_ENV: ${{ steps.scouts-stage-env.outputs.SENTRY_ENV || vars.SENTRY_ENV }}
                   SENTRY_DSN: ${{ vars.SENTRY_DSN }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-                  WEB3AUTH_MAINNET_CLIENT_ID: ${{ secrets.WEB3AUTH_MAINNET_CLIENT_ID }}
-                  WEB3AUTH_TESTNET_CLIENT_ID: ${{ secrets.WEB3AUTH_TESTNET_CLIENT_ID }}
+                  VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
+                  VITE_WEB3AUTH_NETWORK: ${{ vars.VITE_WEB3AUTH_NETWORK }}
+                  VITE_WEB3AUTH_VERIFIER_ID: ${{ vars.VITE_WEB3AUTH_VERIFIER_ID }}
+                  VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
+                  VITE_AUTH_PROVIDER: ${{ vars.VITE_AUTH_PROVIDER }}
+                  VITE_KEY_DERIVATION: ${{ vars.VITE_KEY_DERIVATION }}
+                  VITE_SSS_SERVER_URL: ${{ steps.scouts-stage-env.outputs.VITE_SSS_SERVER_URL || vars.VITE_SSS_SERVER_URL }}
+                  VITE_ENABLE_EMAIL_BACKUP_SHARE: ${{ vars.VITE_ENABLE_EMAIL_BACKUP_SHARE }}
+                  VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
+                  VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
                   VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
                   VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+                  # Backend URL build defines consumed by apps/scouts/vite.config.ts, resolved
+                  # from the checked-in stage configs above (empty for learn-card-app, which
+                  # uses the tenant config system instead).
+                  LCN_URL: ${{ steps.scouts-stage-env.outputs.LCN_URL }}
+                  LCN_API_URL: ${{ steps.scouts-stage-env.outputs.LCN_API_URL }}
+                  CLOUD_URL: ${{ steps.scouts-stage-env.outputs.CLOUD_URL }}
+                  LEARN_CLOUD_XAPI_URL: ${{ steps.scouts-stage-env.outputs.LEARN_CLOUD_XAPI_URL }}
+                  API_URL: ${{ steps.scouts-stage-env.outputs.API_URL }}
+
+            - name: Validate Netlify target
+              run: |
+                  if [[ -z "${{ steps.vars.outputs.netlify_site_id }}" ]]; then
+                    echo "::error::NETLIFY_SITE_ID is not set in environment '${{ matrix.environment }}'! Configure it in the GitHub environment settings."
+                    exit 1
+                  fi
+
+            # Deploy the pre-built web artifact straight to Netlify, keyed off the GitHub
+            # Environment's NETLIFY_SITE_ID. This replaces the old force-push-to-deploy-branch
+            # mechanism, so the deploy branch can be removed and `main` fully branch-protected.
+            # --no-build: CI already built above; Netlify must not rebuild.
+            #
+            # The deploy runs from a clean staging dir OUTSIDE the repo. The Netlify sites have
+            # `apps/<project>` configured as their UI base directory, and account settings are
+            # merged into netlify.toml even for CLI deploys. Mirror that path in the staging
+            # directory so online config resolution succeeds, while still avoiding monorepo
+            # workspace detection (which can desync the edge-function bundle and upload paths).
+            - name: Deploy to Netlify
+              working-directory: apps/${{ steps.vars.outputs.project_name }}
+              run: |
+                  STAGE_ROOT="$RUNNER_TEMP/netlify-deploy-${{ steps.vars.outputs.project_name }}"
+                  STAGE_DIR="$STAGE_ROOT/apps/${{ steps.vars.outputs.project_name }}"
+                  rm -rf "$STAGE_ROOT"
+                  mkdir -p "$STAGE_DIR"
+                  cp netlify.toml "$STAGE_DIR/"
+                  if [[ -d netlify ]]; then
+                    cp -R netlify "$STAGE_DIR/netlify"
+                  fi
+                  cp -R build "$STAGE_DIR/build"
+                  # Pin the CLI's repositoryRoot to the stage root so the site's UI base
+                  # (apps/<project>) resolves to $STAGE_DIR. Without a .git here, the CLI
+                  # treats the cwd as the repo root and base resolution fails.
+                  git -C "$STAGE_ROOT" init --quiet
+
+                  # Run from the app dir: the uploader only scans <cwd>/.netlify for the
+                  # edge-function bundle, and the bundler writes it under the resolved
+                  # base dir — both must be $STAGE_DIR or edge functions are dropped.
+                  cd "$STAGE_DIR"
+                  # --debug: without it the CLI swallows config-resolution errors and
+                  # silently retries offline, which drops siteInfo and surfaces as a
+                  # misleading "Project not found".
+                  bunx netlify-cli@26 deploy \
+                    --debug \
+                    --prod \
+                    --no-build \
+                    --dir "$STAGE_DIR/build" \
+                    --site "${{ steps.vars.outputs.netlify_site_id }}" \
+                    --message "CI deploy ${{ github.sha }}"
+
+                  if [[ -d "$STAGE_DIR/netlify/edge-functions" ]]; then
+                    APP_EDGE_BUNDLE="$STAGE_DIR/.netlify/edge-functions-dist"
+                    if ! compgen -G "$APP_EDGE_BUNDLE/*" > /dev/null; then
+                      echo "::error::Edge functions were not bundled into the deploy (expected $APP_EDGE_BUNDLE to be populated — a bundle anywhere else is never uploaded)."
+                      exit 1
+                    fi
+                  fi
+              env:
+                  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
+              if: matrix.capgo
               run: |
-                  npx @capgo/cli@latest bundle upload \
+                  bunx @capgo/cli@latest bundle upload \
                     ${{ steps.vars.outputs.capgo_id }} \
                     --delta \
                     --apikey ${{ secrets.CAPGO_TOKEN }} \
@@ -692,16 +910,255 @@ jobs:
                     --channel ${{ steps.capgo-channel.outputs.channel }} \
                     --bundle ${{ steps.app-version.outputs.version }} \
                     --package-json apps/${{ steps.vars.outputs.project_name }}/package.json \
-                    --node-modules apps/${{ steps.vars.outputs.project_name }}/node_modules
+                    --node-modules node_modules
 
             - name: Set CapGo Channel
+              if: matrix.capgo
               run: |
-                  npx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
+                  bunx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
                     -s default \
                     -a ${{ secrets.CAPGO_TOKEN }} \
                     -b ${{ steps.app-version.outputs.version }} \
                     --self-assign \
                     ${{ steps.vars.outputs.capgo_id }}
+
+    # ============================================================================
+    # JIRA RELEASE TAGGING (production only, non-blocking)
+    # ============================================================================
+    tag-jira-release:
+        name: Tag Jira Release
+        needs:
+            [
+                determine-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+                deploy-frontend,
+            ]
+        continue-on-error: true
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                needs.determine-affected.outputs.is_release == 'true' ||
+                (needs.determine-affected.outputs.is_manual == 'true' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
+            ) &&
+            (
+                needs.deploy-brain-service.result == 'success' ||
+                needs.deploy-learn-cloud.result == 'success' ||
+                needs.deploy-lca-api.result == 'success' ||
+                needs.deploy-frontend.result == 'success'
+            )
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - name: Generate release name
+              id: release-info
+              run: |
+                  SHORT_SHA="${GITHUB_SHA::7}"
+                  RELEASE_DATE=$(date -u +%Y-%m-%d)
+                  RELEASE_NAME="${RELEASE_DATE}-${SHORT_SHA}"
+                  echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+                  echo "Release name: $RELEASE_NAME"
+
+            - name: Create Jira release
+              env:
+                  JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+                  JIRA_USER_EMAIL: ${{ vars.JIRA_USER_EMAIL }}
+                  JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+                  JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY }}
+              run: |
+                  set -o pipefail
+
+                  RELEASE_NAME="${{ steps.release-info.outputs.release_name }}"
+
+                  echo "Creating Jira release: $RELEASE_NAME"
+                  echo "Project: $JIRA_PROJECT_KEY"
+                  echo "Jira URL: $JIRA_BASE_URL"
+
+                  # Build the Basic auth header per Atlassian docs:
+                  # Base64-encode "email:api_token" and pass as Authorization header.
+                  # NOTE: GNU base64 wraps at 76 columns by default, which injects a
+                  # newline into the header and makes curl fail with exit 43. Strip
+                  # newlines explicitly so this works on both GNU and BSD base64.
+                  AUTH_HEADER="Authorization: Basic $(printf '%s' "${JIRA_USER_EMAIL}:${JIRA_API_TOKEN}" | base64 | tr -d '\n')"
+
+                  # Look up the Jira project ID from the project key
+                  PROJECT_RESPONSE=$(curl -s -w "\n%{http_code}" \
+                    -H "${AUTH_HEADER}" \
+                    -H "Content-Type: application/json" \
+                    "${JIRA_BASE_URL}/rest/api/3/project/${JIRA_PROJECT_KEY}")
+
+                  HTTP_CODE=$(echo "$PROJECT_RESPONSE" | tail -n1)
+                  PROJECT_BODY=$(echo "$PROJECT_RESPONSE" | sed '$d')
+
+                  if [[ "$HTTP_CODE" -ne 200 ]]; then
+                    echo "::error::Failed to fetch Jira project (HTTP $HTTP_CODE): $PROJECT_BODY"
+                    exit 1
+                  fi
+
+                  PROJECT_ID=$(echo "$PROJECT_BODY" | jq -r '.id')
+
+                  # ============================================================
+                  # Find the previous released version's commit SHA
+                  # ============================================================
+                  # Every version we create embeds the source commit SHA in its
+                  # description ("Deployed from commit <SHA> via GitHub Actions").
+                  # We query the most recent released versions, walk them in
+                  # release-date-desc order, and use the first SHA that still
+                  # exists in our local git history as the lower bound for issue
+                  # linking. This is done BEFORE creating the new version so our
+                  # own entry does not shadow the previous one.
+                  PREV_VERSIONS_RESPONSE=$(curl -s -G -w "\n%{http_code}" \
+                    -H "${AUTH_HEADER}" \
+                    -H "Content-Type: application/json" \
+                    --data-urlencode "orderBy=-releaseDate" \
+                    --data-urlencode "status=released" \
+                    --data-urlencode "maxResults=10" \
+                    "${JIRA_BASE_URL}/rest/api/3/project/${PROJECT_ID}/version")
+
+                  PREV_VERSIONS_CODE=$(echo "$PREV_VERSIONS_RESPONSE" | tail -n1)
+                  PREV_VERSIONS_BODY=$(echo "$PREV_VERSIONS_RESPONSE" | sed '$d')
+
+                  PREV_SHA=""
+                  if [[ "$PREV_VERSIONS_CODE" -ge 200 && "$PREV_VERSIONS_CODE" -lt 300 ]]; then
+                    CANDIDATE_SHAS=$(echo "$PREV_VERSIONS_BODY" \
+                      | jq -r '.values[]? | .description // empty' 2>/dev/null \
+                      | grep -oE 'commit [0-9a-f]{7,40}' \
+                      | awk '{print $2}')
+
+                    for sha in $CANDIDATE_SHAS; do
+                      if git cat-file -e "${sha}^{commit}" 2>/dev/null; then
+                        PREV_SHA="$sha"
+                        break
+                      fi
+                    done
+                  else
+                    echo "::warning::Failed to fetch previous Jira versions (HTTP $PREV_VERSIONS_CODE): $PREV_VERSIONS_BODY"
+                    echo "::warning::Will use fallback commit range for issue linking."
+                  fi
+
+                  # Create the release version
+                  RESPONSE=$(curl -s -w "\n%{http_code}" \
+                    -H "${AUTH_HEADER}" \
+                    -H "Content-Type: application/json" \
+                    -X POST "${JIRA_BASE_URL}/rest/api/3/version" \
+                    -d "{
+                      \"name\": \"${RELEASE_NAME}\",
+                      \"projectId\": ${PROJECT_ID},
+                      \"released\": true,
+                      \"releaseDate\": \"$(date -u +%Y-%m-%d)\",
+                      \"description\": \"Deployed from commit ${GITHUB_SHA} via GitHub Actions\"
+                    }")
+
+                  HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+                  BODY=$(echo "$RESPONSE" | sed '$d')
+
+                  if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
+                    echo "Jira release created successfully"
+                    echo "$BODY" | jq .
+                  else
+                    echo "::warning::Failed to create Jira release (HTTP $HTTP_CODE): $BODY"
+                    # If the version was not created, there is nothing to link issues to.
+                    exit 0
+                  fi
+
+                  # ============================================================
+                  # Associate issues with the release via fixVersions
+                  # ============================================================
+                  # Use the previous released version's commit SHA (found above)
+                  # as the lower bound. Fall back to the last N commits on the
+                  # first-ever release or if no previous SHA could be resolved.
+                  # N is configurable via the JIRA_FALLBACK_DEPTH env var on the
+                  # job (defaults to 100).
+                  FALLBACK_DEPTH="${JIRA_FALLBACK_DEPTH:-100}"
+                  if [[ -n "$PREV_SHA" ]]; then
+                    RANGE="${PREV_SHA}..HEAD"
+                    echo "Previous Jira release commit: $PREV_SHA"
+                  else
+                    RANGE="HEAD~${FALLBACK_DEPTH}..HEAD"
+                    echo "No previous Jira release SHA found; scanning last ${FALLBACK_DEPTH} commits."
+                  fi
+                  echo "Scanning commits in range: $RANGE"
+
+                  # Validate the range resolves to at least one commit before
+                  # scanning. Protects against shallow-clone edge cases and an
+                  # unreachable PREV_SHA that slipped past the cat-file check.
+                  if ! git rev-list --count "$RANGE" >/dev/null 2>&1; then
+                    echo "::warning::Invalid commit range ${RANGE}; skipping issue linking."
+                    exit 0
+                  fi
+
+                  # Case-insensitive extraction of "<KEY>-<NUMBER>" tokens from
+                  # commit subjects and bodies. The surrounding [^A-Za-z0-9_]
+                  # (or start/end) boundaries are stricter than \b and prevent
+                  # false matches like "XLC-123" when JIRA_PROJECT_KEY is "LC".
+                  # Jira issue keys are always uppercase in the API, so
+                  # normalize after matching.
+                  ISSUE_KEYS=$(git log "$RANGE" --pretty=format:'%s%n%b' 2>/dev/null \
+                    | grep -oEi "(^|[^A-Za-z0-9_])${JIRA_PROJECT_KEY}-[0-9]+([^A-Za-z0-9_]|$)" \
+                    | grep -oEi "${JIRA_PROJECT_KEY}-[0-9]+" \
+                    | tr '[:lower:]' '[:upper:]' \
+                    | sort -u || true)
+
+                  if [[ -z "$ISSUE_KEYS" ]]; then
+                    echo "No ${JIRA_PROJECT_KEY} issue keys referenced in commits; skipping issue linking."
+                    exit 0
+                  fi
+
+                  echo "Linking issues to release ${RELEASE_NAME}:"
+                  echo "$ISSUE_KEYS"
+
+                  SUCCESS_COUNT=0
+                  FAIL_COUNT=0
+                  while IFS= read -r KEY; do
+                    [[ -z "$KEY" ]] && continue
+                    LINK_RESPONSE=$(curl -s -w "\n%{http_code}" \
+                      -H "${AUTH_HEADER}" \
+                      -H "Content-Type: application/json" \
+                      -X PUT "${JIRA_BASE_URL}/rest/api/3/issue/${KEY}" \
+                      -d "{\"update\":{\"fixVersions\":[{\"add\":{\"name\":\"${RELEASE_NAME}\"}}]}}")
+                    LINK_CODE=$(echo "$LINK_RESPONSE" | tail -n1)
+                    LINK_BODY=$(echo "$LINK_RESPONSE" | sed '$d')
+                    if [[ "$LINK_CODE" -ge 200 && "$LINK_CODE" -lt 300 ]]; then
+                      echo "  ok   $KEY (HTTP $LINK_CODE)"
+                      SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+                    else
+                      echo "::warning::  fail $KEY (HTTP $LINK_CODE): $LINK_BODY"
+                      FAIL_COUNT=$((FAIL_COUNT + 1))
+                    fi
+                  done <<< "$ISSUE_KEYS"
+
+                  echo "Linked ${SUCCESS_COUNT} issue(s) to ${RELEASE_NAME}; ${FAIL_COUNT} failure(s)."
+
+    # ============================================================================
+    # NATIVE APP STORE PUBLISHING
+    # Triggers:
+    #   - Release: Publish if lca_app_changed
+    #   - Manual: Publish if publish-app-stores selected
+    # ============================================================================
+    publish-native-apps:
+        name: Publish Native Apps to App Stores
+        needs: [determine-affected, deploy-frontend]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-app-stores == 'true') ||
+                (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true')
+            ) &&
+            !contains(needs.deploy-frontend.result, 'failure')
+        uses: ./.github/workflows/fastlane-deploy-native-apps.yml
+        with:
+            environment: ${{ needs.determine-affected.outputs.target_frontend_env }}
+            googlePlayReleaseTrack: 'production'
+            submitToAppStore: true
+            releaseNotes: '- Critical Bug Fixes and Security Patches'
+        secrets: inherit
 
     # ============================================================================
     # DOCKER IMAGES
@@ -726,7 +1183,7 @@ jobs:
             id-token: write
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
@@ -739,11 +1196,20 @@ jobs:
                   username: ${{ secrets.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+            - name: Build local monorepo base image
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: ./Dockerfile.monorepo
+                  load: true
+                  push: false
+                  tags: learncard-monorepo-local:latest
+
             - name: Get Brain Service package version
               id: brain-service-version
               working-directory: './services/learn-card-network/brain-service'
               run: |
-                  VERSION=$(node -p "require('./package.json').version")
+                  VERSION=$(bun -e "console.log(require('./package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Extract metadata for Brain Service
@@ -767,7 +1233,7 @@ jobs:
               id: cloud-service-version
               working-directory: './services/learn-card-network/learn-cloud-service'
               run: |
-                  VERSION=$(node -p "require('./package.json').version")
+                  VERSION=$(bun -e "console.log(require('./package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Extract metadata for Cloud Service
@@ -788,10 +1254,10 @@ jobs:
                   labels: ${{ steps.cloud-service-meta.outputs.labels }}
 
     # ============================================================================
-    # NPM PUBLISHING
+    # PACKAGE PUBLISHING
     # ============================================================================
     publish-npm:
-        name: Publish NPM Packages
+        name: Publish Registry Packages
         needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
         if: |
             always() &&
@@ -809,18 +1275,146 @@ jobs:
             contents: read
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            - name: Build packages
-              run: pnpm exec nx run-many --target=build --exclude docs --exclude didkit-plugin-node
+            - name: Use Node.js 24 for npm trusted publishing
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  package-manager-cache: false
 
-            - name: Publish to NPM
-              run: pnpm publish -r --no-git-checks --filter=!@learncard/didkit-plugin-node
+            - name: Build packages
+              run: bunx nx run-many --target=build --exclude docs --exclude didkit-plugin-node
+
+            # The native DIDKit package is published by didkit-plugin-node-prebuilds.yml
+            # with platform artifacts. Keep it out of the generic changeset publish pass.
+            - name: Keep DIDKit native addon out of changeset publish
+              run: |
+                  bun -e '
+                  const fs = require("fs");
+                  const path = "packages/plugins/didkit-plugin-node/package.json";
+                  const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+
+                  pkg.private = true;
+
+                  fs.writeFileSync(path, `${JSON.stringify(pkg, null, 4)}\n`);
+                  '
+
+            - name: Prepare publish dependency versions
+              run: node scripts/prepare-publish-workspace-deps.mjs
+
+            - name: Publish Registry Packages
+              run: bunx changeset publish
+    # ============================================================================
+    # SMOKETEST PUBLISHED PACKAGES (verify external installability)
+    # Calls the reusable smoketest-npm-packages workflow against the freshly
+    # published `latest` dist-tags from a clean directory with no monorepo
+    # context. Catches regressions like the didkit-plugin-node@0.2.14
+    # workspace:* leak that broke external `@learncard/cli` execution.
+    # NOTE: `continue-on-error` is not valid on reusable-workflow caller jobs,
+    # so a failure here WILL mark the deploy workflow run as failed. Treat
+    # smoketest failures as a real signal — the package was published but is
+    # broken for external consumers. Nightly cron in smoketest-npm-packages.yml
+    # provides a second line of defense.
+    # ============================================================================
+    smoketest-published-packages:
+        name: Smoketest Published Packages
+        needs: publish-npm
+        if: |
+            always() &&
+            needs.publish-npm.result == 'success'
+        uses: ./.github/workflows/smoketest-npm-packages.yml
+
+    # ============================================================================
+    # SMOKETEST (after deploys — one job per target environment)
+    # Fires when any deploy in this run succeeded, gated on the run's target.
+    # ============================================================================
+    smoketest-staging:
+        name: Smoketest Staging
+        needs:
+            [
+                determine-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+                deploy-frontend,
+            ]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                (needs.determine-affected.outputs.is_release != 'true' && needs.determine-affected.outputs.is_manual != 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'staging')
+            ) &&
+            (
+              needs.deploy-brain-service.result == 'success' ||
+              needs.deploy-learn-cloud.result == 'success' ||
+              needs.deploy-lca-api.result == 'success' ||
+              needs.deploy-frontend.result == 'success'
+            )
+        uses: ./.github/workflows/smoketest.yml
+        with:
+            environment: staging
+        secrets: inherit
+
+    smoketest-production:
+        name: Smoketest Production
+        needs:
+            [
+                determine-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+                deploy-frontend,
+            ]
+        if: |
+            always() &&
+            !cancelled() &&
+            (
+                needs.determine-affected.outputs.is_release == 'true' ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'production')
+            ) &&
+            (
+              needs.deploy-brain-service.result == 'success' ||
+              needs.deploy-learn-cloud.result == 'success' ||
+              needs.deploy-lca-api.result == 'success' ||
+              needs.deploy-frontend.result == 'success'
+            )
+        uses: ./.github/workflows/smoketest.yml
+        with:
+            environment: production
+        secrets: inherit
+
+    smoketest-scouts:
+        name: Smoketest Scouts
+        needs:
+            [
+                determine-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+                deploy-frontend,
+            ]
+        if: |
+            always() &&
+            !cancelled() &&
+            needs.determine-affected.outputs.is_manual == 'true' &&
+            github.event.inputs.target-environment == 'scouts' &&
+            (
+              needs.deploy-brain-service.result == 'success' ||
+              needs.deploy-learn-cloud.result == 'success' ||
+              needs.deploy-lca-api.result == 'success' ||
+              needs.deploy-frontend.result == 'success'
+            )
+        uses: ./.github/workflows/smoketest.yml
+        with:
+            environment: scouts
+        secrets: inherit
 
     # ============================================================================
     # CHANGESET PR MANAGEMENT (only on non-release, non-manual pushes)
@@ -836,13 +1430,13 @@ jobs:
         steps:
             - name: Generate GitHub App Token
               id: app-token
-              uses: actions/create-github-app-token@v2
+              uses: actions/create-github-app-token@v3
               with:
                   app-id: ${{ secrets.E2E_RUNNER_APP_ID }}
                   private-key: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
 
             - name: Checkout Repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
                   token: ${{ steps.app-token.outputs.token }}
@@ -850,9 +1444,23 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
+            # 2026-07-02: Pin only the Changesets subprocess to Node 24.16.0.
+            # Newer runner Node 24 builds can make node-fetch@2 report false
+            # ERR_STREAM_PREMATURE_CLOSE failures while @changesets/changelog-github
+            # fetches GitHub GraphQL changelog data.
+            # Node regression: https://github.com/nodejs/node/issues/63989
+            # Our failed deploy: https://github.com/learningeconomy/LearnCard/actions/runs/28558778835/job/84673047463
+            # Owner: release CI. Revisit after Node's fix is on the runner or Changesets stops using node-fetch@2:
+            # https://github.com/nodejs/node/pull/64004
+            - name: Use Node.js 24.16 for Changesets
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24.16.0
+
             - name: Create Release Pull Request
               uses: changesets/action@v1
               with:
+                  version: bunx changeset version
                   commit: 'chore(release): version packages'
                   title: 'chore(release): version packages'
               env:

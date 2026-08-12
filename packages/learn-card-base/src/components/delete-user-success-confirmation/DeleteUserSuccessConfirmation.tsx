@@ -3,15 +3,26 @@ import React from 'react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
+import type { TenantBrandingConfig } from '../../config/tenantConfig';
 import { IonHeader, IonToolbar } from '@ionic/react';
 
-export const DeleteUserSuccessConfirmation: React.FC<{ branding: BrandingEnum }> = ({
-    branding = BrandingEnum.learncard,
-}) => {
-    let brandingContainerStyles;
-    let statusBarColor;
+type DeleteUserSuccessConfirmationProps = {
+    branding: BrandingEnum;
+    tenantBranding?: TenantBrandingConfig;
+};
 
-    if(branding === BrandingEnum.learncard) {
+export const DeleteUserSuccessConfirmation: React.FC<DeleteUserSuccessConfirmationProps> = ({
+    branding = BrandingEnum.learncard,
+    tenantBranding,
+}) => {
+    let brandingContainerStyles: string | undefined;
+    let statusBarColor: string | undefined;
+
+    // Data-driven path
+    if (tenantBranding?.deleteSuccessStyles) {
+        brandingContainerStyles = tenantBranding.deleteSuccessStyles.containerClass;
+        statusBarColor = tenantBranding.deleteSuccessStyles.statusBarColor;
+    } else if (branding === BrandingEnum.learncard) {
         brandingContainerStyles = 'bg-white text-emerald-600';
         statusBarColor = 'light';
     } else if (branding === BrandingEnum.metaversity) {

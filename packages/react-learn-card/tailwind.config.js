@@ -1,8 +1,32 @@
+const path = require('path');
+
 const colors = require('tailwindcss/colors');
 const plugin = require('tailwindcss/plugin');
 
+const lineClampPlugin = plugin(({ addUtilities }) => {
+    const utilities = {
+        '.line-clamp-none': {
+            overflow: 'visible',
+            display: 'block',
+            WebkitBoxOrient: 'horizontal',
+            WebkitLineClamp: 'unset',
+        },
+    };
+
+    for (let lineCount = 1; lineCount <= 6; lineCount += 1) {
+        utilities[`.line-clamp-${lineCount}`] = {
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: `${lineCount}`,
+        };
+    }
+
+    addUtilities(utilities);
+});
+
 module.exports = {
-    content: ['./src/**/*.{js,jsx,ts,tsx}'],
+    content: [path.join(__dirname, 'src/**/*.{js,jsx,ts,tsx}')],
     theme: {
         extend: {
             boxShadow: {
@@ -106,7 +130,7 @@ module.exports = {
         },
     },
     plugins: [
-        require('@tailwindcss/line-clamp'),
+        lineClampPlugin,
         plugin(function ({ matchUtilities, theme }) {
             matchUtilities(
                 {

@@ -1,20 +1,42 @@
 import { z } from 'zod';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
+/**
+ * Validates that a value looks like a React component (function or object)
+ * or an image asset URL (string — e.g. a Vite-resolved PNG import).
+ * Catches accidental `undefined` or `number` values that would only
+ * surface as cryptic React render errors.
+ */
+const componentLike = z
+    .unknown()
+    .refine(
+        (v): v is React.FC | string =>
+            typeof v === 'function' ||
+            typeof v === 'string' ||
+            (typeof v === 'object' && v !== null),
+        { message: 'Expected a React component (function or object) or image URL (string)' }
+    );
+
 export const CategoryIconsSchema = z
     .object({
-        Icon: z.any().optional().describe('React component for base icon'),
-        IconWithShape: z.any().optional().describe('React component for shaped icon'),
-        IconWithLightShape: z.any().optional().describe('React component for light shaped icon'),
+        Icon: componentLike.optional().describe('React component for base icon'),
+        IconWithShape: componentLike.optional().describe('React component for shaped icon'),
+        IconWithLightShape: componentLike
+            .optional()
+            .describe('React component for light shaped icon'),
+        // Must stay listed here — Zod strips unknown keys during
+        // validateThemeData, which would silently drop `IconSolid` at
+        // runtime (same failure mode as `navbar.dashboard` in LC-1921).
+        IconSolid: componentLike.optional().describe('React component for flat solid glyph'),
     })
     .describe('Credential Category Icons');
 export type CategoryIcons = z.infer<typeof CategoryIconsSchema>;
 
 export const LaunchPadIconsSchema = z
     .object({
-        contacts: z.any().describe('LaunchPad Contacts Icon'),
-        aiSessions: z.any().describe('LaunchPad AI Sessions Icon'),
-        alerts: z.any().describe('LaunchPad Alerts Icon'),
+        contacts: componentLike.describe('LaunchPad Contacts Icon'),
+        aiSessions: componentLike.describe('LaunchPad AI Sessions Icon'),
+        alerts: componentLike.describe('LaunchPad Alerts Icon'),
     })
     .describe('LaunchPad Icons');
 export type LaunchPadIcons = z.infer<typeof LaunchPadIconsSchema>;
@@ -32,22 +54,34 @@ const sideMenuFixedKeys = [
     'wallet',
 ] as const;
 
+/**
+ * Extra side-menu icon keys that aren't backed by a
+ * `CredentialCategoryEnum` value. These correspond to feature-flagged
+ * routes (see the non-category members of `SideMenuLinksEnum` in
+ * `learn-card-base/components/sidemenu/sidemenuHelpers`). Keep in sync
+ * when a new non-category side-menu entry is added; otherwise theme
+ * validation fails and the registry ends up empty, which surfaces as
+ * `"No themes registered"` at app boot.
+ */
+const sideMenuExtraKeys = ['pathways', 'dashboard'] as const;
+
 export const SideMenuIconsSchema = z
     .object({
-        launchPad: z.any().describe('SideMenu LaunchPad Icon'),
-        contacts: z.any().describe('SideMenu Contacts Icon'),
-        alerts: z.any().describe('SideMenu Alerts Icon'),
-        personalize: z.any().describe('SideMenu Personalize Icon'),
-        adminTools: z.any().describe('SideMenu Admin Tools Icon'),
-        wallet: z.any().describe('SideMenu Wallet Icon'),
+        launchPad: componentLike.describe('SideMenu LaunchPad Icon'),
+        contacts: componentLike.describe('SideMenu Contacts Icon'),
+        alerts: componentLike.describe('SideMenu Alerts Icon'),
+        personalize: componentLike.describe('SideMenu Personalize Icon'),
+        adminTools: componentLike.describe('SideMenu Admin Tools Icon'),
+        wallet: componentLike.describe('SideMenu Wallet Icon'),
     })
-    // allow additional keys, but validate they are category enums
-    .catchall(z.any())
+    .catchall(componentLike)
     .superRefine((obj, ctx) => {
         const fixed = new Set(sideMenuFixedKeys as readonly string[]);
+        const extras = new Set(sideMenuExtraKeys as readonly string[]);
         const validCats = new Set(Object.values(CredentialCategoryEnum) as string[]);
         for (const key of Object.keys(obj)) {
             if (fixed.has(key)) continue;
+            if (extras.has(key)) continue;
             if (!validCats.has(key)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -62,17 +96,22 @@ export type SideMenuIcons = z.infer<typeof SideMenuIconsSchema>;
 
 export const NavbarIconsSchema = z
     .object({
-        wallet: z.any().describe('Navbar Wallet Icon'),
-        plus: z.any().describe('Navbar Plus Icon'),
-        launchPad: z.any().describe('Navbar LaunchPad Icon'),
+        // Optional so Zod doesn't strip them during validateThemeData — every
+        // theme defines these, but they were absent from the schema, which
+        // silently dropped `icons.navbar.dashboard` at runtime (LC-1921).
+        dashboard: componentLike.optional().describe('Navbar Dashboard Icon'),
+        wallet: componentLike.describe('Navbar Wallet Icon'),
+        plus: componentLike.describe('Navbar Plus Icon'),
+        launchPad: componentLike.describe('Navbar LaunchPad Icon'),
+        notification: componentLike.optional().describe('Navbar Notification Icon'),
     })
     .describe('Navbar Icons');
 export type NavbarIcons = z.infer<typeof NavbarIconsSchema>;
 
 export const PlaceholdersIconsSchema = z
     .object({
-        floatingBottle: z.any().describe('Placeholder Empty Bottle Icon'),
-        telescope: z.any().describe('Placeholder Telescope Icon'),
+        floatingBottle: componentLike.describe('Placeholder Empty Bottle Icon'),
+        telescope: componentLike.describe('Placeholder Telescope Icon'),
     })
     .describe('Placeholder Icons');
 export type PlaceholdersIcons = z.infer<typeof PlaceholdersIconsSchema>;

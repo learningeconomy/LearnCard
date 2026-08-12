@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { IonCol, IonRow } from '@ionic/react';
+import React, { useRef, useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
+import { IonRow } from '@ionic/react';
 
 import useSocialLogins from 'learn-card-base/hooks/useSocialLogins';
 
@@ -12,17 +13,26 @@ import { SocialLoginTypes } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
+interface SocialLoginOption {
+    id: number;
+    src: string;
+    alt: string;
+    onClick: () => void | boolean | Promise<void | boolean>;
+    type: SocialLoginTypes;
+}
+
+const getSocialLoginProviderLabel = (provider: SocialLoginTypes, fallback: string): string => {
+    if (provider === SocialLoginTypes.apple) return m['login.social.provider.apple']();
+    if (provider === SocialLoginTypes.google) return m['login.social.provider.google']();
+
+    return fallback;
+};
+
 export const SocialLoginsButtons: React.FC<{
     branding: BrandingEnum;
     activeLoginType: LoginTypesEnum;
     setActiveLoginType: React.Dispatch<React.SetStateAction<LoginTypesEnum>>;
-    extraSocialLogins: {
-        id: number;
-        src: string;
-        alt: string;
-        onClick: () => void;
-        type: SocialLoginTypes;
-    }[];
+    extraSocialLogins: SocialLoginOption[];
     showSocialLogins: boolean;
 }> = ({
     activeLoginType,
@@ -31,12 +41,34 @@ export const SocialLoginsButtons: React.FC<{
     extraSocialLogins = [],
     showSocialLogins,
 }) => {
-    const { colors } = useTheme();
+    const { colors, theme } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
-
+    const loginBgColor =
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
     const socialLogins = useSocialLogins(branding);
+    const socialLoginInFlightRef = useRef(false);
+    const [activeSocialLogin, setActiveSocialLogin] = useState<SocialLoginTypes | null>(null);
 
-    const handleActiveLoginType = () => {
+    const handleSocialLogin = async (socialLogin: SocialLoginOption): Promise<void> => {
+        if (socialLoginInFlightRef.current) return;
+
+        socialLoginInFlightRef.current = true;
+        setActiveSocialLogin(socialLogin.type);
+        let keepLoadingUntilNavigation = false;
+
+        try {
+            keepLoadingUntilNavigation = (await socialLogin.onClick()) === true;
+        } catch {
+            // Provider handlers own error feedback; this component only owns loading state.
+        } finally {
+            if (!keepLoadingUntilNavigation) {
+                socialLoginInFlightRef.current = false;
+                setActiveSocialLogin(null);
+            }
+        }
+    };
+
+    const handleActiveLoginType = (): void => {
         if (activeLoginType === LoginTypesEnum.phone) {
             setActiveLoginType(LoginTypesEnum.email);
         } else if (activeLoginType === LoginTypesEnum.email) {
@@ -60,26 +92,45 @@ export const SocialLoginsButtons: React.FC<{
                                 socialLogin.type === SocialLoginTypes.apple
                                     ? 'px-[14px]'
                                     : 'px-[12px]';
+                            const isActiveSocialLogin = activeSocialLogin === socialLogin.type;
+                            const providerLabel = getSocialLoginProviderLabel(
+                                socialLogin.type,
+                                socialLogin.alt
+                            );
 
                             return (
                                 <button
-                                    className={`${socialLoginStyles} flex items-center justify-center border-solid border-[1px] border-${primaryColor} bg-white rounded-full  py-1 min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
+                                    type="button"
+                                    className={`${socialLoginStyles} flex items-center justify-center border-solid border-[1px] border-${primaryColor} bg-white rounded-full py-1 min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden transition-opacity disabled:opacity-40 disabled:cursor-not-allowed`}
+                                    disabled={activeSocialLogin !== null}
+                                    aria-busy={isActiveSocialLogin}
                                     onClick={e => {
-                                        socialLogin.onClick();
                                         e.stopPropagation();
+                                        void handleSocialLogin(socialLogin);
                                     }}
                                     key={socialLogin.id}
                                 >
-                                    <img
-                                        src={socialLogin.src}
-                                        alt={socialLogin.alt}
-                                        className="w-full h-full object-contain "
-                                    />
+                                    {isActiveSocialLogin ? (
+                                        <span
+                                            role="status"
+                                            aria-label={m['login.social.signingInWith']({
+                                                provider: providerLabel,
+                                            })}
+                                            className="w-6 h-6 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin"
+                                        />
+                                    ) : (
+                                        <img
+                                            src={socialLogin.src}
+                                            alt={socialLogin.alt}
+                                            className="w-full h-full object-contain"
+                                        />
+                                    )}
                                 </button>
                             );
                         })}
                         <button
-                            className={`flex items-center justify-center border-solid border-[1px] border-emerald-800 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
+                            type="button"
+                            className={`flex items-center justify-center border-solid border-[1px] border-white/30 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
                             onClick={e => {
                                 e.stopPropagation();
                                 handleActiveLoginType();
@@ -90,7 +141,12 @@ export const SocialLoginsButtons: React.FC<{
                     </div>
                     {showSocialLogins && (
                         <p className="border-b-[1px] border-solid border-[#EFF0F5] leading-[0.1em] w-full text-center my-[40px]">
-                            <span className="bg-emerald-700 py-0 px-[10px] text-white">OR</span>
+                            <span
+                                className="py-0 px-[10px] text-white"
+                                style={{ backgroundColor: loginBgColor }}
+                            >
+                                {m['login.social.or']()}
+                            </span>
                         </p>
                     )}
                 </div>

@@ -11,15 +11,20 @@ export * from './types';
 
 const getNewClient = async (
     url: string,
-    learnCard: LearnCard<any, 'id', LCAPluginDependentMethods>
+    learnCard: LearnCard<any, 'id', LCAPluginDependentMethods>,
+    extraHeaders?: Record<string, string>
 ) => {
-    return getClient(url, async challenge => {
-        const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+    return getClient(
+        url,
+        async challenge => {
+            const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-        if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+            if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-        return jwt;
-    });
+            return jwt;
+        },
+        extraHeaders
+    );
 };
 
 const getEncryptionJwk = async (
@@ -66,7 +71,8 @@ const ensureKeyAgreement = async (
 export const getLCAPlugin = async (
     initialLearnCard: LearnCard<any, 'id', LCAPluginDependentMethods>,
     url: string,
-    useCustomHash = false
+    useCustomHash = false,
+    extraHeaders?: Record<string, string>
 ): Promise<LCAPlugin> => {
     let learnCard = initialLearnCard;
     let oldDid = learnCard.id.did();
@@ -74,7 +80,7 @@ export const getLCAPlugin = async (
 
     // Don't break whole wallet if connection to LCA API can't be made.
     try {
-        let client = await getNewClient(url, learnCard);
+        let client = await getNewClient(url, learnCard, extraHeaders);
 
         const updateLearnCard = async (
             _learnCard: LearnCard<any, 'id', LCAPluginDependentMethods>
@@ -82,7 +88,7 @@ export const getLCAPlugin = async (
             const newDid = _learnCard.id.did();
 
             if (oldDid !== newDid) {
-                client = await getNewClient(url, _learnCard);
+                client = await getNewClient(url, _learnCard, extraHeaders);
                 oldDid = newDid;
                 encryptionJwk = await getEncryptionJwk(client, _learnCard);
                 await ensureKeyAgreement(encryptionJwk, _learnCard);
@@ -96,7 +102,7 @@ export const getLCAPlugin = async (
             .then(async profile => {
                 if (profile) await updateLearnCard(learnCard);
                 encryptionJwk = await getEncryptionJwk(
-                    await getNewClient(url, learnCard),
+                    await getNewClient(url, learnCard, extraHeaders),
                     learnCard
                 );
             })
@@ -108,6 +114,7 @@ export const getLCAPlugin = async (
 
         return {
             name: 'LearnCard App',
+            isOffline: false,
             displayName: 'LearnCard App Plugin',
             description: 'Adds bespoke logic to the LearnCard App.',
             methods: {
@@ -371,12 +378,13 @@ export const getLCAPlugin = async (
 
                     return result || null;
                 },
-                sendLoginVerificationCode: async (_learnCard, email) => {
+                sendLoginVerificationCode: async (_learnCard, email, locale) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
                     const result = await client.firebase.sendLoginVerificationCode.mutate({
                         email,
+                        locale,
                     });
 
                     return result;
@@ -452,6 +460,86 @@ export const getLCAPlugin = async (
 
                     return result;
                 },
+
+                // SSS Key Management Methods
+                getAuthShare: async (_learnCard, authToken, providerType) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.getAuthShare.mutate({ authToken, providerType });
+                },
+
+                storeAuthShare: async (
+                    _learnCard,
+                    authToken,
+                    providerType,
+                    authShare,
+                    primaryDid,
+                    securityLevel
+                ) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.storeAuthShare.mutate({
+                        authToken,
+                        providerType,
+                        authShare,
+                        primaryDid,
+                        securityLevel,
+                    });
+                },
+
+                addRecoveryMethod: async (
+                    _learnCard,
+                    authToken,
+                    providerType,
+                    type,
+                    encryptedShare,
+                    credentialId
+                ) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.addRecoveryMethod.mutate({
+                        authToken,
+                        providerType,
+                        type,
+                        encryptedShare,
+                        credentialId,
+                    });
+                },
+
+                getRecoveryShare: async (
+                    _learnCard,
+                    authToken,
+                    providerType,
+                    type,
+                    credentialId
+                ) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.getRecoveryShare.query({
+                        authToken,
+                        providerType,
+                        type,
+                        credentialId,
+                    });
+                },
+
+                markMigrated: async (_learnCard, authToken, providerType) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.markMigrated.mutate({ authToken, providerType });
+                },
+
+                deleteUserKey: async (_learnCard, authToken, providerType) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+
+                    return client.keys.deleteUserKey.mutate({ authToken, providerType });
+                },
             },
         };
     } catch (e) {
@@ -461,6 +549,7 @@ export const getLCAPlugin = async (
         );
         return {
             name: 'LearnCard App',
+            isOffline: true,
             displayName: 'LearnCard App Plugin (Offline)',
             description: 'Adds bespoke logic to the LearnCard App. (Unable to connect to LCA API)',
             methods: {
@@ -606,6 +695,32 @@ export const getLCAPlugin = async (
                 sendEndorsementShareLink: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return false;
+                },
+
+                // SSS Key Management Methods (Offline)
+                getAuthShare: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return null;
+                },
+                storeAuthShare: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { success: false };
+                },
+                addRecoveryMethod: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { success: false };
+                },
+                getRecoveryShare: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return null;
+                },
+                markMigrated: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { success: false };
+                },
+                deleteUserKey: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { success: false };
                 },
             },
         };

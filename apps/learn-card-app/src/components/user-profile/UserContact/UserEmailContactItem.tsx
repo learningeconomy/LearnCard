@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import Countdown from 'react-countdown';
 import { ContactMethodType } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-email-contact-item');
 
 import TrashBin from '../../svgs/TrashBin';
 import UnverifiedIcon from 'learn-card-base/svgs/UnverifiedIcon';
@@ -14,6 +16,7 @@ import {
 } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 
 export const UserEmailContactItem: React.FC<{
     email: ContactMethodType;
@@ -48,10 +51,10 @@ export const UserEmailContactItem: React.FC<{
     const handleSetPrimaryContactMethod = async (contactMethodId: string) => {
         try {
             const confirmResponse = await confirm({
-                title: 'Set Primary Contact Method',
-                text: 'Are you sure you want to set this email as primary?',
-                confirmText: 'Yes',
-                cancelText: 'No',
+                title: m['profile.email.setPrimaryConfirm.title'](),
+                text: m['profile.email.setPrimaryConfirm.text'](),
+                confirmText: m['common.yes'](),
+                cancelText: m['common.no'](),
                 cancelButtonClassName:
                     'bg-grayscale-100 text-grayscale-900 font-semibold rounded-full px-4 py-3',
                 confirmButtonClassName:
@@ -62,17 +65,17 @@ export const UserEmailContactItem: React.FC<{
             }
             await setPrimaryContactMethod({ contactMethodId });
         } catch (error) {
-            console.error('Failed to set primary contact method:', error);
+            log.error('Failed to set primary contact method:', error);
         }
     };
 
     const handleRemoveContactMethod = async (contactMethodId: string) => {
         try {
             const confirmResponse = await confirm({
-                title: 'Remove Contact Method',
-                text: 'Are you sure you want to remove this email?',
-                confirmText: 'Yes',
-                cancelText: 'No',
+                title: m['profile.email.removeConfirm.title'](),
+                text: m['profile.email.removeConfirm.text'](),
+                confirmText: m['common.yes'](),
+                cancelText: m['common.no'](),
                 cancelButtonClassName:
                     'bg-grayscale-100 text-grayscale-900 font-semibold rounded-full px-4 py-3',
                 confirmButtonClassName:
@@ -83,7 +86,7 @@ export const UserEmailContactItem: React.FC<{
             }
             await removeContactMethod({ id: contactMethodId });
         } catch (error) {
-            console.error('Failed to remove contact method:', error);
+            log.error('Failed to remove contact method:', error);
         }
     };
 
@@ -103,7 +106,8 @@ export const UserEmailContactItem: React.FC<{
             {!email.isVerified && (
                 <div className="w-full flex items-center justify-start mt-2 mb-2">
                     <p className="text-amber-500 rounded-[15px] text-sm font-semibold">
-                        Unverified <span className="text-grayscale-900">•&nbsp;</span>
+                        {m['profile.email.unverified']()}{' '}
+                        <span className="text-grayscale-900">•&nbsp;</span>
                     </p>
                     <button
                         onClick={e => {
@@ -113,7 +117,9 @@ export const UserEmailContactItem: React.FC<{
                         }}
                         className={`text-${primaryColor} font-semibold text-sm cursor-pointer`}
                     >
-                        {isResendCodeLoading ? 'Sending...' : 'Resend verification email'}
+                        {isResendCodeLoading
+                            ? m['profile.email.sending']()
+                            : m['profile.email.resendVerification']()}
                     </button>
                 </div>
             )}
@@ -124,14 +130,14 @@ export const UserEmailContactItem: React.FC<{
                         onClick={() => handleSetPrimaryContactMethod(email.id)}
                         className="bg-emerald-201 text-emerald-601 font-semibold rounded-full px-6 py-3"
                     >
-                        Primary
+                        {m['profile.email.primary']()}
                     </p>
                 ) : (
                     <button
                         onClick={() => handleSetPrimaryContactMethod(email.id)}
                         className="bg-grayscale-700 text-white font-semibold rounded-full px-4 py-3"
                     >
-                        Set as Primary
+                        {m['profile.email.setAsPrimary']()}
                     </button>
                 )}
                 <button

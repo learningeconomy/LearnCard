@@ -2,9 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Media } from '@capacitor-community/media';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('qr-code-download-options');
 
 import { useModal, useWallet, useIsCurrentUserLCNUser } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks/useJoinLCNetworkModal';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
 import { QrCodeDownloadOptionsEnum, userQrCodeDownloadOptions } from './user-share-options.helpers';
@@ -18,6 +23,7 @@ const QrCodeUserCardShareOptions: React.FC<{
 }> = ({ contractUri, profileId, overrideShareLink }) => {
     const { initWallet } = useWallet();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const brandingConfig = useBrandingConfig();
 
     const [walletDid, setWalletDid] = useState<string>('');
     const [isSavingPng, setIsSavingPng] = useState<boolean>(false);
@@ -131,11 +137,11 @@ const QrCodeUserCardShareOptions: React.FC<{
 
             setIsSavingPng(false);
             closeModal();
-            alert('QR Code saved to Photos!');
+            alert(m['scanner.savedToPhotos']());
         } catch (err) {
             setIsSavingPng(false);
-            console.error('QR save failed:', err);
-            alert('Failed to save QR Code.');
+            log.error('QR save failed:', err);
+            alert(m['scanner.saveFailed']());
         }
     };
 
@@ -183,11 +189,11 @@ const QrCodeUserCardShareOptions: React.FC<{
 
             setIsSavingPdf(false);
             closeModal();
-            if (Capacitor.isNativePlatform()) alert('QR Code saved to Documents!');
+            if (Capacitor.isNativePlatform()) alert(m['scanner.savedToDocuments']());
         } catch (err) {
             setIsSavingPdf(false);
-            console.error('PDF save failed:', err);
-            alert('Failed to save QR Code PDF.');
+            log.error('PDF save failed:', err);
+            alert(m['scanner.savePdfFailed']());
         }
     };
 
@@ -204,9 +210,7 @@ const QrCodeUserCardShareOptions: React.FC<{
     let link = `learncard.app/connect?connect=true&did=${walletDid}`;
 
     if (contractUri) {
-        link = `${
-            IS_PRODUCTION ? 'https://learncard.app' : 'http://localhost:3000'
-        }/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
+        link = `${getAppBaseUrl()}/passport?contractUri=${contractUri}&teacherProfileId=${profileId}&insightsConsent=true`;
     }
 
     if (overrideShareLink) {
@@ -216,24 +220,33 @@ const QrCodeUserCardShareOptions: React.FC<{
     return (
         <div className="w-full flex items-center justify-center my-6 px-6">
             <div className="w-full max-w-[400px]">
-                <h2 className="text-[24px] font-semibold text-grayscale-900">Download QR Code</h2>
+                <h2 className="text-[24px] font-semibold text-grayscale-900">
+                    {m['scanner.downloadQrCode']()}
+                </h2>
                 <p className="text-grayscale-700 text-[17px] my-2">
-                    Share or print your LearnCard QR code.
+                    {m['scanner.downloadQrCodeDescription']({ brand: brandingConfig?.name })}
                 </p>
 
                 {userQrCodeDownloadOptions.map(option => {
-                    let text = option.label;
+                    let text =
+                        option.type === QrCodeDownloadOptionsEnum.saveToPhotos
+                            ? Capacitor.isNativePlatform()
+                                ? m['scanner.saveToPhotos']()
+                                : m['scanner.saveAsPhoto']()
+                            : Capacitor.isNativePlatform()
+                            ? m['scanner.saveToFiles']()
+                            : m['scanner.saveAsFile']();
                     let icon = <option.icon className="w-[35px] mr-2" />;
 
                     if (isSavingPng && option.type === QrCodeDownloadOptionsEnum.saveToPhotos) {
-                        text = 'Saving...';
+                        text = m['scanner.processing']();
                         icon = (
                             <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
                         );
                     }
 
                     if (isSavingPdf && option.type === QrCodeDownloadOptionsEnum.saveToFiles) {
-                        text = 'Saving...';
+                        text = m['scanner.processing']();
                         icon = (
                             <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />
                         );

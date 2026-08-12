@@ -31,7 +31,7 @@ export type CredentialActivityType = {
     activityId: string;
     eventType: CredentialActivityEventType;
     timestamp: string;
-    actorProfileId: string;
+    actorProfileId?: string;
     recipientType: CredentialActivityRecipientType;
     recipientIdentifier: string;
     boostUri?: string;
@@ -69,7 +69,7 @@ export const CredentialActivity = ModelFactory<
                 enum: ['CREATED', 'DELIVERED', 'CLAIMED', 'EXPIRED', 'FAILED'],
             },
             timestamp: { type: 'string', required: true },
-            actorProfileId: { type: 'string', required: true },
+            actorProfileId: { type: 'string', required: false },
             recipientType: {
                 type: 'string',
                 required: true,

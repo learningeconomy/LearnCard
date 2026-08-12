@@ -19,6 +19,9 @@ export type ListingSigningAuthorityInfo = {
     isPrimary: boolean;
 };
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-developer-portal');
+
 export const useDeveloperPortal = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
@@ -66,7 +69,7 @@ export const useDeveloperPortal = () => {
 
                 return created || null;
             } catch (error) {
-                console.warn('Failed to create app signing authority', error);
+                log.warn('Failed to create app signing authority', error);
                 // Re-throw error for critical failures that would prevent credential issuance
                 if (
                     error instanceof Error &&
@@ -85,9 +88,7 @@ export const useDeveloperPortal = () => {
             (await createAuthority(buildFallbackSigningAuthorityName(baseName)));
 
         if (!authority?.endpoint || !authority?.name || !authority?.did) {
-            console.error(
-                'Failed to create signing authority for app. Credential issuance will fail.'
-            );
+            log.error('Failed to create signing authority for app. Credential issuance will fail.');
             throw new Error(
                 'Unable to create app signing authority - required for credential issuance'
             );
@@ -108,7 +109,7 @@ export const useDeveloperPortal = () => {
                 true
             );
         } catch (error) {
-            console.error('Failed to register app signing authority', error);
+            log.error('Failed to register app signing authority', error);
             // Registration/association failures are critical - they prevent credential issuance
             throw new Error(
                 'Failed to register app signing authority - credential issuance will not work'
@@ -338,6 +339,21 @@ export const useDeveloperPortal = () => {
         });
     };
 
+    // Mutation for unsubmitting a listing from review (withdraw pending submission)
+    const useUnsubmitForReview = () => {
+        return useMutation({
+            mutationFn: async (listingId: string): Promise<boolean> => {
+                const wallet = await initWallet();
+
+                return wallet.invoke.unsubmitAppStoreListing(listingId);
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listings'] });
+                queryClient.invalidateQueries({ queryKey: ['developer', 'listing'] });
+            },
+        });
+    };
+
     // ========== Admin Hooks ==========
 
     // Query for checking if user is admin
@@ -482,6 +498,7 @@ export const useDeveloperPortal = () => {
         useUpdateListing,
         useDeleteListing,
         useSubmitForReview,
+        useUnsubmitForReview,
 
         // Admin hooks
         useIsAdmin,

@@ -15,6 +15,8 @@ import {
     getSubjectImage,
     getAchievementTypeDisplayText,
     getImageUrlFromCredential,
+    getCredentialSubjectAchievement,
+    getUrlFromImage,
     getCredentialName,
     isClrCredential as checkIsClrCredential,
     getClrLinkedCredentialCounts,
@@ -22,7 +24,6 @@ import {
     getEndorsements,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { isAppDidWeb } from '@learncard/helpers';
-import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 
 import useCurrentUser from './useGetCurrentUser';
 import useGetCurrentLCNUser from './useGetCurrentLCNUser';
@@ -38,6 +39,8 @@ import {
     ID_CARD_DISPLAY_TYPES,
 } from 'learn-card-base/helpers/credentials/ids';
 import { ellipsisMiddle } from 'learn-card-base/helpers/stringHelpers';
+import { getDefaultDisplayType } from 'learn-card-base/helpers/display.helpers';
+import { parseLcTags } from 'learn-card-base/helpers/displayTags.helpers';
 
 import { useWallet } from 'learn-card-base';
 
@@ -54,6 +57,13 @@ export const useGetVCInfo = (
     vc: UnsignedVC | UnsignedAchievementCredential,
     categoryType?: string
 ) => {
+    type CredentialResultDisplay = {
+        name: string;
+        value: string;
+        resultType?: string;
+        description?: string;
+    };
+
     // --- Wallet context ---
     const { initWallet } = useWallet();
 
@@ -101,23 +111,32 @@ export const useGetVCInfo = (
     const isCurrentUserIssuer =
         issuerDid === currentUserDidKey || issuerDid === currentLCNUser?.did;
     if (issuerAppSlug) {
-        issuerName =
-            issuerAppListing?.display_name || (issuerAppLoading ? 'Loading app...' : issuerAppSlug);
+        const vcIssuerName = getIssuerName(vc);
+        const vcIssuerImage = getIssuerImage(vc);
+        const hasExplicitName = vcIssuerName && !vcIssuerName.startsWith('did:');
+
+        issuerName = hasExplicitName
+            ? vcIssuerName
+            : issuerAppListing?.display_name ||
+              (issuerAppLoading ? 'Loading app...' : issuerAppSlug);
+
         issuerLink = issuerAppListing?.listing_id
             ? `/app/${issuerAppListing.listing_id}`
             : undefined;
 
-        issuerProfileImageElement = issuerAppListing?.icon_url ? (
+        issuerProfileImageElement = vcIssuerImage ? (
+            <UserProfilePicture
+                user={{ name: issuerName, image: vcIssuerImage }}
+                customImageClass="w-full h-full object-cover"
+                customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
+            />
+        ) : issuerAppListing?.icon_url ? (
             <UserProfilePicture
                 user={{ name: issuerName, image: issuerAppListing.icon_url }}
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issuerDid!)}
-            </div>
-        );
+        ) : undefined;
     } else if (issuerProfileId) {
         // Issuer has LCN profile
         issuerName =
@@ -129,11 +148,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issuerDid!)}
-            </div>
-        );
+        ) : undefined;
     } else if (isCurrentUserIssuer) {
         // Issuer is current user
         issuerName = currentUser?.name;
@@ -147,11 +162,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issuerDid!)}
-            </div>
-        );
+        ) : undefined;
     }
 
     // ========================================================================
@@ -174,11 +185,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-4xl"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issueeDid)}
-            </div>
-        );
+        ) : undefined;
     } else if (isCurrentUserSubject) {
         // Subject is current user
         issueeName = currentUser?.name || issueeDid;
@@ -216,11 +223,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-4xl"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issueeDid || issueeName)}
-            </div>
-        );
+        ) : undefined;
     }
 
     // ========================================================================
@@ -293,6 +296,85 @@ export const useGetVCInfo = (
     const source = credentialSubject?.source ?? {};
     const { description, criteria, alignment } = getCredentialSubjectAchievementData(vc);
 
+    // CLR child AchievementCredentials can define resultDescription entries on
+    // credentialSubject.achievement and result entries on credentialSubject.result.
+    // Normalize both structures into arrays so rendering logic can stay consistent.
+    const achievementResultDescriptions = credentialSubject?.achievement?.resultDescription;
+    const resultDescriptions: any[] = [];
+
+    if (Array.isArray(achievementResultDescriptions)) {
+        resultDescriptions.push(...achievementResultDescriptions);
+    } else if (achievementResultDescriptions) {
+        resultDescriptions.push(achievementResultDescriptions);
+    }
+
+    const resultDescriptionMap = new Map(
+        resultDescriptions
+            .filter(resultDescription => resultDescription?.id)
+            .map(resultDescription => [resultDescription.id, resultDescription])
+    );
+
+    const rawResults: any[] = [];
+
+    if (Array.isArray(credentialSubject?.result)) {
+        rawResults.push(...credentialSubject.result);
+    } else if (credentialSubject?.result) {
+        rawResults.push(credentialSubject.result);
+    }
+
+    const results: CredentialResultDisplay[] = rawResults
+        .map((result, index) => {
+            // CLR resultDescription may be either an id reference string or
+            // an inline object. Resolve by id first, then fall back to inline.
+            let resultDescriptionId: string | undefined;
+            if (typeof result?.resultDescription === 'string') {
+                resultDescriptionId = result.resultDescription;
+            } else if (typeof result?.resultDescription === 'object') {
+                resultDescriptionId = result.resultDescription?.id;
+            }
+
+            let linkedResultDescription;
+            if (resultDescriptionId) {
+                linkedResultDescription = resultDescriptionMap.get(resultDescriptionId);
+            }
+
+            let inlineResultDescription;
+            if (typeof result?.resultDescription === 'object') {
+                inlineResultDescription = result.resultDescription;
+            }
+
+            let name = linkedResultDescription?.name;
+            if (!name) {
+                name = inlineResultDescription?.name;
+            }
+            if (!name) {
+                name = `Result ${index + 1}`;
+            }
+
+            let resultType = linkedResultDescription?.resultType;
+            if (!resultType) {
+                resultType = inlineResultDescription?.resultType;
+            }
+
+            let description = linkedResultDescription?.description;
+            if (!description) {
+                description = inlineResultDescription?.description;
+            }
+
+            let value = '';
+            if (result?.value !== undefined && result?.value !== null) {
+                value = String(result.value);
+            } else if (result?.resultValue !== undefined && result?.resultValue !== null) {
+                value = String(result.resultValue);
+            }
+
+            return { name, value, resultType, description };
+        })
+        .filter(result => Boolean(result.name) || Boolean(result.value));
+
+    // CLR child credentials may include creditsEarned alongside result values.
+    const creditsEarned = credentialSubject?.creditsEarned;
+
     // Achievement type resolution
     let achievementType = '';
     if (vc?.boostCredential?.credentialSubject?.achievement?.achievementType) {
@@ -308,18 +390,30 @@ export const useGetVCInfo = (
     // ========================================================================
     // DISPLAY METADATA
     // ========================================================================
-    const displayType = vc?.display?.displayType;
+    const lcTagHints = parseLcTags(getCredentialSubjectAchievement(vc)?.tag);
+
+    const displayType =
+        vc?.display?.displayType ??
+        getDefaultDisplayType(categoryType ?? '', achievementType, lcTagHints.displayType);
     const previewType = vc?.display?.previewType;
+
+    const subtype = lcTagHints.subtype;
 
     // ID card-specific display settings
     const idBackgroundImage = vc?.boostID?.backgroundImage;
     const idDimBackgroundImage = vc?.boostID?.dimBackgroundImage;
     const idFontColor = vc?.boostID?.fontColor;
     const idAccentColor = vc?.boostID?.accentColor;
+    const achievementImage = getUrlFromImage(getCredentialSubjectAchievement(vc)?.image);
+    const idDisplayBackgroundImage = idBackgroundImage ?? achievementImage;
+    const idDisplayDimBackgroundImage = Boolean(
+        idBackgroundImage ? idDimBackgroundImage : achievementImage
+    );
 
     // Generic display settings
-    const backgroundImage = vc?.display?.backgroundImage;
-    const backgroundColor = vc?.display?.backgroundColor;
+    const backgroundImage = vc?.display?.backgroundImage ?? lcTagHints.backgroundImage;
+    const backgroundColor = vc?.display?.backgroundColor ?? lcTagHints.backgroundColor;
+    const accentColor = vc?.display?.accentColor ?? lcTagHints.accentColor;
 
     // ========================================================================
     // CLR
@@ -379,8 +473,12 @@ export const useGetVCInfo = (
         evidence,
         attachments,
         skills,
+        results,
+        creditsEarned,
         achievementType,
-        formattedAchievementType,
+        subtype,
+        accentColor,
+        formattedAchievementType: subtype || formattedAchievementType,
         badgeThumbnail,
         isClrCredential,
         linkedCredentialCount,
@@ -398,6 +496,8 @@ export const useGetVCInfo = (
         idDimBackgroundImage,
         idFontColor,
         idAccentColor,
+        idDisplayBackgroundImage,
+        idDisplayDimBackgroundImage,
         backgroundImage,
         backgroundColor,
 

@@ -25,7 +25,7 @@ const configurations = [
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
         format: 'cjs',
-        outfile: 'dist/learn-cloud-client.cjs.development.js',
+        outfile: 'dist/learn-cloud-client.cjs.development.cjs',
     },
     {
         keepNames: true,
@@ -36,7 +36,7 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         minify: true,
         format: 'cjs',
-        outfile: 'dist/learn-cloud-client.cjs.production.min.js',
+        outfile: 'dist/learn-cloud-client.cjs.production.min.cjs',
     },
     {
         keepNames: true,

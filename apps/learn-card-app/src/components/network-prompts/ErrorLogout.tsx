@@ -1,12 +1,13 @@
 import useLogout from '../../hooks/useLogout';
 import { IonLoading, IonRow } from '@ionic/react';
-import { BrandingEnum } from 'learn-card-base';
 
 const ErrorLogout: React.FC = () => {
     const { handleLogout, isLoggingOut } = useLogout();
 
     const _handleLogout = () => {
-        handleLogout(BrandingEnum.learncard);
+        // Return to the in-app login screen (relative /login) rather than the
+        // absolute tenant URL, which on native opens the system browser.
+        handleLogout({ overrideRedirectUrl: '/login' });
     };
 
     return (

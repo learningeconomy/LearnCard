@@ -6,14 +6,14 @@ import { LCNProfile } from '@learncard/types';
 import CaretDown from 'apps/scouts/src/components/svgs/CaretDown';
 import ScoutsTroopIcon from 'apps/scouts/src/assets/icons/ScoutsTroopIcon';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('manage-framework-admins-modal');
 
 type ManageFrameworkAdminsModalProps = {
     frameworkId: string;
 };
 
-const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
-    frameworkId,
-}) => {
+const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({ frameworkId }) => {
     const { closeModal } = useModal();
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
@@ -44,7 +44,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
             setNewAdminProfileId('');
         },
         onError: error => {
-            console.error('Failed to add admin:', error);
+            log.error('Failed to add admin:', error);
             alert('Failed to add admin. Please check the Profile ID and try again.');
         },
     });
@@ -59,7 +59,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
             queryClient.invalidateQueries({ queryKey: ['frameworkAdmins', frameworkId] });
         },
         onError: error => {
-            console.error('Failed to remove admin:', error);
+            log.error('Failed to remove admin:', error);
             alert('Failed to remove admin. Please try again.');
         },
     });

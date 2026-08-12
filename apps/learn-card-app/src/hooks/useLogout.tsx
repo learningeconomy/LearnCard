@@ -1,39 +1,37 @@
 import { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-logout');
 
-import { auth } from '../firebase/firebase';
 import authStore from 'learn-card-base/stores/authStore';
 
 import {
-    BrandingEnum,
     pushUtilities,
-    LOGIN_REDIRECTS,
     SocialLoginTypes,
-    useWeb3AuthSFA,
     useToast,
     useWallet,
     ToastTypeEnum,
-    useSQLiteStorage,
 } from 'learn-card-base';
-import { useQueryClient } from '@tanstack/react-query';
+import { resumeBuilderStore } from '../stores/resumeBuilderStore';
+
+import { useAuthCoordinator } from '../providers/AuthCoordinatorProvider';
+import { getLoginRedirectUrl } from '../config/bootstrapTenantConfig';
 
 const useLogout = () => {
-    const firebaseAuth = auth();
     const { initWallet } = useWallet();
-    const queryClient = useQueryClient();
-    const { clearDB } = useSQLiteStorage();
-    const { logout, loggingOut: web3AuthLoggingOut } = useWeb3AuthSFA();
+    const { logout: coordinatorLogout } = useAuthCoordinator();
 
     const { presentToast } = useToast();
 
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
-    const handleLogout = async (
-        branding: BrandingEnum,
-        options?: { appendQuery?: Record<string, string>; overrideRedirectUrl?: string }
-    ) => {
+    const handleLogout = async (options?: {
+        appendQuery?: Record<string, string>;
+        overrideRedirectUrl?: string;
+    }) => {
         setIsLoggingOut(true);
+
         const typeOfLogin = authStore?.get?.typeOfLogin();
         const nativeSocialLogins = [
             SocialLoginTypes.apple,
@@ -42,10 +40,7 @@ const useLogout = () => {
             SocialLoginTypes.google,
         ];
 
-        const baseRedirectUrl =
-            IS_PRODUCTION || Capacitor.getPlatform() === 'android'
-                ? LOGIN_REDIRECTS[branding].redirectUrl
-                : LOGIN_REDIRECTS[branding].devRedirectUrl;
+        const baseRedirectUrl = getLoginRedirectUrl();
 
         const appendParams = (url: string, params?: Record<string, string>) => {
             if (!params || Object.keys(params).length === 0) return url;
@@ -65,38 +60,36 @@ const useLogout = () => {
                     try {
                         await pushUtilities.revokePushToken(initWallet, deviceToken);
                     } catch (e) {
-                        console.error('Error revoking push token', e);
+                        log.error('Error revoking push token', e);
                     }
                 }
 
-                await firebaseAuth.signOut(); // sign out of web layer
+                // Native Firebase sign-out for Capacitor social logins.
+                // The coordinator's onSignOut also calls this, but we do it here first
+                // to ensure native session is cleared before the coordinator runs.
+                // Double-calling FirebaseAuthentication.signOut() is harmless.
                 const isNativeSocialLogin =
                     !!typeOfLogin && nativeSocialLogins.includes(typeOfLogin as SocialLoginTypes);
+
                 if (isNativeSocialLogin && Capacitor.isNativePlatform()) {
                     try {
                         await FirebaseAuthentication?.signOut?.();
                     } catch (e) {
-                        console.log('firebase::signout::error', e);
+                        log.warn('firebase::signout::error', e);
                     }
                 }
 
-                try {
-                    // Clear React Query cache FIRST while SQLite is still available for persistence
-                    await queryClient.resetQueries();
+                // Coordinator handles: authProvider.signOut, clearLocalKeys, onLogout callback
+                resumeBuilderStore.set.resetStore();
+                // (onLogout clears stores, queryClient, SQLite, localStorage, IndexedDB, etc.)
+                await coordinatorLogout();
 
-                    // Then clear the database
-                    await clearDB();
-
-                    // Clear CLI-related localStorage
-                    localStorage.removeItem('learncard-cli-welcomed');
-                    localStorage.removeItem('learncard-cli-chains');
-                } catch (e) {
-                    console.error(e);
-                }
-
-                await logout(redirectUrl);
+                // Hard redirect — localStorage.clear() in the logout callback wipes
+                // Ionic's internal router state, so client-side history.push would
+                // land on a white screen. A full page reload reinitializes cleanly.
+                window.location.href = redirectUrl;
             } catch (e) {
-                console.error('There was an issue logging out', e);
+                log.error('There was an issue logging out', e);
                 setIsLoggingOut(false);
                 presentToast(`Oops, we had an issue logging out.`, {
                     type: ToastTypeEnum.Error,
@@ -106,7 +99,7 @@ const useLogout = () => {
         }, 1000);
     };
 
-    return { handleLogout, isLoggingOut: isLoggingOut || web3AuthLoggingOut };
+    return { handleLogout, isLoggingOut };
 };
 
 export default useLogout;

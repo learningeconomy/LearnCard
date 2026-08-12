@@ -6,6 +6,8 @@ import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
 
+import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
+
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 
@@ -26,7 +28,9 @@ export type Context = {
         authorizedDid?: boolean;
     };
     domain: string;
+    tenant: ResolvedTenant;
     debug?: boolean;
+    clientIp?: string;
 };
 
 export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create();
@@ -43,6 +47,28 @@ export const createContext = async (
         !domainName || process.env.IS_OFFLINE
             ? `localhost%3A${process.env.PORT || 3000}`
             : domainName;
+
+    // Resolve tenant from request headers (X-Tenant-Id → Origin → env → default)
+    const rawHeaders =
+        'event' in options
+            ? (options.event.headers as Record<string, string | undefined>)
+            : (options.req.headers as Record<string, string | string[] | undefined>);
+
+    const tenant = resolveTenantFromRequest(rawHeaders);
+
+    // Extract client IP for rate limiting (available on all return paths)
+    let clientIp: string | undefined;
+
+    if ('event' in options) {
+        const awsEvent = options.event as APIGatewayProxyEventV2;
+        clientIp =
+            awsEvent.requestContext?.http?.sourceIp ??
+            awsEvent.headers?.['x-forwarded-for']?.split(',')[0]?.trim();
+    } else {
+        clientIp =
+            options.req.ip ??
+            options.req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim();
+    }
 
     try {
         if (authHeader && authHeader.split(' ').length === 2) {
@@ -75,7 +101,9 @@ export const createContext = async (
                         return {
                             user: { did, isChallengeValid: false, authorizedDid },
                             domain,
+                            tenant,
                             debug,
+                            clientIp,
                         };
 
                     const cacheResponse = await isChallengeValidForDid(did, challenge);
@@ -84,7 +112,9 @@ export const createContext = async (
                     return {
                         user: { did, isChallengeValid: Boolean(cacheResponse), authorizedDid },
                         domain,
+                        tenant,
                         debug,
+                        clientIp,
                     };
                 }
             }
@@ -93,7 +123,7 @@ export const createContext = async (
         console.error(e);
     }
 
-    return { domain };
+    return { domain, tenant, clientIp };
 };
 
 export const openRoute = t.procedure

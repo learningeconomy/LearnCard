@@ -16,6 +16,44 @@ export const associateListingWithIntegration = async (
     return true;
 };
 
+export const associateListingWithSubmitter = async (
+    listingId: string,
+    profileId: string,
+    submittedAt?: string
+): Promise<boolean> => {
+    const { neogma } = await import('@instance');
+
+    // Use MERGE to create or update the relationship
+    const setClause = submittedAt ? 'SET rel.submitted_at = $submittedAt' : '';
+
+    await neogma.queryRunner.run(
+        `MATCH (p:Profile {profileId: $profileId})
+         MATCH (listing:AppStoreListing {listing_id: $listingId})
+         MERGE (p)-[rel:SUBMITTED_LISTING]->(listing)
+         ${setClause}
+         RETURN rel`,
+        { listingId, profileId, submittedAt }
+    );
+
+    return true;
+};
+
+export const updateSubmittedAt = async (
+    listingId: string,
+    submittedAt: string
+): Promise<boolean> => {
+    const { neogma } = await import('@instance');
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (p:Profile)-[rel:SUBMITTED_LISTING]->(listing:AppStoreListing {listing_id: $listingId})
+         SET rel.submitted_at = $submittedAt
+         RETURN rel`,
+        { listingId, submittedAt }
+    );
+
+    return result.records.length > 0;
+};
+
 export const installAppForProfile = async (
     profileId: string,
     listingId: string,
@@ -63,14 +101,21 @@ export const associateListingWithSigningAuthority = async (
     signingAuthorityEndpoint: string,
     props: { name: string; did: string; isPrimary?: boolean }
 ): Promise<boolean> => {
-    await AppStoreListing.relateTo({
-        alias: 'usesSigningAuthority',
-        where: {
-            source: { listing_id: listingId },
-            target: { endpoint: signingAuthorityEndpoint },
-        },
-        properties: props,
-    });
+    const { neogma } = await import('@instance');
+
+    await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing { listing_id: $listingId })
+         MATCH (signingAuthority:SigningAuthority { endpoint: $endpoint })
+         MERGE (listing)-[rel:USES_SIGNING_AUTHORITY { name: $name, did: $did }]->(signingAuthority)
+         SET rel.isPrimary = $isPrimary`,
+        {
+            listingId,
+            endpoint: signingAuthorityEndpoint,
+            name: props.name,
+            did: props.did,
+            isPrimary: props.isPrimary ?? false,
+        }
+    );
 
     return true;
 };

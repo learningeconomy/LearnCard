@@ -1,12 +1,10 @@
 import { useWorker } from '@koale/useworker';
 
 import { getCanvasFromFile, getFileFromCanvas } from './photos/file.helpers';
-import {
-    bilinearInterpolate,
-    halfScaleCanvas,
-    scaleCanvas,
-} from './photos/canvas.helpers';
+import { bilinearInterpolate, halfScaleCanvas, scaleCanvas } from './photos/canvas.helpers';
 import { IMAGE_MIME_TYPES } from './constants/filestack';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-resize-photo');
 
 const MAX_WIDTH = 3000;
 const QUALITY = 1;
@@ -24,7 +22,7 @@ const QUALITY = 1;
  *
  *         const resizedPhoto = await resizePhoto(photo);
  *
- *         console.log({ resizedPhoto });
+ *         log.debug({ resizedPhoto });
  *     }
  *
  *     return (

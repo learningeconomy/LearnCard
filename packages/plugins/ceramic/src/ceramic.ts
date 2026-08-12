@@ -10,7 +10,7 @@ import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
 import { LearnCard } from '@learncard/core';
 import { InputMetadata } from '@learncard/didkit-plugin';
-import { VCValidator, VC, VPValidator, VP } from '@learncard/types';
+import { VCValidator, VC, VPValidator, VP, isStoredCredentialEnvelope } from '@learncard/types';
 
 import { streamIdToCeramicURI } from './helpers';
 import type {
@@ -127,6 +127,11 @@ export const getCeramicPlugin = async (
         return streamIdToCeramicURI(await publishContentToCeramic(vc, {}, {}, encryption));
     };
 
+    const envelopeRejection = (envelope: { format: string }) =>
+        new Error(
+            `Ceramic does not support format-tagged credential envelopes (got format="${envelope.format}"). Use LearnCloud or the LearnCard Network store for non-W3C credentials (SD-JWT-VC, mDoc, etc.).`
+        );
+
     return {
         name: 'Ceramic',
         displayName: 'Ceramic',
@@ -135,10 +140,12 @@ export const getCeramicPlugin = async (
         store: {
             upload: async (_learnCard, vc) => {
                 _learnCard.debug?.('learnCard.store.Ceramic.upload');
+                if (isStoredCredentialEnvelope(vc)) throw envelopeRejection(vc);
                 return uploadCredential(vc);
             },
             uploadEncrypted: async (_learnCard, vc, params) => {
                 _learnCard.debug?.('learnCard.store.Ceramic.uploadEncrypted');
+                if (isStoredCredentialEnvelope(vc)) throw envelopeRejection(vc);
                 return uploadCredential(vc, {
                     encrypt: true,
                     controllersCanDecrypt: true,

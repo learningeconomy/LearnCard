@@ -2,6 +2,8 @@ import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { isLocalhost } from 'learn-card-base';
 import SpilledCup from '../svgs/SpilledCup';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('generic-error-boundary');
 
 type ErrorFallbackProps = {
     error: Error;
@@ -65,7 +67,7 @@ const GenericErrorBoundary: React.FC<GenericErrorBoundaryProps> = ({ children, o
             onReset={onReset}
             onError={(error: Error, info: { componentStack: string }) => {
                 // You can also log the error to an error reporting service here
-                console.error('ErrorBoundary caught an error:', error, info);
+                log.error('ErrorBoundary caught an error:', error, info);
             }}
         >
             {children}

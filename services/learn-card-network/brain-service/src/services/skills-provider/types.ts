@@ -4,7 +4,7 @@
 // oxlint-disable-next-line no-unused-vars
 import { Alignment } from '@learncard/types';
 
-export type ProviderId = 'neo4j' | 'opensalt' | 'dummy' | (string & {});
+export type ProviderId = 'neo4j' | 'opensalt' | 'opensalt-staging' | 'dummy' | (string & {});
 
 export type SkillsProviderOptions = {
     baseUrl?: string;

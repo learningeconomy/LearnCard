@@ -13,13 +13,36 @@ import {
 import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkillCard from './SkillCard';
+import { PreviousSkillInfo } from './AddSkillModal';
+import { SkillLevel } from './skillTypes';
+import type { SelectedSkill } from './skillTypes';
+import { SkillFrameworkNode } from '../../components/boost/boost';
 
 type RelatedSkillsProps = {
     frameworkId: string;
     skillId: string;
+    selectedSkills?: SelectedSkill[];
+    handleAddSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    handleEditSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
+    handleRemoveSkill?: (skillId: string) => void;
+    currentSkillForNav?: SkillFrameworkNode;
+    previousSkills?: PreviousSkillInfo[];
+    parentIsEdit?: boolean;
+    parentProficiencyLevel?: SkillLevel;
 };
 
-const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) => {
+const RelatedSkills: React.FC<RelatedSkillsProps> = ({
+    frameworkId,
+    skillId,
+    selectedSkills,
+    handleAddSkill,
+    handleEditSkill,
+    handleRemoveSkill,
+    currentSkillForNav,
+    previousSkills,
+    parentIsEdit,
+    parentProficiencyLevel,
+}) => {
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
     const [atEnd, setAtEnd] = useState(false);
@@ -64,7 +87,7 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
     if (skillSiblings) {
         relatedSkills.push(
             ...skillSiblings.records
-                .filter(record => record.id !== skillId && record.type === 'competency')
+                .filter((record: any) => record.id !== skillId && record.type === 'competency')
                 .map((record: any) => ({
                     id: record.id,
                     type: SkillType.SIBLING,
@@ -117,7 +140,7 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
 
     return (
         <div className="flex flex-col gap-[5px] w-full">
-            <p className="font-poppins text-[17px]  text-grayscale-900">
+            <p className="font-poppins text-[17px]  text-grayscale-900 font-bold">
                 {conditionalPluralize(relatedSkills.length, 'Related Skill')}
             </p>
 
@@ -143,6 +166,9 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
                         grabCursor={true}
                     >
                         {relatedSkills.map((skill, index) => {
+                            const selectedSkill = selectedSkills?.find(s => s.id === skill.id);
+                            const isSelected = !!selectedSkill;
+
                             return (
                                 <SwiperSlide key={index} style={{ width: 'auto' }}>
                                     <SkillCard
@@ -151,6 +177,16 @@ const RelatedSkills: React.FC<RelatedSkillsProps> = ({ frameworkId, skillId }) =
                                         skillTextOverride={
                                             puzzlePieceText[skill?.type as SkillType]
                                         }
+                                        isSelected={isSelected}
+                                        proficiencyLevel={selectedSkill?.proficiency}
+                                        selectedSkills={selectedSkills}
+                                        handleAddSkill={handleAddSkill}
+                                        handleEditSkill={handleEditSkill}
+                                        handleRemoveSkill={handleRemoveSkill}
+                                        currentSkill={currentSkillForNav}
+                                        previousSkills={previousSkills}
+                                        parentIsEdit={parentIsEdit}
+                                        parentProficiencyLevel={parentProficiencyLevel}
                                     />
                                 </SwiperSlide>
                             );

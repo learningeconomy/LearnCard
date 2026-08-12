@@ -1,22 +1,48 @@
 import { useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet } from 'learn-card-base';
-import type { AppStoreListing, InstalledApp, PaginatedAppStoreListings, PaginatedInstalledApps } from '@learncard/types';
+import type {
+    AppStoreListing,
+    InstalledApp,
+    PaginatedAppStoreListings,
+    PaginatedInstalledApps,
+} from '@learncard/types';
 
-export type AppStoreCategory = 'All' | 'AI' | 'Learning' | 'Games' | 'Tools' | 'Employment' | 'Credentials' | 'Other';
+export type AppStoreCategory =
+    | 'All'
+    | 'AI'
+    | 'Learning'
+    | 'Games'
+    | 'Tools'
+    | 'Employment'
+    | 'Credentials'
+    | 'Plugins'
+    | 'Other';
 
-export const APP_STORE_CATEGORIES: AppStoreCategory[] = ['All', 'AI', 'Learning', 'Games', 'Tools', 'Employment', 'Credentials', 'Other'];
+export const APP_STORE_CATEGORIES: AppStoreCategory[] = [
+    'All',
+    'AI',
+    'Learning',
+    'Games',
+    'Tools',
+    'Employment',
+    'Credentials',
+    'Plugins',
+    'Other',
+];
 
 // Map LaunchPad tab categories to app store categories
 export const mapTabToCategory = (tab: string): string | undefined => {
-    const mapping: Record<string, string | undefined> = {
-        'All': undefined,
+    if (tab === 'My Apps' || tab === 'All') return undefined;
+
+    const mapping: Record<string, string> = {
         'AI': 'ai',
         'Learning': 'learning',
         'Games': 'games',
         'Tools': 'tools',
         'Employment': 'employment',
         'Credentials': 'credentials',
+        'Plugins': 'plugin',
         'Other': 'other',
     };
 
@@ -33,9 +59,17 @@ export const useAppStore = () => {
         limit?: number;
         cursor?: string;
         promotionLevel?: string;
+        enabled?: boolean;
     }) => {
         return useQuery({
-            queryKey: ['appStore', 'browse', options?.category, options?.promotionLevel, options?.limit, options?.cursor],
+            queryKey: [
+                'appStore',
+                'browse',
+                options?.category,
+                options?.promotionLevel,
+                options?.limit,
+                options?.cursor,
+            ],
             queryFn: async (): Promise<PaginatedAppStoreListings> => {
                 const wallet = await getWalletOrFallback();
 
@@ -45,27 +79,30 @@ export const useAppStore = () => {
                     limit: options?.limit ?? 50,
                     cursor: options?.cursor,
                 });
-
             },
-            staleTime: 1000 * 60 * 0.1, // 5 minutes
+            enabled: options?.enabled ?? true,
+            staleTime: 1000 * 60 * 5, // 5 minutes
         });
     };
 
     // Query for featured carousel apps (FEATURED_CAROUSEL promotion level)
-    const useFeaturedCarouselApps = () => {
+    // Pass a category to scope the carousel to that category (e.g. on category tabs).
+    // Omit category for cross-category carousel (My Apps / All tabs).
+    const useFeaturedCarouselApps = (category?: string) => {
         return useQuery({
-            queryKey: ['appStore', 'featuredCarousel'],
+            queryKey: ['appStore', 'featuredCarousel', category ?? null],
             queryFn: async (): Promise<AppStoreListing[]> => {
                 const wallet = await getWalletOrFallback();
 
                 const result = await wallet.invoke.browseAppStore({
                     promotionLevel: 'FEATURED_CAROUSEL',
+                    category,
                     limit: 10,
                 });
 
                 return result.records;
             },
-            staleTime: 1000 * 60 * 0.1, // 5 minutes
+            staleTime: 1000 * 60 * 5, // 5 minutes
         });
     };
 
@@ -83,7 +120,7 @@ export const useAppStore = () => {
 
                 return result.records;
             },
-            staleTime: 1000 * 60 * 0.1, // 5 minutes
+            staleTime: 1000 * 60 * 5, // 5 minutes
         });
     };
 
@@ -154,7 +191,11 @@ export const useAppStore = () => {
                 // Invalidate related queries
                 queryClient.invalidateQueries({ queryKey: ['appStore', 'installed'] });
                 queryClient.invalidateQueries({ queryKey: ['appStore', 'isInstalled', listingId] });
-                queryClient.invalidateQueries({ queryKey: ['appStore', 'installCount', listingId] });
+                queryClient.invalidateQueries({
+                    queryKey: ['appStore', 'installCount', listingId],
+                });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'featuredCarousel'] });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'curatedList'] });
             },
         });
     };
@@ -171,7 +212,11 @@ export const useAppStore = () => {
                 // Invalidate related queries
                 queryClient.invalidateQueries({ queryKey: ['appStore', 'installed'] });
                 queryClient.invalidateQueries({ queryKey: ['appStore', 'isInstalled', listingId] });
-                queryClient.invalidateQueries({ queryKey: ['appStore', 'installCount', listingId] });
+                queryClient.invalidateQueries({
+                    queryKey: ['appStore', 'installCount', listingId],
+                });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'featuredCarousel'] });
+                queryClient.invalidateQueries({ queryKey: ['appStore', 'curatedList'] });
             },
         });
     };

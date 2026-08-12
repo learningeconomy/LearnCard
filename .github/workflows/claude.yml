@@ -1,126 +1,186 @@
 name: Claude PR Assistant
 
 on:
-  issue_comment:
-    types: [created]
-  pull_request_review_comment:
-    types: [created]
-  issues:
-    types: [opened, assigned]
-  pull_request_review:
-    types: [submitted]
+    issue_comment:
+        types: [created]
+    pull_request_review_comment:
+        types: [created]
+    issues:
+        types: [opened, assigned]
+    pull_request_review:
+        types: [submitted]
 
 jobs:
-  claude-code-action:
-    if: |
-      (
-        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') &&
-          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
-        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') &&
-          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
-        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') &&
-          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association)) ||
-        (github.event_name == 'issues' && contains(github.event.issue.body, '@claude') &&
-          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association))
-      )
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-      id-token: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+    claude-code-action:
+        if: |
+            (
+              (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') &&
+                contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+              (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') &&
+                contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+              (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') &&
+                contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association)) ||
+              (github.event_name == 'issues' && contains(github.event.issue.body, '@claude') &&
+                contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association))
+            )
+        runs-on: ubuntu-latest
+        timeout-minutes: 60
+        permissions:
+            contents: read
+            pull-requests: write
+            issues: write
+            id-token: write
+            actions: read
+        steps:
+            # Mint a GitHub App installation token scoped to pull-requests:write.
+            # The "Maybe approve PR" step uses this to cast the approval — the default
+            # GITHUB_TOKEN / github-actions[bot] is NOT permitted to approve PRs, but
+            # the app identity is. Claude itself never approves (its prompt forbids
+            # it); it only emits a verdict marker that the approve step acts on.
+            #
+            # Requires repo configuration:
+            #   - Variable  CLAUDE_APP_CLIENT_ID   (GitHub App Client ID)
+            #   - Secret    CLAUDE_APP_PRIVATE_KEY (GitHub App private key, PEM)
+            # The app must be installed on this repo with Pull requests: Read & write.
+            - name: Generate GitHub App token
+              id: app-token
+              uses: actions/create-github-app-token@v3
+              with:
+                  client-id: ${{ vars.CLAUDE_APP_CLIENT_ID }}
+                  private-key: ${{ secrets.CLAUDE_APP_PRIVATE_KEY }}
+                  permission-pull-requests: write
+                  permission-contents: read
+                  permission-issues: write
 
-      - name: Run Claude PR Action
-        uses: anthropics/claude-code-action@beta
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          timeout_minutes: "60"
-          allowed_tools: "Bash,GitHub,View,GlobTool,GrepTool,BatchTool"
-          custom_instructions: |
-            ## PR Review & Auto-Approval
+            - name: Checkout repository
+              uses: actions/checkout@v5
+              with:
+                  fetch-depth: 1
 
-            When asked to review a PR (e.g. "@claude review", "@claude review this"),
-            perform a thorough code review AND evaluate whether the PR qualifies for Auto-Approval.
+            # Body is read via env vars (NOT interpolated into the shell script) so
+            # untrusted comment content cannot inject shell commands. Do not change.
+            - name: Determine Claude model
+              id: model
+              env:
+                  COMMENT_BODY: ${{ github.event.comment.body }}
+                  REVIEW_BODY: ${{ github.event.review.body }}
+                  ISSUE_BODY: ${{ github.event.issue.body }}
+              run: |
+                  BODY="${COMMENT_BODY}${REVIEW_BODY}${ISSUE_BODY}"
+                  if [[ "$BODY" == *"@claude deep-review"* ]]; then
+                      echo "model_flag=--model claude-opus-4-1" >> "$GITHUB_OUTPUT"
+                      echo "mode=deep-review" >> "$GITHUB_OUTPUT"
+                      echo "Mode: deep-review (Claude Opus 4.1)"
+                  else
+                      echo "model_flag=" >> "$GITHUB_OUTPUT"
+                      echo "mode=standard" >> "$GITHUB_OUTPUT"
+                      echo "Mode: standard (action default)"
+                  fi
 
-            ### Monorepo Context
+            # Resolve the PR number across all trigger types. issue_comment fires on
+            # PRs with github.event.issue.number; the review/review_comment events use
+            # github.event.pull_request.number. Empty for non-PR issues.
+            - name: Resolve PR number
+              id: pr
+              env:
+                  ISSUE_NUMBER: ${{ github.event.issue.number }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+                  IS_PR: ${{ github.event.issue.pull_request != null || github.event_name == 'pull_request_review' || github.event_name == 'pull_request_review_comment' }}
+              run: |
+                  NUM="${PR_NUMBER:-$ISSUE_NUMBER}"
+                  if [ "$IS_PR" = "true" ] && [ -n "$NUM" ]; then
+                    echo "number=$NUM" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "number=" >> "$GITHUB_OUTPUT"
+                  fi
 
-            This is a pnpm + Nx monorepo. Key areas:
-            - `services/` — Production backend services (brain-service, lca-api, learn-cloud-service, simple-signing-service). These handle auth, credentials, signing, Neo4j/MongoDB data, and serverless deployment. **High risk.**
-            - `packages/learn-card-types/` — Shared Zod validators and types used across the entire stack. Changes here ripple everywhere. **High risk.**
-            - `packages/learn-card-core/` — Core wallet and plugin system. **High risk.**
-            - `packages/learn-card-init/` — Assembles the plugin stack. **High risk.**
-            - `packages/plugins/crypto/`, `packages/plugins/encryption/`, `packages/plugins/didkey/`, `packages/plugins/didkit/` — Cryptographic and DID operations. **High risk.**
-            - `packages/plugins/learn-card-network/` — Network plugin bridging to brain-service (plugin.ts is ~78KB). **High risk.**
-            - `apps/` — Frontend apps (learn-card-app, scouts). Medium risk — user-facing but no server-side auth.
-            - `packages/learn-card-base/` — React hooks, queries, UI components. **Medium risk.**
-            - `packages/react-learn-card/` — React component library. **Medium risk.**
-            - `docs/` — GitBook documentation. **Low risk.**
-            - `examples/` — Example/demo apps. **Low risk.**
-            - `reference/` — Docusaurus reference docs. **Low risk.**
-            - `.changeset/` — Version changeset files. **Low risk.**
-            - `tools/`, `scripts/` — Build tooling and dev scripts. **Low risk.**
+            # custom_instructions was removed in claude-code-action@v1; review
+            # instructions now live in .github/claude-review-instructions.md and are
+            # passed via the `appendSystemPrompt` Claude setting. `jq -Rs` safely
+            # JSON-encodes the markdown (which contains quotes/backticks), so no
+            # manual escaping is needed.
+            #
+            # The deterministic auto-approval step (below) reads a hidden verdict
+            # marker from Claude's comment. Claude needs the live PR number and run id
+            # to emit a marker the workflow will trust, so we append them to the
+            # prompt as authoritative context. The action also auto-injects
+            # <pr_number>, but we pin both values here to bind the marker to THIS run.
+            - name: Build Claude settings
+              env:
+                  RESOLVED_PR: ${{ steps.pr.outputs.number }}
+                  RUN_ID: ${{ github.run_id }}
+              run: |
+                  CONTEXT=$(printf '\n\n---\n\nAUTHORITATIVE MARKER CONTEXT (use these exact values in the CLAUDE_AUTO_APPROVE marker):\n- <PR_NUMBER> = %s\n- <RUN_ID> = %s\n' "$RESOLVED_PR" "$RUN_ID")
+                  cat .github/claude-review-instructions.md - <<EOF | jq -Rs '{ appendSystemPrompt: . }' > "${RUNNER_TEMP}/claude-settings.json"
+                  ${CONTEXT}
+                  EOF
 
-            ### Review Process
+            - name: Run Claude PR Action
+              id: claude
+              uses: anthropics/claude-code-action@v1
+              with:
+                  anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+                  github_token: ${{ steps.app-token.outputs.token }}
+                  additional_permissions: |
+                      actions: read
+                      checks: read
+                      workflows: read
+                  # Injects .github/claude-review-instructions.md as appendSystemPrompt.
+                  settings: ${{ runner.temp }}/claude-settings.json
+                  claude_args: |
+                      ${{ steps.model.outputs.model_flag }}
+                      --allowedTools "Bash"
 
-            1. **Fetch the diff** using `gh pr diff $PR_NUMBER` and the file list with `gh pr view $PR_NUMBER --json files`.
-            2. **Review the code** for correctness, style, and potential issues. Leave inline comments for anything notable. Follow the project style: strict TypeScript, arrow functions, named imports, 4-space JSX indentation.
-            3. **Evaluate Auto-Approval eligibility** using the criteria below.
-            4. **Post a summary** with your review findings and your auto-approval decision.
+            # Deterministic auto-approval. Claude cannot approve PRs itself (the
+            # action's prompt forbids it), so it records its verdict as a hidden
+            # CLAUDE_AUTO_APPROVE marker in its comment. This step reads the FINAL
+            # comment body (never logs), validates the marker is bound to this PR and
+            # run, confirms the PR is open and not a draft, then casts the approval
+            # with the App token. Fails closed on any ambiguity.
+            - name: Maybe approve PR
+              if: ${{ steps.claude.outcome == 'success' && steps.pr.outputs.number != '' }}
+              env:
+                  GH_TOKEN: ${{ steps.app-token.outputs.token }}
+                  REPO: ${{ github.repository }}
+                  PR_NUMBER: ${{ steps.pr.outputs.number }}
+                  RUN_ID: ${{ github.run_id }}
+              run: |
+                  set -euo pipefail
 
-            ### Auto-Approval Criteria
+                  comment="$(
+                    gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" --paginate |
+                    jq -sc --arg run "$RUN_ID" '
+                      add
+                      | map(select((.user.type == "Bot") and (.body | contains("/actions/runs/" + $run))))
+                      | last
+                    '
+                  )"
+                  if [ "$comment" = "null" ] || [ -z "$comment" ]; then
+                    echo "No Claude comment bound to run ${RUN_ID} found; skipping approval."
+                    exit 0
+                  fi
 
-            A PR is eligible for auto-approval if **ALL** of the following are true:
+                  verdict="$(
+                    jq -r --arg pr "$PR_NUMBER" --arg run "$RUN_ID" '
+                      .body
+                      | [ scan("CLAUDE_AUTO_APPROVE v1 pr=([0-9]+) run=([0-9]+) verdict=(approve|reject)") ]
+                      | if length == 1
+                        then .[0] | if .[0] == $pr and .[1] == $run then .[2] else "mismatch" end
+                        else "ambiguous" end
+                    ' <<<"$comment"
+                  )"
+                  echo "Parsed verdict: ${verdict}"
+                  if [ "$verdict" != "approve" ]; then
+                    echo "Verdict is not a clean approve; skipping."
+                    exit 0
+                  fi
 
-            **Size:**
-            - Total lines changed (additions + deletions) ≤ 200
+                  state="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.state + ":" + (.draft|tostring)')"
+                  if [ "$state" != "open:false" ]; then
+                    echo "PR not in approvable state (${state}); skipping."
+                    exit 0
+                  fi
 
-            **No high-risk files are modified:**
-            - `services/` — Any file in brain-service, lca-api, learn-cloud-service, or simple-signing-service (routes, access layers, models, helpers, lambda entry points)
-            - `packages/learn-card-types/src/lcn.ts` — Central type definitions
-            - `packages/learn-card-core/` — Core wallet/plugin system
-            - `packages/learn-card-init/` — Plugin stack initialization
-            - `packages/plugins/crypto/`, `packages/plugins/encryption/`, `packages/plugins/didkey/`, `packages/plugins/didkit/` — Crypto/DID plugins
-            - `packages/plugins/learn-card-network/src/plugin.ts` or `types.ts` — Network plugin
-            - `Dockerfile*`, `serverless*.yml`, `compose*.yaml`, `lambda.ts` — Infrastructure/deployment
-            - `.github/workflows/` — CI/CD pipelines
-            - Root monorepo config: `nx.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, root `package.json`
-            - `heroku.yml`, `Procfile` — Deployment
-
-            **No dangerous content patterns in the diff:**
-            - New tRPC procedures or HTTP endpoints being added
-            - Changes to access control, permissions, roles, or Neo4j relationship queries
-            - Removal or weakening of existing tests (deleting assertions, skipping tests)
-            - `eval()`, `dangerouslySetInnerHTML`, or `innerHTML` usage
-            - Hardcoded secrets, API keys, seeds, or private keys
-            - Changes to `CREDENTIAL_RECEIVED`, `CONNECTED_WITH`, or other Neo4j relationship logic
-            - New or modified Zod validators in shared type packages
-
-            **Typical auto-approvable PRs:**
-            - Documentation changes (`docs/`, `*.md`, `AGENTS.md`, `CLAUDE.md`)
-            - New or expanded tests in `test/` or `tests/` directories (not removing/weakening)
-            - Changeset files (`.changeset/*.md`)
-            - Example app changes (`examples/`)
-            - Reference doc changes (`reference/`)
-            - Minor UI tweaks in `apps/` (styling, copy, component layout) under 200 lines
-            - React component or hook changes in `packages/react-learn-card/` or `packages/learn-card-base/` that are clearly cosmetic or additive
-            - Typo, formatting, or comment-only changes anywhere
-            - Build script or tooling changes in `tools/`, `scripts/`
-            - Non-security package.json dependency bumps within individual packages (patch/minor only)
-
-            ### Decision
-
-            - **If eligible:** Approve the PR with `gh pr review $PR_NUMBER --approve --body "Auto-approved: <one-line reason>"`.
-            - **If NOT eligible:** Do NOT approve. Post a review comment explaining why it doesn't qualify and list any issues found. Use `gh pr review $PR_NUMBER --comment --body "<review>"`.
-            - **If borderline:** Do NOT approve, but note in your review that the PR is close to auto-approvable and explain what would need to change.
-
-            ### Important Rules
-
-            - NEVER auto-approve your own changes (commits authored by `claude` or `github-actions`).
-            - NEVER auto-approve PRs labeled `do-not-merge` or `needs-manual-review`.
-            - When in doubt, do NOT approve. It is always safe to leave a thorough review without approving.
-            - Always be transparent about why you are or are not auto-approving.
+                  url="$(jq -r '.html_url' <<<"$comment")"
+                  gh pr review "$PR_NUMBER" --approve \
+                    --body "Auto-approved by workflow based on Claude's verdict: ${url}"

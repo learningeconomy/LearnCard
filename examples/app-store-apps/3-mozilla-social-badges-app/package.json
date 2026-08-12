@@ -1,23 +1,23 @@
 {
-  "name": "@learncard/app-store-demo-mozilla-social-badges",
-  "type": "module",
-  "version": "0.0.13",
-  "private": true,
-  "description": "Mozilla Social Badges - Recognize and celebrate open web contributions through verifiable badges",
-  "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
-  },
-  "dependencies": {
-    "@astrojs/netlify": "5.5.4",
-    "@learncard/init": "workspace:*",
-    "@learncard/partner-connect": "workspace:*",
-    "astro": "4.16.19"
-  },
-  "devDependencies": {
-    "prettier-plugin-astro": "^0.5.4"
-  }
+    "name": "@learncard/app-store-demo-mozilla-social-badges",
+    "type": "module",
+    "version": "0.0.38",
+    "private": true,
+    "description": "Mozilla Social Badges - Recognize and celebrate open web contributions through verifiable badges",
+    "scripts": {
+        "dev": "astro dev",
+        "start": "astro dev",
+        "build": "astro build",
+        "preview": "astro preview",
+        "astro": "astro"
+    },
+    "dependencies": {
+        "@astrojs/netlify": "^7.0.13",
+        "@learncard/init": "workspace:*",
+        "@learncard/partner-connect": "workspace:*",
+        "astro": "^6.4.8"
+    },
+    "devDependencies": {
+        "prettier-plugin-astro": "^0.5.4"
+    }
 }

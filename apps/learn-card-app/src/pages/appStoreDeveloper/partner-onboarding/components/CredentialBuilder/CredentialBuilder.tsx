@@ -1,8 +1,12 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('credential-builder');
 /**
  * CredentialBuilder - Main interactive OBv3 credential template builder
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+
+import * as m from '../../../../../paraglide/messages.js';
 import {
     FileText,
     Code,
@@ -17,11 +21,13 @@ import {
     Users,
     Layers,
     CheckCircle,
+    CheckCircle2,
     AlertTriangle,
     XCircle,
     Loader2,
     RefreshCw,
     Undo2,
+    BookOpen,
 } from 'lucide-react';
 
 import { BoostCategoryOptionsEnum, BoostPageViewMode, useWallet } from 'learn-card-base';
@@ -30,12 +36,15 @@ import { BoostEarnedCard } from '../../../../../components/boost/boost-earned-ca
 
 import { OBv3CredentialTemplate, SectionId } from './types';
 import { templateToJson, validateTemplate, extractDynamicVariables } from './utils';
-import { TEMPLATE_PRESETS, getBlankTemplate } from './presets';
+import { TEMPLATE_PRESETS, CLR2_PRESETS, ALL_PRESETS, getBlankTemplate } from './presets';
 import { JsonPreview } from './JsonPreview';
 import {
     CredentialInfoSection,
     IssuerSection,
     AchievementSection,
+    AchievementsListSection,
+    AssociationsSection,
+    LinkedCredentialsSection,
     RecipientSection,
     EvidenceSection,
     DatesSection,
@@ -53,6 +62,7 @@ const PRESET_ICONS: Record<string, React.FC<{ className?: string }>> = {
     Users,
     Zap,
     Layers,
+    BookOpen,
 };
 
 type TabId = 'builder' | 'preview' | 'json';
@@ -133,7 +143,11 @@ const analyzeValidationError = (error: string): { summary: string; suggestions: 
         },
     ];
 
-    for (const { pattern, summary: patternSummary, suggestions: patternSuggestions } of errorPatterns) {
+    for (const {
+        pattern,
+        summary: patternSummary,
+        suggestions: patternSuggestions,
+    } of errorPatterns) {
         if (pattern.test(error)) {
             summary = patternSummary;
             suggestions.push(...patternSuggestions);
@@ -146,7 +160,7 @@ const analyzeValidationError = (error: string): { summary: string; suggestions: 
         suggestions.push(
             'Review recently changed fields',
             'Check JSON tab for malformed data',
-            'Try reverting to a template preset',
+            'Try reverting to a template preset'
         );
     }
 
@@ -161,21 +175,26 @@ interface FieldChange {
     newValue: string;
 }
 
-const getFieldValue = (field: { value?: string; isDynamic?: boolean; variableName?: string } | undefined): string => {
+const getFieldValue = (
+    field: { value?: string; isDynamic?: boolean; variableName?: string } | undefined
+): string => {
     if (!field) return '';
     if (field.isDynamic && field.variableName) return `{{${field.variableName}}}`;
     return field.value || '';
 };
 
-const diffTemplates = (oldTemplate: OBv3CredentialTemplate | null, newTemplate: OBv3CredentialTemplate): FieldChange[] => {
+const diffTemplates = (
+    oldTemplate: OBv3CredentialTemplate | null,
+    newTemplate: OBv3CredentialTemplate
+): FieldChange[] => {
     if (!oldTemplate) return [];
-    
+
     const changes: FieldChange[] = [];
-    
+
     // Helper to check and record field changes
     const checkField = (
-        path: string, 
-        label: string, 
+        path: string,
+        label: string,
         oldField: { value?: string; isDynamic?: boolean; variableName?: string } | undefined,
         newField: { value?: string; isDynamic?: boolean; variableName?: string } | undefined
     ) => {
@@ -185,45 +204,100 @@ const diffTemplates = (oldTemplate: OBv3CredentialTemplate | null, newTemplate: 
             changes.push({ path, label, oldValue: oldVal, newValue: newVal });
         }
     };
-    
+
     // Check top-level fields
     checkField('name', 'Credential Name', oldTemplate.name, newTemplate.name);
     checkField('description', 'Description', oldTemplate.description, newTemplate.description);
     checkField('image', 'Image', oldTemplate.image, newTemplate.image);
     checkField('validFrom', 'Valid From', oldTemplate.validFrom, newTemplate.validFrom);
     checkField('validUntil', 'Valid Until', oldTemplate.validUntil, newTemplate.validUntil);
-    
+
     // Check issuer fields
     checkField('issuer.name', 'Issuer Name', oldTemplate.issuer?.name, newTemplate.issuer?.name);
     checkField('issuer.url', 'Issuer URL', oldTemplate.issuer?.url, newTemplate.issuer?.url);
-    checkField('issuer.image', 'Issuer Image', oldTemplate.issuer?.image, newTemplate.issuer?.image);
-    
+    checkField(
+        'issuer.image',
+        'Issuer Image',
+        oldTemplate.issuer?.image,
+        newTemplate.issuer?.image
+    );
+
     // Check achievement fields
     const oldAch = oldTemplate.credentialSubject?.achievement;
     const newAch = newTemplate.credentialSubject?.achievement;
     checkField('achievement.name', 'Achievement Name', oldAch?.name, newAch?.name);
-    checkField('achievement.description', 'Achievement Description', oldAch?.description, newAch?.description);
+    checkField(
+        'achievement.description',
+        'Achievement Description',
+        oldAch?.description,
+        newAch?.description
+    );
     checkField('achievement.image', 'Achievement Image', oldAch?.image, newAch?.image);
-    checkField('achievement.criteria', 'Achievement Criteria', oldAch?.criteria?.narrative, newAch?.criteria?.narrative);
+    checkField(
+        'achievement.criteria',
+        'Achievement Criteria',
+        oldAch?.criteria?.narrative,
+        newAch?.criteria?.narrative
+    );
     checkField('achievement.humanCode', 'Human Code', oldAch?.humanCode, newAch?.humanCode);
-    checkField('achievement.achievementType', 'Achievement Type', oldAch?.achievementType, newAch?.achievementType);
-    checkField('achievement.fieldOfStudy', 'Field of Study', oldAch?.fieldOfStudy, newAch?.fieldOfStudy);
-    checkField('achievement.specialization', 'Specialization', oldAch?.specialization, newAch?.specialization);
-    checkField('achievement.creditsAvailable', 'Credits Available', oldAch?.creditsAvailable, newAch?.creditsAvailable);
+    checkField(
+        'achievement.achievementType',
+        'Achievement Type',
+        oldAch?.achievementType,
+        newAch?.achievementType
+    );
+    checkField(
+        'achievement.fieldOfStudy',
+        'Field of Study',
+        oldAch?.fieldOfStudy,
+        newAch?.fieldOfStudy
+    );
+    checkField(
+        'achievement.specialization',
+        'Specialization',
+        oldAch?.specialization,
+        newAch?.specialization
+    );
+    checkField(
+        'achievement.creditsAvailable',
+        'Credits Available',
+        oldAch?.creditsAvailable,
+        newAch?.creditsAvailable
+    );
     checkField('achievement.inLanguage', 'Language', oldAch?.inLanguage, newAch?.inLanguage);
     checkField('achievement.version', 'Version', oldAch?.version, newAch?.version);
-    
+
     // Check credentialSubject fields
     const oldSubj = oldTemplate.credentialSubject;
     const newSubj = newTemplate.credentialSubject;
     checkField('credentialSubject.name', 'Recipient Name', oldSubj?.name, newSubj?.name);
-    checkField('credentialSubject.activityStartDate', 'Activity Start Date', oldSubj?.activityStartDate, newSubj?.activityStartDate);
-    checkField('credentialSubject.activityEndDate', 'Activity End Date', oldSubj?.activityEndDate, newSubj?.activityEndDate);
-    checkField('credentialSubject.creditsEarned', 'Credits Earned', oldSubj?.creditsEarned, newSubj?.creditsEarned);
+    checkField(
+        'credentialSubject.activityStartDate',
+        'Activity Start Date',
+        oldSubj?.activityStartDate,
+        newSubj?.activityStartDate
+    );
+    checkField(
+        'credentialSubject.activityEndDate',
+        'Activity End Date',
+        oldSubj?.activityEndDate,
+        newSubj?.activityEndDate
+    );
+    checkField(
+        'credentialSubject.creditsEarned',
+        'Credits Earned',
+        oldSubj?.creditsEarned,
+        newSubj?.creditsEarned
+    );
     checkField('credentialSubject.term', 'Term', oldSubj?.term, newSubj?.term);
-    checkField('credentialSubject.licenseNumber', 'License Number', oldSubj?.licenseNumber, newSubj?.licenseNumber);
+    checkField(
+        'credentialSubject.licenseNumber',
+        'License Number',
+        oldSubj?.licenseNumber,
+        newSubj?.licenseNumber
+    );
     checkField('credentialSubject.role', 'Role', oldSubj?.role, newSubj?.role);
-    
+
     // Check custom fields count change
     const oldCustomCount = oldTemplate.customFields?.length || 0;
     const newCustomCount = newTemplate.customFields?.length || 0;
@@ -241,7 +315,46 @@ const diffTemplates = (oldTemplate: OBv3CredentialTemplate | null, newTemplate: 
             }
         }
     }
-    
+
+    // CLR 2.0 achievement and association tracking
+    if (newTemplate.schemaType === 'clr2') {
+        const oldAchievements = oldTemplate.clrSubject?.achievements || [];
+        const newAchievements = newTemplate.clrSubject?.achievements || [];
+
+        // Track count changes
+        if (oldAchievements.length !== newAchievements.length) {
+            changes.push({
+                path: 'clrSubject.achievements.count',
+                label: m['developerPortal.credentialBuilder.labels.numberOfAchievements'](),
+                oldValue: String(oldAchievements.length),
+                newValue: String(newAchievements.length),
+            });
+        }
+
+        // Track per-entry name changes for entries present in both (by position)
+        const minLen = Math.min(oldAchievements.length, newAchievements.length);
+        for (let i = 0; i < minLen; i++) {
+            checkField(
+                `clrSubject.achievements.${i}.name`,
+                `Achievement ${i + 1} Name`,
+                oldAchievements[i].achievement.name,
+                newAchievements[i].achievement.name
+            );
+        }
+
+        // Track association count changes
+        const oldAssocCount = oldTemplate.clrSubject?.associations?.length || 0;
+        const newAssocCount = newTemplate.clrSubject?.associations?.length || 0;
+        if (oldAssocCount !== newAssocCount) {
+            changes.push({
+                path: 'clrSubject.associations.count',
+                label: m['developerPortal.credentialBuilder.labels.numberOfAssociations'](),
+                oldValue: String(oldAssocCount),
+                newValue: String(newAssocCount),
+            });
+        }
+    }
+
     return changes;
 };
 
@@ -250,11 +363,15 @@ interface CredentialBuilderProps {
     onChange: (template: OBv3CredentialTemplate) => void;
     issuerName?: string;
     issuerImage?: string;
-    onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
+    onTestIssue?: (
+        credential: Record<string, unknown>
+    ) => Promise<{ success: boolean; error?: string; result?: unknown }>;
     onValidationChange?: (status: ValidationStatus, error?: string) => void;
     initialValidationStatus?: ValidationStatus;
     /** When true, hides the "Dynamic" field mode option (useful for peer-to-peer badges) */
     disableDynamicFields?: boolean;
+    /** When true, hides the Recipient & Activity section (templates don't need recipient info) */
+    hideRecipientSection?: boolean;
 }
 
 export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
@@ -266,35 +383,64 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     onValidationChange,
     initialValidationStatus = 'unknown',
     disableDynamicFields = false,
+    hideRecipientSection = false,
 }) => {
     const { initWallet } = useWallet();
     const [userDid, setUserDid] = useState<string>('did:web:preview');
     const [activeTab, setActiveTab] = useState<TabId>('builder');
-    const [validationStatus, setValidationStatus] = useState<ValidationStatus>(initialValidationStatus);
+    const [validationStatus, setValidationStatus] =
+        useState<ValidationStatus>(initialValidationStatus);
     const [validationError, setValidationError] = useState<string | null>(null);
 
     // Track last valid/baseline template and field changes for debugging
     // Initialize with the starting template so we can track changes from the beginning
-    const [lastValidTemplate, setLastValidTemplate] = useState<OBv3CredentialTemplate>(() => 
+    const [lastValidTemplate, setLastValidTemplate] = useState<OBv3CredentialTemplate>(() =>
         JSON.parse(JSON.stringify(template))
     );
     const [changedFields, setChangedFields] = useState<FieldChange[]>([]);
 
     // Update validation status and notify parent
-    const updateValidationStatus = useCallback((status: ValidationStatus, error?: string) => {
-        setValidationStatus(status);
-        setValidationError(error || null);
-        onValidationChange?.(status, error);
-    }, [onValidationChange]);
+    const updateValidationStatus = useCallback(
+        (status: ValidationStatus, error?: string) => {
+            setValidationStatus(status);
+            setValidationError(error || null);
+            onValidationChange?.(status, error);
+        },
+        [onValidationChange]
+    );
 
     // Auto-validate function
     const runValidation = useCallback(async () => {
         if (!onTestIssue) return;
 
+        // Check structural errors first (invalid URLs, missing required fields)
+        const structuralErrors = validateTemplate(template);
+        if (structuralErrors.length > 0) {
+            const errorMessages = structuralErrors.map(e => `${e.field}: ${e.message}`).join('; ');
+            updateValidationStatus('invalid', errorMessages);
+            return;
+        }
+
         updateValidationStatus('validating');
 
         try {
             const json = templateToJson(template);
+
+            // Client-side JSON-LD validation first (catches key expansion errors locally)
+            try {
+                const { validateCredentialJsonLd } = await import('./validateJsonLd');
+                const jsonLdResult = await validateCredentialJsonLd(json);
+                if (!jsonLdResult.valid) {
+                    const changes = diffTemplates(lastValidTemplate, template);
+                    setChangedFields(changes);
+                    updateValidationStatus('invalid', jsonLdResult.errors.join('; '));
+                    return;
+                }
+            } catch (jsonLdErr) {
+                // If JSON-LD validation itself fails to load, fall through to server validation
+                log.warn('Client-side JSON-LD validation unavailable', jsonLdErr);
+            }
+
             const result = await onTestIssue(json);
 
             if (result.success) {
@@ -305,7 +451,6 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
             } else {
                 // Track what changed since last valid state
                 const changes = diffTemplates(lastValidTemplate, template);
-                console.log("Changes", changes)
                 setChangedFields(changes);
                 updateValidationStatus('invalid', result.error || 'Validation failed');
             }
@@ -388,9 +533,10 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
         new Set(['achievement'])
     );
 
-    // Auto-sync credential-level fields from achievement fields
-    // This simplifies the UX by hiding the redundant CredentialInfoSection
+    // Auto-sync credential-level fields from achievement fields (OBv3 only)
+    // CLR has multiple achievements so there's no single source to sync from
     useEffect(() => {
+        if (template.schemaType === 'clr2') return;
         const achievement = template.credentialSubject?.achievement;
         if (!achievement) return;
 
@@ -403,8 +549,11 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
             needsUpdate = true;
         }
 
-        // Sync description: achievement.description -> credential.description  
-        if (achievement.description?.value && template.description?.value !== achievement.description?.value) {
+        // Sync description: achievement.description -> credential.description
+        if (
+            achievement.description?.value &&
+            template.description?.value !== achievement.description?.value
+        ) {
             updates.description = { ...achievement.description };
             needsUpdate = true;
         }
@@ -424,6 +573,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
         template.credentialSubject?.achievement?.image?.value,
     ]);
     const [showPresetSelector, setShowPresetSelector] = useState(false);
+    const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
 
     // Toggle section expansion
     const toggleSection = useCallback((section: SectionId) => {
@@ -441,29 +591,39 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
     }, []);
 
     // Apply a preset template
-    const applyPreset = useCallback((presetId: string) => {
-        const preset = TEMPLATE_PRESETS.find(p => p.id === presetId);
+    const applyPreset = useCallback(
+        (presetId: string) => {
+            const preset = ALL_PRESETS.find(p => p.id === presetId);
 
-        if (preset) {
-            // Deep clone the template to avoid mutation
-            const newTemplate = JSON.parse(JSON.stringify(preset.template)) as OBv3CredentialTemplate;
+            if (preset) {
+                // Deep clone the template to avoid mutation
+                const newTemplate = JSON.parse(
+                    JSON.stringify(preset.template)
+                ) as OBv3CredentialTemplate;
 
-            // Apply issuer defaults if provided
-            if (issuerName && !newTemplate.issuer.name.isDynamic) {
-                newTemplate.issuer.name.value = issuerName;
+                // Apply issuer defaults if provided
+                if (issuerName && !newTemplate.issuer.name.isDynamic) {
+                    newTemplate.issuer.name.value = issuerName;
+                }
+
+                if (issuerImage && !newTemplate.issuer.image?.isDynamic) {
+                    newTemplate.issuer.image = {
+                        value: issuerImage,
+                        isDynamic: false,
+                        variableName: '',
+                    };
+                }
+
+                onChange(newTemplate);
+                setSelectedPresetId(presetId);
+                setShowPresetSelector(false);
+
+                // Expand relevant sections
+                setExpandedSections(new Set(['credential', 'achievement']));
             }
-
-            if (issuerImage && !newTemplate.issuer.image?.isDynamic) {
-                newTemplate.issuer.image = { value: issuerImage, isDynamic: false, variableName: '' };
-            }
-
-            onChange(newTemplate);
-            setShowPresetSelector(false);
-
-            // Expand relevant sections
-            setExpandedSections(new Set(['credential', 'achievement', 'issuer']));
-        }
-    }, [onChange, issuerName, issuerImage]);
+        },
+        [onChange, issuerName, issuerImage]
+    );
 
     // Validation
     const validationErrors = useMemo(() => validateTemplate(template), [template]);
@@ -483,7 +643,21 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         return new Date().toISOString();
                     }
 
-                    const humanized = varName.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+                    // Image-like fields: return empty to avoid broken <img> tags
+                    if (
+                        lowerVar.includes('image') ||
+                        lowerVar.includes('logo') ||
+                        lowerVar.includes('photo') ||
+                        lowerVar.includes('icon') ||
+                        lowerVar.includes('thumbnail') ||
+                        lowerVar.includes('avatar')
+                    ) {
+                        return '';
+                    }
+
+                    const humanized = varName
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (c: string) => c.toUpperCase());
                     return `[${humanized}]`;
                 });
             }
@@ -507,10 +681,16 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
         const rendered = replaceDynamicVariables(json) as Record<string, unknown>;
 
-        // Add preview issuer info
+        // Add preview issuer info — preserve issuer object structure if present
+        const renderedIssuer = rendered.issuer;
+        let previewIssuer: unknown = userDid;
+        if (typeof renderedIssuer === 'object' && renderedIssuer !== null) {
+            previewIssuer = { ...(renderedIssuer as Record<string, unknown>), id: userDid };
+        }
+
         return {
             ...rendered,
-            issuer: userDid,
+            issuer: previewIssuer,
             validFrom: new Date().toISOString(),
         };
     }, [template, userDid]);
@@ -530,7 +710,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         }`}
                     >
                         <FileText className="w-4 h-4" />
-                        Builder
+                        {m['developerPortal.credentialBuilder.tabs.builder']()}
                     </button>
 
                     <button
@@ -543,7 +723,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         }`}
                     >
                         <Eye className="w-4 h-4" />
-                        Preview
+                        {m['developerPortal.credentialBuilder.tabs.preview']()}
                     </button>
 
                     <button
@@ -556,7 +736,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         }`}
                     >
                         <Code className="w-4 h-4" />
-                        JSON
+                        {m['developerPortal.credentialBuilder.tabs.json']()}
                     </button>
                 </div>
 
@@ -580,16 +760,31 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             }`}
                             title={
                                 validationStatus === 'valid'
-                                    ? 'Credential is valid'
+                                    ? m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.valid'
+                                      ]()
                                     : validationStatus === 'invalid' && analyzedError
-                                    ? `${analyzedError.summary}\n\nSuggestions:\n• ${analyzedError.suggestions.join('\n• ')}`
+                                    ? m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.invalidWithSuggestions'
+                                      ]({
+                                          summary: analyzedError.summary,
+                                          suggestions: analyzedError.suggestions.join('\n• '),
+                                      })
                                     : validationStatus === 'invalid'
-                                    ? `Validation failed: ${validationError}`
+                                    ? m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.invalidGeneric'
+                                      ]({ error: validationError || '' })
                                     : validationStatus === 'dirty'
-                                    ? 'Changes made - validating automatically...'
+                                    ? m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.dirty'
+                                      ]()
                                     : validationStatus === 'validating'
-                                    ? 'Validating...'
-                                    : 'Click to validate credential'
+                                    ? m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.validating'
+                                      ]()
+                                    : m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.clickToValidate'
+                                      ]()
                             }
                         >
                             {validationStatus === 'validating' ? (
@@ -605,14 +800,14 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             )}
                             <span className="text-xs font-medium">
                                 {validationStatus === 'validating'
-                                    ? 'Validating'
+                                    ? m['developerPortal.credentialBuilder.validate.validating']()
                                     : validationStatus === 'valid'
-                                    ? 'Valid'
+                                    ? m['developerPortal.credentialBuilder.validate.valid']()
                                     : validationStatus === 'invalid'
-                                    ? 'Invalid'
+                                    ? m['developerPortal.credentialBuilder.validate.invalid']()
                                     : validationStatus === 'dirty'
-                                    ? 'Changed'
-                                    : 'Validate'}
+                                    ? m['developerPortal.credentialBuilder.validate.changed']()
+                                    : m['developerPortal.credentialBuilder.validate.validate']()}
                             </span>
                         </button>
                     )}
@@ -622,7 +817,9 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         <div className="flex items-center gap-1 px-2 py-1 bg-violet-100 rounded-lg">
                             <Zap className="w-3 h-3 text-violet-600" />
                             <span className="text-xs font-medium text-violet-700">
-                                {dynamicVariables.length} dynamic
+                                {m['developerPortal.credentialBuilder.validate.dynamicCount']({
+                                    count: dynamicVariables.length,
+                                })}
                             </span>
                         </div>
                     )}
@@ -632,11 +829,22 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         <button
                             type="button"
                             onClick={() => setShowPresetSelector(!showPresetSelector)}
-                            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                            className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                selectedPresetId
+                                    ? 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
                         >
                             <Sparkles className="w-4 h-4" />
-                            Templates
-                            <ChevronDown className={`w-4 h-4 transition-transform ${showPresetSelector ? 'rotate-180' : ''}`} />
+                            {selectedPresetId
+                                ? ALL_PRESETS.find(p => p.id === selectedPresetId)?.name ||
+                                  m['developerPortal.credentialBuilder.templates.label']()
+                                : m['developerPortal.credentialBuilder.templates.label']()}
+                            <ChevronDown
+                                className={`w-4 h-4 transition-transform ${
+                                    showPresetSelector ? 'rotate-180' : ''
+                                }`}
+                            />
                         </button>
 
                         {showPresetSelector && (
@@ -648,32 +856,114 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
                                 <div className="absolute right-0 top-full mt-1 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
                                     <div className="p-2 border-b border-gray-100">
-                                        <p className="text-xs text-gray-500">Choose a template to start with</p>
+                                        <p className="text-xs text-gray-500">
+                                            {m[
+                                                'developerPortal.credentialBuilder.templates.choose'
+                                            ]()}
+                                        </p>
                                     </div>
 
                                     <div className="max-h-80 overflow-y-auto p-2">
+                                        <p className="text-xs font-medium text-gray-400 px-2 py-1 uppercase tracking-wider">
+                                            {m[
+                                                'developerPortal.credentialBuilder.templates.openBadgesSection'
+                                            ]()}
+                                        </p>
                                         {TEMPLATE_PRESETS.map(preset => {
-                                            const IconComponent = PRESET_ICONS[preset.icon] || FileText;
+                                            const IconComponent =
+                                                PRESET_ICONS[preset.icon] || FileText;
+                                            const isActive = selectedPresetId === preset.id;
 
                                             return (
                                                 <button
                                                     key={preset.id}
                                                     type="button"
                                                     onClick={() => applyPreset(preset.id)}
-                                                    className="w-full flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                                                    className={`w-full flex items-start gap-3 p-2 rounded-lg transition-colors text-left ${
+                                                        isActive
+                                                            ? 'bg-cyan-50 ring-1 ring-cyan-200'
+                                                            : 'hover:bg-gray-50'
+                                                    }`}
                                                 >
-                                                    <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                    <div
+                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                                            isActive ? 'bg-cyan-200' : 'bg-cyan-100'
+                                                        }`}
+                                                    >
                                                         <IconComponent className="w-4 h-4 text-cyan-600" />
                                                     </div>
 
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-gray-800">
+                                                        <p
+                                                            className={`text-sm font-medium ${
+                                                                isActive
+                                                                    ? 'text-cyan-800'
+                                                                    : 'text-gray-800'
+                                                            }`}
+                                                        >
                                                             {preset.name}
                                                         </p>
                                                         <p className="text-xs text-gray-500 truncate">
                                                             {preset.description}
                                                         </p>
                                                     </div>
+
+                                                    {isActive && (
+                                                        <CheckCircle2 className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+
+                                        <p className="text-xs font-medium text-gray-400 px-2 py-1 mt-2 uppercase tracking-wider">
+                                            {m[
+                                                'developerPortal.credentialBuilder.templates.clrSection'
+                                            ]()}
+                                        </p>
+                                        {CLR2_PRESETS.map(preset => {
+                                            const IconComponent =
+                                                PRESET_ICONS[preset.icon] || FileText;
+                                            const isActive = selectedPresetId === preset.id;
+
+                                            return (
+                                                <button
+                                                    key={preset.id}
+                                                    type="button"
+                                                    onClick={() => applyPreset(preset.id)}
+                                                    className={`w-full flex items-start gap-3 p-2 rounded-lg transition-colors text-left ${
+                                                        isActive
+                                                            ? 'bg-indigo-50 ring-1 ring-indigo-200'
+                                                            : 'hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    <div
+                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                                            isActive
+                                                                ? 'bg-indigo-200'
+                                                                : 'bg-indigo-100'
+                                                        }`}
+                                                    >
+                                                        <IconComponent className="w-4 h-4 text-indigo-600" />
+                                                    </div>
+
+                                                    <div className="flex-1 min-w-0">
+                                                        <p
+                                                            className={`text-sm font-medium ${
+                                                                isActive
+                                                                    ? 'text-indigo-800'
+                                                                    : 'text-gray-800'
+                                                            }`}
+                                                        >
+                                                            {preset.name}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 truncate">
+                                                            {preset.description}
+                                                        </p>
+                                                    </div>
+
+                                                    {isActive && (
+                                                        <CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+                                                    )}
                                                 </button>
                                             );
                                         })}
@@ -685,25 +975,32 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                 </div>
             </div>
 
-            {/* Custom Schema Warning */}
-            {template.schemaType && template.schemaType !== 'obv3' && (
-                <div className="px-4 py-3 bg-violet-50 border-b border-violet-200">
-                    <p className="text-sm text-violet-800">
-                        <strong>Custom Credential Schema</strong>
+            {/* Schema Info Banner */}
+            {template.schemaType === 'clr2' && (
+                <div className="px-4 py-3 bg-indigo-50 border-b border-indigo-200">
+                    <p className="text-sm text-indigo-800">
+                        <strong>{m['developerPortal.credentialBuilder.schema.clrTitle']()}</strong>
                     </p>
-                    <p className="text-xs text-violet-600 mt-1">
-                        This credential uses a {template.schemaType === 'clr2' ? 'CLR 2.0' : 'custom'} schema. 
-                        The Builder UI is not available for this credential type. Use the <strong>JSON</strong> tab to edit directly.
+                    <p className="text-xs text-indigo-600 mt-1">
+                        {m['developerPortal.credentialBuilder.schema.clrDescription']()}
                     </p>
                 </div>
             )}
-
-            {/* Validation Errors */}
-            {validationErrors.length > 0 && activeTab === 'builder' && template.schemaType === 'obv3' && (
-                <div className="px-4 py-2 bg-amber-50 border-b border-amber-200">
-                    <p className="text-xs text-amber-700">
-                        <strong>Missing required fields:</strong> {validationErrors.join(', ')}
+            {template.schemaType === 'custom' && (
+                <div className="px-4 py-3 bg-violet-50 border-b border-violet-200">
+                    <p className="text-sm text-violet-800">
+                        <strong>
+                            {m['developerPortal.credentialBuilder.schema.customTitle']()}
+                        </strong>
                     </p>
+                    <p
+                        className="text-xs text-violet-600 mt-1"
+                        dangerouslySetInnerHTML={{
+                            __html: m[
+                                'developerPortal.credentialBuilder.schema.customDescription'
+                            ](),
+                        }}
+                    />
                 </div>
             )}
 
@@ -715,23 +1012,46 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-red-800">
-                                {analyzedError.summary}
+                                {m['developerPortal.credentialBuilder.errorPanel.summary']({
+                                    summary: analyzedError.summary,
+                                })}
                             </p>
 
                             {/* Show changed fields as likely candidates */}
                             {changedFields.length > 0 && (
                                 <div className="mt-2 p-2 bg-red-100 rounded-lg">
                                     <p className="text-xs font-medium text-red-800 mb-1">
-                                        Likely culprit{changedFields.length > 1 ? 's' : ''} (changed since last valid):
+                                        {m[
+                                            'developerPortal.credentialBuilder.errorPanel.likelyCulprits'
+                                        ]({ plural: changedFields.length > 1 ? 's' : '' })}
                                     </p>
                                     <ul className="space-y-1">
                                         {changedFields.map((change, i) => (
-                                            <li key={i} className="text-xs text-red-700 flex items-center gap-2">
+                                            <li
+                                                key={i}
+                                                className="text-xs text-red-700 flex items-center gap-2"
+                                            >
                                                 <span className="font-medium">{change.label}</span>
                                                 <span className="text-red-500">
-                                                    {change.oldValue ? `"${change.oldValue.slice(0, 20)}${change.oldValue.length > 20 ? '...' : ''}"` : '(empty)'}
+                                                    {change.oldValue
+                                                        ? `"${change.oldValue.slice(0, 20)}${
+                                                              change.oldValue.length > 20
+                                                                  ? '...'
+                                                                  : ''
+                                                          }"`
+                                                        : m[
+                                                              'developerPortal.credentialBuilder.errorPanel.empty'
+                                                          ]()}
                                                     {' → '}
-                                                    {change.newValue ? `"${change.newValue.slice(0, 20)}${change.newValue.length > 20 ? '...' : ''}"` : '(empty)'}
+                                                    {change.newValue
+                                                        ? `"${change.newValue.slice(0, 20)}${
+                                                              change.newValue.length > 20
+                                                                  ? '...'
+                                                                  : ''
+                                                          }"`
+                                                        : m[
+                                                              'developerPortal.credentialBuilder.errorPanel.empty'
+                                                          ]()}
                                                 </span>
                                             </li>
                                         ))}
@@ -742,7 +1062,10 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             {changedFields.length === 0 && (
                                 <ul className="mt-1 space-y-0.5">
                                     {analyzedError.suggestions.map((suggestion, i) => (
-                                        <li key={i} className="text-xs text-red-700 flex items-start gap-1">
+                                        <li
+                                            key={i}
+                                            className="text-xs text-red-700 flex items-start gap-1"
+                                        >
                                             <span className="text-red-400">•</span>
                                             {suggestion}
                                         </li>
@@ -764,7 +1087,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded hover:bg-red-200 transition-colors"
                             >
                                 <RefreshCw className="w-3 h-3" />
-                                Retry
+                                {m['developerPortal.credentialBuilder.errorPanel.retry']()}
                             </button>
 
                             {lastValidTemplate && changedFields.length > 0 && (
@@ -774,7 +1097,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                     className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
                                 >
                                     <Undo2 className="w-3 h-3" />
-                                    Revert
+                                    {m['developerPortal.credentialBuilder.errorPanel.revert']()}
                                 </button>
                             )}
                         </div>
@@ -784,52 +1107,71 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
             {/* Content */}
             <div className="flex-1 overflow-hidden">
-                {activeTab === 'builder' && template.schemaType !== 'obv3' && template.schemaType ? (
+                {activeTab === 'builder' && template.schemaType === 'custom' ? (
                     <div className="h-full flex items-center justify-center p-8">
                         <div className="text-center max-w-md">
                             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-100 flex items-center justify-center">
                                 <Code className="w-8 h-8 text-violet-600" />
                             </div>
                             <h3 className="text-lg font-medium text-gray-800 mb-2">
-                                JSON-Only Mode
+                                {m['developerPortal.credentialBuilder.schema.jsonOnlyTitle']()}
                             </h3>
                             <p className="text-sm text-gray-600 mb-4">
-                                This credential uses a {template.schemaType === 'clr2' ? 'CLR 2.0' : 'custom'} schema 
-                                that doesn't map to the OBv3 builder fields. Switch to the JSON tab to edit this credential directly.
+                                {m[
+                                    'developerPortal.credentialBuilder.schema.jsonOnlyDescription'
+                                ]()}
                             </p>
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('json')}
                                 className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
                             >
-                                Open JSON Editor
+                                {m['developerPortal.credentialBuilder.schema.jsonOnlyButton']()}
                             </button>
                         </div>
                     </div>
-                ) : activeTab === 'builder' ? (
+                ) : activeTab === 'builder' && template.schemaType === 'clr2' ? (
                     <div className="h-full overflow-y-auto p-4 space-y-3">
-                        {/* CredentialInfoSection hidden - fields auto-populated from Achievement */}
-
                         <IssuerSection
+                            template={template}
+                            onChange={onChange}
                             isExpanded={expandedSections.has('issuer')}
                             onToggle={() => toggleSection('issuer')}
-                        />
-
-                        <RecipientSection
-                            template={template}
-                            onChange={onChange}
-                            isExpanded={expandedSections.has('recipient')}
-                            onToggle={() => toggleSection('recipient')}
                             disableDynamicFields={disableDynamicFields}
                         />
 
-                        <AchievementSection
+                        <CredentialInfoSection
                             template={template}
                             onChange={onChange}
-                            isExpanded={expandedSections.has('achievement')}
-                            onToggle={() => toggleSection('achievement')}
+                            isExpanded={expandedSections.has('credential')}
+                            onToggle={() => toggleSection('credential')}
                             disableDynamicFields={disableDynamicFields}
                         />
+
+                        <AchievementsListSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('achievements-list')}
+                            onToggle={() => toggleSection('achievements-list')}
+                            disableDynamicFields={disableDynamicFields}
+                            validationErrors={validationErrors}
+                        />
+
+                        <AssociationsSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('associations')}
+                            onToggle={() => toggleSection('associations')}
+                            validationErrors={validationErrors}
+                        />
+
+                        {(template.clrSubject?.verifiableCredential?.length ?? 0) > 0 && (
+                            <LinkedCredentialsSection
+                                template={template}
+                                isExpanded={expandedSections.has('linked-credentials')}
+                                onToggle={() => toggleSection('linked-credentials')}
+                            />
+                        )}
 
                         <EvidenceSection
                             template={template}
@@ -837,6 +1179,7 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             isExpanded={expandedSections.has('evidence')}
                             onToggle={() => toggleSection('evidence')}
                             disableDynamicFields={disableDynamicFields}
+                            validationErrors={validationErrors}
                         />
 
                         <DatesSection
@@ -846,13 +1189,60 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             onToggle={() => toggleSection('dates')}
                             disableDynamicFields={disableDynamicFields}
                         />
+                    </div>
+                ) : activeTab === 'builder' ? (
+                    <div className="h-full overflow-y-auto p-4 space-y-3">
+                        {/* CredentialInfoSection hidden - fields auto-populated from Achievement */}
 
+                        <IssuerSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('issuer')}
+                            onToggle={() => toggleSection('issuer')}
+                            disableDynamicFields={disableDynamicFields}
+                        />
+
+                        {!hideRecipientSection && (
+                            <RecipientSection
+                                template={template}
+                                onChange={onChange}
+                                isExpanded={expandedSections.has('recipient')}
+                                onToggle={() => toggleSection('recipient')}
+                                disableDynamicFields={disableDynamicFields}
+                            />
+                        )}
+
+                        <AchievementSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('achievement')}
+                            onToggle={() => toggleSection('achievement')}
+                            disableDynamicFields={disableDynamicFields}
+                            validationErrors={validationErrors}
+                        />
+
+                        <EvidenceSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('evidence')}
+                            onToggle={() => toggleSection('evidence')}
+                            disableDynamicFields={disableDynamicFields}
+                            validationErrors={validationErrors}
+                        />
+
+                        <DatesSection
+                            template={template}
+                            onChange={onChange}
+                            isExpanded={expandedSections.has('dates')}
+                            onToggle={() => toggleSection('dates')}
+                            disableDynamicFields={disableDynamicFields}
+                        />
                     </div>
                 ) : activeTab === 'preview' ? (
                     <div className="h-full overflow-y-auto p-6">
                         <div className="space-y-6">
                             <p className="text-sm text-gray-600 text-center">
-                                This is how your credential will appear to recipients:
+                                {m['developerPortal.credentialBuilder.preview.description']()}
                             </p>
 
                             {/* Credential Card Preview */}
@@ -860,7 +1250,11 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 <div className="w-[180px]">
                                     <BoostEarnedCard
                                         credential={previewCredential as any}
-                                        categoryType={getDefaultCategoryForCredential(previewCredential as any) || BoostCategoryOptionsEnum.achievement}
+                                        categoryType={
+                                            getDefaultCategoryForCredential(
+                                                previewCredential as any
+                                            ) || BoostCategoryOptionsEnum.achievement
+                                        }
                                         boostPageViewMode={BoostPageViewMode.Card}
                                         useWrapper={false}
                                         verifierState={false}
@@ -870,26 +1264,40 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             </div>
 
                             <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
-                                <p className="text-xs text-cyan-800 text-center">
-                                    <strong>Tip:</strong> Click the credential card above to open the full detail view,
-                                    just like recipients will see it in their wallet.
-                                </p>
+                                <p
+                                    className="text-xs text-cyan-800 text-center"
+                                    dangerouslySetInnerHTML={{
+                                        __html: m[
+                                            'developerPortal.credentialBuilder.preview.cardTip'
+                                        ](),
+                                    }}
+                                />
                             </div>
 
-                            {!template.image?.value && !template.credentialSubject.achievement?.image?.value && (
-                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <p className="text-xs text-amber-800 text-center">
-                                        <strong>Note:</strong> Add an image to make your credential more visually distinctive!
-                                    </p>
-                                </div>
-                            )}
+                            {!template.image?.value &&
+                                !template.credentialSubject.achievement?.image?.value && (
+                                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                        <p
+                                            className="text-xs text-amber-800 text-center"
+                                            dangerouslySetInnerHTML={{
+                                                __html: m[
+                                                    'developerPortal.credentialBuilder.preview.addImageNote'
+                                                ](),
+                                            }}
+                                        />
+                                    </div>
+                                )}
 
                             {dynamicVariables.length > 0 && (
                                 <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
-                                    <p className="text-xs text-violet-800 text-center">
-                                        <strong>Dynamic fields:</strong> This preview shows placeholder values.
-                                        The actual credential will use data from your API.
-                                    </p>
+                                    <p
+                                        className="text-xs text-violet-800 text-center"
+                                        dangerouslySetInnerHTML={{
+                                            __html: m[
+                                                'developerPortal.credentialBuilder.preview.dynamicFieldsNote'
+                                            ](),
+                                        }}
+                                    />
                                 </div>
                             )}
                         </div>

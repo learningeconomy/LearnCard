@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
-
 import {
     IonContent,
     IonFooter,
@@ -21,11 +20,12 @@ import X from '../../../svgs/X';
 import {
     ModalTypes,
     UploadRes,
-    useFilestack,
+    useImageUpload,
     useModal,
     UserProfilePicture,
     useDeviceTypeByWidth,
 } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import DatePickerInput from '../../../date-picker/DatePickerInput';
 import CountrySelectorModal from '../../../onboarding/onboardingNetworkForm/components/CountrySelectorModal';
@@ -36,6 +36,7 @@ import { LearnCardIDCMSTabsEnum } from '../../../learncardID-CMS/LearnCardIDCMST
 import { getLearnCardIDStyleDefaults } from '../../../learncardID-CMS/learncard-cms.helpers';
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
+import { m } from '../../../../paraglide/messages.js';
 
 export enum ChildInviteModalViewModeEnum {
     create = 'create',
@@ -76,6 +77,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
     const bottomBarRef = useRef<HTMLDivElement>();
+    const brandingConfig = useBrandingConfig();
     const isInEditMode = ChildInviteModalViewModeEnum.edit === viewMode;
 
     const [name, setName] = useState<string | null | undefined>(
@@ -105,7 +107,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -223,7 +225,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                     <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-sm rounded-[15px] bg-white px-4 pt-6 pb-10">
                         <div>
                             <p className="text-grayscale-900 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-xl">
-                                Child Account
+                                {m['family.childInvite.title']()}
                             </p>
                         </div>
                         <div className="flex items-center justify-center my-4">
@@ -247,17 +249,21 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                         </div>
                                     )}
                                 </UserProfilePicture>
-                                <div
+                                <button
+                                    type="button"
                                     onClick={handleImageSelect}
                                     className="text-grayscale-900 ml-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
                                 >
                                     <Pencil className="h-[60%]" />
-                                </div>
+                                </button>
                             </div>
                         </div>
                         <div>
                             <p className="text-grayscale-600 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-sm font-semibold">
-                                Child in {familyName}
+                                {m['family.childInvite.inFamily']({
+                                    title: m['family.members.child'](),
+                                    family: familyName ?? '',
+                                })}
                             </p>
                         </div>
 
@@ -272,7 +278,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !pb-2 !pr-8 font-normal font-poppins text-sm w-full troops-cms-placeholder ${
                                     errors?.name ? 'border-red-300 border-2' : ''
                                 }`}
-                                label="Name"
+                                label={m['family.childInvite.nameLabel']()}
                                 labelPlacement="stacked"
                                 type="text"
                             />
@@ -306,7 +312,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                 className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !pb-2 font-normal font-poppins text-sm w-full troops-cms-placeholder ${
                                     errors?.shortBio ? 'border-red-300 border-2' : ''
                                 }`}
-                                label="Tagline"
+                                label={m['family.childInvite.taglineLabel']()}
                                 labelPlacement="stacked"
                                 type="text"
                             />
@@ -325,14 +331,14 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
 
                         <div className="w-full mb-2 mt-4">
                             <label className="text-grayscale-500 text-xs font-poppins pl-4 mb-1 block">
-                                Date of Birth *
+                                {m['family.childInvite.dobLabel']()} *
                             </label>
                             <DatePickerInput
                                 value={dob}
                                 onChange={handleDobChange}
                                 error={errors?.dob?.[0]}
                                 isMobile={isMobile}
-                                label="Date of Birth"
+                                label={m['family.childInvite.dobLabel']()}
                             />
                             {errors?.dob && (
                                 <div className="text-red-400 text-sm font-medium pl-1 mt-1">
@@ -343,14 +349,16 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
 
                         <div className="w-full mb-2 mt-2">
                             <label className="text-grayscale-500 text-xs font-poppins pl-4 mb-1 block">
-                                Country (Optional)
+                                {m['family.childInvite.countryLabel']()}
                             </label>
                             <button
                                 type="button"
                                 onClick={presentCountrySelector}
                                 className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base`}
                             >
-                                {country ? COUNTRIES[country] : 'Select Country'}
+                                {country
+                                    ? COUNTRIES[country]
+                                    : m['family.childInvite.selectCountry']()}
                             </button>
                         </div>
 
@@ -361,7 +369,10 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                             className="w-full text-grayscale-900 text-xl font-poppins flex items-center justify-between px-2 mt-4"
                         >
                             <div className="flex">
-                                <LearnCardIconOutline className="mr-2" /> Edit LearnCard
+                                <LearnCardIconOutline className="mr-2" />{' '}
+                                {m['family.childInvite.edit']({
+                                    brand: brandingConfig.name || 'LearnCard',
+                                })}
                             </div>
 
                             <SlimCaretRight className="text-grayscale-400 w-[22px] h-auto" />
@@ -394,7 +405,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                 onClick={handleCloseModal}
                                 className="bg-white font-poppins text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                             >
-                                Cancel
+                                {m['common.cancel']()}
                             </button>
                             {isInEditMode ? (
                                 <button
@@ -406,7 +417,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                     }}
                                     className="text-white font-poppins text-lg font-semibold rounded-full py-[12px] w-full bg-emerald-700"
                                 >
-                                    Save
+                                    {m['common.save']()}
                                 </button>
                             ) : (
                                 <button
@@ -418,7 +429,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
                                     onClick={handleSave}
                                     className="text-white font-poppins text-lg font-semibold rounded-full py-[12px] w-full bg-emerald-700"
                                 >
-                                    Create
+                                    {m['common.create']()}
                                 </button>
                             )}
                         </div>

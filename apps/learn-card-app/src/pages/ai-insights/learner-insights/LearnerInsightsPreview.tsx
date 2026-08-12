@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { IonPage, IonContent } from '@ionic/react';
 import AiInsightsTopSkills from '../AiInsightsTopSkills';
 import AiInsightsLearningSnapshots from '../AiInsightsLearningSnapshots';
@@ -21,6 +23,7 @@ import {
 } from '../../skills/skills.helpers';
 
 import { LCNProfile } from '@learncard/types';
+import { useGlobalSkillFrameworks } from '../../../helpers/globalSkillFrameworks.helpers';
 
 export const LearnerInsightsPreview: React.FC<{
     profile: LCNProfile;
@@ -29,6 +32,8 @@ export const LearnerInsightsPreview: React.FC<{
 }> = ({ profile, readStatus, status }) => {
     const { closeModal } = useModal();
     const { getThemedCategoryColors } = useTheme();
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const globalSkillFrameworkIds = globalSkillFrameworks.map(framework => framework.frameworkId);
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiInsight);
     const { backgroundSecondaryColor } = colors;
@@ -47,7 +52,7 @@ export const LearnerInsightsPreview: React.FC<{
 
     const aiInsightsCredential = byCategory?.[CredentialCategoryEnum.aiInsight]?.[0];
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
+    const skillsMap = mapBoostsToSkills(allResolvedCreds, globalSkillFrameworkIds);
     const categorizedSkills: [
         string,
         RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
@@ -71,6 +76,7 @@ export const LearnerInsightsPreview: React.FC<{
                         <AiInsightsLearningSnapshots
                             isLoading={isLoading}
                             aiInsightCredential={aiInsightsCredential}
+                            isSharedView
                         />
                     </div>
                 </div>
@@ -82,7 +88,7 @@ export const LearnerInsightsPreview: React.FC<{
                         className={`bg-white p-3 h-[45px] rounded-full  flex items-center justify-center shadow-button-bottom text-grayscale-900 w-full`}
                         onClick={closeModal}
                     >
-                        Back
+                        {m['common.back']()}
                     </button>
                 </div>
             </footer>

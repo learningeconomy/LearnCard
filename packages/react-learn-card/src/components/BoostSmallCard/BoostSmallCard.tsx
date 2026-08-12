@@ -5,6 +5,7 @@ import AddAwardLight from '../../assets/images/addawardlight.svg';
 import ThreeDotVertical from '../svgs/ThreeDotVertical';
 import UserProfilePicture from '../UserProfilePicture/UserProfilePicture';
 import { CircleCheckButton } from '../CircleCheckButton';
+import BadgeThumbnailImg from '../BadgeThumbnailImg/BadgeThumbnailImg';
 
 import { BoostSmallCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
@@ -96,7 +97,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 {!customThumbComponent && (
                     <section className={defaultThumbClass}>
                         {thumbImgSrc && thumbImgSrc?.trim() !== '' && (
-                            <img
+                            <BadgeThumbnailImg
                                 className="generic-display-card-img h-full w-full  w-[110px] h-[110px] rounded-full object-cover overflow-hidden"
                                 src={thumbImgSrc ?? ''}
                                 alt="Credential Achievement Image"

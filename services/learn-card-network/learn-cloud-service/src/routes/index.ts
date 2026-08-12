@@ -37,10 +37,12 @@ export const createContext = async (
             : event.headers.authorization;
     const domainName = 'requestContext' in event ? event.requestContext.domainName : '';
 
-    const domain =
+    const _domain =
         !domainName || process.env.IS_OFFLINE
             ? `localhost%3A${process.env.PORT || 3000}`
             : domainName;
+
+    const domain = process.env.DOMAIN_NAME || _domain;
 
     if (authHeader && authHeader.split(' ').length === 2) {
         const [scheme, jwt] = authHeader.split(' ');

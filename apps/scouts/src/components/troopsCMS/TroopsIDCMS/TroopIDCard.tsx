@@ -71,7 +71,7 @@ const TroopIDCard: React.FC<TroopIDCardProps> = ({ state, idState, rootViewMode,
         title = 'National Admin Name';
         PlaceholderIcon = NationalAdminIdThumbPlaceholder;
     } else if (isInTroopViewMode && isInLeaderViewMode) {
-        title = 'Leader Name';
+        title = 'Troop Leader Name';
         PlaceholderIcon = LeaderIdThumbPlaceholder;
     } else if (isInTroopViewMode && isInMemberViewMode) {
         title = 'Scout Name';

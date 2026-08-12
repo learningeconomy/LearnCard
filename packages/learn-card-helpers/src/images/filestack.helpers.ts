@@ -36,10 +36,11 @@ export const getFileType = async (url: string): Promise<string> => {
     const handle = getFilestackHandle(url);
 
     try {
-        const data = await (
+        const data = (await (
             await fetch(`https://www.filestackapi.com/api/file/${handle}/metadata`)
-        ).json();
-        return data.mimetype;
+        ).json()) as { mimetype?: string };
+
+        return data.mimetype ?? '';
     } catch (error) {
         console.error(error);
 

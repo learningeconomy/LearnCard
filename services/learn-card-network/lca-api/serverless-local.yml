@@ -14,6 +14,8 @@ custom:
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
+        # serverless-esbuild does not support Bun as a Lambda artifact packager.
+        # Bun remains the repo installer/runner; pnpm is used only for packaging externals.
         packager: pnpm
         plugins: esbuildPlugins.cjs
         external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
@@ -40,8 +42,8 @@ provider:
         OPENAI_API_KEY: ${env:OPENAI_API_KEY}
         METABASE_SECRET_KEY: ${env:METABASE_SECRET_KEY}
         POSTMARK_SERVER_TOKEN: ${env:POSTMARK_SERVER_TOKEN}
-        POSTMARK_LOGIN_CODE_TEMPLATE_ID: ${env:POSTMARK_LOGIN_CODE_TEMPLATE_ID}
-        POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID: ${env:POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID}
+        POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS: ${env:POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS}
+        POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: ${env:POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS}
         POSTMARK_FROM_EMAIL: ${env:POSTMARK_FROM_EMAIL}
         POSTMARK_BRAND_NAME: ${env:POSTMARK_BRAND_NAME}
         PORT: ${opt:httpPort, "3000"}
