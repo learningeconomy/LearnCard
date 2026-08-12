@@ -42,6 +42,12 @@ const getCredentialContentKey = (credential: VC): string => {
 
 type ResolveCredential = (uri: string) => Promise<VC | undefined>;
 const MAX_CATEGORY_PAGES = 1000;
+export class DuplicateCredentialScanLimitError extends Error {
+    public constructor(maxPages: number) {
+        super(`Duplicate credential scan exceeded ${maxPages} pages`);
+        this.name = 'DuplicateCredentialScanLimitError';
+    }
+}
 
 const resolveMatchingRecord = async (
     records: LCR[],
@@ -175,5 +181,5 @@ export const findDuplicateCredential = async (
         cursor = page.cursor;
     }
 
-    return null;
+    throw new DuplicateCredentialScanLimitError(MAX_CATEGORY_PAGES);
 };

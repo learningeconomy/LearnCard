@@ -124,7 +124,7 @@ describe('findDuplicateCredential', () => {
         );
     });
 
-    it('stops legacy scanning after the safety page limit', async () => {
+    it('rejects rather than allowing a claim after the safety page limit', async () => {
         const wallet = createWallet();
         let pageCount = 0;
         const getPage = vi.fn().mockImplementation(async () => {
@@ -139,7 +139,7 @@ describe('findDuplicateCredential', () => {
 
         await expect(
             findDuplicateCredential(wallet, credential, { compareByContent: true })
-        ).resolves.toBeNull();
+        ).rejects.toThrow('Duplicate credential scan exceeded 1000 pages');
         expect(getPage).toHaveBeenCalledTimes(1000);
     });
     it('matches a repeated claim link by boost URI when issuance creates a new credential ID', async () => {

@@ -82,6 +82,14 @@ export const useDuplicateCredentialGuard = () => {
                     });
                 } catch (error) {
                     if (mountedRef.current) setIsCheckingDuplicate(false);
+                    if (
+                        error instanceof Error &&
+                        error.name === 'DuplicateCredentialScanLimitError'
+                    ) {
+                        log.warn('Duplicate credential scan reached its safety limit', error);
+                        return { action: 'cancel', isDuplicate: false };
+                    }
+
                     // Duplicate detection must never block a legitimate claim when the wallet index
                     // is temporarily unavailable. The underlying claim still reports real failures.
                     log.warn('Unable to check for an existing credential', error);

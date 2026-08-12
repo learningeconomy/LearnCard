@@ -168,6 +168,22 @@ describe('useDuplicateCredentialGuard', () => {
         );
     });
 
+    it('cancels rather than allowing a claim when the safety scan limit is exhausted', async () => {
+        const error = new Error('Duplicate credential scan exceeded 1000 pages');
+        error.name = 'DuplicateCredentialScanLimitError';
+        mocks.findDuplicateCredential.mockRejectedValue(error);
+        render(<Harness />);
+
+        await expect(requestImmediateResolution()).resolves.toEqual({
+            action: 'cancel',
+            isDuplicate: false,
+        });
+        expect(mocks.warn).toHaveBeenCalledWith(
+            'Duplicate credential scan reached its safety limit',
+            error
+        );
+    });
+
     it('cancels a pending decision when the claim surface unmounts', async () => {
         mocks.findDuplicateCredential.mockResolvedValue(existingMatch);
         const { unmount } = render(<Harness />);
