@@ -1,5 +1,13 @@
 # @learncard/ler-rs-plugin
 
+## 0.1.21
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.30
+    -   @learncard/vc-plugin@1.5.10
+
 ## 0.1.20
 
 ### Patch Changes
