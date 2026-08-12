@@ -44,6 +44,20 @@ const { readDefaultChannel } = requireFromHere('../../tools/capgo/readDefaultCha
 };
 
 /**
+ * App version read directly from this app's package.json.
+ *
+ * Deliberately NOT `process.env.npm_package_version` — that env var reflects
+ * the package.json of the directory the build command was invoked from, so
+ * CI builds run from the monorepo root (`bunx nx build learn-card-app`) would
+ * bake in the root package's version (e.g. 1.0.1) instead of the app's.
+ */
+const packageVersion = (
+    JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8')) as {
+        version: string;
+    }
+).version;
+
+/**
  * Resolve a short build commit SHA at config-eval time.
  *
  * Source preference:
@@ -120,10 +134,10 @@ export default defineConfig(async ({ mode, command }) => {
     const env = loadEnv(mode, process.cwd(), '');
     const { default: tsconfigPaths } = await import('vite-tsconfig-paths');
 
-    // Keyed off VITE_DOCKER_SOURCE alone (not `mode`) because the self-host build
-    // legitimately runs `vite build` in production mode, so `mode` can't distinguish it
-    // from a Netlify/dist build. We instead emit a loud build-log notice so an accidental
-    // production build with this flag set — which would ship uncompiled TS — is obvious.
+    // VITE_DOCKER_SOURCE is an explicit opt-in source/debug mode, keyed off the flag
+    // rather than `mode`. Production and self-host docker-builds both run `vite build`
+    // in production mode and intentionally resolve the prebuilt workspace dist.
+    // Emit a loud build-log notice so accidental source-mode production builds are obvious.
     const useDockerSourceMode = process.env.VITE_DOCKER_SOURCE === 'true';
     if (useDockerSourceMode) {
         console.warn(
@@ -131,9 +145,8 @@ export default defineConfig(async ({ mode, command }) => {
                 '',
                 '════════════════════════════════════════════════════════════════════════',
                 '⚠️  VITE_DOCKER_SOURCE=true — resolving @learncard/* to TypeScript SOURCE.',
-                '    Intended ONLY for self-host container builds (docker-build).',
-                '    A production/Netlify/npm-dist build MUST leave this UNSET, otherwise',
-                '    the app ships uncompiled workspace sources instead of optimized dist.',
+                '    Opt-in source/debug mode only; self-host docker-builds leave this UNSET.',
+                '    Production/Netlify/npm-dist builds resolve optimized prebuilt workspace dist.',
                 '════════════════════════════════════════════════════════════════════════',
                 '',
             ].join('\n')
@@ -141,8 +154,8 @@ export default defineConfig(async ({ mode, command }) => {
     }
 
     // Resolve @learncard/* to TypeScript source when serving the dev server (HMR / Fast
-    // Refresh) or in the self-host container build. Production dist builds leave this off
-    // so consumers get the optimized prebuilt bundles.
+    // Refresh) or when source/debug mode is explicitly enabled. Production and self-host
+    // docker-builds leave it off so consumers get the optimized prebuilt workspace dist.
     const useSourceConditions = useDockerSourceMode || command === 'serve';
 
     return {
@@ -154,6 +167,7 @@ export default defineConfig(async ({ mode, command }) => {
             paraglideVitePlugin({
                 project: './project.inlang',
                 outdir: './src/paraglide',
+                outputStructure: 'locale-modules',
             }),
             ...(process.env.ANALYZE
                 ? [
@@ -199,8 +213,8 @@ export default defineConfig(async ({ mode, command }) => {
             },
         },
         define: {
-            __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
-            __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+            __PACKAGE_VERSION__: JSON.stringify(packageVersion),
+            __APP_VERSION__: JSON.stringify(packageVersion),
             __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
             __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
             __CAPGO_DEFAULT_CHANNEL__: JSON.stringify(
@@ -234,8 +248,8 @@ export default defineConfig(async ({ mode, command }) => {
         },
         resolve: {
             // See useSourceConditions above: the `development` condition resolves @learncard/*
-            // to source for the dev server and self-host container builds; Netlify/dist builds
-            // leave it off and use the published dist bundles.
+            // to source only when serving locally or when VITE_DOCKER_SOURCE=true is explicit.
+            // Production and self-host Docker builds use the prebuilt dist bundles.
             ...(useSourceConditions
                 ? { conditions: ['development', 'module', 'browser', 'import', 'default'] }
                 : {}),

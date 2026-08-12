@@ -8,6 +8,13 @@ name: OpenID4VC Interop Tests
 # The in-process suite (tests/openid4vc-e2e/) continues to run on
 # every PR via the normal `Test Runner` (nx affected) workflow — this
 # file is purely for the heavyweight, real-vendor tier.
+#
+# walt.id image strategy: PR runs use the known-good pin baked into
+# tests/openid4vc-interop-e2e/compose.yaml (WALTID_IMAGE_TAG default),
+# so PRs only fail on regressions on our side. The weekly scheduled
+# run overrides WALTID_IMAGE_TAG=latest as a canary for upstream
+# drift (e.g. the 2026-08-05 Crypto2 kid-resolution change) without
+# blocking PRs.
 
 on:
     pull_request:
@@ -18,18 +25,27 @@ on:
             - 'tests/openid4vc-e2e/**'
             - 'bun.lock'
             - '.github/workflows/openid4vc-interop.yml'
+    schedule:
+        # Weekly canary against waltid/*:latest (Mondays 06:00 UTC).
+        - cron: '0 6 * * 1'
     workflow_dispatch:
         inputs:
             branch:
                 description: 'Branch to test'
                 required: true
                 default: 'main'
+            waltid_tag:
+                description: 'walt.id image tag (empty = compose default pin, e.g. `latest` for canary)'
+                required: false
+                default: ''
 
 jobs:
     interop:
-        name: Interop (walt.id + Sphereon + EUDI)
+        name: Interop (walt.id + Sphereon + EUDI)${{ github.event_name == 'schedule' && ' — canary vs latest' || '' }}
         runs-on: ubuntu-latest
         timeout-minutes: 45
+        env:
+            WALTID_IMAGE_TAG: ${{ github.event_name == 'schedule' && 'latest' || github.event.inputs.waltid_tag || '' }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -51,6 +67,17 @@ jobs:
               env:
                   # Surface real-vendor failures rather than silently skipping.
                   CI: 'true'
+
+            - name: Record vendor image digests
+              if: always()
+              working-directory: tests/openid4vc-interop-e2e
+              # Ties a red canary run to the exact upstream build it
+              # tested — `latest` is mutable, digests are not.
+              run: |
+                  docker compose config --images | sort -u | while read -r img; do
+                      digest=$(docker image inspect --format '{{index .RepoDigests 0}}' "$img" 2>/dev/null || echo 'not pulled')
+                      echo "$img -> $digest"
+                  done
 
             - name: Dump docker compose logs on failure
               if: failure()

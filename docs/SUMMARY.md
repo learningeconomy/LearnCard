@@ -40,7 +40,6 @@
     -   [Remote Key Management](how-to-guides/deploy-infrastructure/managing-seed-phrases.md)
     -   [SSS Key Management Config](how-to-guides/deploy-infrastructure/sss-key-management-config.md)
     -   [Generate API Tokens](how-to-guides/deploy-infrastructure/generate-api-tokens.md)
-    -   [Signing Authority](how-to-guides/deploy-infrastructure/signing-authority.md)
     -   [Deploy Your Own Network](how-to-guides/deploy-infrastructure/deploy-your-own-network.md)
     -   [Connect to Independent Network](how-to-guides/deploy-infrastructure/connect-to-independent-network.md)
     -   [Build a Plugin](how-to-guides/deploy-infrastructure/the-simplest-plugin.md)

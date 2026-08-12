@@ -66,14 +66,18 @@ pub fn key_to_did(method_pattern: String, jwk_json: String) -> Result<String> {
 }
 
 #[napi]
-pub async fn key_to_verification_method(method_pattern: String, jwk_json: String) -> Result<String> {
+pub async fn key_to_verification_method(
+    method_pattern: String,
+    jwk_json: String,
+) -> Result<String> {
     let jwk: JWK =
         serde_json::from_str(&jwk_json).map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let did = DID_METHODS
         .generate(&Source::KeyAndPattern(&jwk, &method_pattern))
         .ok_or_else(|| Error::from_reason("Unable to generate DID".to_string()))?;
     let did_resolver = DID_METHODS.to_resolver();
-    let vm = get_verification_method(&did, did_resolver).await
+    let vm = get_verification_method(&did, did_resolver)
+        .await
         .ok_or_else(|| Error::from_reason("Unable to get verification method".to_string()))?;
     Ok(vm)
 }
@@ -81,7 +85,8 @@ pub async fn key_to_verification_method(method_pattern: String, jwk_json: String
 #[napi]
 pub async fn did_to_verification_method(did: String) -> Result<String> {
     let did_resolver = DID_METHODS.to_resolver();
-    let vm = get_verification_method(&did, did_resolver).await
+    let vm = get_verification_method(&did, did_resolver)
+        .await
         .ok_or_else(|| Error::from_reason("Unable to get verification method".to_string()))?;
     Ok(vm)
 }
@@ -147,18 +152,15 @@ pub async fn issue_credential(
         .map_err(|e| Error::from_reason(format!("context: {}", e)))?;
 
     let vc_string = match proof_format {
-        ProofFormat::JWT => {
-            credential.generate_jwt(Some(&jwk), &options.ldp_options, resolver).await
-                .map_err(|e| Error::from_reason(format!("jwt: {}", e)))?
-        }
+        ProofFormat::JWT => credential
+            .generate_jwt(Some(&jwk), &options.ldp_options, resolver)
+            .await
+            .map_err(|e| Error::from_reason(format!("jwt: {}", e)))?,
         _ => {
-            let proof = credential.generate_proof(
-                &jwk,
-                &options.ldp_options,
-                resolver,
-                &mut context_loader,
-            ).await
-            .map_err(|e| Error::from_reason(format!("ldp: {}", e)))?;
+            let proof = credential
+                .generate_proof(&jwk, &options.ldp_options, resolver, &mut context_loader)
+                .await
+                .map_err(|e| Error::from_reason(format!("ldp: {}", e)))?;
             credential.add_proof(proof);
             serde_json::to_string(&credential)
                 .map_err(|e| Error::from_reason(format!("serde: {}", e)))?
@@ -185,7 +187,9 @@ pub async fn verify_credential(
         .with_context_map_from(context_map)
         .map_err(|e| Error::from_reason(format!("context: {}", e)))?;
 
-    let result = vc.verify(Some(options), resolver, &mut context_loader).await;
+    let result = vc
+        .verify(Some(options), resolver, &mut context_loader)
+        .await;
     serde_json::to_string(&result).map_err(|e| Error::from_reason(format!("serde: {}", e)))
 }
 
@@ -213,18 +217,15 @@ pub async fn issue_presentation(
         .map_err(|e| Error::from_reason(format!("context: {}", e)))?;
 
     let vp_string = match proof_format {
-        ProofFormat::JWT => {
-            presentation.generate_jwt(Some(&jwk), &options.ldp_options, resolver).await
-                .map_err(|e| Error::from_reason(format!("jwt: {}", e)))?
-        }
+        ProofFormat::JWT => presentation
+            .generate_jwt(Some(&jwk), &options.ldp_options, resolver)
+            .await
+            .map_err(|e| Error::from_reason(format!("jwt: {}", e)))?,
         _ => {
-            let proof = presentation.generate_proof(
-                &jwk,
-                &options.ldp_options,
-                resolver,
-                &mut context_loader,
-            ).await
-            .map_err(|e| Error::from_reason(format!("ldp: {}", e)))?;
+            let proof = presentation
+                .generate_proof(&jwk, &options.ldp_options, resolver, &mut context_loader)
+                .await
+                .map_err(|e| Error::from_reason(format!("ldp: {}", e)))?;
             presentation.add_proof(proof);
             serde_json::to_string(&presentation)
                 .map_err(|e| Error::from_reason(format!("serde: {}", e)))?
@@ -257,12 +258,14 @@ pub async fn verify_presentation(
             Some(options),
             resolver,
             &mut context_loader,
-        ).await
+        )
+        .await
     } else {
         // Verify JSON-LD presentation
         let vp = VerifiablePresentation::from_json(&presentation)
             .map_err(|e| Error::from_reason(format!("vp: {}", e)))?;
-        vp.verify(Some(options), resolver, &mut context_loader).await
+        vp.verify(Some(options), resolver, &mut context_loader)
+            .await
     };
 
     serde_json::to_string(&result).map_err(|e| Error::from_reason(format!("serde: {}", e)))
@@ -275,7 +278,9 @@ pub async fn verify_presentation(
 #[napi]
 pub fn context_loader(url: String) -> Result<String> {
     let context = match url.as_str() {
-        "https://www.w3.org/2018/credentials/v1" => ssi_contexts::CREDENTIALS_V1,
+        "https://www.w3.org/2018/credentials/v1" | "https://w3.org/2018/credentials/v1" => {
+            ssi_contexts::CREDENTIALS_V1
+        }
         "https://www.w3.org/ns/credentials/v2" => ssi_contexts::CREDENTIALS_V2,
         "https://www.w3.org/2018/credentials/examples/v1" => ssi_contexts::CREDENTIALS_EXAMPLES_V1,
         "https://www.w3.org/ns/credentials/examples/v2" => ssi_contexts::CREDENTIALS_EXAMPLES_V2,
@@ -297,6 +302,7 @@ pub fn context_loader(url: String) -> Result<String> {
         "https://w3id.org/security/suites/ed25519-2020/v1" => ssi_contexts::W3ID_ED2020_V1,
         "https://w3id.org/security/multikey/v1" => ssi_contexts::W3ID_MULTIKEY_V1,
         "https://w3id.org/security/data-integrity/v1" => ssi_contexts::W3ID_DATA_INTEGRITY_V1,
+        "https://w3id.org/security/data-integrity/v2" => ssi_contexts::W3ID_DATA_INTEGRITY_V2,
         "https://w3id.org/security/suites/blockchain-2021/v1" => ssi_contexts::BLOCKCHAIN2021_V1,
         "https://w3id.org/citizenship/v1" => ssi_contexts::CITIZENSHIP_V1,
         "https://w3id.org/vaccination/v1" => ssi_contexts::VACCINATION_V1,
@@ -424,4 +430,273 @@ pub fn decrypt_dag_jwe(jwe: String, jwks_json: Vec<String>) -> Result<String> {
 pub async fn clear_cache() -> Result<String> {
     DIDWeb::clear_cache().await;
     Ok("Cleared".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::{json, Value};
+    const KEY: &str = r#"{"kty":"OKP","crv":"Ed25519","x":"iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w","d":"AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE"}"#;
+    const DID: &str = "did:key:z6Mkon3Necd6NkkyfoGoHxid2znGc59LU3K7mubaRcFbLfLX";
+    const VM: &str = "did:key:z6Mkon3Necd6NkkyfoGoHxid2znGc59LU3K7mubaRcFbLfLX#z6Mkon3Necd6NkkyfoGoHxid2znGc59LU3K7mubaRcFbLfLX";
+    const PROOF_CHAIN: &str = include_str!("../tests/fixtures/proof-chain.json");
+    const W3C_PROOF_CHAIN: &str = include_str!("../tests/fixtures/proof-chain-w3c.json");
+
+    fn proof_options() -> String {
+        json!({
+            "type": "DataIntegrityProof",
+            "cryptosuite": "eddsa-rdfc-2022",
+            "verificationMethod": VM,
+            "proofPurpose": "assertionMethod"
+        })
+        .to_string()
+    }
+
+    fn issue(credential: Value) -> Result<String> {
+        block_on(issue_credential(
+            credential.to_string(),
+            proof_options(),
+            KEY.to_string(),
+            "{}".to_string(),
+        ))
+    }
+    fn verify_with_options(credential: &Value, options: Value) -> Value {
+        serde_json::from_str(
+            &block_on(verify_credential(
+                credential.to_string(),
+                options.to_string(),
+                "{}".to_string(),
+            ))
+            .unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn verify(credential: &Value) -> Value {
+        verify_with_options(credential, json!({}))
+    }
+
+    #[test]
+    fn loads_credentials_v1_context_without_www() {
+        assert_eq!(
+            context_loader("https://w3.org/2018/credentials/v1".to_string()).unwrap(),
+            ssi_contexts::CREDENTIALS_V1
+        );
+    }
+
+    #[test]
+    fn accepts_numeric_bitstring_status_list_index() {
+        let entry: ssi::vc::revocation::BitstringStatusListEntry = serde_json::from_value(json!({
+            "statusPurpose": "revocation",
+            "statusListIndex": 436,
+            "statusListCredential": "https://example.com/status/1"
+        }))
+        .unwrap();
+
+        assert_eq!(
+            serde_json::to_value(entry).unwrap()["statusListIndex"],
+            json!("436")
+        );
+    }
+
+    #[test]
+    fn verifies_url_issuer_with_did_key_verification_method() {
+        let credential = json!({
+            "@context": [
+                "https://www.w3.org/ns/credentials/v2",
+                "https://www.w3.org/ns/credentials/examples/v2",
+                "https://w3id.org/security/suites/ed25519-2020/v1"
+            ],
+            "id": "urn:uuid:58172aac-d8ba-11ed-83dd-0b3aef56cc33",
+            "type": ["VerifiableCredential", "AlumniCredential"],
+            "name": "Alumni Credential",
+            "description": "A minimum viable example of an Alumni Credential.",
+            "issuer": "https://vc.example/issuers/5678",
+            "validFrom": "2023-01-01T00:00:00Z",
+            "credentialSubject": {
+                "id": "did:example:abcdefgh",
+                "alumniOf": "The School of Examples"
+            },
+            "proof": {
+                "type": "Ed25519Signature2020",
+                "created": "2023-02-24T23:36:38Z",
+                "verificationMethod": "did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2#z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2",
+                "proofPurpose": "assertionMethod",
+                "proofValue": "z57Mm1vboMtZiCyJ4aReZsv8co4Re64Y8GEjL1ZARzMbXZgkARFLqFs1P345NpPGG2hgCrS4nNdvJhpwnrNyG3kEF"
+            }
+        });
+        let result: Value = serde_json::from_str(
+            &block_on(verify_credential(
+                credential.to_string(),
+                "{}".to_string(),
+                "{}".to_string(),
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("proof")));
+        assert_eq!(result["errors"], json!([]));
+        assert_eq!(
+            result["warnings"],
+            json!([
+                "Issuer authorization was not checked because the credential issuer is not a DID"
+            ])
+        );
+
+        let filtered_result: Value = serde_json::from_str(
+            &block_on(verify_credential(
+                credential.to_string(),
+                json!({
+                    "verificationMethod": credential["proof"]["verificationMethod"]
+                })
+                .to_string(),
+                "{}".to_string(),
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+
+        assert!(filtered_result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("proof")));
+        assert_eq!(filtered_result["errors"], json!([]));
+        assert_eq!(
+            filtered_result["warnings"],
+            json!([
+                "Issuer authorization was not checked because the credential issuer is not a DID"
+            ])
+        );
+    }
+
+    #[test]
+    fn rejects_json_ld_data_loss() {
+        let credential = json!({
+            "@context": ["https://www.w3.org/2018/credentials/v1"],
+            "type": ["VerifiableCredential"],
+            "issuer": DID,
+            "issuanceDate": "2020-03-16T22:37:26.544Z",
+            "credentialSubject": { "id": DID }
+        });
+        let undefined_type = json!({
+            "@context": credential["@context"],
+            "type": ["VerifiableCredential", "InvalidType"],
+            "issuer": credential["issuer"],
+            "issuanceDate": credential["issuanceDate"],
+            "credentialSubject": credential["credentialSubject"]
+        });
+        let undefined_term = json!({
+            "@context": credential["@context"],
+            "type": credential["type"],
+            "issuer": credential["issuer"],
+            "issuanceDate": credential["issuanceDate"],
+            "credentialSubject": {
+                "id": DID,
+                "invalidTerm": "invalidTerm"
+            }
+        });
+
+        for invalid in [undefined_type, undefined_term] {
+            assert!(issue(invalid)
+                .unwrap_err()
+                .to_string()
+                .contains("DATA_LOSS_DETECTION_ERROR"));
+        }
+    }
+
+    #[test]
+    fn emits_typed_cryptosuite_context() {
+        let credential = json!({
+            "@context": ["https://www.w3.org/2018/credentials/v1"],
+            "type": ["VerifiableCredential"],
+            "issuer": DID,
+            "issuanceDate": "2020-03-16T22:37:26.544Z",
+            "credentialSubject": { "id": DID }
+        });
+        let issued: Value = serde_json::from_str(&issue(credential).unwrap()).unwrap();
+        let context: Value = serde_json::from_str(
+            &context_loader("https://w3id.org/security/data-integrity/v2".to_string()).unwrap(),
+        )
+        .unwrap();
+
+        assert!(issued["@context"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("https://w3id.org/security/data-integrity/v2")));
+        assert_eq!(
+            context["@context"]["DataIntegrityProof"]["@context"]["cryptosuite"]["@type"],
+            "https://w3id.org/security#cryptosuiteString"
+        );
+    }
+
+    #[test]
+    fn issues_minimal_v2_credential() {
+        let credential = json!({
+            "@context": ["https://www.w3.org/ns/credentials/v2"],
+            "type": ["VerifiableCredential"],
+            "issuer": DID,
+            "validFrom": "2023-01-01T00:00:00Z",
+            "credentialSubject": { "id": DID }
+        });
+        let issued: Value = serde_json::from_str(&issue(credential).unwrap()).unwrap();
+
+        assert_eq!(issued["proof"]["cryptosuite"], "eddsa-rdfc-2022");
+    }
+    #[test]
+    fn verifies_w3c_previous_proof_chain() {
+        let credential: Value = serde_json::from_str(W3C_PROOF_CHAIN).unwrap();
+        let result = verify(&credential);
+
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("proof")));
+        assert_eq!(result["errors"], json!([]));
+    }
+
+    #[test]
+    fn verifies_transitive_filtered_dependencies() {
+        let credential: Value = serde_json::from_str(PROOF_CHAIN).unwrap();
+        let options = json!({
+            "verificationMethod": credential["proof"][0]["verificationMethod"]
+        });
+
+        assert_eq!(
+            verify_with_options(&credential, options.clone())["errors"],
+            json!([])
+        );
+
+        let mut corrupted = credential;
+        corrupted["proof"][1]["proofValue"] = json!("zInvalidProofValue");
+        let result = verify_with_options(&corrupted, options);
+
+        assert_ne!(result["errors"], json!([]));
+    }
+
+    #[test]
+    fn rejects_proof_set_when_any_proof_is_invalid() {
+        let credential = json!({
+            "@context": ["https://www.w3.org/ns/credentials/v2"],
+            "type": ["VerifiableCredential"],
+            "issuer": DID,
+            "validFrom": "2026-01-01T00:00:00Z",
+            "credentialSubject": { "id": "did:example:subject" }
+        });
+        let mut issued: Value = serde_json::from_str(&issue(credential).unwrap()).unwrap();
+        let valid_proof = issued["proof"].clone();
+        let mut invalid_proof = valid_proof.clone();
+        invalid_proof["proofValue"] = json!("zInvalidProofValue");
+        issued["proof"] = json!([invalid_proof, valid_proof]);
+        let result = verify(&issued);
+
+        assert_ne!(result["errors"], json!([]));
+        assert!(!result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("proof")));
+    }
 }

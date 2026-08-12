@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-protected_branches="main production"
+protected_branches="main"
 timeout_seconds=10
 
 while read -r local_ref local_sha remote_ref remote_sha; do

@@ -51,6 +51,7 @@ import { VC, VerificationItem } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
+import { useCredentialStatus } from 'src/hooks/useCredentialStatus';
 
 type BoostEarnedCardProps = {
     credential?: VC;
@@ -71,7 +72,10 @@ type BoostEarnedCardProps = {
     className?: string;
     loading?: boolean;
     isInSkillsModal?: boolean;
+    /** Hides options on both the card and the credential preview. */
     hideOptionsMenu?: boolean;
+    /** Hides only the options trigger on the card. */
+    hideCardOptionsMenu?: boolean;
     textColor?: string;
     isClrChildCredential?: boolean;
     parentVerificationItems?: VerificationItem[];
@@ -99,6 +103,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     loading,
     isInSkillsModal,
     hideOptionsMenu = false,
+    hideCardOptionsMenu = false,
     textColor,
     isClrChildCredential = false,
     parentVerificationItems = [],
@@ -121,6 +126,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     const credential = resolvedCredential || _credential;
     const isBoost = credential && isBoostCredential(credential);
+
+    // Lazily verify this credential's revoked/suspended status (cached by URI, fail-open).
+    const lifecycleStatus = useCredentialStatus(credential, record?.uri);
 
     let cred = credential && unwrapBoostCredential(credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(cred);
@@ -275,12 +283,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems,
+            lifecycleStatus,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
-            onDotsClick: () => {
-                if (hideOptionsMenu) return;
-                handleOptionsMenu();
-            },
+            onDotsClick: hideOptionsMenu ? undefined : handleOptionsMenu,
             subjectDID: idSubjectDID,
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
@@ -328,14 +334,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems,
+            lifecycleStatus,
             handleShareBoost: () => presentShareBoostLink(),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
-            onDotsClick: () => {
-                if (hideOptionsMenu) return;
-                handleOptionsMenu();
-            },
+            onDotsClick: hideOptionsMenu ? undefined : handleOptionsMenu,
             customThumbComponent: (
                 <CredentialBadgeNew
                     achievementType={achievementType}
@@ -409,6 +413,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         return (
             <ErrorBoundary fallback={<div>Something went wrong</div>}>
                 <BoostGenericCardWrapper
+                    lifecycleStatus={lifecycleStatus}
                     innerOnClick={
                         cred && !showSkeleton
                             ? () => {
@@ -420,7 +425,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     onCheckClick={onCheckMarkClick}
                     showChecked={showChecked}
                     checkStatus={initialCheckmarkState}
-                    optionsTriggerOnClick={hideOptionsMenu ? undefined : handleOptionsMenu}
+                    optionsTriggerOnClick={
+                        showSkeleton || hideOptionsMenu || hideCardOptionsMenu
+                            ? undefined
+                            : handleOptionsMenu
+                    }
                     className={`earned-small-card bg-white text-black z-[1000] mt-[15px] ${className}`}
                     customHeaderClass="boost-managed-card"
                     thumbImgSrc={badgeThumbnail}
@@ -498,6 +507,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     }`}
                 >
                     <BoostGenericCardWrapper
+                        lifecycleStatus={lifecycleStatus}
                         innerOnClick={() => handleClick('innerOnClick')}
                         onCheckClick={() => handleClick('onCheckClick')}
                         showChecked={showChecked}
@@ -574,6 +584,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 className={`flex justify-center items-center relative ${isCardView ? '' : 'p-0'}`}
             >
                 <BoostGenericCardWrapper
+                    lifecycleStatus={lifecycleStatus}
                     innerOnClick={
                         cred && !showSkeleton
                             ? () => {
@@ -586,7 +597,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     customHeaderClass="boost-managed-card"
                     thumbImgSrc={badgeThumbnail}
                     optionsTriggerOnClick={
-                        showSkeleton || hideOptionsMenu
+                        showSkeleton || hideOptionsMenu || hideCardOptionsMenu
                             ? undefined
                             : () => {
                                   handleOptionsMenu();

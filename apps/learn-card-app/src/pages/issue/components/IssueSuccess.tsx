@@ -13,6 +13,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import type { SimpleCredentialType } from '../../../components/simple-send/simpleSend.helpers';
 import { Confetti } from './Confetti';
+import FeedbackMoment from '../../../feedback/FeedbackMoment';
 import type { LinkOptions, Recipient, RecipientMode } from './recipientTypes';
 import * as m from '../../../paraglide/messages.js';
 
@@ -269,6 +270,12 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         >
                             {m['issueFlow.success.issueAnother']()}
                         </button>
+
+                        <FeedbackMoment
+                            surface="issue_success"
+                            className="mt-3"
+                            allowAdvocacy={false}
+                        />
                     </div>
                 </div>
             ) : recipientMode === 'people' ? (
@@ -300,6 +307,8 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         >
                             {m['issueFlow.success.issueAnother']()}
                         </button>
+
+                        <FeedbackMoment surface="issue_success" className="mt-3" />
                     </div>
                 </div>
             ) : (
@@ -329,6 +338,8 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         >
                             {m['issueFlow.success.issueAnother']()}
                         </button>
+
+                        <FeedbackMoment surface="issue_success" className="mt-3" />
                     </div>
                 </div>
             )}

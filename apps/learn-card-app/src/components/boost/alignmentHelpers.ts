@@ -1,25 +1,4 @@
-import { BoostCMSAlignment, BoostCMSSkill } from './boost';
-
-// Convert a BoostCMSSkill to a top-level alignment
-export const toSkillAlignment = (skill: BoostCMSSkill): BoostCMSAlignment => ({
-    type: 'Alignment',
-    targetName: skill.skill,
-    targetFramework: String(skill.category),
-});
-
-// Convert a subskill to an alignment, using the parent skill as framework
-export const toSubskillAlignment = (skillName: string, subskill: string): BoostCMSAlignment => ({
-    type: 'Alignment',
-    targetName: String(subskill),
-    targetFramework: String(skillName),
-});
-
-// Build alignments from an array of BoostCMSSkill entries
-export const alignmentsFromSkills = (skills: BoostCMSSkill[] = []): BoostCMSAlignment[] =>
-    skills.flatMap(s => [
-        toSkillAlignment(s),
-        ...(s?.subskills ?? []).map(ss => toSubskillAlignment(s.skill, ss)),
-    ]);
+import type { BoostCMSAlignment } from './boost';
 
 export const getFrameworkIdAndSkillIdFromUrl = (url: string) => {
     const frameworkIdMatch = url.match(/frameworks\/([^/]+)/);
@@ -50,11 +29,6 @@ export const deriveAlignmentsFromVC = (vc: any): (BoostCMSAlignment & { id: stri
         }) ?? [];
 
     return vcAlignments;
-
-    // if (vcAlignments && vcAlignments.length > 0) return vcAlignments;
-
-    // const vcSkills: BoostCMSSkill[] = vc?.skills ?? [];
-    // return alignmentsFromSkills(vcSkills);
 };
 
 /**

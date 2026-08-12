@@ -34,6 +34,12 @@ module.exports = {
         'bg-baltic-blue-50',
         'bg-baltic-blue-200',
         'bg-baltic-blue-200/50',
+        // Build-My-LearnCard side-menu spinner tint built via `text-${primaryColor}`
+        // (LC-1924). One entry per theme `defaults.primaryColor`; without these the
+        // interpolated class silently produces no styling.
+        'text-indigo-500',
+        'text-blue-500',
+        'text-baltic-blue-500',
     ],
     theme: {
         fontFamily: {

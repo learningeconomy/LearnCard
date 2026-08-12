@@ -1,43 +1,69 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 
 import * as m from '../../../paraglide/messages.js';
-import { TransP } from '../../../i18n/TransP';
-
-import CheckListItem from './CheckListItem';
 
 import {
+    ModalTypes,
+    useModal,
     ChecklistEnum,
-    useGetCheckListStatus,
     ChecklistItem,
+    UploadTypesEnum,
     checklistItems,
+    useGetChecklistCredentialCounts,
 } from 'learn-card-base';
+
+import CheckListItem from './CheckListItem';
+import CheckListManagerContainer from './CheckListManager/CheckListManagerContainer';
 
 export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
     activeChecklistStep,
 }) => {
-    const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
+    const { newModal } = useModal();
+    const { data: checklistItemCounts } = useGetChecklistCredentialCounts();
+
+    const handleOpenChecklistManager = useCallback(
+        (checkListItem: ChecklistItem) => {
+            newModal(
+                <CheckListManagerContainer checkListItem={checkListItem} />,
+                { className: '!bg-transparent' },
+                { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+            );
+        },
+        [newModal]
+    );
+
+    useEffect(() => {
+        if (!activeChecklistStep) return;
+
+        const autoOpenItem = checklistItems.find(item => item.type === activeChecklistStep);
+        if (autoOpenItem) {
+            handleOpenChecklistManager(autoOpenItem);
+        }
+    }, [activeChecklistStep, handleOpenChecklistManager]);
 
     return (
-        <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-[15px] mt-4 rounded-[15px]">
-            <div className="w-full flex items-center justify-start py-[10px]">
-                <h4 className="text-[20px] text-grayscale-900 font-notoSans">
-                    <TransP
-                        m={m['passport.buildMyLearnCard.stepsCompleted']}
-                        values={{ completed: completedItems, total: checklistItems.length }}
-                        components={[
-                            <span className="font-semibold" />,
-                            <span className="font-semibold" />,
-                        ]}
-                    />
+        <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-5 mt-4 rounded-[20px]">
+            <div className="w-full flex flex-col items-start justify-start">
+                <h4 className="text-xl font-semibold text-grayscale-900 leading-tight">
+                    {m['passport.buildMyLearnCard.actionsTitle']()}
                 </h4>
+                <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">
+                    {m['passport.buildMyLearnCard.actionsDescription']()}
+                </p>
             </div>
-            <div className="w-full flex items-center justify-start">
-                <ul className="w-full">
-                    {checklistItemsWithStatus.map((item: ChecklistItem) => (
+
+            <div className="w-full flex items-center justify-start mt-5">
+                <ul className="w-full flex flex-col">
+                    {checklistItems.map((item: ChecklistItem) => (
                         <CheckListItem
                             checkListItem={item}
+                            count={
+                                item.uploadType
+                                    ? checklistItemCounts?.[item.uploadType as UploadTypesEnum]
+                                    : undefined
+                            }
                             key={item.type}
-                            activeChecklistStep={activeChecklistStep}
+                            onOpen={() => handleOpenChecklistManager(item)}
                         />
                     ))}
                 </ul>
