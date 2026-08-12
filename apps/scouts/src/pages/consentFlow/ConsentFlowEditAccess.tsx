@@ -99,12 +99,18 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         })
                     );
                     presentToast(
-                        `Deleted ${contractCredentials.length} credentials from contract ${contractDetails.name}`,
+                        m['consentFlow.toasts.deletedCredentials']({
+                            count: contractCredentials.length,
+                            name: contractDetails.name,
+                        }),
                         { type: ToastTypeEnum.Success }
                     );
                 } catch (e) {
                     presentToast(
-                        `Error while deleting credentials from contarct ${contractDetails.name}: ${e.message}`,
+                        m['consentFlow.toasts.errorDeletingCredentials']({
+                            name: contractDetails.name,
+                            error: e.message,
+                        }),
                         { type: ToastTypeEnum.Error }
                     );
                 }

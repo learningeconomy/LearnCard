@@ -93,10 +93,10 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
         } catch (e) {
             log.debug('///handleSubmit create credential bundle Error', e);
             presentAlert({
-                header: 'Error',
-                subHeader: 'Create Boost Bundle error',
+                header: m['credsBundle.errorHeader'](),
+                subHeader: m['credsBundle.createBoostBundleError'](),
                 message: e?.toString(),
-                buttons: ['OK'],
+                buttons: [m['common.ok']()],
             });
             throw new Error('There was an error. Please try again later.');
         } finally {
@@ -166,7 +166,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                             <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
                                                 <img
                                                     src={MiniGhost}
-                                                    alt="ghost"
+                                                    alt=""
                                                     className="max-w-[250px] m-auto mb-[20px]"
                                                 />
                                                 <div className="flex flex-col gap-[20px] text-grayscale-900 font-[700] font-montserrat">

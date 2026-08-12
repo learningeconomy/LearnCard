@@ -285,7 +285,7 @@ export const ClaimBoostModal: React.FC<{
                 header: isExpired ? m['claimBoost.expiredAlert']() : m['claimBoost.errorAlert'](),
                 buttons: [
                     {
-                        text: 'Okay',
+                        text: m['consentFlow.okay'](),
                         role: 'cancel',
                         handler: () => {
                             dismissAlert();
@@ -351,11 +351,7 @@ export const ClaimBoostModal: React.FC<{
                     )}
                     {!loading && !boost && (
                         <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                            <img
-                                src={MiniGhost}
-                                alt="currencies"
-                                className="relative max-w-[250px] m-auto"
-                            />
+                            <img src={MiniGhost} alt="" className="relative max-w-[250px] m-auto" />
                             <h1 className="text-center text-3xl font-bold text-grayscale-800">
                                 {m['scanner.eek']()}
                             </h1>

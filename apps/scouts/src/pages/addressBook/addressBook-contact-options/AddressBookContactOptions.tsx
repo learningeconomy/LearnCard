@@ -110,7 +110,7 @@ const AddressBookContactOptions: React.FC<{
     const handleShare = async () => {
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['addressBook.addContact'](),
                 text: '',
                 url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',

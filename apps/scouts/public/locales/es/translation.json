@@ -82,7 +82,8 @@
         "edit": "Editar",
         "clear": "Borrar",
         "privacyPolicy": "Política de privacidad",
-        "termsOfService": "Términos del servicio"
+        "termsOfService": "Términos del servicio",
+        "ok": "De acuerdo"
     },
     "navigation": {
         "boosts": "Impulsos",
@@ -907,7 +908,13 @@
         "credStatus": "Estado de la Credencial:",
         "verified": "verificado",
         "credVerifications": "Verificaciones de Credencial",
-        "toggle": "alternar"
+        "toggle": "alternar",
+        "errorHeader": "Error",
+        "createBoostBundleError": "Error al crear el paquete de boosts",
+        "createCredentialBundleError": "Error al crear el paquete de credenciales",
+        "errorFetchingCredential": "Error al obtener la credencial: {{error}}",
+        "enterPinPrompt": "Introduce tu PIN para acceder a este paquete de boosts verificado.",
+        "pinPlaceholder": "PIN (máx. 4 dígitos)"
     },
     "claimBoost": {
         "loadingBoost": "Cargando impulso...",
@@ -1563,7 +1570,11 @@
         "termsOfService": "Términos del Servicio",
         "backBtn": "Botón de retroceso",
         "loading": "Cargando...",
-        "separator": " • "
+        "separator": " • ",
+        "toasts": {
+            "deletedCredentials": "Se eliminaron {{count}} credenciales del contrato {{name}}",
+            "errorDeletingCredentials": "Error al eliminar credenciales del contrato {{name}}: {{error}}"
+        }
     },
     "credentialStorage": {
         "accepting": "Aceptando...",

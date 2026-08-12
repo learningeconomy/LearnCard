@@ -82,7 +82,8 @@
         "edit": "Modifier",
         "clear": "Effacer",
         "privacyPolicy": "Politique de confidentialité",
-        "termsOfService": "Conditions d’utilisation"
+        "termsOfService": "Conditions d’utilisation",
+        "ok": "D'accord"
     },
     "navigation": {
         "boosts": "Boosts",
@@ -907,7 +908,13 @@
         "credStatus": "Statut du justificatif :",
         "verified": "vérifié",
         "credVerifications": "Vérifications du justificatif",
-        "toggle": "basculer"
+        "toggle": "basculer",
+        "errorHeader": "Erreur",
+        "createBoostBundleError": "Erreur lors de la création de l'ensemble de Boosts",
+        "createCredentialBundleError": "Erreur lors de la création de l'ensemble de justificatifs",
+        "errorFetchingCredential": "Erreur lors de la récupération du justificatif : {{error}}",
+        "enterPinPrompt": "Saisissez votre code PIN pour accéder à cet ensemble de Boosts vérifié.",
+        "pinPlaceholder": "Code PIN (4 chiffres max)"
     },
     "claimBoost": {
         "loadingBoost": "Chargement du boost...",
@@ -1563,7 +1570,11 @@
         "termsOfService": "Conditions d'utilisation",
         "backBtn": "Bouton retour",
         "loading": "Chargement en cours...",
-        "separator": " • "
+        "separator": " • ",
+        "toasts": {
+            "deletedCredentials": "{{count}} justificatifs supprimés du contrat {{name}}",
+            "errorDeletingCredentials": "Erreur lors de la suppression des justificatifs du contrat {{name}} : {{error}}"
+        }
     },
     "credentialStorage": {
         "accepting": "Acceptation en cours...",

@@ -117,17 +117,17 @@ const ViewSharedBoost: React.FC = () => {
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: `Error fetching credential: ${e}`,
+                header: m['credsBundle.errorFetchingCredential']({ error: e }),
                 buttons: [
                     {
-                        text: 'OK',
+                        text: m['common.ok'](),
                         role: 'confirm',
                         handler: async () => {
                             setTryRefetch(!tryRefetch);
                         },
                     },
                     {
-                        text: 'Cancel',
+                        text: m['common.cancel'](),
                         role: 'cancel',
                         handler: () => {
                             log.debug('Cancel clicked');

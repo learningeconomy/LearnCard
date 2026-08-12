@@ -82,7 +82,8 @@
         "edit": "تعديل",
         "clear": "مسح",
         "privacyPolicy": "سياسة الخصوصية",
-        "termsOfService": "شروط الخدمة"
+        "termsOfService": "شروط الخدمة",
+        "ok": "حسناً"
     },
     "navigation": {
         "boosts": "التعزيزات",
@@ -907,7 +908,13 @@
         "credStatus": "حالة المؤهل:",
         "verified": "تم التحقق",
         "credVerifications": "التحقق من المؤهلات",
-        "toggle": "تبديل"
+        "toggle": "تبديل",
+        "errorHeader": "خطأ",
+        "createBoostBundleError": "خطأ في إنشاء حزمة التعزيزات",
+        "createCredentialBundleError": "خطأ في إنشاء حزمة المؤهلات",
+        "errorFetchingCredential": "خطأ في جلب المؤهل: {{error}}",
+        "enterPinPrompt": "أدخل رمز PIN للوصول إلى حزمة التعزيزات الموثقة هذه.",
+        "pinPlaceholder": "رمز PIN (4 أرقام كحد أقصى)"
     },
     "claimBoost": {
         "loadingBoost": "جارٍ تحميل التعزيز...",
@@ -1563,7 +1570,11 @@
         "termsOfService": "شروط الخدمة",
         "backBtn": "زر الرجوع",
         "loading": "جاري التحميل...",
-        "separator": " • "
+        "separator": " • ",
+        "toasts": {
+            "deletedCredentials": "تم حذف {{count}} مؤهلات من العقد {{name}}",
+            "errorDeletingCredentials": "خطأ أثناء حذف المؤهلات من العقد {{name}}: {{error}}"
+        }
     },
     "credentialStorage": {
         "accepting": "جاري القبول...",

@@ -11,6 +11,8 @@ import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import ShareBoostsBundle from './ShareBoostsBundle';
 
+const PIN_INPUT_NAME = 'pin';
+
 const ViewCredsBundle: React.FC = () => {
     const { uri, seed } = useParams<{ uri: string; seed: string }>();
     const [vc, setVC] = useState<VP>();
@@ -28,10 +30,10 @@ const ViewCredsBundle: React.FC = () => {
     const showPinInputAlert = () => {
         presentAlert({
             backdropDismiss: false,
-            header: 'Please enter your PIN to access this verified boost bundle.',
+            header: m['credsBundle.enterPinPrompt'](),
             buttons: [
                 {
-                    text: 'OK',
+                    text: m['common.ok'](),
                     handler: alertData => {
                         if (!alertData?.pin || alertData?.pin?.trim() === '') return false;
                         if (alertData?.pin && alertData?.pin.length > 0) {
@@ -42,8 +44,8 @@ const ViewCredsBundle: React.FC = () => {
             ],
             inputs: [
                 {
-                    placeholder: 'PIN (max 4 digits)',
-                    name: 'pin',
+                    placeholder: m['credsBundle.pinPlaceholder'](),
+                    name: PIN_INPUT_NAME,
                     attributes: {
                         maxlength: 4,
                     },

@@ -140,7 +140,7 @@ const AddressBookPendingConnections: React.FC<{
             )}
             {!isLoading && (data?.length === 0 || error) && (
                 <section className="relative flex flex-col pt-[100px] px-[20px] text-center justify-center">
-                    <img src={MiniGhost} alt="ghost" className="max-w-[250px] m-auto" />
+                    <img src={MiniGhost} alt="" className="max-w-[250px] m-auto" />
                     {m['addressBook.noPendingConnections']()}
                 </section>
             )}

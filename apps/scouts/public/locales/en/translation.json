@@ -82,7 +82,8 @@
         "edit": "Edit",
         "clear": "Clear",
         "privacyPolicy": "Privacy Policy",
-        "termsOfService": "Terms of Service"
+        "termsOfService": "Terms of Service",
+        "ok": "OK"
     },
     "navigation": {
         "boosts": "Boosts",
@@ -907,7 +908,13 @@
         "credStatus": "Credential Status:",
         "verified": "verified",
         "credVerifications": "Credential Verifications",
-        "toggle": "toggle"
+        "toggle": "toggle",
+        "errorHeader": "Error",
+        "createBoostBundleError": "Create Boost Bundle error",
+        "createCredentialBundleError": "Create Credential Bundle error",
+        "errorFetchingCredential": "Error fetching credential: {{error}}",
+        "enterPinPrompt": "Please enter your PIN to access this verified boost bundle.",
+        "pinPlaceholder": "PIN (max 4 digits)"
     },
     "claimBoost": {
         "loadingBoost": "Loading boost...",
@@ -1563,7 +1570,11 @@
         "termsOfService": "Terms of Service",
         "backBtn": "Back button",
         "loading": "Loading...",
-        "separator": " • "
+        "separator": " • ",
+        "toasts": {
+            "deletedCredentials": "Deleted {{count}} credentials from contract {{name}}",
+            "errorDeletingCredentials": "Error while deleting credentials from contract {{name}}: {{error}}"
+        }
     },
     "credentialStorage": {
         "accepting": "Accepting...",

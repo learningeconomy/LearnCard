@@ -94,7 +94,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         try {
             const connectionReq = await wallet?.invoke?.connectWith(profileId);
             if (connectionReq) {
-                presentToast('Connection Request sent', {
+                presentToast(m['addressBook.toasts.connectionRequestSent'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -103,7 +103,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
         } catch (err) {
-            presentToast(err?.message ?? 'An error ocurred, unable to send connection request.', {
+            presentToast(err?.message ?? m['addressBook.toasts.unableToSendConnectionRequest'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -130,7 +130,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         try {
             const connectionReq = await wallet?.invoke?.connectWithInvite(profileId, challenge);
             if (connectionReq) {
-                presentToast('Connected Successfully!', {
+                presentToast(m['addressBook.toasts.connectedSuccessfully'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -184,7 +184,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                     },
                     onError(error, variables, context) {
                         presentToast(
-                            error?.message || 'An error occurred, unable to accept request',
+                            error?.message || m['addressBook.toasts.unableToAcceptRequest'](),
                             {
                                 // @ts-ignore
                                 type: ToastTypeEnum.Error,
@@ -195,7 +195,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                 }
             );
         } catch (err) {
-            presentToast(err?.message || 'An error occurred, unable to accept request', {
+            presentToast(err?.message || m['addressBook.toasts.unableToAcceptRequest'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -278,7 +278,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         onClick={e => handleAcceptInvite(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {loading ? 'loading...' : 'Connect'}
+                        {loading ? m['common.loading']() : m['common.connect']()}
                     </button>
                 ) : (
                     <button
@@ -312,7 +312,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         onClick={e => onHandleAcceptConnectionRequest(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {acceptConnectionLoading ? 'loading...' : 'Connect'}
+                        {acceptConnectionLoading ? m['common.loading']() : m['common.connect']()}
                     </button>
                 ) : (
                     <button

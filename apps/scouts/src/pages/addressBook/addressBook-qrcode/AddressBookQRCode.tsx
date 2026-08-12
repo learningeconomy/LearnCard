@@ -58,7 +58,7 @@ const AddressBookQRCode: React.FC<{
 
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['addressBook.addContact'](),
                 text: '',
                 url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
                 dialogTitle: '',

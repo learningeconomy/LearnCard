@@ -175,10 +175,10 @@ const ShareBoostsBundleModal = ({
             setPage('success');
         } catch (e) {
             presentAlert({
-                header: 'Error',
-                subHeader: 'Create Credential Bundle error',
+                header: m['credsBundle.errorHeader'](),
+                subHeader: m['credsBundle.createCredentialBundleError'](),
                 message: e?.toString(),
-                buttons: ['OK'],
+                buttons: [m['common.ok']()],
             });
             setLoading(false);
             throw new Error('There was an error. Please try again later.');

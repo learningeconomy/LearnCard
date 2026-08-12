@@ -323,16 +323,16 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             presentAlert({
                                 backdropDismiss: false,
                                 cssClass: 'boost-confirmation-alert',
-                                header: 'Are you sure you want to send a connection request?',
+                                header: m['addressBook.confirmConnection'](),
                                 buttons: [
                                     {
-                                        text: 'Confirm',
+                                        text: m['addressBook.confirm'](),
                                         role: 'confirm',
                                         handler: () =>
                                             handleConnectionRequest(e, contact.profileId),
                                     },
                                     {
-                                        text: 'Cancel',
+                                        text: m['common.cancel'](),
                                         role: 'cancel',
                                         handler: () => dismissAlert(),
                                     },
@@ -341,7 +341,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-indigo-600 font-semibold text-sm font-notoSans"
                     >
-                        {connectLoading ? 'Loading...' : 'Request Connection'}
+                        {connectLoading
+                            ? m['common.loading']()
+                            : m['addressBook.requestConnection']()}
                     </button>
                 );
             case LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_SENT:
@@ -385,16 +387,16 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             presentAlert({
                                 backdropDismiss: false,
                                 cssClass: 'boost-confirmation-alert',
-                                header: 'Are you sure you want to accept the connection request?',
+                                header: m['addressBook.confirmAcceptConnection'](),
                                 buttons: [
                                     {
-                                        text: 'Confirm',
+                                        text: m['addressBook.confirm'](),
                                         role: 'confirm',
                                         handler: () =>
                                             handleAcceptConnectionRequest(e, contact.profileId),
                                     },
                                     {
-                                        text: 'Cancel',
+                                        text: m['common.cancel'](),
                                         role: 'cancel',
                                         handler: () => dismissAlert(),
                                     },
@@ -403,7 +405,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-emerald-600 font-semibold text-sm font-notoSans"
                     >
-                        {acceptLoading ? 'Loading...' : 'Accept Request'}
+                        {acceptLoading ? m['common.loading']() : m['addressBook.acceptRequest']()}
                     </button>
                 );
             default:
