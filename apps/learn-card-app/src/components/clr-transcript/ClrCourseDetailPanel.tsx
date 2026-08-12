@@ -33,6 +33,7 @@ const ClrCourseDetailPanel: React.FC<{
     competencies?: CompetencyDisplayModel[];
     issuerName?: string;
     issuerLogo?: string;
+    showCloseButton?: boolean;
 }> = ({
     course,
     boost,
@@ -41,6 +42,7 @@ const ClrCourseDetailPanel: React.FC<{
     competencies = [],
     issuerName,
     issuerLogo,
+    showCloseButton = true,
 }) => {
     const { closeModal } = useModal();
     const [competenciesOpen, setCompetenciesOpen] = useState(true);
@@ -107,12 +109,14 @@ const ClrCourseDetailPanel: React.FC<{
                             )}
                         </div>
                     </div>
-                    <button
-                        onClick={closeModal}
-                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px] mt-0.5"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
+                    {showCloseButton && (
+                        <button
+                            onClick={closeModal}
+                            className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px] mt-0.5"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    )}
                 </div>
             </div>
 

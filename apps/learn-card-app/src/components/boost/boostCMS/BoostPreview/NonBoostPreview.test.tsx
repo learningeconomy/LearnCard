@@ -10,7 +10,7 @@ type MenuProps = {
 };
 
 type FooterLayoutProps = React.PropsWithChildren<{
-    footerProps?: { handleDotMenu?: () => void };
+    footerProps?: { handleDotMenu?: () => void; handleDetails?: () => void };
 }>;
 
 vi.mock('learn-card-base', () => ({
@@ -74,11 +74,12 @@ vi.mock('learn-card-base/components/boost/boostFooter/BoostFooterLayout', () => 
         <div>
             {children}
             {footerProps?.handleDotMenu && <button type="button">Footer options</button>}
+            {footerProps?.handleDetails && <button type="button">Footer details</button>}
         </div>
     ),
 }));
 vi.mock('../../../render-method/RenderMethodDisplay', () => ({ default: () => null }));
-vi.mock('./BoostDetailsSideBar', () => ({ default: () => null }));
+vi.mock('./BoostDetailsSideBar', () => ({ default: () => <div>Generic details sidebar</div> }));
 vi.mock('./BoostDetailsSideMenu', () => ({ default: () => null }));
 vi.mock('./VerifiedChildCLRFooter', () => ({ default: () => null }));
 vi.mock('../../../boost-endorsements/EndorsementBadge', () => ({ default: () => null }));
@@ -222,5 +223,7 @@ describe('NonBoostPreview', () => {
 
         expect(screen.getByText('CLR course detail')).toBeTruthy();
         expect(screen.queryByText('Generic credential preview')).toBeNull();
+        expect(screen.queryByText('Generic details sidebar')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Footer details' })).toBeNull();
     });
 });

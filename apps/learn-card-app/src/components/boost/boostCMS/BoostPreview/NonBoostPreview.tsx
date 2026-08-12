@@ -262,7 +262,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     let previewWrapperPaddingClass = '';
     let previewContentPaddingClass = '';
 
-    if (isMobile && usesAcademicFullPage) {
+    if (isStandaloneCourse) {
+        previewWrapperPaddingClass = 'px-0';
+        previewContentPaddingClass = '!p-0';
+    } else if (isMobile && usesAcademicFullPage) {
         previewWrapperPaddingClass = 'px-0';
         previewContentPaddingClass = '!p-0';
     } else if (shouldUseHostCardPadding) {
@@ -335,14 +338,17 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     if (standaloneCourse && clrModel) {
         credentialContent = (
-            <ClrCourseDetailPanel
-                course={standaloneCourse}
-                boost={clrCredential}
-                associations={clrModel.associations}
-                competencies={clrModel.competencies}
-                issuerName={clrModel.header.issuerName?.value}
-                issuerLogo={clrModel.header.issuerImage?.value ?? clrModel.header.image?.value}
-            />
+            <div className="w-full max-w-[800px] mx-auto overflow-hidden bg-grayscale-100 shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl">
+                <ClrCourseDetailPanel
+                    course={standaloneCourse}
+                    boost={clrCredential}
+                    showCloseButton={false}
+                    associations={clrModel.associations}
+                    competencies={clrModel.competencies}
+                    issuerName={clrModel.header.issuerName?.value}
+                    issuerLogo={clrModel.header.issuerImage?.value ?? clrModel.header.image?.value}
+                />
+            </div>
         );
     } else if ((isClrCredential || isClrChildCredential) && clrModel) {
         credentialContent = (
@@ -375,10 +381,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 footerProps={{
                     handleClose: handleCloseModal,
                     handleDetails:
-                        isMobile && !isClrCredential ? () => openDetailsSideModal() : undefined,
+                        isMobile && !isClrCredential && !isStandaloneCourse
+                            ? () => openDetailsSideModal()
+                            : undefined,
                     handleShare: handleShareBoost,
                     handleDotMenu: onDotsClick,
-                    useFullCloseButton: !isMobile || isClrCredential,
+                    useFullCloseButton: !isMobile || isClrCredential || isStandaloneCourse,
                 }}
             >
                 <div className="flex h-full">
@@ -399,7 +407,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             </section>
                         </div>
                     </section>
-                    {!isMobile && !isClrCredential && (
+                    {!isMobile && !isClrCredential && !isStandaloneCourse && (
                         <BoostDetailsSideBar
                             credential={selectedCredential}
                             categoryType={categoryType}
