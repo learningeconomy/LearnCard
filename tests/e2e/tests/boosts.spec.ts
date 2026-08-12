@@ -52,6 +52,7 @@ describe('Boosts', () => {
         // User B (non-owner) creates and registers their own signing authority
         const sa = await b.invoke.createSigningAuthority('b-claim-sa');
         expect(sa).toBeDefined();
+        if (!sa) throw new Error('Could not create signing authority.');
 
         await b.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
 
@@ -87,7 +88,6 @@ describe('Boosts', () => {
     test('Boost claim links require public visibility', async () => {
         const boostUri = await a.invoke.createBoost(testUnsignedBoost);
 
-
         const claimLinkSA = {
             endpoint: 'https://test-sa.example.com',
             name: 'test-sa',
@@ -108,12 +108,11 @@ describe('Boosts', () => {
                 canView: true,
             },
         });
-    
+
         const claimLink = await a.invoke.generateClaimLink(boostUri, claimLinkSA);
         expect(claimLink.boostUri).toBe(boostUri);
         expect(typeof claimLink.challenge).toBe('string');
     });
-
 
     test('Users can delete a published boost', async () => {
         // Create a boost
@@ -685,9 +684,11 @@ describe('Boosts', () => {
         // Create and register a signing authority for user A
         const sa = await learnCard.invoke.createSigningAuthority('test-sa');
         expect(sa).toBeDefined();
+        if (!sa) throw new Error('Could not create signing authority.');
         await learnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
         const saResult = await learnCard.invoke.getRegisteredSigningAuthority(sa.endpoint, sa.name);
         expect(saResult).toBeDefined();
+        if (!saResult) throw new Error('Could not register signing authority.');
         const signingAuthority = {
             endpoint: saResult.signingAuthority.endpoint,
             name: saResult.relationship.name,

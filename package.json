@@ -24,7 +24,7 @@
         "prepare": "husky install",
         "lint": "node scripts/lint-a11y.cjs",
         "lint:staged": "lint-staged",
-        "build": "nx run-many -t build --all --exclude=docs,reference,chapi-example,snap-chapi-example,snap-example-dapp",
+        "build": "nx run-many -t build --all --exclude=docs,reference",
         "build:bootstrap": "nx run-many -t build --projects=types,helpers,core,vc-plugin,email-templates",
         "test:e2e": "nx run e2e:test:e2e",
         "run-network-tests": "nx run network-brain-service:build && bun run --cwd services/learn-card-network/brain-service test",
@@ -66,7 +66,7 @@
         "shx": "^0.3.4",
         "ts-jest": "^29.0.5",
         "vite-tsconfig-paths": "^4.3.2",
-        "vitest": "^1.4.0"
+        "vitest": "^3.2.6"
     },
     "dependencies": {
         "@ionic/react": "8.7.2",
@@ -94,7 +94,7 @@
     },
     "overrides": {
         "@parcel/watcher": "2.5.1",
-        "fastify": "5.7.2",
+        "fastify": "^5.8.5",
         "pvutils": "1.0.17",
         "did-jwt": "5.9.0",
         "typescript": "5.6.2",

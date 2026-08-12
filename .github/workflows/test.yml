@@ -100,7 +100,9 @@ jobs:
                   command_timeout: 50m
                   script: |
                       cd ~/learncard-e2e-runner
-                      git pull origin main
+                      git fetch --no-tags origin main
+                      git reset --hard FETCH_HEAD
+                      echo "Runner repository resolved to: $(git rev-parse HEAD)"
                       ./scripts/sync-repo.sh ${{ github.head_ref || github.event.inputs.branch }}
                       ./scripts/run-tests.sh
 
