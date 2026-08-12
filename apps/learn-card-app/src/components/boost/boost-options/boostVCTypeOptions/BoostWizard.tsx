@@ -124,6 +124,12 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                 type,
                 skills,
                 narrative,
+                // Paraglide's `getLocale()` rather than learn-card-base's
+                // `getActiveLocale()`: this file is in the app, so it can read the
+                // active locale directly. `getActiveLocale` exists only because
+                // learn-card-base can't import the app's paraglide instance, and it
+                // resolves to the same value — LocaleProvider syncs <html lang> on
+                // every locale change, which is that helper's fallback.
             } = await wallet.invoke.generateBoostInfo(description, getLocale());
 
             const [generatedImageUrl, generatedBackgroundUrl, generatedSkills] = await Promise.all([

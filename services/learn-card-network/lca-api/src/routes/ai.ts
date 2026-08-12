@@ -7,6 +7,11 @@ import { TRPCError } from '@trpc/server';
 
 import * as filestack from 'filestack-js';
 import { BoostSkillHierarchy, BoostSkillHierarchyValidator } from 'types/skills';
+import {
+    aiLocaleInstruction,
+    aiSkillsHierarchyRule,
+    aiTitleCharsetRule,
+} from '@helpers/aiLocale.helpers';
 const client = filestack.init('A7RsW3VzfSNO2TCsFJ6Eiz');
 
 export enum BoostCategoryOptionsEnum {
@@ -88,23 +93,6 @@ const openai = process.env.OPENAI_API_KEY
     ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
     : undefined;
 
-// LC-1901: make AI-generated boost text come back in the user's language.
-// Only human-readable prose is translated — category/type enum values and the
-// JSON keys MUST stay English so the strict Zod validators keep parsing.
-const AI_LOCALE_LANGUAGE_NAMES: Record<string, string> = {
-    es: 'Spanish',
-    fr: 'French',
-    ar: 'Arabic',
-};
-
-const aiLocaleInstruction = (locale?: string): string => {
-    if (!locale) return '';
-    const base = locale.toLowerCase().split('-')[0] ?? '';
-    const language = AI_LOCALE_LANGUAGE_NAMES[base];
-    if (!language) return ''; // English / unsupported → no change
-    return `\n\nLANGUAGE: Write the "title", "description", and "narrative" values in ${language}. Keep the "category" and "type" values, and all JSON keys, exactly as the English options specified above — do NOT translate or alter them.`;
-};
-
 export const aiRouter = t.router({
     generateBoostInfo: didAndChallengeRoute
         .meta({
@@ -139,7 +127,9 @@ export const aiRouter = t.router({
                     {
                         role: 'system',
                         content:
-                            'Generate a title using only letters A-Z with a maximum length of 24 characters and separate words with spaces if there is more than one, description, category, type, and narrative for a boost based on an arbitrary description. The narrative is no longer than 300 characters and answers the question "How do you earn this boost?"\n\nStrict constraints:\n- category MUST be EXACTLY one of: "Social Badge", "Achievement", "Course", "ID", "Work History", "Learning History", "Accomplishment", "Accommodation". Use exact casing and spelling; do NOT invent other categories.\n- type MUST be EXACTLY one of: "Certificate", "Badge", "ID". Use exact casing and spelling; do NOT invent other types.\n\nOutput requirements:\n- Return ONLY a JSON object with the keys "title", "description", "category", "type", and optional "narrative".\n- Do not include explanations, markdown, or extra fields.\n- Ensure the JSON parses without code fences.' +
+                            `Generate a title ${aiTitleCharsetRule(
+                                input.locale
+                            )} with a maximum length of 24 characters and separate words with spaces if there is more than one, description, category, type, and narrative for a boost based on an arbitrary description. The narrative is no longer than 300 characters and answers the question "How do you earn this boost?"\n\nStrict constraints:\n- category MUST be EXACTLY one of: "Social Badge", "Achievement", "Course", "ID", "Work History", "Learning History", "Accomplishment", "Accommodation". Use exact casing and spelling; do NOT invent other categories.\n- type MUST be EXACTLY one of: "Certificate", "Badge", "ID". Use exact casing and spelling; do NOT invent other types.\n\nOutput requirements:\n- Return ONLY a JSON object with the keys "title", "description", "category", "type", and optional "narrative".\n- Do not include explanations, markdown, or extra fields.\n- Ensure the JSON parses without code fences.` +
                             aiLocaleInstruction(input.locale),
                     },
                     { role: 'user', content: description },
@@ -186,8 +176,7 @@ export const aiRouter = t.router({
                 messages: [
                     {
                         role: 'system',
-                        content:
-                            'Generate *NO MORE THAN 3* skills for the provided description about a boost that matches the given skills hierarchy. Keep every category, skill, and subskill value exactly as specified in the English skill hierarchy because they are validated identifiers, not user-facing prose.',
+                        content: `Generate *NO MORE THAN 3* skills for the provided description about a boost that matches the given skills hierarchy. ${aiSkillsHierarchyRule}`,
                     },
                     { role: 'user', content: description },
                 ],
