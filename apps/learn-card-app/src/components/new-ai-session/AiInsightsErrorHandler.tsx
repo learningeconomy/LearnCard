@@ -3,6 +3,8 @@ import { IonIcon } from '@ionic/react';
 import { alertCircleOutline } from 'ionicons/icons';
 import { useStore } from '@nanostores/react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { lastAiError } from 'learn-card-base/stores/nanoStores/chatStore';
 
 import { AiSessionMode } from './newAiSession.helpers';
@@ -55,9 +57,11 @@ export const AiInsightsErrorHandler: React.FC<{
                     className="text-red-400 text-lg mt-0.5 shrink-0"
                 />
                 <div>
-                    <p className="text-sm font-semibold text-red-700">Something went wrong</p>
+                    <p className="text-sm font-semibold text-red-700">
+                        {m['aiSession.chat.errorTitle']()}
+                    </p>
                     <p className="text-sm text-red-700 leading-relaxed">
-                        AI chat is temporarily unavailable. Please try again later.
+                        {m['aiSession.chat.errorBody']()}
                     </p>
                 </div>
             </div>

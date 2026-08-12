@@ -52,9 +52,11 @@ interface ChatInputProps {
     showUserAvatar?: boolean;
 }
 
+// Resolved per call (not hoisted to a module constant) so the placeholder
+// follows the active locale — Paraglide resolves at call time.
 const getDefaultPlaceholder = (mode: AiSessionMode): string => {
-    if (mode === AiSessionMode.insights) return 'Ask anything...';
-    return 'Say anything...';
+    if (mode === AiSessionMode.insights) return m['aiSession.chat.placeholderInsights']();
+    return m['aiSession.chat.placeholderTutor']();
 };
 
 const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = true }) => {
