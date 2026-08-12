@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { VC } from '@learncard/types';
 import { useQueryClient } from '@tanstack/react-query';
-import { getLogger, useWallet } from 'learn-card-base';
+import { getLogger, ToastTypeEnum, useToast, useWallet } from 'learn-card-base';
 import { getOrFetchResolvedCredential } from 'learn-card-base/react-query/queries/vcQueries';
+import * as m from '../../../paraglide/messages.js';
 
 import {
     DuplicateCredentialPrompt,
@@ -29,6 +30,7 @@ const CONTINUE_WITH_NEW_CREDENTIAL: DuplicateCredentialResolution = {
 export const useDuplicateCredentialGuard = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+    const { presentToast } = useToast();
     const [existing, setExisting] = useState<ExistingCredentialMatch | null>(null);
     const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
     const mountedRef = useRef(true);
@@ -87,6 +89,12 @@ export const useDuplicateCredentialGuard = () => {
                         error.name === 'DuplicateCredentialScanLimitError'
                     ) {
                         log.warn('Duplicate credential scan reached its safety limit', error);
+                        if (mountedRef.current) {
+                            presentToast(m['toasts.claimOops'](), {
+                                duration: 4000,
+                                type: ToastTypeEnum.Error,
+                            });
+                        }
                         return { action: 'cancel', isDuplicate: false };
                     }
 
@@ -104,7 +112,7 @@ export const useDuplicateCredentialGuard = () => {
 
             return request;
         },
-        [initWallet, queryClient]
+        [initWallet, presentToast, queryClient]
     );
 
     return {

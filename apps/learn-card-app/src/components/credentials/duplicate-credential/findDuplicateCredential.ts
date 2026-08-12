@@ -175,7 +175,7 @@ export const findDuplicateCredential = async (
         );
         if (match) return match;
 
-        if (!page?.hasMore || !page.cursor || seenCursors.has(page.cursor)) break;
+        if (!page?.hasMore || !page.cursor || seenCursors.has(page.cursor)) return null;
 
         seenCursors.add(page.cursor);
         cursor = page.cursor;

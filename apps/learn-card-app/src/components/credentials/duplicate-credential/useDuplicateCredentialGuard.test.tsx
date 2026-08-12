@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     findDuplicateCredential: vi.fn(),
     initWallet: vi.fn(),
     warn: vi.fn(),
+    presentToast: vi.fn(),
 }));
 
 vi.mock('@tanstack/react-query', () => ({
@@ -19,6 +20,8 @@ vi.mock('@tanstack/react-query', () => ({
 
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ warn: mocks.warn }),
+    ToastTypeEnum: { Error: 'error' },
+    useToast: () => ({ presentToast: mocks.presentToast }),
     useWallet: () => ({ initWallet: mocks.initWallet }),
 }));
 
@@ -182,6 +185,10 @@ describe('useDuplicateCredentialGuard', () => {
             'Duplicate credential scan reached its safety limit',
             error
         );
+        expect(mocks.presentToast).toHaveBeenCalledWith(expect.any(String), {
+            duration: 4000,
+            type: 'error',
+        });
     });
 
     it('cancels a pending decision when the claim surface unmounts', async () => {

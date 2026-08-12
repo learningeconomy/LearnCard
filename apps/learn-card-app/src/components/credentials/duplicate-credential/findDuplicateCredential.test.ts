@@ -124,6 +124,20 @@ describe('findDuplicateCredential', () => {
         );
     });
 
+    it('returns no match when the final category page is exhausted', async () => {
+        const wallet = createWallet();
+        const getPage = vi.fn().mockResolvedValue({
+            records: [{ uri: 'lc:credential:different' }],
+            hasMore: false,
+        });
+        wallet.index.LearnCloud.getPage = getPage;
+
+        await expect(
+            findDuplicateCredential(wallet, credential, { compareByContent: true })
+        ).resolves.toBeNull();
+        expect(getPage).toHaveBeenCalledTimes(1);
+    });
+
     it('rejects rather than allowing a claim after the safety page limit', async () => {
         const wallet = createWallet();
         let pageCount = 0;
