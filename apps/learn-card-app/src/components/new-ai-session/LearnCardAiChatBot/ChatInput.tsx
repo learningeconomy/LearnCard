@@ -125,7 +125,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                     onClick={continuePlan}
                     className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px] mr-2`}
                 >
-                    Start Session
+                    {m['aiSession.chat.startSession']()}
                 </button>
             </div>
         );
@@ -145,7 +145,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                         </div>
                     ) : (
                         <p className="text-grayscale-600 mb-4 text-center font-semibold text-[17px]">
-                            Nice work! Now what?
+                            {m['aiSession.chat.niceWork']()}
                         </p>
                     )}
 
@@ -161,7 +161,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                     }}
                                     className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                                 >
-                                    Return Home
+                                    {m['aiSession.chat.returnHome']()}
                                 </button>
                             </>
                         )}
@@ -189,7 +189,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 }}
                                 className={`bg-${primaryColor} text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-${primaryColor} transition-colors`}
                             >
-                                Session Summary
+                                {m['aiSession.chat.sessionSummary']()}
                             </button>
                         )}
 
@@ -198,7 +198,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 onClick={handleKeepGoing}
                                 className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                             >
-                                Keep Going
+                                {m['aiSession.chat.keepGoing']()}
                             </button>
                         )}
                     </div>
@@ -221,10 +221,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 {/* Header */}
                                 <div className="px-6 pt-6 text-center">
                                     <h2 className="text-2xl font-semibold text-gray-800">
-                                        Continue Your Learning Journey
+                                        {m['aiSession.chat.pathwayModalTitle']()}
                                     </h2>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        Select a pathway to keep exploring this topic
+                                        {m['aiSession.chat.pathwayModalSubtitle']()}
                                     </p>
                                 </div>
 
@@ -253,7 +253,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                     </div>
                                 ) : (
                                     <div className="text-center py-10 text-gray-500 px-6">
-                                        No learning pathways available for this session.
+                                        {m['aiSession.chat.noPathways']()}
                                     </div>
                                 )}
                             </div>
