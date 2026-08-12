@@ -107,7 +107,7 @@ const BulkImportDataRow: React.FC<BulkImportDataRowProps> = ({
                             {isValidUrl(mainImageValue) ? (
                                 <img
                                     src={mainImageValue}
-                                    alt="Badge"
+                                    alt=""
                                     className="h-[100px] w-[100px] object-contain"
                                 />
                             ) : (
@@ -141,7 +141,7 @@ const BulkImportDataRow: React.FC<BulkImportDataRowProps> = ({
                             {isValidUrl(bgImageValue) ? (
                                 <img
                                     src={bgImageValue}
-                                    alt="Background"
+                                    alt=""
                                     className="h-[100px] w-[100px] object-contain"
                                 />
                             ) : (

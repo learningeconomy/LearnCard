@@ -76,7 +76,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
                             ) : (
                                 <img
                                     src={networkImage}
-                                    alt="network thumb"
+                                    alt=""
                                     className="w-full h-full object-cover"
                                 />
                             )}

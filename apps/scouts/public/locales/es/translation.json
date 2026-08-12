@@ -1234,6 +1234,7 @@
         "fwNameLabel": "Nombre del Marco *",
         "descLabel": "Descripción",
         "descPlh": "Describe este marco...",
+        "templateDesc": "Una plantilla con 1 nivel y 2 competencias",
         "namePlh": "ej., Scouts Core Skills",
         "noFwYet": "Aún no hay marcos. ¡Crea uno para empezar!",
         "editSkills": "Editar Habilidades",
@@ -1263,6 +1264,7 @@
         "compLabel": "Competencia",
         "codeLabel": "Código",
         "titleLabel": "Título*",
+        "titlePlh": "Título",
         "statementLabel": "Declaración",
         "tierDesc": "Un <0>nivel de marco</0> sirve como contenedor estructural para competencias.",
         "compDesc": "Una <0>competencia</0> describe conocimientos, habilidades o capacidades que una credencial puede reconocer o verificar.",
@@ -1323,7 +1325,9 @@
             "addAdminFail": "Error al añadir admin. Verifica el ID de Perfil e inténtalo de nuevo.",
             "removeAdminFail": "Error al eliminar admin. Por favor inténtalo de nuevo.",
             "createFail": "Error al crear marco. Por favor inténtalo de nuevo.",
-            "updateFail": "Error al actualizar marco. Por favor inténtalo de nuevo."
+            "updateFail": "Error al actualizar marco. Por favor inténtalo de nuevo.",
+            "updateNetworksFail": "Error al actualizar las redes. Por favor inténtalo de nuevo.",
+            "error": "Se produjo un error: {{message}}"
         },
         "fwTierResult": "Nivel del Marco • ",
         "compUpdated": "{{count}} competencias",

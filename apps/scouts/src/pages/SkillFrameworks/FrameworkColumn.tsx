@@ -433,7 +433,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             <IonInput
                                 ref={inputRef}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
-                                placeholder="Search framework..."
+                                placeholder={m['skillFrameworks.searchPlh']()}
                                 value={search}
                                 onIonInput={e => setSearch(e.detail.value)}
                             />

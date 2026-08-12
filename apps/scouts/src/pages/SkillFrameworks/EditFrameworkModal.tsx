@@ -66,7 +66,7 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
         },
         onError: error => {
             log.error('Failed to update framework:', error);
-            alert('Failed to update framework. Please try again.');
+            alert(m['skillFrameworks.toasts.updateFail']());
         },
     });
 

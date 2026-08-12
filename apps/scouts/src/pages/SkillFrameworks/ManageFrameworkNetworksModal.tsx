@@ -127,7 +127,7 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
         },
         onError: error => {
             log.error('Failed to update networks:', error);
-            alert('Failed to update networks. Please try again.');
+            alert(m['skillFrameworks.toasts.updateNetworksFail']());
         },
     });
 

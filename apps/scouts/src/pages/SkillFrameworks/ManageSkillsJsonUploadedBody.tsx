@@ -77,8 +77,8 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                     {isError && (
                         <p className="text-[19px] font-poppins text-rose-600 font-[500]">
                             {jsonError.type === 'format'
-                                ? 'File Formatting Error'
-                                : 'Processing Error'}
+                                ? m['skillFrameworks.fileFormatError']()
+                                : m['skillFrameworks.processingError']()}
                         </p>
                     )}
 

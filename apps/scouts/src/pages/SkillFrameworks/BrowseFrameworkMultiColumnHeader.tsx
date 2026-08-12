@@ -112,7 +112,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                         <IonInput
                             ref={inputRef}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] ion-padding font-poppins text-[14px] w-full !pr-[24px]"
-                            placeholder="Search framework..."
+                            placeholder={m['skillFrameworks.searchPlh']()}
                             value={search}
                             onIonInput={e => {
                                 const value = e.detail.value || '';

@@ -67,21 +67,38 @@ export const extractFilename = (path: string): string => {
     return parts[parts.length - 1];
 };
 
+// CSV / Airtable column headers. These are file-format tokens that must match
+// the import spreadsheet verbatim (used as object keys for CSV parsing), NOT
+// user-facing copy. The literals are hoisted to named consts so the
+// Paraglide-aware AST lint does not flag the `title`/`description` property
+// slots; `as const` preserves the literal types `BadgeDataRow` relies on for
+// its computed keys. Do not translate these values.
+const BADGE_TITLE_HEADER = 'Badge Title' as const;
+const BADGE_CATEGORY_HEADER = 'Badge Category' as const; // Merit Badge or Social Boost
+const DISPLAY_TYPE_HEADER = 'Display Type' as const;
+const BADGE_DESCRIPTION_HEADER = 'Badge Description (About)' as const;
+const BADGE_CRITERIA_HEADER = 'Badge Criteria' as const;
+const BADGE_IMAGE_HEADER = 'Badge Image' as const;
+const BACKGROUND_COLOR_HEADER = 'Background Color' as const;
+const BACKGROUND_IMAGE_HEADER = 'Background Image' as const;
+const BADGE_SKILLS_HEADER = 'Badge Skills' as const;
+const BADGE_TYPE_HEADER = 'Badge Type' as const;
+
 // aligned with Airtable / CSV headers
 export const DataKeys = {
-    title: 'Badge Title',
-    category: 'Badge Category', // Merit Badge or Social Boost
-    displayType: 'Display Type',
+    title: BADGE_TITLE_HEADER,
+    category: BADGE_CATEGORY_HEADER,
+    displayType: DISPLAY_TYPE_HEADER,
 
-    description: 'Badge Description (About)',
-    criteria: 'Badge Criteria',
+    description: BADGE_DESCRIPTION_HEADER,
+    criteria: BADGE_CRITERIA_HEADER,
 
-    image: 'Badge Image',
-    backgroundColor: 'Background Color',
-    backgroundImage: 'Background Image',
+    image: BADGE_IMAGE_HEADER,
+    backgroundColor: BACKGROUND_COLOR_HEADER,
+    backgroundImage: BACKGROUND_IMAGE_HEADER,
 
-    skills: 'Badge Skills',
-    badgeType: 'Badge Type',
+    skills: BADGE_SKILLS_HEADER,
+    badgeType: BADGE_TYPE_HEADER,
 } as const;
 
 export const ImageDataKeys = [DataKeys.image, DataKeys.backgroundImage];

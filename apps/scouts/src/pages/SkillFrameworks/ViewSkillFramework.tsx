@@ -109,7 +109,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                             type="button"
                             onClick={() => setOpen(o => !o)}
                             className="mt-[2px] h-5 w-5 shrink-0 flex items-center justify-center rounded border border-grayscale-300 bg-white text-grayscale-700 hover:bg-grayscale-50"
-                            aria-label={open ? 'Collapse' : 'Expand'}
+                            aria-label={open ? m['skillFrameworks.collapse']() : m['skillFrameworks.expand']()}
                         >
                             <span className="text-[12px] leading-none">{open ? '-' : '+'}</span>
                         </button>

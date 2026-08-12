@@ -1234,6 +1234,7 @@
         "fwNameLabel": "Framework Name *",
         "descLabel": "Description",
         "descPlh": "Describe this framework...",
+        "templateDesc": "A template with 1 tier and 2 competencies",
         "namePlh": "e.g., Scouts Core Skills",
         "noFwYet": "No frameworks yet. Create one to get started!",
         "editSkills": "Edit Skills",
@@ -1263,6 +1264,7 @@
         "compLabel": "Competency",
         "codeLabel": "Code",
         "titleLabel": "Title*",
+        "titlePlh": "Title",
         "statementLabel": "Statement",
         "tierDesc": "A <0>framework tier</0> serves as a structural container for competencies.",
         "compDesc": "A <0>competency</0> describes knowledge, skills, or abilities that a credential can recognize or verify.",
@@ -1323,7 +1325,9 @@
             "addAdminFail": "Failed to add admin. Please check the Profile ID and try again.",
             "removeAdminFail": "Failed to remove admin. Please try again.",
             "createFail": "Failed to create framework. Please try again.",
-            "updateFail": "Failed to update framework. Please try again."
+            "updateFail": "Failed to update framework. Please try again.",
+            "updateNetworksFail": "Failed to update networks. Please try again.",
+            "error": "Error: {{message}}"
         },
         "fwTierResult": "Framework Tier • ",
         "compUpdated": "{{count}} competencies",

@@ -79,14 +79,14 @@ export const FrameworkCRUD: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['skillFrameworks'] });
-            presentToast('Framework created successfully!', {
+            presentToast(m['skillFrameworks.toasts.created'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
             setShowCreateForm(false);
         },
         onError: (error: any) => {
-            presentToast(`Error: ${error.message}`, {
+            presentToast(m['skillFrameworks.toasts.error']({ message: error.message }), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -106,13 +106,13 @@ export const FrameworkCRUD: React.FC = () => {
             return await wallet.invoke.attachFrameworkToBoost(networkUri, frameworkId);
         },
         onSuccess: () => {
-            presentToast('Framework attached to network!', {
+            presentToast(m['skillFrameworks.toasts.attached'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         },
         onError: (error: any) => {
-            presentToast(`Error: ${error.message}`, {
+            presentToast(m['skillFrameworks.toasts.error']({ message: error.message }), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -168,7 +168,7 @@ export const FrameworkCRUD: React.FC = () => {
                                     name="name"
                                     required
                                     className="w-full px-3 py-2 border border-grayscale-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                    placeholder="e.g., Scouts Core Skills"
+                                    placeholder={m['skillFrameworks.namePlh']()}
                                 />
                             </div>
                             <div>
@@ -179,7 +179,7 @@ export const FrameworkCRUD: React.FC = () => {
                                     name="description"
                                     rows={3}
                                     className="w-full px-3 py-2 border border-grayscale-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                    placeholder="Describe this framework..."
+                                    placeholder={m['skillFrameworks.descPlh']()}
                                 />
                             </div>
                             <div className="flex gap-2">
@@ -188,7 +188,7 @@ export const FrameworkCRUD: React.FC = () => {
                                     disabled={createFrameworkMutation.isPending}
                                     className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 disabled:bg-grayscale-400"
                                 >
-                                    {createFrameworkMutation.isPending ? 'Creating...' : 'Create'}
+                                    {createFrameworkMutation.isPending ? m['common.creating']() : m['common.create']()}
                                 </button>
                                 <button
                                     type="button"

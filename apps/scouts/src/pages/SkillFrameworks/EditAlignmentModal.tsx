@@ -231,7 +231,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                     }));
                                 }}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[5px] !px-[10px]"
-                                placeholder="Code"
+                                placeholder={m['skillFrameworks.codeLabel']()}
                                 value={node.targetCode}
                             />
                         </div>
@@ -249,7 +249,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                 }));
                             }}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[5px] !px-[10px]"
-                            placeholder="Title"
+                            placeholder={m['skillFrameworks.titlePlh']()}
                             value={node.targetName}
                         />
                     </div>
@@ -318,7 +318,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                 }));
                             }}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[5px] !px-[10px]"
-                            placeholder="Statement"
+                            placeholder={m['skillFrameworks.statementLabel']()}
                             value={node.targetDescription}
                             rows={4}
                         />

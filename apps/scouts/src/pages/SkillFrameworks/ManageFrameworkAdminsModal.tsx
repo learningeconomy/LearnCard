@@ -46,7 +46,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
         },
         onError: error => {
             log.error('Failed to add admin:', error);
-            alert('Failed to add admin. Please check the Profile ID and try again.');
+            alert(m['skillFrameworks.toasts.addAdminFail']());
         },
     });
 
@@ -61,7 +61,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
         },
         onError: error => {
             log.error('Failed to remove admin:', error);
-            alert('Failed to remove admin. Please try again.');
+            alert(m['skillFrameworks.toasts.removeAdminFail']());
         },
     });
 
@@ -74,7 +74,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
 
     const handleRemoveAdmin = (profileId: string) => {
         const confirmed = window.confirm(
-            'Are you sure you want to remove this admin? They will lose management access to this framework.'
+            m['skillFrameworks.confirmRemAdmin']()
         );
 
         if (confirmed) {

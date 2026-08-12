@@ -1234,6 +1234,7 @@
         "fwNameLabel": "Nom du cadre *",
         "descLabel": "Description",
         "descPlh": "Décrivez ce cadre...",
+        "templateDesc": "Un modèle avec 1 niveau et 2 compétences",
         "namePlh": "ex. : Compétences fondamentales Scouts",
         "noFwYet": "Aucun cadre pour l'instant. Créez-en un pour commencer !",
         "editSkills": "Modifier les compétences",
@@ -1263,6 +1264,7 @@
         "compLabel": "Compétence",
         "codeLabel": "Code",
         "titleLabel": "Titre*",
+        "titlePlh": "Titre",
         "statementLabel": "Énoncé",
         "tierDesc": "Un <0>niveau de cadre</0> sert de conteneur structurel pour les compétences.",
         "compDesc": "Une <0>compétence</0> décrit des connaissances, des aptitudes ou des capacités qu’un justificatif peut reconnaître ou vérifier.",
@@ -1323,7 +1325,9 @@
             "addAdminFail": "Échec de l'ajout de l'administrateur. Veuillez vérifier l'ID de profil et réessayer.",
             "removeAdminFail": "Échec de la suppression de l'administrateur. Veuillez réessayer.",
             "createFail": "Échec de la création du cadre. Veuillez réessayer.",
-            "updateFail": "Échec de la mise à jour du cadre. Veuillez réessayer."
+            "updateFail": "Échec de la mise à jour du cadre. Veuillez réessayer.",
+            "updateNetworksFail": "Échec de la mise à jour des réseaux. Veuillez réessayer.",
+            "error": "Erreur : {{message}}"
         },
         "fwTierResult": "Niveau du cadre • ",
         "compUpdated": "{{count}} compétences",
