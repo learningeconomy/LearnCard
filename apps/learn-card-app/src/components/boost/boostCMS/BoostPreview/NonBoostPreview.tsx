@@ -15,7 +15,9 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import ClrTranscriptFullPage from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
+import ClrCourseDetailPanel from '../../../clr-transcript/ClrCourseDetailPanel';
 import {
+    isStandaloneCourseCredential,
     normalizeClrTranscriptDisplayModel,
     ClrTranscriptSurface,
 } from '../../../../helpers/clrRenderer.helpers';
@@ -165,14 +167,22 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         });
     }, [categoryType, credential, isEarnedBoost, isPreview, track]);
 
-    useEffect(() => {
-        if (!isFront) {
-            setIsFront(!isFront);
-            if (isMobile) {
-                openDetailsSideModal();
-            }
-        }
-    }, [isFront]);
+    let verifications: VerificationItem[] = [];
+    if (isClrChildCredential) {
+        verifications = [];
+    } else if (showVerifications && verificationItems && verificationItems.length > 0) {
+        verifications = verificationItems;
+    } else if (showVerifications) {
+        verifications = vcVerifications;
+    }
+
+    // Reflect the authoritative revoked/suspended status in the side-panel verifications
+    // list (the client status check can't see a set suspension bit).
+    verifications = applyLifecycleStatusToVerifications(verifications, lifecycleStatus);
+
+    const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
+
+    const selectedCredential = credential;
 
     const openDetailsSideModal = () => {
         // ! this prevents the modal from opening if there are no verifications
@@ -201,6 +211,15 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         );
     };
 
+    useEffect(() => {
+        if (!isFront) {
+            setIsFront(!isFront);
+            if (isMobile) {
+                openDetailsSideModal();
+            }
+        }
+    }, [isFront]);
+
     const endorsementBadge = showEndorsementBadge ? (
         <EndorsementBadge
             credential={credential}
@@ -213,22 +232,13 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         />
     ) : null;
 
-    let verifications: VerificationItem[] = [];
-    if (isClrChildCredential) {
-        verifications = [];
-    } else if (showVerifications && verificationItems && verificationItems.length > 0) {
-        verifications = verificationItems;
-    } else if (showVerifications) {
-        verifications = vcVerifications;
-    }
-
-    // Reflect the authoritative revoked/suspended status in the side-panel verifications
-    // list (the client status check can't see a set suspension bit).
-    verifications = applyLifecycleStatusToVerifications(verifications, lifecycleStatus);
-
-    const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
-
-    const selectedCredential = credential;
+    const clrCredential = useMemo(() => unwrapBoostCredential(credential), [credential]);
+    const isStandaloneCourse = useMemo(
+        () => isStandaloneCourseCredential(clrCredential as unknown as Record<string, unknown>),
+        [clrCredential]
+    );
+    const usesClrPresentation = isClrCredential || isClrChildCredential || isStandaloneCourse;
+    const usesAcademicFullPage = isClrCredential || isStandaloneCourse;
 
     const isCertificate =
         displayType === DisplayTypeEnum.Certificate ||
@@ -240,6 +250,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const isMedia =
         !isClrCredential &&
         !isClrChildCredential &&
+        !isStandaloneCourse &&
         (displayType === DisplayTypeEnum.Media || credential?.display?.displayType === 'media');
     const isIssuerViewSelected =
         enableRenderMethod &&
@@ -251,7 +262,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     let previewWrapperPaddingClass = '';
     let previewContentPaddingClass = '';
 
-    if (isMobile && isClrCredential) {
+    if (isMobile && usesAcademicFullPage) {
         previewWrapperPaddingClass = 'px-0';
         previewContentPaddingClass = '!p-0';
     } else if (shouldUseHostCardPadding) {
@@ -262,18 +273,16 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const bgImage = credential?.display?.backgroundImager;
     const showBackground = bgImage && isCertificate;
 
-    const bgColor = isClrCredential ? 'bg-grayscale-100' : '';
-
-    const clrCredential = useMemo(() => unwrapBoostCredential(credential), [credential]);
+    const bgColor = usesAcademicFullPage ? 'bg-grayscale-100' : '';
 
     const clrModel = useMemo(
         () =>
-            isClrCredential || isClrChildCredential
+            usesClrPresentation
                 ? normalizeClrTranscriptDisplayModel(
                       clrCredential as unknown as Record<string, unknown>
                   )
                 : null,
-        [clrCredential, isClrCredential, isClrChildCredential]
+        [clrCredential, usesClrPresentation]
     );
     const clrEvidence = clrModel ? getDownloadableEvidence(clrModel.evidence) : [];
     const hasClrEvidence = clrEvidence.length > 0;
@@ -322,7 +331,20 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     );
 
     let credentialContent: React.ReactNode;
-    if ((isClrCredential || isClrChildCredential) && clrModel) {
+    const standaloneCourse = isStandaloneCourse ? clrModel?.courses[0] : undefined;
+
+    if (standaloneCourse && clrModel) {
+        credentialContent = (
+            <ClrCourseDetailPanel
+                course={standaloneCourse}
+                boost={clrCredential}
+                associations={clrModel.associations}
+                competencies={clrModel.competencies}
+                issuerName={clrModel.header.issuerName?.value}
+                issuerLogo={clrModel.header.issuerImage?.value ?? clrModel.header.image?.value}
+            />
+        );
+    } else if ((isClrCredential || isClrChildCredential) && clrModel) {
         credentialContent = (
             <ClrTranscriptFullPage
                 model={clrModel}
@@ -368,7 +390,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         >
                             <section
                                 className={`w-full overflow-y-auto max-h-full disable-scrollbars ${
-                                    Capacitor.isNativePlatform() && !isClrCredential
+                                    Capacitor.isNativePlatform() && !usesAcademicFullPage
                                         ? 'pt-0 safe-area-top-margin'
                                         : 'pt-[30px]'
                                 } ${previewContentPaddingClass}`}
