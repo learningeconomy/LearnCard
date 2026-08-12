@@ -37,6 +37,22 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         ).toBe('StructuredTranscriptView');
     });
 
+    it('normalizes a CLR with its single credential subject encoded as an array', () => {
+        const credential = clrUniversityTranscript.credential as unknown as Record<string, unknown>;
+        const objectSubjectModel = normalizeClrTranscriptDisplayModel(credential);
+        const arraySubjectModel = normalizeClrTranscriptDisplayModel({
+            ...credential,
+            credentialSubject: [credential.credentialSubject],
+        });
+
+        expect(arraySubjectModel.courses).toHaveLength(objectSubjectModel.courses.length);
+        expect(arraySubjectModel.programs).toHaveLength(objectSubjectModel.programs.length);
+        expect(arraySubjectModel.associations).toHaveLength(objectSubjectModel.associations.length);
+        expect(arraySubjectModel.header.learnerIdentifiers.value).toEqual(
+            objectSubjectModel.header.learnerIdentifiers.value
+        );
+    });
+
     it('renders sparse academic record from ND fixture and flags large inline evidence', () => {
         const model = normalizeClrTranscriptDisplayModel(
             clrNdStudentTranscript.credential as unknown as Record<string, unknown>

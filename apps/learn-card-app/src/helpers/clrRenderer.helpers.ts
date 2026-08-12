@@ -276,6 +276,11 @@ const asArray = <T>(value: T | T[] | undefined): T[] => {
     return Array.isArray(value) ? value : [value];
 };
 
+/**
+ * Returns the sole credential subject whether it is encoded as an object or a
+ * single-element array. Multi-subject credentials remain ambiguous and are not
+ * reduced by silently selecting the first subject.
+ */
 const getSingleCredentialSubject = (
     rawCredential: Record<string, unknown>
 ): Record<string, unknown> | undefined => {
