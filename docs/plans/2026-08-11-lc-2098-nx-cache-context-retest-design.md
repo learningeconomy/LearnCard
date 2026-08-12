@@ -1,7 +1,7 @@
 # LC-2098: `.nx-cache` Docker Context Retest
 
 -   **Date:** 2026-08-11
--   **Status:** Draft for manual review
+-   **Status:** Approved for implementation planning
 -   **Ticket:** [LC-2098](https://welibrary.atlassian.net/browse/LC-2098)
 -   **Predecessor:** [LC-2073 Phase 2B results](./2026-08-10-lc-2073-phase-2b-cache-experiment-results.md)
 
@@ -71,8 +71,9 @@ All three comparable legs use:
 
 -   runner input `runner_ref=56466ae3de804ad746f636753b52d5e232d6a375`, not the
     movable `main` name;
--   a full LearnCard experiment commit SHA after the main merge and `.dockerignore`
-    change as the `branch` input, not a movable branch name;
+-   the pushed `codex/lc-2073-phase-2b` LearnCard experiment branch, frozen with no
+    additional pushes during the three-leg sequence; every artifact must resolve it to
+    the same full experiment commit SHA;
 -   the same seven Firefox E2E tests used by Phase 2B;
 -   explicit cache modes (`cold`, then `warm`, then `warm`);
 -   the same EC2 instance and runner workflow;
