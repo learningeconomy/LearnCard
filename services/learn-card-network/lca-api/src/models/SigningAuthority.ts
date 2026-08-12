@@ -8,7 +8,16 @@ export const MongoSigningAuthorityValidator = z.object({
     name: z.string(),
     seed: z.string(),
     did: z.string().optional(),
-    endpoint: z.string().optional()
+    endpoint: z.string().optional(),
 });
+
+export const SigningAuthorityResponseValidator = MongoSigningAuthorityValidator.omit({
+    seed: true,
+}).extend({
+    did: z.string(),
+    endpoint: z.string(),
+});
+
+export type SigningAuthorityResponseType = z.infer<typeof SigningAuthorityResponseValidator>;
 
 export type MongoSigningAuthorityType = z.infer<typeof MongoSigningAuthorityValidator>;
