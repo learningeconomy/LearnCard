@@ -1,6 +1,6 @@
 # LearnCard AI Agent Service
 
-Prototype request/response AI agent service for LearnCard Network.
+Production-capable request/response AI agent service for LearnCard Network.
 
 ## Run Locally
 
@@ -32,12 +32,19 @@ workspace packages first.
 | `AI_AGENT_NETWORK_URL`                        | `LEARNCARD_NETWORK_URL` or `https://network.learncard.com/trpc`            | LearnCard Network tRPC endpoint for the agent wallet.                                                                                                       |
 | `AI_AGENT_PORT`                               | `PORT` or `3000`                                                           | HTTP port.                                                                                                                                                  |
 | `AI_AGENT_TRUST_PROXY_HOPS`                   | `0`                                                                        | Number of known reverse-proxy hops trusted when resolving client IPs for baseline and public-endpoint rate limits.                                          |
-| `AI_AGENT_MAX_TOOL_ROUNDS`                    | `100`                                                                      | Maximum tool-call rounds within one request.                                                                                                                |
+| `AI_AGENT_MAX_TOOL_ROUNDS`                    | `8`                                                                        | Maximum tool-call rounds within one request. Integer from `1` through `20`.                                                                                 |
+| `AI_AGENT_RUN_TIMEOUT_MS`                     | `120000`                                                                   | Wall-clock limit for one agent request. Allowed range: 5 seconds through 10 minutes.                                                                        |
+| `AI_AGENT_MAX_OUTPUT_TOKENS`                  | `4096`                                                                     | Maximum output tokens passed to each model call.                                                                                                            |
+| `AI_AGENT_MAX_RUN_TOKENS`                     | `50000`                                                                    | Maximum measured input + output tokens across a run.                                                                                                        |
+| `AI_AGENT_MAX_RUN_COST_USD`                   | `1`                                                                        | Maximum estimated model cost across a run.                                                                                                                  |
+| `AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION`   | none                                                                       | Current model input-token price used for cost telemetry and limits. Required in production.                                                                 |
+| `AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION`  | none                                                                       | Current model output-token price used for cost telemetry and limits. Required in production.                                                                |
+| `AI_AGENT_METRICS_NAMESPACE`                  | `LearnCard/AIAgent`                                                        | CloudWatch Embedded Metric Format namespace.                                                                                                                |
 | `AI_AGENT_AUTH_DOMAIN`                        | none                                                                       | Expected DID Auth domain. Required in production; local dev falls back to request origin.                                                                   |
 | `AI_AGENT_AUTH_CHALLENGE_TTL_MS`              | `300000`                                                                   | DID Auth challenge lifetime in milliseconds.                                                                                                                |
 | `AI_AGENT_ENCRYPTION_KEY_ID`                  | `agent-learncard-dag-jwe-v1`                                               | Versioned key identifier stored in encrypted Mongo field envelopes.                                                                                         |
-| `AI_AGENT_DEBUG_ENABLED`                      | `true` outside `NODE_ENV=production`                                       | Enables debug endpoints. Production requires `AI_AGENT_DEBUG_TOKEN` when enabled.                                                                           |
-| `AI_AGENT_DEBUG_TOKEN`                        | none                                                                       | Optional in local dev. When set, send it as `X-AI-Agent-Debug-Token` for debug endpoints. Required in production when debug endpoints are enabled.          |
+| `AI_AGENT_DEBUG_ENABLED`                      | `true` outside `NODE_ENV=production`                                       | Enables debug endpoints. Production refuses to start unless this is `false`.                                                                                |
+| `AI_AGENT_DEBUG_TOKEN`                        | none                                                                       | Optional in local development. When set, send it as `X-AI-Agent-Debug-Token` for debug endpoints.                                                           |
 | `AI_AGENT_CONSENT_FLOW_CONTRACT_URI`          | none                                                                       | ConsentFlow contract URI used for user-context data. Required on production network.                                                                        |
 | `AI_AGENT_CONSENT_FLOW_APP_URL`               | `https://learncard.app`                                                    | Base app URL used to build consent links.                                                                                                                   |
 | `AI_AGENT_CONSENT_FLOW_DATA_PAGE_SIZE`        | `100`                                                                      | Page size when preloading consented user data.                                                                                                              |
@@ -48,7 +55,7 @@ workspace packages first.
 | `AI_AGENT_SELF_IMPROVEMENT_ENABLED`           | `true` outside `NODE_ENV=production`                                       | Enables per-DID dynamic docs, trace persistence, and post-response retro updates.                                                                           |
 | `AI_AGENT_RETRO_MODEL`                        | `AI_AGENT_MODEL`                                                           | Model used by the background retro agent.                                                                                                                   |
 | `AI_AGENT_RETRO_MAX_TRACE_CHARS`              | `24000`                                                                    | Maximum serialized run-trace size sent to the retro agent.                                                                                                  |
-| `AI_AGENT_AUTONOMY_DEV_ENABLED`               | `false`                                                                    | Enables the separate development autonomy worker. Rejected outside `NODE_ENV=development`; never starts from Express.                                       |
+| `AI_AGENT_AUTONOMY_DEV_ENABLED`               | `false`                                                                    | Enables the separate development autonomy worker. Rejected outside `NODE_ENV=development`; never starts from the HTTP service.                              |
 | `AI_AGENT_AUTONOMY_DEV_DIDS`                  | none                                                                       | Comma-separated exact fixture DIDs the development worker may select. Required and deduplicated when autonomy is enabled.                                   |
 | `AI_AGENT_AUTONOMY_DEV_POLL_INTERVAL_MS`      | `30000`                                                                    | Delay after one completed development cycle before the next cycle starts. Minimum `1000`.                                                                   |
 | `AI_AGENT_AUTONOMY_DEV_MAX_RUNS_PER_CYCLE`    | `3`                                                                        | Maximum due schedules attempted sequentially in one worker cycle. Integer from `1` through `10`.                                                            |
@@ -63,6 +70,20 @@ workspace packages first.
 | `AI_AGENT_WEB_SEARCH_COUNTRY`                 | none                                                                       | Optional default 2-letter country code, such as `US`.                                                                                                       |
 | `AI_AGENT_WEB_SEARCH_LANG`                    | none                                                                       | Optional default search language, such as `en`.                                                                                                             |
 | `AI_AGENT_WEB_SEARCH_SAFESEARCH`              | none                                                                       | Optional default SafeSearch level: `off`, `moderate`, or `strict`.                                                                                          |
+| `SENTRY_DSN`                                  | none                                                                       | Existing project Sentry transport for sanitized operational errors. Required in production.                                                                 |
+| `SENTRY_ENV`                                  | `NODE_ENV`                                                                 | Sentry environment and CloudWatch metric environment dimension.                                                                                             |
+| `SENTRY_RELEASE`                              | `GIT_SHA`                                                                  | Deployed release identifier.                                                                                                                                |
+| `SENTRY_TRACES_SAMPLE_RATE`                   | `0.1`                                                                      | Sentry trace sampling rate from `0` through `1`.                                                                                                            |
+
+## Health, telemetry, and AWS deployment
+
+-   `GET /api/health/live` is a process liveness probe.
+-   `GET /api/health/ready` returns 503 until the model provider and MongoDB are ready.
+-   `GET /api/health` retains the detailed feature/configuration status used by local QA.
+-   Every response includes `X-Request-ID`; agent runs also return a `runId`.
+-   Structured logs and CloudWatch metrics correlate HTTP, model, tool, run, and post-run stages without recording DIDs, prompts, responses, memory, tool payloads, or exception messages.
+
+The production ARM64 container, reusable-infrastructure ECS/Fargate CloudFormation stack, deployment workflow, alarms, dashboard, staging smoke test, rollout procedure, key rotation, troubleshooting, and rollback steps are documented in [RUNBOOK.md](./RUNBOOK.md).
 
 ## Shape
 
@@ -83,7 +104,7 @@ workspace packages first.
 The authenticated HTTP service is request/response. `POST /api/agent/heartbeat` is a manually
 invoked proactive HTTP request; it is not the recurring scheduler. The separate, default-disabled
 development autonomy worker can run full-agent user schedules and await their retrospective pass.
-It never starts from Express and is not a production deployment design.
+It never starts from the production HTTP service and is not a production deployment design.
 
 ## Skill-Backed Tools
 

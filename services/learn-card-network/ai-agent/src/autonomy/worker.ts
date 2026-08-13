@@ -1,5 +1,6 @@
 import type { ServiceConfig } from '../config';
 import { assertAutonomyDevConfig } from '../config';
+import { recordAutonomyCycle, recordServiceError } from '../observability';
 import { createAgentServiceRuntime, type AgentServiceRuntime } from '../runtime';
 import { createAutonomousScheduler, type AutonomousScheduler } from './scheduler';
 import { createMongoAutonomousLeaseRepository, createMongoAutonomousRunRepository } from './runs';
@@ -43,12 +44,8 @@ export const createAutonomyWorker = async (config: ServiceConfig): Promise<Auton
             pollIntervalMs: config.autonomyDevPollIntervalMs,
             maxRunsPerCycle: config.autonomyDevMaxRunsPerCycle,
             leaseMs: config.autonomyDevLeaseMs,
-            onCycleComplete: summary => {
-                console.log(JSON.stringify(summary));
-            },
-            onCycleError: error => {
-                console.error('AI agent autonomy cycle failed.', error);
-            },
+            onCycleComplete: recordAutonomyCycle,
+            onCycleError: error => recordServiceError('autonomy.cycle', error),
         });
 
         return {

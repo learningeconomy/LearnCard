@@ -42,10 +42,50 @@ export interface AgentProviderRequest {
     messages: AgentMessage[];
     tools: AgentToolDefinition[];
     signal?: AbortSignal;
+    maxOutputTokens?: number;
+}
+
+export interface AgentTokenUsage {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+}
+
+export interface AgentModelRun {
+    requestId?: string;
+    durationMs: number;
+    usage?: AgentTokenUsage;
+}
+
+export interface AgentRunObserver {
+    onModelComplete?: (event: {
+        runId: string;
+        model: string;
+        round: number;
+        durationMs: number;
+        requestId?: string;
+        usage?: AgentTokenUsage;
+    }) => void;
+    onModelError?: (event: {
+        runId: string;
+        model: string;
+        round: number;
+        durationMs: number;
+        error: unknown;
+    }) => void;
+    onToolComplete?: (event: {
+        runId: string;
+        name: string;
+        durationMs: number;
+        success: boolean;
+        error?: unknown;
+    }) => void;
 }
 
 export interface AgentProviderResponse {
     message: AgentMessage;
+    requestId?: string;
+    usage?: AgentTokenUsage;
 }
 
 export interface AgentProvider {
@@ -58,6 +98,7 @@ export interface AgentToolRun {
     arguments: Record<string, unknown>;
     result?: unknown;
     error?: string;
+    durationMs?: number;
 }
 
 export interface AgentRunRequest {
@@ -70,6 +111,13 @@ export interface AgentRunRequest {
     systemPrompt?: string;
     contextPrompt?: string;
     signal?: AbortSignal;
+    runId?: string;
+    maxOutputTokens?: number;
+    maxTotalTokens?: number;
+    maxEstimatedCostUsd?: number;
+    inputTokenCostUsdPerMillion?: number;
+    outputTokenCostUsdPerMillion?: number;
+    observer?: AgentRunObserver;
 }
 
 export interface AgentRunResult {
@@ -77,4 +125,8 @@ export interface AgentRunResult {
     message: string;
     messages: AgentMessage[];
     toolRuns: AgentToolRun[];
+    modelRuns: AgentModelRun[];
+    usage: AgentTokenUsage & {
+        estimatedCostUsd?: number;
+    };
 }

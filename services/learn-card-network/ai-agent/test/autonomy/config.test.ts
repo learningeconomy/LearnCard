@@ -102,6 +102,52 @@ describe('autonomy development configuration gate', () => {
     });
 });
 
+describe('production service configuration gate', () => {
+    const productionConfig: ServiceConfig = {
+        ...validConfig,
+        nodeEnv: 'production',
+        authDomain: 'https://agent.learncard.app',
+        cloudUrl: 'https://cloud.learncard.com/trpc',
+        networkUrl: 'https://network.learncard.com/trpc',
+        consentFlowContractUri: 'lc:network:example:contract:test',
+        debugEnabled: false,
+        autonomyDevEnabled: false,
+        inputTokenCostUsdPerMillion: 1,
+        outputTokenCostUsdPerMillion: 2,
+        sentryDsn: 'https://public@example.ingest.sentry.io/1',
+        webSearchProvider: 'none',
+    };
+
+    it('accepts an observable, bounded production configuration', () => {
+        expect(() => assertSecurityConfig(productionConfig)).not.toThrow();
+    });
+
+    it.each([
+        {
+            override: { inputTokenCostUsdPerMillion: 0 },
+            message: 'current positive prices',
+        },
+        {
+            override: { outputTokenCostUsdPerMillion: undefined },
+            message: 'current positive prices',
+        },
+        {
+            override: { sentryDsn: undefined },
+            message: 'SENTRY_DSN',
+        },
+        {
+            override: { debugEnabled: true },
+            message: 'AI_AGENT_DEBUG_ENABLED',
+        },
+        {
+            override: { mongoUri: undefined },
+            message: 'MONGO_URI',
+        },
+    ])('rejects an incomplete production configuration', ({ override, message }) => {
+        expect(() => assertSecurityConfig({ ...productionConfig, ...override })).toThrow(message);
+    });
+});
+
 describe('Trigger.dev development configuration gate', () => {
     const triggerConfig: ServiceConfig = {
         ...validConfig,

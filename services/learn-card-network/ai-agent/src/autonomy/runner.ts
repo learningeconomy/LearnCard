@@ -7,6 +7,7 @@ export interface RunScheduledAgentRequestOptions {
     scheduledFor: Date;
     runtime: AgentServiceRuntime;
     signal?: AbortSignal;
+    correlationId?: string;
 }
 
 const normalizeWhitespace = (value: string): string => value.replace(/\s+/g, ' ').trim();
@@ -16,6 +17,7 @@ export const runScheduledAgentRequest = async ({
     scheduledFor,
     runtime,
     signal,
+    correlationId,
 }: RunScheduledAgentRequestOptions): Promise<RunChatResult> => {
     const prompt = [
         `Scheduled task: ${schedule.name}`,
@@ -37,6 +39,7 @@ export const runScheduledAgentRequest = async ({
         assistantProfileRuntime: runtime.assistantProfileRuntime,
         runOrigin: 'autonomous',
         ...(signal ? { signal } : {}),
+        ...(correlationId ? { requestId: correlationId } : {}),
     });
 
     if (result.status !== 200 || !('message' in result.payload)) {

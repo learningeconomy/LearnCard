@@ -1,5 +1,6 @@
 import type {
     AgentMessage,
+    AgentProviderResponse,
     AgentRunRequest,
     AgentRunResult,
     AgentToolCall,
@@ -25,7 +26,7 @@ const getTool = (
     toolCall: AgentToolCall
 ): AgentToolDefinition | undefined => toolsByName.get(toolCall.name);
 
-const awaitWithSignal = async <T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> => {
+export const awaitWithSignal = async <T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> => {
     signal?.throwIfAborted();
     if (!signal) return promise;
     const activeSignal = signal;
@@ -58,6 +59,30 @@ const awaitWithSignal = async <T>(promise: Promise<T>, signal?: AbortSignal): Pr
     });
 };
 
+const notifyObserver = (callback: (() => void) | undefined): void => {
+    try {
+        callback?.();
+    } catch {
+        // Telemetry must never change agent behavior.
+    }
+};
+
+const estimateCost = (
+    inputTokens: number,
+    outputTokens: number,
+    inputTokenCostUsdPerMillion?: number,
+    outputTokenCostUsdPerMillion?: number
+): number | undefined => {
+    if (inputTokenCostUsdPerMillion === undefined || outputTokenCostUsdPerMillion === undefined) {
+        return undefined;
+    }
+
+    return (
+        (inputTokens * inputTokenCostUsdPerMillion + outputTokens * outputTokenCostUsdPerMillion) /
+        1_000_000
+    );
+};
+
 export const runAgent = async ({
     model,
     messages,
@@ -68,8 +93,14 @@ export const runAgent = async ({
     systemPrompt = DEFAULT_SYSTEM_PROMPT,
     contextPrompt,
     signal,
+    runId = crypto.randomUUID(),
+    maxOutputTokens,
+    maxTotalTokens,
+    maxEstimatedCostUsd,
+    inputTokenCostUsdPerMillion,
+    outputTokenCostUsdPerMillion,
+    observer,
 }: AgentRunRequest): Promise<AgentRunResult> => {
-    const runId = crypto.randomUUID();
     const agentTools = withSkillTools(tools, skills);
     const toolsByName = new Map(agentTools.map(tool => [tool.name, tool]));
     const skillSystemPrompt = getSkillSystemPrompt(tools, skills);
@@ -81,15 +112,75 @@ export const runAgent = async ({
         ...messages,
     ];
     const toolRuns: AgentToolRun[] = [];
+    const modelRuns: AgentRunResult['modelRuns'] = [];
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let totalTokens = 0;
 
     signal?.throwIfAborted();
     for (let round = 0; round <= maxToolRounds; round += 1) {
-        const response = await provider.complete({
-            model,
-            messages: conversation,
-            tools: agentTools,
-            ...(signal ? { signal } : {}),
-        });
+        const modelStartedAt = Date.now();
+        let response: AgentProviderResponse;
+
+        try {
+            response = await provider.complete({
+                model,
+                messages: conversation,
+                tools: agentTools,
+                ...(signal ? { signal } : {}),
+                ...(maxOutputTokens ? { maxOutputTokens } : {}),
+            });
+        } catch (error) {
+            notifyObserver(() =>
+                observer?.onModelError?.({
+                    runId,
+                    model,
+                    round,
+                    durationMs: Date.now() - modelStartedAt,
+                    error,
+                })
+            );
+            throw error;
+        }
+
+        const modelRun = {
+            durationMs: Date.now() - modelStartedAt,
+            ...(response.requestId ? { requestId: response.requestId } : {}),
+            ...(response.usage ? { usage: response.usage } : {}),
+        };
+
+        modelRuns.push(modelRun);
+        if (response.usage) {
+            inputTokens += response.usage.inputTokens;
+            outputTokens += response.usage.outputTokens;
+            totalTokens += response.usage.totalTokens;
+        }
+        const estimatedCostUsd = estimateCost(
+            inputTokens,
+            outputTokens,
+            inputTokenCostUsdPerMillion,
+            outputTokenCostUsdPerMillion
+        );
+
+        notifyObserver(() =>
+            observer?.onModelComplete?.({
+                runId,
+                model,
+                round,
+                ...modelRun,
+            })
+        );
+        if (maxTotalTokens !== undefined && totalTokens > maxTotalTokens) {
+            throw new Error('Agent run exceeded its configured token limit.');
+        }
+        if (
+            maxEstimatedCostUsd !== undefined &&
+            estimatedCostUsd !== undefined &&
+            estimatedCostUsd > maxEstimatedCostUsd
+        ) {
+            throw new Error('Agent run exceeded its configured cost limit.');
+        }
+
         signal?.throwIfAborted();
         conversation.push(response.message);
 
@@ -101,6 +192,13 @@ export const runAgent = async ({
                 message: response.message.content,
                 messages: conversation,
                 toolRuns,
+                modelRuns,
+                usage: {
+                    inputTokens,
+                    outputTokens,
+                    totalTokens,
+                    ...(estimatedCostUsd !== undefined ? { estimatedCostUsd } : {}),
+                },
             };
         }
 
@@ -112,10 +210,21 @@ export const runAgent = async ({
                 name: toolCall.name,
                 arguments: toolCall.arguments,
             };
+            const toolStartedAt = Date.now();
 
             if (!tool) {
                 toolRun.error = `Unknown tool: ${toolCall.name}`;
+                toolRun.durationMs = Date.now() - toolStartedAt;
                 toolRuns.push(toolRun);
+                notifyObserver(() =>
+                    observer?.onToolComplete?.({
+                        runId,
+                        name: toolCall.name,
+                        durationMs: toolRun.durationMs ?? 0,
+                        success: false,
+                        error: new Error('Unknown agent tool.'),
+                    })
+                );
                 conversation.push({
                     role: 'tool',
                     toolCallId: toolCall.id,
@@ -134,13 +243,32 @@ export const runAgent = async ({
                 );
                 signal?.throwIfAborted();
                 toolRun.result = result;
+                toolRun.durationMs = Date.now() - toolStartedAt;
                 toolRuns.push(toolRun);
+                notifyObserver(() =>
+                    observer?.onToolComplete?.({
+                        runId,
+                        name: toolCall.name,
+                        durationMs: toolRun.durationMs ?? 0,
+                        success: true,
+                    })
+                );
                 conversation.push({
                     role: 'tool',
                     toolCallId: toolCall.id,
                     content: safeStringify(result),
                 });
             } catch (error) {
+                toolRun.durationMs = Date.now() - toolStartedAt;
+                notifyObserver(() =>
+                    observer?.onToolComplete?.({
+                        runId,
+                        name: toolCall.name,
+                        durationMs: toolRun.durationMs ?? 0,
+                        success: false,
+                        error,
+                    })
+                );
                 signal?.throwIfAborted();
                 const message = error instanceof Error ? error.message : 'Tool failed.';
                 toolRun.error = message;

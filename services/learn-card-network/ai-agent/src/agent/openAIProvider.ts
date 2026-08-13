@@ -6,6 +6,7 @@ import type {
     AgentProviderRequest,
     AgentToolCall,
     AgentToolDefinition,
+    AgentTokenUsage,
 } from './types';
 
 type OpenAIMessage = {
@@ -86,15 +87,44 @@ const toAgentToolCalls = (
         arguments: parseToolArguments(toolCall.function?.arguments ?? '{}'),
     }));
 
+const toAgentTokenUsage = (
+    usage:
+        | {
+              prompt_tokens?: number;
+              completion_tokens?: number;
+              total_tokens?: number;
+          }
+        | undefined
+): AgentTokenUsage | undefined => {
+    if (!usage) return undefined;
+
+    const inputTokens = usage.prompt_tokens ?? 0;
+    const outputTokens = usage.completion_tokens ?? 0;
+
+    return {
+        inputTokens,
+        outputTokens,
+        totalTokens: usage.total_tokens ?? inputTokens + outputTokens,
+    };
+};
+
 export const createOpenAIProvider = (apiKey: string): AgentProvider => {
     const client = new OpenAI({ apiKey });
 
     return {
-        complete: async ({ model, messages, tools, signal }: AgentProviderRequest) => {
+        complete: async ({
+            model,
+            messages,
+            tools,
+            signal,
+            maxOutputTokens,
+        }: AgentProviderRequest) => {
             const request: Record<string, unknown> = {
                 model,
                 messages: messages.map(toOpenAIMessage) as never,
             };
+
+            if (maxOutputTokens) request.max_completion_tokens = maxOutputTokens;
 
             if (tools.length > 0) {
                 request.tools = tools.map(toOpenAITool) as never;
@@ -117,6 +147,8 @@ export const createOpenAIProvider = (apiKey: string): AgentProvider => {
                         ? toAgentToolCalls(message.tool_calls)
                         : undefined,
                 },
+                requestId: completion.id,
+                usage: toAgentTokenUsage(completion.usage),
             };
         },
     };

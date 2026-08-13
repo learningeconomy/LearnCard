@@ -60,6 +60,7 @@ describe('runAgent', () => {
                 id: 'call-1',
                 name: 'getProfile',
                 arguments: {},
+                durationMs: expect.any(Number),
                 result: { profile: { profileId: 'taylor' } },
             },
         ]);
@@ -130,6 +131,7 @@ describe('runAgent', () => {
                 id: 'call-1',
                 name: 'readSkill',
                 arguments: { name: 'test-skill' },
+                durationMs: expect.any(Number),
                 result: {
                     name: 'test-skill',
                     description: 'Explains how to use the freeform tool.',
@@ -256,6 +258,51 @@ describe('runAgent', () => {
             readCount: 1,
         });
     });
+    it('reports token usage and rejects runs over the configured cost budget', async () => {
+        const provider: AgentProvider = {
+            complete: async () => ({
+                message: { role: 'assistant', content: 'Complete.' },
+                requestId: 'provider-request',
+                usage: {
+                    inputTokens: 1_000,
+                    outputTokens: 500,
+                    totalTokens: 1_500,
+                },
+            }),
+        };
+        const request = {
+            model: 'test-model',
+            messages: [{ role: 'user' as const, content: 'Run once.' }],
+            provider,
+            tools: [],
+            inputTokenCostUsdPerMillion: 1,
+            outputTokenCostUsdPerMillion: 2,
+        };
+
+        const result = await runAgent(request);
+
+        expect(result.usage).toEqual({
+            inputTokens: 1_000,
+            outputTokens: 500,
+            totalTokens: 1_500,
+            estimatedCostUsd: 0.002,
+        });
+        expect(result.modelRuns).toEqual([
+            {
+                durationMs: expect.any(Number),
+                requestId: 'provider-request',
+                usage: {
+                    inputTokens: 1_000,
+                    outputTokens: 500,
+                    totalTokens: 1_500,
+                },
+            },
+        ]);
+        await expect(runAgent({ ...request, maxEstimatedCostUsd: 0.001 })).rejects.toThrow(
+            'configured cost limit'
+        );
+    });
+
     it('aborts a non-settling tool run and passes the signal into tool context', async () => {
         const abortController = new AbortController();
         const started = Promise.withResolvers<void>();

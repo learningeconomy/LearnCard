@@ -1,19 +1,22 @@
 import 'dotenv/config';
 
 import { getConfig } from '../config';
+import { flushObservability, initializeObservability, recordServiceError } from '../observability';
 import { createAutonomyWorker } from './worker';
 
 const main = async (): Promise<void> => {
-    const worker = await createAutonomyWorker(getConfig());
+    const config = getConfig();
+
+    initializeObservability(config);
+
+    const worker = await createAutonomyWorker(config);
     let shutdownPromise: Promise<void> | undefined;
 
     const shutdown = (signal: NodeJS.Signals): Promise<void> => {
         if (shutdownPromise) return shutdownPromise;
 
         console.log(`AI agent autonomy worker received ${signal}; draining active work.`);
-        shutdownPromise = worker.close().then(() => {
-            console.log('AI agent autonomy worker stopped.');
-        });
+        shutdownPromise = worker.close().then(flushObservability);
 
         return shutdownPromise;
     };
@@ -28,6 +31,6 @@ const main = async (): Promise<void> => {
 };
 
 main().catch(error => {
-    console.error('AI agent autonomy worker failed.', error);
+    recordServiceError('autonomy.worker', error);
     process.exitCode = 1;
 });

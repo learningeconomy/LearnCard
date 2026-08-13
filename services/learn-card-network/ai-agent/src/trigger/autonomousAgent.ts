@@ -7,6 +7,13 @@ import {
 import { createAutonomousScheduler, type AutonomyCycleResult } from '../autonomy/scheduler';
 import { TRIGGER_AUTONOMOUS_SCHEDULE_TASK_ID } from '../autonomy/triggerScheduleProvider';
 import { assertTriggerConfig, getConfig } from '../config';
+import {
+    flushObservability,
+    getOwnerTelemetryId,
+    initializeObservability,
+    recordAutonomyCycle,
+    recordServiceError,
+} from '../observability';
 import { createAgentServiceRuntime } from '../runtime';
 
 export const TRIGGER_AUTONOMOUS_EXECUTION_TASK_ID = 'learncard-autonomous-agent-execution';
@@ -56,8 +63,11 @@ export const autonomousAgentExecution = task({
     run: async (payload: TriggerAutonomousAgentExecutionPayload, { signal }) => {
         const parsed = parseExecutionPayload(payload);
         const config = getConfig();
+        initializeObservability(config);
         assertTriggerConfig(config);
         const runtime = createAgentServiceRuntime({ config });
+        const startedAt = new Date();
+        const ownerId = getOwnerTelemetryId(parsed.ownerDid);
 
         try {
             const mongoStatus = await runtime.mongoRuntime.getStatus();
@@ -82,8 +92,7 @@ export const autonomousAgentExecution = task({
                 logger.warn(
                     'Skipping a Trigger.dev occurrence with no matching LearnCard schedule.',
                     {
-                        ownerDid: parsed.ownerDid,
-                        triggerScheduleId: parsed.triggerScheduleId,
+                        ownerId,
                     }
                 );
 
@@ -91,8 +100,7 @@ export const autonomousAgentExecution = task({
             }
             if (!schedule.enabled) {
                 logger.info('Skipping a queued occurrence for a disabled LearnCard schedule.', {
-                    ownerDid: parsed.ownerDid,
-                    scheduleId: schedule.id,
+                    ownerId,
                 });
 
                 return { status: 'skipped' as const };
@@ -113,19 +121,34 @@ export const autonomousAgentExecution = task({
 
             await runRepository.recoverExpired(new Date());
 
-            const result = await scheduler.runOccurrence(
-                {
-                    id: schedule.id,
-                    ownerDid: schedule.ownerDid,
-                    nextRunAt: parsed.scheduledForDate,
-                },
-                'trigger',
-                signal
+            const result = requireNonFailedAutonomyResult(
+                await scheduler.runOccurrence(
+                    {
+                        id: schedule.id,
+                        ownerDid: schedule.ownerDid,
+                        nextRunAt: parsed.scheduledForDate,
+                    },
+                    'trigger',
+                    signal
+                )
             );
+            const completedAt = new Date();
 
-            return requireNonFailedAutonomyResult(result);
+            recordAutonomyCycle({
+                triggerSource: 'trigger',
+                startedAt: startedAt.toISOString(),
+                completedAt: completedAt.toISOString(),
+                dueCount: 1,
+                results: [result],
+            });
+
+            return result;
+        } catch (error) {
+            recordServiceError('trigger.autonomous-execution', error);
+            throw error;
         } finally {
             await runtime.mongoRuntime.close();
+            await flushObservability();
         }
     },
 });
@@ -147,6 +170,7 @@ export const autonomousScheduleDispatch = schedules.task({
 
         const ownerDid = payload.externalId.trim();
         if (!ownerDid) throw new AbortTaskRunError('The autonomous schedule owner DID is empty.');
+        const ownerId = getOwnerTelemetryId(ownerDid);
 
         const scheduledFor = payload.timestamp.toISOString();
         const idempotencyKey = await idempotencyKeys.create(
@@ -163,7 +187,7 @@ export const autonomousScheduleDispatch = schedules.task({
                 concurrencyKey: ownerDid,
                 idempotencyKey,
                 idempotencyKeyTTL: '30d',
-                tags: [`owner:${ownerDid}`, `schedule:${payload.scheduleId}`],
+                tags: [`owner:${ownerId}`, `schedule:${payload.scheduleId}`],
             }
         );
 

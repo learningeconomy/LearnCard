@@ -3,7 +3,7 @@ import type { ConsentedUserDataResult } from '../consentFlow';
 
 export interface ConsentedUserDataToolConfig {
     did: string;
-    dataPromise: Promise<ConsentedUserDataResult>;
+    loadData: () => Promise<ConsentedUserDataResult>;
 }
 
 const consentedUserDataParameters = {
@@ -14,10 +14,18 @@ const consentedUserDataParameters = {
 
 export const createConsentedUserDataTool = ({
     did,
-    dataPromise,
-}: ConsentedUserDataToolConfig): AgentToolDefinition => ({
-    name: 'getConsentedUserData',
-    description: `Gets data consented by the current user (${did}) through the configured ConsentFlow contract. The load starts before the agent loop and this tool waits for it to finish.`,
-    parameters: consentedUserDataParameters,
-    execute: async () => dataPromise,
-});
+    loadData,
+}: ConsentedUserDataToolConfig): AgentToolDefinition => {
+    let dataPromise: Promise<ConsentedUserDataResult> | undefined;
+
+    return {
+        name: 'getConsentedUserData',
+        description: `Gets data consented by the current user (${did}) through the configured ConsentFlow contract.`,
+        parameters: consentedUserDataParameters,
+        execute: async () => {
+            dataPromise ??= loadData();
+
+            return dataPromise;
+        },
+    };
+};

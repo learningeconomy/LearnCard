@@ -14,18 +14,26 @@ export const callbackLink = (callback: () => Promise<void>): TRPCLink<AppRouter>
                     attempts += 1;
                     request?.unsubscribe();
                     request = next(op).subscribe({
-                        error: async error => {
+                        error: error => {
+                            if (isDone) return;
+
                             if (attempts > 5 || error.data?.httpStatus !== 401) {
-                                return observer.error(error);
+                                observer.error(error);
+                                return;
                             }
 
-                            await callback();
-
-                            attempt();
+                            void callback().then(
+                                () => {
+                                    if (!isDone) attempt();
+                                },
+                                callbackError => {
+                                    if (!isDone) observer.error(callbackError);
+                                }
+                            );
                         },
                         next: result => observer.next(result),
                         complete: () => {
-                            if (isDone) observer.complete();
+                            if (!isDone) observer.complete();
                         },
                     });
                 };

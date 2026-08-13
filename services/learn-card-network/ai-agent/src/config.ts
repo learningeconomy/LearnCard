@@ -10,6 +10,17 @@ export interface ServiceConfig {
     cloudUrl?: string;
     networkUrl?: string;
     maxToolRounds: number;
+    runTimeoutMs?: number;
+    maxOutputTokens?: number;
+    maxRunTokens?: number;
+    maxRunCostUsd?: number;
+    inputTokenCostUsdPerMillion?: number;
+    outputTokenCostUsdPerMillion?: number;
+    metricsNamespace?: string;
+    sentryDsn?: string;
+    sentryEnvironment?: string;
+    sentryRelease?: string;
+    sentryTracesSampleRate?: number;
     consentFlowContractUri?: string;
     consentFlowAppUrl: string;
     consentFlowDataPageSize: number;
@@ -51,6 +62,14 @@ const readNumber = (value: string | undefined, fallback: number): number => {
     const parsed = Number(value);
 
     return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const readOptionalNumber = (value: string | undefined): number | undefined => {
+    if (!value) return undefined;
+
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) ? parsed : undefined;
 };
 
 const readBoolean = (value: string | undefined, fallback: boolean): boolean => {
@@ -175,6 +194,66 @@ export const assertSecurityConfig = (config: ServiceConfig): void => {
         throw new Error('AI_AGENT_TRUST_PROXY_HOPS must be an integer from 0 to 10.');
     }
 
+    if (
+        !Number.isInteger(config.maxToolRounds) ||
+        config.maxToolRounds < 1 ||
+        config.maxToolRounds > 20
+    ) {
+        throw new Error('AI_AGENT_MAX_TOOL_ROUNDS must be an integer from 1 to 20.');
+    }
+    if (
+        config.runTimeoutMs !== undefined &&
+        (!Number.isFinite(config.runTimeoutMs) ||
+            config.runTimeoutMs < 5_000 ||
+            config.runTimeoutMs > 600_000)
+    ) {
+        throw new Error('AI_AGENT_RUN_TIMEOUT_MS must be between 5000 and 600000.');
+    }
+    if (
+        config.maxOutputTokens !== undefined &&
+        (!Number.isInteger(config.maxOutputTokens) ||
+            config.maxOutputTokens < 128 ||
+            config.maxOutputTokens > 16_384)
+    ) {
+        throw new Error('AI_AGENT_MAX_OUTPUT_TOKENS must be an integer from 128 to 16384.');
+    }
+    if (
+        config.maxRunTokens !== undefined &&
+        (!Number.isInteger(config.maxRunTokens) ||
+            config.maxRunTokens < 1_000 ||
+            config.maxRunTokens > 1_000_000)
+    ) {
+        throw new Error('AI_AGENT_MAX_RUN_TOKENS must be an integer from 1000 to 1000000.');
+    }
+    if (
+        config.maxRunCostUsd !== undefined &&
+        (!Number.isFinite(config.maxRunCostUsd) || config.maxRunCostUsd <= 0)
+    ) {
+        throw new Error('AI_AGENT_MAX_RUN_COST_USD must be greater than 0.');
+    }
+    if (
+        config.inputTokenCostUsdPerMillion !== undefined &&
+        (!Number.isFinite(config.inputTokenCostUsdPerMillion) ||
+            config.inputTokenCostUsdPerMillion < 0)
+    ) {
+        throw new Error('AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION must be at least 0.');
+    }
+    if (
+        config.outputTokenCostUsdPerMillion !== undefined &&
+        (!Number.isFinite(config.outputTokenCostUsdPerMillion) ||
+            config.outputTokenCostUsdPerMillion < 0)
+    ) {
+        throw new Error('AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION must be at least 0.');
+    }
+    if (
+        config.sentryTracesSampleRate !== undefined &&
+        (!Number.isFinite(config.sentryTracesSampleRate) ||
+            config.sentryTracesSampleRate < 0 ||
+            config.sentryTracesSampleRate > 1)
+    ) {
+        throw new Error('SENTRY_TRACES_SAMPLE_RATE must be between 0 and 1.');
+    }
+
     if (config.nodeEnv === 'production' && !config.authDomain) {
         throw new Error('AI_AGENT_AUTH_DOMAIN must be set in production.');
     }
@@ -183,10 +262,43 @@ export const assertSecurityConfig = (config: ServiceConfig): void => {
         throw new Error('AI_AGENT_MONGO_URI or MONGO_URI must be set in production.');
     }
 
-    if (config.nodeEnv === 'production' && config.debugEnabled && !config.debugToken) {
+    if (config.nodeEnv === 'production' && !config.openAIApiKey) {
+        throw new Error('OPENAI_API_KEY must be set in production.');
+    }
+
+    if (
+        config.nodeEnv === 'production' &&
+        (!config.cloudUrl || !config.networkUrl || !config.consentFlowContractUri)
+    ) {
         throw new Error(
-            'AI_AGENT_DEBUG_TOKEN must be set when debug endpoints are enabled in production.'
+            'AI_AGENT_CLOUD_URL, AI_AGENT_NETWORK_URL, and AI_AGENT_CONSENT_FLOW_CONTRACT_URI must be set in production.'
         );
+    }
+
+    if (
+        config.nodeEnv === 'production' &&
+        (!config.inputTokenCostUsdPerMillion ||
+            config.inputTokenCostUsdPerMillion <= 0 ||
+            !config.outputTokenCostUsdPerMillion ||
+            config.outputTokenCostUsdPerMillion <= 0)
+    ) {
+        throw new Error(
+            'AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION and AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION must be set to current positive prices in production.'
+        );
+    }
+
+    if (config.nodeEnv === 'production' && !config.sentryDsn) {
+        throw new Error('SENTRY_DSN must be set in production.');
+    }
+
+    if (config.webSearchProvider === 'brave' && !config.braveSearchApiKey) {
+        throw new Error(
+            'BRAVE_SEARCH_API_KEY must be set when AI_AGENT_WEB_SEARCH_PROVIDER=brave.'
+        );
+    }
+
+    if (config.nodeEnv === 'production' && config.debugEnabled) {
+        throw new Error('AI_AGENT_DEBUG_ENABLED must be false in production.');
     }
 
     if (config.mongoUri && !config.walletSeed) {
@@ -237,7 +349,22 @@ export const getConfig = (): ServiceConfig => {
         networkUrl:
             readString(process.env.AI_AGENT_NETWORK_URL) ??
             readString(process.env.LEARNCARD_NETWORK_URL),
-        maxToolRounds: readNumber(process.env.AI_AGENT_MAX_TOOL_ROUNDS, 100),
+        maxToolRounds: readNumber(process.env.AI_AGENT_MAX_TOOL_ROUNDS, 8),
+        runTimeoutMs: readNumber(process.env.AI_AGENT_RUN_TIMEOUT_MS, 120_000),
+        maxOutputTokens: readNumber(process.env.AI_AGENT_MAX_OUTPUT_TOKENS, 4_096),
+        maxRunTokens: readNumber(process.env.AI_AGENT_MAX_RUN_TOKENS, 50_000),
+        maxRunCostUsd: readNumber(process.env.AI_AGENT_MAX_RUN_COST_USD, 1),
+        inputTokenCostUsdPerMillion: readOptionalNumber(
+            process.env.AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION
+        ),
+        outputTokenCostUsdPerMillion: readOptionalNumber(
+            process.env.AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION
+        ),
+        metricsNamespace: readString(process.env.AI_AGENT_METRICS_NAMESPACE) ?? 'LearnCard/AIAgent',
+        sentryDsn: readString(process.env.SENTRY_DSN),
+        sentryEnvironment: readString(process.env.SENTRY_ENV) ?? readString(process.env.NODE_ENV),
+        sentryRelease: readString(process.env.SENTRY_RELEASE) ?? readString(process.env.GIT_SHA),
+        sentryTracesSampleRate: readOptionalNumber(process.env.SENTRY_TRACES_SAMPLE_RATE),
         consentFlowContractUri: readString(process.env.AI_AGENT_CONSENT_FLOW_CONTRACT_URI),
         consentFlowAppUrl:
             readString(process.env.AI_AGENT_CONSENT_FLOW_APP_URL) ?? 'https://learncard.app',

@@ -58,3 +58,8 @@ services/learn-card-network/lca-api/.env.scouts
 
 # Sisyphus agent working directory (local only)
 .sisyphus/
+
+
+# CloudFormation deployment inputs
+**/*.parameters.json
+!**/*.parameters.example.json

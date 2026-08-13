@@ -1,9 +1,11 @@
+import { randomUUID } from 'node:crypto';
+
 import cors from 'cors';
 import express, { type RequestHandler } from 'express';
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 
-import { runAgent } from './agent/runAgent';
+import { awaitWithSignal, runAgent } from './agent/runAgent';
 import type { AgentProvider, AgentToolDefinition, AgentToolRun } from './agent/types';
 import {
     LearnCardAssistantCardToolInputValidator,
@@ -24,6 +26,12 @@ import {
 import { createConsentFlowRuntime, isProdNetworkUrl, type ConsentFlowRuntime } from './consentFlow';
 import type { ServiceConfig } from './config';
 import { getEmptyAgentLearnCard } from './helpers/learnCard.helpers';
+import {
+    createAgentRunTelemetry,
+    getOwnerTelemetryId,
+    recordHttpRequest,
+    recordServiceError,
+} from './observability';
 import { toStoredInputMessages, type SelfImprovementRuntime } from './selfImprovement';
 import {
     USER_DOC_KINDS,
@@ -44,15 +52,21 @@ import {
 } from './security/didAuth';
 import { createAgentServiceRuntime, type CreateAgentServiceRuntimeOptions } from './runtime';
 
+export const AGENT_SERVER_SHUTDOWN = Symbol('agent-server-shutdown');
+
+export type AgentServer = express.Express & {
+    [AGENT_SERVER_SHUTDOWN]: () => Promise<void>;
+};
+
 const MessageValidator = z.object({
     role: z.enum(['user', 'assistant']),
-    content: z.string().min(1),
+    content: z.string().min(1).max(32_000),
 });
 
 const RunRequestValidator = z.object({
-    messages: z.array(MessageValidator).min(1),
-    did: z.string().optional(),
-    consentFlowContractUri: z.string().optional(),
+    messages: z.array(MessageValidator).min(1).max(50),
+    did: z.string().max(512).optional(),
+    consentFlowContractUri: z.string().max(2_048).optional(),
 });
 
 const HeartbeatRequestValidator = z.object({
@@ -140,6 +154,8 @@ export interface RunChatOptions {
     assistantProfileRuntime?: LearnCardAssistantProfileRuntime;
     runOrigin?: 'interactive' | 'autonomous';
     signal?: AbortSignal;
+    requestId?: string;
+    runId?: string;
 }
 
 export interface RunChatResult {
@@ -156,6 +172,7 @@ export interface RunChatResult {
 }
 
 const OPENAI_API_KEY_REQUIRED_ERROR = 'OPENAI_API_KEY must be set to run the AI agent.';
+const AGENT_RUN_FAILED_ERROR = 'The agent failed to run. Please try again.';
 
 const getRunContextPrompt = (
     did: string,
@@ -221,6 +238,8 @@ export const runChatRequest = async ({
     assistantProfileRuntime,
     runOrigin = 'interactive',
     signal,
+    requestId,
+    runId = randomUUID(),
 }: RunChatOptions): Promise<RunChatResult> => {
     const parsed = RunRequestValidator.safeParse(body);
 
@@ -233,57 +252,91 @@ export const runChatRequest = async ({
         };
     }
 
+    const startedAt = Date.now();
+    const correlationId = requestId ?? runId;
+    const telemetry = createAgentRunTelemetry({
+        runId,
+        correlationId,
+        ownerDid,
+        triggerType: runOrigin,
+        config,
+    });
+    const abortController = new AbortController();
+    const abortFromSignal = (): void => abortController.abort(signal?.reason);
+    const timeout = setTimeout(
+        () => abortController.abort(new Error('Agent run exceeded its configured time limit.')),
+        config.runTimeoutMs ?? 120_000
+    );
+
+    if (signal?.aborted) abortFromSignal();
+    else signal?.addEventListener('abort', abortFromSignal, { once: true });
+    telemetry.started();
+
     try {
         const did = ownerDid;
         const consentFlowContractUri = parsed.data.consentFlowContractUri?.trim();
         const agentTools = [...tools];
         const runtime = consentFlowRuntime ?? createConsentFlowRuntime(config);
-        const requestSkills = await (async () => {
-            try {
-                return (await selfImprovementRuntime?.loadRequestSkills(did)) ?? [];
-            } catch {
-                return [];
-            }
-        })();
-        const memoryTools = await (async () => {
-            try {
-                return (await selfImprovementRuntime?.loadRequestTools(did)) ?? [];
-            } catch {
-                return [];
-            }
-        })();
-        const memoryManifestPrompt = await (async () => {
-            try {
-                return await selfImprovementRuntime?.getMemoryManifestPrompt(did);
-            } catch {
-                return undefined;
-            }
-        })();
-        const assistantFeedTools = await (async () => {
-            try {
-                return (await assistantFeedRuntime?.loadRequestTools(did, runOrigin)) ?? [];
-            } catch {
-                return [];
-            }
-        })();
-        const assistantProfilePrompt = await (async () => {
-            try {
-                return await assistantProfileRuntime?.getPrompt(did);
-            } catch {
-                return undefined;
-            }
-        })();
+        const [
+            requestSkills,
+            memoryTools,
+            memoryManifestPrompt,
+            assistantFeedTools,
+            assistantProfilePrompt,
+        ] = await awaitWithSignal(
+            Promise.all([
+                (async () => {
+                    try {
+                        return (await selfImprovementRuntime?.loadRequestSkills(did)) ?? [];
+                    } catch {
+                        return [];
+                    }
+                })(),
+                (async () => {
+                    try {
+                        return (await selfImprovementRuntime?.loadRequestTools(did)) ?? [];
+                    } catch {
+                        return [];
+                    }
+                })(),
+                (async () => {
+                    try {
+                        return await selfImprovementRuntime?.getMemoryManifestPrompt(did);
+                    } catch {
+                        return undefined;
+                    }
+                })(),
+                (async () => {
+                    try {
+                        return (await assistantFeedRuntime?.loadRequestTools(did, runOrigin)) ?? [];
+                    } catch {
+                        return [];
+                    }
+                })(),
+                (async () => {
+                    try {
+                        return await assistantProfileRuntime?.getPrompt(did);
+                    } catch {
+                        return undefined;
+                    }
+                })(),
+            ]),
+            abortController.signal
+        );
         let contextPrompt: string | undefined;
 
         agentTools.push(...memoryTools, ...assistantFeedTools);
         if (did) {
-            const dataPromise = runtime.loadConsentedUserData({
-                did,
-                contractUri: consentFlowContractUri || undefined,
-            });
-            dataPromise.catch(() => undefined);
-
-            agentTools.push(createConsentedUserDataTool({ did, dataPromise }));
+            agentTools.push(
+                createConsentedUserDataTool({
+                    did,
+                    loadData: () =>
+                        runtime.loadConsentedUserData({
+                            did,
+                            contractUri: consentFlowContractUri || undefined,
+                        }),
+                })
+            );
             contextPrompt = getRunContextPrompt(
                 did,
                 consentFlowContractUri || undefined,
@@ -300,8 +353,17 @@ export const runChatRequest = async ({
             skills: requestSkills,
             maxToolRounds: config.maxToolRounds,
             contextPrompt,
-            ...(signal ? { signal } : {}),
+            signal: abortController.signal,
+            runId,
+            maxOutputTokens: config.maxOutputTokens,
+            maxTotalTokens: config.maxRunTokens,
+            maxEstimatedCostUsd: config.maxRunCostUsd,
+            inputTokenCostUsdPerMillion: config.inputTokenCostUsdPerMillion,
+            outputTokenCostUsdPerMillion: config.outputTokenCostUsdPerMillion,
+            observer: telemetry.observer,
         });
+
+        telemetry.succeeded(result, Date.now() - startedAt);
 
         return {
             status: 200,
@@ -312,22 +374,34 @@ export const runChatRequest = async ({
                 toolRuns: result.toolRuns,
             },
             afterResponse: async afterResponseSignal => {
-                await selfImprovementRuntime?.runAfterResponse({
-                    ownerDid: did,
-                    model: config.model,
-                    inputMessages: toStoredInputMessages(parsed.data.messages),
-                    result,
-                    ...(afterResponseSignal ? { signal: afterResponseSignal } : {}),
-                });
+                const postRunStartedAt = Date.now();
+
+                try {
+                    await selfImprovementRuntime?.runAfterResponse({
+                        ownerDid: did,
+                        model: config.model,
+                        inputMessages: toStoredInputMessages(parsed.data.messages),
+                        result,
+                        ...(afterResponseSignal ? { signal: afterResponseSignal } : {}),
+                    });
+                    telemetry.postRunSucceeded(Date.now() - postRunStartedAt);
+                } catch (error) {
+                    telemetry.postRunFailed(error, Date.now() - postRunStartedAt);
+                    throw error;
+                }
             },
         };
     } catch (error) {
+        telemetry.failed(error, Date.now() - startedAt);
         const message = error instanceof Error ? error.message : 'The agent failed to run.';
 
         return {
             status: 500,
             payload: { error: message },
         };
+    } finally {
+        clearTimeout(timeout);
+        signal?.removeEventListener('abort', abortFromSignal);
     }
 };
 
@@ -335,8 +409,19 @@ export const createServer = ({
     didAuthChallengeStore,
     getVerifierLearnCard,
     ...runtimeOptions
-}: CreateServerOptions): express.Express => {
-    const app = express();
+}: CreateServerOptions): AgentServer => {
+    const app = express() as AgentServer;
+    app.disable('x-powered-by');
+    const pendingPostRuns = new Set<Promise<void>>();
+    const trackPostRun = (callback: (() => Promise<void>) | undefined): void => {
+        if (!callback) return;
+
+        const work = callback().catch(() => undefined);
+
+        pendingPostRuns.add(work);
+        void work.then(() => pendingPostRuns.delete(work));
+    };
+
     const runtime = createAgentServiceRuntime(runtimeOptions);
     const {
         config,
@@ -352,6 +437,31 @@ export const createServer = ({
     } = runtime;
 
     app.set('trust proxy', config.trustProxyHops ?? 0);
+    app.use((req, res, next) => {
+        const forwardedRequestId = req.get('X-Request-ID');
+        const requestId =
+            forwardedRequestId && /^[A-Za-z0-9_.-]{1,64}$/.test(forwardedRequestId)
+                ? forwardedRequestId
+                : randomUUID();
+        const startedAt = Date.now();
+
+        res.locals.agentRequestId = requestId;
+        res.set('X-Request-ID', requestId);
+        res.once('finish', () => {
+            recordHttpRequest({
+                requestId,
+                method: req.method,
+                route: typeof req.route?.path === 'string' ? req.route.path : 'unmatched',
+                statusCode: res.statusCode,
+                durationMs: Date.now() - startedAt,
+                ownerId:
+                    typeof res.locals.agentTelemetryOwnerId === 'string'
+                        ? res.locals.agentTelemetryOwnerId
+                        : undefined,
+            });
+        });
+        next();
+    });
     let challengeStorePromise: Promise<AgentDidAuthChallengeStore> | undefined;
 
     const getChallengeStore = async (): Promise<AgentDidAuthChallengeStore> => {
@@ -379,6 +489,7 @@ export const createServer = ({
                 challengeStore: await getChallengeStore(),
                 getVerifierLearnCard: getVerifierLearnCard ?? getEmptyAgentLearnCard,
             });
+            res.locals.agentTelemetryOwnerId = getOwnerTelemetryId(res.locals.agentDidAuth.did);
 
             next();
         } catch (error) {
@@ -487,6 +598,7 @@ export const createServer = ({
         (handler: RequestHandler): RequestHandler =>
         (req, res, next) => {
             Promise.resolve(handler(req, res, next)).catch(error => {
+                recordServiceError('http.async-handler', error);
                 const message =
                     error instanceof Error ? error.message : 'AI Agent storage is not available.';
 
@@ -497,6 +609,34 @@ export const createServer = ({
     app.use(cors());
     app.use('/api', baselineRateLimit);
     app.use(express.json({ limit: '1mb' }));
+
+    const getReadinessStatus = async (): Promise<{
+        ok: boolean;
+        checks: {
+            provider: boolean;
+            mongo: boolean;
+        };
+    }> => {
+        const mongoStatus = await mongo.getStatus();
+
+        return {
+            ok: providerConfigured && mongoStatus.connected,
+            checks: {
+                provider: providerConfigured,
+                mongo: mongoStatus.connected,
+            },
+        };
+    };
+
+    app.get('/api/health/live', (_req, res) => {
+        res.json({ ok: true });
+    });
+
+    app.get('/api/health/ready', async (_req, res) => {
+        const readiness = await getReadinessStatus();
+
+        res.status(readiness.ok ? 200 : 503).json(readiness);
+    });
 
     app.get('/api/health', async (_req, res) => {
         const assistantFeedStatus = await assistantFeed.getStatus();
@@ -530,6 +670,17 @@ export const createServer = ({
                 enabled: agentTools.some(tool => tool.name === 'webSearch'),
             },
             tools: agentTools.map(tool => tool.name),
+            limits: {
+                maxToolRounds: config.maxToolRounds,
+                runTimeoutMs: config.runTimeoutMs,
+                maxOutputTokens: config.maxOutputTokens,
+                maxRunTokens: config.maxRunTokens,
+                maxRunCostUsd: config.maxRunCostUsd,
+            },
+            observability: {
+                metricsNamespace: config.metricsNamespace,
+                sentryEnabled: Boolean(config.sentryDsn),
+            },
         });
     });
 
@@ -611,10 +762,15 @@ export const createServer = ({
             selfImprovementRuntime: selfImprovement,
             assistantFeedRuntime: assistantFeed,
             assistantProfileRuntime: assistantProfile,
+            ...(typeof res.locals.agentRequestId === 'string'
+                ? { requestId: res.locals.agentRequestId }
+                : {}),
         });
 
-        res.status(result.status).json(result.payload);
-        void result.afterResponse?.().catch(() => undefined);
+        res.status(result.status).json(
+            result.status >= 500 ? { error: AGENT_RUN_FAILED_ERROR } : result.payload
+        );
+        trackPostRun(result.afterResponse);
     });
 
     app.post('/api/agent/heartbeat', requireDidAuth, agentRateLimit, async (req, res) => {
@@ -661,6 +817,9 @@ export const createServer = ({
             selfImprovementRuntime: selfImprovement,
             assistantFeedRuntime: assistantFeed,
             assistantProfileRuntime: assistantProfile,
+            ...(typeof res.locals.agentRequestId === 'string'
+                ? { requestId: res.locals.agentRequestId }
+                : {}),
         });
 
         if (result.status !== 200) {
@@ -1166,6 +1325,11 @@ export const createServer = ({
             });
         })
     );
+
+    app[AGENT_SERVER_SHUTDOWN] = async () => {
+        await Promise.all([...pendingPostRuns]);
+        await mongo.close();
+    };
 
     return app;
 };

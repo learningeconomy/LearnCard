@@ -203,6 +203,7 @@ export const createAutonomousScheduler = ({
                     scheduledFor,
                     runtime,
                     signal: abortController.signal,
+                    correlationId: runId,
                 });
             } finally {
                 clearInterval(heartbeatTimer);

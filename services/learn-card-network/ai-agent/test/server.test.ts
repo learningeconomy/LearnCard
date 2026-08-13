@@ -5,7 +5,11 @@ import type { AgentProvider, AgentToolDefinition } from '../src/agent/types';
 import type { ConsentFlowRuntime } from '../src/consentFlow';
 import type { ServiceConfig } from '../src/config';
 import type { MongoRuntime } from '../src/mongo';
-import { createServer as createAgentServer, runChatRequest } from '../src/server';
+import {
+    AGENT_SERVER_SHUTDOWN,
+    createServer as createAgentServer,
+    runChatRequest,
+} from '../src/server';
 import { createSelfImprovementRuntime, type SelfImprovementRuntime } from '../src/selfImprovement';
 import { createWebSearchTool, type WebSearchProvider } from '../src/tools/webSearch';
 import {
@@ -119,6 +123,48 @@ describe('runChatRequest', () => {
         expect(result.afterResponse).toBeTypeOf('function');
     });
 
+    it('times out while request context preloading never settles', async () => {
+        const preloadStarted = Promise.withResolvers<void>();
+        const stalledPreload = Promise.withResolvers<never>();
+        let providerCalled = false;
+        const provider: AgentProvider = {
+            complete: async () => {
+                providerCalled = true;
+
+                return {
+                    message: {
+                        role: 'assistant',
+                        content: 'This should not run.',
+                    },
+                };
+            },
+        };
+        const resultPromise = runChatRequest({
+            body: { messages: [{ role: 'user', content: 'Hi' }] },
+            ownerDid: 'did:key:user',
+            config: { ...testConfig, runTimeoutMs: 25 },
+            provider,
+            tools: [],
+            selfImprovementRuntime: {
+                loadRequestSkills: async () => {
+                    preloadStarted.resolve();
+
+                    return stalledPreload.promise;
+                },
+                loadRequestTools: async () => [],
+                getMemoryManifestPrompt: async () => undefined,
+            } as SelfImprovementRuntime,
+        });
+
+        await preloadStarted.promise;
+
+        await expect(resultPromise).resolves.toMatchObject({
+            status: 500,
+            payload: { error: 'Agent run exceeded its configured time limit.' },
+        });
+        expect(providerCalled).toBe(false);
+    });
+
     it('rejects invalid chat payloads', async () => {
         const provider: AgentProvider = {
             complete: async () => ({
@@ -144,7 +190,7 @@ describe('runChatRequest', () => {
         });
     });
 
-    it('starts consented user data loading and exposes it as a request-scoped tool', async () => {
+    it('loads consented user data only when the request-scoped tool is called', async () => {
         let calls = 0;
         let loadStarted = false;
         const consentFlowRuntime: ConsentFlowRuntime = {
@@ -189,7 +235,7 @@ describe('runChatRequest', () => {
                 calls += 1;
 
                 if (calls === 1) {
-                    expect(loadStarted).toBe(true);
+                    expect(loadStarted).toBe(false);
                     expect(messages[0]?.content).toContain('The current user DID is did:key:user.');
                     expect(tools.map(tool => tool.name)).toContain('getConsentedUserData');
 
@@ -244,6 +290,7 @@ describe('runChatRequest', () => {
                 },
             ],
         });
+        expect(loadStarted).toBe(true);
     });
 
     it('adds DID-scoped memory tools and manifest context to chat runs', async () => {
@@ -512,6 +559,28 @@ describe('createServer', () => {
         close: async () => undefined,
     };
 
+    it('does not expose provider error details to the HTTP caller', async () => {
+        const app = createAgentServer({
+            config: testConfig,
+            provider: {
+                complete: async () => {
+                    throw new Error('Provider leaked credential material.');
+                },
+            },
+            tools: [],
+        });
+
+        await expect(
+            callRoute(app, 'post', '/api/agent/run', {
+                did: 'did:key:user',
+                messages: [{ role: 'user', content: 'Hi' }],
+            })
+        ).resolves.toEqual({
+            status: 500,
+            payload: { error: 'The agent failed to run. Please try again.' },
+        });
+    });
+
     it('does not register browser debug UI routes', () => {
         const app = createAgentServer({
             config: testConfig,
@@ -621,8 +690,9 @@ describe('createServer', () => {
         });
     });
 
-    it('sends the chat response before post-response self-improvement finishes', async () => {
-        let afterResponseStarted = false;
+    it('sends the chat response first and drains post-response work during shutdown', async () => {
+        const afterResponseStarted = Promise.withResolvers<void>();
+        const finishAfterResponse = Promise.withResolvers<void>();
         const provider: AgentProvider = {
             complete: async () => ({
                 message: {
@@ -636,8 +706,8 @@ describe('createServer', () => {
             loadRequestTools: async () => [],
             getMemoryManifestPrompt: async () => undefined,
             runAfterResponse: async () => {
-                afterResponseStarted = true;
-                await new Promise<void>(() => undefined);
+                afterResponseStarted.resolve();
+                await finishAfterResponse.promise;
             },
             getDocsForDebug: async () => [],
             getMemoryManifestForDebug: async () => undefined,
@@ -684,8 +754,19 @@ describe('createServer', () => {
                 message: 'Response first.',
             },
         });
+        await afterResponseStarted.promise;
+
+        let shutdownFinished = false;
+        const shutdown = app[AGENT_SERVER_SHUTDOWN]().then(() => {
+            shutdownFinished = true;
+        });
+
         await Promise.resolve();
-        expect(afterResponseStarted).toBe(true);
+        expect(shutdownFinished).toBe(false);
+
+        finishAfterResponse.resolve();
+        await shutdown;
+        expect(shutdownFinished).toBe(true);
     });
 
     it('supports debug memory create, approve, and archive actions', async () => {
