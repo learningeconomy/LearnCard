@@ -98,8 +98,7 @@ export const TroopIDPreviewBackFace: React.FC<{
                                 </h4>
                                 <div className="flex">
                                     {permission?.roleKeys.map((role, i) => {
-                                        const isLast =
-                                            i === permission.roleKeys.length - 1; // Check if it's the last item
+                                        const isLast = i === permission.roleKeys.length - 1; // Check if it's the last item
                                         const _role = isLast
                                             ? permissionRole(role)
                                             : `${permissionRole(role)},`; // Conditionally add the comma

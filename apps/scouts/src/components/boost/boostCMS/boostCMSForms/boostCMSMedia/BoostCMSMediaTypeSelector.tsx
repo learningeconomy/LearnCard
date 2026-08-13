@@ -1,9 +1,6 @@
 import React from 'react';
 
-import {
-    IonCol,
-    IonRow,
-} from '@ionic/react';
+import { IonCol, IonRow } from '@ionic/react';
 
 import { boostMediaOptions, BoostMediaOptionsEnum, mediaTypeTitle } from '../../../boost';
 
@@ -30,6 +27,5 @@ const BOOSTCMSMediaTypeSelector: React.FC<{
         </IonRow>
     );
 };
-
 
 export default BOOSTCMSMediaTypeSelector;

@@ -46,11 +46,7 @@ const BoostMediaCMSFormPhotoItem: React.FC<BoostMediaCMSFormItemProps> = ({
             className="flex bg-grayscale-100 rounded-[20px] relative min-h-[120px] max-h-[120px] w-full mb-4"
         >
             <div className="w-2/5 relative overflow-hidden rounded-[20px] shadow-3xl min-h-[120px] max-h-[120px]">
-                <img
-                    alt=""
-                    src={media.url || ''}
-                    className="h-full w-full object-cover"
-                />
+                <img alt="" src={media.url || ''} className="h-full w-full object-cover" />
                 <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent z-10"></div>
 
                 <Camera className="absolute left-2 bottom-2 h-[30px] w-[30px] text-white z-20" />

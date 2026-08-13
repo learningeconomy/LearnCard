@@ -129,11 +129,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                 <div className="w-full flex items-center justify-between px-[8px] py-[8px] mt-4">
                     <div className="text-grayscale-900 text-lg flex items-center justify-start w-[80%] font-notoSans">
                         <div className="h-[40px] w-[40px] rounded-full bg-white mr-[10px] overflow-hidden">
-                            <img
-                                src={networkImage}
-                                alt=""
-                                className="w-full h-full object-cover"
-                            />
+                            <img src={networkImage} alt="" className="w-full h-full object-cover" />
                         </div>
                         {m['troops.useNetworkStyles']()}
                     </div>

@@ -73,11 +73,7 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
                             className={`relative flex items-center justify-center object-contain overflow-hidden w-[72px] h-[72px] bg-grayscale-800 rounded-full`}
                         >
                             {!state?.appearance?.idIssuerThumbnail ? (
-                                <img
-                                    alt=""
-                                    src={EmptyImage}
-                                    className="w-[43px] h-[47px]"
-                                />
+                                <img alt="" src={EmptyImage} className="w-[43px] h-[47px]" />
                             ) : (
                                 <img
                                     alt=""

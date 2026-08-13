@@ -188,7 +188,9 @@ export const FrameworkCRUD: React.FC = () => {
                                     disabled={createFrameworkMutation.isPending}
                                     className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 disabled:bg-grayscale-400"
                                 >
-                                    {createFrameworkMutation.isPending ? m['common.creating']() : m['common.create']()}
+                                    {createFrameworkMutation.isPending
+                                        ? m['common.creating']()
+                                        : m['common.create']()}
                                 </button>
                                 <button
                                     type="button"

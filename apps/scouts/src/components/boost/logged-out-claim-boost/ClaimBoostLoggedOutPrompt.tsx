@@ -294,11 +294,7 @@ const ScoutsLoginColumn: React.FC = () => {
                                 onClick={() => setActiveLoginType(LoginTypesEnum.phone)}
                                 aria-label={m['login.accessibility.phoneLogin']()}
                             >
-                                <img
-                                    src={PhoneIcon}
-                                    alt=""
-                                    className="w-[30px] h-[30px]"
-                                />
+                                <img src={PhoneIcon} alt="" className="w-[30px] h-[30px]" />
                             </button>
                         )}
                     </div>

@@ -202,10 +202,7 @@ const BoostCMSAppearanceForm: React.FC<{
                                 <div
                                     className={`flex items-center justify-center rounded-full object-contain overflow-hidden w-[72px] h-[72px] bg-${_subColor}`}
                                 >
-                                    <img
-                                        alt=""
-                                        src={state?.appearance?.badgeThumbnail}
-                                    />
+                                    <img alt="" src={state?.appearance?.badgeThumbnail} />
                                 </div>
                                 {isDefaultImage && (
                                     <p className="ml-[10px] text-grayscale-700">

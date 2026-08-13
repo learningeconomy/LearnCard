@@ -232,11 +232,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
             <div className="flex items-center justify-start w-full font-notoSans text-lg">
                 <div className="bg-sp-green-leaf flex items-center justify-center h-[40px] w-[40px] object-contain rounded-full overflow-hidden mr-[10px]">
                     {adminThumbnail ? (
-                        <img
-                            src={adminThumbnail}
-                            alt=""
-                            className="w-full h-full object-cover"
-                        />
+                        <img src={adminThumbnail} alt="" className="w-full h-full object-cover" />
                     ) : (
                         <>{icon}</>
                     )}

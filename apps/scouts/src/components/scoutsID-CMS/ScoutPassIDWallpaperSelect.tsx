@@ -51,18 +51,10 @@ export const ScoutPassIDWallpaperSelect: React.FC<{
                 >
                     {!wallpaper ? (
                         <div className="p-[6px]">
-                            <img
-                                alt=""
-                                src={EmptyImage}
-                                className="w-full h-full object-contain"
-                            />
+                            <img alt="" src={EmptyImage} className="w-full h-full object-contain" />
                         </div>
                     ) : (
-                        <img
-                            alt=""
-                            src={wallpaper}
-                            className="w-full h-full object-cover"
-                        />
+                        <img alt="" src={wallpaper} className="w-full h-full object-cover" />
                     )}
                     {imageUploadLoading && (
                         <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">

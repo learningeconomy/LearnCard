@@ -73,9 +73,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
     };
 
     const handleRemoveAdmin = (profileId: string) => {
-        const confirmed = window.confirm(
-            m['skillFrameworks.confirmRemAdmin']()
-        );
+        const confirmed = window.confirm(m['skillFrameworks.confirmRemAdmin']());
 
         if (confirmed) {
             removeAdminMutation.mutate(profileId);

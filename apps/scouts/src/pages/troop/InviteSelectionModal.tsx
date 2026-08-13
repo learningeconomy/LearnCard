@@ -37,11 +37,7 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
                 >
                     <div className="flex shrink-0 items-center justify-center h-12 w-12 rounded-full overflow-hidden bg-grayscale-100">
                         {leaderImage ? (
-                            <img
-                                src={leaderImage}
-                                alt=""
-                                className="h-full w-full object-cover"
-                            />
+                            <img src={leaderImage} alt="" className="h-full w-full object-cover" />
                         ) : (
                             <LeaderIdThumbPlaceholder className="h-full w-full object-cover" />
                         )}

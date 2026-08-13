@@ -59,11 +59,7 @@ const BoostIDCardCMSBackgroundImageForm: React.FC<{
                         className={`relative flex items-center justify-center object-contain overflow-hidden w-[72px] h-[72px] bg-grayscale-800 rounded-[10px]`}
                     >
                         {!state?.appearance?.idBackgroundImage ? (
-                            <img
-                                alt=""
-                                src={EmptyImage}
-                                className="w-[43px] h-[47px]"
-                            />
+                            <img alt="" src={EmptyImage} className="w-[43px] h-[47px]" />
                         ) : (
                             <img
                                 alt=""
