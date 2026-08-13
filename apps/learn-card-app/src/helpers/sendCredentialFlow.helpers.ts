@@ -172,7 +172,12 @@ function buildPayload(
     };
 }
 
+/**
+ * Organic send-credential telemetry was retired after its LaunchDarkly rollout
+ * remained fully disabled. Bench-triggered measurements remain explicit opt-ins.
+ */
 async function emit(payload: Iter): Promise<void> {
+    if (!payload.triggered_by_bench) return;
     if (!analyticsProvider) {
         log.warn('[sendCredentialFlow] emit skipped — no analytics provider wired', payload);
         return;
