@@ -3,7 +3,14 @@ import { useStore } from '@nanostores/react';
 import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { getLogger } from 'learn-card-base';
-const log = getLogger('learn-card-ai-chat-bot');
+
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    newFlowId,
+    createFlowLifecycle,
+    type FlowLifecycle,
+} from '@analytics';
 
 import ChatHeader from './ChatHeader';
 import ChatInput from './ChatInput';
@@ -11,7 +18,9 @@ import CaretDown from '../../svgs/CaretDown';
 import AiChatLoading from './AiChatLoading';
 import AiSessionPlan from './AiSessionPlan';
 import AiSessionLoader from '../AiSessionLoader';
+import AiSessionErrorHandler from '../AiSessionErrorHandler';
 import { MessageWithQuestions, StreamingMessage } from './MessageWithQuestions';
+import ChatBotTypingIndicator from '../NewAiSessionChatBot/helpers/TypingIndicator';
 
 import {
     messages,
@@ -20,6 +29,8 @@ import {
     startLearningPathway,
     currentThreadId,
     isLoading,
+    isTyping,
+    lastAiError,
     isEndingSession,
     showEndingSessionLoader,
     disconnectWebSocket,
@@ -38,6 +49,8 @@ import {
 import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 import { useStickToBottom } from '../../../hooks/useStickToBottom';
 import { preloadMarkdownRenderer } from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
+
+const log = getLogger('learn-card-ai-chat-bot');
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
@@ -97,8 +110,10 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const isEnding = useStore(isEndingSession);
     const showEndingLoader = useStore(showEndingSessionLoader);
     const loading = useStore(isLoading);
+    const typing = useStore(isTyping);
     const authState = useStore(auth);
     const streaming = useStore(streamingMessage);
+    const aiError = useStore(lastAiError);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const chatContentRef = useRef<HTMLDivElement>(null);
@@ -113,6 +128,19 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     // Pin-user-message refs
     const lastUserMessageRef = useRef<HTMLDivElement | null>(null);
     const prevUserCountRef = useRef(0);
+
+    const { track } = useAnalytics();
+    const aiFlowIdRef = useRef(newFlowId());
+    const aiMessageIndexRef = useRef(0);
+    const aiResponseQueueRef = useRef<Array<{ lifecycle: FlowLifecycle; messageIndex: number }>>(
+        []
+    );
+    const aiPrevUserCountRef = useRef(0);
+    const aiBaselineInitializedRef = useRef(false);
+    const aiPrevStreamingRef = useRef(false);
+    const aiMountedAtRef = useRef(Date.now());
+    const aiHandledErrorAtRef = useRef<number | null>(null);
+    const aiSuppressNextStreamCompletionRef = useRef(false);
 
     // Viewport height for min-height pin calculation
     const [viewportAllowance, setViewportAllowance] = useState(0);
@@ -264,9 +292,95 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         return -1;
     }, [messagesToShow]);
 
-    // Pin user message to top of viewport when a new user message is sent.
-    // The min-height style on the user bubble reserves viewport space so the
-    // assistant reply can grow beneath it without the view moving.
+    useEffect(() => {
+        const userCount = messagesToShow.filter(m => m.role === 'user').length;
+        if (!aiBaselineInitializedRef.current) {
+            // Wait until the message source has switched from the (possibly
+            // empty) initialMessages prop to the store — otherwise a resumed
+            // thread hydrating asynchronously baselines at 0 and its history
+            // gets counted as fresh sends.
+            if (showInitialMessages) return;
+            aiBaselineInitializedRef.current = true;
+            aiPrevUserCountRef.current = userCount;
+            return;
+        }
+        if (userCount > aiPrevUserCountRef.current) {
+            const delta = userCount - aiPrevUserCountRef.current;
+            aiPrevUserCountRef.current = userCount;
+            // A real send appends exactly one user message and synchronously
+            // sets isTyping (sendMessageWithQuestion). Thread hydration
+            // (loadThread) bulk-sets history with isTyping false — resync
+            // the baseline without emitting.
+            if (delta > 1 || !isTyping.get()) return;
+            aiMessageIndexRef.current += 1;
+            aiResponseQueueRef.current.push({
+                lifecycle: createFlowLifecycle(),
+                messageIndex: aiMessageIndexRef.current,
+            });
+            track(AnalyticsEvents.AI_MESSAGE_SENT, {
+                flow_id: aiFlowIdRef.current,
+                surface: 'ai_chat',
+                message_index: aiMessageIndexRef.current,
+            });
+        }
+    }, [messagesToShow, showInitialMessages, track]);
+
+    useEffect(() => {
+        const isNowStreaming = Boolean(streaming);
+        const hasCurrentError = Boolean(
+            aiError &&
+                aiError.at >= aiMountedAtRef.current &&
+                aiError.at !== aiHandledErrorAtRef.current
+        );
+        if (aiPrevStreamingRef.current && !isNowStreaming) {
+            if (aiSuppressNextStreamCompletionRef.current) {
+                aiSuppressNextStreamCompletionRef.current = false;
+            } else if (!hasCurrentError) {
+                const response = aiResponseQueueRef.current[0];
+                if (response?.lifecycle.terminate()) {
+                    track(AnalyticsEvents.AI_RESPONSE_COMPLETED, {
+                        flow_id: aiFlowIdRef.current,
+                        surface: 'ai_chat',
+                        message_index: response.messageIndex,
+                        duration_ms: response.lifecycle.durationMs(),
+                    });
+                    aiResponseQueueRef.current.shift();
+                }
+            }
+        }
+        aiPrevStreamingRef.current = isNowStreaming;
+    }, [aiError, streaming, track]);
+
+    useEffect(() => {
+        // Ignore errors that predate this mount (the atom persists across sessions).
+        if (
+            !aiError ||
+            aiError.at < aiMountedAtRef.current ||
+            aiError.at === aiHandledErrorAtRef.current
+        ) {
+            return;
+        }
+
+        const response = aiResponseQueueRef.current[0];
+        if (!response?.lifecycle.terminate()) {
+            aiHandledErrorAtRef.current = aiError.at;
+            return;
+        }
+        track(AnalyticsEvents.AI_RESPONSE_FAILED, {
+            flow_id: aiFlowIdRef.current,
+            surface: 'ai_chat',
+            message_index: response.messageIndex,
+            error_code:
+                aiError.event === 'ai_error' ? aiError.rawCode ?? aiError.code : aiError.code,
+            duration_ms: response.lifecycle.durationMs(),
+        });
+        if (streaming) {
+            aiSuppressNextStreamCompletionRef.current = true;
+        }
+        aiResponseQueueRef.current.shift();
+        aiHandledErrorAtRef.current = aiError.at;
+    }, [aiError, streaming, track]);
+
     useEffect(() => {
         const userCount = messagesToShow.filter(m => m.role === 'user').length;
         if (userCount > prevUserCountRef.current) {
@@ -280,9 +394,10 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     return (
         <AiFeatureGate>
             <div
-                className="flex flex-col h-full min-h-0 w-full bg-white"
+                className="relative flex flex-col h-full min-h-0 w-full bg-white"
                 style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
             >
+                <AiSessionErrorHandler />
                 {isEnding && showEndingLoader && (
                     <AiSessionLoader
                         contractUri={contractUri}
@@ -323,12 +438,11 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                     {messagesToShow.map((msg, index) => {
                                         const isLastUser = index === lastUserIdx;
                                         const isTail = index === messagesToShow.length - 1;
-                                        // Reserve viewport space on whatever is the last rendered block.
-                                        // When streaming, that's the StreamingMessage below; otherwise
-                                        // it's the tail message wrapper. Keeps the user bubble pinned
-                                        // to the top without creating a gap before the assistant reply.
+                                        // Reserve viewport space on whichever block renders last.
+                                        // Streaming and typing indicators own this space while active;
+                                        // otherwise the tail message keeps the latest user bubble pinned.
                                         const pinStyle =
-                                            isTail && !streaming && viewportAllowance > 0
+                                            isTail && !streaming && !typing && viewportAllowance > 0
                                                 ? {
                                                       minHeight: `${Math.max(
                                                           0,
@@ -364,6 +478,26 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                             }
                                         >
                                             <StreamingMessage aiApp={aiApp} />
+                                        </div>
+                                    )}
+
+                                    {typing && !streaming && !aiError && (
+                                        <div
+                                            role="status"
+                                            aria-label="AI is responding"
+                                            className="w-full transition-opacity duration-150"
+                                            style={
+                                                viewportAllowance > 0
+                                                    ? {
+                                                          minHeight: `${Math.max(
+                                                              0,
+                                                              viewportAllowance - 24
+                                                          )}px`,
+                                                      }
+                                                    : undefined
+                                            }
+                                        >
+                                            <ChatBotTypingIndicator />
                                         </div>
                                     )}
                                 </div>

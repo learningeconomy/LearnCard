@@ -303,7 +303,7 @@ export const appendBitstringStatusListEntries = async (
     credential: UnsignedVC,
     ownerProfileId: string,
     domain: string,
-    statusPurposes: BitstringStatusPurpose[] = ['revocation']
+    statusPurposes: BitstringStatusPurpose[] = ['revocation', 'suspension']
 ): Promise<UnsignedVC> => {
     if (!isVC2Format(credential)) return credential;
 

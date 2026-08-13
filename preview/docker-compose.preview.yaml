@@ -71,8 +71,6 @@ services:
                 condition: service_started
             elasticmq:
                 condition: service_started
-            signing:
-                condition: service_started
         networks:
             - learn-card
             - preview-net
@@ -132,36 +130,6 @@ services:
             XAPI_PASSWORD: test-api-secret
             SERVER_URL: http://cloud:4100
             JWT_SIGNING_KEY: test
-        volumes:
-            - ../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
-            - ../packages/email-templates/src:/app/packages/email-templates/src
-
-    signing:
-        image: learncard-monorepo-local
-        build:
-            context: ../
-            dockerfile: Dockerfile.monorepo
-        expose:
-            - 4200
-        command:
-            ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && bun run dev']
-        depends_on:
-            - mongodb
-            - redis3
-        networks:
-            - learn-card
-        extra_hosts:
-            - 'localhost:host-gateway'
-        environment:
-            PORT: 4200
-            IS_OFFLINE: true
-            SKIP_DIDKIT_NAPI: '1'
-            SEED: c
-            AUTHORIZED_DIDS: did:web:${PREVIEW_DOMAIN:-localhost%3A4000}:brain
-            MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
-            MONGO_DB_NAME: simple-signing
-            REDIS_HOST: redis3
-            REDIS_PORT: 6379
         volumes:
             - ../packages/sss-key-manager/src:/app/packages/sss-key-manager/src
             - ../packages/email-templates/src:/app/packages/email-templates/src

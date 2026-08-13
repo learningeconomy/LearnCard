@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
     Send,
     CheckCircle2,
@@ -46,7 +46,6 @@ export interface IssuanceListProps {
     title?: string;
     showFilter?: boolean;
     showExport?: boolean;
-    refreshKey?: number;
     /** Which issuer surface this list lives on — forwarded to the detail modal for analytics. */
     surface?: 'managed-boosts' | 'issuer-dashboard';
 }
@@ -61,7 +60,6 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
     title,
     showFilter,
     showExport,
-    refreshKey,
     surface = 'issuer-dashboard',
 }) => {
     const [eventTypeFilter, setEventTypeFilter] = useState<CredentialEventType | 'ALL'>('ALL');
@@ -72,7 +70,6 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
         isLoading: activityLoading,
         isLoadingMore,
         hasMore,
-        refetch,
         loadMore,
         stats: activityStats,
     } = useIntegrationActivity(templates, {
@@ -83,17 +80,10 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
         eventType: eventTypeFilter === 'ALL' ? undefined : eventTypeFilter,
     });
 
-    // Refetch when refreshKey changes
-    useEffect(() => {
-        if (refreshKey && refreshKey > 0) {
-            refetch();
-        }
-    }, [refreshKey, refetch]);
-
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
 
     const handleActivityItemClick = (item: CredentialActivityRecord) => {
-        newModal(<IssuanceDetailModal item={item} surface={surface} onActionComplete={refetch} />, {
+        newModal(<IssuanceDetailModal item={item} surface={surface} />, {
             sectionClassName: '!max-w-[450px]',
         });
     };

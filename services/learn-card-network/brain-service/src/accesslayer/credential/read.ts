@@ -269,6 +269,56 @@ export const getCredentialStatusForBoostAndProfile = async (
 };
 
 /**
+ * Returns the authoritative lifecycle status ('active' | 'revoked' | 'suspended') for a
+ * holder's credentials, keyed by the URI the caller passed in.
+ *
+ * This is the source of truth the issuer view and activity feed already use: the status
+ * is tracked on the CREDENTIAL_SENT (`{ to: profileId }`) / CREDENTIAL_RECEIVED
+ * relationship, set directly by the revoke/suspend routes. It is more reliable than
+ * client-side verifyCredential, whose WASM status-list check enforces revocation but does
+ * not surface a set suspension bit. URIs that don't resolve to a credential the holder
+ * received are simply omitted from the result (caller can fall back to verification).
+ */
+export const getLifecycleStatusesForCredentialUris = async (
+    profileId: string,
+    uris: string[]
+): Promise<Record<string, 'active' | 'revoked' | 'suspended'>> => {
+    const idToUri = new Map<string, string>();
+    for (const uri of uris) {
+        try {
+            idToUri.set(getIdFromUri(uri), uri);
+        } catch {
+            // Unparseable URI — skip it; the caller falls back to client verification.
+        }
+    }
+    if (idToUri.size === 0) return {};
+
+    const result = await neogma.queryRunner.run(
+        `UNWIND $ids AS cid
+         MATCH (credential:Credential { id: cid })
+         OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT { to: $profileId }]->(credential)
+             WHERE (sender:Profile OR sender:AppStoreListing)
+         OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(:Profile { profileId: $profileId })
+         WITH cid, sent, received
+         WHERE sent IS NOT NULL OR received IS NOT NULL
+         WITH cid, coalesce(sent.status, received.status) AS status
+         RETURN cid, status`,
+        { profileId, ids: [...idToUri.keys()] }
+    );
+
+    const statuses: Record<string, 'active' | 'revoked' | 'suspended'> = {};
+    for (const record of result.records) {
+        const cid = record.get('cid') as string;
+        const uri = idToUri.get(cid);
+        if (!uri) continue;
+        const raw = record.get('status') as string | null;
+        statuses[uri] =
+            raw === 'revoked' ? 'revoked' : raw === 'suspended' ? 'suspended' : 'active';
+    }
+    return statuses;
+};
+
+/**
  * Get a credential instance for a specific boost and profile.
  * This is used to find the credential that was issued when a profile claimed a boost.
  * Looks via credentialSent (which exists for pending and claimed) and filters out revoked credentials.

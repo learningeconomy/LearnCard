@@ -1,28 +1,18 @@
 import { useGetCredentialsForSkills } from 'learn-card-base';
-import { mapBoostsToSkills } from '../pages/skills/skills.helpers';
 import { useResolvedConsentFlowDataForDid } from 'learn-card-base';
+import { useGlobalSkillFrameworks } from '../helpers/globalSkillFrameworks.helpers';
+import { countSkillsForFrameworks } from './skillAlignment.helpers';
 
 export const useSkillsCount = () => {
     const { data: allResolvedCreds } = useGetCredentialsForSkills();
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const frameworkIds = globalSkillFrameworks.map(framework => framework.frameworkId);
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
-
-    // Calculate total count of skills and subskills
-    const totalSkills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.length || 0),
-        0
-    );
-
-    const totalSubskills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.totalSubskills || 0),
-        0
-    );
-
-    const total = (totalSkills || 0) + (totalSubskills || 0);
+    const total = countSkillsForFrameworks(allResolvedCreds, frameworkIds);
 
     return {
-        totalSkills,
-        totalSubskills,
+        totalSkills: total,
+        totalSubskills: 0,
         total,
     };
 };
@@ -32,25 +22,14 @@ export const useSkillsCountByDid = (did: string) => {
         useResolvedConsentFlowDataForDid(did, {
             limit: 100,
         });
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const frameworkIds = globalSkillFrameworks.map(framework => framework.frameworkId);
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
-
-    // Calculate total count of skills and subskills
-    const totalSkills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.length || 0),
-        0
-    );
-
-    const totalSubskills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.totalSubskills || 0),
-        0
-    );
-
-    const total = (totalSkills || 0) + (totalSubskills || 0);
+    const total = countSkillsForFrameworks(allResolvedCreds, frameworkIds);
 
     return {
-        totalSkills,
-        totalSubskills,
+        totalSkills: total,
+        totalSubskills: 0,
         total,
         isLoadingResolved,
     };

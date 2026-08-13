@@ -15,6 +15,7 @@ import {
 import cache from '@cache';
 import { TRPCError } from '@trpc/server';
 import { getDeliveryService, getFrom } from '../services/delivery';
+import { resolveLocaleByEmail } from '../helpers/locale.helpers';
 import jwtDecode from 'jwt-decode';
 import { getDidWebLearnCard, getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { isAuthorizedDID } from '@helpers/dids.helpers';
@@ -246,10 +247,10 @@ export const firebaseRouter = t.router({
                 description: 'Sends a verification code to the user for login.',
             },
         })
-        .input(z.object({ email: z.string().email() }))
+        .input(z.object({ email: z.string().email(), locale: z.string().optional() }))
         .output(z.object({ success: z.boolean(), error: z.string().optional() }))
         .mutation(async ({ input, ctx }) => {
-            const { email } = input;
+            const { email, locale } = input;
 
             try {
                 // rate limit attempts (max 3 codes per 10 mins)
@@ -278,9 +279,18 @@ export const firebaseRouter = t.router({
                 // store code in Redis with 5-min TTL
                 await cache.set(redisKey, '1', CODE_TTL_SECONDS);
 
+                // Login is pre-auth, so the client only knows its UI language.
+                // Prefer the account's saved locale (resolved by email via
+                // brain-service) so a user whose preference is Spanish gets a
+                // Spanish email even from a fresh English browser; fall back to
+                // the client UI locale, then 'en' at render time. Never blocks
+                // login — resolveLocaleByEmail returns undefined on any failure.
+                const resolvedLocale = (await resolveLocaleByEmail(email)) ?? locale;
+
                 try {
                     await getDeliveryService().send({
                         to: email,
+                        locale: resolvedLocale,
                         templateAlias: LOGIN_VERIFICATION_CODE_TEMPLATE_ALIAS,
                         templateModel: {
                             verificationCode: code,

@@ -75,6 +75,9 @@ import { DEFAULT_REGISTRY } from './quickActions/registry';
 import { resolveSlots } from './quickActions/resolveSlots';
 import type { ActionHandlers, DashboardState, SlotIcons } from './quickActions/types';
 import { isHiddenActivity } from '../wallet/activity-feed/activityFeed.helpers';
+import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
+
+import { AnalyticsEvents, useAnalytics } from '@analytics';
 
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
@@ -83,11 +86,17 @@ import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 const DashboardPage: React.FC = () => {
     const history = useHistory();
     const flags = useFlags();
+    const { track } = useAnalytics();
     const { getIconSet, getColorSet } = useTheme();
     const brandingConfig = useBrandingConfig();
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const sideMenuColors = getColorSet(ColorSetEnum.sideMenu);
     const primaryButtonClass = sideMenuColors?.primaryButtonColor;
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const globalSkillFrameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
     const pathwaysEnabled = usePathwaysEnabled();
     const {
         openClaimLink,
@@ -191,7 +200,7 @@ const DashboardPage: React.FC = () => {
     const dashboardTopSkills = useMemo(() => {
         if (!aiInsightsAllowed) return [];
 
-        const skillsMap = mapBoostsToSkills(skillsCredentials);
+        const skillsMap = mapBoostsToSkills(skillsCredentials, globalSkillFrameworkIds);
         const categorizedSkills = Object.entries(skillsMap) as [
             string,
             RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
@@ -199,7 +208,7 @@ const DashboardPage: React.FC = () => {
         const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
 
         return buildTopSkills(getTopSkills(aggregatedSkills, 15), 3);
-    }, [aiInsightsAllowed, skillsCredentials]);
+    }, [aiInsightsAllowed, globalSkillFrameworkIds, skillsCredentials]);
 
     // LC-1921: shared right-loading profile/settings modal, same entry point as
     // the side-menu Settings row and the header avatar.
@@ -332,6 +341,23 @@ const DashboardPage: React.FC = () => {
     const showGetStarted = !getStartedDismissed && (!hasCredentials || !secondStepDone);
     const heroSlot: 'getStarted' | 'goal' = showGetStarted ? 'getStarted' : 'goal';
 
+    const withChecklistTracking = (item: {
+        key: string;
+        label: string;
+        done: boolean;
+        onClick: () => void;
+    }) => ({
+        ...item,
+        onClick: () => {
+            track(AnalyticsEvents.DASHBOARD_GET_STARTED_INTERACTED, {
+                action: 'item_clicked',
+                item_key: item.key,
+                hero_action_id: heroActionId ?? undefined,
+            });
+            item.onClick();
+        },
+    });
+
     const checklistItems = [
         {
             key: 'add-credential',
@@ -349,6 +375,11 @@ const DashboardPage: React.FC = () => {
     ];
 
     const dismissGetStarted = () => {
+        track(AnalyticsEvents.DASHBOARD_GET_STARTED_INTERACTED, {
+            action: 'dismissed',
+            item_key: nextChecklistItem?.key,
+            hero_action_id: heroActionId ?? undefined,
+        });
         firstStartupStore.set.dashboardGetStartedDismissed(true);
     };
 
@@ -380,6 +411,7 @@ const DashboardPage: React.FC = () => {
     const slotIcons: SlotIcons = {
         collect: sideMenuIcons.wallet,
         understand: sideMenuIcons[CredentialCategoryEnum.aiInsight],
+        skills: sideMenuIcons[CredentialCategoryEnum.skill],
         navigate: sideMenuIcons.pathways,
     };
 
@@ -490,7 +522,7 @@ const DashboardPage: React.FC = () => {
             roleSwitcher: <DashboardRoleSwitcher />,
         },
         heroSlot,
-        checklistItems,
+        checklistItems: checklistItems.map(withChecklistTracking),
         onDismissGetStarted: dismissGetStarted,
         goalSummary,
         pathwaysEnabled,

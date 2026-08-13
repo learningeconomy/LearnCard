@@ -1,5 +1,25 @@
 # @learncard/partner-connect
 
+## 0.4.2
+
+### Patch Changes
+
+-   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4)]:
+    -   @learncard/types@5.18.1
+
+## 0.4.1
+
+### Patch Changes
+
+-   Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24), [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158)]:
+    -   @learncard/types@5.18.0
+
+## 0.4.0
+
+### Minor Changes
+
+-   [#1414](https://github.com/learningeconomy/LearnCard/pull/1414) [`f31566902ac5f458312800c4cadcd615d6ca949f`](https://github.com/learningeconomy/LearnCard/commit/f31566902ac5f458312800c4cadcd615d6ca949f) Thanks [@Custard7](https://github.com/Custard7)! - feat: @partner-connect SDK Mock Mode
+
 ## 0.3.10
 
 ### Patch Changes

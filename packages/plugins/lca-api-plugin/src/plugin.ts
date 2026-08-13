@@ -14,13 +14,17 @@ const getNewClient = async (
     learnCard: LearnCard<any, 'id', LCAPluginDependentMethods>,
     extraHeaders?: Record<string, string>
 ) => {
-    return getClient(url, async challenge => {
-        const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+    return getClient(
+        url,
+        async challenge => {
+            const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-        if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+            if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-        return jwt;
-    }, extraHeaders);
+            return jwt;
+        },
+        extraHeaders
+    );
 };
 
 const getEncryptionJwk = async (
@@ -110,6 +114,7 @@ export const getLCAPlugin = async (
 
         return {
             name: 'LearnCard App',
+            isOffline: false,
             displayName: 'LearnCard App Plugin',
             description: 'Adds bespoke logic to the LearnCard App.',
             methods: {
@@ -373,12 +378,13 @@ export const getLCAPlugin = async (
 
                     return result || null;
                 },
-                sendLoginVerificationCode: async (_learnCard, email) => {
+                sendLoginVerificationCode: async (_learnCard, email, locale) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
                     const result = await client.firebase.sendLoginVerificationCode.mutate({
                         email,
+                        locale,
                     });
 
                     return result;
@@ -543,6 +549,7 @@ export const getLCAPlugin = async (
         );
         return {
             name: 'LearnCard App',
+            isOffline: true,
             displayName: 'LearnCard App Plugin (Offline)',
             description: 'Adds bespoke logic to the LearnCard App. (Unable to connect to LCA API)',
             methods: {

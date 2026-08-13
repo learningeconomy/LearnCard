@@ -17,6 +17,7 @@ import { ActivityFilterPopover } from './ActivityFilterPopover';
 import { ActivityDetailOverlay } from './ActivityDetailOverlay';
 import { RecentlyAdded } from './RecentlyAdded';
 import * as m from '../../../paraglide/messages.js';
+import { getLocale } from '../../../paraglide/runtime.js';
 
 export const PassportActivityFeed: React.FC = () => {
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
@@ -71,8 +72,11 @@ export const PassportActivityFeed: React.FC = () => {
     return (
         <section className="w-full max-w-[840px] mx-auto mt-[24px]">
             <RecentlyAdded />
+            {/* Eyebrow heading — cased to match the month group labels below,
+                which uppercase in JS (not CSS) so locales with special casing
+                rules are handled by Intl rather than `text-transform`. */}
             <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500 mb-[10px]">
-                {m['passport.activity.heading']()}
+                {m['passport.activity.heading']().toLocaleUpperCase(getLocale())}
             </h3>
             <div className="bg-white rounded-[20px] border border-grayscale-200 shadow-sm px-[16px] pt-[16px] pb-[8px]">
                 <div className="flex items-center gap-2 mb-4 relative">

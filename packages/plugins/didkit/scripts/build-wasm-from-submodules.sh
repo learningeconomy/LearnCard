@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+DIDKIT_DIR="${ROOT_DIR}/lib/didkit"
+DIDKIT_LOCKFILE="${DIDKIT_DIR}/Cargo.lock"
+DIDKIT_WASM_LOCKFILE="${ROOT_DIR}/packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock"
+DIDKIT_WEB_DIR="${ROOT_DIR}/lib/didkit/lib/web"
+SOURCE_PKG_DIR="${DIDKIT_WEB_DIR}/pkg"
+TARGET_PKG_DIR="${ROOT_DIR}/packages/plugins/didkit/src/didkit/pkg"
+
+if ! command -v wasm-pack >/dev/null 2>&1; then
+    echo "wasm-pack is required to build DIDKit WASM" >&2
+    exit 1
+fi
+if ! command -v wasm-opt >/dev/null 2>&1; then
+    echo "wasm-opt is required to optimize DIDKit WASM" >&2
+    exit 1
+fi
+
+
+if [ ! -d "${DIDKIT_WEB_DIR}" ]; then
+    echo "Expected DIDKit web crate at ${DIDKIT_WEB_DIR}" >&2
+    exit 1
+fi
+
+if [ ! -f "${DIDKIT_WASM_LOCKFILE}" ]; then
+    echo "Expected DIDKit WASM lockfile at ${DIDKIT_WASM_LOCKFILE}" >&2
+    exit 1
+fi
+
+if [ -e "${DIDKIT_LOCKFILE}" ]; then
+    echo "Unexpected upstream DIDKit lockfile at ${DIDKIT_LOCKFILE}" >&2
+    echo "If a previous build was interrupted, remove it: rm '${DIDKIT_LOCKFILE}'" >&2
+    exit 1
+fi
+
+# DIDKit does not ship a workspace lock, so seed Cargo with our reproducible WASM lock.
+trap 'rm -f "${DIDKIT_LOCKFILE}"' EXIT INT TERM
+cp "${DIDKIT_WASM_LOCKFILE}" "${DIDKIT_LOCKFILE}"
+
+(
+    cd "${DIDKIT_WEB_DIR}"
+
+    if [ "${UPDATE_DIDKIT_WASM_LOCKFILE:-0}" = "1" ]; then
+        wasm-pack build --target=web
+        cp "${DIDKIT_LOCKFILE}" "${DIDKIT_WASM_LOCKFILE}"
+    else
+        wasm-pack build --target=web --locked
+    fi
+    optimized_wasm="$(mktemp "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm.XXXXXX")"
+    trap 'rm -f "${optimized_wasm}"' EXIT
+
+    wasm-opt -Oz -o "${optimized_wasm}" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
+    mv "${optimized_wasm}" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
+
+    trap - EXIT
+
+
+)
+
+mkdir -p "${TARGET_PKG_DIR}"
+
+for file in didkit_wasm.d.ts didkit_wasm.js didkit_wasm_bg.wasm didkit_wasm_bg.wasm.d.ts; do
+    cp "${SOURCE_PKG_DIR}/${file}" "${TARGET_PKG_DIR}/${file}"
+done
+

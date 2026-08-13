@@ -55,13 +55,20 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
     };
 
     const handleButtonClick = () => {
+        const action = isConnected && !isAiApp ? 'open' : 'connect';
         track(AnalyticsEvents.LAUNCHPAD_APP_CLICKED, {
             appName: app.name,
             appId: app.id,
-            action: isConnected && !isAiApp ? 'open' : 'connect',
+            action,
             appType: app.type,
         });
-        if (isConnected && !isAiApp) {
+        if (action === 'open') {
+            track(AnalyticsEvents.LAUNCHPAD_APP_OPENED, {
+                appName: app.name,
+                appId: app.id,
+                appType: app.type,
+                entry_point: 'list_item',
+            });
             app.handleView?.();
         } else {
             handleConnect(app);

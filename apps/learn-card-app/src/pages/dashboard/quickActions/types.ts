@@ -34,6 +34,7 @@ export type ActionHandlers = {
 export type SlotIcons = {
     collect: QuickActionIcon;
     understand: QuickActionIcon;
+    skills: QuickActionIcon;
     navigate: QuickActionIcon;
 };
 

@@ -1,5 +1,15 @@
 # @welibraryos/lca-api-client
 
+## 1.2.4
+
+### Patch Changes
+
+-   [#1453](https://github.com/learningeconomy/LearnCard/pull/1453) [`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Retire the legacy CHAPI example, MetaMask Snap projects, Discord bot, and Simple Signing service, client, and plugin.
+
+    Managed signing authority consumers now use `@learncard/lca-api-plugin`. Replace `getSimpleSigningPlugin(learnCard, endpoint)` with `getLCAPlugin(learnCard, endpoint)`. Historical implementations remain available through Git history.
+
+-   [#1473](https://github.com/learningeconomy/LearnCard/pull/1473) [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump @trpc/server, fastify, @fastify/static (7 high Dependabot alerts)
+
 ## 1.2.3
 
 ### Patch Changes

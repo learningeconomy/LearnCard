@@ -7,6 +7,7 @@ import CheckListDisclaimer from './checklist-disclaimer/CheckListDisclaimer';
 
 import { ChecklistEnum } from 'learn-card-base';
 import GenericErrorBoundary from '../../generic/GenericErrorBoundary';
+import CredentialIntakeOptions from './CredentialIntakeOptions';
 import DemoSchoolBox from './DemoSchoolBox';
 import UploadJsonVcBox from './UploadJsonVcBox';
 
@@ -20,6 +21,7 @@ export const CheckListContainer: React.FC<{ activeChecklistStep?: ChecklistEnum 
                     <ChecklistHeader />
                     <DemoSchoolBox />
                     <CheckList activeChecklistStep={activeChecklistStep} />
+                    <CredentialIntakeOptions />
                     <UploadJsonVcBox />
                     {/* <CheckListDisclaimer /> */}
                 </GenericErrorBoundary>

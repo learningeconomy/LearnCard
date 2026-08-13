@@ -1,5 +1,28 @@
 # @learncard/network-brain-client
 
+## 1.6.36
+
+### Patch Changes
+
+-   [#1473](https://github.com/learningeconomy/LearnCard/pull/1473) [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump @trpc/server, fastify, @fastify/static (7 high Dependabot alerts)
+
+-   Updated dependencies [[`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417)]:
+    -   @learncard/learn-cloud-service@2.5.28
+
+## 1.6.35
+
+### Patch Changes
+
+-   Updated dependencies [[`36cc19241aa3bbe6c82a1664f967992d09176d4a`](https://github.com/learningeconomy/LearnCard/commit/36cc19241aa3bbe6c82a1664f967992d09176d4a), [`540434989e3b0e15b9d3ca76388ca4de6730a56b`](https://github.com/learningeconomy/LearnCard/commit/540434989e3b0e15b9d3ca76388ca4de6730a56b)]:
+    -   @learncard/learn-cloud-service@2.5.27
+
+## 1.6.34
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.5.26
+
 ## 1.6.33
 
 ### Patch Changes

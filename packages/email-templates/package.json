@@ -1,6 +1,6 @@
 {
     "name": "@learncard/email-templates",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Git-managed, tenant-branded email and SMS templates for LearnCard services",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -25,7 +25,7 @@
         "@types/react": "^18.3.0",
         "react-email": "^3.0.0",
         "typescript": "^5.0.0",
-        "vitest": "^1.0.0"
+        "vitest": "^3.2.6"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",

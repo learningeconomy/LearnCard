@@ -121,16 +121,40 @@
                 "description": "Si vous avez des justificatifs au format JSON brut, vous pouvez les ajouter à votre portefeuille ici."
             },
             "title": "Construire mon {{brand}}",
-            "progress": "{{percent}}% optimisé",
             "processing": "Traitement des documents…",
-            "stepsCompleted": "<0>{{completed}}</0> sur <1>{{total}}</1> étapes terminées",
             "pendingReview": "{{count}} titre(s) prêt(s) pour vérification",
+            "helper": "Ajoutez un CV, un certificat, un relevé de notes ou un diplôme.",
+            "actionsTitle": "Choisissez le prochain élément à ajouter",
+            "actionsDescription": "Choisissez le document le plus adapté et nous ouvrirons le bon parcours d’importation.",
+            "managerDescription": "Ajoutez le document le plus adapté.",
             "titleMarkup": "Construire mon <0>{{brand}}</0>",
+            "intake": {
+                "title": "Ajouter un élément reçu",
+                "description": "Utilisez un code QR ou un lien de réclamation provenant d’un émetteur ou d’une autre application.",
+                "scanTitle": "Scanner un code QR",
+                "scanDescription": "Ouvrez votre appareil photo pour scanner le code QR d’un justificatif.",
+                "uploadTitle": "Importer un code QR",
+                "uploadDescription": "Importez depuis votre appareil une image du code QR d’un justificatif.",
+                "linkTitle": "Utiliser un lien de réclamation",
+                "linkDescription": "Collez un lien de réclamation LearnCard ou un lien de réclamation externe pour continuer."
+            },
+            "uploadError": {
+                "title": "Échec de l’importation",
+                "partialTitle": "Échec de certains fichiers",
+                "singleMessage": "Nous n’avons pas pu importer ce fichier. Vérifiez votre connexion et réessayez.",
+                "multipleMessage": "Nous n’avons pas pu importer ces fichiers. Vérifiez votre connexion et réessayez.",
+                "partialSingleMessage": "1 fichier n’a pas pu être importé. Vous pouvez continuer avec les fichiers restants.",
+                "partialMultipleMessage": "{{count}} fichiers n’ont pas pu être importés. Vous pouvez continuer avec les fichiers restants."
+            },
             "steps": {
                 "addResume": "Ajouter un CV",
-                "addCertificates": "Ajouter des certificats",
+                "addCertificates": "Ajouter un certificat",
                 "addTranscript": "Ajouter un relevé de notes",
                 "addDiploma": "Ajouter un diplôme",
+                "resumeDescription": "Idéal pour l’expérience professionnelle, les postes et les dates.",
+                "certificateDescription": "Idéal pour les formations, les cours et les justificatifs obtenus.",
+                "transcriptDescription": "Idéal pour le parcours scolaire vérifié et les cours suivis.",
+                "diplomaDescription": "Idéal pour confirmer l’obtention d’un diplôme et la fin des études.",
                 "processingResume": "Traitement du CV…",
                 "processingCertificate": "Traitement du certificat…",
                 "processingTranscript": "Traitement du relevé de notes…",
@@ -573,7 +597,9 @@
                 "sent": "Envoyé",
                 "claimed": "Récupéré",
                 "expired": "Expiré",
-                "notDelivered": "Non livré"
+                "notDelivered": "Non livré",
+                "revoked": "Révoqué",
+                "suspended": "Suspendu"
             },
             "title": {
                 "selfAdded": "Vous avez ajouté {{article}} {{label}} à votre passeport",
@@ -581,7 +607,11 @@
                 "claimedBy": "{{label}} récupéré par",
                 "expiredFor": "{{label}} expiré pour",
                 "failedTo": "Impossible de livrer {{label}} à",
-                "sentTo": "Vous avez envoyé {{article}} {{label}} à"
+                "sentTo": "Vous avez envoyé {{article}} {{label}} à",
+                "receivedRevoked": "Votre {{label}} a été révoqué",
+                "receivedSuspended": "Votre {{label}} a été suspendu",
+                "revokedFor": "{{label}} révoqué pour",
+                "suspendedFor": "{{label}} suspendu pour"
             },
             "when": {
                 "earlier": "Plus tôt",
@@ -925,7 +955,16 @@
             }
         },
         "social": {
-            "or": "OU"
+            "or": "OU",
+            "inProgress": "Une connexion est déjà en cours. Terminez-la avant de réessayer.",
+            "signingInWith": "Connexion avec {{provider}}",
+            "googleStartFailed": "La connexion avec Google n’a pas pu démarrer. Si le problème persiste, vérifiez les paramètres du navigateur, effacez les données du site, actualisez la page et réessayez. Vous pouvez aussi essayer un autre navigateur ou le mode privé.",
+            "popupBlocked": "Les fenêtres contextuelles sont bloquées dans votre navigateur. Autorisez-les et réessayez.",
+            "genericError": "Une erreur est survenue. Veuillez réessayer.",
+            "provider": {
+                "apple": "Apple",
+                "google": "Google"
+            }
         },
         "seedPhrase": {
             "title": "Utiliser une phrase de récupération pour importer votre passeport",
@@ -1341,7 +1380,6 @@
             "linkADevice": "Associer un appareil",
             "switchAccount": "Changer de compte",
             "buildMyLearnCard": "Construire mon {{brand}}",
-            "stepsCompleted": "{{completed}} sur {{total}}",
             "completeProfile": "Compléter le profil",
             "settings": "Paramètres du compte"
         },
@@ -1807,7 +1845,9 @@
         "okay": "OK",
         "viewCredential": "Voir la crédention",
         "loadingNotifications": "Chargement des notifications...",
-        "refresh": "Actualiser"
+        "refresh": "Actualiser",
+        "restored": "Rétabli",
+        "unableToLoad": "Impossible de charger la notification"
     },
     "share": {
         "addContact": "Ajouter un contact",
@@ -1939,7 +1979,19 @@
         "noSessionsForTopicBody": "Vous n’avez pas encore de sessions pour « {{topic}} ». Démarrez-en une nouvelle pour discuter de ce sujet.",
         "completedOn": "<0>Terminé</0> le {{date}}",
         "topicLabel": "Sujet",
-        "appLabel": "Application"
+        "appLabel": "Application",
+        "errors": {
+            "quotaTitle": "Limite d’utilisation de l’IA LearnCard atteinte",
+            "quotaBody": "L’IA LearnCard a atteint sa limite d’utilisation actuelle. Veuillez réessayer plus tard.",
+            "rateTitle": "L’IA LearnCard est très sollicitée",
+            "rateBody": "Trop de personnes utilisent l’IA LearnCard actuellement. Veuillez réessayer dans quelques instants.",
+            "unavailableTitle": "L’IA LearnCard est temporairement indisponible",
+            "unavailableBody": "Veuillez réessayer plus tard.",
+            "timeoutTitle": "L’IA LearnCard a mis trop de temps à répondre",
+            "timeoutBody": "Veuillez réessayer.",
+            "unknownTitle": "L’IA LearnCard n’a pas pu terminer cette demande",
+            "unknownBody": "Veuillez réessayer plus tard."
+        }
     },
     "pathways": {
         "title": "Parcours",
@@ -2351,7 +2403,10 @@
         },
         "paste": {
             "title": "Utiliser un lien de réclamation",
+            "titleQr": "Importer un code QR",
             "subtitle": "Collez un lien ou importez un QR",
+            "subtitleLink": "Collez un lien de réclamation LearnCard ou externe",
+            "subtitleQr": "Importez une image contenant le code QR d’un justificatif",
             "linkHeading": "Vous avez un lien de justificatif ?",
             "linkDesc": "Collez-le ci-dessous pour continuer.",
             "checking": "Vérification…",
@@ -2369,8 +2424,18 @@
                 "empty": "Collez un lien ou importez une image de code QR pour continuer.",
                 "malformedUrl": "Cela ne ressemble pas à un lien de réclamation. Essayez de copier le lien entier, commençant par https://, openid-credential-offer:// ou similaire.",
                 "unknownScheme": "Nous ne reconnaissons pas encore ce type de lien. Le lien semble valide, mais le format n'est pas pris en charge.",
+                "emptyLink": "Collez un lien de réclamation pour continuer.",
+                "emptyQr": "Choisissez une image contenant le code QR d’un justificatif pour continuer.",
+                "malformedUrlLink": "Cela ne ressemble pas à un lien de réclamation. Copiez le lien complet et réessayez.",
+                "malformedUrlQr": "Nous avons trouvé un code QR, mais son lien n’est pas valide. Essayez une autre image.",
+                "unknownSchemeLink": "Nous ne reconnaissons pas encore ce type de lien de réclamation.",
+                "unknownSchemeQr": "Nous avons trouvé un code QR, mais il n’utilise pas un format de justificatif pris en charge.",
                 "invalidVc": "Cela ressemble à un justificatif, mais nous n'avons pas pu le lire. Demandez une nouvelle copie à l'émetteur.",
-                "unknownFormat": "Nous n'avons pas pu interpréter cela. Collez un lien de réclamation ou importez une image de code QR."
+                "interactionUnavailableLink": "Nous n’avons pas pu ouvrir ce lien de réclamation. Il est peut-être indisponible ou expiré.",
+                "interactionUnavailableQr": "Nous avons trouvé le code QR, mais son justificatif est indisponible ou expiré.",
+                "unknownFormat": "Nous n'avons pas pu interpréter cela. Collez un lien de réclamation ou importez une image de code QR.",
+                "unknownFormatLink": "Nous n’avons pas pu utiliser ce lien de réclamation. Vérifiez que vous avez copié le lien complet et réessayez.",
+                "unknownFormatQr": "Nous avons trouvé un code QR, mais il ne contient pas de réclamation de justificatif prise en charge."
             }
         },
         "accept": {
@@ -2551,6 +2616,31 @@
         "nationalNetwork": "Réseau national",
         "globalNetworkAdmin": "Administrateur réseau mondial",
         "nationalNetworkAdmin": "Administrateur réseau national"
+    },
+    "feedback": {
+        "howWasThat": "Comment ça s'est passé ?",
+        "thanks": "Merci pour votre retour !",
+        "bad": "Pas bien",
+        "okay": "Moyen",
+        "great": "Super",
+        "followup": {
+            "title": "Qu'est-ce qui n'a pas fonctionné ?",
+            "desc": "Vos retours nous aident à améliorer LearnCard.",
+            "reason": {
+                "confusing": "Déroutant",
+                "slow": "Lent",
+                "broken": "Quelque chose s'est cassé",
+                "other": "Autre"
+            },
+            "placeholder": "Dites-nous en plus (facultatif)",
+            "send": "Envoyer",
+            "skip": "Passer"
+        },
+        "github": {
+            "body": "Vous aimez LearnCard ? C'est open source.",
+            "cta": "Mettez une étoile sur GitHub",
+            "dismiss": "Ignorer"
+        }
     },
     "toasts": {
         "copied": "Copié dans le presse-papiers",
@@ -2883,7 +2973,17 @@
         "unfinished": "Inachevé",
         "learningOverview": "Aperçu des apprentissages",
         "finishSession": "Terminer la session",
-        "finish": "Terminer"
+        "finish": "Terminer",
+        "activeTitle": "Session en cours",
+        "activeFallbackTitle": "Votre session d’IA actuelle",
+        "activeDescription": "« {{title}} » est toujours active. Démarrer une nouvelle session y mettra fin.",
+        "resumeSession": "Reprendre la session",
+        "resumingSession": "Reprise...",
+        "checkingActiveSession": "Vérification des sessions...",
+        "startNewSession": "Démarrer une nouvelle session",
+        "startingNewSession": "Démarrage...",
+        "activeCheckFailedTitle": "Un problème est survenu",
+        "activeCheckFailedDescription": "Essayez de redémarrer la session."
     },
     "aiFeatureLinks": {
         "skillsHub": "Pôle de compétences"
@@ -2906,6 +3006,12 @@
         "common": {
             "close": "Fermer",
             "select": "Sélectionner"
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "Révoqué",
+                "suspended": "Suspendu"
+            }
         }
     },
     "sdk": {
@@ -2935,7 +3041,14 @@
                 "doesNotExpire": "N’expire pas",
                 "expired": "Expiré",
                 "active": "Actif",
-                "couldNotVerify": "Le justificatif Boost n’a pas pu être vérifié."
+                "couldNotVerify": "Le justificatif Boost n’a pas pu être vérifié.",
+                "suspended": "Suspendu"
+            }
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "Révoqué",
+                "suspended": "Suspendu"
             }
         }
     },
@@ -3217,7 +3330,11 @@
                 "approvedPre": "Merci !",
                 "approvedPost": "Recommandation approuvée !",
                 "waitingReview": "En attente d'examen par {{name}}",
-                "approvedBy": "Approuvé par {{name}}"
+                "approvedBy": "Approuvé par {{name}}",
+                "sendFailedTitle": "Recommandation non envoyée",
+                "sendFailedDescription": "Votre recommandation est toujours enregistrée. Réessayez.",
+                "missingRequestDescription": "Fermez cet écran et rouvrez le lien de recommandation pour réessayer.",
+                "tryAgain": "Réessayer"
             },
             "footer": {
                 "viewEndorsement": "Voir la recommandation"
@@ -3261,7 +3378,7 @@
         },
         "viewRequest": {
             "ok": "OK",
-            "errorFetching": "Erreur lors de la récupération de la credential : {{error}}"
+            "errorOpening": "Nous n’avons pas pu ouvrir cette attestation. Veuillez réessayer."
         }
     },
     "verification": {

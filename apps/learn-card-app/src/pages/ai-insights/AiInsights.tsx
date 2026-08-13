@@ -31,9 +31,8 @@ import {
     useExistingAiInsightCredential,
     useGetCredentialsForSkills,
     aiInsightRefreshStore,
-    useToast,
-    ToastTypeEnum,
 } from 'learn-card-base';
+import { AiServiceError, type AiErrorCode } from 'learn-card-base/helpers/aiErrors';
 import { useLoadingLine } from '../../stores/loadingStore';
 import {
     aggregateCategorizedEntries,
@@ -47,6 +46,8 @@ import { useGetCurrentLCNUser } from 'learn-card-base';
 import { useAllContractRequestsForProfile } from 'learn-card-base';
 import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
 import AiInsightsWidgets from './AiInsightsWidgets';
+import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
+import { getAiErrorCopy } from '../../helpers/aiError.helpers';
 
 type Flags = {
     hideAiPathways?: boolean;
@@ -63,13 +64,18 @@ const AiInsights: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
-    const { presentToast } = useToast();
     const location = useLocation();
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const globalSkillFrameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
 
     const [selectedTab, setSelectedTab] = useState(AiInsightsTabsEnum.MyInsights);
     const flags = useFlags<Flags>();
     const showAgentDebugTab = flags?.enableAiAgentDebugTab ?? !IS_PRODUCTION;
     const autoGenerateAiInsightsAttemptedRef = useRef(false);
+    const [aiInsightErrorCode, setAiInsightErrorCode] = useState<AiErrorCode | null>(null);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -149,16 +155,17 @@ const AiInsights: React.FC = () => {
         if (!canGenerateAiInsights) {
             return;
         }
+        setAiInsightErrorCode(null);
 
         createAiInsightCredential(undefined, {
-            onError: () => {
-                presentToast('Something went wrong. Please try again.', {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
+            onError: error => {
+                const code =
+                    error instanceof AiServiceError ? error.payload.code : 'ai_unknown_error';
+
+                setAiInsightErrorCode(code);
             },
         });
-    }, [canGenerateAiInsights, createAiInsightCredential, presentToast]);
+    }, [canGenerateAiInsights, createAiInsightCredential]);
     const canAutoGenerateAiInsights =
         selectedTab === AiInsightsTabsEnum.MyInsights &&
         isAiEnabled &&
@@ -168,6 +175,7 @@ const AiInsights: React.FC = () => {
         !consentedContractsLoading &&
         !existingAiInsightCredentialLoading &&
         !createAiInsightCredentialLoading &&
+        !aiInsightErrorCode &&
         !aiInsightCredentialToDisplay &&
         hasWalletCredentials &&
         !autoGenerateAiInsightsAttemptedRef.current;
@@ -213,8 +221,8 @@ const AiInsights: React.FC = () => {
     }, [canAutoGenerateAiInsights, generateAiInsights]);
 
     const skillsMap = useMemo(() => {
-        return mapBoostsToSkills(allResolvedCreds);
-    }, [allResolvedCreds]);
+        return mapBoostsToSkills(allResolvedCreds, globalSkillFrameworkIds);
+    }, [allResolvedCreds, globalSkillFrameworkIds]);
 
     const categorizedSkills = useMemo(
         () =>
@@ -256,6 +264,7 @@ const AiInsights: React.FC = () => {
             ];
         });
     }, [pendingRequests]);
+    const aiInsightErrorCopy = aiInsightErrorCode ? getAiErrorCopy(aiInsightErrorCode) : undefined;
 
     const myInsights = (
         <>
@@ -278,6 +287,15 @@ const AiInsights: React.FC = () => {
             <ShareInsightsCard />
 
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
+            {aiInsightErrorCopy && (
+                <div
+                    className="w-full rounded-[15px] border border-red-100 bg-red-50 p-4 text-start text-red-700"
+                    role="alert"
+                >
+                    <h2 className="font-semibold">{aiInsightErrorCopy.title}</h2>
+                    <p>{aiInsightErrorCopy.body}</p>
+                </div>
+            )}
             <AiInsightsLearningSnapshots
                 aiInsightCredential={aiInsightCredentialToDisplay}
                 isLoading={learningSnapshotsIsLoading}

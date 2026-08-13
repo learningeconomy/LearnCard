@@ -31,6 +31,7 @@ export * from './components/boost/boostOptions/boostOptions';
 export * from './components/boost/boost';
 export * from './components/boost/BoostRecipients';
 export * from './components/boost/boostFooter/BoostFooter';
+export * from './components/boost/boostFooter/BoostFooterLayout';
 export * from './components/CredentialBadge/CredentialBadge';
 export * from './components/CredentialBadge/CredentialBadgeNew';
 export * from './components/CredentialBadge/CredentialCLRBadge';
@@ -61,6 +62,9 @@ export * from './components/shadcn/lib/utils';
 export * from './components/generic/Select';
 export * from './components/form-inputs';
 export * from './components/toast/Toast';
+export * from './components/loaders/LoadingSpinner';
+export * from './components/loaders/CredentialListSkeleton';
+export * from './components/SkillCompetencyCard';
 
 export * from './utils/regexes';
 export * from './utils/pushUtilities';
@@ -144,6 +148,7 @@ export * from './hooks/useSharedUrisInTerms';
 export * from './hooks/usePendingContractSync';
 export * from './hooks/useConsentedContracts';
 export * from './hooks/useLaunchDarklyIdentify';
+export * from './in-app-messages';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
@@ -188,6 +193,7 @@ export {
     suggestedTopics,
     topicCredentials,
     sessionEnded,
+    hasThreadEnded,
     planReady,
     planReadyThread,
     resetChatStores,
@@ -205,7 +211,9 @@ export {
     updateArtifactClaimedStatus,
 } from './stores/nanoStores/chatStore';
 
+export * from './helpers/aiErrors';
 export * from './helpers/credentialHelpers';
+export * from './helpers/credentialIngestion';
 export * from './helpers/credentials/queries';
 export * from './helpers/openid4vcErrors';
 export * from './helpers/faviconHelpers';

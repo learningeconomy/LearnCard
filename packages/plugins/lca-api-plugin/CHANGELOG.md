@@ -1,5 +1,53 @@
 # lca-api-plugin
 
+## 2.0.0
+
+### Major Changes
+
+-   [#1453](https://github.com/learningeconomy/LearnCard/pull/1453) [`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Retire the legacy CHAPI example, MetaMask Snap projects, Discord bot, and Simple Signing service, client, and plugin.
+
+    Managed signing authority consumers now use `@learncard/lca-api-plugin`. Replace `getSimpleSigningPlugin(learnCard, endpoint)` with `getLCAPlugin(learnCard, endpoint)`. Historical implementations remain available through Git history.
+
+### Patch Changes
+
+-   Updated dependencies [[`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575), [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417)]:
+    -   @learncard/lca-api-client@1.2.4
+    -   @learncard/core@9.4.30
+    -   @learncard/init@2.4.11
+    -   @learncard/didkit-plugin@1.9.10
+
+## 1.2.23
+
+### Patch Changes
+
+-   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4), [`6796b321354ca870e4dfa3606719f9882221bc1b`](https://github.com/learningeconomy/LearnCard/commit/6796b321354ca870e4dfa3606719f9882221bc1b)]:
+    -   @learncard/didkit-plugin@1.9.9
+    -   @learncard/types@5.18.1
+    -   @learncard/lca-api-client@1.2.3
+    -   @learncard/init@2.4.10
+    -   @learncard/core@9.4.29
+
+## 1.2.22
+
+### Patch Changes
+
+-   [#1312](https://github.com/learningeconomy/LearnCard/pull/1312) [`0f93889aeebd38203ec57c44ed888d25f8d75f4f`](https://github.com/learningeconomy/LearnCard/commit/0f93889aeebd38203ec57c44ed888d25f8d75f4f) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1902] Localize transactional emails + SMS (en/es/fr/ar)
+
+-   Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24), [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158)]:
+    -   @learncard/types@5.18.0
+    -   @learncard/lca-api-client@1.2.3
+    -   @learncard/core@9.4.28
+    -   @learncard/init@2.4.9
+    -   @learncard/didkit-plugin@1.9.8
+
+## 1.2.21
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.8
+    -   @learncard/lca-api-client@1.2.3
+
 ## 1.2.20
 
 ### Patch Changes

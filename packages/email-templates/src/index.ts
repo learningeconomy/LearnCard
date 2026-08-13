@@ -17,6 +17,10 @@
 export { resolveBranding, DEFAULT_BRANDING } from './branding';
 export type { TenantBranding } from './branding';
 
+// i18n (LC-1902)
+export { resolveCatalogLocale } from './i18n';
+export type { NotificationLocale } from './i18n';
+
 // Email rendering
 export { renderEmail } from './render';
 export type { RenderedEmail, TemplateId, TemplateDataMap } from './render';
@@ -37,10 +41,19 @@ export type {
 
 // SMS rendering
 export { renderSms } from './sms';
-export type { SmsTemplateId, SmsTemplateDataMap, SmsInboxClaimData, SmsVerificationData } from './sms';
+export type {
+    SmsTemplateId,
+    SmsTemplateDataMap,
+    SmsInboxClaimData,
+    SmsVerificationData,
+} from './sms';
 
 // Server-side tenant resolution
-export { resolveTenantFromRequest, registerOriginMapping, registerTenantBranding } from './tenant-registry';
+export {
+    resolveTenantFromRequest,
+    registerOriginMapping,
+    registerTenantBranding,
+} from './tenant-registry';
 export type { ResolvedTenant, RequestHeaders } from './tenant-registry';
 
 // Template components are intentionally NOT re-exported from the barrel.

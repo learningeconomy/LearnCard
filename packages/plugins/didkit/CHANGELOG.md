@@ -1,5 +1,32 @@
 # learn-card-core
 
+## 1.9.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.30
+
+## 1.9.9
+
+### Patch Changes
+
+-   [#1444](https://github.com/learningeconomy/LearnCard/pull/1444) [`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-1958] Fix W3C EdDSA Data Integrity interoperability and ship rebuilt native and WASM DIDKit artifacts.
+
+-   [#1220](https://github.com/learningeconomy/LearnCard/pull/1220) [`6796b321354ca870e4dfa3606719f9882221bc1b`](https://github.com/learningeconomy/LearnCard/commit/6796b321354ca870e4dfa3606719f9882221bc1b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-2065] Automate DIDKit WASM updates
+
+-   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4)]:
+    -   @learncard/types@5.18.1
+    -   @learncard/core@9.4.29
+
+## 1.9.8
+
+### Patch Changes
+
+-   Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24), [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158)]:
+    -   @learncard/types@5.18.0
+    -   @learncard/core@9.4.28
+
 ## 1.9.7
 
 ### Patch Changes
