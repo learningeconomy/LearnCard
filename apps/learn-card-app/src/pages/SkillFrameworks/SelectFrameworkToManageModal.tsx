@@ -36,6 +36,7 @@ type SelectFrameworkToManageModalProps = {
 };
 
 type Flags = {
+    enableOpenSaltBoostSkillSection?: boolean;
     openSaltFrameworkAllowlist?: string[] | string;
 };
 
@@ -97,7 +98,8 @@ const SelectFrameworkToManageModal: React.FC<SelectFrameworkToManageModalProps> 
     const [isImportingOpenSaltFramework, setIsImportingOpenSaltFramework] = React.useState(false);
     const [syncingFrameworkId, setSyncingFrameworkId] = React.useState<string | null>(null);
 
-    const shouldShowOpenSaltSection = Boolean(isBoostSkillSelection);
+    const shouldShowOpenSaltSection =
+        Boolean(isBoostSkillSelection) && Boolean(flags.enableOpenSaltBoostSkillSection);
 
     const { data: availableFrameworks = [], isLoading: isLoadingAvailableFrameworks } = useQuery({
         queryKey: ['allAvailableSkillFrameworks', shouldShowOpenSaltSection],

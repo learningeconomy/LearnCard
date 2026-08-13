@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
+import React, { useEffect, useRef } from 'react';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -42,7 +41,6 @@ type LaunchPadAppTabsProps = {
 };
 
 const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
-    const flags = useFlags();
     const { getColorSet, getStyleSet } = useTheme();
     const colorSet = getColorSet(ColorSetEnum.defaults);
     const styleSet = getStyleSet(StyleSetEnum.defaults);
@@ -54,13 +52,6 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
     const primaryColor = colorSet.primaryColor;
     const primaryColorShade = colorSet.primaryColorShade;
     const borderRadius = styleSet.tabs.borderRadius;
-    const visibleTabs = useMemo(
-        () =>
-            Object.values(LaunchPadTabEnum).filter(
-                option => option !== LaunchPadTabEnum.plugins || flags?.pluginVisibility
-            ),
-        [flags?.pluginVisibility]
-    );
 
     const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         if (event.pointerType !== 'mouse') return;
@@ -126,7 +117,7 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
             onClickCapture={handleClickCapture}
             className="flex text-grayscale-900 w-full overflow-x-auto scrollbar-hide select-none cursor-grab active:cursor-grabbing"
         >
-            {visibleTabs.map((option, index) => {
+            {Object.values(LaunchPadTabEnum).map((option, index) => {
                 const isActive = option === tab;
 
                 return (
