@@ -1,5 +1,13 @@
 # @learncard/render-method-plugin
 
+## 4.0.2
+
+### Patch Changes
+
+-   Updated dependencies [[`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417)]:
+    -   @learncard/helpers@1.3.12
+    -   @learncard/core@9.4.30
+
 ## 4.0.1
 
 ### Patch Changes

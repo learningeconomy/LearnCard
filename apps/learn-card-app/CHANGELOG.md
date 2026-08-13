@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.98.2
+
+### Patch Changes
+
+-   [#1466](https://github.com/learningeconomy/LearnCard/pull/1466) [`454793da3e4ef151a6e3bab129392df2004990b1`](https://github.com/learningeconomy/LearnCard/commit/454793da3e4ef151a6e3bab129392df2004990b1) Thanks [@Custard7](https://github.com/Custard7)! - fix: Web Version #
+
+-   [#1462](https://github.com/learningeconomy/LearnCard/pull/1462) [`cc3fbd709cf0df3238264a36e87d945a0047bf2e`](https://github.com/learningeconomy/LearnCard/commit/cc3fbd709cf0df3238264a36e87d945a0047bf2e) Thanks [@smurflo2](https://github.com/smurflo2)! - Improve dashboard quick actions with consistent sizing, visible descriptions, and an updated skill-profile icon.
+
+-   [#1458](https://github.com/learningeconomy/LearnCard/pull/1458) [`017225676f8bed7640f7222bebd32aa164d80ede`](https://github.com/learningeconomy/LearnCard/commit/017225676f8bed7640f7222bebd32aa164d80ede) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-2078] - 🐞 Fix toast status icons and text overflow
+
+-   [#1463](https://github.com/learningeconomy/LearnCard/pull/1463) [`9ae364deb8d3b33a9147a7b46b868791e8d5e4b9`](https://github.com/learningeconomy/LearnCard/commit/9ae364deb8d3b33a9147a7b46b868791e8d5e4b9) Thanks [@smurflo2](https://github.com/smurflo2)! - Keep credential preview option menus clickable, remove duplicate overflow controls, and show pointer cursors on clickable credential rows.
+
+-   Updated dependencies [[`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575), [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417)]:
+    -   @learncard/lca-api-plugin@2.0.0
+    -   @learncard/helpers@1.3.12
+    -   @learncard/render-method-plugin@4.0.2
+    -   @learncard/ler-rs-plugin@0.1.21
+    -   @learncard/open-badge-v2-plugin@1.1.31
+    -   @learncard/credential-library@1.0.15
+    -   @learncard/react@2.12.1
+
 ## 1.98.1
 
 ### Patch Changes
