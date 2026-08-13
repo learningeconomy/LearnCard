@@ -8,6 +8,8 @@ import {
     TenantConfigProvider,
     DEFAULT_LEARNCARD_TENANT_CONFIG,
 } from 'learn-card-base';
+import { AnalyticsContextProvider } from '../src/analytics';
+import { LocaleProvider } from '../src/i18n';
 import { Buffer } from 'buffer';
 
 (window as any).Buffer = (window as any).Buffer ?? Buffer;
@@ -50,35 +52,25 @@ const preview: Preview = {
         },
     },
     decorators: [
-        Story =>
-            React.createElement(
-                IonApp,
-                null,
-                React.createElement(
-                    TenantConfigProvider,
-                    { config: DEFAULT_LEARNCARD_TENANT_CONFIG },
-                    React.createElement(
-                        QueryClientProvider,
-                        { client: queryClient },
-                        React.createElement(
-                            MemoryRouter,
-                            null,
-                            React.createElement(
-                                ModalsProvider,
-                                null,
-                                React.createElement(
-                                    'div',
-                                    {
-                                        className:
-                                            'font-poppins bg-grayscale-100 h-screen overflow-y-auto',
-                                    },
-                                    React.createElement(Story)
-                                )
-                            )
-                        )
-                    )
-                )
-            ),
+        Story => (
+            <IonApp>
+                <TenantConfigProvider config={DEFAULT_LEARNCARD_TENANT_CONFIG}>
+                    <LocaleProvider>
+                        <AnalyticsContextProvider>
+                            <QueryClientProvider client={queryClient}>
+                                <MemoryRouter>
+                                    <ModalsProvider>
+                                        <div className="font-poppins bg-grayscale-100 h-screen overflow-y-auto">
+                                            <Story />
+                                        </div>
+                                    </ModalsProvider>
+                                </MemoryRouter>
+                            </QueryClientProvider>
+                        </AnalyticsContextProvider>
+                    </LocaleProvider>
+                </TenantConfigProvider>
+            </IonApp>
+        ),
     ],
 };
 
