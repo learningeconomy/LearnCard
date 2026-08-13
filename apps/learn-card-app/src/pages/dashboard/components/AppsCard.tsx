@@ -4,6 +4,7 @@ import { useHistory } from 'react-router-dom';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import * as m from '../../../paraglide/messages.js';
+import { ChevronRight } from 'lucide-react';
 
 import AppTile from './AppTile';
 import FeaturedAppTile from './FeaturedAppTile';
@@ -84,9 +85,10 @@ const AppsCard: React.FC<AppsCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/launchpad')}
-                        className="text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                        className="flex items-center text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
                     >
                         {m['dashboard.apps.browseAll']()}
+                        <ChevronRight className="w-5 h-5 text-grayscale-400" />
                     </button>
                 </div>
 
@@ -116,9 +118,10 @@ const AppsCard: React.FC<AppsCardProps> = ({
                 <button
                     type="button"
                     onClick={() => history.push('/launchpad')}
-                    className="text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                    className="flex items-center text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
                 >
                     {m['dashboard.apps.viewAll']()}
+                    <ChevronRight className="w-5 h-5 text-grayscale-400" />
                 </button>
             </div>
 
