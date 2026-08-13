@@ -410,7 +410,7 @@ const DashboardPage: React.FC = () => {
 
     const slotIcons: SlotIcons = {
         collect: sideMenuIcons.wallet,
-        understand: sideMenuIcons[CredentialCategoryEnum.aiInsight],
+        understand: sideMenuIcons[CredentialCategoryEnum.skill],
         navigate: sideMenuIcons.pathways,
     };
 
