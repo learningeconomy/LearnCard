@@ -71,11 +71,11 @@ Parameters:
         Default: gpt-5.5
     ModelInputCostUsdPerMillion:
         Type: Number
-        Default: 1.25
+        Default: 5
         MinValue: 0
     ModelOutputCostUsdPerMillion:
         Type: Number
-        Default: 10
+        Default: 30
         MinValue: 0
     WebSearchProvider:
         Type: String

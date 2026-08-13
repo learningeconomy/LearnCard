@@ -233,17 +233,16 @@ Create `learn-card-ai-agent-staging` and `learn-card-ai-agent-production` GitHub
 Environment variables:
 
 -   `AWS_REGION`
+-   `AI_AGENT_AWS_ROLE_ARN`, an AWS role trusted only by the two AI Agent GitHub environments
 -   `AI_AGENT_ECR_REPOSITORY_URL` from the stack's `EcrRepositoryUrl` output
 -   `AI_AGENT_CLOUDFORMATION_STACK`
 -   `AI_AGENT_BASE_URL`, the final public HTTPS origin
 
 Environment secrets:
 
--   `AWS_ACCESS_KEY_ID`
--   `AWS_SECRET_ACCESS_KEY`
 -   `AI_AGENT_SMOKE_SEED` for staging only
 
-Restrict the deploy principal to pushing the two AI Agent ECR repositories and updating/reading the two CloudFormation stacks and their managed ECS resources. Add required reviewers to the production GitHub environment. Migrate the workflow to GitHub OIDC when the account's CI role is available; the current credentials match the repository's existing AWS deployment convention.
+Grant the workflow `id-token: write` and use GitHub OIDC; do not create long-lived AWS access keys. Scope the role trust policy to `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-staging` and `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-production`. Restrict its policy to the two AI Agent ECR repositories, CloudFormation stacks, and resource types the template manages. Require a non-self production approval and protected-branch deployment.
 
 ## Staging test-account setup
 

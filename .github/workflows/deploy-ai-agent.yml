@@ -26,6 +26,7 @@ concurrency:
 
 permissions:
     contents: read
+    id-token: write
 
 jobs:
     deploy:
@@ -56,16 +57,18 @@ jobs:
                   ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
                   CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
                   BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
+                  AWS_ROLE_ARN: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
               run: |
                   test -n "$ECR_REPOSITORY_URL" || { echo "::error::AI_AGENT_ECR_REPOSITORY_URL is missing"; exit 1; }
                   test -n "$CLOUDFORMATION_STACK" || { echo "::error::AI_AGENT_CLOUDFORMATION_STACK is missing"; exit 1; }
                   test -n "$BASE_URL" || { echo "::error::AI_AGENT_BASE_URL is missing"; exit 1; }
+                  test -n "$AWS_ROLE_ARN" || { echo "::error::AI_AGENT_AWS_ROLE_ARN is missing"; exit 1; }
 
             - name: Configure AWS credentials
               uses: aws-actions/configure-aws-credentials@v5
               with:
-                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  role-to-assume: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
+                  role-session-name: learncard-ai-agent-${{ env.TARGET_ENVIRONMENT }}-${{ github.run_id }}
                   aws-region: ${{ env.AWS_DEFAULT_REGION }}
             - name: Validate CloudFormation template
               run: |
