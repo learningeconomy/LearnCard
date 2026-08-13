@@ -263,14 +263,14 @@ It explicitly tells the agent not to write user data. A missing grant, unavailab
 -   Every merge to `main` that changes the AI Agent, shared packages, lockfile, or container base deploys staging through `.github/workflows/deploy-ai-agent.yml`.
 -   Production is a manual workflow dispatch targeting `production` and should require GitHub environment approval.
 -   Images receive an immutable `sha-<git-sha>` tag plus an environment convenience tag.
--   The workflow updates the CloudFormation image tag and deployment ID, waits for the ECS rolling deployment with circuit-breaker rollback, checks readiness, and runs the authenticated smoke test in staging.
+-   The workflow rejects ARM64 images with critical or high ECR findings, updates the CloudFormation image tag and deployment ID, waits for the ECS rolling deployment with circuit-breaker rollback, checks readiness, and runs the authenticated smoke test in staging.
 
 Before production dispatch:
 
 1. Confirm the staging smoke test passed on the exact commit.
 2. Inspect the CloudWatch dashboard and Sentry for staging errors.
 3. Confirm current model prices and budget thresholds.
-4. Confirm the ECR scan has no newly introduced critical finding.
+4. Confirm the ECR scan completed with no critical or high findings.
 5. Record the current production `ImageTag` parameter for rollback.
 
 After production dispatch, use the dedicated synthetic production test account for one read-only authenticated run. Do not use a real learner account for deployment verification.
