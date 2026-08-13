@@ -36,7 +36,10 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
     const unreadCount =
         data?.notifications && data?.notifications?.length > 0 ? data?.notifications?.length : null;
 
-    const Icon = iconVariant === 'alerts' ? NotificationIcon2 : NotificationIcon;
+    const Icon =
+        iconVariant === 'alerts'
+            ? NotificationIcon2
+            : (props: { className?: string }) => <NotificationIcon {...props} version="2" />;
 
     return (
         <button
