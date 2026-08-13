@@ -99,7 +99,32 @@ jobs:
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
+
+            - name: Check immutable AI Agent image
+              id: image
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+              run: |
+                  set -euo pipefail
+
+                  REPOSITORY_NAME="${ECR_REPOSITORY_URL#*/}"
+                  IMAGE_COUNT="$(aws ecr list-images \
+                    --repository-name "$REPOSITORY_NAME" \
+                    --filter tagStatus=TAGGED \
+                    --query "length(imageIds[?imageTag=='sha-${{ github.sha }}'])" \
+                    --output text)"
+
+                  if [ "$IMAGE_COUNT" = '0' ]; then
+                    echo 'exists=false' >> "$GITHUB_OUTPUT"
+                  elif [ "$IMAGE_COUNT" = '1' ]; then
+                    echo 'exists=true' >> "$GITHUB_OUTPUT"
+                  else
+                    echo "::error::Unexpected immutable image count: $IMAGE_COUNT"
+                    exit 1
+                  fi
+
             - name: Build and push AI Agent image
+              if: steps.image.outputs.exists != 'true'
               uses: docker/build-push-action@v6
               with:
                   context: .
@@ -109,14 +134,14 @@ jobs:
                   build-args: GIT_SHA=${{ github.sha }}
                   cache-from: type=gha,scope=ai-agent-image
                   cache-to: type=gha,mode=max,scope=ai-agent-image
-                  tags: |
-                      ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}:sha-${{ github.sha }}
-                      ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}:${{ env.TARGET_ENVIRONMENT }}
+                  tags: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}:sha-${{ github.sha }}
 
             - name: Reject vulnerable runtime image
               env:
                   ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
               run: |
+                  set -euo pipefail
+
                   REPOSITORY_NAME="${ECR_REPOSITORY_URL#*/}"
                   ARM64_DIGEST="$(docker buildx imagetools inspect \
                     "$ECR_REPOSITORY_URL:sha-${{ github.sha }}" \

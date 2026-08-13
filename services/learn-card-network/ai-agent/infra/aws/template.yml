@@ -236,7 +236,7 @@ Resources:
             RepositoryName: !Sub '${ServiceName}-${Environment}'
             ImageScanningConfiguration:
                 ScanOnPush: true
-            ImageTagMutability: MUTABLE
+            ImageTagMutability: IMMUTABLE
             LifecyclePolicy:
                 LifecyclePolicyText: |
                     {
