@@ -14,6 +14,10 @@ RUN bun run --cwd services/learn-card-network/ai-agent build
 
 FROM oven/bun:1.3.14
 
+RUN apt-get update \
+    && apt-get upgrade --yes \
+    && rm -rf /var/lib/apt/lists/*
+
 ARG GIT_SHA=unknown
 ENV GIT_SHA=${GIT_SHA} \
     NODE_ENV=production \
