@@ -11,6 +11,7 @@ import {
     planStreamActive,
     planSections,
     isLoading,
+    learningCommonsDebug,
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 const containerVariants = {
@@ -35,6 +36,7 @@ export const AiSessionPlan: React.FC = () => {
     const loading = useStore(isLoading);
     const isStreaming = useStore(planStreamActive);
     const plan = useStore(planSections);
+    const groundingDebug = useStore(learningCommonsDebug);
 
     const hasPlan =
         loading ||
@@ -80,6 +82,112 @@ export const AiSessionPlan: React.FC = () => {
                     </div>
                 )}
             </motion.section>
+
+            {import.meta.env.DEV && groundingDebug.status !== 'idle' && (
+                <motion.section
+                    variants={sectionVariants}
+                    className="rounded-2xl border border-amber-200 bg-amber-50 p-4"
+                    data-testid="learning-commons-debug"
+                >
+                    <div className="mb-2 flex items-center gap-2">
+                        <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900">
+                            Debug
+                        </span>
+                        <h2 className="text-sm font-semibold text-grayscale-900">
+                            Learning Commons grounding
+                        </h2>
+                    </div>
+
+                    {groundingDebug.status === 'unavailable' ? (
+                        <p className="text-sm leading-relaxed text-red-700">
+                            No matching standard was used. This plan used the generic prompt.
+                        </p>
+                    ) : groundingDebug.status === 'grounded' ? (
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-xs font-medium text-grayscale-700">
+                                    Standard used
+                                </p>
+                                <p className="font-mono text-sm font-semibold text-grayscale-900">
+                                    {groundingDebug.grounding.target.statementCode}
+                                </p>
+                                <p className="mt-1 text-sm leading-relaxed text-grayscale-700">
+                                    {groundingDebug.grounding.target.description}
+                                </p>
+                            </div>
+
+                            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                                <div>
+                                    <dt className="text-grayscale-500">Subject</dt>
+                                    <dd className="font-medium text-grayscale-800">
+                                        {groundingDebug.grounding.target.academicSubject}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt className="text-grayscale-500">Grade</dt>
+                                    <dd className="font-medium text-grayscale-800">
+                                        {groundingDebug.grounding.target.gradeLevel.join(', ')}
+                                    </dd>
+                                </div>
+                                {groundingDebug.grounding.source.searchScore !== undefined && (
+                                    <div>
+                                        <dt className="text-grayscale-500">Search relevance</dt>
+                                        <dd className="font-medium text-grayscale-800">
+                                            {(
+                                                groundingDebug.grounding.source.searchScore * 100
+                                            ).toFixed(1)}
+                                            %
+                                        </dd>
+                                    </div>
+                                )}
+                                <div>
+                                    <dt className="text-grayscale-500">Jurisdiction</dt>
+                                    <dd className="font-medium text-grayscale-800">
+                                        {groundingDebug.grounding.target.jurisdiction}
+                                    </dd>
+                                </div>
+                            </dl>
+
+                            {groundingDebug.grounding.prerequisite && (
+                                <div>
+                                    <p className="text-xs font-medium text-grayscale-700">
+                                        Supporting standard
+                                    </p>
+                                    <p className="font-mono text-xs font-semibold text-grayscale-900">
+                                        {groundingDebug.grounding.prerequisite.statementCode}
+                                    </p>
+                                    <p className="mt-1 text-xs leading-relaxed text-grayscale-600">
+                                        {groundingDebug.grounding.prerequisite.description}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                                <a
+                                    href={groundingDebug.grounding.target.caseIdentifierURI}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-medium text-grayscale-700 underline hover:text-grayscale-900"
+                                >
+                                    Open CASE identifier
+                                </a>
+                                <a
+                                    href={groundingDebug.grounding.source.targetUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-medium text-grayscale-700 underline hover:text-grayscale-900"
+                                >
+                                    Open API source
+                                </a>
+                            </div>
+
+                            <p className="text-[11px] leading-relaxed text-grayscale-500">
+                                {groundingDebug.grounding.target.attributionStatement}
+                            </p>
+                        </div>
+                    ) : null}
+                </motion.section>
+            )}
 
             {/* ================= SKILLS ================= */}
             <motion.section variants={sectionVariants} className="flex flex-col gap-8 mt-4">
