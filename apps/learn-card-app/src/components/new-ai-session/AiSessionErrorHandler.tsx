@@ -6,28 +6,14 @@ import { useStore } from '@nanostores/react';
 import { lastAiError } from 'learn-card-base/stores/nanoStores/chatStore';
 import type { AiErrorCode } from 'learn-card-base/helpers/aiErrors';
 
-import { AiSessionMode } from './newAiSession.helpers';
 import { getAiErrorCopy } from '../../helpers/aiError.helpers';
 
-export const AiInsightsErrorHandler: React.FC<{
-    active: boolean;
-    mode: AiSessionMode;
-}> = ({ active, mode }) => {
+export const AiSessionErrorHandler: React.FC = () => {
     const aiError = useStore(lastAiError);
-    const activeSinceRef = useRef<number | null>(null);
+    const mountedAtRef = useRef(Date.now());
     const [visibleError, setVisibleError] = useState<{ at: number; code: AiErrorCode } | null>(
         null
     );
-
-    useEffect(() => {
-        if (active && mode === AiSessionMode.insights) {
-            activeSinceRef.current ??= Date.now();
-            return;
-        }
-
-        activeSinceRef.current = null;
-        setVisibleError(null);
-    }, [active, mode]);
 
     useEffect(() => {
         if (!aiError) {
@@ -40,22 +26,13 @@ export const AiInsightsErrorHandler: React.FC<{
             return;
         }
 
-        const activeSince = activeSinceRef.current;
-
-        if (
-            !active ||
-            mode !== AiSessionMode.insights ||
-            activeSince === null ||
-            aiError.at < activeSince ||
-            aiError.at === visibleError?.at
-        )
-            return;
+        if (aiError.at < mountedAtRef.current || aiError.at === visibleError?.at) return;
 
         setVisibleError({
             at: aiError.at,
             code: aiError.event === 'ai_error' ? aiError.code : 'ai_unknown_error',
         });
-    }, [active, aiError, mode, visibleError?.at]);
+    }, [aiError, visibleError?.at]);
 
     if (!visibleError) return null;
 
@@ -80,4 +57,4 @@ export const AiInsightsErrorHandler: React.FC<{
     );
 };
 
-export default AiInsightsErrorHandler;
+export default AiSessionErrorHandler;

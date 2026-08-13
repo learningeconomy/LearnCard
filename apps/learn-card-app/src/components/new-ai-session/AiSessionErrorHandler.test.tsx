@@ -2,8 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import AiInsightsErrorHandler from './AiInsightsErrorHandler';
-import { AiSessionMode } from './newAiSession.helpers';
+import AiSessionErrorHandler from './AiSessionErrorHandler';
 
 const mocks = vi.hoisted(() => ({
     aiError: null as
@@ -39,16 +38,14 @@ vi.mock('../../helpers/aiError.helpers', () => ({
               },
 }));
 
-describe('AiInsightsErrorHandler', () => {
+describe('AiSessionErrorHandler', () => {
     beforeEach(() => {
         mocks.aiError = null;
         vi.spyOn(Date, 'now').mockReturnValue(1_000);
     });
 
-    it('shows quota-specific guidance for an active Insights request', () => {
-        const { rerender } = render(
-            <AiInsightsErrorHandler active mode={AiSessionMode.insights} />
-        );
+    it('shows quota-specific guidance for an active AI Session request', () => {
+        const { rerender } = render(<AiSessionErrorHandler />);
 
         mocks.aiError = {
             at: 1_001,
@@ -57,7 +54,7 @@ describe('AiInsightsErrorHandler', () => {
             message: 'Safe public message',
             retryable: false,
         };
-        rerender(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
+        rerender(<AiSessionErrorHandler />);
 
         expect(screen.getByRole('alert')).toHaveTextContent('LearnCard AI usage limit reached');
         expect(screen.getByRole('alert')).toHaveTextContent(
@@ -66,9 +63,7 @@ describe('AiInsightsErrorHandler', () => {
     });
 
     it('dismisses the banner when an explicit retry clears the error', () => {
-        const { rerender } = render(
-            <AiInsightsErrorHandler active mode={AiSessionMode.insights} />
-        );
+        const { rerender } = render(<AiSessionErrorHandler />);
 
         mocks.aiError = {
             at: 1_001,
@@ -77,12 +72,12 @@ describe('AiInsightsErrorHandler', () => {
             message: 'Safe public message',
             retryable: false,
         };
-        rerender(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
+        rerender(<AiSessionErrorHandler />);
 
         expect(screen.getByRole('alert')).toBeInTheDocument();
 
         mocks.aiError = null;
-        rerender(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
+        rerender(<AiSessionErrorHandler />);
 
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
@@ -90,24 +85,15 @@ describe('AiInsightsErrorHandler', () => {
     it('does not duplicate a legacy error already presented by the store', () => {
         mocks.aiError = { at: 1_001, code: 'server_error', presented: true };
 
-        render(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
+        render(<AiSessionErrorHandler />);
 
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
-    it('ignores errors from before the Insights chat became active', () => {
+    it('ignores errors from before the AI chat became active', () => {
         mocks.aiError = { at: 999, code: 'server_error' };
 
-        render(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
-
-        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
-
-    it('does not show the Insights error modal for tutor sessions', () => {
-        const { rerender } = render(<AiInsightsErrorHandler active mode={AiSessionMode.tutor} />);
-
-        mocks.aiError = { at: 1_001, code: 'server_error' };
-        rerender(<AiInsightsErrorHandler active mode={AiSessionMode.tutor} />);
+        render(<AiSessionErrorHandler />);
 
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });

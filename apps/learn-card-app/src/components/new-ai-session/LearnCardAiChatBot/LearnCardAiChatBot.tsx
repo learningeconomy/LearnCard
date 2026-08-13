@@ -3,7 +3,6 @@ import { useStore } from '@nanostores/react';
 import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { getLogger } from 'learn-card-base';
-import { showErrorModal } from 'learn-card-base/stores/nanoStores/ErrorModalStore';
 
 import {
     useAnalytics,
@@ -19,6 +18,7 @@ import CaretDown from '../../svgs/CaretDown';
 import AiChatLoading from './AiChatLoading';
 import AiSessionPlan from './AiSessionPlan';
 import AiSessionLoader from '../AiSessionLoader';
+import AiSessionErrorHandler from '../AiSessionErrorHandler';
 import { MessageWithQuestions, StreamingMessage } from './MessageWithQuestions';
 import ChatBotTypingIndicator from '../NewAiSessionChatBot/helpers/TypingIndicator';
 
@@ -49,7 +49,6 @@ import {
 import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 import { useStickToBottom } from '../../../hooks/useStickToBottom';
 import { preloadMarkdownRenderer } from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
-import { getAiErrorCopy } from '../../../helpers/aiError.helpers';
 
 const log = getLogger('learn-card-ai-chat-bot');
 
@@ -361,17 +360,6 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         ) {
             return;
         }
-        if (mode !== AiSessionMode.insights) {
-            const shouldPresentError = aiError.event === 'ai_error' || !aiError.presented;
-
-            if (shouldPresentError) {
-                const { title, body } = getAiErrorCopy(
-                    aiError.event === 'ai_error' ? aiError.code : 'ai_unknown_error'
-                );
-
-                showErrorModal(title, body);
-            }
-        }
 
         const response = aiResponseQueueRef.current[0];
         if (!response?.lifecycle.terminate()) {
@@ -391,7 +379,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         }
         aiResponseQueueRef.current.shift();
         aiHandledErrorAtRef.current = aiError.at;
-    }, [aiError, mode, streaming, track]);
+    }, [aiError, streaming, track]);
 
     useEffect(() => {
         const userCount = messagesToShow.filter(m => m.role === 'user').length;
@@ -406,9 +394,10 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     return (
         <AiFeatureGate>
             <div
-                className="flex flex-col h-full min-h-0 w-full bg-white"
+                className="relative flex flex-col h-full min-h-0 w-full bg-white"
                 style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
             >
+                <AiSessionErrorHandler />
                 {isEnding && showEndingLoader && (
                     <AiSessionLoader
                         contractUri={contractUri}
