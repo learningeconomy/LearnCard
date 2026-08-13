@@ -10,8 +10,35 @@ import { readFileSync } from 'node:fs';
 
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
 
-if (packageJson.devDependencies?.['@balena/dockerignore'] !== '1.0.2') {
-    throw new Error('@balena/dockerignore 1.0.2 must be a direct root devDependency');
+const EXACT_SEMVER =
+    /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+
+const isExactSemver = (version: unknown): version is string =>
+    typeof version === 'string' && EXACT_SEMVER.test(version);
+
+for (const version of ['1.0.2', '1.0.3', '2.0.0-beta.1', '2.0.0+build.5']) {
+    if (!isExactSemver(version)) {
+        throw new Error(`exact semantic version ${version} must satisfy the dependency policy`);
+    }
+}
+
+for (const version of [
+    '^1.0.2',
+    '~1.0.2',
+    '>=1.0.2',
+    '1.x',
+    '*',
+    'latest',
+    'workspace:*',
+    'https://example.com/dockerignore.tgz',
+]) {
+    if (isExactSemver(version)) {
+        throw new Error(`non-exact dependency version ${version} must be rejected`);
+    }
+}
+
+if (!isExactSemver(packageJson.devDependencies?.['@balena/dockerignore'])) {
+    throw new Error('@balena/dockerignore must be an exactly pinned direct root devDependency');
 }
 
 const { default: dockerignore } = await import('@balena/dockerignore');
