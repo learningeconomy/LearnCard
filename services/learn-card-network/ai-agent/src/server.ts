@@ -498,6 +498,8 @@ export const createServer = ({
                 return;
             }
 
+            recordServiceError('did-auth.verify', error);
+
             res.status(503).json({ ok: false, error: 'DID Auth is unavailable.' });
         }
     };
