@@ -12,11 +12,9 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile
 RUN bun run --cwd services/learn-card-network/ai-agent build
 
-FROM oven/bun:1.3.14
+FROM oven/bun:1.3.14-alpine
 
-RUN apt-get update \
-    && apt-get upgrade --yes \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk upgrade --no-cache
 
 ARG GIT_SHA=unknown
 ENV GIT_SHA=${GIT_SHA} \
