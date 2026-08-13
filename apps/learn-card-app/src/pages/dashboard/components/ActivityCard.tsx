@@ -109,7 +109,7 @@ const SkeletonRow: React.FC<{ index: number }> = ({ index }) => (
 
 const MeanwhileTips: React.FC<{ tips: EmptyTip[] }> = ({ tips }) => (
     <div className="mt-auto pt-3 border-t border-grayscale-100 flex flex-col gap-1">
-        <p className="text-[11px] font-medium tracking-wider text-grayscale-400 uppercase px-1 mb-1">
+        <p className="text-xs font-medium tracking-wider text-grayscale-400 uppercase px-1 mb-1">
             {m['dashboard.activity.meanwhile']()}
         </p>
         {tips.map(tip => {
@@ -121,9 +121,9 @@ const MeanwhileTips: React.FC<{ tips: EmptyTip[] }> = ({ tips }) => (
                     onClick={tip.onClick}
                     className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-grayscale-10 transition-colors text-left"
                 >
-                    <span className="shrink-0 w-9 h-9 rounded-full bg-grayscale-100 flex items-center justify-center text-grayscale-700">
+                    <span className="shrink-0 w-10 h-10 rounded-full bg-grayscale-100 flex items-center justify-center text-grayscale-700">
                         {TipIcon ? (
-                            <TipIcon className="w-5 h-5" />
+                            <TipIcon className="w-[30px] h-[30px]" />
                         ) : (
                             <span className="text-sm leading-none">›</span>
                         )}
@@ -132,7 +132,7 @@ const MeanwhileTips: React.FC<{ tips: EmptyTip[] }> = ({ tips }) => (
                         <span className="block text-sm font-medium text-grayscale-900 truncate">
                             {tip.title}
                         </span>
-                        <span className="block text-[11px] text-grayscale-500 truncate">
+                        <span className="block text-xs text-grayscale-500 truncate">
                             {tip.subtitle}
                         </span>
                     </span>

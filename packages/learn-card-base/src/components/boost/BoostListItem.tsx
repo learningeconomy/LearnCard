@@ -310,7 +310,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 <span
                     className={`font-normal flex items-center w-full min-w-0 ${
                         compact
-                            ? 'text-grayscale-600 text-[11px] leading-tight mt-0.5'
+                            ? 'text-grayscale-600 text-xs leading-tight mt-0.5'
                             : 'text-grayscale-800'
                     }`}
                 >

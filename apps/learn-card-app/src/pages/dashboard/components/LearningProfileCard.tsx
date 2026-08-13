@@ -155,7 +155,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                             icon={shieldCheckmarkOutline}
                             className="text-grayscale-400 text-sm"
                         />
-                        <span className="text-[11px] font-medium text-grayscale-500">
+                        <span className="text-xs font-medium text-grayscale-500">
                             {verifiedRecords === 1
                                 ? m['dashboard.learningProfile.groundedInOne']({
                                       count: verifiedRecords,

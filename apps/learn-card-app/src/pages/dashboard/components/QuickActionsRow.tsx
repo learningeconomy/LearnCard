@@ -29,13 +29,13 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ slots }) => {
                         className="group flex items-center gap-3 bg-white rounded-2xl py-3 px-3 border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-left min-w-0"
                     >
                         <span className="shrink-0 w-9 h-9 rounded-full bg-grayscale-100 group-hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800">
-                            <Icon className="w-5 h-5" />
+                            <Icon className="w-[30px] h-[30px]" />
                         </span>
                         <span className="flex flex-col min-w-0">
                             <span className="text-sm font-semibold text-grayscale-900 truncate">
                                 {action.label}
                             </span>
-                            <span className="inline sm:hidden desktop:inline text-[11px] text-grayscale-500 leading-tight truncate">
+                            <span className="inline desktop:inline text-xs text-grayscale-500 leading-tight truncate">
                                 {action.caption}
                             </span>
                         </span>
