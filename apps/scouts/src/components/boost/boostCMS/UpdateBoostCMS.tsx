@@ -10,7 +10,6 @@ import BoostAddressBook, {
 } from './boostCMSForms/boostCMSIssueTo/BoostAddressBook';
 import BoostCMSBasicInfoForm from './boostCMSForms/boostCMSBasicInfo/BoostCMSBasicInfoForm';
 import BoostCMSAppearanceController from './boostCMSForms/boostCMSAppearance/BoostCMSAppearanceController';
-import BoostCMSMediaForm from './boostCMSForms/boostCMSMedia/BoostCMSMediaForm';
 import BoostPreview from './BoostPreview/BoostPreview';
 import BoostPreviewBody from './BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from './BoostPreview/BoostPreviewFooter';
@@ -766,7 +765,6 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                         />
                     )}
 
-                <BoostCMSMediaForm state={state} setState={setState} disabled={isEditDisabled} />
                 <BoostCMSBasicInfoForm
                     state={state}
                     overrideCustomize={overrideCustomize}

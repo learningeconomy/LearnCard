@@ -11,7 +11,6 @@ import BoostAddressBook, {
 import BoostCMSTitleForm from './boostCMSForms/boostCMSTitleForm/BoostCMSTitleForm';
 import BoostCMSBasicInfoForm from './boostCMSForms/boostCMSBasicInfo/BoostCMSBasicInfoForm';
 import BoostCMSAppearanceController from './boostCMSForms/boostCMSAppearance/BoostCMSAppearanceController';
-import BoostCMSMediaForm from './boostCMSForms/boostCMSMedia/BoostCMSMediaForm';
 import BoostPreview from './BoostPreview/BoostPreview';
 import BoostPreviewFooter from './BoostPreview/BoostPreviewFooter';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
@@ -735,12 +734,11 @@ const BoostCMS: React.FC<{
                     />
                 )}
 
-                <BoostCMSMediaForm state={state} setState={setState} />
-
                 <BoostCMSBasicInfoForm
                     state={state}
                     setState={setState}
                     overrideCustomize={overrideCustomize}
+                    disabled={!overrideCustomize}
                 />
 
                 {/* Framework-based skill selector (new) */}

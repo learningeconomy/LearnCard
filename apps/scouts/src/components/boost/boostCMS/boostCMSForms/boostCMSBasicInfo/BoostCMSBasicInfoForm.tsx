@@ -12,6 +12,7 @@ import { BoostCategoryOptionsEnum, useModal, ModalTypes } from 'learn-card-base'
 import { AddressSpec } from '../../../../locationSearch/location.helpers';
 import { SetState } from 'packages/shared-types/dist';
 import { boostCategoryOptions } from '../../../boost-options/boostOptions';
+import { commitExpirationDate } from '../boostCMSDatePicker.helpers';
 
 const BoostCMSBasicInfoForm: React.FC<{
     state: BoostCMSState;
@@ -52,7 +53,7 @@ const BoostCMSBasicInfoForm: React.FC<{
             });
         }
     };
-    const { newModal: newDatePickerModal } = useModal({
+    const { newModal: newDatePickerModal, closeModal: closeDatePickerModal } = useModal({
         mobile: ModalTypes.Cancel,
         desktop: ModalTypes.Cancel,
     });
@@ -65,12 +66,13 @@ const BoostCMSBasicInfoForm: React.FC<{
         newDatePickerModal(
             <div className="w-full h-full transparent flex items-center justify-center">
                 <IonDatetime
-                    onIonChange={e => {
-                        handleStateChange(
-                            'expirationDate',
-                            moment(e.detail.value as string).toISOString()
-                        );
-                    }}
+                    onIonChange={e =>
+                        commitExpirationDate(
+                            e.detail.value,
+                            expirationDate => handleStateChange('expirationDate', expirationDate),
+                            closeDatePickerModal
+                        )
+                    }
                     value={
                         state?.basicInfo?.expirationDate
                             ? moment(state?.basicInfo?.expirationDate).format('YYYY-MM-DD')
