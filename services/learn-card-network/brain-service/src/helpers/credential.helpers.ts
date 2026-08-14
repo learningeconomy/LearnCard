@@ -109,14 +109,10 @@ export const acceptCredential = async (
             message: 'Credential is suspended',
         });
     }
-
+    // Acceptance is idempotent so clients can safely recover after a completed
+    // request whose response was interrupted or whose local follow-up failed.
     const alreadyReceived = await getCredentialReceivedByProfile(id, profile);
-    if (alreadyReceived) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Credential has already been received',
-        });
-    }
+    if (alreadyReceived) return true;
 
     await createReceivedCredentialRelationship(
         profile,

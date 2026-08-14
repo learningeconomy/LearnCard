@@ -2386,6 +2386,15 @@
             "accepted": "Aceptada",
             "expiredHeader": "El enlace para reclamar el Boost ha caducado o ha alcanzado el número máximo de veces que puede reclamarse."
         },
+        "duplicate": {
+            "title": "Ya está guardada",
+            "description": "Elige si quieres omitir esta credencial que ya guardaste o guardar otra copia.",
+            "existingLabel": "Credencial guardada",
+            "issuedBy": "Emitida por {{issuer}}",
+            "skip": "Omitir esta copia",
+            "save": "Guardar otra copia",
+            "skippedToast": "Esta copia no se añadió. Tu credencial guardada no cambió."
+        },
         "modal": {
             "earnedTitle": "¡Has obtenido una credencial!",
             "claimedTitle": "¡Credencial reclamada!",

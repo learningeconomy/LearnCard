@@ -13,7 +13,11 @@ import {
     InboxCredential,
     ContactMethod,
 } from '@models';
-import { getClaimLinkOptionsInfoForBoost, getClaimLinkGeneratorProfileId, getTTLForClaimLink } from '@cache/claim-links';
+import {
+    getClaimLinkOptionsInfoForBoost,
+    getClaimLinkGeneratorProfileId,
+    getTTLForClaimLink,
+} from '@cache/claim-links';
 import { BoostStatus } from 'types/boost';
 import { adminRole, creatorRole, emptyRole } from './helpers/permissions';
 import { neogma } from '@instance';
@@ -743,6 +747,46 @@ describe('Boosts', () => {
                 credential,
             });
             expect(credentialUri).toBeDefined();
+        });
+
+        it('includes the source Boost URI in received-notification metadata', async () => {
+            const notificationSpy = vi
+                .spyOn(notifications, 'addNotificationToQueue')
+                .mockImplementation(addNotificationToQueueSpy);
+            addNotificationToQueueSpy.mockClear();
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userBProfile = (await userB.clients.fullAuth.profile.getProfile())!;
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.profileId,
+                uri,
+                credential,
+            });
+
+            await vi.waitFor(() => {
+                expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        data: {
+                            vcUris: [credentialUri],
+                            metadata: { boostUri: uri },
+                        },
+                    })
+                );
+            });
+
+            notificationSpy.mockRestore();
         });
 
         it('should allow sending a boost to did:web', async () => {
