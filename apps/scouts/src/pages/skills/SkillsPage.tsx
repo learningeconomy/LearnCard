@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import TotalSkillsCount from './TotalSkillsCount';
 import { IonContent, IonPage } from '@ionic/react';
-import SkillsInsightCard from './SkillsInsightCard';
 import SkillsCategoryList from './SkillsCategoryList';
 import MainHeader from '../../components/main-header/MainHeader';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
