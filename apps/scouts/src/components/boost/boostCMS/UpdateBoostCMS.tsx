@@ -1,5 +1,5 @@
 import * as m from '../../../paraglide/messages.js';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -50,10 +50,13 @@ import {
     getBoostAdmin,
     getBoostCredentialPreview,
     getDefaultAchievementTypeImage,
+    getDefaultBoostCriteria,
+    getDefaultBoostDescription,
     getDefaultBoostTitle,
     sendBoostCredential,
     updateBoost,
 } from '../boostHelpers';
+import { getBoostPresetLocalization } from '../localizedPresetFields';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
@@ -106,6 +109,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
     // issueMode,
 }) => {
     const flags = useFlags();
+    const presetLocalization = useRef(
+        getBoostPresetLocalization(flags?.localizeBoostTemplateContent)
+    ).current;
     const history = useHistory();
     const location = useLocation();
     const query = usePathQuery();
@@ -332,9 +338,21 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             categoryType === BoostCategoryOptionsEnum.socialBadge
         ) {
             // default ID title to selected achievementType
-            boostTitle = getDefaultBoostTitle(categoryType, achievementType);
-            description = getDefaultBoostDescription(categoryType, achievementType);
-            criteria = getDefaultBoostCriteria(categoryType, achievementType);
+            boostTitle = getDefaultBoostTitle(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
+            description = getDefaultBoostDescription(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
+            criteria = getDefaultBoostCriteria(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
         } else if (
             (_boostCategoryType === BoostCategoryOptionsEnum.id &&
                 categoryType !== BoostCategoryOptionsEnum.id) ||

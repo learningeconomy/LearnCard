@@ -1,5 +1,6 @@
 import moment from 'moment';
 import { formatLocaleDate } from '../../i18n/formatters';
+import type { SupportedLanguage } from '../../i18n';
 import { LCNBoostStatusEnum, VC, VerificationItem } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { RouteComponentProps } from 'react-router-dom';
@@ -536,7 +537,45 @@ export const getDefaultIssuerImage = (category: string) => {
     return '';
 };
 
-export const getDefaultBoostTitle = (category: string, achievementType: string) => {
+type BoostPresetContentField = 'presetTitle' | 'description' | 'criteria';
+
+type BoostPresetContentOptions = {
+    locale?: SupportedLanguage;
+};
+
+type BoostPresetMessage = (
+    inputs?: Record<string, never>,
+    options?: { locale?: SupportedLanguage }
+) => string;
+
+const BOOST_PRESET_MESSAGE_CATEGORY: Record<string, 'socialBadge' | 'meritBadge'> = {
+    [BoostCategoryOptionsEnum.socialBadge]: 'socialBadge',
+    [BoostCategoryOptionsEnum.meritBadge]: 'meritBadge',
+};
+
+const resolveBoostPresetCopy = (
+    category: string,
+    achievementType: string,
+    field: BoostPresetContentField,
+    locale: SupportedLanguage
+): string | undefined => {
+    const categoryKey = BOOST_PRESET_MESSAGE_CATEGORY[category];
+    const normalizedType = achievementType?.replace(/^ext:/, '');
+
+    if (!categoryKey || !normalizedType) return undefined;
+
+    const subcategoryKey = `${normalizedType.charAt(0).toLowerCase()}${normalizedType.slice(1)}`;
+    const messageKey = `boostContent.subcategories.${categoryKey}.${subcategoryKey}.${field}`;
+    const message = m[messageKey as keyof typeof m] as BoostPresetMessage | undefined;
+
+    return typeof message === 'function' ? message({}, { locale }) : undefined;
+};
+
+export const getDefaultBoostTitle = (
+    category: string,
+    achievementType: string,
+    options: BoostPresetContentOptions = {}
+) => {
     if (
         category === BoostCategoryOptionsEnum.id ||
         category === BoostCategoryOptionsEnum.membership ||
@@ -554,8 +593,17 @@ export const getDefaultBoostTitle = (category: string, achievementType: string) 
                 options => options?.type === achievementType
             );
 
-            const title = _achievementType?.title;
-            const presetTitle = _achievementType?.presetTitle;
+            const hasPresetTitle = _achievementType && 'presetTitle' in _achievementType;
+            const title = options.locale && hasPresetTitle ? undefined : _achievementType?.title;
+            const presetTitle =
+                options.locale && hasPresetTitle
+                    ? resolveBoostPresetCopy(
+                          category,
+                          achievementType,
+                          'presetTitle',
+                          options.locale
+                      )
+                    : _achievementType?.presetTitle;
 
             return presetTitle ?? title ?? '';
         }
@@ -564,7 +612,11 @@ export const getDefaultBoostTitle = (category: string, achievementType: string) 
     return '';
 };
 
-export const getDefaultBoostDescription = (category: string, achievementType: string) => {
+export const getDefaultBoostDescription = (
+    category: string,
+    achievementType: string,
+    options: BoostPresetContentOptions = {}
+) => {
     if (
         category === BoostCategoryOptionsEnum.socialBadge ||
         category === BoostCategoryOptionsEnum.meritBadge
@@ -573,7 +625,9 @@ export const getDefaultBoostDescription = (category: string, achievementType: st
             options => options?.type === achievementType
         );
 
-        const description = _achievementType?.description;
+        const description = options.locale
+            ? resolveBoostPresetCopy(category, achievementType, 'description', options.locale)
+            : _achievementType?.description;
 
         return description ?? '';
     }
@@ -581,7 +635,11 @@ export const getDefaultBoostDescription = (category: string, achievementType: st
     return '';
 };
 
-export const getDefaultBoostCriteria = (category: string, achievementType: string) => {
+export const getDefaultBoostCriteria = (
+    category: string,
+    achievementType: string,
+    options: BoostPresetContentOptions = {}
+) => {
     if (
         category === BoostCategoryOptionsEnum.socialBadge ||
         category === BoostCategoryOptionsEnum.meritBadge
@@ -590,7 +648,9 @@ export const getDefaultBoostCriteria = (category: string, achievementType: strin
             options => options?.type === achievementType
         );
 
-        const criteria = _achievementType?.criteria;
+        const criteria = options.locale
+            ? resolveBoostPresetCopy(category, achievementType, 'criteria', options.locale)
+            : _achievementType?.criteria;
 
         return criteria ?? '';
     }

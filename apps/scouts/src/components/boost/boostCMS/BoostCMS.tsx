@@ -54,7 +54,7 @@ import {
     sendBoostCredential,
     addFallbackNameToCMSState,
 } from '../boostHelpers';
-import { refreshLocalizedPresetFields } from '../localizedPresetFields';
+import { getBoostPresetLocalization, refreshLocalizedPresetFields } from '../localizedPresetFields';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
 import {
     BrandingEnum,
@@ -108,6 +108,9 @@ const BoostCMS: React.FC<{
     returnToParentAfterSave = false,
 }) => {
     const flags = useFlags();
+    const presetLocalization = useRef(
+        getBoostPresetLocalization(flags?.localizeBoostTemplateContent)
+    ).current;
     const locale = useLocale();
     const history = useHistory();
     const location = useLocation();
@@ -154,9 +157,21 @@ const BoostCMS: React.FC<{
         ...initialBoostCMSState,
         basicInfo: {
             ...initialBoostCMSState.basicInfo,
-            name: getDefaultBoostTitle(_boostCategoryType, _boostSubCategoryType),
-            description: getDefaultBoostDescription(_boostCategoryType, _boostSubCategoryType),
-            narrative: getDefaultBoostCriteria(_boostCategoryType, _boostSubCategoryType),
+            name: getDefaultBoostTitle(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            description: getDefaultBoostDescription(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            narrative: getDefaultBoostCriteria(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
             type: _boostCategoryType, // main category
             achievementType: _boostSubCategoryType, // sub category type
         },
@@ -173,9 +188,21 @@ const BoostCMS: React.FC<{
         },
     });
     const previousLocalizedPresetDefaults = useRef({
-        name: getDefaultBoostTitle(_boostCategoryType, _boostSubCategoryType),
-        description: getDefaultBoostDescription(_boostCategoryType, _boostSubCategoryType),
-        narrative: getDefaultBoostCriteria(_boostCategoryType, _boostSubCategoryType),
+        name: getDefaultBoostTitle(
+            _boostCategoryType,
+            _boostSubCategoryType,
+            presetLocalization.contentOptions
+        ),
+        description: getDefaultBoostDescription(
+            _boostCategoryType,
+            _boostSubCategoryType,
+            presetLocalization.contentOptions
+        ),
+        narrative: getDefaultBoostCriteria(
+            _boostCategoryType,
+            _boostSubCategoryType,
+            presetLocalization.contentOptions
+        ),
     });
 
     const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
@@ -195,16 +222,29 @@ const BoostCMS: React.FC<{
 
     useEffect(() => {
         const nextLocalizedPresetDefaults = {
-            name: getDefaultBoostTitle(_boostCategoryType, _boostSubCategoryType),
-            description: getDefaultBoostDescription(_boostCategoryType, _boostSubCategoryType),
-            narrative: getDefaultBoostCriteria(_boostCategoryType, _boostSubCategoryType),
+            name: getDefaultBoostTitle(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            description: getDefaultBoostDescription(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            narrative: getDefaultBoostCriteria(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
         };
 
         setState(previousState => {
             const refreshedPresetFields = refreshLocalizedPresetFields(
                 previousState.basicInfo,
                 previousLocalizedPresetDefaults.current,
-                nextLocalizedPresetDefaults
+                nextLocalizedPresetDefaults,
+                presetLocalization.enabled
             );
 
             if (refreshedPresetFields === previousState.basicInfo) return previousState;
@@ -312,9 +352,21 @@ const BoostCMS: React.FC<{
             categoryType === BoostCategoryOptionsEnum.meritBadge
         ) {
             // default ID title to selected achievementType
-            boostTitle = getDefaultBoostTitle(categoryType, achievementType);
-            description = getDefaultBoostDescription(categoryType, achievementType);
-            criteria = getDefaultBoostCriteria(categoryType, achievementType);
+            boostTitle = getDefaultBoostTitle(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
+            description = getDefaultBoostDescription(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
+            criteria = getDefaultBoostCriteria(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
         } else if (
             (_boostCategoryType === BoostCategoryOptionsEnum.id &&
                 categoryType !== BoostCategoryOptionsEnum.id) ||
