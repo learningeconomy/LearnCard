@@ -150,7 +150,7 @@ export const useManagedBoost = (
     const showSkeleton = loading || resolvedBoostLoading || recipientsLoading || myProfileLoading;
 
     const link = `/boost/update`;
-    const linkQueryParams = `?uri=${boost?.uri}&boostUserType=someone&boostCategoryType=${boost?.category}&boostSubCategoryType=${boost?.type}$overrideCustomize=${overrideCustomize}`;
+    const linkQueryParams = `?uri=${boost?.uri}&boostUserType=someone&boostCategoryType=${boost?.category}&boostSubCategoryType=${boost?.type}&overrideCustomize=${overrideCustomize}`;
 
     const handleEditOnClick = () => {
         if (useCmsModal) {
