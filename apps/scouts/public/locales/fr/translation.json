@@ -54,10 +54,10 @@
             "earnedCountOther": "Rechercher {{count}} Boosts obtenus",
             "managedCountOne": "Rechercher {{count}} Boost géré",
             "managedCountOther": "Rechercher {{count}} Boosts gérés",
-            "noEarned": "Aucun {{category}} obtenu intitulé « {{query}} »",
-            "noManaged": "Aucun {{category}} géré intitulé « {{query}} »",
-            "loadingEarned": "Chargement des {{category}} obtenus",
-            "loadingManaged": "Chargement des {{category}} gérés"
+            "noEarned": "Aucun Boost obtenu intitulé « {{query}} »",
+            "noManaged": "Aucun Boost géré intitulé « {{query}} »",
+            "loadingEarned": "Chargement des Boosts obtenus",
+            "loadingManaged": "Chargement des Boosts gérés"
         },
         "countLabels": {
             "meritBadgeOne": "Badge de mérite",
@@ -446,8 +446,8 @@
             "descWithEmail": "Nous avons précédemment envoyé un e-mail de récupération à <0>{{email}}</0>. Ouvrez cet e-mail et suivez les étapes ci-dessous.",
             "descWithoutEmail": "Nous avons précédemment envoyé un e-mail de récupération à votre adresse de récupération. Ouvrez cet e-mail et suivez les étapes ci-dessous.",
             "findKey": "Comment trouver votre clé de récupération",
-            "step1": "Cherchez dans votre boîte de réception un e-mail avec l'objet <0>« Votre clé de récupération ScoutPass »</0>",
-            "step2": "Trouvez la longue chaîne de caractères entre <0>\"RECOVERY KEY\"</0> et <1>\"END RECOVERY KEY\"</1>",
+            "step1": "Retrouvez l'e-mail de récupération du compte ScoutPass dans votre boîte de réception.",
+            "step2": "Copiez la longue clé de récupération affichée dans l'encadré en surbrillance.",
             "step3": "Copiez cette chaîne entière et collez-la ci-dessous",
             "keyLabel": "Clé de récupération",
             "keyPlaceholder": "Collez votre clé de récupération ici — elle ressemble à une longue chaîne de lettres et de chiffres",
@@ -1663,7 +1663,7 @@
     },
     "mainSubheader": {
         "socialBadge": {
-            "title": "Badges sociaux",
+            "title": "Boosts sociaux",
             "helper": "Mettez en valeur vos",
             "helperAction": "étapes sociales"
         },

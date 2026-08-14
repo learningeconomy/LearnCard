@@ -148,7 +148,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                 ? m['common.searchResults.managedCountOne']({ count: searchResultsCount })
                 : m['common.searchResults.managedCountOther']({ count: searchResultsCount })
             : noSearchResults
-            ? m['common.searchResults.noManaged']({ category, query: searchString })
+            ? m['common.searchResults.noManaged']({ query: searchString })
             : searchResultsCount === 1
             ? m['common.searchResults.foundOne']({
                   count: searchResultsCount,
@@ -174,7 +174,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                 <IonCol
                     className="flex m-auto items-center flex-wrap w-full achievements-list-container"
                     role="status"
-                    aria-label={m['common.searchResults.loadingManaged']({ category })}
+                    aria-label={m['common.searchResults.loadingManaged']()}
                 >
                     {isCardView ? (
                         <IonGrid className="max-w-[600px] pt-[20px]">

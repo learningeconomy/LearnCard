@@ -54,10 +54,10 @@
             "earnedCountOther": "Search {{count}} earned Boosts",
             "managedCountOne": "Search {{count}} managed Boost",
             "managedCountOther": "Search {{count}} managed Boosts",
-            "noEarned": "No earned {{category}} titled \"{{query}}\"",
-            "noManaged": "No managed {{category}} titled \"{{query}}\"",
-            "loadingEarned": "Loading earned {{category}}",
-            "loadingManaged": "Loading managed {{category}}"
+            "noEarned": "No earned Boost titled \"{{query}}\"",
+            "noManaged": "No managed Boost titled \"{{query}}\"",
+            "loadingEarned": "Loading earned Boosts",
+            "loadingManaged": "Loading managed Boosts"
         },
         "countLabels": {
             "meritBadgeOne": "Merit Badge",
@@ -446,8 +446,8 @@
             "descWithEmail": "We previously sent a recovery email to <0>{{email}}</0>. Open that email and follow the steps below.",
             "descWithoutEmail": "We previously sent a recovery email to your recovery address. Open that email and follow the steps below.",
             "findKey": "How to find your recovery key",
-            "step1": "Search your inbox for an email with the subject <0>\"Your ScoutPass Recovery Key\"</0>",
-            "step2": "Find the long string of characters between <0>\"RECOVERY KEY\"</0> and <1>\"END RECOVERY KEY\"</1>",
+            "step1": "Find the ScoutPass account recovery email in your inbox.",
+            "step2": "Copy the long recovery key shown in the highlighted key box.",
             "step3": "Copy that entire string and paste it below",
             "keyLabel": "Recovery Key",
             "keyPlaceholder": "Paste your recovery key here — it looks like a long string of letters and numbers",

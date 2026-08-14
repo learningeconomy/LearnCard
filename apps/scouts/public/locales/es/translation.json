@@ -54,10 +54,10 @@
             "earnedCountOther": "Buscar {{count}} Boosts obtenidos",
             "managedCountOne": "Buscar {{count}} Boost administrado",
             "managedCountOther": "Buscar {{count}} Boosts administrados",
-            "noEarned": "No hay {{category}} obtenidos con el título \"{{query}}\"",
-            "noManaged": "No hay {{category}} administrados con el título \"{{query}}\"",
-            "loadingEarned": "Cargando {{category}} obtenidos",
-            "loadingManaged": "Cargando {{category}} administrados"
+            "noEarned": "No hay ningún Boost obtenido con el título \"{{query}}\"",
+            "noManaged": "No hay ningún Boost administrado con el título \"{{query}}\"",
+            "loadingEarned": "Cargando Boosts obtenidos",
+            "loadingManaged": "Cargando Boosts administrados"
         },
         "countLabels": {
             "meritBadgeOne": "Insignia de mérito",
@@ -446,8 +446,8 @@
             "descWithEmail": "Anteriormente enviamos un correo de recuperación a <0>{{email}}</0>. Abre ese correo y sigue los pasos a continuación.",
             "descWithoutEmail": "Anteriormente enviamos un correo de recuperación a tu dirección de recuperación. Abre ese correo y sigue los pasos a continuación.",
             "findKey": "Cómo encontrar tu clave de recuperación",
-            "step1": "Busca en tu bandeja de entrada un correo con el asunto <0>\"Your ScoutPass Recovery Key\"</0>",
-            "step2": "Encuentra la larga cadena de caracteres entre <0>\"RECOVERY KEY\"</0> y <1>\"END RECOVERY KEY\"</1>",
+            "step1": "Busca en tu bandeja de entrada el correo de recuperación de la cuenta de ScoutPass.",
+            "step2": "Copia la clave de recuperación larga que aparece en el recuadro resaltado.",
             "step3": "Copia toda esa cadena y pégala abajo",
             "keyLabel": "Clave de Recuperación",
             "keyPlaceholder": "Pega tu clave de recuperación aquí — parece una cadena larga de letras y números",
@@ -1596,7 +1596,7 @@
         "accepting": "Aceptando...",
         "accept": "Aceptar",
         "reject": "Rechazar",
-        "wouldLikeToSend": "{{origin}} quiere enviarte una credencial",
+        "wouldLikeToSend": "¿{{origin}} quiere enviarte una credencial?",
         "noCredsToShare": "No hay credenciales para compartir.",
         "sharing": "Compartiendo...",
         "share": "Compartir",
@@ -1663,7 +1663,7 @@
     },
     "mainSubheader": {
         "socialBadge": {
-            "title": "Insignias sociales",
+            "title": "Boosts sociales",
             "helper": "Muestra tus",
             "helperAction": "hitos sociales"
         },

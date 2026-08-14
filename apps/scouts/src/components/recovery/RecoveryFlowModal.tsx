@@ -471,20 +471,14 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                 <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">
                                     1
                                 </span>
-                                <TransP
-                                    m={m['recovery.email.step1']}
-                                    components={[<strong key="b" />]}
-                                />
+                                <span>{m['recovery.email.step1']()}</span>
                             </li>
 
                             <li className="flex items-start gap-2.5">
                                 <span className="shrink-0 w-5 h-5 rounded-full bg-grayscale-900 text-white text-xs font-medium flex items-center justify-center mt-0.5">
                                     2
                                 </span>
-                                <TransP
-                                    m={m['recovery.email.step2']}
-                                    components={[<strong key="b0" />, <strong key="b1" />]}
-                                />
+                                <span>{m['recovery.email.step2']()}</span>
                             </li>
 
                             <li className="flex items-start gap-2.5">

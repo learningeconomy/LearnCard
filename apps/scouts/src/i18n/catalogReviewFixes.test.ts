@@ -144,8 +144,8 @@ describe('reviewed catalog copy', () => {
     it('keeps the credential sender unambiguous in Spanish', () => {
         const es = loadCatalog('es');
 
-        expect(es.credentialStorage.wouldLikeToSend).toContain(
-            '{{origin}} quiere enviarte una credencial'
+        expect(es.credentialStorage.wouldLikeToSend).toBe(
+            '¿{{origin}} quiere enviarte una credencial?'
         );
         expect(es.credentialStorage.wouldLikeToSend).not.toContain('te gustaría');
     });
@@ -157,12 +157,14 @@ describe('reviewed catalog copy', () => {
         expect(fr.login.selfCustodial).not.toContain('auto-hébergée');
     });
 
-    it('preserves the literal recovery-email delimiters in every catalog', () => {
+    it('matches the recovery instructions to the highlighted key box in the shipped email', () => {
         for (const locale of ['en', 'es', 'fr', 'ar']) {
             const catalog = loadCatalog(locale);
 
-            expect(catalog.recovery.email.step2).toContain('"RECOVERY KEY"');
-            expect(catalog.recovery.email.step2).toContain('"END RECOVERY KEY"');
+            expect(catalog.recovery.email.step1).not.toContain('Your ScoutPass Recovery Key');
+            expect(catalog.recovery.email.step2).not.toContain('"RECOVERY KEY"');
+            expect(catalog.recovery.email.step2).not.toContain('"END RECOVERY KEY"');
+            expect(catalog.recovery.email.step2).toMatch(/key|clave|clé|مفتاح/i);
         }
     });
 
@@ -184,15 +186,40 @@ describe('reviewed catalog copy', () => {
         expect(es.troops.template.joinTroop).toContain('Tropa');
     });
 
-    it('uses explicit Arabic hierarchy and Campfire terminology', () => {
+    it('uses non-biological Arabic hierarchy and Campfire terminology', () => {
         const ar = loadCatalog('ar');
 
-        expect(ar.adminTools.bulkImport.assignParentTitle).toContain('الأب');
-        expect(ar.adminTools.bulkImport.selectParentOptional).toContain('الأب');
+        expect(ar.adminTools.bulkImport.assignParentTitle).toContain('الرئيسي');
+        expect(ar.adminTools.bulkImport.selectParentOptional).toContain('الرئيسي');
+        expect(ar.adminTools.bulkImport.assignParentTitle).not.toContain('الأب');
+        expect(ar.adminTools.bulkImport.selectParentOptional).not.toContain('الأب');
         expect(ar.adminTools.bulkImport.assignParentTitle).not.toContain('أصلي');
         expect(ar.navigation.campfire).toBe('نار المخيم');
         expect(ar.sidemenu.links.campfire).toBe('نار المخيم');
         expect(ar.boostCMS.whatFor).toContain('الغرض');
+    });
+
+    it('names Social Boosts consistently in translated subheaders', () => {
+        const expectedTitles = {
+            es: 'Boosts sociales',
+            fr: 'Boosts sociaux',
+            ar: 'تعزيزات اجتماعية',
+        };
+
+        for (const [locale, expectedTitle] of Object.entries(expectedTitles)) {
+            const catalog = loadCatalog(locale);
+            expect(catalog.mainSubheader.socialBadge.title).toBe(expectedTitle);
+        }
+    });
+
+    it('does not interpolate internal category identifiers into search-result copy', () => {
+        for (const locale of ['en', 'es', 'fr', 'ar']) {
+            const searchResults = loadCatalog(locale).common.searchResults;
+
+            for (const key of ['noEarned', 'noManaged', 'loadingEarned', 'loadingManaged']) {
+                expect(searchResults[key]).not.toContain('{{category}}');
+            }
+        }
     });
 
     it('provides all ten loading messages in every locale', () => {

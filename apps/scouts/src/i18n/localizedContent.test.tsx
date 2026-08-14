@@ -20,6 +20,7 @@ import {
     boostVCTypeOptions,
 } from '../components/boost/boost-options/boostOptions';
 import BoostCMSSkillOptions from '../components/boost/boostCMS/boostCMSForms/boostCMSSkills/BoostCMSSkillOptions';
+import { useLocalizedBoostFilter } from '../components/boost/boost-select-menu/useLocalizedBoostFilter';
 import { LocaleProvider, useChangeLocale } from './index';
 import { setLocale } from '../paraglide/runtime.js';
 
@@ -64,10 +65,23 @@ const LocaleSwitch: React.FC = () => {
     );
 };
 
+const LocalizedBoostFilterHarness: React.FC = () => {
+    const options = CATEGORY_TO_SUBCATEGORY_LIST[BoostCategoryOptionsEnum.meritBadge];
+    const filteredOptions = useLocalizedBoostFilter(options, 'Archery');
+
+    return (
+        <output data-testid="filtered-boosts">{filteredOptions.map(option => option.title)}</output>
+    );
+};
+
 describe('localized credential content', () => {
-    beforeEach(() => setLocale('en', { reload: false }));
+    beforeEach(() => {
+        window.localStorage.clear();
+        setLocale('en', { reload: false });
+    });
     afterEach(() => {
         cleanup();
+        window.localStorage.clear();
         setLocale('en', { reload: false });
     });
 
@@ -134,5 +148,20 @@ describe('localized credential content', () => {
         expect(
             CATEGORY_TO_SKILLS[BoostCMSSKillsCategoryEnum.Durable].map(skill => skill.type)
         ).toEqual(originalOrder);
+    });
+
+    it('recomputes localized Boost filters when the locale changes', () => {
+        render(
+            <LocaleProvider>
+                <LocaleSwitch />
+                <LocalizedBoostFilterHarness />
+            </LocaleProvider>
+        );
+
+        expect(screen.getByTestId('filtered-boosts').textContent).toContain('Archery');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Switch to Arabic' }));
+
+        expect(screen.getByTestId('filtered-boosts').textContent).toBe('');
     });
 });

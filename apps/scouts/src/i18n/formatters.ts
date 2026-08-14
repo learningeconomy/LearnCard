@@ -6,7 +6,12 @@ type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & { other: strin
 const toValidDate = (value: DateValue): Date | null => {
     if (value === null || value === undefined || value === '') return null;
 
-    const date = value instanceof Date ? value : new Date(value);
+    const dateOnlyMatch = typeof value === 'string' && /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    const date = dateOnlyMatch
+        ? new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
+        : value instanceof Date
+        ? value
+        : new Date(value);
 
     return Number.isNaN(date.getTime()) ? null : date;
 };

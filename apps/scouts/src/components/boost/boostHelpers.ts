@@ -20,6 +20,27 @@ import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 const log = getLogger('boost-helpers');
 
+export type LocalizedPresetFields = Pick<
+    BoostCMSState['basicInfo'],
+    'name' | 'description' | 'narrative'
+>;
+
+export const refreshLocalizedPresetFields = (
+    current: LocalizedPresetFields,
+    previousDefaults: LocalizedPresetFields,
+    nextDefaults: LocalizedPresetFields
+): LocalizedPresetFields => ({
+    name: current.name === previousDefaults.name ? nextDefaults.name : current.name,
+    description:
+        current.description === previousDefaults.description
+            ? nextDefaults.description
+            : current.description,
+    narrative:
+        current.narrative === previousDefaults.narrative
+            ? nextDefaults.narrative
+            : current.narrative,
+});
+
 export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState => {
     const fallbackName = isCustomBoostType(state.basicInfo.achievementType ?? '')
         ? replaceUnderscoresWithWhiteSpace(

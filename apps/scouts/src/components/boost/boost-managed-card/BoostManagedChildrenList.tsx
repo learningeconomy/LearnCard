@@ -174,7 +174,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                 ? m['common.searchResults.managedCountOne']({ count: searchResultsCount })
                 : m['common.searchResults.managedCountOther']({ count: searchResultsCount })
             : noSearchResults
-            ? m['common.searchResults.noManaged']({ category, query: searchString })
+            ? m['common.searchResults.noManaged']({ query: searchString })
             : searchResultsCount === 1
             ? m['common.searchResults.foundOne']({
                   count: searchResultsCount,
@@ -202,7 +202,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                     <section
                         className="w-full"
                         role="status"
-                        aria-label={m['common.searchResults.loadingManaged']({ category })}
+                        aria-label={m['common.searchResults.loadingManaged']()}
                     >
                         {isCardView ? (
                             <IonGrid className="max-w-[600px]">

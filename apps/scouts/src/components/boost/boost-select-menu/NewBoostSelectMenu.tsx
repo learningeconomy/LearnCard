@@ -32,6 +32,7 @@ import Lottie from 'react-lottie-player';
 import Pulpo from '../../../assets/lotties/cuteopulpo.json';
 import boostSearchStore from '../../../stores/boostSearchStore';
 import * as m from '../../../paraglide/messages.js';
+import { useLocalizedBoostFilter } from './useLocalizedBoostFilter';
 
 interface NewBoostSelectMenuProps {
     handleCloseModal: () => void;
@@ -179,13 +180,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     }, [boostPackSelected, isHardcodedPack]);
 
     // Filtered boost packs
-    const filteredBoostPack = useMemo(
-        () =>
-            hardcodedBoostPack?.filter(item =>
-                item.title?.toLowerCase().includes(search.toLowerCase())
-            ) ?? [],
-        [hardcodedBoostPack, search]
-    );
+    const filteredBoostPack = useLocalizedBoostFilter(hardcodedBoostPack, search);
 
     const showNewBoostpackTypes = useMemo(
         () => showHardcodedBoostPacks && isHardcodedPack,

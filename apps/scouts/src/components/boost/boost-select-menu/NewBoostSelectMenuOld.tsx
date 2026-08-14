@@ -24,6 +24,7 @@ import { BrandingEnum, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { LCNBoostStatusEnum } from '../boost';
 import * as m from '../../../paraglide/messages.js';
 import TransP from '../../../i18n/TransP';
+import { useLocalizedBoostFilter } from './useLocalizedBoostFilter';
 import {
     BadgePackOption,
     badgePackOptions,
@@ -67,10 +68,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     );
 
     // Derived values
-    const filteredBoostPack = useMemo(
-        () => boostPack?.filter(item => item.title?.toLowerCase().includes(search.toLowerCase())),
-        [boostPack, search]
-    );
+    const filteredBoostPack = useLocalizedBoostFilter(boostPack, search);
 
     const filteredBoosts = useMemo(() => {
         return (

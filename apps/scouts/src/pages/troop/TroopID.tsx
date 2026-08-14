@@ -5,6 +5,7 @@ import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import troopPageStore from '../../stores/troopPageStore';
 import useGetTroopNetwork from '../../hooks/useGetTroopNetwork';
 import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 import { formatLocaleDate } from '../../i18n/formatters';
 import {
     getDefaultBadgeThumbForCredential,
@@ -69,6 +70,7 @@ const TroopID: React.FC<TroopIDProps> = ({
     issuedDateOverride,
     showDetails,
 }) => {
+    const locale = useLocale();
     const { credentialWithEdits } = useGetCredentialWithEdits(initialCredential);
     const credential = credentialWithEdits ?? initialCredential;
     const { network: networkData } = useGetTroopNetwork({ credential });
@@ -76,7 +78,7 @@ const TroopID: React.FC<TroopIDProps> = ({
     const thumbSrc = initialThumbSrc || credential?.boostID?.idThumbnail;
     const issueDate = useMemo(
         () => formatLocaleDate(credential?.issuanceDate, { dateStyle: 'short' }),
-        [credential?.issuanceDate]
+        [credential?.issuanceDate, locale]
     );
 
     const roleProperties = useMemo(() => {

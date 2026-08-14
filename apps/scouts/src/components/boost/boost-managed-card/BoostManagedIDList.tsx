@@ -121,7 +121,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                 ? m['common.searchResults.managedCountOne']({ count: searchResultsCount })
                 : m['common.searchResults.managedCountOther']({ count: searchResultsCount })
             : noSearchResults
-            ? m['common.searchResults.noManaged']({ category, query: searchString })
+            ? m['common.searchResults.noManaged']({ query: searchString })
             : searchResultsCount === 1
             ? m['common.searchResults.foundOne']({
                   count: searchResultsCount,

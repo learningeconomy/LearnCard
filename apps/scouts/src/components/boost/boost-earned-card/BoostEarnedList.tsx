@@ -135,7 +135,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                 ? m['common.searchResults.earnedCountOne']({ count: searchResultsCount })
                 : m['common.searchResults.earnedCountOther']({ count: searchResultsCount })
             : noSearchResults
-            ? m['common.searchResults.noEarned']({ category, query: searchString })
+            ? m['common.searchResults.noEarned']({ query: searchString })
             : searchResultsCount === 1
             ? m['common.searchResults.foundOne']({
                   count: searchResultsCount,
@@ -161,7 +161,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                 <IonCol
                     className="flex m-auto items-center flex-wrap w-full achievements-list-container"
                     role="status"
-                    aria-label={m['common.searchResults.loadingEarned']({ category })}
+                    aria-label={m['common.searchResults.loadingEarned']()}
                 >
                     {isCardView ? (
                         <IonGrid className="max-w-[600px] pt-[25px]">

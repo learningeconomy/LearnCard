@@ -1,6 +1,6 @@
 import * as m from '../../../paraglide/messages.js';
 // oxlint-disable-next-line no-unused-vars
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -53,6 +53,7 @@ import {
     getDefaultIssuerImage,
     sendBoostCredential,
     addFallbackNameToCMSState,
+    refreshLocalizedPresetFields,
 } from '../boostHelpers';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
 import {
@@ -85,6 +86,7 @@ import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import boostSearchStore from 'apps/scouts/src/stores/boostSearchStore';
 import { getLogger } from 'learn-card-base';
+import { useLocale } from '../../../i18n';
 const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<{
@@ -106,6 +108,7 @@ const BoostCMS: React.FC<{
     returnToParentAfterSave = false,
 }) => {
     const flags = useFlags();
+    const locale = useLocale();
     const history = useHistory();
     const location = useLocation();
     const query = usePathQuery();
@@ -169,6 +172,11 @@ const BoostCMS: React.FC<{
             idIssuerThumbnail: getDefaultIssuerImage(_boostCategoryType),
         },
     });
+    const previousLocalizedPresetDefaults = useRef({
+        name: getDefaultBoostTitle(_boostCategoryType, _boostSubCategoryType),
+        description: getDefaultBoostDescription(_boostCategoryType, _boostSubCategoryType),
+        narrative: getDefaultBoostCriteria(_boostCategoryType, _boostSubCategoryType),
+    });
 
     const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
 
@@ -184,6 +192,28 @@ const BoostCMS: React.FC<{
     const isMeritBadge = _boostCategoryType === BoostCategoryOptionsEnum.meritBadge;
 
     const issueToLength = state?.issueTo?.length || 0;
+
+    useEffect(() => {
+        const nextLocalizedPresetDefaults = {
+            name: getDefaultBoostTitle(_boostCategoryType, _boostSubCategoryType),
+            description: getDefaultBoostDescription(_boostCategoryType, _boostSubCategoryType),
+            narrative: getDefaultBoostCriteria(_boostCategoryType, _boostSubCategoryType),
+        };
+
+        setState(previousState => ({
+            ...previousState,
+            basicInfo: {
+                ...previousState.basicInfo,
+                ...refreshLocalizedPresetFields(
+                    previousState.basicInfo,
+                    previousLocalizedPresetDefaults.current,
+                    nextLocalizedPresetDefaults
+                ),
+            },
+        }));
+
+        previousLocalizedPresetDefaults.current = nextLocalizedPresetDefaults;
+    }, [locale, _boostCategoryType, _boostSubCategoryType]);
 
     useEffect(() => {
         const loadOtherUser = async () => {

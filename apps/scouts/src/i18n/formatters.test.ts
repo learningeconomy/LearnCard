@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 let locale = 'en';
 
@@ -9,8 +9,14 @@ vi.mock('../paraglide/runtime.js', () => ({
 import { formatLocaleDate, formatLocaleNumber, selectLocalePlural } from './formatters';
 
 describe('locale-aware formatters', () => {
+    const originalTimeZone = process.env.TZ;
+
     beforeEach(() => {
         locale = 'en';
+    });
+
+    afterEach(() => {
+        process.env.TZ = originalTimeZone;
     });
 
     it('formats dates using the active French locale', () => {
@@ -24,6 +30,12 @@ describe('locale-aware formatters', () => {
                 year: 'numeric',
             })
         ).toContain('janvier');
+    });
+
+    it('treats a date-only value as a local calendar date', () => {
+        process.env.TZ = 'America/New_York';
+
+        expect(formatLocaleDate('2026-01-05', { dateStyle: 'long' })).toBe('January 5, 2026');
     });
 
     it('formats numbers using the active Arabic locale', () => {
