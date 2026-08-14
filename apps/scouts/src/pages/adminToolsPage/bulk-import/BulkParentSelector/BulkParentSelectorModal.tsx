@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import * as m from '../../../../paraglide/messages.js';
 
 import { IonInput } from '@ionic/react';
@@ -35,16 +35,10 @@ const BulkParentSelectorModal: React.FC<ViewAllManagedBoostsProps> = ({
     const [activeCategory, setActiveCategory] = useState<BoostCategoryOptionsEnum>(
         BoostCategoryOptionsEnum.all
     );
-    const [categoryTitle, setCategoryTitle] = useState<string>('All');
-
-    useEffect(() => {
-        if (activeCategory === BoostCategoryOptionsEnum.all) {
-            setCategoryTitle('All');
-            return;
-        } else if (boostCategoryOptions[activeCategory]) {
-            setCategoryTitle(boostCategoryOptions[activeCategory].title);
-        }
-    }, [activeCategory]);
+    const categoryTitle =
+        activeCategory === BoostCategoryOptionsEnum.all
+            ? m['boostCMS.all']()
+            : boostCategoryOptions[activeCategory]?.title;
 
     const handleCategoryFilter = () => {
         newModal(

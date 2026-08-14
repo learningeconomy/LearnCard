@@ -19,6 +19,7 @@ import {
 } from 'learn-card-base';
 import X from 'learn-card-base/svgs/X';
 import * as m from '../../../../paraglide/messages.js';
+import { useLocale } from '../../../../i18n';
 
 const StateValidator = z.object({
     customType: z
@@ -51,6 +52,8 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
     showCloseButton,
     history,
 }) => {
+    const locale = useLocale();
+
     const flags = useFlags();
     const [customBoostType, setCustomBoostType] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -62,15 +65,9 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
     }, [customBoostType]);
 
     const { color, subColor, title, CategoryImage } = boostCategoryOptions[boostCategoryType];
-    // temp fix for request in polish doc
-    const _title = title === 'Badge' ? 'Boost' : title;
 
-    const subCategoryTypes = CATEGORY_TO_SUBCATEGORY_LIST[boostCategoryType].sort(
-        (a: { title: string; type: string }, b: { title: string; type: string }) => {
-            const textA = a?.title?.toUpperCase();
-            const textB = b?.title?.toUpperCase();
-            return textA < textB ? -1 : textA > textB ? 1 : 0;
-        }
+    const subCategoryTypes = [...CATEGORY_TO_SUBCATEGORY_LIST[boostCategoryType]].sort((a, b) =>
+        a.title.localeCompare(b.title, locale)
     );
 
     const boostOptionsItemList = subCategoryTypes?.map(({ title, type }, index) => {
@@ -148,7 +145,7 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                             <CaretLeft className="rtl-mirror h-auto w-3 text-white" />
                                         </button>
                                     )}
-                                    {_title}
+                                    {title}
                                 </h6>
                             </IonCol>
                         </IonRow>

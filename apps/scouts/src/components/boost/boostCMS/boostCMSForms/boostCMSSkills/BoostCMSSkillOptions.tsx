@@ -11,6 +11,7 @@ import { BoostCMSSkill, BoostCMSState } from '../../../boost';
 import { BoostCMSSKillsCategoryEnum, CATEGORY_TO_SKILLS, SKILLS_TO_SUBSKILLS } from './boostSkills';
 import { isPlatformIOS } from 'learn-card-base';
 import * as m from '../../../../../paraglide/messages.js';
+import { useLocale } from '../../../../../i18n';
 
 const BoostCMSSkillOptions: React.FC<{
     state: BoostCMSState;
@@ -37,17 +38,15 @@ const BoostCMSSkillOptions: React.FC<{
     handleSaveSkills,
     customHeaderClass,
 }) => {
+    const locale = useLocale();
+
     const [activeCategoryType, setActiveCategoryType] = useState<BoostCMSSKillsCategoryEnum>(
         BoostCMSSKillsCategoryEnum.Durable
     );
 
-    const skills = CATEGORY_TO_SKILLS?.[activeCategoryType]?.sort((a, b) => {
-        let titleA = a.title.toLowerCase();
-        let titleB = b.title.toLowerCase();
-        if (titleA < titleB) return -1;
-        if (titleA > titleB) return 1;
-        return 0;
-    });
+    const skills = [...(CATEGORY_TO_SKILLS?.[activeCategoryType] ?? [])].sort((a, b) =>
+        a.title.localeCompare(b.title, locale)
+    );
 
     return (
         <IonPage id="user-options-modal">
@@ -87,13 +86,9 @@ const BoostCMSSkillOptions: React.FC<{
                 <IonGrid className="ion-padding">
                     <IonRow>
                         {skills.map((skill, index) => {
-                            const subSkills = SKILLS_TO_SUBSKILLS?.[skill?.type]?.sort((a, b) => {
-                                let titleA = a.title.toLowerCase();
-                                let titleB = b.title.toLowerCase();
-                                if (titleA < titleB) return -1;
-                                if (titleA > titleB) return 1;
-                                return 0;
-                            });
+                            const subSkills = [...(SKILLS_TO_SUBSKILLS?.[skill?.type] ?? [])].sort(
+                                (a, b) => a.title.localeCompare(b.title, locale)
+                            );
 
                             const selectedSkills = state?.skills ?? [];
                             const skillSelected = selectedSkills?.find(

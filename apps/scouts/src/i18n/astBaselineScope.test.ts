@@ -9,18 +9,11 @@ const baselinePath = fileURLToPath(
 );
 const guardPath = fileURLToPath(new URL('../../scripts/check-i18n-ast.mjs', import.meta.url));
 
-const CANONICAL_CONTENT_FILES = new Set([
-    'src/components/boost/boostCMS/boostCMSForms/boostCMSSkills/boostSkills.ts',
-    'src/components/boost/boost-options/boostOptions.ts',
-]);
-
 describe('ScoutPass AST baseline scope', () => {
-    it('contains only the 703 canonical credential-content findings', () => {
+    it('accepts no untranslated production content', () => {
         const baseline: string[] = JSON.parse(readFileSync(baselinePath, 'utf8'));
-        const files = new Set(baseline.map(fingerprint => fingerprint.split('::')[0]));
 
-        expect(baseline).toHaveLength(703);
-        expect(files).toEqual(CANONICAL_CONTENT_FILES);
+        expect(baseline).toEqual([]);
     });
 
     it('does not scan test or development-only debug surfaces', () => {

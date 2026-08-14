@@ -43,9 +43,7 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
     let boostOptions = boostVCTypeOptions[boostUserType];
     // Allow admins to bypass CMS customization restrictions
     if (flags?.disableCmsCustomization && !isAdmin) {
-        boostOptions = boostVCTypeOptions?.[boostUserType].filter(
-            item => item.title === targetType
-        );
+        boostOptions = boostVCTypeOptions?.[boostUserType].filter(item => item.type === targetType);
     }
 
     return (

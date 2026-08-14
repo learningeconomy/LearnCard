@@ -91,8 +91,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
         boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     const { CategoryImage } = categoryMetadata || {};
     const isDefaultImage = state?.appearance?.badgeThumbnail === CategoryImage;
-    const type = state?.basicInfo?.type;
-    const targetType = type === 'Social Badge' ? 'Boost' : type;
+    const targetType = state?.basicInfo?.type;
 
     const [activeStylePackCategory, setActiveStylePackCategory] = useState<StylePackCategories>(
         StylePackCategories.all

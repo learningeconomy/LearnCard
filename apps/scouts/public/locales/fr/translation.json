@@ -1697,5 +1697,2660 @@
         "learning": {
             "title": "Historique d'apprentissage"
         }
+    },
+    "boostContent": {
+        "categories": {
+            "achievement": {
+                "title": "Réalisations"
+            },
+            "course": {
+                "title": "Études"
+            },
+            "id": {
+                "title": "Troupe"
+            },
+            "job": {
+                "title": "Emploi"
+            },
+            "learningHistory": {
+                "title": "Historique d'apprentissage"
+            },
+            "membership": {
+                "title": "Troupe"
+            },
+            "meritBadge": {
+                "subTitle": "Badge de mérite",
+                "title": "Badge de mérite"
+            },
+            "skill": {
+                "title": "Compétence"
+            },
+            "socialBadge": {
+                "subTitle": "Boost social",
+                "title": "Boosts sociaux"
+            },
+            "workHistory": {
+                "title": "Historique professionnel"
+            }
+        },
+        "categorySkills": {
+            "adaptability": {
+                "title": "Adaptabilité"
+            },
+            "anatomyAndPhysiology": {
+                "title": "Anatomie et physiologie"
+            },
+            "basicComputerSkills": {
+                "title": "Compétences informatiques de base"
+            },
+            "clinicalSkills": {
+                "title": "Compétences cliniques"
+            },
+            "construction": {
+                "title": "Construction"
+            },
+            "coordination": {
+                "title": "Coordination"
+            },
+            "cosmetology": {
+                "title": "Cosmétologie"
+            },
+            "culinaryArts": {
+                "title": "Arts culinaires"
+            },
+            "cybersecurity": {
+                "title": "Cybersécurité"
+            },
+            "design": {
+                "title": "Conception"
+            },
+            "economics": {
+                "title": "Économie"
+            },
+            "engineering": {
+                "title": "Ingénierie"
+            },
+            "entrepreneurship": {
+                "title": "Entrepreneuriat"
+            },
+            "finance": {
+                "title": "Finance"
+            },
+            "healthcareAdministration": {
+                "title": "Administration des services de santé"
+            },
+            "history": {
+                "title": "Histoire"
+            },
+            "ideation": {
+                "title": "Idéation"
+            },
+            "informationLiteracy": {
+                "title": "Maîtrise de l’information"
+            },
+            "lifelongLearning": {
+                "title": "Apprentissage tout au long de la vie"
+            },
+            "management": {
+                "title": "Gestion"
+            },
+            "manufacturing": {
+                "title": "Fabrication"
+            },
+            "marketing": {
+                "title": "Marketing"
+            },
+            "mathematics": {
+                "title": "Mathématiques"
+            },
+            "mechanics": {
+                "title": "Mécanique"
+            },
+            "medicalSpecialties": {
+                "title": "Spécialités médicales"
+            },
+            "mentalFocus": {
+                "title": "Concentration mentale"
+            },
+            "mentalToughness": {
+                "title": "Force mentale"
+            },
+            "onlineCommunication": {
+                "title": "Communication en ligne"
+            },
+            "operations": {
+                "title": "Opérations"
+            },
+            "patientCare": {
+                "title": "Soins aux patients"
+            },
+            "performingArts": {
+                "title": "Arts du spectacle"
+            },
+            "perseverance": {
+                "title": "Persévérance"
+            },
+            "physicalEndurance": {
+                "title": "Endurance physique"
+            },
+            "politicalScience": {
+                "title": "Science politique"
+            },
+            "psychology": {
+                "title": "Psychologie"
+            },
+            "research": {
+                "title": "Recherche"
+            },
+            "science": {
+                "title": "Sciences"
+            },
+            "sociology": {
+                "title": "Sociologie"
+            },
+            "softwareProficiency": {
+                "title": "Maîtrise des logiciels"
+            },
+            "sportSpecificSkills": {
+                "title": "Compétences propres à un sport"
+            },
+            "strengthAndConditioning": {
+                "title": "Force et conditionnement physique"
+            },
+            "teamwork": {
+                "title": "Travail d’équipe"
+            },
+            "technology": {
+                "title": "Technologie"
+            },
+            "visualArts": {
+                "title": "Arts visuels"
+            },
+            "writing": {
+                "title": "Rédaction"
+            }
+        },
+        "skillCategories": {
+            "athletic": {
+                "title": "Compétences sportives"
+            },
+            "business": {
+                "title": "Compétences commerciales"
+            },
+            "creative": {
+                "title": "Compétences créatives"
+            },
+            "digital": {
+                "title": "Compétences numériques"
+            },
+            "durable": {
+                "title": "Compétences durables"
+            },
+            "medical": {
+                "title": "Compétences médicales"
+            },
+            "social": {
+                "title": "Compétences sociales"
+            },
+            "stem": {
+                "title": "STEM"
+            },
+            "trade": {
+                "title": "Métiers"
+            }
+        },
+        "skills": {
+            "adaptability": {
+                "description": "C’est la capacité à s’adapter à de nouvelles conditions et à de nouveaux environnements.",
+                "title": "Adaptabilité"
+            },
+            "anatomyAndPhysiology": {
+                "description": "C’est l’étude des structures et des fonctions du corps.",
+                "title": "Anatomie et physiologie"
+            },
+            "basicComputerSkills": {
+                "description": "Il s’agit de l’utilisation élémentaire des ordinateurs et des applications logicielles.",
+                "title": "Compétences informatiques de base"
+            },
+            "clinicalSkills": {
+                "description": "Ce sont des compétences pratiques permettant d’évaluer et de soigner les patients.",
+                "title": "Compétences cliniques"
+            },
+            "construction": {
+                "description": "Il s’agit de construire des structures et des infrastructures.",
+                "title": "Construction"
+            },
+            "coordination": {
+                "description": "C’est la capacité à utiliser différentes parties du corps avec fluidité et efficacité.",
+                "title": "Coordination"
+            },
+            "cosmetology": {
+                "description": "C’est l’art et la science des soins de beauté.",
+                "title": "Cosmétologie"
+            },
+            "culinaryArts": {
+                "description": "Il s’agit de préparer et de présenter des aliments.",
+                "title": "Arts culinaires"
+            },
+            "cybersecurity": {
+                "description": "Il s’agit de protéger les systèmes et les données contre les menaces numériques.",
+                "title": "Cybersécurité"
+            },
+            "design": {
+                "description": "Il s’agit de planifier et de créer des solutions visuelles et fonctionnelles.",
+                "title": "Conception"
+            },
+            "economics": {
+                "description": "C’est l’étude de la production, de la consommation et de la distribution des biens.",
+                "title": "Économie"
+            },
+            "engineering": {
+                "description": "Il s’agit d’appliquer les sciences et les mathématiques pour concevoir et construire des structures, des systèmes et des dispositifs.",
+                "title": "Ingénierie"
+            },
+            "entrepreneurship": {
+                "description": "Il s’agit de lancer et de développer de nouvelles entreprises.",
+                "title": "Entrepreneuriat"
+            },
+            "finance": {
+                "description": "Elle englobe la gestion de l’argent et des investissements, ainsi que la planification financière.",
+                "title": "Finance"
+            },
+            "healthcareAdministration": {
+                "description": "Il s’agit de gérer des établissements et des systèmes de santé.",
+                "title": "Administration des services de santé"
+            },
+            "history": {
+                "description": "C’est l’étude des événements et des sociétés du passé.",
+                "title": "Histoire"
+            },
+            "ideation": {
+                "description": "Il s’agit de générer et de développer de nouvelles idées.",
+                "title": "Idéation"
+            },
+            "informationLiteracy": {
+                "description": "C’est la capacité à trouver, à évaluer et à utiliser efficacement l’information.",
+                "title": "Maîtrise de l’information"
+            },
+            "lifelongLearning": {
+                "description": "C’est la recherche et l’amélioration continues des connaissances et des compétences.",
+                "title": "Apprentissage tout au long de la vie"
+            },
+            "management": {
+                "description": "Il s’agit de planifier, d’organiser et de superviser les ressources afin d’atteindre des objectifs.",
+                "title": "Gestion"
+            },
+            "manufacturing": {
+                "description": "Il s’agit de produire des biens à l’aide de machines et de main-d’œuvre.",
+                "title": "Fabrication"
+            },
+            "marketing": {
+                "description": "Il s’agit de promouvoir et de vendre des produits ou des services.",
+                "title": "Marketing"
+            },
+            "mathematics": {
+                "description": "Cela implique de comprendre et d’utiliser des nombres, des équations et des formules.",
+                "title": "Mathématiques"
+            },
+            "mechanics": {
+                "description": "Il s’agit d’entretenir et de réparer des machines et des véhicules.",
+                "title": "Mécanique"
+            },
+            "medicalSpecialties": {
+                "description": "C’est une expertise dans des domaines précis de la médecine.",
+                "title": "Spécialités médicales"
+            },
+            "mentalFocus": {
+                "description": "Il s’agit de maintenir sa concentration et sa clarté mentale pendant une performance.",
+                "title": "Concentration mentale"
+            },
+            "mentalToughness": {
+                "description": "C’est la force mentale nécessaire pour résister aux difficultés et à la pression.",
+                "title": "Force mentale"
+            },
+            "onlineCommunication": {
+                "description": "Il s’agit d’interagir et de collaborer efficacement dans des environnements numériques.",
+                "title": "Communication en ligne"
+            },
+            "operations": {
+                "description": "Il s’agit d’exécuter efficacement les processus opérationnels et les flux de travail.",
+                "title": "Opérations"
+            },
+            "patientCare": {
+                "description": "Il s’agit d’apporter aux patients un soutien empreint de compassion et conforme à l’éthique.",
+                "title": "Soins aux patients"
+            },
+            "performingArts": {
+                "description": "Cela comprend des formes artistiques telles que la musique, la danse et le théâtre, présentées en direct.",
+                "title": "Arts du spectacle"
+            },
+            "perseverance": {
+                "description": "Il s’agit de poursuivre ses efforts malgré les obstacles ou le découragement.",
+                "title": "Persévérance"
+            },
+            "physicalEndurance": {
+                "description": "C’est la capacité à soutenir un effort physique prolongé.",
+                "title": "Endurance physique"
+            },
+            "politicalScience": {
+                "description": "C’est l’étude des gouvernements, des politiques publiques et des comportements politiques.",
+                "title": "Science politique"
+            },
+            "psychology": {
+                "description": "C’est la science de l’esprit et du comportement.",
+                "title": "Psychologie"
+            },
+            "research": {
+                "description": "C’est une investigation systématique visant à établir des faits et à parvenir à de nouvelles conclusions.",
+                "title": "Recherche"
+            },
+            "science": {
+                "description": "Il s’agit d’explorer et de comprendre le monde naturel et physique.",
+                "title": "Sciences"
+            },
+            "sociology": {
+                "description": "C’est l’étude des comportements sociaux et des institutions.",
+                "title": "Sociologie"
+            },
+            "softwareProficiency": {
+                "description": "C’est l’utilisation compétente d’outils logiciels spécialisés.",
+                "title": "Maîtrise des logiciels"
+            },
+            "sportSpecificSkills": {
+                "description": "Ce sont des techniques et des aptitudes propres à un sport particulier.",
+                "title": "Compétences propres à un sport"
+            },
+            "strengthAndConditioning": {
+                "description": "C’est un entraînement visant à améliorer la force musculaire et la condition physique.",
+                "title": "Force et conditionnement physique"
+            },
+            "teamwork": {
+                "description": "C’est un effort collaboratif visant à atteindre des objectifs communs.",
+                "title": "Travail d’équipe"
+            },
+            "technology": {
+                "description": "C’est l’utilisation d’outils, de machines et de systèmes pour résoudre des problèmes.",
+                "title": "Technologie"
+            },
+            "visualArts": {
+                "description": "C’est l’expression créative par des médias visuels comme le dessin, la peinture et la sculpture.",
+                "title": "Arts visuels"
+            },
+            "writing": {
+                "description": "C’est la composition créative et technique de textes.",
+                "title": "Rédaction"
+            }
+        },
+        "skillSubskills": {
+            "adaptability": {
+                "flexibility": {
+                    "title": "Souplesse"
+                },
+                "problemSolving": {
+                    "title": "Résolution de problèmes"
+                },
+                "resilience": {
+                    "title": "Résilience"
+                },
+                "resourcefulness": {
+                    "title": "Débrouillardise"
+                },
+                "stressManagement": {
+                    "title": "Gestion du stress"
+                }
+            },
+            "anatomyAndPhysiology": {
+                "bodySystems": {
+                    "title": "Systèmes du corps humain"
+                },
+                "diseaseProcesses": {
+                    "title": "Processus pathologiques"
+                },
+                "medicalTerminology": {
+                    "title": "Terminologie médicale"
+                },
+                "pathophysiology": {
+                    "title": "Physiopathologie"
+                },
+                "pharmacology": {
+                    "title": "Pharmacologie"
+                }
+            },
+            "basicComputerSkills": {
+                "email": {
+                    "title": "E-mail"
+                },
+                "fileManagement": {
+                    "title": "Gestion des fichiers"
+                },
+                "internetNavigation": {
+                    "title": "Navigation sur Internet"
+                },
+                "typing": {
+                    "title": "Dactylographie"
+                },
+                "wordProcessing": {
+                    "title": "Traitement de texte"
+                }
+            },
+            "clinicalSkills": {
+                "basicLifeSupport": {
+                    "title": "Réanimation de base"
+                },
+                "diagnosticProcedures": {
+                    "title": "Procédures diagnostiques"
+                },
+                "medicationAdministration": {
+                    "title": "Administration des médicaments"
+                },
+                "patientAssessment": {
+                    "title": "Évaluation du patient"
+                },
+                "woundCare": {
+                    "title": "Soins des plaies"
+                }
+            },
+            "construction": {
+                "carpentry": {
+                    "title": "Menuiserie"
+                },
+                "electricalWork": {
+                    "title": "Travaux d’électricité"
+                },
+                "hVAC": {
+                    "title": "CVC (chauffage, ventilation et climatisation)"
+                },
+                "masonry": {
+                    "title": "Maçonnerie"
+                },
+                "plumbing": {
+                    "title": "Plomberie"
+                }
+            },
+            "coordination": {
+                "balance": {
+                    "title": "Équilibre"
+                },
+                "footwork": {
+                    "title": "Jeu de jambes"
+                },
+                "handEyeCoordination": {
+                    "title": "Coordination œil-main"
+                },
+                "reactionTime": {
+                    "title": "Temps de réaction"
+                },
+                "spatialAwareness": {
+                    "title": "Conscience spatiale"
+                }
+            },
+            "cosmetology": {
+                "barbering": {
+                    "title": "Techniques de barbier"
+                },
+                "esthetics": {
+                    "title": "Esthétique"
+                },
+                "hairstyling": {
+                    "title": "Coiffure"
+                },
+                "makeupArtistry": {
+                    "title": "Art du maquillage"
+                },
+                "nailTechnology": {
+                    "title": "Techniques d’onglerie"
+                }
+            },
+            "culinaryArts": {
+                "baking": {
+                    "title": "Cuisson au four"
+                },
+                "cookingTechniques": {
+                    "title": "Techniques culinaires"
+                },
+                "foodSafety": {
+                    "title": "Sécurité sanitaire des aliments"
+                },
+                "menuPlanning": {
+                    "title": "Planification des menus"
+                },
+                "restaurantManagement": {
+                    "title": "Gestion de restaurant"
+                }
+            },
+            "cybersecurity": {
+                "dataPrivacy": {
+                    "title": "Confidentialité des données"
+                },
+                "passwordManagement": {
+                    "title": "Gestion des mots de passe"
+                },
+                "phishingAwareness": {
+                    "title": "Sensibilisation à l’hameçonnage"
+                },
+                "protectingDevices": {
+                    "title": "Protection des appareils"
+                },
+                "safeOnlinePractices": {
+                    "title": "Pratiques sûres en ligne"
+                }
+            },
+            "design": {
+                "fashionDesign": {
+                    "title": "Création de mode"
+                },
+                "gameDesign": {
+                    "title": "Conception de jeux"
+                },
+                "interiorDesign": {
+                    "title": "Design d’intérieur"
+                },
+                "productDesign": {
+                    "title": "Conception de produits"
+                },
+                "webDesign": {
+                    "title": "Conception Web"
+                }
+            },
+            "economics": {
+                "econometrics": {
+                    "title": "Économétrie"
+                },
+                "economicPolicy": {
+                    "title": "Politique économique"
+                },
+                "internationalEconomics": {
+                    "title": "Économie internationale"
+                },
+                "macroeconomics": {
+                    "title": "Macroéconomie"
+                },
+                "microeconomics": {
+                    "title": "Microéconomie"
+                }
+            },
+            "engineering": {
+                "chemicalEngineering": {
+                    "title": "Génie chimique"
+                },
+                "civilEngineering": {
+                    "title": "Génie civil"
+                },
+                "computerEngineering": {
+                    "title": "Génie informatique"
+                },
+                "electricalEngineering": {
+                    "title": "Génie électrique"
+                },
+                "mechanicalEngineering": {
+                    "title": "Génie mécanique"
+                }
+            },
+            "entrepreneurship": {
+                "businessPlanning": {
+                    "title": "Planification d’entreprise"
+                },
+                "decisionMaking": {
+                    "title": "Prise de décision"
+                },
+                "fundraising": {
+                    "title": "Collecte de fonds"
+                },
+                "networking": {
+                    "title": "Réseautage"
+                },
+                "opportunityRecognition": {
+                    "title": "Détection des opportunités"
+                }
+            },
+            "finance": {
+                "accounting": {
+                    "title": "Comptabilité"
+                },
+                "budgeting": {
+                    "title": "Budgétisation"
+                },
+                "financialAnalysis": {
+                    "title": "Analyse financière"
+                },
+                "investment": {
+                    "title": "Investissement"
+                },
+                "riskManagement": {
+                    "title": "Gestion des risques"
+                }
+            },
+            "healthcareAdministration": {
+                "facilityManagement": {
+                    "title": "Gestion des installations"
+                },
+                "insuranceAndBilling": {
+                    "title": "Assurance et facturation"
+                },
+                "medicalRecords": {
+                    "title": "Dossiers médicaux"
+                },
+                "patientScheduling": {
+                    "title": "Planification des rendez-vous des patients"
+                },
+                "regulatoryCompliance": {
+                    "title": "Conformité réglementaire"
+                }
+            },
+            "history": {
+                "analysisOfPrimarySources": {
+                    "title": "Analyse des sources primaires"
+                },
+                "chronologicalReasoning": {
+                    "title": "Raisonnement chronologique"
+                },
+                "comparativeHistory": {
+                    "title": "Histoire comparée"
+                },
+                "historiography": {
+                    "title": "Historiographie"
+                },
+                "researchMethods": {
+                    "title": "Méthodes de recherche"
+                }
+            },
+            "ideation": {
+                "brainstorming": {
+                    "title": "Remue-méninges"
+                },
+                "conceptDevelopment": {
+                    "title": "Développement de concepts"
+                },
+                "innovation": {
+                    "title": "Innovation"
+                },
+                "outOfTheBoxThinking": {
+                    "title": "Pensée hors des sentiers battus"
+                },
+                "problemSolving": {
+                    "title": "Résolution de problèmes"
+                }
+            },
+            "informationLiteracy": {
+                "criticalMediaAnalysis": {
+                    "title": "Analyse critique des médias"
+                },
+                "evaluatingSources": {
+                    "title": "Évaluation des sources"
+                },
+                "factChecking": {
+                    "title": "Vérification des faits"
+                },
+                "searchEngineProficiency": {
+                    "title": "Maîtrise des moteurs de recherche"
+                },
+                "understandingBias": {
+                    "title": "Compréhension des biais"
+                }
+            },
+            "lifelongLearning": {
+                "criticalThinking": {
+                    "title": "Pensée critique"
+                },
+                "curiosity": {
+                    "title": "Curiosité"
+                },
+                "knowledgeRetention": {
+                    "title": "Rétention des connaissances"
+                },
+                "openMindedness": {
+                    "title": "Ouverture d’esprit"
+                },
+                "selfDirectedLearning": {
+                    "title": "Apprentissage autodirigé"
+                }
+            },
+            "management": {
+                "conflictResolution": {
+                    "title": "Résolution des conflits"
+                },
+                "delegation": {
+                    "title": "Délégation"
+                },
+                "leadership": {
+                    "title": "Leadership"
+                },
+                "strategicPlanning": {
+                    "title": "Planification stratégique"
+                },
+                "teamBuilding": {
+                    "title": "Constitution d’équipes"
+                }
+            },
+            "manufacturing": {
+                "assembly": {
+                    "title": "Assemblage"
+                },
+                "fabrication": {
+                    "title": "Fabrication"
+                },
+                "machining": {
+                    "title": "Usinage"
+                },
+                "qualityAssurance": {
+                    "title": "Assurance qualité"
+                },
+                "welding": {
+                    "title": "Soudage"
+                }
+            },
+            "marketing": {
+                "advertising": {
+                    "title": "Publicité"
+                },
+                "branding": {
+                    "title": "Création d’une image de marque"
+                },
+                "customerRelationshipManagement": {
+                    "title": "Gestion de la relation client"
+                },
+                "marketResearch": {
+                    "title": "Études de marché"
+                },
+                "sales": {
+                    "title": "Vente"
+                }
+            },
+            "mathematics": {
+                "algebra": {
+                    "title": "Algèbre"
+                },
+                "calculus": {
+                    "title": "Calcul différentiel et intégral"
+                },
+                "geometry": {
+                    "title": "Géométrie"
+                },
+                "statistics": {
+                    "title": "Statistiques"
+                },
+                "trigonometry": {
+                    "title": "Trigonométrie"
+                }
+            },
+            "mechanics": {
+                "aircraftMaintenance": {
+                    "title": "Maintenance aéronautique"
+                },
+                "automotiveRepair": {
+                    "title": "Réparation automobile"
+                },
+                "dieselEngineRepair": {
+                    "title": "Réparation de moteurs diesel"
+                },
+                "heavyEquipmentOperation": {
+                    "title": "Conduite d’engins lourds"
+                },
+                "smallEngineRepair": {
+                    "title": "Réparation de petits moteurs"
+                }
+            },
+            "medicalSpecialties": {
+                "diagnosticReasoning": {
+                    "title": "Raisonnement diagnostique"
+                },
+                "emergencyMedicine": {
+                    "title": "Médecine d’urgence"
+                },
+                "interdisciplinaryCollaboration": {
+                    "title": "Collaboration interdisciplinaire"
+                },
+                "pediatrics": {
+                    "title": "Pédiatrie"
+                },
+                "radiology": {
+                    "title": "Radiologie"
+                },
+                "surgery": {
+                    "title": "Chirurgie"
+                },
+                "treatmentPlanning": {
+                    "title": "Planification du traitement"
+                }
+            },
+            "mentalFocus": {
+                "competitiveness": {
+                    "title": "Esprit de compétition"
+                },
+                "goalSetting": {
+                    "title": "Définition d’objectifs"
+                },
+                "handlingPressure": {
+                    "title": "Gestion de la pression"
+                },
+                "resilience": {
+                    "title": "Résilience"
+                },
+                "visualization": {
+                    "title": "Visualisation"
+                }
+            },
+            "mentalToughness": {
+                "emotionalRegulation": {
+                    "title": "Régulation émotionnelle"
+                },
+                "growthMindset": {
+                    "title": "État d’esprit de développement"
+                },
+                "optimism": {
+                    "title": "Optimisme"
+                },
+                "positiveSelfTalk": {
+                    "title": "Discours intérieur positif"
+                },
+                "selfConfidence": {
+                    "title": "Confiance en soi"
+                }
+            },
+            "onlineCommunication": {
+                "collaborationTools": {
+                    "title": "Outils collaboratifs"
+                },
+                "effectiveEmailAndMessaging": {
+                    "title": "E-mails et messagerie efficaces"
+                },
+                "netiquette": {
+                    "title": "Nétiquette"
+                },
+                "socialMediaPlatforms": {
+                    "title": "Plateformes de médias sociaux"
+                },
+                "videoConferencing": {
+                    "title": "Visioconférence"
+                }
+            },
+            "operations": {
+                "logistics": {
+                    "title": "Logistique"
+                },
+                "processImprovement": {
+                    "title": "Amélioration des processus"
+                },
+                "projectManagement": {
+                    "title": "Gestion de projet"
+                },
+                "qualityControl": {
+                    "title": "Contrôle qualité"
+                },
+                "supplyChainManagement": {
+                    "title": "Gestion de la chaîne d’approvisionnement"
+                }
+            },
+            "patientCare": {
+                "bedsideManner": {
+                    "title": "Relation avec les patients"
+                },
+                "communication": {
+                    "title": "Communication"
+                },
+                "culturalSensitivity": {
+                    "title": "Sensibilité culturelle"
+                },
+                "empathy": {
+                    "title": "Empathie"
+                },
+                "ethics": {
+                    "title": "Éthique"
+                }
+            },
+            "performingArts": {
+                "acting": {
+                    "title": "Jeu d’acteur"
+                },
+                "costumeDesign": {
+                    "title": "Conception de costumes"
+                },
+                "dance": {
+                    "title": "Danse"
+                },
+                "directing": {
+                    "title": "Mise en scène"
+                },
+                "instrumental": {
+                    "title": "Pratique instrumentale"
+                },
+                "singing": {
+                    "title": "Chant"
+                },
+                "theaterProduction": {
+                    "title": "Production théâtrale"
+                }
+            },
+            "perseverance": {
+                "commitment": {
+                    "title": "Engagement"
+                },
+                "discipline": {
+                    "title": "Discipline"
+                },
+                "focus": {
+                    "title": "Concentration"
+                },
+                "grit": {
+                    "title": "Persévérance"
+                },
+                "tenacity": {
+                    "title": "Ténacité"
+                }
+            },
+            "physicalEndurance": {
+                "cardiovascularFitness": {
+                    "title": "Condition cardiovasculaire"
+                },
+                "injuryPrevention": {
+                    "title": "Prévention des blessures"
+                },
+                "painTolerance": {
+                    "title": "Tolérance à la douleur"
+                },
+                "stamina": {
+                    "title": "Endurance"
+                },
+                "strength": {
+                    "title": "Force"
+                }
+            },
+            "politicalScience": {
+                "comparativePolitics": {
+                    "title": "Politique comparée"
+                },
+                "governmentSystems": {
+                    "title": "Systèmes de gouvernement"
+                },
+                "internationalRelations": {
+                    "title": "Relations internationales"
+                },
+                "politicalTheory": {
+                    "title": "Théorie politique"
+                },
+                "publicPolicy": {
+                    "title": "Politiques publiques"
+                }
+            },
+            "psychology": {
+                "clinicalPsychology": {
+                    "title": "Psychologie clinique"
+                },
+                "cognitivePsychology": {
+                    "title": "Psychologie cognitive"
+                },
+                "developmentalPsychology": {
+                    "title": "Psychologie du développement"
+                },
+                "experimentalMethods": {
+                    "title": "Méthodes expérimentales"
+                },
+                "socialPsychology": {
+                    "title": "Psychologie sociale"
+                }
+            },
+            "research": {
+                "analysis": {
+                    "title": "Analyse"
+                },
+                "dataCollection": {
+                    "title": "Collecte de données"
+                },
+                "experimentalDesign": {
+                    "title": "Conception expérimentale"
+                },
+                "hypothesisDevelopment": {
+                    "title": "Formulation d’hypothèses"
+                },
+                "presentation": {
+                    "title": "Présentation"
+                }
+            },
+            "science": {
+                "biology": {
+                    "title": "Biologie"
+                },
+                "chemistry": {
+                    "title": "Chimie"
+                },
+                "earthScience": {
+                    "title": "Sciences de la Terre"
+                },
+                "environmentalScience": {
+                    "title": "Sciences de l’environnement"
+                },
+                "physics": {
+                    "title": "Physique"
+                }
+            },
+            "sociology": {
+                "researchMethods": {
+                    "title": "Méthodes de recherche"
+                },
+                "socialChange": {
+                    "title": "Changement social"
+                },
+                "socialInequality": {
+                    "title": "Inégalité sociale"
+                },
+                "socialInstitutions": {
+                    "title": "Institutions sociales"
+                },
+                "socialMovements": {
+                    "title": "Mouvements sociaux"
+                }
+            },
+            "softwareProficiency": {
+                "dataVisualizationTools": {
+                    "title": "Outils de visualisation de données"
+                },
+                "designSoftware": {
+                    "title": "Logiciels de conception"
+                },
+                "productivitySuites": {
+                    "title": "Suites bureautiques"
+                },
+                "programmingBasics": {
+                    "title": "Bases de la programmation"
+                },
+                "specializedSoftware": {
+                    "title": "Logiciels spécialisés"
+                }
+            },
+            "sportSpecificSkills": {
+                "ballHandling": {
+                    "title": "Maniement du ballon"
+                },
+                "runningTechnique": {
+                    "title": "Technique de course"
+                },
+                "swimmingStrokes": {
+                    "title": "Nages"
+                },
+                "swingMechanics": {
+                    "title": "Mécanique du swing"
+                },
+                "tackling": {
+                    "title": "Plaquage"
+                }
+            },
+            "strengthAndConditioning": {
+                "agility": {
+                    "title": "Agilité"
+                },
+                "flexibility": {
+                    "title": "Souplesse"
+                },
+                "injuryPrevention": {
+                    "title": "Prévention des blessures"
+                },
+                "speedTraining": {
+                    "title": "Entraînement de vitesse"
+                },
+                "weightLifting": {
+                    "title": "Haltérophilie"
+                }
+            },
+            "teamwork": {
+                "communication": {
+                    "title": "Communication"
+                },
+                "cooperation": {
+                    "title": "Coopération"
+                },
+                "roleUnderstanding": {
+                    "title": "Compréhension des rôles"
+                },
+                "sportsmanship": {
+                    "title": "Esprit sportif"
+                },
+                "strategy": {
+                    "title": "Stratégie"
+                }
+            },
+            "technology": {
+                "coding": {
+                    "title": "Codage"
+                },
+                "cybersecurity": {
+                    "title": "Cybersécurité"
+                },
+                "dataAnalysis": {
+                    "title": "Analyse de données"
+                },
+                "robotics": {
+                    "title": "Robotique"
+                },
+                "softwareDevelopment": {
+                    "title": "Développement logiciel"
+                }
+            },
+            "visualArts": {
+                "drawing": {
+                    "title": "Dessin"
+                },
+                "graphicDesign": {
+                    "title": "Conception graphique"
+                },
+                "painting": {
+                    "title": "Peinture"
+                },
+                "photography": {
+                    "title": "Photographie"
+                },
+                "sculpture": {
+                    "title": "Sculpture"
+                }
+            },
+            "writing": {
+                "copyWriting": {
+                    "title": "Rédaction publicitaire"
+                },
+                "fiction": {
+                    "title": "Fiction"
+                },
+                "journalism": {
+                    "title": "Journalisme"
+                },
+                "nonfiction": {
+                    "title": "Non-fiction"
+                },
+                "poetry": {
+                    "title": "Poésie"
+                },
+                "scriptWriting": {
+                    "title": "Écriture de scénarios"
+                }
+            }
+        },
+        "subcategories": {
+            "achievement": {
+                "achievement": {
+                    "title": "Générique"
+                },
+                "award": {
+                    "title": "Distinction officielle"
+                },
+                "badge": {
+                    "title": "Badge"
+                },
+                "communityService": {
+                    "title": "Service communautaire"
+                },
+                "credential": {
+                    "title": "Titre de compétence"
+                },
+                "language": {
+                    "title": "Langue"
+                },
+                "training": {
+                    "title": "Formation"
+                },
+                "upskilling": {
+                    "title": "Perfectionnement des compétences"
+                },
+                "workshop": {
+                    "title": "Atelier"
+                }
+            },
+            "course": {
+                "assignment": {
+                    "title": "Travail à réaliser"
+                },
+                "associateDegree": {
+                    "title": "Diplôme d'études supérieures de cycle court"
+                },
+                "bachelorDegree": {
+                    "title": "Licence"
+                },
+                "certificateOfCompletion": {
+                    "title": "Certificat"
+                },
+                "coCurricular": {
+                    "title": "Activité périscolaire complémentaire"
+                },
+                "course": {
+                    "title": "Cours"
+                },
+                "microDegree": {
+                    "title": "Microdiplôme"
+                },
+                "reportCard": {
+                    "title": "Bulletin scolaire"
+                },
+                "researchDoctorate": {
+                    "title": "Doctorat de recherche"
+                }
+            },
+            "id": {
+                "memberID": {
+                    "title": "Identifiant de membre"
+                }
+            },
+            "job": {
+                "apprenticeshipCertificate": {
+                    "title": "Apprentissage professionnel"
+                },
+                "board": {
+                    "title": "Conseil"
+                },
+                "fellowship": {
+                    "title": "Bourse"
+                },
+                "fieldwork": {
+                    "title": "Travail de terrain"
+                },
+                "internship": {
+                    "title": "Stage"
+                },
+                "job": {
+                    "title": "Emploi"
+                },
+                "journeymanCertificate": {
+                    "title": "Compagnon"
+                },
+                "masterCertificate": {
+                    "title": "Certificat de maîtrise"
+                },
+                "volunteer": {
+                    "title": "Bénévolat"
+                }
+            },
+            "learningHistory": {
+                "assignment": {
+                    "title": "Travail à réaliser"
+                },
+                "associateDegree": {
+                    "title": "Diplôme d'études supérieures de cycle court"
+                },
+                "bachelorDegree": {
+                    "title": "Licence"
+                },
+                "certificateOfCompletion": {
+                    "title": "Certificat"
+                },
+                "coCurricular": {
+                    "title": "Activité périscolaire complémentaire"
+                },
+                "course": {
+                    "title": "Cours"
+                },
+                "microDegree": {
+                    "title": "Microdiplôme"
+                },
+                "reportCard": {
+                    "title": "Bulletin scolaire"
+                },
+                "researchDoctorate": {
+                    "title": "Doctorat de recherche"
+                }
+            },
+            "membership": {
+                "global": {
+                    "title": "Mondial"
+                },
+                "network": {
+                    "title": "Réseau"
+                },
+                "scoutMember": {
+                    "title": "Scout"
+                },
+                "troop": {
+                    "title": "Troupe"
+                },
+                "leader": {
+                    "title": "Responsable"
+                }
+            },
+            "meritBadge": {
+                "archery": {
+                    "criteria": "1. Fais ce qui suit :\n    (a) Explique les cinq règles de sécurité du pas de tir.\n    (b) Explique les quatre commandements au sifflet utilisés sur le pas de tir.\n    (c) Explique comment retirer les flèches de la cible en toute sécurité et les remettre dans ton carquois.\n    (d) Présente les lois locales et celles de ton État concernant la possession et l'utilisation de matériel de tir à l'arc.\n2. Fais ce qui suit :\n    (a) Nomme et montre les parties d'une flèche.\n    (b) Décris au moins trois types de flèches.\n    (c) Nomme les quatre principaux matériaux utilisés pour fabriquer les fûts de flèche.\n    (d) Fais UNE des activités suivantes :\n    (1) Fabrique une flèche complète à partir d'un fût nu avec le matériel approprié dont tu disposes.\n    (2) Pour démontrer la réparation de flèches, inspecte les fûts, puis prépare et remplace au moins trois empennages, une pointe et une encoche. Tu peux utiliser autant de flèches que nécessaire. Les réparations peuvent être effectuées sur des flèches en bois, en fibre de verre ou en aluminium.\n    (e) Explique comment entretenir et ranger correctement les flèches.\n3. Fais ce qui suit :\n    (a) Explique l'utilisation, l'entretien et le rangement appropriés des palettes, protège-bras, gants de tir et carquois, ainsi que les raisons de les utiliser.\n    (b) Explique les termes suivants : allonge, puissance d'arc, décocheur mécanique et arc nu.\n4. Explique ce qui suit :\n    (a) La différence entre une volée et une manche.\n    (b) Les différences entre le tir en campagne, le tir sur cible et le tir 3-D.\n    (c) La façon de compter les points sur la cible à cinq couleurs de la World Archery Federation.\n    (d) La façon de compter les points sur les cibles de campagne noires et blanches et les cibles bleues en salle de la National Field Archery Association (NFAA).\n5. Réalise UNE des options suivantes.\n    A.) Option A - Utilisation d'un arc classique ou d'un arc long\n        (a) Nomme et montre les parties de l'arc classique ou de l'arc long avec lequel tu tires.\n        (b) Explique comment entretenir et ranger correctement les arcs classiques et les arcs longs.\n        (c) Démontre et explique les « Steps of Shooting » de USA Archery pour l'arc avec lequel tu tires.\n        (d) Montre la bonne manière de bander un arc classique ou un arc long.\n        (e) À l'aide d'une équerre d'arc, repère et marque avec du fil dentaire, un repère à sertir ou une autre méthode le point d'encochage sur la corde de l'arc utilisé.\n        (f) Fais UNE des activités suivantes :\n            (1) Avec un arc classique ou un arc long et des flèches décochées aux doigts, tire une seule manche de l'une des épreuves BSA, USA Archery ou NFAA suivantes :\n                (a) Une manche de campagne NFAA sur 14 cibles et obtiens 60 points.\n                (b) Une manche de campagne BSA Scout sur 14 cibles et obtiens 80 points.\n                (c) Une manche en salle* World Archery/USA Archery et obtiens 80 points.\n                (d) Une manche en salle* NFAA et obtiens 50 points.\n            (2) Tire 30 flèches par volées de cinq sur une cible à cinq couleurs de 80 centimètres (32 pouces), à 10 yards, en utilisant les 10 zones de score, et obtiens 150 points.\n            (3) En tant que membre du programme Junior Olympic Archery Development (JOAD) de USA Archery, obtiens les épinglettes de réussite verte, violette et grise en salle ou en plein air avec un arc classique ou un arc long.\n            (4) En tant que membre de la division junior de la NFAA, obtiens un écusson de progression à 100 points de catégorie Cub ou Youth.\nB.) Option B - Utilisation d'un arc à poulies\n    (a) Nomme et montre les parties de l'arc à poulies avec lequel tu tires.\n    (b) Explique comment entretenir et ranger correctement les arcs à poulies.\n    (c) Démontre et explique les « Steps of Shooting » de USA Archery pour l'arc avec lequel tu tires.\n    (d) Explique pourquoi la corde ou le câble d'un arc à poulies doit être remplacé dans une archerie.\n    (e) Repère et marque avec du fil dentaire, un repère à sertir ou une autre méthode le point d'encochage sur la corde de l'arc utilisé.\n    (f) Fais UNE des activités suivantes :\n        (1) Avec un arc à poulies et des flèches décochées aux doigts, tire une seule manche de l'UNE des épreuves BSA, NAA ou NFAA suivantes :\n            (a) Une manche de campagne NFAA sur 14 cibles et obtiens 70 points.\n            (b) Une manche de campagne BSA Scout sur 14 cibles et obtiens 90 points.\n            (c) Une manche en salle* World Archery/USA Archery et obtiens 90 points.\n            (d) Une manche en salle* NFAA et obtiens 60 points.\n        (2) En tirant sur une cible à cinq couleurs de 80 centimètres (32 pouces) et en utilisant les 10 zones de score, obtiens au moins 160 points de la manière suivante :\n            Tire 15 flèches par volées de cinq, à une distance de 10 yards.\n            ET\n            Tire 15 flèches par volées de cinq, à une distance de 15 yards.\n        (3) En tant que membre du programme Junior Olympic Archery Development (JOAD) de USA Archery, obtiens les épinglettes de réussite verte, violette et grise en salle ou en plein air avec un arc à poulies.\n        (4) En tant que membre de la division junior de la NFAA, obtiens un écusson de progression à 100 points de catégorie Cub ou Youth.",
+                    "description": "Le tir à l'arc permet aux Scouts d'exercer agréablement leur esprit autant que leur corps, tout en développant une main ferme, un bon coup d'œil et un esprit discipliné. Ce Badge de mérite peut offrir une initiation approfondie aux personnes qui découvrent l'arc et les flèches, mais même les archers expérimentés peuvent, en l'obtenant, approfondir leur compréhension et leur appréciation du tir à l'arc.",
+                    "presetTitle": "Tir à l'arc",
+                    "title": "Tir à l'arc"
+                },
+                "astronomy": {
+                    "criteria": "1. Fais ce qui suit :\n    (a) Explique à ton conseiller les dangers que tu risques le plus de rencontrer pendant des activités d'astronomie et ce que tu dois faire pour les anticiper, contribuer à les prévenir, les atténuer et y réagir.\n    (b) Explique les premiers secours à apporter en cas de blessures ou de troubles tels que les réactions à la chaleur et au froid, la déshydratation, les morsures et piqûres, ainsi que les lésions oculaires pouvant survenir pendant l'observation.\n    (c) Décris les vêtements appropriés et les autres précautions permettant d'observer en toute sécurité la nuit et par temps froid.\n    (d) Explique comment observer en toute sécurité le Soleil, les objets proches du Soleil et les éclipses solaires.\n2. Explique ce qu'est la pollution lumineuse et comment celle-ci et la pollution atmosphérique affectent l'astronomie.\n3. À l'aide de schémas (ou de véritables télescopes, s'il y en a), réalise chacune des activités suivantes :\n    (a) Explique pourquoi les jumelles et les télescopes sont des outils astronomiques importants. Démontre ou explique leur utilisation.\n    (b) Décris les ressemblances et les différences entre plusieurs types de télescopes astronomiques, dont au moins un qui observe la lumière au-delà de la partie visible du spectre (c'est-à-dire les ondes radio, les rayons X, les ultraviolets ou les infrarouges).\n    (c) Explique la fonction d'au moins trois instruments utilisés avec les télescopes astronomiques.\n    (d) Décris l'entretien et le rangement appropriés des télescopes et des jumelles, à la maison comme sur le terrain.\n4. Fais ce qui suit* :\n    (a) Identifie dans le ciel au moins 10 constellations, dont au moins quatre du zodiaque.\n    (b) Identifie dans le ciel au moins huit étoiles remarquables, dont cinq de magnitude 1 ou plus brillantes.\n    (c) Fais deux croquis du Grand Chariot. Sur l'un, montre son orientation dans le ciel en début de soirée. Sur l'autre, montre sa position plusieurs heures plus tard. Sur les deux, indique l'étoile Polaire et l'horizon. Note la date et l'heure de réalisation de chaque croquis.\n    (d) Explique ce que nous voyons lorsque nous regardons la Voie lactée.\n5. Fais ce qui suit :\n    (a) Dresse la liste des cinq planètes les plus visibles. Explique lesquelles peuvent présenter des phases semblables à celles de la Lune, lesquelles ne le peuvent pas, et pourquoi.\n    (b) À l'aide d'Internet (avec l'autorisation de ton parent ou tuteur) et d'autres ressources, détermine quand chacune des cinq planètes identifiées dans l'exigence 5a sera observable dans le ciel du soir au cours des 12 prochains mois, puis rassemble ces informations sous forme de graphique ou de tableau.\n    (c) Décris le mouvement des planètes dans le ciel.\n    (d) Observe une planète et décris ce que tu as vu.\n6. Fais ce qui suit :\n    (a) Dessine la face de la Lune et indique au moins cinq mers et cinq cratères. Légende ces repères.\n    (b) Dessine la phase et la position de la Lune, à la même heure et au même endroit, pendant quatre nuits au cours d'une semaine. Inclus des repères à l'horizon, tels que des collines, des arbres et des bâtiments. Explique les changements observés.\n    (c) Énumère les facteurs qui maintiennent la Lune en orbite autour de la Terre.\n    (d) À l'aide de schémas, explique les positions relatives du Soleil, de la Terre et de la Lune lors des éclipses lunaires et solaires, ainsi que lors de la nouvelle lune, du premier quartier, de la pleine lune et du dernier quartier.\n7. Fais ce qui suit :\n    (a) Décris la composition du Soleil, sa relation avec les autres étoiles et certains effets de son rayonnement sur la météo et les communications terrestres.\n    (b) Définis les taches solaires et décris certains de leurs effets possibles sur le rayonnement solaire.\n    (c) Identifie au moins une étoile rouge, une étoile bleue et une étoile jaune (autre que le Soleil). Explique la signification de ces couleurs.\n8. Avec l'accord et les conseils de ton conseiller, fais UNE des activités suivantes :\n    (a) Visite un planétarium ou un observatoire astronomique. Présente ensuite à ton conseiller un rapport écrit, un album ou une présentation vidéo contenant les informations suivantes :\n        Les activités qui s'y déroulent.\n        Les expositions et présentations que tu as vues.\n        Les télescopes et autres instruments utilisés.\n        Les objets célestes que tu as observés.\n    (b) Planifie et réalise une séance d'observation de trois heures comprenant l'utilisation de jumelles ou d'un télescope. Dresse la liste des objets célestes que tu veux observer et repère chacun sur une carte du ciel ou dans un guide. Prépare un journal ou un carnet. Avant la séance, discute avec ton conseiller de ce que tu espères observer. Examine ensuite ton journal ou ton carnet avec ton conseiller.**\n    (c) Planifie et organise une soirée d'observation des étoiles pour ta Troupe Scout ou un autre groupe, comme ta classe. Utilise des jumelles ou un télescope pour montrer et expliquer des objets célestes au groupe.\n    (d) Aide un club d'astronomie de ta communauté à organiser une soirée d'observation ouverte au public.\n    (e) Prends personnellement une série de photographies ou d'images numériques du mouvement de la Lune, d'une planète, d'un astéroïde, d'un météore ou d'une comète. Dans ta présentation visuelle, légende chaque image et indique sa date et son heure de prise de vue. Montre toutes les positions sur une carte du ciel. Présente ton travail à l'école ou lors d'une réunion de la Troupe. Explique les changements observés.\n9. Renseigne-toi sur trois possibilités de carrière en astronomie. Choisis-en une et détermine les études, la formation et l'expérience requises. Discutes-en avec ton conseiller et explique pourquoi cette profession pourrait t'intéresser.",
+                    "description": "En apprenant l'astronomie, les Scouts étudient la manière dont les activités spatiales affectent notre planète et découvrent les merveilles du ciel nocturne : les nébuleuses, ces immenses nuages de gaz et de poussière où naissent de nouvelles étoiles; les vieilles étoiles qui meurent et explosent; les pluies de météores et les étoiles filantes; la Lune, les planètes et une éblouissante multitude d'étoiles.",
+                    "presetTitle": "Astronomie",
+                    "title": "Astronomie"
+                },
+                "chess": {
+                    "criteria": "1. Discute avec ton conseiller du Badge de mérite de l'histoire du jeu d'échecs. Explique pourquoi il est considéré comme un jeu de planification et de stratégie.\n2. Discute avec ton conseiller du Badge de mérite des points suivants :\n    (a) Les avantages de la pratique des échecs, notamment le développement de l'esprit critique, de la concentration et de la prise de décision, ainsi que la façon dont ces compétences peuvent t'aider dans d'autres domaines de ta vie.\n    (b) L'esprit sportif et l'étiquette aux échecs.\n3. Montre à ton conseiller que tu maîtrises chacun des éléments suivants. Puis, à l'aide de la méthode Teaching EDGE* du Scoutisme, apprends à jouer aux échecs à une personne qui ne sait pas jouer, de préférence un autre Scout :\n    (a) Le nom de chaque pièce.\n    (b) La mise en place de l'échiquier.\n    (c) Le déplacement de chaque pièce, y compris le roque et la prise en passant.\n4. Fais ce qui suit :\n    (a) Montre comment noter les coups avec le système algébrique de notation des échecs.\n    (b) Explique les différences entre l'ouverture, le milieu de partie et la finale.\n    (c) Explique quatre principes d'ouverture.\n    (d) Explique les quatre règles du roque.\n    (e) Montre sur un échiquier le « mat du berger » et le « mat du sot ».\n    (f) Montre sur un échiquier quatre manières dont une partie peut se terminer par une nulle.\n5. Fais ce qui suit :\n    (a) Explique quatre des éléments suivants de la stratégie aux échecs : exploitation des faiblesses, force, sécurité du roi, structure de pions, espace, tempo, temps.\n    (b) Explique cinq des tactiques suivantes : sacrifice de dégagement, attraction, attaque à la découverte, attaque double, fourchette, interposition, surcharge, surprotection, clouage, élimination du défenseur, enfilade, zwischenzug.\n    (c) Place le roi blanc en e1, les tours blanches en a1 et h1, et le roi noir en e5. Les Blancs jouant en premier, montre comment forcer l'échec et mat du roi noir.\n    (d) Mets en place et résous cinq problèmes de mat direct fournis par ton conseiller du Badge de mérite.\n6. Fais UNE des activités suivantes :\n    (a) Joue au moins trois parties avec d'autres Scouts et/ou ton conseiller du Badge de mérite. Rejoue-les à partir de tes feuilles de partie et discute avec ton conseiller de la manière dont tu aurais pu jouer chacune différemment.\n    (b) Participe à un tournoi d'échecs scolaire (pour jeunes) et utilise tes feuilles de partie du tournoi pour rejouer tes parties avec ton conseiller du Badge de mérite. Discute avec lui de la manière dont tu aurais pu jouer chacune différemment.\n    (c) Organise et dirige un tournoi d'échecs réunissant au moins quatre autres joueurs, en plus de toi. Fais jouer au moins deux parties à chaque concurrent.",
+                    "description": "Les échecs comptent parmi les plus anciens jeux de plateau au monde et parmi les jeux les plus populaires jamais créés. Ils se jouent partout dans le monde, même sur Internet. Les joueurs se retrouvent pour le plaisir ou la compétition, autour d'une table de cuisine, sur un banc public ou lors de tournois internationaux officiels.",
+                    "presetTitle": "Échecs",
+                    "title": "Échecs"
+                },
+                "dogCare": {
+                    "criteria": "1. Fais ce qui suit :\n    (a) Présente brièvement l'origine historique et la domestication du chien.\n    (b) Décris quelques caractéristiques communes des chiens appartenant à chacun des sept grands groupes canins.\n    (c) Présente des caractéristiques précises de sept races de chiens, une de chaque grand groupe, OU fais un bref historique d'une race.\n2. Montre sur un chien ou un dessin au moins 10 parties du corps. Donne le nom exact de chacune.\n3. Fais ce qui suit :\n    (a) Explique l'importance de l'apprentissage de la propreté, de l'obéissance et de la socialisation de ton chien.\n    (b) Explique ce que signifie la « possession responsable d'un animal de compagnie ».\n    (c) Explique les questions, notamment celle du tempérament, à prendre en compte pour choisir une race de chien comme animal de compagnie familial.\n4. Pendant deux mois, nourris ton chien et prends-en soin.* Tiens un journal de tes activités durant cette période comprenant les éléments suivants : horaires des repas, types d'aliments utilisés, quantités données, périodes d'exercice, programme d'éducation, relevé hebdomadaire du poids, calendrier du toilettage et des bains, soins vétérinaires si nécessaire et coûts. Inclus également une brève description de l'hébergement ou de l'abri prévu pour ton chien.\n5. Explique la bonne manière d'apprendre l'obéissance à un chien et le matériel nécessaire. Montre avec ton chien trois des ordres suivants : « viens », « assis », « couché », « au pied », « reste », « rapporte » ou « va chercher », et « lâche ».\n6. Fais ce qui suit.\n    (a) Présente le calendrier de vaccination approprié pour un chien dans ta région, de l'âge de chiot à l'âge adulte.\n    (b) Présente les méthodes de lutte permettant de prévenir les puces, les tiques, les vers du cœur et les parasites intestinaux chez un chien de ta région, de l'âge de chiot à l'âge adulte.\n    (c) Explique l'importance des soins dentaires et du brossage des dents pour la santé de ton animal.\n    (d) Présente les avantages d'entretenir régulièrement le pelage et les griffes de ton chien.\n    (e) Discute avec ton conseiller des conditions saisonnières de ton lieu de résidence, comme les étés chauds, les hivers froids ou l'humidité extrême, dont il faut tenir compte pour ton chien.\n    (f) Discute avec ton conseiller des considérations et des avantages liés à la stérilisation de ton chien.\n7. Fais ce qui suit :\n    (a) Explique les précautions à prendre pour manipuler un chien blessé.\n    (b) Montre comment poser une muselière d'urgence.\n    (c) Explique comment traiter les plaies. Explique les premiers secours en cas de morsure de chien.\n    (d) Montre comment poser un pansement simple et bander la patte, le corps ou la tête de ton chien.\n    (e) Explique ce qu'il faut faire si un chien est renversé par une voiture.\n    (f) Dresse la liste du contenu nécessaire dans la trousse de premiers secours de toute personne possédant un chien.\n    (g) Indique les dangers du traitement à domicile d'une affection grave.\n    (h) Présente brièvement la cause, le mode de propagation, les signes et symptômes, ainsi que les méthodes de prévention de la rage, de la parvovirose, de la maladie de Carré et des vers du cœur chez les chiens.\n8. Visite une clinique vétérinaire ou un refuge pour animaux et présente à ton conseiller un compte rendu de ta visite.\n9. Connais les lois et règlements relatifs aux chiens en vigueur dans ta communauté.\n10. Renseigne-toi sur trois possibilités de carrière auprès des chiens. Choisis-en une, détermine les études, la formation et l'expérience requises, puis discutes-en avec ton conseiller. Explique pourquoi cette profession t'intéresse.",
+                    "description": "L'affection et l'interdépendance entre les êtres humains et les chiens perdurent depuis des milliers d'années. Des éléments indiquent que les chiens et les humains ont commencé à compter les uns sur les autres il y a plusieurs millénaires. Aujourd'hui, les chiens sont nos partenaires de travail et nos compagnons. Ils aident les équipes de recherche et de sauvetage, les forces de l'ordre, les chasseurs, les agriculteurs et les personnes en situation de handicap. Ils jouent aussi avec nous et nous tiennent compagnie.",
+                    "presetTitle": "Soins des chiens",
+                    "title": "Soins des chiens"
+                },
+                "engineering": {
+                    "criteria": "1. Choisis chez toi un objet manufacturé, comme un jouet ou un appareil ménager, et, sous la supervision d'un adulte et avec l'accord de ton conseiller, étudie comment et pourquoi il fonctionne ainsi. Détermine quelles activités d'ingénierie ont été nécessaires pour le créer. Discute avec ton conseiller de ce que tu as appris et de la manière dont tu as obtenu ces informations.\n2. Choisis une réalisation technique qui a eu un impact majeur sur la société. À l'aide de ressources comme Internet (avec l'autorisation de ton parent ou tuteur), de livres et de magazines, renseigne-toi sur les ingénieurs qui ont rendu cet exploit possible, les obstacles particuliers qu'ils ont dû surmonter et l'influence de cette réalisation sur le monde actuel. Présente à ton conseiller ce que tu as appris.\n3. Explique le travail de six types d'ingénieurs. Choisis-en deux et explique les liens entre leurs activités.\n4. Rencontre un ingénieur, qui peut être ton conseiller ou ton parent, et fais ce qui suit :\n    (a) Discute de son travail et des outils utilisés.\n    (b) Discute avec cette personne d'un projet en cours et de son rôle particulier dans celui-ci.\n    (c) Détermine comment le travail est effectué et comment les résultats sont obtenus.\n    (d) Demande à voir les rapports rédigés au sujet du projet.\n    (e) Discute avec ton conseiller de ce que cette visite t'a appris sur l'ingénierie.\n5. Utilise l'approche de l'ingénierie système pour concevoir un équipement original de patrouille, un jouet ou un dispositif utile pour la maison, le bureau ou le garage.\n6. Fais DEUX des activités suivantes :\n    (a) Transformer le mouvement. À l'aide de matériaux courants ou d'un jeu de construction, réalise un modèle simple illustrant le mouvement. Explique comment il utilise des éléments mécaniques fondamentaux, comme les leviers et les plans inclinés. Décris un produit réel qui utilise ce mécanisme.\n    (b) Utiliser l'électricité. Dresse la liste de 10 appareils électriques de ton domicile. Détermine approximativement la quantité d'électricité consommée par chacun en un mois. Apprends à déterminer la quantité et le coût de l'électricité consommée chez toi pendant les périodes de faible et de forte utilisation. Indique cinq moyens d'économiser l'électricité.\n    (c) Comprendre l'électronique. À l'aide d'un appareil électronique comme un téléphone intelligent ou une tablette, détermine comment le son, la vidéo, le texte ou les images sont transmis d'un lieu à un autre. Explique comment l'appareil a été conçu pour être facile à utiliser, fonctionnel et durable.\n    (d) Utiliser les matériaux. Réalise des expériences illustrant les différences de résistance et de conductivité thermique entre le bois, le métal et le plastique. Discute avec ton conseiller de ce que tu as appris.\n    (e) Convertir l'énergie. Réalise une expérience montrant comment l'énergie mécanique, thermique, chimique, solaire et/ou électrique peut être convertie d'une ou plusieurs formes en une autre. Explique tes résultats. Décris à ton conseiller ce qu'est l'énergie et comment elle est convertie et utilisée autour de toi.\n    (f) Déplacer les personnes. Détermine les différents moyens utilisés par les personnes de ta communauté pour se rendre au travail. Étudie la circulation, c'est-à-dire le nombre de véhicules et leur vitesse relative, pendant les périodes de trafic dense et faible. Discute avec ton conseiller des améliorations possibles pour aider les personnes de ta communauté à se rendre plus facilement là où elles doivent aller.\n    (g) Réaliser un projet d'ingénierie. Présente un projet à une foire scientifique ou technique, ou à un concours similaire. (Cette exigence peut être remplie en participant à une équipe présentant un projet à un concours d'ingénierie.) Discute avec ton conseiller de ce que démontre ton projet, des questions posées par les visiteurs et de ta capacité à y répondre.\n7. Explique ce que signifie être ingénieur professionnel agréé (P.E.). Nomme les types de travaux d'ingénierie pour lesquels cet agrément est le plus important.\n8. Étudie le Code de déontologie de l'ingénieur. Explique ses ressemblances avec la Promesse Scout et la Loi Scout.\n9. Renseigne-toi sur trois possibilités de carrière en ingénierie. Choisis-en une et étudie les études, la formation et l'expérience requises. Discutes-en avec ton conseiller et explique pourquoi cette profession pourrait t'intéresser.",
+                    "description": "Les ingénieurs utilisent à la fois la science et la technologie pour transformer les idées en réalité et concevoir toutes sortes de choses, depuis une minuscule batterie peu coûteuse pour ton téléphone portable jusqu'à un barrage gigantesque sur le puissant fleuve Yangtsé, en Chine.",
+                    "presetTitle": "Ingénierie",
+                    "title": "Ingénierie"
+                },
+                "music": {
+                    "criteria": "1. Chante ou joue un chant ou un hymne simple choisi par ton conseiller, avec une bonne technique, un bon phrasé, une bonne sonorité, un bon rythme et de bonnes nuances. Lis tous les signes et termes de la partition.\n2. Nomme les cinq grandes familles d'instruments de musique. Crée une illustration montrant comment les sons sont générés et comment les instruments produisent du son.\n3. Fais DEUX des activités suivantes :\n    (a) Assiste à un spectacle en direct ou écoute trois heures d'enregistrements appartenant à deux des styles suivants : blues, jazz, musique classique, country, bluegrass, musique ethnique, gospel, comédie musicale, opéra. Décris le son de la musique et les instruments utilisés. Identifie les compositeurs ou auteurs-compositeurs, les interprètes et les titres des œuvres entendues. S'il s'agissait d'un spectacle en direct, décris le cadre et la réaction du public. Exprime ton avis sur la musique.\n    (b) Interroge un membre adulte de ta famille sur la musique. Détermine quelle musique était la plus populaire quand cette personne avait ton âge. Découvre sa musique préférée aujourd'hui et écoute avec elle trois de ses morceaux favoris. Que penses-tu de leur son? Les avais-tu déjà entendus? Fais-lui écouter trois de tes chansons préférées et explique pourquoi elles te plaisent. Demande-lui son avis sur ta musique favorite.\n    (c) Pendant six mois, fais partie d'un orchestre scolaire, d'une chorale ou d'un autre ensemble musical organisé, ou produis-toi six fois en public comme soliste.\n    (d) Nomme cinq personnes importantes dans l'histoire de la musique américaine et explique à ton conseiller pourquoi elles restent influentes. Inclus au moins un compositeur, un interprète, un innovateur et une personne née il y a plus de 100 ans.\n4. Fais UNE des activités suivantes :\n    (a) Apprends trois chansons à un groupe. Dirige le chant en utilisant les gestes appropriés.\n    (b) Compose et écris la partition d'une œuvre musicale d'au moins 12 mesures, puis joue-la sur un instrument.\n    (c) Fabrique un instrument traditionnel et apprends à en jouer.\n5. Définis la propriété intellectuelle (IP) pour ton conseiller. Explique comment obtenir et partager correctement de la musique enregistrée.",
+                    "description": "L'histoire de la musique est riche et passionnante. À travers les âges, de nouvelles musiques ont été créées par des personnes qui ont appris de la tradition, puis exploré et innové. Tous les grands chefs-d'œuvre musicaux n'ont pas encore été écrits. Aujourd'hui, les possibilités de création musicale sont illimitées.",
+                    "presetTitle": "Musique",
+                    "title": "Musique"
+                },
+                "nuclearScience": {
+                    "criteria": "1. Fais ce qui suit :\n    (a) Explique le rayonnement et la différence entre les rayonnements ionisants et non ionisants.\n    (b) Explique le principe ALARA et les mesures imposées par la loi pour réduire ces risques au minimum. Décris les exigences de sécurité à prendre en compte pour réaliser les exigences de ce Badge de mérite.\n    (c) Décris le symbole de danger lié aux rayonnements et explique où il doit être utilisé.\n    (d) Explique comment nous sommes quotidiennement exposés aux rayonnements ionisants provenant de l'extérieur de la Terre et de la Terre elle-même. Donne quatre exemples de matières radioactives naturelles, NORM, présentes chez toi ou dans une épicerie, et explique pourquoi elles sont radioactives.\n    (e) Explique la différence entre l'exposition aux rayonnements et la contamination. Décris les dangers des rayonnements pour les humains, l'environnement et la faune. Calcule ta dose annuelle approximative de rayonnement et compare-la à celle d'une personne travaillant dans une centrale nucléaire.\n2. Fais ce qui suit :\n    (a) Donne la signification des termes suivants : atome, noyau, proton, neutron, électron, quark, isotope; particule alpha, particule bêta, rayon gamma, rayon X; ionisation, radioactivité, radio-isotope et stabilité.\n    (b) Choisis un élément du tableau périodique. Construis des modèles 3-D des atomes de trois isotopes de cet élément en montrant les neutrons, les protons et les électrons. Écris la notation isotopique de chaque modèle, avec le numéro atomique et le nombre de masse. Dans un modèle ou schéma séparé, explique ou montre comment les quarks composent les protons et les neutrons.\n3. Fais UNE des activités suivantes, puis discute de la physique moderne des particules avec ton conseiller :\n    (a) Visite un accélérateur, un laboratoire de recherche ou une université où des scientifiques étudient les propriétés du noyau ou des nucléons.\n    (b) Nomme trois accélérateurs de particules et décris plusieurs expériences réalisées par chacun, notamment en science fondamentale et dans les applications pratiques.\n4. Fais DEUX des activités suivantes, puis discutes-en avec ton conseiller :\n    (a) Construis un électroscope. Montre son fonctionnement. Place une source de rayonnement à l'intérieur et explique l'effet produit.\n    (b) Fabrique une chambre à brouillard. Montre comment elle permet de voir les traces produites par les rayonnements. Explique ce qui se passe.\n    (c) Réalise une expérience illustrant la demi-vie. Discute des chaînes de désintégration.\n5. Fais UNE des activités suivantes, puis discute avec ton conseiller des principes de radioprotection :\n    (a) À l'aide d'un radiamètre et d'une source radioactive, montre comment le nombre de coups par minute varie lorsque la source se rapproche ou s'éloigne du détecteur. Place trois matériaux différents entre la source et le détecteur, puis explique les éventuelles différences entre les mesures par minute. Explique comment la durée, la distance et le blindage peuvent réduire la dose reçue par une personne.\n    (b) Décris comment le radon est détecté dans les habitations. Présente les étapes des méthodes de mesure à court et à long terme, indique comment interpréter les résultats et explique quand utiliser chaque type de test. Explique le risque sanitaire lié au radon et les mesures permettant d'en réduire la concentration dans les bâtiments.\n    (c) Visite un lieu où des rayons X sont utilisés. Dessine le plan de la salle. Indique l'emplacement de l'appareil, de l'opérateur et du patient pendant son fonctionnement. Explique les précautions prises et leur importance.\n6. Fais UNE des activités suivantes, puis discute avec ton conseiller de la manière dont l'énergie nucléaire sert à produire de l'électricité :\n    (a) Réalise un dessin montrant la fission nucléaire. Observe un réacteur à pièges à souris (installé par un adulte) et utilise-le pour expliquer comment une réaction en chaîne peut être déclenchée. Explique comment arrêter ou maîtriser une réaction en chaîne dans un réacteur nucléaire. Explique ce que signifie « masse critique ».\n    (b) Visite une centrale ou un réacteur nucléaire de ta région, sur place ou en ligne (avec l'autorisation de ton parent). Apprends comment fonctionne un réacteur et comment la centrale produit de l'électricité. Détermine les pourcentages de l'électricité des États-Unis produits par les centrales nucléaires, le charbon et le gaz.\n7. Donne un exemple de chacun des usages suivants de l'énergie atomique : médecine nucléaire, applications environnementales, applications industrielles, exploration spatiale et radiothérapie. Pour chaque exemple, explique l'application et son importance pour la science nucléaire.\n8. Renseigne-toi sur trois possibilités de carrière en science nucléaire qui t'intéressent. Choisis-en une, détermine les études, la formation et l'expérience requises, puis discutes-en avec ton conseiller. Explique pourquoi cette profession t'intéresse.",
+                    "description": "La science nucléaire nous offre une explication simple du monde naturel. Son objectif ultime est de déterminer s'il existe une règle fondamentale unique expliquant l'interaction de la matière et des forces. Obtenir le Badge de mérite Sciences nucléaires permet aux Scouts de découvrir ce domaine passionnant qui se trouve aujourd'hui à la pointe de la science.",
+                    "presetTitle": "Sciences nucléaires",
+                    "title": "Sciences nucléaires"
+                },
+                "programming": {
+                    "criteria": "1. Sécurité. Fais ce qui suit :\n    (a) Regarde la vidéo « Digital Safety » de Personal Safety Awareness (avec l'autorisation de ton parent ou tuteur.)\n    (b) Discute des premiers secours et de la prévention des blessures pouvant survenir pendant les activités de programmation, notamment les lésions dues aux gestes répétitifs et la fatigue oculaire.\n2. Histoire. Fais ce qui suit :\n    (a) Présente une brève histoire de la programmation comprenant au moins trois étapes marquantes de son progrès ou de son développement.\n    (b) Discute avec ton conseiller de l'histoire de la programmation et de l'évolution des langages de programmation.\n3. Connaissances générales. Fais ce qui suit :\n    (a) Dresse la liste de cinq langages de programmation populaires actuellement utilisés et décris le ou les secteurs qui les emploient principalement, ainsi que les raisons de leur utilisation.\n    (b) Décris trois appareils programmés dont tu dépends chaque jour.\n4. Propriété intellectuelle. Fais ce qui suit :\n    (a) Explique les quatre types de propriété intellectuelle utilisés pour protéger les programmes informatiques.\n    (b) Décris la différence entre détenir une licence de logiciel et posséder un logiciel.\n    (c) Décris les différences entre les logiciels gratuits, libres et commerciaux, et explique pourquoi il est important de respecter les conditions d'utilisation de chacun.\n5. Projets. Fais ce qui suit :\n    (a) Avec l'accord de ton conseiller, choisis un programme d'exemple. Modifie son code ou ajoute-lui une fonction ou un sous-programme. Débogue le programme modifié et présente son fonctionnement à ton conseiller.\n    (b) Avec l'accord de ton conseiller, choisis un deuxième langage de programmation et un environnement de développement différents de ceux utilisés pour l'exigence 5a et relevant d'un secteur différent de celui de l'exigence 5a. Écris ensuite un programme fonctionnel avec ce langage et cet environnement, débogue-le et présente-le à ton conseiller.\n    (c) Avec l'accord de ton conseiller, choisis un troisième langage de programmation et un environnement de développement différents de ceux utilisés pour les exigences 5a et 5b et relevant d'un secteur différent de 5a ou 5b. Écris ensuite un programme fonctionnel avec ce langage et cet environnement, débogue-le et présente-le à ton conseiller.\n    (d) Explique comment les programmes écrits pour les exigences 5a, 5b et 5c traitent les entrées, prennent des décisions en fonction de celles-ci et produisent des sorties fondées sur ces décisions.\n6. Carrières. Renseigne-toi sur trois possibilités de carrière exigeant des connaissances en programmation. Choisis-en une et détermine les études, la formation et l'expérience requises. Discutes-en avec ton conseiller et explique pourquoi cette carrière pourrait t'intéresser.",
+                    "description": "Le Badge de mérite Programmation t'emmènera « derrière l'écran » pour découvrir les codes complexes qui rendent les appareils numériques utiles et amusants.",
+                    "presetTitle": "Programmation",
+                    "title": "Programmation"
+                },
+                "spaceExploration": {
+                    "criteria": "1. Présente le but de l'exploration spatiale en incluant les éléments suivants :\n    (a) Les raisons historiques.\n    (b) Les objectifs immédiats en matière de connaissances précises.\n    (c) Les avantages liés aux ressources terrestres, à la technologie et aux nouveaux produits.\n    (d) Les relations et la coopération internationales.\n2. Conçois une carte de collection sur ton pionnier spatial préféré, avec une image au recto et des informations au verso. Présente ta carte et discute de quatre autres pionniers de l'espace avec ton conseiller.\n3. Construis, lance et récupère une fusée miniature.* Effectue un deuxième lancement pour atteindre un objectif précis. (La fusée doit être construite conformément au code de sécurité de la National Association of Rocketry. Consulte le chapitre « Model Rocketry » du livret du Badge de mérite Exploration spatiale.) Identifie et explique les parties suivantes de la fusée :\n    (a) Tube du corps.\n    (b) Support moteur.\n    (c) Ailerons.\n    (d) Allumeur.\n    (e) Anneau de guidage de lancement.\n    (f) Coiffe.\n    (g) Charge utile.\n    (h) Système de récupération.\n    (i) Moteur-fusée.\n4. Discute et démontre chacun des éléments suivants :\n    (a) La loi de l'action et de la réaction.\n    (b) Le fonctionnement des moteurs-fusées.\n    (c) La façon dont les satellites restent en orbite.\n    (d) La façon dont les images satellites de la Terre et les images d'autres planètes sont produites et transmises.\n5. Fais DEUX des activités suivantes :\n    (a) Discute avec ton conseiller d'une mission robotisée d'exploration spatiale et d'une mission habitée historique. Présente les principales découvertes de chacune, son importance et ce qu'elle nous a appris sur les planètes, les lunes ou les régions de l'espace explorées.\n    (b) À l'aide de photographies de magazines, de coupures de presse et d'articles électroniques, notamment sur Internet, réalise un album sur une mission planétaire en cours.\n    (c) Conçois une mission robotisée vers une autre planète, une lune, une comète ou un astéroïde qui rapportera sur Terre des échantillons de sa surface. Nomme l'astre que visitera ton engin spatial. Montre comment ta conception fera face aux conditions environnementales de cette planète, lune, comète ou de cet astéroïde.\n6. Décris le but, le fonctionnement et les composants de l'UN des éléments suivants :\n    (a) Une navette spatiale ou tout autre véhicule orbital habité, gouvernemental (américain ou étranger) ou commercial.\n    (b) La Station spatiale internationale.\n7. Conçois une base habitée située dans notre système solaire, par exemple sur Titan, sur des astéroïdes ou dans d'autres lieux que les humains pourraient souhaiter explorer en personne. Réalise des dessins ou une maquette de ta base. Dans ta conception, prends en compte et planifie les éléments suivants :\n    (a) Source d'énergie.\n    (b) Mode de construction.\n    (c) Système de maintien de la vie.\n    (d) But et fonction.\n8. Discute avec ton conseiller de deux carrières possibles dans l'exploration spatiale qui t'intéressent. Détermine les qualifications, les études et la préparation requises, puis discute des principales responsabilités de ces postes.",
+                    "description": "L'espace est mystérieux. Nous l'explorons pour de nombreuses raisons, notamment parce que nous ignorons ce qui s'y trouve, qu'il est immense et que les êtres humains sont très curieux. Chaque fois que nous envoyons des explorateurs dans l'espace, nous apprenons quelque chose que nous ignorions auparavant. Nous découvrons un peu mieux ce qui s'y trouve.",
+                    "presetTitle": "Exploration spatiale",
+                    "title": "Exploration spatiale"
+                },
+                "wildernessSurvival": {
+                    "criteria": "1. Fais ce qui suit :\n    (a) Explique à ton conseiller les dangers que tu risques le plus de rencontrer pendant des activités de survie en milieu sauvage et ce que tu dois faire pour les anticiper, contribuer à les prévenir, les atténuer ou les réduire.\n    (b) Montre que tu connais les premiers secours et la prévention des blessures ou affections susceptibles de survenir en pleine nature, notamment l'hypothermie, les réactions à la chaleur, les gelures, la déshydratation, les ampoules, les piqûres d'insectes, les morsures de tiques et les morsures de serpents.\n2. Énumère de mémoire les sept priorités de survie dans un lieu isolé ou sauvage. Explique à ton conseiller l'importance de chacune.\n3. Décris des moyens d'éviter la panique et de garder un bon moral lorsqu'on est perdu, et explique pourquoi cela est important.\n4. Décris les mesures que tu prendrais pour survivre dans les conditions d'exposition suivantes :\n    (a) Froid et neige.\n    (b) Humidité.\n    (c) Chaleur et sécheresse.\n    (d) Vent.\n    (e) Dans l'eau ou au bord de l'eau.\n5. Constitue un nécessaire personnel de survie et sois en mesure d'expliquer l'utilité possible de chaque élément.\n6. En utilisant trois méthodes différentes autres que les allumettes, prépare et allume trois feux.\n7. Fais ce qui suit :\n    (a) Montre cinq façons différentes d'attirer l'attention lorsqu'on est perdu.\n    (b) Montre comment utiliser un miroir de signalisation.\n    (c) Décris de mémoire cinq signaux sol-air et donne leur signification.\n8. Improvise un abri naturel. Pour cette démonstration, utilise des techniques ayant peu d'impact négatif sur l'environnement. Passe une nuit dans ton abri.\n9. Explique comment te protéger des insectes, des reptiles, des ours et des autres animaux de la région.\n10. Montre trois façons de traiter l'eau trouvée dans la nature afin de la rendre potable.\n11. Montre que tu connais les vêtements appropriés à porter dehors par temps extrêmement chaud ou froid et par temps humide.\n12. Explique pourquoi il n'est généralement pas judicieux de manger des plantes sauvages comestibles ou des animaux sauvages dans une situation de survie en pleine nature.",
+                    "description": "Lors de leurs activités de plein air, les Scouts apprennent à emporter les vêtements et le matériel nécessaires, à bien planifier et à faire de leur mieux pour gérer les risques. Mais il arrive parfois qu'un événement inattendu se produise. Quand les choses tournent mal, les techniques de survie en milieu sauvage peuvent aider à rétablir la situation.",
+                    "presetTitle": "Survie en milieu sauvage",
+                    "title": "Survie en milieu sauvage"
+                }
+            },
+            "skill": {
+                "assessment": {
+                    "title": "Évaluation"
+                },
+                "certificate": {
+                    "title": "Certificat"
+                },
+                "certification": {
+                    "title": "Certification"
+                },
+                "competency": {
+                    "title": "Compétence"
+                },
+                "microCredential": {
+                    "title": "Microcertification"
+                }
+            },
+            "socialBadge": {
+                "adventurer": {
+                    "criteria": "Le badge Allié de l'aventure est décerné au Scout qui fait constamment preuve d'enthousiasme, de courage et d'engagement en entreprenant des aventures nouvelles et exigeantes.",
+                    "description": "Pour le Scout toujours partant pour une aventure!",
+                    "presetTitle": "Allié de l'aventure",
+                    "title": "Aventurier"
+                },
+                "celebrator": {
+                    "criteria": "Obtiens le badge Semeur de joie du Jamboree en incarnant la positivité et en apportant de la joie aux autres Scouts pendant un camp ou un événement Scout.",
+                    "description": "Pour le Scout qui apporte de la joie partout où il va !",
+                    "presetTitle": "Semeur de joie du Jamboree",
+                    "title": "Célébrateur"
+                },
+                "changeMaker": {
+                    "criteria": "Le badge Réalisateur des objectifs de développement est obtenu par un Scout qui contribue activement à la réalisation des Objectifs de développement durable (SDGs) grâce au service communautaire.",
+                    "description": "Pour le Scout qui œuvre à un monde meilleur en réalisant les SDGs !",
+                    "presetTitle": "Réalisateur des objectifs de développement",
+                    "title": "Artisan du changement"
+                },
+                "chef": {
+                    "criteria": "Obtiens le badge Masterchef du camp en faisant preuve de créativité culinaire et en préparant régulièrement des repas savoureux dans ton camp.",
+                    "description": "Bravo au masterchef de notre camp, qui veille à ce que chaque repas soit excellent !",
+                    "presetTitle": "Masterchef du camp",
+                    "title": "Chef cuisinier"
+                },
+                "connector": {
+                    "criteria": "Obtiens le badge Navigateur social en démontrant des aptitudes exceptionnelles pour favoriser les amitiés, encourager la collaboration et améliorer la dynamique de groupe au sein de la communauté Scout.",
+                    "description": "Pour le Scout le plus sociable que je connaisse !",
+                    "presetTitle": "Navigateur social",
+                    "title": "Créateur de liens"
+                },
+                "connoisseur": {
+                    "criteria": "Obtiens le badge Connaisseur de l’installation du camp en faisant preuve d’une créativité et d’un sens pratique exceptionnels lors de l’aménagement et de l’organisation de ton emplacement de camp.",
+                    "description": "Bravo au Scout qui a les idées les plus utiles et créatives pour installer le camp !",
+                    "presetTitle": "Connaisseur de l’installation du camp",
+                    "title": "Connaisseur"
+                },
+                "diplomat": {
+                    "criteria": "Le badge Négociateur de foulards est décerné au Scout qui fait preuve d’une implication et d’un enthousiasme constants dans l’échange de foulards avec d’autres personnes, favorisant ainsi la camaraderie et la diversité.",
+                    "description": "Pour le Scout qui échange constamment des foulards !",
+                    "presetTitle": "Négociateur de foulards",
+                    "title": "Diplomate"
+                },
+                "earlyBird": {
+                    "criteria": "Le badge Champion du réveil en fanfare est décerné au Scout qui fait constamment preuve d’enthousiasme à se lever tôt et déborde d’énergie au début de chaque journée.",
+                    "description": "Bravo au Scout qui est toujours debout le premier et déborde d’énergie !",
+                    "presetTitle": "Champion du réveil en fanfare",
+                    "title": "Lève-tôt"
+                },
+                "funMaker": {
+                    "criteria": "Obtiens le badge Maître du divertissement en contribuant activement au plaisir et à la participation dans ton camp grâce à des activités créatives et dynamiques.",
+                    "description": "Bravo au Scout qui rend notre camp amusant et passionnant !",
+                    "presetTitle": "Maître du divertissement",
+                    "title": "Boute-en-train"
+                },
+                "griller": {
+                    "criteria": "Le badge Chef du charbon est obtenu par le Scout qui fait de réels efforts en cuisine de plein air, quel que soit le résultat, en privilégiant l’expérience d’apprentissage et l’envie d’essayer.",
+                    "description": "Bravo au Scout qui a fait de son mieux, mais a carbonisé notre repas — on l’adore quand même !",
+                    "presetTitle": "Chef du charbon",
+                    "title": "As du gril"
+                },
+                "hydrator": {
+                    "criteria": "Obtiens le badge Héros de l’hydratation en montrant ton engagement à être prêt, à rester hydraté et à veiller au bien-être des autres.",
+                    "description": "Bravo au Scout qui est toujours prêt, bien hydraté et attentif à ses amis !",
+                    "presetTitle": "Héros de l’hydratation",
+                    "title": "Expert de l’hydratation"
+                },
+                "innovator": {
+                    "criteria": "Obtiens le badge Prodige du poncho en faisant preuve de résilience et d’adaptabilité lors des activités de plein air, quelles que soient les conditions météorologiques.",
+                    "description": "Pour le Scout qui n’a jamais peur d’un peu de pluie !",
+                    "presetTitle": "Prodige du poncho",
+                    "title": "Innovateur"
+                },
+                "insomniac": {
+                    "criteria": "Obtiens le badge Nomade sans sommeil en faisant preuve d’un engagement sans faille et d’une participation active aux activités scoutes à toute heure du jour et de la nuit.",
+                    "description": "Bravo au Scout qui ne semble jamais dormir !",
+                    "presetTitle": "Nomade sans sommeil",
+                    "title": "Insomniaque"
+                },
+                "inspirer": {
+                    "criteria": "Obtiens le badge Maître de la motivation en inspirant et en dynamisant constamment ton groupe grâce à ton état d’esprit positif et à ton enthousiasme.",
+                    "description": "Pour le Scout qui nous garde tous motivés et enthousiastes !",
+                    "presetTitle": "Maître de la motivation",
+                    "title": "Source d’inspiration"
+                },
+                "instaGuru": {
+                    "criteria": "Obtiens le badge Gourou d’Instagram en partageant des moments #Scouts mémorables sur Instagram !",
+                    "description": "Pour la personne qui veille à ce que nous ayons de magnifiques souvenirs #Scouts sur Instagram !",
+                    "presetTitle": "Gourou d’Instagram",
+                    "title": "Gourou d’Insta"
+                },
+                "jester": {
+                    "criteria": "Le badge Bouffon du Jamboree est décerné au Scout qui apporte constamment joie et rires à sa Troupe, rendant le camp plus agréable grâce à son humour et à sa bonne humeur.",
+                    "description": "Pour le Scout qui fait toujours rire tout le monde !",
+                    "presetTitle": "Bouffon du Jamboree",
+                    "title": "Bouffon"
+                },
+                "knotMaster": {
+                    "criteria": "Le badge Fanatique des nœuds d’amitié est décerné au Scout qui fait preuve d’un dévouement constant et passionné pour la réalisation de nœuds d’amitié.",
+                    "description": "Pour le Scout qui fait des nœuds d’amitié tous les jours !",
+                    "presetTitle": "Fanatique des nœuds d’amitié",
+                    "title": "Maître des nœuds"
+                },
+                "laterBird": {
+                    "criteria": "Obtiens le badge Dormeur de l’aube en démontrant ta capacité à profiter d’un peu de sommeil supplémentaire le matin et à te lever régulièrement tard.",
+                    "description": "Bravo au Scout qui réussit à faire la grasse matinée tous les matins !",
+                    "presetTitle": "Dormeur de l’aube",
+                    "title": "Oiseau tardif"
+                },
+                "mosquitoMagnet": {
+                    "criteria": "Le badge Aimant à moustiques est obtenu par un Scout qui fait constamment preuve de résilience et d’une attitude positive face aux moustiques importuns lors des activités de plein air.",
+                    "description": "Pour le Scout à qui les moustiques ne laissent aucun répit !",
+                    "presetTitle": "Aimant à moustiques",
+                    "title": "Aimant à moustiques"
+                },
+                "optimist": {
+                    "criteria": "Obtiens le badge Scout rayonnant en diffusant constamment de la positivité et en remontant le moral de ton groupe Scout.",
+                    "description": "Pour le Scout qui apporte toujours une énergie positive et rayonnante !",
+                    "presetTitle": "Scout rayonnant",
+                    "title": "Optimiste"
+                },
+                "organizer": {
+                    "criteria": "Obtiens le badge Maître de la coordination en faisant preuve de leadership, de capacités d’organisation exceptionnelles et d’initiative afin d’assurer une coordination fluide et efficace des activités scoutes.",
+                    "description": "Pour le Scout qui aide à maintenir une bonne coordination et une bonne organisation — merci !",
+                    "presetTitle": "Maître de la coordination",
+                    "title": "Organisateur"
+                },
+                "packMaster": {
+                    "criteria": "Obtiens le badge Prodige du paquetage en démontrant des compétences exceptionnelles et efficaces pour préparer tes affaires lors des aventures scoutes.",
+                    "description": "Bravo au Scout qui prépare ses affaires comme un pro — apprends-moi tes techniques, s’il te plaît !",
+                    "presetTitle": "Prodige du paquetage",
+                    "title": "Maître du paquetage"
+                },
+                "polyglot": {
+                    "criteria": "Obtiens le badge Passionné des langues en faisant preuve d’efforts constants et de progrès dans l’apprentissage et la pratique orale d’autres langues.",
+                    "description": "Pour le Scout qui fait de grands efforts pour apprendre et parler d’autres langues — je suis impressionné !",
+                    "presetTitle": "Passionné des langues",
+                    "title": "Polyglotte"
+                },
+                "prankster": {
+                    "criteria": "Obtiens le badge Maestro des bêtises en démontrant un don étonnant pour les espiègleries ludiques et inoffensives qui apportent une touche de plaisir inattendue aux activités scoutes.",
+                    "description": "Pour le Scout qui se retrouve toujours dans de petites situations délicates sans conséquence !",
+                    "presetTitle": "Maestro des bêtises",
+                    "title": "Farceur"
+                },
+                "protector": {
+                    "criteria": "Le badge Sergent de la crème solaire est décerné au Scout qui apporte et applique systématiquement de la crème solaire lors de toutes les activités de plein air, et rappelle aux autres d’en faire autant pour assurer leur protection contre le soleil.",
+                    "description": "Pour le Scout qui est toujours prêt à affronter le soleil !",
+                    "presetTitle": "Sergent de la crème solaire",
+                    "title": "Protecteur"
+                },
+                "rescuer": {
+                    "criteria": "Obtiens le badge Sauveur des petites faims en étant le grignoteur par excellence, avec une réserve de gourmandises toujours prête à être partagée.",
+                    "description": "Bravo au Scout qui a toujours des en-cas sous la main — tu es un véritable héros !",
+                    "presetTitle": "Sauveur des petites faims",
+                    "title": "Sauveteur"
+                },
+                "resilient": {
+                    "criteria": "Le badge Rockstar de la résilience est décerné au Scout qui fait constamment preuve d’une ténacité et d’une capacité d’adaptation remarquables face aux défis.",
+                    "description": "Pour le Scout qui excelle à rebondir après des situations difficiles !",
+                    "presetTitle": "Rockstar de la résilience",
+                    "title": "Résilience"
+                },
+                "rested": {
+                    "criteria": "Le badge Ninja de la sieste est décerné au Scout qui démontre une aptitude unique à faire la sieste dans différents cadres, incarnant ainsi le véritable esprit d’adaptation et de détente.",
+                    "description": "Pour le Scout qui peut faire la sieste n’importe où !",
+                    "presetTitle": "Ninja de la sieste",
+                    "title": "Repos optimal"
+                },
+                "samaritan": {
+                    "criteria": "Le badge Héros de la main secourable est décerné à un Scout qui se montre constamment prêt à aider les autres, incarnant ainsi l’esprit de service et de camaraderie.",
+                    "description": "Pour le Scout qui est toujours prêt à donner un coup de main !",
+                    "presetTitle": "Héros de la main secourable",
+                    "title": "Esprit samaritain"
+                },
+                "scoutInfluencer": {
+                    "criteria": "Obtiens le badge Étoile de @WorldScouting en suivant @worldscouting et en étant un membre précieux de la communauté #Scouts en ligne.",
+                    "description": "Merci de suivre @worldscouting ! Nous sommes ravis de t’accueillir dans notre communauté #Scouts en ligne !",
+                    "presetTitle": "Étoile de @WorldScouting",
+                    "title": "Influenceur Scout"
+                },
+                "snapchatScout": {
+                    "criteria": "Obtiens le badge Spécialiste de Snapchat en démontrant ton expertise sur tout ce qui concerne #Scouts sur Snapchat.",
+                    "description": "Pour la personne qui maîtrise tout ce qui concerne #Scouts sur Snapchat !",
+                    "presetTitle": "Spécialiste de Snapchat",
+                    "title": "Scout de Snapchat"
+                },
+                "snoozer": {
+                    "criteria": "Obtiens le badge Leader de l’extinction des feux en étant le Scout qui accorde constamment la priorité au repos et qui est souvent le premier à déclarer la journée terminée au camp.",
+                    "description": "Bravo au Scout qui s’endort toujours en premier !",
+                    "presetTitle": "Leader de l’extinction des feux",
+                    "title": "Sommeil facile"
+                },
+                "snoreMaster": {
+                    "criteria": "Le badge Soliste de la symphonie du sommeil est décerné au Scout qui embrasse sans crainte le chœur de la nuit, prouvant que le sommeil et le camping peuvent coexister en harmonie.",
+                    "description": "Bravo au Scout qui ronfle toute la nuit : on l’adore quand même !",
+                    "presetTitle": "Soliste de la symphonie du sommeil",
+                    "title": "Maîtrise du ronflement"
+                },
+                "stylist": {
+                    "criteria": "Obtiens le badge Fashionista de plein air en affichant constamment un sens unique du style et de la créativité dans tes tenues de plein air lors d’activités Scout.",
+                    "description": "Pour le Scout qui s’habille avec style, où qu’il aille !",
+                    "presetTitle": "Fashionista de plein air",
+                    "title": "Styliste"
+                },
+                "supporter": {
+                    "criteria": "Obtiens le badge Équipe solidaire en faisant constamment preuve de gentillesse, d’empathie et de soutien envers les autres Scouts, afin de favoriser un environnement de groupe positif et inclusif.",
+                    "description": "Pour le Scout qui offre soutien et amitié à tout le monde !",
+                    "presetTitle": "Équipe solidaire",
+                    "title": "Soutien"
+                },
+                "survivor": {
+                    "criteria": "Obtiens le badge Élève de Bear Grylls en faisant preuve de compétences exceptionnelles en survie, de leadership et de résilience dans des conditions extrêmes, ainsi que d’un engagement extraordinaire envers l’exploration et l’aventure en plein air.",
+                    "description": "Pour le Scout qui pourrait bien être la prochaine figure à suivre les traces de Bear Grylls !",
+                    "presetTitle": "Élève de Bear Grylls",
+                    "title": "As de la survie"
+                },
+                "tentMate": {
+                    "criteria": "Obtiens le badge Camarade de tente de l’année en faisant preuve d’une camaraderie, d’un respect et d’une serviabilité exceptionnels en tant que camarade de tente lors d’un camp Scout.",
+                    "description": "Bravo au Scout qui est la meilleure compagnie de tente que je puisse espérer !",
+                    "presetTitle": "Camarade de tente de l’année",
+                    "title": "Camarade de tente"
+                },
+                "tickTrendSetter": {
+                    "criteria": "Obtiens le badge As de TikTok en créant des vidéos #Scouts divertissantes sur TikTok.",
+                    "description": "Pour la personne qui crée des vidéos #Scouts tellement amusantes sur TikTok !",
+                    "presetTitle": "As de TikTok",
+                    "title": "Référence des TickTendances"
+                },
+                "trader": {
+                    "criteria": "Obtiens le badge Pro de l’échange d’écussons en participant avec enthousiasme à l’échange d’écussons Scout avec d’autres personnes.",
+                    "description": "Pour le Scout qui échange des badges à tour de bras !",
+                    "presetTitle": "Pro de l’échange d’écussons",
+                    "title": "Spécialiste des échanges"
+                },
+                "trustworthy": {
+                    "criteria": "Obtiens le badge Camarade fiable en faisant constamment preuve de fiabilité et en apportant ton soutien aux autres Scouts chaque fois que nécessaire, contribuant ainsi à créer des environnements sûrs pour tout le monde.",
+                    "description": "Pour le Scout qui est toujours fiable et présent pour ses amis !",
+                    "presetTitle": "Camarade fiable",
+                    "title": "Digne de confiance"
+                },
+                "unifier": {
+                    "criteria": "Le badge Architecte de l’unité est décerné au Scout qui déploie des efforts exceptionnels pour promouvoir l’harmonie et la coopération entre des groupes divers, favorisant constamment l’unité et la compréhension en toutes circonstances.",
+                    "description": "Pour le Scout qui aide à bâtir des ponts et à créer un environnement sûr, quoi qu’il arrive !",
+                    "presetTitle": "Architecte de l’unité",
+                    "title": "Force unificatrice"
+                }
+            },
+            "workHistory": {
+                "apprenticeshipCertificate": {
+                    "title": "Apprentissage professionnel"
+                },
+                "board": {
+                    "title": "Conseil"
+                },
+                "fellowship": {
+                    "title": "Bourse"
+                },
+                "fieldwork": {
+                    "title": "Travail de terrain"
+                },
+                "internship": {
+                    "title": "Stage"
+                },
+                "job": {
+                    "title": "Emploi"
+                },
+                "journeymanCertificate": {
+                    "title": "Compagnon"
+                },
+                "masterCertificate": {
+                    "title": "Certificat de maîtrise"
+                },
+                "volunteer": {
+                    "title": "Bénévolat"
+                }
+            }
+        },
+        "subskills": {
+            "adaptability": {
+                "flexibility": {
+                    "description": "C’est la capacité de s’adapter à de nouvelles conditions et à de nouveaux environnements avec aisance et souplesse.",
+                    "title": "Souplesse"
+                },
+                "problemSolving": {
+                    "description": "Il s’agit de cerner, d’analyser et de résoudre les problèmes avec efficacité et efficience.",
+                    "title": "Résolution de problèmes"
+                },
+                "resilience": {
+                    "description": "C’est la capacité de se remettre rapidement des difficultés et de rebondir avec davantage de force.",
+                    "title": "Résilience"
+                },
+                "resourcefulness": {
+                    "description": "Il s’agit de trouver des moyens rapides et ingénieux de surmonter les défis à l’aide des ressources disponibles.",
+                    "title": "Débrouillardise"
+                },
+                "stressManagement": {
+                    "description": "Il s’agit de conserver son calme et son efficacité sous la pression ou dans des situations difficiles.",
+                    "title": "Gestion du stress"
+                }
+            },
+            "anatomyAndPhysiology": {
+                "bodySystems": {
+                    "description": "Il s’agit de comprendre la structure et le fonctionnement des systèmes du corps humain.",
+                    "title": "Systèmes du corps humain"
+                },
+                "diseaseProcesses": {
+                    "description": "Il s’agit d’étudier la manière dont les maladies se développent et affectent le corps.",
+                    "title": "Processus pathologiques"
+                },
+                "medicalTerminology": {
+                    "description": "Il s’agit d’utiliser le langage médical pour décrire avec précision l’état des patients.",
+                    "title": "Terminologie médicale"
+                },
+                "pathophysiology": {
+                    "description": "Il s’agit de comprendre les altérations des processus physiologiques associées aux maladies.",
+                    "title": "Physiopathologie"
+                },
+                "pharmacology": {
+                    "description": "Il s’agit d’apprendre comment les médicaments agissent sur les systèmes biologiques pour traiter des affections.",
+                    "title": "Pharmacologie"
+                }
+            },
+            "basicComputerSkills": {
+                "email": {
+                    "description": "Il s’agit d’utiliser des plateformes de messagerie électronique pour envoyer, recevoir et gérer des communications électroniques.",
+                    "title": "E-mail"
+                },
+                "fileManagement": {
+                    "description": "Il s’agit d’organiser, de stocker et de retrouver efficacement des fichiers et des dossiers numériques.",
+                    "title": "Gestion des fichiers"
+                },
+                "internetNavigation": {
+                    "description": "Il s’agit d’utiliser des navigateurs web et des outils en ligne pour trouver des sites web et interagir avec eux.",
+                    "title": "Navigation sur Internet"
+                },
+                "typing": {
+                    "description": "Il s’agit de saisir efficacement du texte au clavier, avec rapidité et précision.",
+                    "title": "Dactylographie"
+                },
+                "wordProcessing": {
+                    "description": "Il s’agit de créer et de modifier des documents texte à l’aide d’un logiciel de traitement de texte.",
+                    "title": "Traitement de texte"
+                }
+            },
+            "clinicalSkills": {
+                "basicLifeSupport": {
+                    "description": "Il s’agit de prodiguer des soins immédiats lors d’urgences mettant la vie en danger, y compris la RCP.",
+                    "title": "Réanimation de base"
+                },
+                "diagnosticProcedures": {
+                    "description": "Il s’agit d’effectuer des tests afin de détecter des maladies ou des affections médicales.",
+                    "title": "Procédures diagnostiques"
+                },
+                "medicationAdministration": {
+                    "description": "Il s’agit d’administrer en toute sécurité aux patients les médicaments prescrits par les voies appropriées.",
+                    "title": "Administration des médicaments"
+                },
+                "patientAssessment": {
+                    "description": "Il s’agit d’évaluer l’état physique et émotionnel d’un patient afin d’éclairer les décisions relatives aux soins.",
+                    "title": "Évaluation du patient"
+                },
+                "woundCare": {
+                    "description": "Il s’agit de traiter et de prendre en charge les plaies ouvertes afin de favoriser la guérison et de prévenir les infections.",
+                    "title": "Soins des plaies"
+                }
+            },
+            "construction": {
+                "carpentry": {
+                    "description": "Il s’agit de construire et de réparer des structures et des ossatures à l’aide de bois et d’autres matériaux.",
+                    "title": "Menuiserie"
+                },
+                "electricalWork": {
+                    "description": "Il s’agit d’installer, d’entretenir et de réparer des systèmes électriques et des câblages.",
+                    "title": "Travaux d’électricité"
+                },
+                "hVAC": {
+                    "description": "Il s’agit d’installer et d’entretenir des systèmes de chauffage, de ventilation et de climatisation.",
+                    "title": "CVC (chauffage, ventilation et climatisation)"
+                },
+                "masonry": {
+                    "description": "Il s’agit de construire des structures en brique, en pierre ou en blocs de béton.",
+                    "title": "Maçonnerie"
+                },
+                "plumbing": {
+                    "description": "Il s’agit d’installer et de réparer des systèmes d’alimentation en eau, d’évacuation et de tuyauterie.",
+                    "title": "Plomberie"
+                }
+            },
+            "coordination": {
+                "balance": {
+                    "description": "Il s’agit de maintenir le contrôle et la stabilité du corps dans des positions dynamiques ou statiques.",
+                    "title": "Équilibre"
+                },
+                "footwork": {
+                    "description": "Il s’agit d’exécuter des mouvements de pieds précis et efficaces afin d’améliorer le placement et la performance.",
+                    "title": "Jeu de jambes"
+                },
+                "handEyeCoordination": {
+                    "description": "Il s’agit de synchroniser les mouvements des mains avec les informations visuelles afin d’effectuer les tâches efficacement.",
+                    "title": "Coordination œil-main"
+                },
+                "reactionTime": {
+                    "description": "Il s’agit de réagir rapidement et de manière appropriée aux stimuli externes pendant le jeu.",
+                    "title": "Temps de réaction"
+                },
+                "spatialAwareness": {
+                    "description": "Il s’agit de comprendre l’espace environnant et de s’y déplacer par rapport aux autres personnes et aux objets.",
+                    "title": "Conscience spatiale"
+                }
+            },
+            "cosmetology": {
+                "barbering": {
+                    "description": "Il s’agit de fournir des services de soins esthétiques, notamment la coupe de cheveux, le rasage et l’entretien de la barbe.",
+                    "title": "Techniques de barbier"
+                },
+                "esthetics": {
+                    "description": "Il s’agit de prendre soin de la peau grâce à des traitements tels que les soins du visage, l’épilation à la cire et l’exfoliation.",
+                    "title": "Esthétique"
+                },
+                "hairstyling": {
+                    "description": "Il s’agit de couper, de colorer et de coiffer les cheveux afin de mettre en valeur l’apparence.",
+                    "title": "Coiffure"
+                },
+                "makeupArtistry": {
+                    "description": "Il s’agit d’appliquer du maquillage pour mettre en valeur ou transformer l’apparence à diverses occasions.",
+                    "title": "Art du maquillage"
+                },
+                "nailTechnology": {
+                    "description": "Il s’agit de réaliser des manucures, des pédicures et des décorations artistiques des ongles.",
+                    "title": "Techniques d’onglerie"
+                }
+            },
+            "cybersecurity": {
+                "dataPrivacy": {
+                    "description": "Il s’agit de protéger en ligne les informations personnelles et organisationnelles sensibles.",
+                    "title": "Confidentialité des données"
+                },
+                "passwordManagement": {
+                    "description": "Créer et stocker des mots de passe robustes et sécurisés pour protéger les comptes en ligne.",
+                    "title": "Gestion des mots de passe"
+                },
+                "phishingAwareness": {
+                    "description": "Reconnaître et éviter les escroqueries qui tentent de voler des renseignements personnels.",
+                    "title": "Sensibilisation à l’hameçonnage"
+                },
+                "protectingDevices": {
+                    "description": "Sécuriser les ordinateurs et les appareils mobiles contre les menaces et les logiciels malveillants.",
+                    "title": "Protection des appareils"
+                },
+                "safeOnlinePractices": {
+                    "description": "Adopter des comportements qui réduisent les risques lors de l’utilisation d’Internet.",
+                    "title": "Pratiques sûres en ligne"
+                }
+            },
+            "design": {
+                "fashionDesign": {
+                    "description": "Créer des vêtements et des accessoires en tenant compte du style, des couleurs et des tendances.",
+                    "title": "Création de mode"
+                },
+                "gameDesign": {
+                    "description": "Créer les règles, la structure et le contenu de jeux vidéo ou de jeux physiques.",
+                    "title": "Conception de jeux"
+                },
+                "interiorDesign": {
+                    "description": "Planifier et concevoir des espaces intérieurs fonctionnels et esthétiques.",
+                    "title": "Design d’intérieur"
+                },
+                "productDesign": {
+                    "description": "Concevoir des produits physiques ou numériques fonctionnels et commercialisables.",
+                    "title": "Conception de produits"
+                },
+                "webDesign": {
+                    "description": "Créer des sites web conviviaux et visuellement attrayants.",
+                    "title": "Conception Web"
+                }
+            },
+            "economics": {
+                "econometrics": {
+                    "description": "Appliquer des méthodes statistiques pour tester des théories et des prévisions économiques.",
+                    "title": "Économétrie"
+                },
+                "economicPolicy": {
+                    "description": "Formuler et analyser les décisions qui influencent l’économie d’un pays.",
+                    "title": "Politique économique"
+                },
+                "internationalEconomics": {
+                    "description": "Examiner le commerce, la finance et les interactions économiques entre les pays.",
+                    "title": "Économie internationale"
+                },
+                "macroeconomics": {
+                    "description": "Analyser des phénomènes à l’échelle de l’économie, comme l’inflation, le PIB et le chômage.",
+                    "title": "Macroéconomie"
+                },
+                "microeconomics": {
+                    "description": "Étudier les unités économiques individuelles, comme les consommateurs et les entreprises.",
+                    "title": "Microéconomie"
+                }
+            },
+            "engineering": {
+                "chemicalEngineering": {
+                    "description": "Combiner la chimie et l’ingénierie pour mettre au point des procédés de production de matériaux.",
+                    "title": "Génie chimique"
+                },
+                "civilEngineering": {
+                    "description": "Planifier, concevoir et construire des infrastructures telles que des routes et des ponts.",
+                    "title": "Génie civil"
+                },
+                "computerEngineering": {
+                    "description": "Développer du matériel informatique et l’intégrer à des systèmes logiciels.",
+                    "title": "Génie informatique"
+                },
+                "electricalEngineering": {
+                    "description": "Concevoir des systèmes, des circuits et des appareils électriques, et travailler avec eux.",
+                    "title": "Génie électrique"
+                },
+                "mechanicalEngineering": {
+                    "description": "Appliquer la physique et la science des matériaux à la conception de systèmes mécaniques.",
+                    "title": "Génie mécanique"
+                }
+            },
+            "entrepreneurship": {
+                "businessPlanning": {
+                    "description": "Définir les stratégies, les objectifs et les ressources nécessaires pour créer ou développer une entreprise.",
+                    "title": "Planification d’entreprise"
+                },
+                "decisionMaking": {
+                    "description": "Évaluer les options et faire des choix éclairés en situation d’incertitude.",
+                    "title": "Prise de décision"
+                },
+                "fundraising": {
+                    "description": "Obtenir des capitaux ou des investissements pour financer les activités ou l’expansion d’une entreprise.",
+                    "title": "Collecte de fonds"
+                },
+                "networking": {
+                    "description": "Établir des relations professionnelles pour favoriser la croissance de l’entreprise et créer des occasions d’affaires.",
+                    "title": "Réseautage"
+                },
+                "opportunityRecognition": {
+                    "description": "Repérer les besoins non satisfaits ou les lacunes du marché propices à l’innovation.",
+                    "title": "Détection des opportunités"
+                }
+            },
+            "finance": {
+                "accounting": {
+                    "description": "Suivre et déclarer les opérations financières à des fins de budgétisation et de conformité.",
+                    "title": "Comptabilité"
+                },
+                "budgeting": {
+                    "description": "Planifier et gérer les ressources financières pour atteindre les objectifs de l’organisation.",
+                    "title": "Budgétisation"
+                },
+                "financialAnalysis": {
+                    "description": "Interpréter les données financières pour évaluer les performances et éclairer la prise de décision.",
+                    "title": "Analyse financière"
+                },
+                "investment": {
+                    "description": "Allouer des ressources à des actifs ou à des projets en vue de rendements potentiels.",
+                    "title": "Investissement"
+                },
+                "riskManagement": {
+                    "description": "Repérer et atténuer les risques financiers ou opérationnels potentiels.",
+                    "title": "Gestion des risques"
+                }
+            },
+            "healthcareAdministration": {
+                "facilityManagement": {
+                    "description": "Superviser le fonctionnement et l’entretien des établissements médicaux.",
+                    "title": "Gestion des installations"
+                },
+                "insuranceAndBilling": {
+                    "description": "Gérer les processus financiers liés à l’assurance des patients et aux services médicaux.",
+                    "title": "Assurance et facturation"
+                },
+                "medicalRecords": {
+                    "description": "Consigner et tenir à jour des renseignements exacts et confidentiels sur les patients.",
+                    "title": "Dossiers médicaux"
+                },
+                "patientScheduling": {
+                    "description": "Coordonner les rendez-vous et les procédures afin d’assurer des soins en temps opportun.",
+                    "title": "Planification des rendez-vous des patients"
+                },
+                "regulatoryCompliance": {
+                    "description": "Respecter les lois, les politiques et les normes éthiques en matière de santé.",
+                    "title": "Conformité réglementaire"
+                }
+            },
+            "history": {
+                "analysisOfPrimarySources": {
+                    "description": "Interpréter des documents historiques originaux et des artéfacts pour comprendre le passé.",
+                    "title": "Analyse des sources primaires"
+                },
+                "chronologicalReasoning": {
+                    "description": "Comprendre les liens de cause à effet à travers l’enchaînement des événements historiques.",
+                    "title": "Raisonnement chronologique"
+                },
+                "comparativeHistory": {
+                    "description": "Analyser les similitudes et les différences entre des contextes historiques ou des cultures.",
+                    "title": "Histoire comparée"
+                },
+                "historiography": {
+                    "description": "Étudier la manière dont l’histoire est écrite et interprétée au fil du temps.",
+                    "title": "Historiographie"
+                },
+                "researchMethods": {
+                    "description": "Utiliser des techniques de recherche savante pour recueillir et évaluer des informations historiques.",
+                    "title": "Méthodes de recherche"
+                }
+            },
+            "ideation": {
+                "brainstorming": {
+                    "description": "Générer un grand nombre d’idées pour résoudre un problème ou explorer des possibilités.",
+                    "title": "Remue-méninges"
+                },
+                "conceptDevelopment": {
+                    "description": "Affiner et développer des idées pour en faire des projets ou des produits viables.",
+                    "title": "Développement de concepts"
+                },
+                "innovation": {
+                    "description": "Créer et mettre en œuvre des solutions nouvelles et efficaces.",
+                    "title": "Innovation"
+                },
+                "outOfTheBoxThinking": {
+                    "description": "Aborder les problèmes de manière créative et non conventionnelle.",
+                    "title": "Pensée hors des sentiers battus"
+                }
+            },
+            "informationLiteracy": {
+                "criticalMediaAnalysis": {
+                    "description": "Comprendre et analyser les messages médiatiques et leur impact sur la société.",
+                    "title": "Analyse critique des médias"
+                },
+                "evaluatingSources": {
+                    "description": "Évaluer la fiabilité et la crédibilité des contenus et des informations en ligne.",
+                    "title": "Évaluation des sources"
+                },
+                "factChecking": {
+                    "description": "Vérifier la véracité et l’exactitude des informations avant de les accepter.",
+                    "title": "Vérification des faits"
+                },
+                "searchEngineProficiency": {
+                    "description": "Utiliser efficacement les moteurs de recherche pour trouver des informations exactes et pertinentes.",
+                    "title": "Maîtrise des moteurs de recherche"
+                },
+                "understandingBias": {
+                    "description": "Reconnaître et prendre en compte les biais dans les médias et les sources d’information.",
+                    "title": "Compréhension des biais"
+                }
+            },
+            "lifelongLearning": {
+                "criticalThinking": {
+                    "description": "Analyser les faits et formuler des jugements raisonnés avec clarté et logique.",
+                    "title": "Pensée critique"
+                },
+                "curiosity": {
+                    "description": "Avoir un vif désir d’explorer, d’apprendre et de comprendre de nouvelles choses.",
+                    "title": "Curiosité"
+                },
+                "knowledgeRetention": {
+                    "description": "Mémoriser et restituer efficacement des informations au fil du temps.",
+                    "title": "Rétention des connaissances"
+                },
+                "openMindedness": {
+                    "description": "Être disposé à prendre en considération des idées, des perspectives et des expériences différentes.",
+                    "title": "Ouverture d’esprit"
+                },
+                "selfDirectedLearning": {
+                    "description": "Prendre l’initiative de repérer et de saisir les occasions d’apprentissage.",
+                    "title": "Apprentissage autodirigé"
+                }
+            },
+            "management": {
+                "conflictResolution": {
+                    "description": "Traiter et résoudre les désaccords afin de maintenir un environnement de travail productif.",
+                    "title": "Résolution des conflits"
+                },
+                "delegation": {
+                    "description": "Attribuer efficacement les responsabilités en fonction des forces et des rôles de chaque personne.",
+                    "title": "Délégation"
+                },
+                "leadership": {
+                    "description": "Inspirer et guider des personnes ou des équipes vers un objectif ou une vision commune.",
+                    "title": "Leadership"
+                },
+                "strategicPlanning": {
+                    "description": "Élaborer des objectifs à long terme et des mesures concrètes pour favoriser la croissance de l’entreprise.",
+                    "title": "Planification stratégique"
+                },
+                "teamBuilding": {
+                    "description": "Bâtir une équipe soudée et collaborative grâce à la confiance et à des objectifs communs.",
+                    "title": "Constitution d’équipes"
+                }
+            },
+            "manufacturing": {
+                "assembly": {
+                    "description": "Assembler des composants pour créer des produits ou des systèmes finis.",
+                    "title": "Assemblage"
+                },
+                "fabrication": {
+                    "description": "Construire des structures métalliques au moyen de procédés de découpe, de pliage et d’assemblage.",
+                    "title": "Fabrication"
+                },
+                "machining": {
+                    "description": "Façonner des pièces à l’aide de tours, de fraiseuses et d’autres outils de coupe.",
+                    "title": "Usinage"
+                },
+                "qualityAssurance": {
+                    "description": "Veiller à ce que les produits manufacturés respectent les normes et les spécifications requises.",
+                    "title": "Assurance qualité"
+                },
+                "welding": {
+                    "description": "Assembler des pièces métalliques à l’aide de chaleur et de pression.",
+                    "title": "Soudage"
+                }
+            },
+            "marketing": {
+                "advertising": {
+                    "description": "Promouvoir des produits ou des services par l’intermédiaire de divers canaux médiatiques.",
+                    "title": "Publicité"
+                },
+                "branding": {
+                    "description": "Façonner l’identité et l’image perçue d’une entreprise ou d’un produit.",
+                    "title": "Création d’une image de marque"
+                },
+                "customerRelationshipManagement": {
+                    "description": "Établir et entretenir de solides relations avec les clients.",
+                    "title": "Gestion de la relation client"
+                },
+                "marketResearch": {
+                    "description": "Recueillir des informations sur les besoins des clients, les tendances et les concurrents.",
+                    "title": "Études de marché"
+                },
+                "sales": {
+                    "description": "Convertir les prospects en clients en comprenant leurs besoins et en y répondant.",
+                    "title": "Vente"
+                }
+            },
+            "mathematics": {
+                "algebra": {
+                    "description": "Manipuler des symboles et résoudre des équations comportant des variables et des constantes.",
+                    "title": "Algèbre"
+                },
+                "calculus": {
+                    "description": "Analyser les variations à l’aide des dérivées et des intégrales de fonctions.",
+                    "title": "Calcul différentiel et intégral"
+                },
+                "geometry": {
+                    "description": "Étudier les formes, les dimensions et les propriétés de l’espace et de la position.",
+                    "title": "Géométrie"
+                },
+                "statistics": {
+                    "description": "Recueillir, analyser et interpréter des données afin de tirer des conclusions.",
+                    "title": "Statistiques"
+                },
+                "trigonometry": {
+                    "description": "Explorer les relations entre les angles et les côtés des triangles.",
+                    "title": "Trigonométrie"
+                }
+            },
+            "mechanics": {
+                "aircraftMaintenance": {
+                    "description": "Inspecter et réparer les systèmes mécaniques et électroniques des avions.",
+                    "title": "Maintenance aéronautique"
+                },
+                "automotiveRepair": {
+                    "description": "Diagnostiquer et réparer les problèmes des voitures et d’autres véhicules.",
+                    "title": "Réparation automobile"
+                },
+                "dieselEngineRepair": {
+                    "description": "Effectuer l’entretien courant et la maintenance des moteurs diesel utilisés dans les camions, les autobus et les équipements.",
+                    "title": "Réparation de moteurs diesel"
+                },
+                "heavyEquipmentOperation": {
+                    "description": "Utiliser de grosses machines, comme des bulldozers et des excavatrices, de manière sûre et efficace.",
+                    "title": "Conduite d’engins lourds"
+                },
+                "smallEngineRepair": {
+                    "description": "Réparer les moteurs de tondeuses à gazon, de génératrices et d’équipements similaires.",
+                    "title": "Réparation de petits moteurs"
+                }
+            },
+            "medicalSpecialties": {
+                "diagnosticReasoning": {
+                    "description": "Synthétiser les données cliniques afin d’établir le diagnostic médical le plus probable.",
+                    "title": "Raisonnement diagnostique"
+                },
+                "emergencyMedicine": {
+                    "description": "Fournir des soins médicaux immédiats en cas de maladies aiguës et de blessures.",
+                    "title": "Médecine d’urgence"
+                },
+                "interdisciplinaryCollaboration": {
+                    "description": "Collaborer avec des professionnels de différentes spécialités afin de fournir des soins complets.",
+                    "title": "Collaboration interdisciplinaire"
+                },
+                "pediatrics": {
+                    "description": "Se spécialiser dans les soins médicaux destinés aux nourrissons, aux enfants et aux adolescents.",
+                    "title": "Pédiatrie"
+                },
+                "radiology": {
+                    "description": "Utiliser les technologies d’imagerie pour diagnostiquer et surveiller les problèmes de santé.",
+                    "title": "Radiologie"
+                },
+                "surgery": {
+                    "description": "Réaliser des interventions chirurgicales pour traiter des blessures, des maladies ou des malformations.",
+                    "title": "Chirurgie"
+                },
+                "treatmentPlanning": {
+                    "description": "Élaborer des stratégies de soins personnalisées pour répondre aux besoins des patients.",
+                    "title": "Planification du traitement"
+                }
+            },
+            "mentalFocus": {
+                "competitiveness": {
+                    "description": "Canaliser le désir d’exceller et de surpasser les autres de manière saine et ciblée.",
+                    "title": "Esprit de compétition"
+                },
+                "goalSetting": {
+                    "description": "Fixer des objectifs précis et mesurables pour stimuler la motivation et l’amélioration.",
+                    "title": "Définition d’objectifs"
+                },
+                "handlingPressure": {
+                    "description": "Être performant dans des situations très stressantes où les enjeux sont élevés.",
+                    "title": "Gestion de la pression"
+                },
+                "resilience": {
+                    "description": "Maintenir sa force mentale et rebondir après les revers à l’entraînement ou en compétition.",
+                    "title": "Résilience"
+                },
+                "visualization": {
+                    "description": "Répéter mentalement les mouvements et les résultats pour améliorer la confiance et l’exécution.",
+                    "title": "Visualisation"
+                }
+            },
+            "mentalToughness": {
+                "emotionalRegulation": {
+                    "description": "Gérer ses émotions pour rester calme et efficace dans diverses situations.",
+                    "title": "Régulation émotionnelle"
+                },
+                "growthMindset": {
+                    "description": "Croire en la capacité de développer ses compétences et son intelligence par l’effort et l’apprentissage.",
+                    "title": "État d’esprit de développement"
+                },
+                "optimism": {
+                    "description": "Garder une attitude positive et s’attendre à de bons résultats.",
+                    "title": "Optimisme"
+                },
+                "positiveSelfTalk": {
+                    "description": "Dialogue intérieur encourageant et constructif qui renforce la confiance et la motivation.",
+                    "title": "Discours intérieur positif"
+                },
+                "selfConfidence": {
+                    "description": "Confiance en ses propres capacités et son propre jugement, même sous pression ou face aux critiques.",
+                    "title": "Confiance en soi"
+                }
+            },
+            "onlineCommunication": {
+                "collaborationTools": {
+                    "description": "Utilisation d’applications comme Slack, Trello ou Notion pour le travail d’équipe et la coordination.",
+                    "title": "Outils collaboratifs"
+                },
+                "effectiveEmailAndMessaging": {
+                    "description": "Communication claire et professionnelle par e-mail et sur les plateformes de discussion en ligne.",
+                    "title": "E-mails et messagerie efficaces"
+                },
+                "netiquette": {
+                    "description": "Adoption d’un comportement respectueux et approprié dans la communication numérique.",
+                    "title": "Nétiquette"
+                },
+                "socialMediaPlatforms": {
+                    "description": "Utilisation de plateformes comme Twitter, Instagram ou LinkedIn pour communiquer et développer son réseau.",
+                    "title": "Plateformes de médias sociaux"
+                },
+                "videoConferencing": {
+                    "description": "Participation à des réunions virtuelles et animation de celles-ci à l’aide d’outils comme Zoom ou Teams.",
+                    "title": "Visioconférence"
+                }
+            },
+            "operations": {
+                "logistics": {
+                    "description": "Coordination efficace de la circulation des biens, des services et de l’information.",
+                    "title": "Logistique"
+                },
+                "processImprovement": {
+                    "description": "Optimisation des opérations pour accroître la productivité et réduire le gaspillage.",
+                    "title": "Amélioration des processus"
+                },
+                "projectManagement": {
+                    "description": "Planification, exécution et clôture de projets afin d’atteindre des objectifs définis.",
+                    "title": "Gestion de projet"
+                },
+                "qualityControl": {
+                    "description": "Garantie que les produits et services respectent les normes et les spécifications.",
+                    "title": "Contrôle qualité"
+                },
+                "supplyChainManagement": {
+                    "description": "Supervision de toutes les étapes des processus d’approvisionnement, de production et de livraison.",
+                    "title": "Gestion de la chaîne d’approvisionnement"
+                }
+            },
+            "patientCare": {
+                "bedsideManner": {
+                    "description": "Démonstration d’empathie et de professionnalisme dans les interactions avec les patients.",
+                    "title": "Relation avec les patients"
+                },
+                "culturalSensitivity": {
+                    "description": "Respect des différentes origines et pratiques culturelles dans les soins médicaux.",
+                    "title": "Sensibilité culturelle"
+                },
+                "empathy": {
+                    "description": "Compréhension et partage des sentiments des patients afin de leur prodiguer des soins avec compassion.",
+                    "title": "Empathie"
+                },
+                "ethics": {
+                    "description": "Application de principes moraux à la prise de décisions médicales et au traitement des patients.",
+                    "title": "Éthique"
+                }
+            },
+            "performingArts": {
+                "acting": {
+                    "description": "Interprétation de rôles dans des pièces de théâtre, des films ou d’autres productions afin d’incarner des personnages.",
+                    "title": "Jeu d’acteur"
+                },
+                "costumeDesign": {
+                    "description": "Création de vêtements et de costumes pour les personnages de spectacles.",
+                    "title": "Conception de costumes"
+                },
+                "dance": {
+                    "description": "Mouvement artistique du corps, souvent sur de la musique, pour exprimer des émotions ou raconter des histoires.",
+                    "title": "Danse"
+                },
+                "directing": {
+                    "description": "Supervision de la vision créative et de la réalisation d’un spectacle ou d’une production.",
+                    "title": "Mise en scène"
+                },
+                "instrumental": {
+                    "description": "Interprétation de musique avec des instruments, en solo ou au sein d’un ensemble.",
+                    "title": "Pratique instrumentale"
+                },
+                "singing": {
+                    "description": "Production de sons musicaux avec la voix pour interpréter des chansons ou des compositions vocales.",
+                    "title": "Chant"
+                },
+                "theaterProduction": {
+                    "description": "Coordination et gestion de représentations scéniques, notamment des décors, de l’éclairage et de la mise en scène.",
+                    "title": "Production théâtrale"
+                }
+            },
+            "perseverance": {
+                "commitment": {
+                    "description": "Maintien de son engagement envers ses objectifs ou ses responsabilités malgré les difficultés.",
+                    "title": "Engagement"
+                },
+                "discipline": {
+                    "description": "Application constante d’efforts et de concentration pour atteindre des objectifs au fil du temps.",
+                    "title": "Discipline"
+                },
+                "focus": {
+                    "description": "Capacité à se concentrer sur des tâches sans se laisser distraire.",
+                    "title": "Concentration"
+                },
+                "grit": {
+                    "description": "Effort soutenu et passion pour les objectifs à long terme, en particulier face à l’adversité.",
+                    "title": "Persévérance"
+                },
+                "tenacity": {
+                    "description": "Détermination persistante à atteindre ses objectifs, quels que soient les obstacles.",
+                    "title": "Ténacité"
+                }
+            },
+            "physicalEndurance": {
+                "cardiovascularFitness": {
+                    "description": "Efficacité du cœur et des poumons à acheminer l’oxygène pendant l’activité.",
+                    "title": "Condition cardiovasculaire"
+                },
+                "injuryPrevention": {
+                    "description": "Pratiques qui réduisent le risque de blessure pendant une activité ou un effort physique.",
+                    "title": "Prévention des blessures"
+                },
+                "painTolerance": {
+                    "description": "Capacité à supporter l’inconfort ou la douleur tout en continuant à fonctionner.",
+                    "title": "Tolérance à la douleur"
+                },
+                "stamina": {
+                    "description": "Capacité à soutenir un effort physique ou mental prolongé.",
+                    "title": "Endurance"
+                },
+                "strength": {
+                    "description": "Puissance et capacité physiques permettant d’effectuer des tâches ou des mouvements exigeants.",
+                    "title": "Force"
+                }
+            },
+            "politicalScience": {
+                "comparativePolitics": {
+                    "description": "Comparaison des systèmes et des institutions politiques de différents pays.",
+                    "title": "Politique comparée"
+                },
+                "governmentSystems": {
+                    "description": "Compréhension du fonctionnement des différentes formes de gouvernement.",
+                    "title": "Systèmes de gouvernement"
+                },
+                "internationalRelations": {
+                    "description": "Analyse des relations politiques et de la diplomatie entre les nations.",
+                    "title": "Relations internationales"
+                },
+                "politicalTheory": {
+                    "description": "Exploration des idées relatives au pouvoir, à la gouvernance, à la justice et aux droits.",
+                    "title": "Théorie politique"
+                },
+                "publicPolicy": {
+                    "description": "Élaboration et évaluation de lois et de réglementations pour répondre aux enjeux publics.",
+                    "title": "Politiques publiques"
+                }
+            },
+            "psychology": {
+                "clinicalPsychology": {
+                    "description": "Évaluation et traitement des troubles mentaux, émotionnels et comportementaux.",
+                    "title": "Psychologie clinique"
+                },
+                "cognitivePsychology": {
+                    "description": "Exploration des processus mentaux tels que la mémoire, la perception et la prise de décision.",
+                    "title": "Psychologie cognitive"
+                },
+                "developmentalPsychology": {
+                    "description": "Étude du développement psychologique et de ses changements tout au long de la vie.",
+                    "title": "Psychologie du développement"
+                },
+                "experimentalMethods": {
+                    "description": "Conception et réalisation d’expériences psychologiques pour tester des hypothèses.",
+                    "title": "Méthodes expérimentales"
+                },
+                "socialPsychology": {
+                    "description": "Étude de la manière dont les individus pensent, ressentent et se comportent dans des contextes sociaux.",
+                    "title": "Psychologie sociale"
+                }
+            },
+            "research": {
+                "analysis": {
+                    "description": "Interprétation des données recueillies afin d’en dégager le sens, les tendances ou les résultats.",
+                    "title": "Analyse"
+                },
+                "dataCollection": {
+                    "description": "Collecte d’informations exactes à des fins d’analyse au moyen de diverses méthodes.",
+                    "title": "Collecte de données"
+                },
+                "experimentalDesign": {
+                    "description": "Création de méthodes structurées pour étudier des questions scientifiques.",
+                    "title": "Conception expérimentale"
+                },
+                "hypothesisDevelopment": {
+                    "description": "Formulation d’explications vérifiables fondées sur des observations et des connaissances antérieures.",
+                    "title": "Formulation d’hypothèses"
+                },
+                "presentation": {
+                    "description": "Communication claire et efficace des résultats de recherche à autrui.",
+                    "title": "Présentation"
+                }
+            },
+            "science": {
+                "biology": {
+                    "description": "Étude des organismes vivants, de leur structure, de leur fonctionnement et de leurs interactions.",
+                    "title": "Biologie"
+                },
+                "chemistry": {
+                    "description": "Étude des propriétés, de la composition et des réactions des substances.",
+                    "title": "Chimie"
+                },
+                "earthScience": {
+                    "description": "Exploration de la structure physique, des processus et des systèmes de la Terre.",
+                    "title": "Sciences de la Terre"
+                },
+                "environmentalScience": {
+                    "description": "Étude de l’impact humain sur les écosystèmes et des moyens de protéger les ressources naturelles.",
+                    "title": "Sciences de l’environnement"
+                },
+                "physics": {
+                    "description": "Compréhension des principes fondamentaux de la matière, de l’énergie et du mouvement.",
+                    "title": "Physique"
+                }
+            },
+            "sociology": {
+                "socialChange": {
+                    "description": "Analyse de l’évolution des normes, des valeurs et des comportements sociaux au fil du temps.",
+                    "title": "Changement social"
+                },
+                "socialInequality": {
+                    "description": "Compréhension des disparités de richesse, de statut et de pouvoir entre les groupes sociaux.",
+                    "title": "Inégalité sociale"
+                },
+                "socialInstitutions": {
+                    "description": "Étude des structures telles que la famille, la religion et l’éducation qui façonnent la société.",
+                    "title": "Institutions sociales"
+                },
+                "socialMovements": {
+                    "description": "Exploration des efforts collectifs visant à promouvoir le changement social ou à y résister.",
+                    "title": "Mouvements sociaux"
+                }
+            },
+            "softwareProficiency": {
+                "dataVisualizationTools": {
+                    "description": "Création de représentations visuelles de données à l’aide de logiciels comme Tableau ou Excel.",
+                    "title": "Outils de visualisation de données"
+                },
+                "designSoftware": {
+                    "description": "Utilisation d’outils comme Adobe Creative Suite ou Figma pour des travaux de conception visuelle.",
+                    "title": "Logiciels de conception"
+                },
+                "productivitySuites": {
+                    "description": "Utilisation de logiciels comme Microsoft Office ou Google Workspace pour accomplir des tâches.",
+                    "title": "Suites bureautiques"
+                },
+                "programmingBasics": {
+                    "description": "Compréhension des concepts fondamentaux de la programmation et écriture de code simple.",
+                    "title": "Bases de la programmation"
+                },
+                "specializedSoftware": {
+                    "description": "Utilisation de programmes propres à un secteur et adaptés à des fonctions ou domaines professionnels particuliers.",
+                    "title": "Logiciels spécialisés"
+                }
+            },
+            "sportSpecificSkills": {
+                "ballHandling": {
+                    "description": "Contrôle, dribble et maniement efficace d’un ballon pendant le jeu.",
+                    "title": "Maniement du ballon"
+                },
+                "runningTechnique": {
+                    "description": "Utilisation d’une technique et de schémas de mouvement efficaces pour améliorer la vitesse et l’endurance.",
+                    "title": "Technique de course"
+                },
+                "swimmingStrokes": {
+                    "description": "Exécution de différentes techniques de nage, comme le crawl, le dos, la brasse et le papillon.",
+                    "title": "Nages"
+                },
+                "swingMechanics": {
+                    "description": "Optimisation du mouvement pour effectuer des frappes puissantes et précises dans des sports comme le baseball, le golf ou le tennis.",
+                    "title": "Mécanique du swing"
+                },
+                "tackling": {
+                    "description": "Arrêt sûr et efficace de la progression d’un adversaire dans les sports de contact.",
+                    "title": "Plaquage"
+                }
+            },
+            "strengthAndConditioning": {
+                "agility": {
+                    "description": "Déplacement rapide et aisé tout en maintenant l’équilibre et la maîtrise.",
+                    "title": "Agilité"
+                },
+                "injuryPrevention": {
+                    "description": "Développement d’habitudes d’entraînement sûres et renforcement des zones clés pour réduire le risque de blessure.",
+                    "title": "Prévention des blessures"
+                },
+                "lexibility": {
+                    "description": "Amélioration de l’amplitude de mouvement des muscles et des articulations pour accroître les performances et prévenir les blessures.",
+                    "title": "Souplesse"
+                },
+                "speedTraining": {
+                    "description": "Amélioration de l’accélération, de la longueur des foulées et de leur fréquence pour gagner en vitesse.",
+                    "title": "Entraînement de vitesse"
+                },
+                "weightLifting": {
+                    "description": "Développement de la force et de l’endurance musculaires grâce à l’entraînement en résistance.",
+                    "title": "Haltérophilie"
+                }
+            },
+            "teamwork": {
+                "communication": {
+                    "description": "Communication claire des idées, des stratégies et des retours à ses coéquipiers.",
+                    "title": "Communication"
+                },
+                "cooperation": {
+                    "description": "Collaboration avec les autres pour atteindre les objectifs de l’équipe.",
+                    "title": "Coopération"
+                },
+                "roleUnderstanding": {
+                    "description": "Connaissance et accomplissement de ses responsabilités au sein de la structure d’une équipe.",
+                    "title": "Compréhension des rôles"
+                },
+                "sportsmanship": {
+                    "description": "Démonstration d’équité, de respect et d’élégance dans la compétition.",
+                    "title": "Esprit sportif"
+                },
+                "strategy": {
+                    "description": "Planification et exécution de tactiques coordonnées pour remporter la victoire ou réussir.",
+                    "title": "Stratégie"
+                }
+            },
+            "technology": {
+                "coding": {
+                    "description": "Écriture et compréhension d’instructions que les ordinateurs peuvent exécuter.",
+                    "title": "Codage"
+                },
+                "cybersecurity": {
+                    "description": "Protection des systèmes et des réseaux contre les attaques numériques et les accès non autorisés.",
+                    "title": "Cybersécurité"
+                },
+                "dataAnalysis": {
+                    "description": "Extraction d’enseignements et de tendances à partir de jeux de données au moyen d’outils statistiques et informatiques.",
+                    "title": "Analyse de données"
+                },
+                "robotics": {
+                    "description": "Conception, construction et programmation de machines qui accomplissent des tâches de manière autonome.",
+                    "title": "Robotique"
+                },
+                "softwareDevelopment": {
+                    "description": "Conception, développement et maintenance d’applications et de systèmes.",
+                    "title": "Développement logiciel"
+                }
+            },
+            "visualArts": {
+                "drawing": {
+                    "description": "Art ou aptitude consistant à tracer des marques sur une surface pour représenter des objets, des actions ou des idées.",
+                    "title": "Dessin"
+                },
+                "graphicDesign": {
+                    "description": "Communication visuelle utilisant la typographie, les images et la mise en page pour transmettre des messages.",
+                    "title": "Conception graphique"
+                },
+                "painting": {
+                    "description": "Application de pigments sur une surface pour créer une image expressive ou figurative.",
+                    "title": "Peinture"
+                },
+                "photography": {
+                    "description": "Capture d’images avec des appareils photo pour exprimer des idées ou documenter des moments.",
+                    "title": "Photographie"
+                },
+                "sculpture": {
+                    "description": "Création de formes tridimensionnelles en façonnant ou en combinant des matériaux.",
+                    "title": "Sculpture"
+                }
+            },
+            "writing": {
+                "copyWriting": {
+                    "description": "Création de contenus persuasifs et attrayants pour le marketing ou la publicité.",
+                    "title": "Rédaction publicitaire"
+                },
+                "fiction": {
+                    "description": "Création d’histoires imaginaires qui ne reposent pas sur des faits réels.",
+                    "title": "Fiction"
+                },
+                "journalism": {
+                    "description": "Reportage et rédaction d’articles d’actualité pour des médias.",
+                    "title": "Journalisme"
+                },
+                "nonfiction": {
+                    "description": "Écriture fondée sur des informations factuelles et des événements réels.",
+                    "title": "Non-fiction"
+                },
+                "poetry": {
+                    "description": "Écriture qui met l’accent sur les qualités esthétiques et rythmiques de la langue.",
+                    "title": "Poésie"
+                },
+                "scriptWriting": {
+                    "description": "Création de scénarios pour des pièces de théâtre, des films ou des émissions, comprenant les dialogues et les indications scéniques.",
+                    "title": "Écriture de scénarios"
+                }
+            }
+        },
+        "vcTypes": {
+            "self": {
+                "socialBadge": {
+                    "title": "Badge"
+                }
+            },
+            "someone": {
+                "meritBadge": {
+                    "title": "Badge de mérite"
+                },
+                "socialBadge": {
+                    "title": "Boost"
+                }
+            }
+        }
     }
 }
