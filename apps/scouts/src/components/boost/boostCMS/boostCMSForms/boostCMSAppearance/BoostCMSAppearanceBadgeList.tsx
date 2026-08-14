@@ -31,6 +31,8 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
 import { SetState } from '@learncard/helpers';
 import { StylePackCategoryModal } from './StylePackCategoryModal';
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
+import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 export enum StylePackCategories {
     all = 'All',
@@ -72,6 +74,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     setActiveForm: SetState<BoostCMSActiveAppearanceForm>;
 }> = ({ state, setState, handleCloseModal, disabled = false, boostUserType, setActiveForm }) => {
     const { newModal } = useModal();
+    const { credentials } = useHighlightedCredentials();
+    const isAdmin = isScoutPassCustomizationAdmin(credentials);
 
     const { data: boostAppearanceBadgeList, isLoading } = useScoutPassStylesPackRegistry();
 
@@ -79,6 +83,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
         boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     const { CategoryImage } = categoryMetadata || {};
     const isDefaultImage = state?.appearance?.badgeThumbnail === CategoryImage;
+    const type = state?.basicInfo?.type;
+    const targetType = type === BoostCategoryOptionsEnum.socialBadge ? 'Boost' : type;
 
     const [activeStylePackCategory, setActiveStylePackCategory] = useState<StylePackCategories>(
         StylePackCategories.all
@@ -133,6 +139,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                 activeStylePackCategory={activeStylePackCategory}
                 setActiveStylePackCategory={setActiveStylePackCategory}
                 boostUserType={boostUserType}
+                targetType={targetType}
             />,
             {},
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
@@ -185,10 +192,12 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                             </p>
                             {categoryButton}
                         </div>
-                        <button onClick={handleImageSelect} className="boost-cms-badge">
-                            <Camera className="boost-cms-camera-icon text-white" />
-                            <span className="upload-text">Upload</span>
-                        </button>
+                        {isAdmin && (
+                            <button onClick={handleImageSelect} className="boost-cms-badge">
+                                <Camera className="boost-cms-camera-icon text-white" />
+                                <span className="upload-text">Upload</span>
+                            </button>
+                        )}
                         {photo && !isDefaultImage && (
                             <div className="boost-cms-badge">
                                 <img

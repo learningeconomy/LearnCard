@@ -39,6 +39,8 @@ import { UnsignedVC, VC } from '@learncard/types';
 
 import PurpGhost from '../../../assets/lotties/purpghost.json';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
+import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 const PATH_TO_CATEGORY = {
     learninghistory: BoostCategoryOptionsEnum.learningHistory,
@@ -101,7 +103,13 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
 
     const boostUserType = BoostUserTypeEnum.someone;
 
-    const boostDropdownCategoryOptions = boostVCTypeOptions[boostUserType];
+    const { credentials } = useHighlightedCredentials();
+    const isAdmin = isScoutPassCustomizationAdmin(credentials);
+    const boostDropdownCategoryOptions = isAdmin
+        ? boostVCTypeOptions[boostUserType]
+        : boostVCTypeOptions[boostUserType].filter(
+              option => option.type !== BoostCategoryOptionsEnum.other
+          );
 
     const { color, IconComponent, title } = boostCategoryOptions[selectedVCType];
 

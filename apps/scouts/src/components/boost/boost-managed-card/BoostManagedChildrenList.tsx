@@ -27,6 +27,8 @@ import {
     credentialCategoryToSubheaderType,
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
+import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 type BoostManagedListProps = {
     parentUri: string;
@@ -63,6 +65,8 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     useManagedCardSkeleton = false,
 }) => {
     const history = useHistory();
+    const { credentials } = useHighlightedCredentials();
+    const isAdmin = isScoutPassCustomizationAdmin(credentials);
     /*
         * start **
         Managed boosts query + pagination
@@ -218,7 +222,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                         <IonGrid className="max-w-[600px]">
                             {searchActive && searchResultsElement}
                             <IonRow>
-                                {enableCreateButton && (
+                                {enableCreateButton && isAdmin && (
                                     <NewBoostSelectMenuCustomTypeButton
                                         category={category}
                                         handleCloseModal={handleCloseModal}

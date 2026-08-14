@@ -18,6 +18,8 @@ import {
     boostCategoryOptions,
     CATEGORY_TO_SUBCATEGORY_LIST,
 } from '../../../boost-options/boostOptions';
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
+import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';
 import Pencil from '../../../../svgs/Pencil';
@@ -51,6 +53,8 @@ const BoostCMSAppearanceForm: React.FC<{
     handleCloseModal,
     handleSaveAppearance,
 }) => {
+    const { credentials } = useHighlightedCredentials();
+    const isAdmin = isScoutPassCustomizationAdmin(credentials);
     const categoryMetadata = boostCategoryOptions[activeCategoryType];
     const { CategoryImage } = categoryMetadata || {};
 
@@ -211,64 +215,68 @@ const BoostCMSAppearanceForm: React.FC<{
                     </div>
                 )}
 
-                <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
-                    <h3 className="text-grayscale-700 text-left w-full">
-                        {isID || isMembership ? 'Container Background Image' : 'Background Image'}
-                    </h3>
+                {isAdmin && (
+                    <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
+                        <h3 className="text-grayscale-700 text-left w-full">
+                            {isID || isMembership
+                                ? 'Container Background Image'
+                                : 'Background Image'}
+                        </h3>
 
-                    <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-tl-[10px] rounded-bl-[10px] rounded-tr-[50px] rounded-br-[50px] mt-4">
-                        <div className="flex items-center justify-start w-[70%] px-[6px] py-[6px] overflow-hidden">
-                            <div
-                                className={`relative flex items-center justify-center object-contain overflow-hidden w-[72px] h-[72px] bg-grayscale-800 rounded-[10px]`}
-                            >
-                                {!state?.appearance?.backgroundImage ? (
-                                    <img
-                                        alt="badge thumbnail"
-                                        src={EmptyImage}
-                                        className="w-[43px] h-[47px]"
-                                    />
-                                ) : (
-                                    <img
-                                        alt="badge thumbnail"
-                                        src={state?.appearance?.backgroundImage}
-                                        className="w-full h-full object-cover"
-                                    />
-                                )}
-                                {(imageUploadLoading || uploadProgress !== false) && (
-                                    <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                        <IonSpinner
-                                            name="crescent"
-                                            color="dark"
-                                            className="scale-[1.75]"
+                        <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-tl-[10px] rounded-bl-[10px] rounded-tr-[50px] rounded-br-[50px] mt-4">
+                            <div className="flex items-center justify-start w-[70%] px-[6px] py-[6px] overflow-hidden">
+                                <div
+                                    className={`relative flex items-center justify-center object-contain overflow-hidden w-[72px] h-[72px] bg-grayscale-800 rounded-[10px]`}
+                                >
+                                    {!state?.appearance?.backgroundImage ? (
+                                        <img
+                                            alt="badge thumbnail"
+                                            src={EmptyImage}
+                                            className="w-[43px] h-[47px]"
                                         />
-                                    </div>
-                                )}
-                                {state?.appearance?.backgroundImage && (
-                                    <button
-                                        onClick={handleDeleteImageUploaded}
-                                        className="absolute flex items-center justify-center right-1 bottom-1 rounded-full bg-white h-[30px] w-[30px] z-50 shadow-3xl"
-                                        disabled={disabled}
-                                    >
-                                        <TrashBin className="text-grayscale-800 h-[20px] w-[20px]" />
-                                    </button>
+                                    ) : (
+                                        <img
+                                            alt="badge thumbnail"
+                                            src={state?.appearance?.backgroundImage}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    )}
+                                    {(imageUploadLoading || uploadProgress !== false) && (
+                                        <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
+                                            <IonSpinner
+                                                name="crescent"
+                                                color="dark"
+                                                className="scale-[1.75]"
+                                            />
+                                        </div>
+                                    )}
+                                    {state?.appearance?.backgroundImage && (
+                                        <button
+                                            onClick={handleDeleteImageUploaded}
+                                            className="absolute flex items-center justify-center right-1 bottom-1 rounded-full bg-white h-[30px] w-[30px] z-50 shadow-3xl"
+                                            disabled={disabled}
+                                        >
+                                            <TrashBin className="text-grayscale-800 h-[20px] w-[20px]" />
+                                        </button>
+                                    )}
+                                </div>
+                                {!state?.appearance?.backgroundImage && (
+                                    <p className="ml-[10px] text-grayscale-700">Empty</p>
                                 )}
                             </div>
-                            {!state?.appearance?.backgroundImage && (
-                                <p className="ml-[10px] text-grayscale-700">Empty</p>
-                            )}
-                        </div>
 
-                        <div className="flex items-center justify-center rounded-full bg-white mr-4 h-[50px] w-[50px] shadow-3xl">
-                            <button
-                                disabled={disabled}
-                                onClick={handleImageSelect}
-                                className="bg-white"
-                            >
-                                <Pencil className="text-grayscale-900 h-[30px] w-[30px]" />
-                            </button>
+                            <div className="flex items-center justify-center rounded-full bg-white mr-4 h-[50px] w-[50px] shadow-3xl">
+                                <button
+                                    disabled={disabled}
+                                    onClick={handleImageSelect}
+                                    className="bg-white"
+                                >
+                                    <Pencil className="text-grayscale-900 h-[30px] w-[30px]" />
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
                     <h3 className="text-grayscale-700 text-left w-full">

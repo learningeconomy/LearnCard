@@ -7,26 +7,34 @@ import { BoostUserTypeEnum, boostVCTypeOptions } from '../../../boost-options/bo
 import BoostVCTypeOptionButton from '../../../boost-options/boostVCTypeOptions/BoostVCTypeOptionButton';
 import { StylePackCategories } from './BoostCMSAppearanceBadgeList';
 import { SetState } from '@learncard/helpers';
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
+import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 export interface StylePackCategoryModalProps {
     activeStylePackCategory: StylePackCategories;
     setActiveStylePackCategory: SetState<StylePackCategories>;
     boostUserType: BoostUserTypeEnum;
+    targetType?: string;
 }
 
 export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
     activeStylePackCategory,
     setActiveStylePackCategory,
     boostUserType,
+    targetType,
 }) => {
     const { closeModal } = useModal();
+    const { credentials } = useHighlightedCredentials();
+    const isAdmin = isScoutPassCustomizationAdmin(credentials);
 
     const handleSelectCategory = (category: StylePackCategories) => {
         setActiveStylePackCategory(category);
         closeModal();
     };
 
-    const boostOptions = boostVCTypeOptions[boostUserType];
+    const boostOptions = isAdmin
+        ? boostVCTypeOptions[boostUserType]
+        : boostVCTypeOptions[boostUserType].filter(item => item.title === targetType);
 
     return (
         <div className="w-full">

@@ -702,6 +702,9 @@ const BoostCMS: React.FC<{
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                     customTypes={customTypes}
                     setCustomTypes={setCustomTypes}
+                    disabled={!overrideCustomize}
+                    showEditButton={overrideCustomize}
+                    showEditAppearanceText={overrideCustomize}
                 />
             ) : (
                 <BoostCMSAppearanceController
@@ -711,6 +714,8 @@ const BoostCMS: React.FC<{
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                     customTypes={customTypes}
                     setCustomTypes={setCustomTypes}
+                    disabled={!overrideCustomize}
+                    showEditButton={overrideCustomize}
                 />
             );
 

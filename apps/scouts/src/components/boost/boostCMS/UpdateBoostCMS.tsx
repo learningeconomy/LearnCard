@@ -734,6 +734,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                     customTypes={customTypes}
                     setCustomTypes={setCustomTypes}
+                    disabled={!overrideCustomize}
+                    showEditButton={overrideCustomize}
+                    showEditAppearanceText={overrideCustomize}
                 />
             ) : (
                 <BoostCMSAppearanceController
@@ -743,6 +746,8 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                     customTypes={customTypes}
                     setCustomTypes={setCustomTypes}
+                    disabled={!overrideCustomize}
+                    showEditButton={overrideCustomize}
                 />
             );
         activeBoostCMSStep = (
@@ -770,6 +775,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     overrideCustomize={overrideCustomize}
                     setState={setState}
                     disabled={isEditDisabled || !overrideCustomize}
+                    locationDisabled={isEditDisabled}
                 />
 
                 <BoostFrameworkSkillSelector

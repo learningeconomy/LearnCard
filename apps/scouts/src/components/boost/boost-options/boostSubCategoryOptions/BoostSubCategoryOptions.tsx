@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { z } from 'zod';
 
 import { IonHeader, IonContent, IonRow, IonCol, IonGrid, IonToolbar, IonInput } from '@ionic/react';
@@ -17,6 +17,8 @@ import {
     constructCustomBoostType,
 } from 'learn-card-base';
 import X from 'learn-card-base/svgs/X';
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
+import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 const StateValidator = z.object({
     customType: z
@@ -49,14 +51,11 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
     showCloseButton,
     history,
 }) => {
+    const { credentials } = useHighlightedCredentials();
+    const isAdmin = isScoutPassCustomizationAdmin(credentials);
     const [customBoostType, setCustomBoostType] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string[]>>({});
-    const [charCount, setCharCount] = useState<number>(0);
-    const maxCount = 22;
-
-    useEffect(() => {
-        setCharCount(maxCount - customBoostType.length);
-    }, [customBoostType]);
+    const charCount = 22 - customBoostType.length;
 
     const { color, subColor, title, CategoryImage } = boostCategoryOptions[boostCategoryType];
     // temp fix for request in polish doc
@@ -85,42 +84,32 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
             />
         );
     });
-
-    const validate = () => {
-        const parsedData = StateValidator.safeParse({
-            customType: customBoostType,
-        });
+    const validate = (): boolean => {
+        const parsedData = StateValidator.safeParse({ customType: customBoostType });
 
         if (parsedData.success) {
             setErrors({});
             return true;
         }
 
-        if (parsedData.error) {
-            setErrors(parsedData.error.flatten().fieldErrors);
-        }
-
+        setErrors(parsedData.error.flatten().fieldErrors);
         return false;
     };
 
-    const _subCategoryColor = `bg-${subColor}`;
+    const handleCustomBoostType = (): void => {
+        if (!validate()) return;
 
-    const handleCustomBoostType = () => {
-        if (validate()) {
-            const customType = constructCustomBoostType(boostCategoryType, customBoostType);
+        const customType = constructCustomBoostType(boostCategoryType, customBoostType);
+        const baseLink = `/boost?boostUserType=${boostUserType}&boostCategoryType=${boostCategoryType}&boostSubCategoryType=${customType}`;
+        const link = otherUserProfileId
+            ? `${baseLink}&otherUserProfileId=${otherUserProfileId}`
+            : baseLink;
 
-            const baseLink = `/boost?boostUserType=${boostUserType}&boostCategoryType=${boostCategoryType}&boostSubCategoryType=${customType}`;
-
-            let link = baseLink;
-
-            if (otherUserProfileId) {
-                link = `${baseLink}&otherUserProfileId=${otherUserProfileId}`;
-            }
-
-            history.push(link);
-            closeAllModals();
-        }
+        history.push(link);
+        closeAllModals();
     };
+
+    const _subCategoryColor = `bg-${subColor}`;
 
     return (
         <section className="h-full">
@@ -167,47 +156,53 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                 </IonHeader>
                 <IonGrid>
                     <IonRow className="w-full flex items-center justify-center pb-6">
-                        <div className="max-w-[95%] w-full ion-padding rounded-tr-[20px] rounded-tl-[20px] mb-0 relative">
-                            <IonInput
-                                autocapitalize="on"
-                                value={customBoostType}
-                                onIonInput={e => {
-                                    setCustomBoostType(e.detail.value);
-                                    setErrors({});
-                                }}
-                                placeholder="Custom Type..."
-                                type="text"
-                                className={`bg-white text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
-                                    errors?.customType ? 'border-red-500 border-2' : ''
-                                }`}
-                                maxlength={22}
-                            />
-
-                            <div className="flex items-center justify-center absolute top-[24px] right-[15px] z-50">
-                                <p className="mr-4 font-bold text-gray-500 text-xs ">{charCount}</p>
-                                <button
-                                    slot="end"
-                                    className={`bg-emerald-700 rounded-full min-h-[40px] min-w-[40px] flex items-center justify-center shadow-3xl mr-4`}
-                                    onClick={handleCustomBoostType}
-                                >
-                                    <Checkmark className="text-white w-[30px]" strokeWidth="3" />
-                                </button>
-                            </div>
-
-                            <div className="w-full text-left">
-                                <p className="text-sm text-red-600 mt-2 ml-2 font-medium">
-                                    {errors?.customType}{' '}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-center w-full">
-                            <div className="flex items-center justify-center w-full px-5 max-w-[95%]">
-                                <h2 className="divider-with-text-dynamic border-white border-solid border-b-[1px]">
-                                    <span className={`bg-${subColor} text-white`}>or</span>
-                                </h2>
-                            </div>
-                        </div>
+                        {isAdmin && (
+                            <>
+                                <div className="max-w-[95%] w-full ion-padding rounded-tr-[20px] rounded-tl-[20px] mb-0 relative">
+                                    <IonInput
+                                        autocapitalize="on"
+                                        value={customBoostType}
+                                        onIonInput={e => {
+                                            setCustomBoostType(e.detail.value ?? '');
+                                            setErrors({});
+                                        }}
+                                        placeholder="Custom Type..."
+                                        type="text"
+                                        className={`bg-white text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
+                                            errors.customType ? 'border-red-500 border-2' : ''
+                                        }`}
+                                        maxlength={22}
+                                    />
+                                    <div className="flex items-center justify-center absolute top-[24px] right-[15px] z-50">
+                                        <p className="mr-4 font-bold text-gray-500 text-xs">
+                                            {charCount}
+                                        </p>
+                                        <button
+                                            slot="end"
+                                            className="bg-emerald-700 rounded-full min-h-[40px] min-w-[40px] flex items-center justify-center shadow-3xl mr-4"
+                                            onClick={handleCustomBoostType}
+                                        >
+                                            <Checkmark
+                                                className="text-white w-[30px]"
+                                                strokeWidth="3"
+                                            />
+                                        </button>
+                                    </div>
+                                    <div className="w-full text-left">
+                                        <p className="text-sm text-red-600 mt-2 ml-2 font-medium">
+                                            {errors.customType}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-center w-full">
+                                    <div className="flex items-center justify-center w-full px-5 max-w-[95%]">
+                                        <h2 className="divider-with-text-dynamic border-white border-solid border-b-[1px]">
+                                            <span className={`bg-${subColor} text-white`}>or</span>
+                                        </h2>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                         <IonCol className="w-full flex flex-col items-center justify-center">
                             {boostOptionsItemList}
                         </IonCol>
