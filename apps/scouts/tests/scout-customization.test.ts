@@ -3,6 +3,7 @@ import { describe, expect, it } from 'bun:test';
 import {
     getScoutPassAllowedBoostTypes,
     isScoutPassCustomizationAdmin,
+    resolveScoutPassBoostType,
 } from '../src/helpers/scoutCustomization.helpers';
 
 describe('isScoutPassCustomizationAdmin', () => {
@@ -41,14 +42,21 @@ describe('isScoutPassCustomizationAdmin', () => {
     });
 });
 
-describe('getScoutPassAllowedBoostTypes', () => {
-    const boostTypes = ['Merit Badge', 'Boost'];
+describe('ScoutPass boost type policy', () => {
+    const boostTypes = [{ type: 'Merit Badge' }, { type: 'Boost' }];
 
     it('limits normal scouts to the agreed credential type', () => {
-        expect(getScoutPassAllowedBoostTypes(boostTypes, false)).toEqual(['Merit Badge']);
+        const allowedBoostTypes = getScoutPassAllowedBoostTypes(boostTypes, false);
+
+        expect(allowedBoostTypes).toEqual([{ type: 'Merit Badge' }]);
+        expect(resolveScoutPassBoostType(allowedBoostTypes)).toBe('Merit Badge');
+        expect(resolveScoutPassBoostType(allowedBoostTypes, 'Boost')).toBe('Merit Badge');
     });
 
     it('allows administrators to use every credential type', () => {
-        expect(getScoutPassAllowedBoostTypes(boostTypes, true)).toEqual(boostTypes);
+        const allowedBoostTypes = getScoutPassAllowedBoostTypes(boostTypes, true);
+
+        expect(allowedBoostTypes).toEqual(boostTypes);
+        expect(resolveScoutPassBoostType(allowedBoostTypes, 'Boost')).toBe('Boost');
     });
 });

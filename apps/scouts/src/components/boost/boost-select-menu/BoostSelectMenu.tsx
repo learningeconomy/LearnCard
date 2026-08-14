@@ -42,6 +42,7 @@ import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCrede
 import {
     getScoutPassAllowedBoostTypes,
     isScoutPassCustomizationAdmin,
+    resolveScoutPassBoostType,
 } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 const PATH_TO_CATEGORY = {
@@ -82,26 +83,8 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
     const { handlePresentBoostModal } = useBoostModal(history);
 
     const [showNewBoostOptions, setShowNewBoostOptions] = useState(false);
-    const [selectedVCType, setSelectedVCType] = useState<BoostCategoryOptionsEnum>(
-        BoostCategoryOptionsEnum.socialBadge
-    );
-
-    const handleCategoryTypeChange = (value: BoostCategoryOptionsEnum) => {
-        setSelectedVCType(value);
-    };
     const pathName = location?.pathname?.replace('/', '');
-
     const onCategoryRoute = pathName ? PATH_TO_CATEGORY[pathName] : null;
-
-    useEffect(() => {
-        //Change default selectedVCType if on category route
-        if (onCategoryRoute) {
-            setSelectedVCType(onCategoryRoute);
-        } else {
-            setSelectedVCType(BoostCategoryOptionsEnum.socialBadge);
-        }
-    }, [onCategoryRoute]);
-
     const boostUserType = BoostUserTypeEnum.someone;
 
     const { credentials } = useHighlightedCredentials();
@@ -110,6 +93,21 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
         boostVCTypeOptions[boostUserType],
         isAdmin
     );
+    const routeVCType =
+        resolveScoutPassBoostType(
+            boostDropdownCategoryOptions,
+            onCategoryRoute ?? BoostCategoryOptionsEnum.socialBadge
+        ) ?? BoostCategoryOptionsEnum.socialBadge;
+
+    const [selectedVCType, setSelectedVCType] = useState<BoostCategoryOptionsEnum>(routeVCType);
+
+    useEffect(() => {
+        setSelectedVCType(routeVCType);
+    }, [routeVCType]);
+
+    const handleCategoryTypeChange = (value: BoostCategoryOptionsEnum) => {
+        setSelectedVCType(value);
+    };
 
     const { color, IconComponent, title } = boostCategoryOptions[selectedVCType];
 

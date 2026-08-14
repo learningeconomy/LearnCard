@@ -31,3 +31,9 @@ export const getScoutPassAllowedBoostTypes = <T>(
     boostTypes: ReadonlyArray<T>,
     isAdmin: boolean
 ): ReadonlyArray<T> => (isAdmin || boostTypes.length <= 1 ? boostTypes : boostTypes.slice(0, 1));
+
+export const resolveScoutPassBoostType = <T extends string>(
+    boostTypes: ReadonlyArray<{ type: T }>,
+    requestedType?: string
+): T | undefined =>
+    boostTypes.find(({ type }) => type === requestedType)?.type ?? boostTypes[0]?.type;
