@@ -377,7 +377,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             } ${isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
                         >
                             <section
-                                className={`w-full mt-[calc(20px+var(--ion-safe-area-top,0px))] overflow-y-auto max-h-full disable-scrollbars ${
+                                className={`w-full mt-[var(--ion-safe-area-top,0px)] overflow-y-auto max-h-full disable-scrollbars ${
                                     shouldUseHostCardPadding ? 'px-6' : ''
                                 } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                             >

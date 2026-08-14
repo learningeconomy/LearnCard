@@ -159,7 +159,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     }`}
                 >
                     <section
-                        className={`w-full mt-[calc(20px+var(--ion-safe-area-top,0px))] ${
+                        className={`w-full mt-[var(--ion-safe-area-top,0px)] ${
                             shouldUseHostCardPadding ? 'px-6' : ''
                         }`}
                     >

@@ -137,8 +137,9 @@ const FamilyPage: React.FC = () => {
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
+            history.replace('/families');
         }
-    }, [_showPreview, _boostUri, newModal]);
+    }, [_showPreview, _boostUri, newModal, history]);
 
     const imgSrc = RelationshipCats;
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.Family];

@@ -45,24 +45,25 @@ try {
         { encoding: 'utf8' }
     );
 } catch (e) {
-    if (e.status === 1)
-        out = ''; // no matches
+    if (e.status === 1) out = ''; // no matches
     else throw e;
 }
 
-const violations = out
+const matchedFiles = out
     .split('\n')
     .filter(Boolean)
     // Lines whose only safe-area reference is the sanctioned dual-host idiom pass.
     .filter(line => line.replace(DUAL_HOST_IDIOM, '').match(grepPattern))
     .map(line => line.split(':')[0])
-    .filter(file => !SURFACE_LAYER.some(p => file.startsWith(p)))
-    .filter(file => !allowlist.files.includes(file));
+    .filter(file => !SURFACE_LAYER.some(p => file.startsWith(p)));
 
-const unique = [...new Set(violations)];
-if (unique.length > 0) {
+const uniqueMatches = [...new Set(matchedFiles)];
+const violations = uniqueMatches.filter(file => !allowlist.files.includes(file));
+const staleAllowlistEntries = allowlist.files.filter(file => !uniqueMatches.includes(file));
+
+if (violations.length > 0) {
     console.error('❌ safe-area primitives referenced outside the surface layer:\n');
-    for (const f of unique) console.error(`  ${f}`);
+    for (const f of violations) console.error(`  ${f}`);
     console.error(
         '\nRule: inside an AppModal/AppScreen, never mention safe area — the surface owns insets.' +
             '\nIf this file IS a surface, add it to SURFACE_LAYER in scripts/check-safe-area.mjs.' +
@@ -70,4 +71,15 @@ if (unique.length > 0) {
     );
     process.exit(1);
 }
+
+if (staleAllowlistEntries.length > 0) {
+    console.error('❌ stale allowlist entries no longer reference safe-area primitives:\n');
+    for (const f of staleAllowlistEntries) console.error(`  ${f}`);
+    console.error(
+        '\nRule: scripts/safe-area-allowlist.json is shrink-only.' +
+            '\nRemove stale entries as soon as their direct safe-area references are removed.'
+    );
+    process.exit(1);
+}
+
 console.log(`✅ safe-area gate clean (${allowlist.files.length} legacy files on allowlist)`);

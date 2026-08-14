@@ -10,8 +10,6 @@
         "apps/learn-card-app/src/components/ai-sessions/AiSessionsNavbar/AiSessionsNavbar.tsx",
         "apps/learn-card-app/src/components/clr-transcript/ClrTranscriptDetailModal.tsx",
         "apps/learn-card-app/src/components/common/ContractSyncStatusBanner.tsx",
-        "apps/learn-card-app/src/components/mobile-nav-bar/MobileNavBar.test.tsx",
-        "apps/learn-card-app/src/components/mobile-nav-bar/MobileNavBar.tsx",
         "apps/learn-card-app/src/components/network-listener/OfflineBanner.tsx",
         "apps/learn-card-app/src/components/notifications/AppNotificationToast.tsx",
         "apps/learn-card-app/src/components/resume-builder/ResumeBuilderHeader.tsx",

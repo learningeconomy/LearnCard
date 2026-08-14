@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { IonFooter, IonHeader, IonToolbar } from '@ionic/react';
-import { Capacitor } from '@capacitor/core';
 import QrScanner from 'qr-scanner';
 
 import { useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
@@ -429,6 +428,8 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                     bottom: 0,
                     paddingBottom:
                         'var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px))',
+                    maxHeight:
+                        'calc(100px + var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px)))',
                 }}
             >
                 <div className="w-full flex items-center justify-center">

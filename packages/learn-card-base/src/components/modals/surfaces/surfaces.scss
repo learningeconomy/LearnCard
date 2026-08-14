@@ -135,9 +135,10 @@
 // Content with a floating frosted footer (the bar content scrolls beneath,
 // e.g. checklist / admin-tools / endorsement forms) OWNS the bottom edge:
 // content must run to the physical screen edge under the footer, exactly as
-// on main. Mark the content root with `lc-content-owns-bottom` — the surface
-// drops its bottom padding and republishes the real inset so the overlay
-// footer floats clear of the home indicator.
+// on main. Mark the modal subtree with `lc-content-owns-bottom` (typically the
+// floating footer itself, or the content root when the whole view owns the
+// edge) — the surface drops its bottom padding and republishes the real inset
+// so the overlay footer floats clear of the home indicator.
 .lc-surface:has(.lc-content-owns-bottom) {
     padding-bottom: 0;
 }

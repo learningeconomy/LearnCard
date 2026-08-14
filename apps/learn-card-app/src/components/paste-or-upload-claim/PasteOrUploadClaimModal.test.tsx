@@ -12,7 +12,13 @@ vi.mock('@capacitor/core', () => ({
 }));
 
 vi.mock('@ionic/react', () => ({
-    IonFooter: ({ children }: React.PropsWithChildren) => <footer>{children}</footer>,
+    IonFooter: ({
+        children,
+        mode: _mode,
+        ...props
+    }: React.PropsWithChildren<React.HTMLAttributes<HTMLElement> & { mode?: string }>) => (
+        <footer {...props}>{children}</footer>
+    ),
     IonHeader: ({ children }: React.PropsWithChildren) => <header>{children}</header>,
     IonToolbar: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
 }));
@@ -93,5 +99,14 @@ describe('PasteOrUploadClaimModal website continuation', () => {
         fireEvent.click(websiteLink);
 
         expect(closeModalMock).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the footer height cap while accounting for the bottom inset', () => {
+        const { container } = render(<PasteOrUploadClaimModal mode="claim-link" />);
+
+        expect(container.querySelector('footer')).toHaveStyle({
+            maxHeight:
+                'calc(100px + var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px)))',
+        });
     });
 });

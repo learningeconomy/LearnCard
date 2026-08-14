@@ -122,7 +122,7 @@ Sanctioned patterns for the two exceptions:
 
 Dev verification: append `?insets` (47/34) or `?insets=<top>,<bottom>` to any dev URL to simulate device insets in a desktop browser.
 
-Do not add new raw `<IonModal>` usages — present modals via `useModal`/`newModal` (the count is currently zero; keep it there).
+Do not add new raw `<IonModal>` usages — present modals via `useModal`/`newModal` (the raw JSX count is currently zero; keep it there). Existing `useIonModal(...)` callers are legacy exceptions: do not add new ones, and migrate them through `AppModal` when touched.
 
 ### Loading States
 

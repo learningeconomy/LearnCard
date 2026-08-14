@@ -369,7 +369,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             <section
                                 className={`w-full overflow-y-auto max-h-full disable-scrollbars ${
                                     Capacitor.isNativePlatform() && !isClrCredential
-                                        ? 'pt-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]'
+                                        ? 'pt-0 mt-[var(--ion-safe-area-top,0px)]'
                                         : 'pt-[30px]'
                                 } ${previewContentPaddingClass}`}
                             >
