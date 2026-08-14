@@ -724,10 +724,15 @@ const BoostCMS: React.FC<{
                     overrideCustomize={overrideCustomize}
                     setState={setState}
                     showTitle={showCustomTypeInput}
+                    disabled={!overrideCustomize}
                 />
 
                 {showCustomTypeInput && (
-                    <BoostCMSCustomTypeForm state={state} setState={setState} />
+                    <BoostCMSCustomTypeForm
+                        state={state}
+                        setState={setState}
+                        disabled={!overrideCustomize}
+                    />
                 )}
 
                 <BoostCMSMediaForm state={state} setState={setState} />
