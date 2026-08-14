@@ -773,7 +773,6 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     overrideCustomize={overrideCustomize}
                     setState={setState}
                     disabled={isEditDisabled || !overrideCustomize}
-                    locationDisabled={isEditDisabled}
                 />
 
                 <BoostFrameworkSkillSelector
