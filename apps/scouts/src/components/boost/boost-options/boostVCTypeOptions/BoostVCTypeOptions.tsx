@@ -9,11 +9,6 @@ import CaretLeft from '../../../svgs/CaretLeft';
 
 import { boostVCTypeOptions, BoostUserTypeEnum } from '../boostOptions';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
-import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
-import {
-    getScoutPassAllowedBoostTypes,
-    isScoutPassCustomizationAdmin,
-} from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 type BoostVCTypeOptionsProps = {
     boostUserType: BoostUserTypeEnum;
@@ -41,9 +36,7 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
     >(boostCategoryType ?? null);
 
     const title = boostUserType === BoostUserTypeEnum.self ? 'Yourself!' : 'Someone!';
-    const { credentials } = useHighlightedCredentials();
-    const isAdmin = isScoutPassCustomizationAdmin(credentials);
-    const boostOptions = getScoutPassAllowedBoostTypes(boostVCTypeOptions[boostUserType], isAdmin);
+    const boostOptions = boostVCTypeOptions[boostUserType];
 
     const subtext =
         boostUserType === BoostUserTypeEnum.self

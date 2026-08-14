@@ -27,8 +27,6 @@ import {
     BadgePackOptionsEnum,
     badgePacks,
 } from './badge-pack.helper';
-import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
-import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 interface NewBoostSelectMenuProps {
     handleCloseModal: () => void;
@@ -47,8 +45,6 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
 }) => {
     const { data: stylePack, isLoading: stylePackLoading } = useScoutPassStylesPackRegistry();
     const { data: myBoosts } = useGetPaginatedManagedBoostsQuery();
-    const { credentials } = useHighlightedCredentials();
-    const isAdmin = isScoutPassCustomizationAdmin(credentials);
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState<BoostSelectMenuTabsEnum>(
         BoostSelectMenuTabsEnum.new
@@ -114,16 +110,14 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
         if (activeTab === BoostSelectMenuTabsEnum.new) {
             return (
                 <>
-                    {isAdmin && (
-                        <NewBoostSelectMenuCustomTypeButton
-                            category={category}
-                            handleCloseModal={handleCloseModal}
-                            useCMSModal={useCMSModal}
-                            overrideCustomize
-                            parentUri={parentUri}
-                            returnToParentAfterSave={returnToParentAfterSave}
-                        />
-                    )}
+                    <NewBoostSelectMenuCustomTypeButton
+                        category={category}
+                        handleCloseModal={handleCloseModal}
+                        useCMSModal={useCMSModal}
+                        overrideCustomize
+                        parentUri={parentUri}
+                        returnToParentAfterSave={returnToParentAfterSave}
+                    />
 
                     {(filteredBoostPack?.length > 0 ? filteredBoostPack : boostPack)?.map(item => (
                         <NewBoostSelectMenuBoostPackItem
@@ -155,16 +149,14 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                         handleCloseModal={handleCloseModal}
                     />
                 ))}
-                {isAdmin && (
-                    <NewBoostSelectMenuCustomTypeButton
-                        category={category}
-                        useCMSModal={useCMSModal}
-                        overrideCustomize
-                        parentUri={parentUri}
-                        returnToParentAfterSave={returnToParentAfterSave}
-                        handleCloseModal={handleCloseModal}
-                    />
-                )}
+                <NewBoostSelectMenuCustomTypeButton
+                    category={category}
+                    useCMSModal={useCMSModal}
+                    overrideCustomize
+                    parentUri={parentUri}
+                    returnToParentAfterSave={returnToParentAfterSave}
+                    handleCloseModal={handleCloseModal}
+                />
             </>
         );
     };

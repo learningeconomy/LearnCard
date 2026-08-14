@@ -31,8 +31,6 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
 import { SetState } from '@learncard/helpers';
 import { StylePackCategoryModal } from './StylePackCategoryModal';
-import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
-import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 export enum StylePackCategories {
     all = 'All',
@@ -74,8 +72,6 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     setActiveForm: SetState<BoostCMSActiveAppearanceForm>;
 }> = ({ state, setState, handleCloseModal, disabled = false, boostUserType, setActiveForm }) => {
     const { newModal } = useModal();
-    const { credentials } = useHighlightedCredentials();
-    const isAdmin = isScoutPassCustomizationAdmin(credentials);
 
     const { data: boostAppearanceBadgeList, isLoading } = useScoutPassStylesPackRegistry();
 
@@ -192,12 +188,10 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                             </p>
                             {categoryButton}
                         </div>
-                        {isAdmin && (
-                            <button onClick={handleImageSelect} className="boost-cms-badge">
-                                <Camera className="boost-cms-camera-icon text-white" />
-                                <span className="upload-text">Upload</span>
-                            </button>
-                        )}
+                        <button onClick={handleImageSelect} className="boost-cms-badge">
+                            <Camera className="boost-cms-camera-icon text-white" />
+                            <span className="upload-text">Upload</span>
+                        </button>
                         {photo && !isDefaultImage && (
                             <div className="boost-cms-badge">
                                 <img

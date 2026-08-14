@@ -30,8 +30,6 @@ import { BadgePackOption, BadgePackOptionsEnum } from './badge-pack.helper';
 import Lottie from 'react-lottie-player';
 import Pulpo from '../../../assets/lotties/cuteopulpo.json';
 import boostSearchStore from '../../../stores/boostSearchStore';
-import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
-import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 interface NewBoostSelectMenuProps {
     handleCloseModal: () => void;
@@ -61,8 +59,6 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
         error: troopIdQueryError,
         refetch,
     } = useGetCurrentUserTroopIdsResolved();
-    const { credentials } = useHighlightedCredentials();
-    const isAdmin = isScoutPassCustomizationAdmin(credentials);
 
     // Hardcoded boostpack
     const {
@@ -250,7 +246,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                             <IonRow>
                                 {showNewBoostpackTypes && hardcodedBoostPack ? (
                                     <>
-                                        {canCreateNewBoost && isAdmin && (
+                                        {canCreateNewBoost && (
                                             <NewBoostSelectMenuCustomTypeButton
                                                 category={category}
                                                 handleCloseModal={handleCloseModal}
@@ -282,7 +278,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                                             childGenerations={childGenerations}
                                             parentGenerations={parentGenerations}
                                             category={category}
-                                            enableCreateButton={canCreateNewBoost && isAdmin}
+                                            enableCreateButton={canCreateNewBoost}
                                             viewMode={BoostPageViewMode.Card}
                                             includeExtendedFamily={myTroopIdData?.isScout}
                                         />

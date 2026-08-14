@@ -13,8 +13,6 @@ import { AddressSpec } from '../../../../locationSearch/location.helpers';
 import { SetState } from 'packages/shared-types/dist';
 import { boostCategoryOptions } from '../../../boost-options/boostOptions';
 import { commitExpirationDate } from '../boostCMSDatePicker.helpers';
-import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
-import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 const BoostCMSBasicInfoForm: React.FC<{
     state: BoostCMSState;
@@ -23,8 +21,6 @@ const BoostCMSBasicInfoForm: React.FC<{
     locationDisabled?: boolean;
     overrideCustomize?: boolean;
 }> = ({ state, setState, disabled = false, locationDisabled = false, overrideCustomize }) => {
-    const { credentials } = useHighlightedCredentials();
-    const isAdmin = isScoutPassCustomizationAdmin(credentials);
     const basicInfo = state?.basicInfo;
     const boostType = state?.basicInfo?.type;
 
@@ -178,44 +174,40 @@ const BoostCMSBasicInfoForm: React.FC<{
                             <LocationIcon className="text-grayscale-600" />
                         </div>
                     )}
-                    {isAdmin && (
-                        <>
-                            <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                                <p className="text-grayscale-900 font-medium w-10/12">
-                                    Credential Expires
-                                </p>
-                                <IonToggle
-                                    mode="ios"
-                                    color="indigo-700"
-                                    onIonChange={() => {
-                                        const expiresValue = !basicInfo?.credentialExpires;
-                                        handleStateChange('credentialExpires', expiresValue);
-                                        if (!expiresValue) {
-                                            handleStateChange('expirationDate', null);
-                                        }
-                                    }}
-                                    checked={basicInfo?.credentialExpires}
+                    <>
+                        <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
+                            <p className="text-grayscale-900 font-medium w-10/12">
+                                Credential Expires
+                            </p>
+                            <IonToggle
+                                mode="ios"
+                                color="indigo-700"
+                                onIonChange={() => {
+                                    const expiresValue = !basicInfo?.credentialExpires;
+                                    handleStateChange('credentialExpires', expiresValue);
+                                    if (!expiresValue) {
+                                        handleStateChange('expirationDate', null);
+                                    }
+                                }}
+                                checked={basicInfo?.credentialExpires}
+                                disabled={disabled && !overrideCustomize}
+                            />
+                        </div>
+                        <div className="flex flex-col items-center justify-center w-full mb-2 mt-2">
+                            {basicInfo?.credentialExpires && (
+                                <button
                                     disabled={disabled && !overrideCustomize}
-                                />
-                            </div>
-                            <div className="flex flex-col items-center justify-center w-full mb-2 mt-2">
-                                {basicInfo?.credentialExpires && (
-                                    <button
-                                        disabled={disabled && !overrideCustomize}
-                                        className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[16px] py-[12px] font-medium tracking-widest text-base font-notoSans"
-                                        onClick={openDatePicker}
-                                    >
-                                        {basicInfo?.expirationDate
-                                            ? moment(basicInfo.expirationDate).format(
-                                                  'MMMM Do, YYYY'
-                                              )
-                                            : 'Expiration Date'}
-                                        <Calendar className="w-[30px] text-grayscale-700" />
-                                    </button>
-                                )}
-                            </div>
-                        </>
-                    )}
+                                    className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[16px] py-[12px] font-medium tracking-widest text-base font-notoSans"
+                                    onClick={openDatePicker}
+                                >
+                                    {basicInfo?.expirationDate
+                                        ? moment(basicInfo.expirationDate).format('MMMM Do, YYYY')
+                                        : 'Expiration Date'}
+                                    <Calendar className="w-[30px] text-grayscale-700" />
+                                </button>
+                            )}
+                        </div>
+                    </>
                 </IonCol>
             )}
         </IonRow>

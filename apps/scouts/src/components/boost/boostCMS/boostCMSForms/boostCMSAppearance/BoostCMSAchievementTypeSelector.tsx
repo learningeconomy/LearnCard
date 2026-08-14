@@ -13,8 +13,6 @@ import {
     boostCategoryOptions,
     CATEGORY_TO_SUBCATEGORY_LIST,
 } from '../../../boost-options/boostOptions';
-import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
-import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 const StateValidator = z.object({
     customType: z
@@ -53,8 +51,6 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
     setCustomTypes,
 }) => {
     const { color, subColor, CategoryImage } = boostCategoryOptions[activeCategoryType];
-    const { credentials } = useHighlightedCredentials();
-    const isAdmin = isScoutPassCustomizationAdmin(credentials);
 
     const [search, setSearch] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -72,7 +68,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
     }, [activeCategoryType]);
 
     const categoryTypes = CATEGORY_TO_SUBCATEGORY_LIST?.[activeCategoryType] ?? [];
-    const customCategoryTypes = isAdmin ? customTypes?.[activeCategoryType] ?? [] : [];
+    const customCategoryTypes = customTypes?.[activeCategoryType] ?? [];
     const filteredAchievementTypes = [...categoryTypes, ...customCategoryTypes].filter(type =>
         type.title.toLowerCase().includes(search.toLowerCase())
     );
@@ -135,14 +131,12 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                                 No results found for{' '}
                                 <span className="text-black italic">{search}</span>
                             </p>
-                            {isAdmin && (
-                                <button
-                                    onClick={handleCustomType}
-                                    className="text-indigo-600 text-base font-bold text-left font-notoSans"
-                                >
-                                    Use "{search}" anyways!
-                                </button>
-                            )}
+                            <button
+                                onClick={handleCustomType}
+                                className="text-indigo-600 text-base font-bold text-left font-notoSans"
+                            >
+                                Use "{search}" anyways!
+                            </button>
                         </div>
                     )}
                     {search.length > 0 &&
@@ -183,8 +177,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                                 </button>
                             );
                         })}
-                    {isAdmin &&
-                        search.length === 0 &&
+                    {search.length === 0 &&
                         customCategoryTypes.map(({ title, type }) => {
                             const isActive = type === activeType;
                             const activeStyles = isActive ? 'bg-emerald-100' : 'bg-grayscale-100';

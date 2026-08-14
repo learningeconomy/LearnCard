@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { IonCol, IonRow } from '@ionic/react';
 import { useModal } from 'learn-card-base';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -7,8 +7,6 @@ import { BoostUserTypeEnum, boostVCTypeOptions } from '../../../boost-options/bo
 import BoostVCTypeOptionButton from '../../../boost-options/boostVCTypeOptions/BoostVCTypeOptionButton';
 import { StylePackCategories } from './BoostCMSAppearanceBadgeList';
 import { SetState } from '@learncard/helpers';
-import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
-import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 export interface StylePackCategoryModalProps {
     activeStylePackCategory: StylePackCategories;
@@ -21,20 +19,15 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
     activeStylePackCategory,
     setActiveStylePackCategory,
     boostUserType,
-    targetType,
 }) => {
     const { closeModal } = useModal();
-    const { credentials } = useHighlightedCredentials();
-    const isAdmin = isScoutPassCustomizationAdmin(credentials);
 
     const handleSelectCategory = (category: StylePackCategories) => {
         setActiveStylePackCategory(category);
         closeModal();
     };
 
-    const boostOptions = isAdmin
-        ? boostVCTypeOptions[boostUserType]
-        : boostVCTypeOptions[boostUserType].filter(item => item.title === targetType);
+    const boostOptions = boostVCTypeOptions[boostUserType];
 
     return (
         <div className="w-full">

@@ -10,6 +10,7 @@ import BoostAddressBook, {
 } from './boostCMSForms/boostCMSIssueTo/BoostAddressBook';
 import BoostCMSBasicInfoForm from './boostCMSForms/boostCMSBasicInfo/BoostCMSBasicInfoForm';
 import BoostCMSAppearanceController from './boostCMSForms/boostCMSAppearance/BoostCMSAppearanceController';
+import BoostCMSMediaForm from './boostCMSForms/boostCMSMedia/BoostCMSMediaForm';
 import BoostPreview from './BoostPreview/BoostPreview';
 import BoostPreviewBody from './BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from './BoostPreview/BoostPreviewFooter';
@@ -734,9 +735,6 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                     customTypes={customTypes}
                     setCustomTypes={setCustomTypes}
-                    disabled={!overrideCustomize}
-                    showEditButton={overrideCustomize}
-                    showEditAppearanceText={overrideCustomize}
                 />
             ) : (
                 <BoostCMSAppearanceController
@@ -746,8 +744,6 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                     customTypes={customTypes}
                     setCustomTypes={setCustomTypes}
-                    disabled={!overrideCustomize}
-                    showEditButton={overrideCustomize}
                 />
             );
         activeBoostCMSStep = (
@@ -769,6 +765,8 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                             disabled={isEditDisabled || !overrideCustomize}
                         />
                     )}
+
+                <BoostCMSMediaForm state={state} setState={setState} disabled={isEditDisabled} />
 
                 <BoostCMSBasicInfoForm
                     state={state}

@@ -38,12 +38,6 @@ import { UnsignedVC, VC } from '@learncard/types';
 
 import PurpGhost from '../../../assets/lotties/purpghost.json';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
-import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
-import {
-    getScoutPassAllowedBoostTypes,
-    isScoutPassCustomizationAdmin,
-    resolveScoutPassBoostType,
-} from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 const PATH_TO_CATEGORY = {
     learninghistory: BoostCategoryOptionsEnum.learningHistory,
@@ -83,31 +77,27 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
     const { handlePresentBoostModal } = useBoostModal(history);
 
     const [showNewBoostOptions, setShowNewBoostOptions] = useState(false);
-    const pathName = location?.pathname?.replace('/', '');
-    const onCategoryRoute = pathName ? PATH_TO_CATEGORY[pathName] : null;
-    const boostUserType = BoostUserTypeEnum.someone;
-
-    const { credentials } = useHighlightedCredentials();
-    const isAdmin = isScoutPassCustomizationAdmin(credentials);
-    const boostDropdownCategoryOptions = getScoutPassAllowedBoostTypes(
-        boostVCTypeOptions[boostUserType],
-        isAdmin
+    const [selectedVCType, setSelectedVCType] = useState<BoostCategoryOptionsEnum>(
+        BoostCategoryOptionsEnum.socialBadge
     );
-    const routeVCType =
-        resolveScoutPassBoostType(
-            boostDropdownCategoryOptions,
-            onCategoryRoute ?? BoostCategoryOptionsEnum.socialBadge
-        ) ?? BoostCategoryOptionsEnum.socialBadge;
-
-    const [selectedVCType, setSelectedVCType] = useState<BoostCategoryOptionsEnum>(routeVCType);
-
-    useEffect(() => {
-        setSelectedVCType(routeVCType);
-    }, [routeVCType]);
 
     const handleCategoryTypeChange = (value: BoostCategoryOptionsEnum) => {
         setSelectedVCType(value);
     };
+    const pathName = location?.pathname?.replace('/', '');
+
+    const onCategoryRoute = pathName ? PATH_TO_CATEGORY[pathName] : null;
+
+    useEffect(() => {
+        if (onCategoryRoute) {
+            setSelectedVCType(onCategoryRoute);
+        } else {
+            setSelectedVCType(BoostCategoryOptionsEnum.socialBadge);
+        }
+    }, [onCategoryRoute]);
+
+    const boostUserType = BoostUserTypeEnum.someone;
+    const boostDropdownCategoryOptions = boostVCTypeOptions[boostUserType];
 
     const { color, IconComponent, title } = boostCategoryOptions[selectedVCType];
 
