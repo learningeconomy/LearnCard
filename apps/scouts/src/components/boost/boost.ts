@@ -3,7 +3,7 @@ import LinkChain from 'learn-card-base/svgs/LinkChain';
 import Video from 'learn-card-base/svgs/Video';
 import Document from 'learn-card-base/svgs/Document';
 
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { BoostCategoryOptionsEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
 import { AddressSpec } from '../locationSearch/location.helpers';
 import * as m from '../../paraglide/messages.js';
 

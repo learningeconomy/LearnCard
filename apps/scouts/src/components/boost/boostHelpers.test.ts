@@ -1,8 +1,6 @@
-// @vitest-environment happy-dom
-
 import { describe, expect, it } from 'vitest';
 
-import { refreshLocalizedPresetFields } from './boostHelpers';
+import { refreshLocalizedPresetFields } from './localizedPresetFields';
 
 const englishDefaults = {
     name: 'Archery',
@@ -33,5 +31,13 @@ describe('refreshLocalizedPresetFields', () => {
             ...spanishDefaults,
             description: 'My custom description',
         });
+    });
+
+    it('preserves the current object when the localized defaults did not change', () => {
+        const current = { ...englishDefaults };
+
+        expect(refreshLocalizedPresetFields(current, englishDefaults, englishDefaults)).toBe(
+            current
+        );
     });
 });

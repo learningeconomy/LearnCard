@@ -41,10 +41,10 @@ Locale switching: `useLocale()` / `useChangeLocale()` from `../i18n`.
    (`CredentialCategoryEnum`, `link.id`), not the display label. (Bit us in
    `CategoryDescriptorModal` and `SideMenuRootLinks`.)
 2. **Plurals compile to _separate_ functions.** The inlang i18next plugin emits
-   `key_one` / `key_other` as distinct message fns — there is no runtime plural
-   selector. Use a ternary with two keys
-   (`count === 1 ? m['x.matchingSkill']() : m['x.matchingSkills']()`) or a
-   single `{{count}}` string.
+   `key_one` / `key_other` as distinct message fns — there is no generated runtime
+   selector. Route count copy through `selectLocalePlural` so locale-specific CLDR
+   categories can be added without another component sweep; do not add new binary
+   `count === 1` UI branches.
 3. **`TransP` / `<Trans>`** — don't mix a `defaults` prop with children. The
    `components` array is indexed by the `<0>`, `<1>`… markers in the source string.
 4. **No fixed `h-[N]` + `max-h-[N]` on buttons holding translated text** — longer
@@ -55,6 +55,10 @@ Locale switching: `useLocale()` / `useChangeLocale()` from `../i18n`.
    plugin's duplicate-import guard and fails the build. Prefer `import * as m`.
 7. **`vite build` does NOT typecheck** (esbuild strips types). Undefined-identifier
    and type bugs surface only at runtime — run `tsc` separately.
+8. **The frozen-i18n memo guard is intentionally narrow.** It catches direct Paraglide
+   calls in `useMemo`, but it cannot recognize locale-backed getters such as
+   `option.title`. When memoizing getter-backed display copy or filters, call
+   `useLocale()` and make the locale load-bearing inside the callback.
 
 ## Shared packages (`learn-card-base`, `@learncard/react`)
 

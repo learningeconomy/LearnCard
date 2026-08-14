@@ -53,8 +53,8 @@ import {
     getDefaultIssuerImage,
     sendBoostCredential,
     addFallbackNameToCMSState,
-    refreshLocalizedPresetFields,
 } from '../boostHelpers';
+import { refreshLocalizedPresetFields } from '../localizedPresetFields';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
 import {
     BrandingEnum,
@@ -200,17 +200,23 @@ const BoostCMS: React.FC<{
             narrative: getDefaultBoostCriteria(_boostCategoryType, _boostSubCategoryType),
         };
 
-        setState(previousState => ({
-            ...previousState,
-            basicInfo: {
-                ...previousState.basicInfo,
-                ...refreshLocalizedPresetFields(
-                    previousState.basicInfo,
-                    previousLocalizedPresetDefaults.current,
-                    nextLocalizedPresetDefaults
-                ),
-            },
-        }));
+        setState(previousState => {
+            const refreshedPresetFields = refreshLocalizedPresetFields(
+                previousState.basicInfo,
+                previousLocalizedPresetDefaults.current,
+                nextLocalizedPresetDefaults
+            );
+
+            if (refreshedPresetFields === previousState.basicInfo) return previousState;
+
+            return {
+                ...previousState,
+                basicInfo: {
+                    ...previousState.basicInfo,
+                    ...refreshedPresetFields,
+                },
+            };
+        });
 
         previousLocalizedPresetDefaults.current = nextLocalizedPresetDefaults;
     }, [locale, _boostCategoryType, _boostSubCategoryType]);

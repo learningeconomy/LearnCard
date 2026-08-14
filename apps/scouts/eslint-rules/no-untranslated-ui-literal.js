@@ -10,6 +10,8 @@ const UI_PROPERTIES = new Set([
     'emptyMessage',
     'errorMessage',
     'header',
+    'footerSubText',
+    'idTypeText',
     'label',
     'loadingText',
     'message',

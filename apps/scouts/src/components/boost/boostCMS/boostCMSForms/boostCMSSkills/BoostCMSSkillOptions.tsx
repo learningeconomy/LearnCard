@@ -9,7 +9,7 @@ import X from 'learn-card-base/svgs/X';
 
 import { BoostCMSSkill, BoostCMSState } from '../../../boost';
 import { BoostCMSSKillsCategoryEnum, CATEGORY_TO_SKILLS, SKILLS_TO_SUBSKILLS } from './boostSkills';
-import { isPlatformIOS } from 'learn-card-base';
+import { isPlatformIOS } from 'learn-card-base/helpers/platformHelpers';
 import * as m from '../../../../../paraglide/messages.js';
 import { useLocale } from '../../../../../i18n';
 

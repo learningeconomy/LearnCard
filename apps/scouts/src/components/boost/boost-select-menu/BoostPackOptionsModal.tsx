@@ -24,6 +24,8 @@ import {
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../boost-options/boostOptions';
 import useGetTroopNetwork from '../../hooks/useGetTroopNetwork';
 import { selectLocalePlural } from '../../../i18n/formatters';
+import { getLocalizedBoostPackTypeTitle } from './boostPackCopy';
+import { useLocale } from '../../../i18n';
 
 export const BoostPackOptionsModal: React.FC<{
     boostPackSelected: BadgePackOption;
@@ -40,6 +42,7 @@ export const BoostPackOptionsModal: React.FC<{
     networkPacks = [],
     category,
 }) => {
+    useLocale();
     const { closeModal } = useModal();
 
     const [search, setSearch] = useState('');
@@ -112,10 +115,7 @@ export const BoostPackOptionsModal: React.FC<{
                             <TransP
                                 m={m['boost.noBoostPackFound']}
                                 values={{
-                                    type:
-                                        category === BoostCategoryOptionsEnum.socialBadge
-                                            ? 'Boost'
-                                            : 'Badge',
+                                    type: getLocalizedBoostPackTypeTitle(undefined, category),
                                     search,
                                 }}
                                 components={[<em key="em" className="font-medium not-italic" />]}

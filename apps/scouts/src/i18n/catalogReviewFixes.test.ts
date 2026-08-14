@@ -222,6 +222,15 @@ describe('reviewed catalog copy', () => {
         }
     });
 
+    it('uses a closed no-results sentence without interpolating an untranslated noun', () => {
+        for (const locale of ['en', 'es', 'fr', 'ar']) {
+            const catalog = loadCatalog(locale);
+
+            expect(catalog.boost.noResultsFoundFor).toContain('{{search}}');
+            expect(catalog.boost.noResultsFoundFor).not.toContain('{{title}}');
+        }
+    });
+
     it('provides all ten loading messages in every locale', () => {
         for (const locale of ['en', 'es', 'fr', 'ar']) {
             const catalog = loadCatalog(locale);

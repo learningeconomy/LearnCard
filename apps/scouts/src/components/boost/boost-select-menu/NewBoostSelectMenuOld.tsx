@@ -24,6 +24,7 @@ import { BrandingEnum, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { LCNBoostStatusEnum } from '../boost';
 import * as m from '../../../paraglide/messages.js';
 import TransP from '../../../i18n/TransP';
+import { useLocale } from '../../../i18n';
 import { useLocalizedBoostFilter } from './useLocalizedBoostFilter';
 import {
     BadgePackOption,
@@ -47,6 +48,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     useCMSModal,
     returnToParentAfterSave = false,
 }) => {
+    const locale = useLocale();
     const flags = useFlags();
     const { data: stylePack, isLoading: stylePackLoading } = useScoutPassStylesPackRegistry();
     const { data: myBoosts } = useGetPaginatedManagedBoostsQuery();
@@ -75,12 +77,14 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
             myBoosts?.pages?.flatMap(page =>
                 page?.records?.filter(
                     boost =>
-                        boost?.title?.toLowerCase().includes(search.toLowerCase()) &&
+                        boost?.title
+                            ?.toLocaleLowerCase(locale)
+                            .includes(search.toLocaleLowerCase(locale)) &&
                         boost?.status === LCNBoostStatusEnum.live
                 )
             ) ?? []
         );
-    }, [myBoosts, search]);
+    }, [myBoosts, search, locale]);
 
     // Effects
     useEffect(() => {
@@ -102,7 +106,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                     <p className="text-grayscale-700">
                         <TransP
                             m={m['boost.noResultsFoundFor']}
-                            values={{ title, search }}
+                            values={{ search }}
                             components={[<em key="em" className="font-medium" />]}
                         />
                     </p>

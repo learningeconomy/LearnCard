@@ -742,7 +742,7 @@
         },
         "charCount": "{{count}}/{{max}}",
         "noBoostsYetEmpty": "No boosts yet",
-        "noResultsFoundFor": "0 {{title}}s found for <0>{{search}}</0>",
+        "noResultsFoundFor": "No results found for <0>{{search}}</0>",
         "closeModal": "Close modal",
         "loadingPacks": "Loading packs",
         "selectTypePack": "Select {{type}} pack",

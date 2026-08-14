@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
-import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import { BoostCategoryOptionsEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
 
 import {
     BoostCMSCategorySkillEnum,
@@ -20,6 +20,7 @@ import {
     boostVCTypeOptions,
 } from '../components/boost/boost-options/boostOptions';
 import BoostCMSSkillOptions from '../components/boost/boostCMS/boostCMSForms/boostCMSSkills/BoostCMSSkillOptions';
+import { BoostCMSMediaTypeSelector } from '../components/boost/boostCMS/boostCMSForms/boostCMSMedia/BoostCMSMediaTypeSelector';
 import { useLocalizedBoostFilter } from '../components/boost/boost-select-menu/useLocalizedBoostFilter';
 import { LocaleProvider, useChangeLocale } from './index';
 import { setLocale } from '../paraglide/runtime.js';
@@ -54,6 +55,22 @@ vi.mock(
 vi.mock('../components/boost/boostCMS/boostCMSForms/boostCMSSkills/BoostCMSSubSkillButton', () => ({
     default: () => null,
 }));
+
+const localStorageValues = new Map<string, string>();
+
+Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: {
+        clear: () => localStorageValues.clear(),
+        getItem: (key: string) => localStorageValues.get(key) ?? null,
+        key: (index: number) => [...localStorageValues.keys()][index] ?? null,
+        get length() {
+            return localStorageValues.size;
+        },
+        removeItem: (key: string) => localStorageValues.delete(key),
+        setItem: (key: string, value: string) => localStorageValues.set(key, value),
+    } satisfies Storage,
+});
 
 const LocaleSwitch: React.FC = () => {
     const changeLocale = useChangeLocale();
@@ -176,5 +193,28 @@ describe('localized credential content', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Switch to Arabic' }));
 
         expect(screen.getByTestId('filtered-boosts').textContent).toBe('');
+    });
+
+    it('renders localized media attachment type labels', () => {
+        render(
+            <LocaleProvider>
+                <LocaleSwitch />
+                <BoostCMSMediaTypeSelector
+                    setActiveMediaType={vi.fn()}
+                    handleImageSelect={vi.fn()}
+                    handleDocumentSelect={vi.fn()}
+                />
+            </LocaleProvider>
+        );
+
+        expect(screen.getByText('Photo')).not.toBeNull();
+        expect(screen.getByText('Document')).not.toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Switch to Arabic' }));
+
+        expect(screen.getByText('صورة')).not.toBeNull();
+        expect(screen.getByText('مستند')).not.toBeNull();
+        expect(screen.queryByText('Photo')).toBeNull();
+        expect(screen.queryByText('Document')).toBeNull();
     });
 });

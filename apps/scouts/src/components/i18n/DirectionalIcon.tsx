@@ -1,4 +1,6 @@
-export const DirectionalIcon: React.FC<{ children: React.ReactNode; className?: string }> = ({
+import type { FC, ReactNode } from 'react';
+
+export const DirectionalIcon: FC<{ children: ReactNode; className?: string }> = ({
     children,
     className,
 }) => (

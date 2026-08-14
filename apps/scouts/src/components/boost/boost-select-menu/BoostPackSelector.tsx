@@ -8,6 +8,8 @@ import { BadgePackOption, BadgePackOptionsEnum } from './badge-pack.helper';
 import { useGetCurrentUserTroopIdsResolved } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
+import { getLocalizedBoostPackTypeTitle } from './boostPackCopy';
+import { useLocale } from '../../../i18n';
 
 interface BoostPackSelectorProps {
     boostPackType: BoostCategoryOptionsEnum;
@@ -50,6 +52,7 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
     showMoreOptionsCaret,
     hideNetworkBoostPacks,
 }) => {
+    const locale = useLocale();
     const { newModal, closeModal } = useModal();
     const { data: myTroopIdData, isLoading: troopIdDataLoading } =
         useGetCurrentUserTroopIdsResolved(hideNetworkBoostPacks);
@@ -68,7 +71,10 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
 
     const { boostPackTypeTitle, badgePackName, badgePackColor } = useMemo(() => {
         const baseData = {
-            boostPackTypeTitle: '',
+            boostPackTypeTitle: getLocalizedBoostPackTypeTitle(
+                boostPackSelected?.type,
+                boostPackType
+            ),
             badgePackName: 'ScoutPass',
             badgePackColor: '#248737', // Consider moving to constants
         };
@@ -77,7 +83,6 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
             case BadgePackOptionsEnum.network:
                 return {
                     ...baseData,
-                    boostPackTypeTitle: 'Network',
                     badgePackName: boostPackSelected.name,
                     badgePackColor: boostPackSelected.color,
                 };
@@ -85,7 +90,6 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
             case BadgePackOptionsEnum.troop:
                 return {
                     ...baseData,
-                    boostPackTypeTitle: 'Troop',
                     badgePackName: boostPackSelected.name,
                     badgePackColor: boostPackSelected.color,
                 };
@@ -94,16 +98,12 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
                 return boostPackType === BoostCategoryOptionsEnum.meritBadge
                     ? {
                           ...baseData,
-                          boostPackTypeTitle: 'Badge',
                           badgePackName: boostPackSelected?.name || baseData.badgePackName,
                           badgePackColor: boostPackSelected?.color || baseData.badgePackColor,
                       }
-                    : {
-                          ...baseData,
-                          boostPackTypeTitle: 'Boost',
-                      };
+                    : baseData;
         }
-    }, [boostPackType, boostPackSelected]);
+    }, [boostPackType, boostPackSelected, locale]);
 
     const handlePackSelection = () => {
         if (!showMoreOptionsCaret || troopIdDataLoading) return;

@@ -36,6 +36,10 @@ describe('no-untranslated-ui-literal', () => {
         expect(lint("const dialog = { title: 'Delete credential' }")).toHaveLength(1);
     });
 
+    it('rejects hard-coded Troop ID role copy in configuration', () => {
+        expect(lint("const role = { idTypeText: 'National Admin' }")).toHaveLength(1);
+    });
+
     it('ignores non-copy configuration values', () => {
         expect(lint("const request = { method: 'POST', url: '/api/boosts' }")).toHaveLength(0);
     });

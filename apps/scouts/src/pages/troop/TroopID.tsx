@@ -17,6 +17,7 @@ import ScoutIdThumbPlaceholder from '../../components/svgs/ScoutIdThumbPlacehold
 import LeaderIdThumbPlaceholder from '../../components/svgs/LeaderIdThumbPlaceholder';
 import NationalAdminIdThumbPlaceholder from '../../components/svgs/NationalAdminIdThumbPlaceholder';
 import GlobalAdminIdThumbPlaceholder from '../../components/svgs/GlobalAdminIdThumbPlaceholder';
+import { getTroopIdRoleLabel } from './troopIdCopy';
 
 interface TroopIDProps {
     name?: string | undefined;
@@ -32,29 +33,24 @@ interface TroopIDProps {
 
 interface RoleSpecificProperties {
     PlaceholderThumbComponent: React.FC<{ className?: string }>;
-    idTypeText: string;
     footerSubText?: string;
 }
 
 const ROLE_PROPERTIES: Record<ScoutsRoleEnum, RoleSpecificProperties> = {
     [ScoutsRoleEnum.scout]: {
         PlaceholderThumbComponent: ScoutIdThumbPlaceholder,
-        idTypeText: 'Scout',
         footerSubText: undefined, // Will be set dynamically
     },
     [ScoutsRoleEnum.leader]: {
         PlaceholderThumbComponent: LeaderIdThumbPlaceholder,
-        idTypeText: 'Leader',
         footerSubText: undefined, // Will be set dynamically
     },
     [ScoutsRoleEnum.national]: {
         PlaceholderThumbComponent: NationalAdminIdThumbPlaceholder,
-        idTypeText: 'National Admin',
         footerSubText: undefined,
     },
     [ScoutsRoleEnum.global]: {
         PlaceholderThumbComponent: GlobalAdminIdThumbPlaceholder,
-        idTypeText: 'Global Admin',
         footerSubText: undefined,
     },
 };
@@ -75,6 +71,7 @@ const TroopID: React.FC<TroopIDProps> = ({
     const credential = credentialWithEdits ?? initialCredential;
     const { network: networkData } = useGetTroopNetwork({ credential });
     const role = getRoleFromCred(credential);
+    const roleLabel = getTroopIdRoleLabel(role);
     const thumbSrc = initialThumbSrc || credential?.boostID?.idThumbnail;
     const issueDate = useMemo(
         () => formatLocaleDate(credential?.issuanceDate, { dateStyle: 'short' }),
@@ -120,10 +117,10 @@ const TroopID: React.FC<TroopIDProps> = ({
 
             <div className="flex flex-col items-start">
                 <span className="font-notoSans font-[600] text-[17px] leading-[24px] tracking-[0.25px]">
-                    {name || ROLE_PROPERTIES[role].idTypeText}
+                    {name || roleLabel}
                 </span>
                 <span className="font-notoSans font-[600] text-[12px]">
-                    {subTextOverride || roleProperties.idTypeText}
+                    {subTextOverride || roleLabel}
                 </span>
                 {issuedDateOverride || (
                     <span className="font-notoSans font-[600] text-[12px]">

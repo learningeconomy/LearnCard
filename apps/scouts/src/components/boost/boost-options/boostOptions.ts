@@ -15,7 +15,7 @@ import {
     BoostCategoryMetadata,
     BoostCategoryOptionsEnum,
     boostCategoryMetadata,
-} from 'learn-card-base';
+} from 'learn-card-base/types/boostAndCredentialMetadata';
 import * as m from '../../../paraglide/messages.js';
 
 export enum BoostUserTypeEnum {

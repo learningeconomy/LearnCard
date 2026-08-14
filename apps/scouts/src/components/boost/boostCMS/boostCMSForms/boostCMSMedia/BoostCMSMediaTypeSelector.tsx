@@ -3,11 +3,15 @@ import React from 'react';
 import { IonCol, IonRow } from '@ionic/react';
 
 import { boostMediaOptions, BoostMediaOptionsEnum, mediaTypeTitle } from '../../../boost';
+import { useLocale } from '../../../../../i18n';
 
-const BOOSTCMSMediaTypeSelector: React.FC<{
+export const BoostCMSMediaTypeSelector: React.FC<{
     setActiveMediaType: React.Dispatch<React.SetStateAction<BoostMediaOptionsEnum | null>>;
-    handleCloseModal: () => void;
-}> = ({ setActiveMediaType, handleCloseModal }) => {
+    handleImageSelect: () => void;
+    handleDocumentSelect: () => void;
+}> = ({ setActiveMediaType, handleImageSelect, handleDocumentSelect }) => {
+    useLocale();
+
     return (
         <IonRow className="flex w-full">
             <IonCol className="flex items-center justify-center flex-wrap">
@@ -16,7 +20,15 @@ const BOOSTCMSMediaTypeSelector: React.FC<{
                         <button
                             key={id}
                             className={`flex flex-col items-center justify-center text-center w-[45%] ion-padding h-[122px] m-2 bg-${color} rounded-[20px]`}
-                            onClick={() => setActiveMediaType(type)}
+                            onClick={() => {
+                                if (type === BoostMediaOptionsEnum.photo) {
+                                    handleImageSelect();
+                                } else if (type === BoostMediaOptionsEnum.document) {
+                                    handleDocumentSelect();
+                                } else {
+                                    setActiveMediaType(type);
+                                }
+                            }}
                         >
                             <Icon className="h-[40px] text-white max-h-[40px] max-w-[40px]" />
                             <p className="text-white text-2xl">{mediaTypeTitle(titleKey)}</p>
@@ -28,4 +40,4 @@ const BOOSTCMSMediaTypeSelector: React.FC<{
     );
 };
 
-export default BOOSTCMSMediaTypeSelector;
+export default BoostCMSMediaTypeSelector;

@@ -14,8 +14,9 @@ export const useLocalizedBoostFilter = <T extends LocalizedBoostOption>(
 
     return useMemo(
         () =>
-            options?.filter(option => option.title?.toLowerCase().includes(search.toLowerCase())) ??
-            [],
+            options?.filter(option =>
+                option.title?.toLocaleLowerCase(locale).includes(search.toLocaleLowerCase(locale))
+            ) ?? [],
         [options, search, locale]
     );
 };
