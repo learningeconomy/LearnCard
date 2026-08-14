@@ -26,7 +26,7 @@ const BoostVCTypeSwiper: React.FC<{
     const width = useScreenWidth(true);
     const swiperRef = useRef();
 
-    let _boostVCTypeOptions = boostVCTypeOptions[boostUserType];
+    let _boostVCTypeOptions = boostVCTypeOptions?.[boostUserType] ?? [];
     if (!flags?.createMeritBadges) {
         _boostVCTypeOptions = _boostVCTypeOptions.filter(
             option => option.type !== BoostCategoryOptionsEnum.meritBadge
