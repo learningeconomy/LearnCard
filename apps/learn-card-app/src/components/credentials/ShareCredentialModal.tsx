@@ -25,7 +25,7 @@ export const ShareCredentialModal: React.FC<ShareCredentialModalProps> = ({
     return (
         <div className="flex flex-col h-full w-full bg-grayscale-100">
             {/* Header */}
-            <div 
+            <div
                 className="bg-white border-b border-grayscale-200 p-6"
                 style={{
                     paddingTop: '1.5rem',
@@ -55,7 +55,7 @@ export const ShareCredentialModal: React.FC<ShareCredentialModalProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div 
+            <div
                 className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                 style={{
                     paddingBottom: '1.5rem',

@@ -17,9 +17,16 @@ interface SocialLoginOption {
     id: number;
     src: string;
     alt: string;
-    onClick: () => void | Promise<void>;
+    onClick: () => void | boolean | Promise<void | boolean>;
     type: SocialLoginTypes;
 }
+
+const getSocialLoginProviderLabel = (provider: SocialLoginTypes, fallback: string): string => {
+    if (provider === SocialLoginTypes.apple) return m['login.social.provider.apple']();
+    if (provider === SocialLoginTypes.google) return m['login.social.provider.google']();
+
+    return fallback;
+};
 
 export const SocialLoginsButtons: React.FC<{
     branding: BrandingEnum;
@@ -47,14 +54,17 @@ export const SocialLoginsButtons: React.FC<{
 
         socialLoginInFlightRef.current = true;
         setActiveSocialLogin(socialLogin.type);
+        let keepLoadingUntilNavigation = false;
 
         try {
-            await socialLogin.onClick();
+            keepLoadingUntilNavigation = (await socialLogin.onClick()) === true;
         } catch {
             // Provider handlers own error feedback; this component only owns loading state.
         } finally {
-            socialLoginInFlightRef.current = false;
-            setActiveSocialLogin(null);
+            if (!keepLoadingUntilNavigation) {
+                socialLoginInFlightRef.current = false;
+                setActiveSocialLogin(null);
+            }
         }
     };
 
@@ -83,6 +93,10 @@ export const SocialLoginsButtons: React.FC<{
                                     ? 'px-[14px]'
                                     : 'px-[12px]';
                             const isActiveSocialLogin = activeSocialLogin === socialLogin.type;
+                            const providerLabel = getSocialLoginProviderLabel(
+                                socialLogin.type,
+                                socialLogin.alt
+                            );
 
                             return (
                                 <button
@@ -99,7 +113,9 @@ export const SocialLoginsButtons: React.FC<{
                                     {isActiveSocialLogin ? (
                                         <span
                                             role="status"
-                                            aria-label={`Signing in with ${socialLogin.alt}`}
+                                            aria-label={m['login.social.signingInWith']({
+                                                provider: providerLabel,
+                                            })}
                                             className="w-6 h-6 border-2 border-grayscale-300 border-t-grayscale-900 rounded-full animate-spin"
                                         />
                                     ) : (

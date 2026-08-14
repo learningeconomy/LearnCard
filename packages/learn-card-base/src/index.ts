@@ -64,6 +64,7 @@ export * from './components/form-inputs';
 export * from './components/toast/Toast';
 export * from './components/loaders/LoadingSpinner';
 export * from './components/loaders/CredentialListSkeleton';
+export * from './components/SkillCompetencyCard';
 
 export * from './utils/regexes';
 export * from './utils/pushUtilities';
@@ -210,6 +211,7 @@ export {
     updateArtifactClaimedStatus,
 } from './stores/nanoStores/chatStore';
 
+export * from './helpers/aiErrors';
 export * from './helpers/credentialHelpers';
 export * from './helpers/credentialIngestion';
 export * from './helpers/credentials/queries';

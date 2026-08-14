@@ -1,5 +1,38 @@
 # @welibraryos/react-learn-card
 
+## 2.12.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.11
+
+## 2.12.0
+
+### Minor Changes
+
+-   [#1440](https://github.com/learningeconomy/LearnCard/pull/1440) [`54bdfbee2960f0c38c7faa801ca82911fb3fcf03`](https://github.com/learningeconomy/LearnCard/commit/54bdfbee2960f0c38c7faa801ca82911fb3fcf03) Thanks [@gerardopar](https://github.com/gerardopar)! - Keep credential-card padding aligned with the rendered card variant and improve responsive ribbon-title fitting.
+
+### Patch Changes
+
+-   [#1447](https://github.com/learningeconomy/LearnCard/pull/1447) [`b61fb6c6ae83838549078a538ca765776ba46b5e`](https://github.com/learningeconomy/LearnCard/commit/b61fb6c6ae83838549078a538ca765776ba46b5e) Thanks [@goblincore](https://github.com/goblincore)! - Fix boost/credential grid card header collapsing on iOS 18 (LC-2066)
+
+    The thumbnail wrapper added in #1366 for the revoked/suspended grayscale
+    treatment had no width of its own and relied on the card `<button>` stretching
+    it. iOS 18 WebKit lays a bare block child of a `<button>` flex container out
+    shrink-to-fit (UA `align-items: flex-start` per the HTML spec), so the badge —
+    which sizes itself with `width: 100%` — collapsed to the width of its 116px
+    circle: the header artwork stopped spanning the card and the options ("...")
+    button appeared to push it aside instead of overlaying it. iOS 26+ and desktop
+    engines compute `align-items: normal` and stretch the wrapper, which is why
+    the bug only appeared on older devices. The wrapper is now explicitly
+    `width: 100%` (verified by A/B on an iOS 18.1 simulator).
+
+-   [#1454](https://github.com/learningeconomy/LearnCard/pull/1454) [`306855bd45eacd131f5803ba74c87519ab316ff5`](https://github.com/learningeconomy/LearnCard/commit/306855bd45eacd131f5803ba74c87519ab316ff5) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-1964] YouTube embeds fail with Error 153 on iOS native
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.10
+
 ## 2.11.0
 
 ### Minor Changes

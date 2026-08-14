@@ -36,11 +36,7 @@ export const QRCodeScannerListener: React.FC = () => {
     const presentScannerFailedModal = () => {
         newModal(
             <section className="flex flex-col items-center text-center justify-center h-[90%]">
-                <img
-                    src={MiniGhost}
-                    alt="ghost"
-                    className="relative max-w-[250px] m-auto mb-0"
-                />
+                <img src={MiniGhost} alt="ghost" className="relative max-w-[250px] m-auto mb-0" />
                 <h1 className="text-center text-3xl font-bold text-grayscale-800 m-0 p-0 mt-4">
                     Eeek!
                 </h1>

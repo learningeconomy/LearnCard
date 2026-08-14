@@ -183,6 +183,8 @@
 }
 
 .lc-surface .ion-page .safe-area-bottom-padding {
-    padding-bottom: calc(var(--ion-safe-area-bottom) + 70px) !important; // COMPAT (ion-page carve-out)
+    padding-bottom: calc(
+        var(--ion-safe-area-bottom) + 70px
+    ) !important; // COMPAT (ion-page carve-out)
 }
 // ────────────────────────────────────────────────────────────────────────────

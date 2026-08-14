@@ -72,7 +72,7 @@ export const CancelModal: ModalContainer = ({ component, options, open }) => {
                             </button>
                         </section>
                     )}
-                    {/* This section creates a portal-like container for scenarios where you need 
+                    {/* This section creates a portal-like container for scenarios where you need
                     to display a custom button layout with a cancel action, e.g. LearnCardFooter.tsx */}
                     {usePortal && (
                         <section

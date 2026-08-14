@@ -6,8 +6,10 @@ import { SOCIAL_LOGIN_LOCK_KEY } from './socialLoginLock';
 
 const mocks = vi.hoisted(() => ({
     appleSignIn: vi.fn(),
+    credentialFromResult: vi.fn<() => object | null>(() => ({})),
     debugEvent: vi.fn(),
     firebaseAuth: { currentUser: null as null | { getIdToken: () => Promise<string> } },
+    firebaseAuthStoreSet: vi.fn(),
     flowNumber: 0,
     getCurrentUser: vi.fn(),
     getIdToken: vi.fn(),
@@ -16,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     logError: vi.fn(),
     logInfo: vi.fn(),
     logWarn: vi.fn(),
+    newModal: vi.fn(),
     presentAlert: vi.fn(),
     presentToast: vi.fn(),
     signInWithCredential: vi.fn(),
@@ -46,7 +49,8 @@ vi.mock('firebase/auth', () => {
         credential = vi.fn(() => ({}));
 
         static credentialFromError = vi.fn(() => null);
-        static credentialFromResult = vi.fn(() => ({}));
+
+        static credentialFromResult = mocks.credentialFromResult;
     }
 
     return {
@@ -109,7 +113,7 @@ vi.mock('learn-card-base', () => ({
     authStore: { set: { typeOfLogin: vi.fn() } },
     destroyRecaptcha: vi.fn(),
     ensureRecaptcha: vi.fn(),
-    firebaseAuthStore: { set: { firebaseAuth: vi.fn() } },
+    firebaseAuthStore: { set: { firebaseAuth: mocks.firebaseAuthStoreSet } },
     getLogger: () => ({
         error: mocks.logError,
         info: mocks.logInfo,
@@ -124,7 +128,7 @@ vi.mock('learn-card-base', () => ({
         sms: 'sms',
     },
     ToastTypeEnum: { Error: 'error', Success: 'success' },
-    useModal: () => ({ closeModal: vi.fn(), newModal: vi.fn() }),
+    useModal: () => ({ closeModal: vi.fn(), newModal: mocks.newModal }),
     useToast: () => ({ presentToast: mocks.presentToast }),
 }));
 
@@ -134,6 +138,15 @@ vi.mock('../firebase/firebase', () => ({
 
 vi.mock('../components/auth/GoogleLoginHelpModal', () => ({
     default: () => null,
+}));
+
+vi.mock('../paraglide/messages.js', () => ({
+    'login.social.genericError': () => 'Something went wrong. Please try again.',
+    'login.social.googleStartFailed': () => 'Google sign-in failed to start.',
+    'login.social.inProgress': () =>
+        'A sign-in is already in progress. Finish it before trying again.',
+    'login.social.popupBlocked': () =>
+        'Popups are blocked in your browser. Please enable popups and try again.',
 }));
 
 vi.mock('../config/bootstrapTenantConfig', () => ({
@@ -154,6 +167,7 @@ describe('useFirebase social login hardening', () => {
         mocks.firebaseAuth.currentUser = null;
         mocks.flowNumber = 0;
         mocks.isNative = true;
+        mocks.credentialFromResult.mockReturnValue({});
         mocks.signInWithCredential.mockResolvedValue({});
         localStorage.clear();
     });
@@ -275,6 +289,47 @@ describe('useFirebase social login hardening', () => {
         });
     });
 
+    it('releases the web lease when the page is abandoned', async () => {
+        mocks.isNative = false;
+
+        let resolveGoogleSignIn:
+            | ((value: { user: object; credential: object }) => void)
+            | undefined;
+        const googleUser = { uid: 'google-user' };
+
+        mocks.googleSignIn.mockReturnValue(
+            new Promise(resolve => {
+                resolveGoogleSignIn = resolve;
+            })
+        );
+        mocks.getCurrentUser.mockResolvedValue({ user: googleUser });
+        mocks.getIdToken.mockResolvedValue({ token: 'not-recorded' });
+
+        const { result } = renderHook(() => useFirebase());
+        let googleAttempt: Promise<void> | undefined;
+
+        act(() => {
+            googleAttempt = result.current.googleLogin();
+        });
+
+        expect(localStorage.getItem(SOCIAL_LOGIN_LOCK_KEY)).not.toBeNull();
+
+        act(() => {
+            window.dispatchEvent(new Event('pagehide'));
+        });
+
+        expect(localStorage.getItem(SOCIAL_LOGIN_LOCK_KEY)).toBeNull();
+
+        await act(async () => {
+            resolveGoogleSignIn?.({ user: googleUser, credential: {} });
+            await googleAttempt;
+        });
+
+        localStorage.setItem(SOCIAL_LOGIN_LOCK_KEY, 'sentinel');
+        window.dispatchEvent(new Event('pagehide'));
+        expect(localStorage.getItem(SOCIAL_LOGIN_LOCK_KEY)).toBe('sentinel');
+    });
+
     it('releases the web lease when the popup is closed', async () => {
         mocks.isNative = false;
         mocks.googleSignIn.mockRejectedValue({ code: 'auth/popup-closed-by-user' });
@@ -332,5 +387,104 @@ describe('useFirebase social login hardening', () => {
         expect(recordedData).not.toContain('oauth-secret');
         expect(recordedData).not.toContain('state-secret');
         expect(recordedData).not.toContain('/__/auth/handler');
+    });
+
+    it('does not treat an unrelated Apple message containing 1001 as cancellation', async () => {
+        mocks.appleSignIn.mockRejectedValue({
+            message: 'Request 1001 failed unexpectedly',
+        });
+
+        const { result } = renderHook(() => useFirebase());
+
+        await act(async () => {
+            await result.current.appleLogin();
+        });
+
+        expect(getTrackedEvents(AnalyticsEvents.SOCIAL_LOGIN_CANCELLED)).toHaveLength(0);
+        expect(getTrackedEvents(AnalyticsEvents.SOCIAL_LOGIN_FAILED)).toHaveLength(1);
+        expect(mocks.presentAlert).toHaveBeenCalledWith('Something went wrong. Please try again.');
+    });
+
+    it('shows feedback and classifies a missing Apple popup result', async () => {
+        mocks.isNative = false;
+        mocks.signInWithPopup.mockResolvedValue(undefined);
+
+        const { result } = renderHook(() => useFirebase());
+
+        await act(async () => {
+            await result.current.appleLogin();
+        });
+
+        expect(getTrackedEvents(AnalyticsEvents.SOCIAL_LOGIN_FAILED)[0]![1]).toMatchObject({
+            failure_reason: 'missing_popup_result',
+        });
+        expect(mocks.presentAlert).toHaveBeenCalledWith('Something went wrong. Please try again.');
+    });
+
+    it('shows feedback when Google returns without a user', async () => {
+        mocks.googleSignIn.mockResolvedValue({ user: null });
+        mocks.getCurrentUser.mockResolvedValue({ user: null });
+
+        const { result } = renderHook(() => useFirebase());
+
+        await act(async () => {
+            await result.current.googleLogin();
+        });
+
+        expect(getTrackedEvents(AnalyticsEvents.SOCIAL_LOGIN_FAILED)[0]![1]).toMatchObject({
+            failure_reason: 'missing_user',
+        });
+        expect(mocks.newModal).toHaveBeenCalledOnce();
+    });
+
+    it('shows feedback when native Apple auth returns without a current user', async () => {
+        mocks.appleSignIn.mockResolvedValue({ credential: {} });
+
+        const { result } = renderHook(() => useFirebase());
+
+        await act(async () => {
+            await result.current.appleLogin();
+        });
+
+        expect(getTrackedEvents(AnalyticsEvents.SOCIAL_LOGIN_FAILED)[0]![1]).toMatchObject({
+            failure_reason: 'missing_user',
+        });
+        expect(mocks.presentAlert).toHaveBeenCalledWith('Something went wrong. Please try again.');
+    });
+
+    it('shows feedback and classifies a missing Apple credential', async () => {
+        mocks.isNative = false;
+        mocks.signInWithPopup.mockResolvedValue({
+            user: { getIdToken: vi.fn(() => Promise.resolve('not-recorded')) },
+        });
+        mocks.credentialFromResult.mockReturnValue(null);
+
+        const { result } = renderHook(() => useFirebase());
+
+        await act(async () => {
+            await result.current.appleLogin();
+        });
+
+        expect(getTrackedEvents(AnalyticsEvents.SOCIAL_LOGIN_FAILED)[0]![1]).toMatchObject({
+            failure_reason: 'missing_credential',
+        });
+        expect(mocks.presentAlert).toHaveBeenCalledWith('Something went wrong. Please try again.');
+    });
+
+    it('registers the Firebase auth adapter after a successful web Apple login', async () => {
+        mocks.isNative = false;
+        mocks.signInWithPopup.mockResolvedValue({
+            user: { getIdToken: vi.fn(() => Promise.resolve('not-recorded')) },
+        });
+
+        const { result } = renderHook(() => useFirebase());
+        let loginSucceeded = false;
+
+        await act(async () => {
+            loginSucceeded = await result.current.appleLogin();
+        });
+
+        expect(loginSucceeded).toBe(true);
+        expect(mocks.firebaseAuthStoreSet).toHaveBeenCalledOnce();
     });
 });

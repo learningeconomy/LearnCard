@@ -881,9 +881,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             </div>
 
             {/* Sticky Footer */}
-            <div
-                className="shrink-0 relative z-20 bg-white/80 backdrop-blur-xl border-t border-grayscale-200/50"
-            >
+            <div className="shrink-0 relative z-20 bg-white/80 backdrop-blur-xl border-t border-grayscale-200/50">
                 <div className="max-w-[600px] mx-auto px-6 py-4 flex items-center gap-3">
                     <button
                         type="button"

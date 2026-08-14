@@ -23,10 +23,12 @@
     "scripts": {
         "prepare": "husky install",
         "lint:staged": "lint-staged",
-        "build": "nx run-many -t build --all --exclude=docs,reference,chapi-example,snap-chapi-example,snap-example-dapp",
+        "build": "nx run-many -t build --all --exclude=docs,reference",
         "build:bootstrap": "nx run-many -t build --projects=types,helpers,core,vc-plugin,email-templates",
         "test:e2e": "nx run e2e:test:e2e",
         "run-network-tests": "nx run network-brain-service:build && bun run --cwd services/learn-card-network/brain-service test",
+        "test:lc-2079": "bun run --cwd packages/learn-card-base test -- src/helpers/aiErrors.test.ts src/stores/nanoStores/chatStore.test.ts && bun run --cwd apps/learn-card-app test:unit -- src/helpers/aiError.helpers.test.ts src/components/new-ai-session/AiSessionErrorHandler.test.tsx",
+        "verify:lc-2079": "bun run test:lc-2079 && bunx nx build learn-card-app",
         "validate-packages": "node scripts/validate-packages.mjs",
         "check:safe-area": "node scripts/check-safe-area.mjs",
         "env:pull": "bash scripts/pull-env.sh",
@@ -65,7 +67,7 @@
         "shx": "^0.3.4",
         "ts-jest": "^29.0.5",
         "vite-tsconfig-paths": "^4.3.2",
-        "vitest": "^1.4.0"
+        "vitest": "^3.2.6"
     },
     "dependencies": {
         "@ionic/react": "8.7.2",
@@ -93,7 +95,7 @@
     },
     "overrides": {
         "@parcel/watcher": "2.5.1",
-        "fastify": "5.7.2",
+        "fastify": "^5.8.5",
         "pvutils": "1.0.17",
         "did-jwt": "5.9.0",
         "typescript": "5.6.2",
@@ -154,6 +156,7 @@
     },
     "patchedDependencies": {
         "capacitor-plugin-safe-area@5.0.0": "patches/capacitor-plugin-safe-area@5.0.0.patch",
-        "libsodium-wrappers@0.7.16": "patches/libsodium-wrappers@0.7.16.patch"
+        "libsodium-wrappers@0.7.16": "patches/libsodium-wrappers@0.7.16.patch",
+        "@capacitor-community/in-app-review@8.0.0": "patches/@capacitor-community%2Fin-app-review@8.0.0.patch"
     }
 }

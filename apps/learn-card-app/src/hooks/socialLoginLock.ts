@@ -111,14 +111,23 @@ export const refreshSocialLoginLock = (
     if (!storage) return true;
 
     try {
-        if (readLease(storage)?.ownerId !== ownerId) return false;
+        if (readLease(storage)?.ownerId !== ownerId) {
+            activeDocumentOwnerId = null;
+            return false;
+        }
 
         storage.setItem(
             SOCIAL_LOGIN_LOCK_KEY,
             JSON.stringify({ ownerId, expiresAt: now + SOCIAL_LOGIN_LOCK_TTL_MS })
         );
 
-        return readLease(storage)?.ownerId === ownerId;
+        const refreshed = readLease(storage)?.ownerId === ownerId;
+
+        if (!refreshed) {
+            activeDocumentOwnerId = null;
+        }
+
+        return refreshed;
     } catch {
         return true;
     }

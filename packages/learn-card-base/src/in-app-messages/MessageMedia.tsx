@@ -1,5 +1,6 @@
 import React from 'react';
 import { InAppMessageMedia } from '@learncard/types';
+import { canEmbedVideoIframe, ExternalVideoFallback } from '@learncard/react';
 
 export interface MessageMediaProps {
     media: InAppMessageMedia;
@@ -49,17 +50,24 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({ media }) => {
                 className="w-full overflow-hidden rounded-[20px] border border-white/60 shadow-sm"
                 style={{ aspectRatio: getAspectRatio(media.aspect) }}
             >
-                <iframe
-                    className="w-full h-full"
-                    src={`https://www.youtube.com/embed/${videoId}`}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    // Defense-in-depth: keeps the embed from navigating the top
-                    // frame even though the URL host is already validated above.
-                    sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-                    allowFullScreen
-                />
+                {!canEmbedVideoIframe() ? (
+                    <ExternalVideoFallback
+                        url={`https://www.youtube.com/watch?v=${videoId}`}
+                        thumbnailUrl={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                    />
+                ) : (
+                    <iframe
+                        className="w-full h-full"
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        title="YouTube video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        // Defense-in-depth: keeps the embed from navigating the top
+                        // frame even though the URL host is already validated above.
+                        sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                        allowFullScreen
+                    />
+                )}
             </div>
         );
     }

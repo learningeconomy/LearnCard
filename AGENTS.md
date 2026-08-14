@@ -332,6 +332,23 @@ const lc = await initLearnCard({ seed: '...', network: true });
 
 For repo-wide environment setup and Infisical-managed `.env` generation, see [environment-variables.md](./environment-variables.md). It covers the pull, backup, and compare scripts used across the monorepo.
 
+### Rebuilding DIDKit WASM
+
+Run this from the repository root. This is the standard local workflow: build the Web
+target, optimize the generated binary with Binaryen's `wasm-opt`, copy the package into
+the DIDKit plugin, and return from `pkg` with `cd ..` (compatible with fish):
+
+```bash
+cd lib/didkit/lib/web
+wasm-pack build --target=web && cd pkg && wasm-opt -Oz -o tmp.wasm didkit_wasm_bg.wasm && mv tmp.wasm didkit_wasm_bg.wasm && cp didkit* ../../../../../packages/plugins/didkit/src/didkit/pkg/ && cd ..
+bun --cwd ../../../../packages/plugins/didkit run build
+```
+
+The bridge and LearnCard CLI load
+`@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm`, so the final plugin build is
+required after copying the optimized WASM. Restart any running bridge or CLI process
+afterward because it loads the WASM during initialization.
+
 ## Adding a New Network Route
 
 Types flow: `@learncard/types` → brain-service tRPC router → brain-client → network plugin → `learnCard.invoke.*`

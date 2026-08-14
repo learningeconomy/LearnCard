@@ -22,8 +22,6 @@
 #   /LearnCard/cloud-service       → learn-cloud-service secrets
 #   /learn-card-app                → learn-card-app secrets
 #   /LearnCard/lca-api             → lca-api secrets
-#   /                              → root-level shared vars (currently only used
-#                                     for simple-signing-service)
 # ==============================================================================
 
 set -euo pipefail
@@ -38,7 +36,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # conflicts). Use this when a service needs root-level vars combined with its
 # own folder.
 #
-# To add a new service, add an entry to ALL three arrays below.
+# To add a new service, add an entry to all four arrays below.
 # ---------------------------------------------------------------------------
 
 SERVICE_KEYS=(
@@ -46,7 +44,6 @@ SERVICE_KEYS=(
   cloud
   app
   lca-api
-  signing
 )
 
 # Infisical folder paths — use "|" to merge multiple paths into one export.
@@ -56,7 +53,6 @@ INFISICAL_PATHS=(
   "/LearnCard/cloud-service"                  # cloud
   "/learn-card-app"                           # app
   "/LearnCard/lca-api"                        # lca-api
-  "/LearnCard/simple-signing-service"         # signing
 )
 
 # Local .env file paths (relative to repo root). Staging/prod pulls write
@@ -66,7 +62,6 @@ LOCAL_ENV_FILES=(
   "services/learn-card-network/learn-cloud-service/.env"    # cloud
   "apps/learn-card-app/.env"                                # app
   "services/learn-card-network/lca-api/.env"                # lca-api
-  "services/learn-card-network/simple-signing-service/.env" # signing
 )
 
 # Human-readable labels for --list output
@@ -75,7 +70,6 @@ SERVICE_LABELS=(
   "LearnCloud Service"
   "LearnCard App"
   "LCA API"
-  "Simple Signing Service"
 )
 
 # ---------------------------------------------------------------------------

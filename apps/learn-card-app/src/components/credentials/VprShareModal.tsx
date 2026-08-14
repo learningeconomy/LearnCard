@@ -152,11 +152,14 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
     });
 
     return (
-        <div className="flex flex-col h-full w-full bg-grayscale-100" style={{
-            paddingTop: '1.5rem',
-        }}>
+        <div
+            className="flex flex-col h-full w-full bg-grayscale-100"
+            style={{
+                paddingTop: '1.5rem',
+            }}
+        >
             {/* Header */}
-            <div 
+            <div
                 className="bg-white border-b border-grayscale-200 p-6"
                 style={{
                     paddingTop: '1.5rem',
@@ -228,7 +231,7 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
             </div>
 
             {/* Footer with Action Buttons */}
-            <div 
+            <div
                 className="bg-white border-t border-grayscale-200 p-6"
                 style={{
                     paddingBottom: '1.5rem',

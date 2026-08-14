@@ -1,10 +1,12 @@
+import { vi } from 'vitest';
+
 import { getClient, getUser } from './helpers/getClient';
 import { SigningAuthorities } from '@accesslayer/signing-authority';
 
 /**
-* More info on Signing Authorities:
-* https://docs.learncard.com/core-concepts/identities-and-keys/signing-authorities 
-**/
+ * More info on Signing Authorities:
+ * https://docs.learncard.com/core-concepts/identities-and-keys/signing-authorities
+ **/
 
 import { client } from '@mongo';
 
@@ -49,10 +51,18 @@ describe('Signing Authority', () => {
         ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
     });
 
-    it('should allow you to create a signing authority', async () => {
-        await expect(
-            userA.clients.fullAuth.signingAuthority.createSigningAuthority({ name: 'mysa' })
-        ).resolves.not.toThrow();
+    it('should return a complete signing authority after creation', async () => {
+        const signingAuthority =
+            await userA.clients.fullAuth.signingAuthority.createSigningAuthority({
+                name: 'mysa',
+            });
+
+        expect(signingAuthority).toMatchObject({
+            name: 'mysa',
+            ownerDid: userA.learnCard.id.did(),
+            did: expect.stringMatching(/^did:/),
+            endpoint: expect.stringContaining('/api'),
+        });
     });
 
     it('should prevent creating a signing authority with the same name', async () => {
@@ -73,6 +83,31 @@ describe('Signing Authority', () => {
             expect(sas[0].ownerDid).toBe(userA.learnCard.id.did());
         } else {
             expect(sas[0]).toBeDefined();
+        }
+    });
+
+    it('should warn and ignore legacy signing authorities without a DID', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        try {
+            await SigningAuthorities.insertOne({
+                ownerDid: userA.learnCard.id.did(),
+                name: 'legacy',
+                seed: 'legacy-seed',
+            });
+
+            await expect(
+                userA.clients.fullAuth.signingAuthority.signingAuthorities()
+            ).resolves.toEqual([]);
+            expect(warn).toHaveBeenCalledWith(
+                '[LCA signing-authority/get] Ignoring legacy records without a DID',
+                {
+                    ownerDid: userA.learnCard.id.did(),
+                    count: 1,
+                }
+            );
+        } finally {
+            warn.mockRestore();
         }
     });
 

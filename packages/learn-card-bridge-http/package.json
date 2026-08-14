@@ -1,13 +1,15 @@
 {
     "name": "@learncard/create-http-bridge",
-    "version": "1.1.248",
+    "version": "1.1.250",
     "description": "Instantly create and deploy a Learn Card Bridge HTTP API via AWS Lambda!",
     "main": "dist/index.js",
     "bin": "dist/index.js",
     "scripts": {
-        "serverless-deploy": "shx cp ../learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless deploy",
-        "start": "rollup -c && node dist/index.js",
-        "build": "rollup -c"
+        "sync-didkit": "bun scripts/sync-didkit.ts",
+        "serverless-deploy": "bun run sync-didkit && serverless deploy",
+        "start": "bun run sync-didkit && rollup -c && node dist/index.js",
+        "start:local": "bun run sync-didkit && bun src/server.ts",
+        "build": "bun run sync-didkit && rollup -c"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
@@ -35,7 +37,8 @@
         "serverless-http": "^3.0.1",
         "serverless-plugin-warmup": "^8.1.0",
         "simple-git": "^3.36.0",
-        "use-immer": "^0.7.0"
+        "use-immer": "^0.7.0",
+        "zod": "4.1.13"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.106",
@@ -48,7 +51,6 @@
         "@types/react": "^17.0.2",
         "nodemon": "^2.0.16",
         "serverless-plugin-typescript": "^2.1.0",
-        "shx": "^0.3.4",
         "ts-node": "^10.8.1"
     },
     "repository": {

@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 
 import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
 import AddContactView, {
@@ -18,127 +18,193 @@ const log = getLogger('qr-scanner');
 export const QRCodeScannerListener: React.FC = () => {
     const { presentToast } = useToast();
     const route = useClaimInputRouter({ defaultSource: 'camera' });
-
     const { newModal, closeModal } = useModal();
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
+    const latestSessionIdRef = useRef(0);
+    const cleanupPromiseRef = useRef<Promise<void>>(Promise.resolve());
 
-    const handleStartScanning = async () => {
-        return new Promise(async resolve => {
-            const listener = await BarcodeScanner?.addListener('barcodeScanned', async result => {
-                await listener.remove();
-                await BarcodeScanner.stopScan();
-                resolve(result.barcode);
-            });
-
-            await BarcodeScanner.startScan({
-                formats: [BarcodeFormat.QrCode],
-                lensFacing: LensFacing.Back,
-            });
-        });
-    };
-
-    const handleScan = async (qrCodeValue: string) => {
-        await handleCancelScanning();
-
-        try {
+    const handleScan = useCallback(
+        async (qrCodeValue: string) => {
             if (!qrCodeValue) return;
 
-            const result = await route(qrCodeValue);
+            try {
+                const result = await route(qrCodeValue);
 
-            if (result.kind === 'open_contact') {
-                newModal(
-                    <AddContactView
-                        handleCancel={() => closeModal()}
-                        user={result.contact}
-                        mode={AddContactViewMode.requestConnection}
-                    />,
-                    { hideButton: true, hideDimmer: true },
-                    { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
-                );
-                return;
+                if (result.kind === 'open_contact') {
+                    newModal(
+                        <AddContactView
+                            handleCancel={() => closeModal()}
+                            user={result.contact}
+                            mode={AddContactViewMode.requestConnection}
+                        />,
+                        { hideButton: true, hideDimmer: true },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+                    );
+                    return;
+                }
+                if (result.kind === 'open_claim_boost') {
+                    newModal(
+                        <ClaimBoost
+                            uri={result.boost.uri}
+                            claimChallenge={result.boost.challenge}
+                            dismissClaimModal={() => closeModal()}
+                            vc={null}
+                        />,
+                        { hideButton: true },
+                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                    );
+                    return;
+                }
+                if (result.kind === 'open_claim_vc') {
+                    newModal(
+                        <ClaimBoost dismissClaimModal={() => closeModal()} vc={result.vc} />,
+                        { hideButton: true },
+                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                    );
+                    return;
+                }
+                if (result.kind === 'open_website') {
+                    window.open(result.url, '_blank');
+                    return;
+                }
+                if (result.kind === 'unrecognized') {
+                    newModal(
+                        <section className="flex flex-col items-center text-center justify-center h-[90%]">
+                            <h1 className="text-center text-xl font-bold text-grayscale-800 m-0 p-0 mt-4">
+                                {m['scanner.failed']()}
+                            </h1>
+                            <div className="w-full flex items-center justify-center mt-8">
+                                <button
+                                    onClick={() => closeModal()}
+                                    className="text-grayscale-900 text-center text-sm"
+                                >
+                                    {m['common.close']()}
+                                </button>
+                            </div>
+                        </section>,
+                        { hideButton: true, hideDimmer: true },
+                        { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+                    );
+                }
+                // 'routed' — the router already called history.push; nothing more to do.
+            } catch (error) {
+                log.error('scanner::error', error);
+                presentToast(m['scanner.failed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
             }
-            if (result.kind === 'open_claim_boost') {
-                newModal(
-                    <ClaimBoost
-                        uri={result.boost.uri}
-                        claimChallenge={result.boost.challenge}
-                        dismissClaimModal={() => closeModal()}
-                        vc={null}
-                    />,
-                    { hideButton: true },
-                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-                );
-                return;
-            }
-            if (result.kind === 'open_claim_vc') {
-                newModal(
-                    <ClaimBoost dismissClaimModal={() => closeModal()} vc={result.vc} />,
-                    { hideButton: true },
-                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-                );
-                return;
-            }
-            if (result.kind === 'open_website') {
-                window.open(result.url, '_blank');
-                return;
-            }
-            if (result.kind === 'unrecognized') {
-                newModal(
-                    <section className="flex flex-col items-center text-center justify-center h-[90%]">
-                        <h1 className="text-center text-xl font-bold text-grayscale-800 m-0 p-0 mt-4">
-                            {m['scanner.failed']()}
-                        </h1>
-                        <div className="w-full flex items-center justify-center mt-8">
-                            <button
-                                onClick={() => closeModal()}
-                                className="text-grayscale-900 text-center text-sm"
-                            >
-                                {m['common.close']()}
-                            </button>
-                        </div>
-                    </section>,
-                    { hideButton: true, hideDimmer: true },
-                    { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
-                );
-                return;
-            }
-            // 'routed' — the router already called history.push; nothing more to do.
-        } catch (error) {
-            log.error('scanner::error', error);
-            await handleCancelScanning();
-
-            presentToast(m['scanner.failed'](), {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
-        }
-    };
-
-    const handleCancelScanning = async () => {
-        document?.querySelector('#app-router')?.classList?.remove('scanner-active');
-        QRCodeScannerStore.set.showScanner(false);
-
-        await BarcodeScanner?.removeAllListeners();
-        await BarcodeScanner?.stopScan();
-    };
+        },
+        [closeModal, newModal, presentToast, route]
+    );
+    const handleScanRef = useRef(handleScan);
+    const presentToastRef = useRef(presentToast);
 
     useEffect(() => {
-        if (Capacitor.isNativePlatform()) {
-            if (showScanner) {
-                handleStartScanning()
-                    .then(async (res: any) => {
-                        log.debug('scan::success', { rawValue: res?.rawValue });
-                        await handleScan(res?.rawValue);
-                    })
-                    .catch(async error => {
-                        log.error('scan::error', error);
-                        await handleCancelScanning();
-                    });
-            } else if (!showScanner) {
-                handleCancelScanning();
+        handleScanRef.current = handleScan;
+        presentToastRef.current = presentToast;
+    });
+
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform() || !showScanner) return;
+        const sessionId = ++latestSessionIdRef.current;
+        const previousCleanupPromise = cleanupPromiseRef.current;
+
+        let disposed = false;
+        let listener: PluginListenerHandle | null = null;
+        let stopPromise: Promise<void> | null = null;
+
+        const stopOwnedScan = (): Promise<void> => {
+            if (stopPromise) return stopPromise;
+
+            stopPromise = (async () => {
+                const activeListener = listener;
+                listener = null;
+
+                try {
+                    await activeListener?.remove();
+                } catch (error) {
+                    log.warn('scan::listener-remove-error', error);
+                }
+
+                await BarcodeScanner.stopScan();
+                document.querySelector('#app-router')?.classList.remove('scanner-active');
+            })();
+
+            return stopPromise;
+        };
+
+        const handleBarcodeScanned = async (rawValue: string) => {
+            if (disposed) return;
+
+            disposed = true;
+            log.debug('scan::success', { rawValue });
+
+            try {
+                await stopOwnedScan();
+            } catch (error) {
+                log.warn('scan::cleanup-error', error);
             }
-        }
+
+            QRCodeScannerStore.set.showScanner(false);
+            await handleScanRef.current(rawValue);
+        };
+
+        const startScanning = async () => {
+            try {
+                await previousCleanupPromise;
+                if (disposed) return;
+
+                const registeredListener = await BarcodeScanner.addListener(
+                    'barcodeScanned',
+                    result => {
+                        void handleBarcodeScanned(result.barcode.rawValue);
+                    }
+                );
+
+                if (disposed) {
+                    await registeredListener.remove();
+                    return;
+                }
+
+                listener = registeredListener;
+                await BarcodeScanner.startScan({
+                    formats: [BarcodeFormat.QrCode],
+                    lensFacing: LensFacing.Back,
+                });
+
+                if (disposed && latestSessionIdRef.current === sessionId) {
+                    await BarcodeScanner.stopScan();
+                }
+            } catch (error) {
+                if (disposed) return;
+
+                disposed = true;
+                log.error('scan::error', error);
+
+                try {
+                    await stopOwnedScan();
+                } catch (cleanupError) {
+                    log.warn('scan::cleanup-error', cleanupError);
+                }
+
+                QRCodeScannerStore.set.showScanner(false);
+                presentToastRef.current(m['scanner.failed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            }
+        };
+
+        void startScanning();
+
+        return () => {
+            disposed = true;
+            cleanupPromiseRef.current = previousCleanupPromise
+                .then(stopOwnedScan)
+                .catch(error => log.warn('scan::cleanup-error', error));
+        };
     }, [showScanner]);
 
     return null;

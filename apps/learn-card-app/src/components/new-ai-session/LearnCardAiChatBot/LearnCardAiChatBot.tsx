@@ -3,7 +3,6 @@ import { useStore } from '@nanostores/react';
 import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { getLogger } from 'learn-card-base';
-const log = getLogger('learn-card-ai-chat-bot');
 
 import {
     useAnalytics,
@@ -19,7 +18,9 @@ import CaretDown from '../../svgs/CaretDown';
 import AiChatLoading from './AiChatLoading';
 import AiSessionPlan from './AiSessionPlan';
 import AiSessionLoader from '../AiSessionLoader';
+import AiSessionErrorHandler from '../AiSessionErrorHandler';
 import { MessageWithQuestions, StreamingMessage } from './MessageWithQuestions';
+import ChatBotTypingIndicator from '../NewAiSessionChatBot/helpers/TypingIndicator';
 
 import {
     messages,
@@ -48,6 +49,8 @@ import {
 import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 import { useStickToBottom } from '../../../hooks/useStickToBottom';
 import { preloadMarkdownRenderer } from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
+
+const log = getLogger('learn-card-ai-chat-bot');
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
@@ -107,6 +110,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const isEnding = useStore(isEndingSession);
     const showEndingLoader = useStore(showEndingSessionLoader);
     const loading = useStore(isLoading);
+    const typing = useStore(isTyping);
     const authState = useStore(auth);
     const streaming = useStore(streamingMessage);
     const aiError = useStore(lastAiError);
@@ -356,6 +360,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         ) {
             return;
         }
+
         const response = aiResponseQueueRef.current[0];
         if (!response?.lifecycle.terminate()) {
             aiHandledErrorAtRef.current = aiError.at;
@@ -365,7 +370,8 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             flow_id: aiFlowIdRef.current,
             surface: 'ai_chat',
             message_index: response.messageIndex,
-            error_code: aiError.code,
+            error_code:
+                aiError.event === 'ai_error' ? aiError.rawCode ?? aiError.code : aiError.code,
             duration_ms: response.lifecycle.durationMs(),
         });
         if (streaming) {
@@ -388,9 +394,10 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     return (
         <AiFeatureGate>
             <div
-                className="flex flex-col h-full min-h-0 w-full bg-white"
+                className="relative flex flex-col h-full min-h-0 w-full bg-white"
                 style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
             >
+                <AiSessionErrorHandler />
                 {isEnding && showEndingLoader && (
                     <AiSessionLoader
                         contractUri={contractUri}
@@ -431,12 +438,11 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                     {messagesToShow.map((msg, index) => {
                                         const isLastUser = index === lastUserIdx;
                                         const isTail = index === messagesToShow.length - 1;
-                                        // Reserve viewport space on whatever is the last rendered block.
-                                        // When streaming, that's the StreamingMessage below; otherwise
-                                        // it's the tail message wrapper. Keeps the user bubble pinned
-                                        // to the top without creating a gap before the assistant reply.
+                                        // Reserve viewport space on whichever block renders last.
+                                        // Streaming and typing indicators own this space while active;
+                                        // otherwise the tail message keeps the latest user bubble pinned.
                                         const pinStyle =
-                                            isTail && !streaming && viewportAllowance > 0
+                                            isTail && !streaming && !typing && viewportAllowance > 0
                                                 ? {
                                                       minHeight: `${Math.max(
                                                           0,
@@ -472,6 +478,26 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                             }
                                         >
                                             <StreamingMessage aiApp={aiApp} />
+                                        </div>
+                                    )}
+
+                                    {typing && !streaming && !aiError && (
+                                        <div
+                                            role="status"
+                                            aria-label="AI is responding"
+                                            className="w-full transition-opacity duration-150"
+                                            style={
+                                                viewportAllowance > 0
+                                                    ? {
+                                                          minHeight: `${Math.max(
+                                                              0,
+                                                              viewportAllowance - 24
+                                                          )}px`,
+                                                      }
+                                                    : undefined
+                                            }
+                                        >
+                                            <ChatBotTypingIndicator />
                                         </div>
                                     )}
                                 </div>

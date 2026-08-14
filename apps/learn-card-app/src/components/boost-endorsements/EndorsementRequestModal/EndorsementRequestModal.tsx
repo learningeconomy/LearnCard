@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import EndorsementForm from '../EndorsementForm/EndorsementForm';
 import EndorsementBadge from '../../../assets/images/endorsement-badge.png';
@@ -19,6 +19,7 @@ import {
     UserProfilePicture,
     useWallet,
     useGetCurrentLCNUser,
+    getLogger,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { endorsementsRequestStore } from '../../../stores/endorsementsRequestStore';
@@ -27,6 +28,9 @@ import { BoostEndorsement, BoostEndorsementStatusEnum } from '../boost-endorseme
 import { VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
+import { findEndorsementForRequest } from '../EndorsementRequestForm/endorsement-request.helpers';
+
+const log = getLogger('endorsement-request-modal');
 
 export const EndorsementRequestModal: React.FC<{
     credential: VC;
@@ -44,6 +48,13 @@ export const EndorsementRequestModal: React.FC<{
 
     const [showSuccess, setShowSuccess] = useState<boolean>(false);
     const [pendingEndorsement, setPendingEndorsement] = useState<BoostEndorsement | null>(null);
+    const initWalletRef = useRef(initWallet);
+    const currentLCNUserRef = useRef(currentLCNUser);
+
+    useEffect(() => {
+        initWalletRef.current = initWallet;
+        currentLCNUserRef.current = currentLCNUser;
+    });
 
     let {
         issuerProfile,
@@ -56,45 +67,58 @@ export const EndorsementRequestModal: React.FC<{
     } = useGetVCInfo(credential, categoryType);
 
     useEffect(() => {
-        getPendingEndorsement();
-    }, [issueeProfile]);
+        let cancelled = false;
+        const profileId = issueeProfile?.profileId;
 
-    const getPendingEndorsement = async () => {
-        const wallet = await initWallet();
-        // fetch sent credentials / notifications
-        const sentCredentials = await wallet.invoke.getSentCredentials(
-            issueeProfile?.profileId || ''
-        );
+        setPendingEndorsement(null);
 
-        // filter for the specific credential
-        const [pendingEndorsement] = await sentCredentials?.filter(
-            c => c?.metadata?.credentialId === credential?.id
-        );
-
-        if (!pendingEndorsement) {
-            return;
+        if (!profileId || !shareLinkInfo) {
+            return () => {
+                cancelled = true;
+            };
         }
 
-        // get the endorsement request
-        const pendingEndorsementRequest = await wallet.read.get(pendingEndorsement?.uri);
+        const getPendingEndorsement = async () => {
+            try {
+                const wallet = await initWalletRef.current();
+                const sentCredentials = await wallet.invoke.getSentCredentials(profileId);
+                const matchingEndorsement = findEndorsementForRequest(
+                    sentCredentials,
+                    shareLinkInfo
+                );
 
-        const pendingEndorsementState = {
-            user: {
-                name: currentLCNUser?.displayName || pendingEndorsement?.from,
-                image: currentLCNUser?.image,
-            },
-            description: pendingEndorsementRequest?.description,
-            qualification: pendingEndorsementRequest?.credentialSubject?.endorsementComment,
-            mediaAttachments: pendingEndorsementRequest?.credentialSubject?.evidence,
-            relationship: pendingEndorsement?.metadata?.relationship,
-            status: pendingEndorsement?.received
-                ? BoostEndorsementStatusEnum.Approved
-                : BoostEndorsementStatusEnum.Pending,
-            date: pendingEndorsement?.sent,
-            deleted: false,
+                if (!matchingEndorsement || cancelled) return;
+
+                const pendingEndorsementRequest = await wallet.read.get(matchingEndorsement.uri);
+
+                if (cancelled) return;
+
+                setPendingEndorsement({
+                    user: {
+                        name: currentLCNUserRef.current?.displayName || matchingEndorsement.from,
+                        image: currentLCNUserRef.current?.image,
+                    },
+                    description: pendingEndorsementRequest?.description,
+                    qualification: pendingEndorsementRequest?.credentialSubject?.endorsementComment,
+                    mediaAttachments: pendingEndorsementRequest?.credentialSubject?.evidence,
+                    relationship: matchingEndorsement.metadata?.relationship,
+                    status: matchingEndorsement.received
+                        ? BoostEndorsementStatusEnum.Approved
+                        : BoostEndorsementStatusEnum.Pending,
+                    date: matchingEndorsement.sent,
+                    deleted: false,
+                });
+            } catch (error) {
+                if (!cancelled) log.warn('Unable to load an existing endorsement', error);
+            }
         };
-        setPendingEndorsement(pendingEndorsementState);
-    };
+
+        void getPendingEndorsement();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [credential?.id, issueeProfile?.profileId, shareLinkInfo]);
 
     const handleOnSuccess = (endorsementRequest: EndorsementState) => {
         endorsementRequestStore.set.setEndorsementRequest(endorsementRequest);

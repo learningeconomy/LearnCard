@@ -142,7 +142,10 @@ const issueCredentialWithStatus = async (
     statusListIndex: number
 ): Promise<VC> => {
     const unsignedCredential = {
-        '@context': ['https://www.w3.org/ns/credentials/v2'],
+        '@context': [
+            'https://www.w3.org/ns/credentials/v2',
+            'https://www.w3.org/ns/credentials/examples/v2',
+        ],
         id: `urn:uuid:bitstring-status-list-e2e-${statusListIndex}`,
         type: ['VerifiableCredential', 'BitstringStatusListE2ECredential'],
         issuer: issuer.id.did(),
