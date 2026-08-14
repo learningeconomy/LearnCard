@@ -117,6 +117,19 @@ describe('localized credential content', () => {
         expect(socialBoost.title).toBe('تعزيز');
     });
 
+    it('keeps the Leader achievement type stable while its label changes', () => {
+        const membershipOptions = CATEGORY_TO_SUBCATEGORY_LIST[BoostCategoryOptionsEnum.membership];
+        const leader = membershipOptions.find(option => option.type === AchievementTypes.Leader)!;
+
+        expect(leader.type).toBe(AchievementTypes.Leader);
+        expect(leader.title).toBe('Leader');
+
+        setLocale('ar', { reload: false });
+
+        expect(leader.type).toBe(AchievementTypes.Leader);
+        expect(leader.title).toBe('قائد');
+    });
+
     it('rerenders and resorts mounted skill options without mutating shared data', () => {
         const originalOrder = CATEGORY_TO_SKILLS[BoostCMSSKillsCategoryEnum.Durable].map(
             skill => skill.type
