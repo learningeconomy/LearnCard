@@ -1,5 +1,14 @@
 # @learncard/sd-jwt-vc-plugin
 
+## 0.2.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.30
+    -   @learncard/didkit-plugin@1.9.10
+    -   @learncard/vc-plugin@1.5.10
+
 ## 0.2.7
 
 ### Patch Changes

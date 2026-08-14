@@ -1,5 +1,13 @@
 # @learncard/didkit-plugin-node
 
+## 0.2.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.30
+    -   @learncard/didkit-plugin@1.9.10
+
 ## 0.2.27
 
 ### Patch Changes
