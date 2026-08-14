@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
@@ -50,6 +51,7 @@ const ShareBoostsBundleModal = lazyWithRetry(
 );
 
 const WalletPage: React.FC = () => {
+    const flags = useFlags();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
