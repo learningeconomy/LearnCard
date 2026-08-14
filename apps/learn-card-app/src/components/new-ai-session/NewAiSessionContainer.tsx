@@ -4,7 +4,6 @@ import ExistingAiSessionChatBotContainer from './NewAiSessionChatBot/ExistingAiS
 import NewAiAppSessionChatBotContainer from './NewAiSessionChatBot/NewAiAppSessionChatBotContainer';
 import NewAiSessionChatBotContainer from './NewAiSessionChatBot/NewAiSessionChatBotContainer';
 import AiSessionTypeSelector from './AiSessionTypeSelector/AiSessionTypeSelector';
-import AiInsightsErrorHandler from './AiInsightsErrorHandler';
 
 import { useDeviceTypeByWidth, LaunchPadAppListItem } from 'learn-card-base';
 
@@ -37,7 +36,6 @@ export const NewAiSessionContainer: React.FC<{
 
     const startInternalAiChatBot = chatBotStore.useTracked.startInternalAiChatBot();
     const setStartInternalAiChatBot = chatBotStore.set.setStartInternalAiChatBot;
-    const mode = chatBotStore.useTracked.mode();
 
     useEffect(() => {
         if (shortCircuitStep) {
@@ -109,7 +107,6 @@ export const NewAiSessionContainer: React.FC<{
         <div
             className={`h-full bg-transparent relative flex items-center flex-col justify-end ${containerStyles}`}
         >
-            <AiInsightsErrorHandler active={startInternalAiChatBot} mode={mode} />
             {step}
         </div>
     );

@@ -1,5 +1,20 @@
 # learn-card-base
 
+## 0.4.2
+
+### Patch Changes
+
+-   [#1458](https://github.com/learningeconomy/LearnCard/pull/1458) [`017225676f8bed7640f7222bebd32aa164d80ede`](https://github.com/learningeconomy/LearnCard/commit/017225676f8bed7640f7222bebd32aa164d80ede) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-2078] - 🐞 Fix toast status icons and text overflow
+
+-   [#1463](https://github.com/learningeconomy/LearnCard/pull/1463) [`9ae364deb8d3b33a9147a7b46b868791e8d5e4b9`](https://github.com/learningeconomy/LearnCard/commit/9ae364deb8d3b33a9147a7b46b868791e8d5e4b9) Thanks [@smurflo2](https://github.com/smurflo2)! - Keep credential preview option menus clickable, remove duplicate overflow controls, and show pointer cursors on clickable credential rows.
+
+-   Updated dependencies [[`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575), [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417)]:
+    -   @learncard/lca-api-plugin@2.0.0
+    -   @learncard/helpers@1.3.12
+    -   @learncard/render-method-plugin@4.0.2
+    -   @learncard/learn-card-plugin@1.2.30
+    -   @learncard/ler-rs-plugin@0.1.21
+
 ## 0.4.1
 
 ### Patch Changes

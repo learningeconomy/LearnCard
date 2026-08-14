@@ -1978,7 +1978,19 @@
         "noSessionsForTopicBody": "You don't have any sessions for \"{{topic}}\" yet. Start a new one to begin chatting about this topic.",
         "completedOn": "<0>Completed</0> on {{date}}",
         "topicLabel": "Topic",
-        "appLabel": "App"
+        "appLabel": "App",
+        "errors": {
+            "quotaTitle": "LearnCard AI usage limit reached",
+            "quotaBody": "LearnCard AI has reached its current usage limit. Please try again later.",
+            "rateTitle": "LearnCard AI is busy",
+            "rateBody": "Too many people are using LearnCard AI right now. Please try again shortly.",
+            "unavailableTitle": "LearnCard AI is temporarily unavailable",
+            "unavailableBody": "Please try again later.",
+            "timeoutTitle": "LearnCard AI took too long to respond",
+            "timeoutBody": "Please try again.",
+            "unknownTitle": "LearnCard AI could not complete this request",
+            "unknownBody": "Please try again later."
+        }
     },
     "pathways": {
         "addSkill": "Add Skill",

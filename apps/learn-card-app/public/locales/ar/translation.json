@@ -1978,7 +1978,19 @@
         "noSessionsForTopicBody": "ليست لديك أي جلسات لـ \"{{topic}}\" بعد. ابدأ جلسة جديدة للدردشة حول هذا الموضوع.",
         "completedOn": "<0>مكتمل</0> في {{date}}",
         "topicLabel": "الموضوع",
-        "appLabel": "التطبيق"
+        "appLabel": "التطبيق",
+        "errors": {
+            "quotaTitle": "تم بلوغ حد استخدام ذكاء LearnCard الاصطناعي",
+            "quotaBody": "بلغ ذكاء LearnCard الاصطناعي حد الاستخدام الحالي. يُرجى المحاولة مرة أخرى لاحقًا.",
+            "rateTitle": "ذكاء LearnCard الاصطناعي مشغول",
+            "rateBody": "يستخدم عدد كبير من الأشخاص ذكاء LearnCard الاصطناعي الآن. يُرجى المحاولة مرة أخرى بعد قليل.",
+            "unavailableTitle": "ذكاء LearnCard الاصطناعي غير متاح مؤقتًا",
+            "unavailableBody": "يُرجى المحاولة مرة أخرى لاحقًا.",
+            "timeoutTitle": "استغرق ذكاء LearnCard الاصطناعي وقتًا طويلًا للرد",
+            "timeoutBody": "يُرجى المحاولة مرة أخرى.",
+            "unknownTitle": "تعذّر على ذكاء LearnCard الاصطناعي إكمال هذا الطلب",
+            "unknownBody": "يُرجى المحاولة مرة أخرى لاحقًا."
+        }
     },
     "pathways": {
         "title": "المسارات",
