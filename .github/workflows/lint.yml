@@ -51,6 +51,30 @@ jobs:
               if: steps.changed.outputs.has_files != 'true'
               run: echo "No lintable files changed in this PR — skipping."
 
+    RepositoryContracts:
+        name: Repository shell contracts
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Setup Ruby
+              uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: '3.3'
+
+            - name: Run repository shell contracts
+              run: |
+                  for contract in .github/tests/*.test.sh; do
+                    echo "Running $contract"
+                    bash "$contract"
+                  done
+
     I18nKeys:
         runs-on: ubuntu-latest
         steps:

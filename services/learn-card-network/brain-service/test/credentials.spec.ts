@@ -272,24 +272,22 @@ describe('Credentials', () => {
             );
         });
 
-        it('should not allow accepting the same credential twice', async () => {
+        it('should allow accepting the same credential twice without duplicate side effects', async () => {
             const uri = await userA.clients.fullAuth.credential.sendCredential({
                 profileId: 'userb',
                 credential: testVc,
             });
 
-            // First acceptance should succeed
-            await expect(
-                userB.clients.fullAuth.credential.acceptCredential({ uri })
-            ).resolves.not.toThrow();
+            await expect(userB.clients.fullAuth.credential.acceptCredential({ uri })).resolves.toBe(
+                true
+            );
 
-            // Second acceptance should fail
-            await expect(
-                userB.clients.fullAuth.credential.acceptCredential({ uri })
-            ).rejects.toMatchObject({
-                code: 'BAD_REQUEST',
-                message: expect.stringContaining('already been received'),
-            });
+            addNotificationToQueueSpy.mockClear();
+
+            await expect(userB.clients.fullAuth.credential.acceptCredential({ uri })).resolves.toBe(
+                true
+            );
+            expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
         });
 
         it('should clear did:web cache for managed profiles when accepting a boost that grants canManageChildrenProfiles', async () => {
