@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     IonCol,
     IonContent,
@@ -49,7 +48,6 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     useCMSModal,
     showHardcodedBoostPacks,
 }) => {
-    const flags = useFlags();
     const [search, setSearch] = useState('');
     const { newModal, closeModal } = useModal({
         mobile: ModalTypes.FullScreen,

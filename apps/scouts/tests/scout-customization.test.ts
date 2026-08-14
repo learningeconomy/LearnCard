@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 
-import { isScoutPassCustomizationAdmin } from '../src/helpers/scoutCustomization.helpers';
+import {
+    getScoutPassAllowedBoostTypes,
+    isScoutPassCustomizationAdmin,
+} from '../src/helpers/scoutCustomization.helpers';
 
 describe('isScoutPassCustomizationAdmin', () => {
     it('allows global and network administrators', () => {
@@ -35,5 +38,17 @@ describe('isScoutPassCustomizationAdmin', () => {
             ])
         ).toBe(false);
         expect(isScoutPassCustomizationAdmin([{ credentialSubject: [] }, {}])).toBe(false);
+    });
+});
+
+describe('getScoutPassAllowedBoostTypes', () => {
+    const boostTypes = ['Merit Badge', 'Boost'];
+
+    it('limits normal scouts to the agreed credential type', () => {
+        expect(getScoutPassAllowedBoostTypes(boostTypes, false)).toEqual(['Merit Badge']);
+    });
+
+    it('allows administrators to use every credential type', () => {
+        expect(getScoutPassAllowedBoostTypes(boostTypes, true)).toEqual(boostTypes);
     });
 });

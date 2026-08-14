@@ -26,3 +26,8 @@ export const isScoutPassCustomizationAdmin = (
             typeof achievementType === 'string' && ADMIN_ACHIEVEMENT_TYPES[achievementType] === true
         );
     });
+
+export const getScoutPassAllowedBoostTypes = <T>(
+    boostTypes: ReadonlyArray<T>,
+    isAdmin: boolean
+): ReadonlyArray<T> => (isAdmin || boostTypes.length <= 1 ? boostTypes : boostTypes.slice(0, 1));

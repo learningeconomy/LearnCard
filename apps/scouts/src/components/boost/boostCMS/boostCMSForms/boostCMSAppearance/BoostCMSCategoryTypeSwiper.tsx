@@ -17,7 +17,10 @@ import {
 import 'swiper/css/navigation';
 import { SetState } from 'packages/shared-types/dist';
 import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
-import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
+import {
+    getScoutPassAllowedBoostTypes,
+    isScoutPassCustomizationAdmin,
+} from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 const BoostVCTypeSwiper: React.FC<{
     boostUserType: BoostUserTypeEnum;
@@ -30,11 +33,10 @@ const BoostVCTypeSwiper: React.FC<{
     const { credentials } = useHighlightedCredentials();
     const isAdmin = isScoutPassCustomizationAdmin(credentials);
 
-    let _boostVCTypeOptions = isAdmin
-        ? boostVCTypeOptions[boostUserType]
-        : boostVCTypeOptions[boostUserType].filter(
-              option => option.type !== BoostCategoryOptionsEnum.other
-          );
+    let _boostVCTypeOptions = getScoutPassAllowedBoostTypes(
+        boostVCTypeOptions[boostUserType],
+        isAdmin
+    );
     if (!flags?.createMeritBadges) {
         _boostVCTypeOptions = _boostVCTypeOptions.filter(
             option => option.type !== BoostCategoryOptionsEnum.meritBadge

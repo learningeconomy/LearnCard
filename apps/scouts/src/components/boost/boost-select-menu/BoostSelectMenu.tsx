@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, RouteComponentProps } from 'react-router-dom';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import Lottie from 'react-lottie-player';
 
 import {
@@ -40,7 +39,10 @@ import { UnsignedVC, VC } from '@learncard/types';
 import PurpGhost from '../../../assets/lotties/purpghost.json';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
-import { isScoutPassCustomizationAdmin } from 'apps/scouts/src/helpers/scoutCustomization.helpers';
+import {
+    getScoutPassAllowedBoostTypes,
+    isScoutPassCustomizationAdmin,
+} from 'apps/scouts/src/helpers/scoutCustomization.helpers';
 
 const PATH_TO_CATEGORY = {
     learninghistory: BoostCategoryOptionsEnum.learningHistory,
@@ -76,7 +78,6 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
     otherUserProfileId,
 }) => {
     const width = useScreenWidth(true);
-    const flags = useFlags();
     const location = useLocation();
     const { handlePresentBoostModal } = useBoostModal(history);
 
@@ -105,11 +106,10 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
 
     const { credentials } = useHighlightedCredentials();
     const isAdmin = isScoutPassCustomizationAdmin(credentials);
-    const boostDropdownCategoryOptions = isAdmin
-        ? boostVCTypeOptions[boostUserType]
-        : boostVCTypeOptions[boostUserType].filter(
-              option => option.type !== BoostCategoryOptionsEnum.other
-          );
+    const boostDropdownCategoryOptions = getScoutPassAllowedBoostTypes(
+        boostVCTypeOptions[boostUserType],
+        isAdmin
+    );
 
     const { color, IconComponent, title } = boostCategoryOptions[selectedVCType];
 
