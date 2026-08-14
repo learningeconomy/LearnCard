@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import {
     useImageUpload,
@@ -30,6 +31,7 @@ import BoostVCTypeOptionButton from '../../../boost-options/boostVCTypeOptions/B
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
 import { SetState } from '@learncard/helpers';
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
 import { StylePackCategoryModal } from './StylePackCategoryModal';
 
 export enum StylePackCategories {
@@ -72,6 +74,13 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     setActiveForm: SetState<BoostCMSActiveAppearanceForm>;
 }> = ({ state, setState, handleCloseModal, disabled = false, boostUserType, setActiveForm }) => {
     const { newModal } = useModal();
+    const flags = useFlags();
+    const { credentials } = useHighlightedCredentials();
+    const isAdmin = credentials.some(cred => {
+        const subject = cred?.credentialSubject;
+        if (!subject || Array.isArray(subject)) return false;
+        return ['ext:GlobalID', 'ext:NetworkID'].includes(subject?.achievement?.achievementType);
+    });
 
     const { data: boostAppearanceBadgeList, isLoading } = useScoutPassStylesPackRegistry();
 
@@ -188,10 +197,12 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                             </p>
                             {categoryButton}
                         </div>
-                        <button onClick={handleImageSelect} className="boost-cms-badge">
-                            <Camera className="boost-cms-camera-icon text-white" />
-                            <span className="upload-text">Upload</span>
-                        </button>
+                        {(!flags?.disableCmsCustomization || isAdmin) && (
+                            <button onClick={handleImageSelect} className="boost-cms-badge">
+                                <Camera className="boost-cms-camera-icon text-white" />
+                                <span className="upload-text">Upload</span>
+                            </button>
+                        )}
                         {photo && !isDefaultImage && (
                             <div className="boost-cms-badge">
                                 <img

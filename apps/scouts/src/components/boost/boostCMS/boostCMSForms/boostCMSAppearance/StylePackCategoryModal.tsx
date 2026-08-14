@@ -7,6 +7,8 @@ import { BoostUserTypeEnum, boostVCTypeOptions } from '../../../boost-options/bo
 import BoostVCTypeOptionButton from '../../../boost-options/boostVCTypeOptions/BoostVCTypeOptionButton';
 import { StylePackCategories } from './BoostCMSAppearanceBadgeList';
 import { SetState } from '@learncard/helpers';
+import useHighlightedCredentials from 'apps/scouts/src/hooks/useHighlightedCredentials';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 export interface StylePackCategoryModalProps {
     activeStylePackCategory: StylePackCategories;
@@ -19,15 +21,26 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
     activeStylePackCategory,
     setActiveStylePackCategory,
     boostUserType,
+    targetType,
 }) => {
     const { closeModal } = useModal();
+    const flags = useFlags();
+    const { credentials } = useHighlightedCredentials();
+    const isAdmin = credentials.some(cred => {
+        const subject = cred?.credentialSubject;
+        if (!subject || Array.isArray(subject)) return false;
+        return ['ext:GlobalID', 'ext:NetworkID'].includes(subject?.achievement?.achievementType);
+    });
 
     const handleSelectCategory = (category: StylePackCategories) => {
         setActiveStylePackCategory(category);
         closeModal();
     };
 
-    const boostOptions = boostVCTypeOptions[boostUserType];
+    let boostOptions = boostVCTypeOptions[boostUserType] ?? [];
+    if (flags?.disableCmsCustomization && !isAdmin) {
+        boostOptions = boostOptions.filter(item => item.title === targetType);
+    }
 
     return (
         <div className="w-full">

@@ -27,6 +27,9 @@ const BoostVCTypeSwiper: React.FC<{
     const swiperRef = useRef();
 
     let _boostVCTypeOptions = boostVCTypeOptions?.[boostUserType] ?? [];
+    if (flags?.disableCmsCustomization) {
+        _boostVCTypeOptions = _boostVCTypeOptions.slice(0, 1);
+    }
     if (!flags?.createMeritBadges) {
         _boostVCTypeOptions = _boostVCTypeOptions.filter(
             option => option.type !== BoostCategoryOptionsEnum.meritBadge

@@ -1,6 +1,7 @@
 // oxlint-disable-next-line no-unused-vars
 import React, { useEffect, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
@@ -103,6 +104,7 @@ const BoostCMS: React.FC<{
     showCustomTypeInput,
     returnToParentAfterSave = false,
 }) => {
+    const flags = useFlags();
     const history = useHistory();
     const location = useLocation();
     const query = usePathQuery();
@@ -735,7 +737,9 @@ const BoostCMS: React.FC<{
                     />
                 )}
 
-                <BoostCMSMediaForm state={state} setState={setState} />
+                {!flags?.disableCmsCustomization && (
+                    <BoostCMSMediaForm state={state} setState={setState} />
+                )}
 
                 <BoostCMSBasicInfoForm
                     state={state}

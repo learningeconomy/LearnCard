@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import BoostCMSHeader from './BoostCMSHeader/BoostCMSHeader';
@@ -103,6 +104,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
     handleCloseModal,
     // issueMode,
 }) => {
+    const flags = useFlags();
     const history = useHistory();
     const location = useLocation();
     const query = usePathQuery();
@@ -766,7 +768,13 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                         />
                     )}
 
-                <BoostCMSMediaForm state={state} setState={setState} disabled={isEditDisabled} />
+                {!flags?.disableCmsCustomization && (
+                    <BoostCMSMediaForm
+                        state={state}
+                        setState={setState}
+                        disabled={isEditDisabled}
+                    />
+                )}
 
                 <BoostCMSBasicInfoForm
                     state={state}
