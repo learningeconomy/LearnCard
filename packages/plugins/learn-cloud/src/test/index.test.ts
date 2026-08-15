@@ -10,6 +10,9 @@ const mockClient = {
     storage: {
         batchResolve: { query: jest.fn() },
     },
+    customStorage: {
+        count: { query: jest.fn().mockResolvedValue(0) },
+    },
 };
 
 jest.mock('@learncard/learn-cloud-client', () => ({
@@ -32,9 +35,9 @@ const makeW3cVc = () => ({
     },
 });
 
-const makeLearnCard = () => ({
+const makeLearnCard = (did = 'did:key:z6MkHolder') => ({
     id: {
-        did: () => 'did:key:z6MkHolder',
+        did: () => did,
     },
     invoke: {
         getDidAuthVp: jest.fn().mockResolvedValue('did-auth-jwt'),
@@ -51,6 +54,35 @@ describe('LearnCloud Plugin', () => {
 
     it('exposes a function', () => {
         expect(getLearnCloudPlugin).toBeDefined();
+    });
+
+    it('defers remote identity requests until a method needs them', async () => {
+        await getLearnCloudPlugin(makeLearnCard() as never, 'https://cloud.example');
+
+        expect(mockClient.user.getDids.query).not.toHaveBeenCalled();
+        expect(mockClient.utilities.getDid.query).not.toHaveBeenCalled();
+    });
+
+    it('does not load associated DIDs when automatic association is disabled', async () => {
+        const learnCard = makeLearnCard();
+        const plugin = await getLearnCloudPlugin(
+            learnCard as never,
+            'https://cloud.example',
+            [],
+            [],
+            false
+        );
+
+        await plugin.methods.learnCloudCount(
+            makeLearnCard('did:web:holder.example') as never,
+            undefined as never,
+            false
+        );
+
+        expect(mockClient.user.getDids.query).not.toHaveBeenCalled();
+        expect(mockClient.customStorage.count.query).toHaveBeenCalledWith({
+            includeAssociatedDids: false,
+        });
     });
 
     it('projects envelope-backed credentials in learnCloudBatchResolve', async () => {

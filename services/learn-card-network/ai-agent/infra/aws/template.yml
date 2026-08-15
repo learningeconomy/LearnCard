@@ -1,0 +1,859 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: LearnCard AI Agent on reusable Amazon ECS/Fargate infrastructure with CloudWatch operations
+
+Parameters:
+    CreateService:
+        Type: String
+        Default: 'false'
+        AllowedValues: ['true', 'false']
+        Description: Bootstrap ECR with false, push the first image, then update with true.
+    Environment:
+        Type: String
+        AllowedValues: [staging, production]
+    ServiceName:
+        Type: String
+        Default: learncard-ai-agent
+    DeploymentId:
+        Type: String
+        Default: bootstrap
+    ImageTag:
+        Type: String
+        Default: bootstrap
+    ClusterName:
+        Type: String
+        Default: ''
+    VpcId:
+        Type: AWS::EC2::VPC::Id
+    PrivateSubnetIds:
+        Type: List<AWS::EC2::Subnet::Id>
+    LoadBalancerSecurityGroupId:
+        Type: AWS::EC2::SecurityGroup::Id
+    HttpsListenerArn:
+        Type: String
+        Default: ''
+    LoadBalancerFullName:
+        Type: String
+        Default: app/bootstrap/bootstrap
+        Description: ALB FullName, for example app/name/id, used by request-count auto scaling and alarms.
+    LoadBalancerDnsName:
+        Type: String
+        Default: ''
+    LoadBalancerCanonicalHostedZoneId:
+        Type: String
+        Default: ''
+    HostedZoneId:
+        Type: AWS::Route53::HostedZone::Id
+    Hostname:
+        Type: String
+        Default: ''
+    ListenerRulePriority:
+        Type: Number
+        Default: 100
+        MinValue: 1
+        MaxValue: 50000
+    AuthDomain:
+        Type: String
+        Default: ''
+    CloudUrl:
+        Type: String
+        Default: ''
+    NetworkUrl:
+        Type: String
+        Default: ''
+    ConsentFlowContractUri:
+        Type: String
+        Default: ''
+    ConsentFlowAppUrl:
+        Type: String
+        Default: ''
+    Model:
+        Type: String
+        Default: gpt-5.5
+    ModelInputCostUsdPerMillion:
+        Type: Number
+        Default: 5
+        MinValue: 0
+    ModelOutputCostUsdPerMillion:
+        Type: Number
+        Default: 30
+        MinValue: 0
+    WebSearchProvider:
+        Type: String
+        Default: brave
+        AllowedValues: [brave, none]
+    OpenAIApiKeySecretArn:
+        Type: String
+        Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-openai
+        NoEcho: true
+    BraveSearchApiKeySecretArn:
+        Type: String
+        Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-brave
+        NoEcho: true
+    WalletSeedSecretArn:
+        Type: String
+        Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-wallet
+        NoEcho: true
+    MongoUriSecretArn:
+        Type: String
+        Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-mongo
+        NoEcho: true
+    SentryDsnSecretArn:
+        Type: String
+        Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-sentry
+        NoEcho: true
+    MongoDbName:
+        Type: String
+        Default: learn-card-ai-agent
+    EncryptionKeyId:
+        Type: String
+        Default: agent-learncard-dag-jwe-v1
+    Cpu:
+        Type: String
+        Default: '1024'
+        AllowedValues: ['256', '512', '1024', '2048', '4096']
+    Memory:
+        Type: String
+        Default: '2048'
+    MinTaskCount:
+        Type: Number
+        Default: 1
+        MinValue: 1
+    MaxTaskCount:
+        Type: Number
+        Default: 4
+        MinValue: 1
+    MaxToolRounds:
+        Type: Number
+        Default: 8
+        MinValue: 1
+        MaxValue: 20
+    RunTimeoutMs:
+        Type: Number
+        Default: 120000
+        MinValue: 5000
+        MaxValue: 600000
+    MaxOutputTokens:
+        Type: Number
+        Default: 4096
+        MinValue: 128
+        MaxValue: 16384
+    MaxRunTokens:
+        Type: Number
+        Default: 50000
+        MinValue: 1000
+        MaxValue: 1000000
+    MaxRunCostUsd:
+        Type: Number
+        Default: 1
+        MinValue: 0.01
+    MetricsNamespace:
+        Type: String
+        Default: LearnCard/AIAgent
+    AlertEmail:
+        Type: String
+        Default: ''
+    FailureRateThresholdPercent:
+        Type: Number
+        Default: 10
+        MinValue: 0
+        MaxValue: 100
+    LatencyThresholdMs:
+        Type: Number
+        Default: 30000
+        MinValue: 1
+    HourlyCostThresholdUsd:
+        Type: Number
+        Default: 25
+        MinValue: 0.01
+
+Rules:
+    ServiceConfigurationRequired:
+        RuleCondition: !Equals [!Ref CreateService, 'true']
+        Assertions:
+            - Assert: !Not [!Equals [!Ref ClusterName, '']]
+              AssertDescription: ClusterName is required.
+            - Assert: !Not [!Equals [!Ref HttpsListenerArn, '']]
+              AssertDescription: HttpsListenerArn is required.
+            - Assert: !Not [!Equals [!Ref LoadBalancerFullName, app/bootstrap/bootstrap]]
+              AssertDescription: LoadBalancerFullName is required.
+            - Assert: !Not [!Equals [!Ref LoadBalancerDnsName, '']]
+              AssertDescription: LoadBalancerDnsName is required.
+            - Assert: !Not [!Equals [!Ref LoadBalancerCanonicalHostedZoneId, '']]
+              AssertDescription: LoadBalancerCanonicalHostedZoneId is required.
+            - Assert: !Not [!Equals [!Ref Hostname, '']]
+              AssertDescription: Hostname is required.
+            - Assert: !Not [!Equals [!Ref AuthDomain, '']]
+              AssertDescription: AuthDomain is required.
+            - Assert: !Not [!Equals [!Ref CloudUrl, '']]
+              AssertDescription: CloudUrl is required.
+            - Assert: !Not [!Equals [!Ref NetworkUrl, '']]
+              AssertDescription: NetworkUrl is required.
+            - Assert: !Not [!Equals [!Ref ConsentFlowContractUri, '']]
+              AssertDescription: ConsentFlowContractUri is required.
+            - Assert: !Not [!Equals [!Ref ConsentFlowAppUrl, '']]
+              AssertDescription: ConsentFlowAppUrl is required.
+            - Assert: !Not
+                  - !Equals
+                    - !Ref OpenAIApiKeySecretArn
+                    - arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-openai
+              AssertDescription: OpenAIApiKeySecretArn is required.
+            - Assert: !Not
+                  - !Equals
+                    - !Ref WalletSeedSecretArn
+                    - arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-wallet
+              AssertDescription: WalletSeedSecretArn is required.
+            - Assert: !Not
+                  - !Equals
+                    - !Ref MongoUriSecretArn
+                    - arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-mongo
+              AssertDescription: MongoUriSecretArn is required.
+            - Assert: !Not
+                  - !Equals
+                    - !Ref SentryDsnSecretArn
+                    - arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-sentry
+              AssertDescription: SentryDsnSecretArn is required.
+            - Assert: !Or
+                  - !Equals [!Ref WebSearchProvider, none]
+                  - !Not
+                    - !Equals
+                      - !Ref BraveSearchApiKeySecretArn
+                      - arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-brave
+              AssertDescription: BraveSearchApiKeySecretArn is required when Brave is enabled.
+
+Conditions:
+    ShouldCreateService: !Equals [!Ref CreateService, 'true']
+    UseBrave: !Equals [!Ref WebSearchProvider, brave]
+    HasAlertEmail: !And
+        - !Condition ShouldCreateService
+        - !Not [!Equals [!Ref AlertEmail, '']]
+
+Resources:
+    Repository:
+        Type: AWS::ECR::Repository
+        DeletionPolicy: Retain
+        UpdateReplacePolicy: Retain
+        Properties:
+            RepositoryName: !Sub '${ServiceName}-${Environment}'
+            ImageScanningConfiguration:
+                ScanOnPush: true
+            ImageTagMutability: IMMUTABLE
+            LifecyclePolicy:
+                LifecyclePolicyText: |
+                    {
+                      "rules": [
+                        {
+                          "rulePriority": 1,
+                          "description": "Keep latest 30 immutable commit images",
+                          "selection": {
+                            "tagStatus": "tagged",
+                            "tagPrefixList": ["sha-"],
+                            "countType": "imageCountMoreThan",
+                            "countNumber": 30
+                          },
+                          "action": { "type": "expire" }
+                        },
+                        {
+                          "rulePriority": 2,
+                          "description": "Delete untagged images after seven days",
+                          "selection": {
+                            "tagStatus": "untagged",
+                            "countType": "sinceImagePushed",
+                            "countUnit": "days",
+                            "countNumber": 7
+                          },
+                          "action": { "type": "expire" }
+                        }
+                      ]
+                    }
+
+    ApplicationLogGroup:
+        Type: AWS::Logs::LogGroup
+        Condition: ShouldCreateService
+        Properties:
+            LogGroupName: !Sub '/ecs/${ServiceName}-${Environment}'
+            RetentionInDays: 30
+
+    TaskExecutionRole:
+        Type: AWS::IAM::Role
+        Condition: ShouldCreateService
+        Properties:
+            RoleName: !Sub '${ServiceName}-${Environment}-execution'
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Service: ecs-tasks.amazonaws.com
+                      Action: sts:AssumeRole
+            ManagedPolicyArns:
+                - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+            Policies:
+                - PolicyName: runtime-secrets
+                  PolicyDocument:
+                      Version: '2012-10-17'
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - secretsmanager:GetSecretValue
+                            Resource:
+                                - !Ref OpenAIApiKeySecretArn
+                                - !Ref WalletSeedSecretArn
+                                - !Ref MongoUriSecretArn
+                                - !Ref SentryDsnSecretArn
+                                - !If [
+                                      UseBrave,
+                                      !Ref BraveSearchApiKeySecretArn,
+                                      !Ref 'AWS::NoValue',
+                                  ]
+
+    TaskSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Condition: ShouldCreateService
+        Properties:
+            GroupDescription: !Sub '${ServiceName}-${Environment} ingress from the shared ALB only'
+            VpcId: !Ref VpcId
+            SecurityGroupIngress:
+                - IpProtocol: tcp
+                  FromPort: 3000
+                  ToPort: 3000
+                  SourceSecurityGroupId: !Ref LoadBalancerSecurityGroupId
+            SecurityGroupEgress:
+                - IpProtocol: '-1'
+                  CidrIp: 0.0.0.0/0
+            Tags:
+                - Key: Name
+                  Value: !Sub '${ServiceName}-${Environment}'
+
+    TargetGroup:
+        Type: AWS::ElasticLoadBalancingV2::TargetGroup
+        Condition: ShouldCreateService
+        Properties:
+            Name: !Sub '${ServiceName}-${Environment}'
+            VpcId: !Ref VpcId
+            Port: 3000
+            Protocol: HTTP
+            ProtocolVersion: HTTP1
+            TargetType: ip
+            HealthCheckEnabled: true
+            HealthCheckPath: /api/health/ready
+            HealthCheckPort: traffic-port
+            HealthCheckProtocol: HTTP
+            HealthCheckIntervalSeconds: 30
+            HealthCheckTimeoutSeconds: 5
+            HealthyThresholdCount: 2
+            UnhealthyThresholdCount: 2
+            Matcher:
+                HttpCode: '200'
+            TargetGroupAttributes:
+                - Key: deregistration_delay.timeout_seconds
+                  Value: '30'
+            Tags:
+                - Key: Project
+                  Value: learncard
+                - Key: Service
+                  Value: !Ref ServiceName
+                - Key: Environment
+                  Value: !Ref Environment
+
+    Certificate:
+        Type: AWS::CertificateManager::Certificate
+        Condition: ShouldCreateService
+        Properties:
+            DomainName: !Ref Hostname
+            ValidationMethod: DNS
+            DomainValidationOptions:
+                - DomainName: !Ref Hostname
+                  HostedZoneId: !Ref HostedZoneId
+            Tags:
+                - Key: Project
+                  Value: learncard
+                - Key: Service
+                  Value: !Ref ServiceName
+                - Key: Environment
+                  Value: !Ref Environment
+
+    ListenerCertificate:
+        Type: AWS::ElasticLoadBalancingV2::ListenerCertificate
+        Condition: ShouldCreateService
+        Properties:
+            ListenerArn: !Ref HttpsListenerArn
+            Certificates:
+                - CertificateArn: !Ref Certificate
+
+    ListenerRule:
+        Type: AWS::ElasticLoadBalancingV2::ListenerRule
+        Condition: ShouldCreateService
+        DependsOn: ListenerCertificate
+        Properties:
+            ListenerArn: !Ref HttpsListenerArn
+            Priority: !Ref ListenerRulePriority
+            Conditions:
+                - Field: host-header
+                  HostHeaderConfig:
+                      Values:
+                          - !Ref Hostname
+            Actions:
+                - Type: forward
+                  TargetGroupArn: !Ref TargetGroup
+
+    TaskDefinition:
+        Type: AWS::ECS::TaskDefinition
+        Condition: ShouldCreateService
+        Properties:
+            Family: !Sub '${ServiceName}-${Environment}'
+            RequiresCompatibilities: [FARGATE]
+            NetworkMode: awsvpc
+            Cpu: !Ref Cpu
+            Memory: !Ref Memory
+            ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+            RuntimePlatform:
+                CpuArchitecture: ARM64
+                OperatingSystemFamily: LINUX
+            ContainerDefinitions:
+                - Name: app
+                  Image: !Sub '${Repository.RepositoryUri}:${ImageTag}'
+                  Essential: true
+                  PortMappings:
+                      - ContainerPort: 3000
+                        Protocol: tcp
+                  LinuxParameters:
+                      InitProcessEnabled: true
+                  StopTimeout: 30
+                  LogConfiguration:
+                      LogDriver: awslogs
+                      Options:
+                          awslogs-group: !Ref ApplicationLogGroup
+                          awslogs-region: !Ref AWS::Region
+                          awslogs-stream-prefix: ai-agent
+                          mode: non-blocking
+                          max-buffer-size: 25m
+                  Environment:
+                      - Name: NODE_ENV
+                        Value: production
+                      - Name: PORT
+                        Value: '3000'
+                      - Name: AI_AGENT_AUTH_DOMAIN
+                        Value: !Ref AuthDomain
+                      - Name: AI_AGENT_CLOUD_URL
+                        Value: !Ref CloudUrl
+                      - Name: AI_AGENT_NETWORK_URL
+                        Value: !Ref NetworkUrl
+                      - Name: AI_AGENT_CONSENT_FLOW_CONTRACT_URI
+                        Value: !Ref ConsentFlowContractUri
+                      - Name: AI_AGENT_CONSENT_FLOW_APP_URL
+                        Value: !Ref ConsentFlowAppUrl
+                      - Name: AI_AGENT_MODEL
+                        Value: !Ref Model
+                      - Name: AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION
+                        Value: !Ref ModelInputCostUsdPerMillion
+                      - Name: AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION
+                        Value: !Ref ModelOutputCostUsdPerMillion
+                      - Name: AI_AGENT_MAX_TOOL_ROUNDS
+                        Value: !Ref MaxToolRounds
+                      - Name: AI_AGENT_RUN_TIMEOUT_MS
+                        Value: !Ref RunTimeoutMs
+                      - Name: AI_AGENT_MAX_OUTPUT_TOKENS
+                        Value: !Ref MaxOutputTokens
+                      - Name: AI_AGENT_MAX_RUN_TOKENS
+                        Value: !Ref MaxRunTokens
+                      - Name: AI_AGENT_MAX_RUN_COST_USD
+                        Value: !Ref MaxRunCostUsd
+                      - Name: AI_AGENT_METRICS_NAMESPACE
+                        Value: !Ref MetricsNamespace
+                      - Name: AI_AGENT_MONGO_DB_NAME
+                        Value: !Ref MongoDbName
+                      - Name: AI_AGENT_ENCRYPTION_KEY_ID
+                        Value: !Ref EncryptionKeyId
+                      - Name: AI_AGENT_SELF_IMPROVEMENT_ENABLED
+                        Value: 'true'
+                      - Name: AI_AGENT_WEB_SEARCH_PROVIDER
+                        Value: !Ref WebSearchProvider
+                      - Name: AI_AGENT_DEBUG_ENABLED
+                        Value: 'false'
+                      - Name: AI_AGENT_AUTONOMY_DEV_ENABLED
+                        Value: 'false'
+                      - Name: AI_AGENT_TRIGGER_ENABLED
+                        Value: 'false'
+                      - Name: AI_AGENT_TRUST_PROXY_HOPS
+                        Value: '1'
+                      - Name: SENTRY_ENV
+                        Value: !Ref Environment
+                      - Name: AI_AGENT_DEPLOYMENT_ID
+                        Value: !Ref DeploymentId
+                  Secrets:
+                      - Name: OPENAI_API_KEY
+                        ValueFrom: !Ref OpenAIApiKeySecretArn
+                      - Name: AI_AGENT_WALLET_SEED
+                        ValueFrom: !Ref WalletSeedSecretArn
+                      - Name: AI_AGENT_MONGO_URI
+                        ValueFrom: !Ref MongoUriSecretArn
+                      - Name: SENTRY_DSN
+                        ValueFrom: !Ref SentryDsnSecretArn
+                      - !If
+                        - UseBrave
+                        - Name: BRAVE_SEARCH_API_KEY
+                          ValueFrom: !Ref BraveSearchApiKeySecretArn
+                        - !Ref 'AWS::NoValue'
+            Tags:
+                - Key: Project
+                  Value: learncard
+                - Key: Service
+                  Value: !Ref ServiceName
+                - Key: Environment
+                  Value: !Ref Environment
+                - Key: Architecture
+                  Value: arm64
+
+    EcsService:
+        Type: AWS::ECS::Service
+        Condition: ShouldCreateService
+        DependsOn: ListenerRule
+        Properties:
+            ServiceName: !Sub '${ServiceName}-${Environment}'
+            Cluster: !Ref ClusterName
+            TaskDefinition: !Ref TaskDefinition
+            DesiredCount: !Ref MinTaskCount
+            LaunchType: FARGATE
+            PlatformVersion: LATEST
+            HealthCheckGracePeriodSeconds: 180
+            EnableECSManagedTags: true
+            PropagateTags: SERVICE
+            DeploymentConfiguration:
+                MinimumHealthyPercent: 100
+                MaximumPercent: 200
+                DeploymentCircuitBreaker:
+                    Enable: true
+                    Rollback: true
+            LoadBalancers:
+                - ContainerName: app
+                  ContainerPort: 3000
+                  TargetGroupArn: !Ref TargetGroup
+            NetworkConfiguration:
+                AwsvpcConfiguration:
+                    AssignPublicIp: DISABLED
+                    SecurityGroups:
+                        - !Ref TaskSecurityGroup
+                    Subnets: !Ref PrivateSubnetIds
+            Tags:
+                - Key: Project
+                  Value: learncard
+                - Key: Service
+                  Value: !Ref ServiceName
+                - Key: Environment
+                  Value: !Ref Environment
+                - Key: ManagedBy
+                  Value: cloudformation
+
+    ScalingTarget:
+        Type: AWS::ApplicationAutoScaling::ScalableTarget
+        Condition: ShouldCreateService
+        DependsOn: EcsService
+        Properties:
+            MinCapacity: !Ref MinTaskCount
+            MaxCapacity: !Ref MaxTaskCount
+            ResourceId: !Sub 'service/${ClusterName}/${ServiceName}-${Environment}'
+            ScalableDimension: ecs:service:DesiredCount
+            ServiceNamespace: ecs
+
+    ScalingPolicy:
+        Type: AWS::ApplicationAutoScaling::ScalingPolicy
+        Condition: ShouldCreateService
+        Properties:
+            PolicyName: !Sub '${ServiceName}-${Environment}-requests'
+            PolicyType: TargetTrackingScaling
+            ScalingTargetId: !Ref ScalingTarget
+            TargetTrackingScalingPolicyConfiguration:
+                TargetValue: 20
+                ScaleInCooldown: 300
+                ScaleOutCooldown: 60
+                PredefinedMetricSpecification:
+                    PredefinedMetricType: ALBRequestCountPerTarget
+                    ResourceLabel:
+                        !Join [
+                            '/',
+                            [!Ref LoadBalancerFullName, !GetAtt TargetGroup.TargetGroupFullName],
+                        ]
+
+    DnsRecord:
+        Type: AWS::Route53::RecordSet
+        Condition: ShouldCreateService
+        Properties:
+            HostedZoneId: !Ref HostedZoneId
+            Name: !Ref Hostname
+            Type: A
+            AliasTarget:
+                DNSName: !Ref LoadBalancerDnsName
+                HostedZoneId: !Ref LoadBalancerCanonicalHostedZoneId
+                EvaluateTargetHealth: true
+
+    AlertsTopic:
+        Type: AWS::SNS::Topic
+        Condition: ShouldCreateService
+        Properties:
+            TopicName: !Sub '${ServiceName}-${Environment}-alerts'
+
+    AlertsEmailSubscription:
+        Type: AWS::SNS::Subscription
+        Condition: HasAlertEmail
+        Properties:
+            TopicArn: !Ref AlertsTopic
+            Protocol: email
+            Endpoint: !Ref AlertEmail
+
+    HttpFailureAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Condition: ShouldCreateService
+        Properties:
+            AlarmName: !Sub '${ServiceName}-${Environment}-http-failures'
+            Namespace: !Ref MetricsNamespace
+            MetricName: HttpRequestFailure
+            Dimensions:
+                - Name: Service
+                  Value: learncard-ai-agent
+                - Name: Environment
+                  Value: !Ref Environment
+            Statistic: Sum
+            Period: 300
+            EvaluationPeriods: 1
+            Threshold: 5
+            ComparisonOperator: GreaterThanOrEqualToThreshold
+            TreatMissingData: notBreaching
+            AlarmActions: [!Ref AlertsTopic]
+            OKActions: [!Ref AlertsTopic]
+
+    RequestLatencyAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Condition: ShouldCreateService
+        Properties:
+            AlarmName: !Sub '${ServiceName}-${Environment}-request-latency'
+            Namespace: !Ref MetricsNamespace
+            MetricName: HttpRequestLatency
+            Dimensions:
+                - Name: Service
+                  Value: learncard-ai-agent
+                - Name: Environment
+                  Value: !Ref Environment
+            ExtendedStatistic: p95
+            Period: 300
+            EvaluationPeriods: 2
+            DatapointsToAlarm: 2
+            Threshold: !Ref LatencyThresholdMs
+            ComparisonOperator: GreaterThanThreshold
+            TreatMissingData: notBreaching
+            AlarmActions: [!Ref AlertsTopic]
+            OKActions: [!Ref AlertsTopic]
+
+    RunFailureRateAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Condition: ShouldCreateService
+        Properties:
+            AlarmName: !Sub '${ServiceName}-${Environment}-run-failure-rate'
+            ComparisonOperator: GreaterThanThreshold
+            Threshold: !Ref FailureRateThresholdPercent
+            EvaluationPeriods: 2
+            DatapointsToAlarm: 2
+            TreatMissingData: notBreaching
+            AlarmActions: [!Ref AlertsTopic]
+            OKActions: [!Ref AlertsTopic]
+            Metrics:
+                - Id: failure_rate
+                  Expression: IF(runs > 0, 100 * failures / runs, 0)
+                  Label: Run failure rate
+                  ReturnData: true
+                - Id: failures
+                  ReturnData: false
+                  MetricStat:
+                      Metric:
+                          Namespace: !Ref MetricsNamespace
+                          MetricName: RunFailureCount
+                          Dimensions:
+                              - Name: Service
+                                Value: learncard-ai-agent
+                              - Name: Environment
+                                Value: !Ref Environment
+                      Period: 300
+                      Stat: Sum
+                - Id: runs
+                  ReturnData: false
+                  MetricStat:
+                      Metric:
+                          Namespace: !Ref MetricsNamespace
+                          MetricName: RunCount
+                          Dimensions:
+                              - Name: Service
+                                Value: learncard-ai-agent
+                              - Name: Environment
+                                Value: !Ref Environment
+                      Period: 300
+                      Stat: Sum
+
+    ModelProviderFailureAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Condition: ShouldCreateService
+        Properties:
+            AlarmName: !Sub '${ServiceName}-${Environment}-model-provider-failures'
+            Namespace: !Ref MetricsNamespace
+            MetricName: ModelFailureCount
+            Dimensions:
+                - Name: Service
+                  Value: learncard-ai-agent
+                - Name: Environment
+                  Value: !Ref Environment
+            Statistic: Sum
+            Period: 300
+            EvaluationPeriods: 1
+            Threshold: 3
+            ComparisonOperator: GreaterThanOrEqualToThreshold
+            TreatMissingData: notBreaching
+            AlarmActions: [!Ref AlertsTopic]
+            OKActions: [!Ref AlertsTopic]
+
+    EstimatedSpendAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Condition: ShouldCreateService
+        Properties:
+            AlarmName: !Sub '${ServiceName}-${Environment}-estimated-hourly-spend'
+            Namespace: !Ref MetricsNamespace
+            MetricName: EstimatedCostUsd
+            Dimensions:
+                - Name: Service
+                  Value: learncard-ai-agent
+                - Name: Environment
+                  Value: !Ref Environment
+            Statistic: Sum
+            Period: 3600
+            EvaluationPeriods: 1
+            Threshold: !Ref HourlyCostThresholdUsd
+            ComparisonOperator: GreaterThanThreshold
+            TreatMissingData: notBreaching
+            AlarmActions: [!Ref AlertsTopic]
+            OKActions: [!Ref AlertsTopic]
+
+    UnhealthyTargetAlarm:
+        Type: AWS::CloudWatch::Alarm
+        Condition: ShouldCreateService
+        Properties:
+            AlarmName: !Sub '${ServiceName}-${Environment}-unhealthy-targets'
+            Namespace: AWS/ApplicationELB
+            MetricName: UnHealthyHostCount
+            Dimensions:
+                - Name: LoadBalancer
+                  Value: !Ref LoadBalancerFullName
+                - Name: TargetGroup
+                  Value: !GetAtt TargetGroup.TargetGroupFullName
+            Statistic: Maximum
+            Period: 60
+            EvaluationPeriods: 2
+            DatapointsToAlarm: 2
+            Threshold: 1
+            ComparisonOperator: GreaterThanOrEqualToThreshold
+            TreatMissingData: breaching
+            AlarmActions: [!Ref AlertsTopic]
+            OKActions: [!Ref AlertsTopic]
+
+    Dashboard:
+        Type: AWS::CloudWatch::Dashboard
+        Condition: ShouldCreateService
+        Properties:
+            DashboardName: !Sub '${ServiceName}-${Environment}'
+            DashboardBody: !Sub |
+                {
+                  "widgets": [
+                    {
+                      "type": "metric",
+                      "x": 0,
+                      "y": 0,
+                      "width": 12,
+                      "height": 6,
+                      "properties": {
+                        "title": "Runs and failures",
+                        "region": "${AWS::Region}",
+                        "stat": "Sum",
+                        "period": 300,
+                        "metrics": [
+                          ["${MetricsNamespace}", "RunCount", "Service", "learncard-ai-agent", "Environment", "${Environment}"],
+                          [".", "RunSuccessCount", ".", ".", ".", "."],
+                          [".", "RunFailureCount", ".", ".", ".", "."],
+                          [".", "PostRunFailureCount", ".", ".", ".", "."]
+                        ]
+                      }
+                    },
+                    {
+                      "type": "metric",
+                      "x": 12,
+                      "y": 0,
+                      "width": 12,
+                      "height": 6,
+                      "properties": {
+                        "title": "Latency",
+                        "region": "${AWS::Region}",
+                        "stat": "p95",
+                        "period": 300,
+                        "metrics": [
+                          ["${MetricsNamespace}", "HttpRequestLatency", "Service", "learncard-ai-agent", "Environment", "${Environment}"],
+                          [".", "RunLatency", ".", ".", ".", "."],
+                          [".", "ModelCallLatency", ".", ".", ".", "."],
+                          [".", "ToolCallLatency", ".", ".", ".", "."]
+                        ]
+                      }
+                    },
+                    {
+                      "type": "metric",
+                      "x": 0,
+                      "y": 6,
+                      "width": 12,
+                      "height": 6,
+                      "properties": {
+                        "title": "Tokens and estimated cost",
+                        "region": "${AWS::Region}",
+                        "stat": "Sum",
+                        "period": 3600,
+                        "metrics": [
+                          ["${MetricsNamespace}", "ModelInputTokens", "Service", "learncard-ai-agent", "Environment", "${Environment}"],
+                          [".", "ModelOutputTokens", ".", ".", ".", "."],
+                          [".", "EstimatedCostUsd", ".", ".", ".", "."]
+                        ]
+                      }
+                    },
+                    {
+                      "type": "metric",
+                      "x": 12,
+                      "y": 6,
+                      "width": 12,
+                      "height": 6,
+                      "properties": {
+                        "title": "Provider, tool, and post-run failures",
+                        "region": "${AWS::Region}",
+                        "stat": "Sum",
+                        "period": 300,
+                        "metrics": [
+                          ["${MetricsNamespace}", "ModelFailureCount", "Service", "learncard-ai-agent", "Environment", "${Environment}"],
+                          [".", "ToolFailureCount", ".", ".", ".", "."],
+                          [".", "PostRunFailureCount", ".", ".", ".", "."]
+                        ]
+                      }
+                    }
+                  ]
+                }
+
+Outputs:
+    EcrRepositoryUrl:
+        Value: !GetAtt Repository.RepositoryUri
+    ServiceArn:
+        Condition: ShouldCreateService
+        Value: !Ref EcsService
+    ServiceEndpoint:
+        Condition: ShouldCreateService
+        Value: !Sub 'https://${Hostname}'
+    CertificateArn:
+        Condition: ShouldCreateService
+        Value: !Ref Certificate
+    ApplicationLogGroupName:
+        Condition: ShouldCreateService
+        Value: !Ref ApplicationLogGroup
+    AlertsTopicArn:
+        Condition: ShouldCreateService
+        Value: !Ref AlertsTopic
+    DashboardName:
+        Condition: ShouldCreateService
+        Value: !Ref Dashboard

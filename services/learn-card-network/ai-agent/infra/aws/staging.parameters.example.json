@@ -1,0 +1,87 @@
+[
+    { "ParameterKey": "CreateService", "ParameterValue": "true" },
+    { "ParameterKey": "Environment", "ParameterValue": "staging" },
+    { "ParameterKey": "ImageTag", "ParameterValue": "sha-replace-with-git-sha" },
+    { "ParameterKey": "ClusterName", "ParameterValue": "replace-with-existing-cluster" },
+    { "ParameterKey": "VpcId", "ParameterValue": "vpc-replace" },
+    {
+        "ParameterKey": "PrivateSubnetIds",
+        "ParameterValue": "subnet-private-a,subnet-private-b"
+    },
+    {
+        "ParameterKey": "LoadBalancerSecurityGroupId",
+        "ParameterValue": "sg-existing-alb"
+    },
+    {
+        "ParameterKey": "HttpsListenerArn",
+        "ParameterValue": "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/existing/id/listener-id"
+    },
+    {
+        "ParameterKey": "LoadBalancerFullName",
+        "ParameterValue": "app/existing/id"
+    },
+    {
+        "ParameterKey": "LoadBalancerDnsName",
+        "ParameterValue": "existing-alb.us-east-1.elb.amazonaws.com"
+    },
+    {
+        "ParameterKey": "LoadBalancerCanonicalHostedZoneId",
+        "ParameterValue": "Z35SXDOTRQ7X7K"
+    },
+    { "ParameterKey": "HostedZoneId", "ParameterValue": "ZREPLACE" },
+    { "ParameterKey": "Hostname", "ParameterValue": "agent-staging.learncard.ai" },
+    { "ParameterKey": "ListenerRulePriority", "ParameterValue": "100" },
+    {
+        "ParameterKey": "AuthDomain",
+        "ParameterValue": "https://agent-staging.learncard.ai"
+    },
+    { "ParameterKey": "CloudUrl", "ParameterValue": "https://cloud.example.com/trpc" },
+    { "ParameterKey": "NetworkUrl", "ParameterValue": "https://network.example.com/trpc" },
+    {
+        "ParameterKey": "ConsentFlowContractUri",
+        "ParameterValue": "lc:network:example.com%2Ftrpc:contract:replace-me"
+    },
+    { "ParameterKey": "ConsentFlowAppUrl", "ParameterValue": "https://staging.example.com" },
+    { "ParameterKey": "Model", "ParameterValue": "replace-with-approved-model" },
+    {
+        "ParameterKey": "ModelInputCostUsdPerMillion",
+        "ParameterValue": "replace-with-current-price"
+    },
+    {
+        "ParameterKey": "ModelOutputCostUsdPerMillion",
+        "ParameterValue": "replace-with-current-price"
+    },
+    { "ParameterKey": "WebSearchProvider", "ParameterValue": "brave" },
+    {
+        "ParameterKey": "OpenAIApiKeySecretArn",
+        "ParameterValue": "arn:aws:secretsmanager:us-east-1:123456789012:secret:learncard/ai-agent/staging/openai-replace"
+    },
+    {
+        "ParameterKey": "BraveSearchApiKeySecretArn",
+        "ParameterValue": "arn:aws:secretsmanager:us-east-1:123456789012:secret:learncard/ai-agent/staging/brave-replace"
+    },
+    {
+        "ParameterKey": "WalletSeedSecretArn",
+        "ParameterValue": "arn:aws:secretsmanager:us-east-1:123456789012:secret:learncard/ai-agent/staging/wallet-seed-replace"
+    },
+    {
+        "ParameterKey": "MongoUriSecretArn",
+        "ParameterValue": "arn:aws:secretsmanager:us-east-1:123456789012:secret:learncard/ai-agent/staging/mongo-uri-replace"
+    },
+    {
+        "ParameterKey": "SentryDsnSecretArn",
+        "ParameterValue": "arn:aws:secretsmanager:us-east-1:123456789012:secret:learncard/ai-agent/staging/sentry-dsn-replace"
+    },
+    { "ParameterKey": "MongoDbName", "ParameterValue": "learn-card-ai-agent-staging" },
+    { "ParameterKey": "AlertEmail", "ParameterValue": "operator@example.com" },
+    { "ParameterKey": "Cpu", "ParameterValue": "1024" },
+    { "ParameterKey": "Memory", "ParameterValue": "2048" },
+    { "ParameterKey": "MinTaskCount", "ParameterValue": "1" },
+    { "ParameterKey": "MaxTaskCount", "ParameterValue": "4" },
+    { "ParameterKey": "MaxToolRounds", "ParameterValue": "8" },
+    { "ParameterKey": "RunTimeoutMs", "ParameterValue": "120000" },
+    { "ParameterKey": "MaxOutputTokens", "ParameterValue": "4096" },
+    { "ParameterKey": "MaxRunTokens", "ParameterValue": "50000" },
+    { "ParameterKey": "MaxRunCostUsd", "ParameterValue": "1" },
+    { "ParameterKey": "HourlyCostThresholdUsd", "ParameterValue": "25" }
+]

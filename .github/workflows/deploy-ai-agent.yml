@@ -1,0 +1,204 @@
+name: Deploy AI Agent
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - 'services/learn-card-network/ai-agent/**'
+            - 'packages/**'
+            - 'bun.lock'
+            - '.dockerignore'
+            - '.github/workflows/deploy-ai-agent.yml'
+    workflow_dispatch:
+        inputs:
+            target-environment:
+                description: Target environment
+                required: true
+                default: staging
+                type: choice
+                options:
+                    - staging
+                    - production
+
+concurrency:
+    group: deploy-ai-agent-${{ github.event_name == 'workflow_dispatch' && inputs.target-environment || 'staging' }}
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    deploy:
+        name: Deploy AI Agent
+        runs-on: ubuntu-latest
+        environment: learn-card-ai-agent-${{ github.event_name == 'workflow_dispatch' && inputs.target-environment || 'staging' }}
+        env:
+            CI: true
+            TARGET_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.target-environment || 'staging' }}
+            AWS_DEFAULT_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Use composite setup action
+              uses: ./.github/actions/setup
+
+            - name: Run AI Agent tests
+              run: bun run --cwd services/learn-card-network/ai-agent test -- run
+
+            - name: Build AI Agent
+              run: bun run --cwd services/learn-card-network/ai-agent build
+            - name: Lint CloudFormation template
+              run: pipx run cfn-lint services/learn-card-network/ai-agent/infra/aws/template.yml
+
+            - name: Validate deployment configuration
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+                  CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
+                  BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
+                  AWS_ROLE_ARN: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
+              run: |
+                  test -n "$ECR_REPOSITORY_URL" || { echo "::error::AI_AGENT_ECR_REPOSITORY_URL is missing"; exit 1; }
+                  test -n "$CLOUDFORMATION_STACK" || { echo "::error::AI_AGENT_CLOUDFORMATION_STACK is missing"; exit 1; }
+                  test -n "$BASE_URL" || { echo "::error::AI_AGENT_BASE_URL is missing"; exit 1; }
+                  test -n "$AWS_ROLE_ARN" || { echo "::error::AI_AGENT_AWS_ROLE_ARN is missing"; exit 1; }
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v5
+              with:
+                  role-to-assume: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
+                  role-session-name: learncard-ai-agent-${{ env.TARGET_ENVIRONMENT }}-${{ github.run_id }}
+                  aws-region: ${{ env.AWS_DEFAULT_REGION }}
+            - name: Validate CloudFormation template
+              run: |
+                  aws cloudformation validate-template \
+                    --template-body file://services/learn-card-network/ai-agent/infra/aws/template.yml
+            - name: Verify ECR and stack consistency
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+                  CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
+              run: |
+                  STACK_ECR_REPOSITORY_URL="$(aws cloudformation describe-stacks \
+                    --stack-name "$CLOUDFORMATION_STACK" \
+                    --query "Stacks[0].Outputs[?OutputKey=='EcrRepositoryUrl'].OutputValue" \
+                    --output text)"
+
+                  if [ "$STACK_ECR_REPOSITORY_URL" != "$ECR_REPOSITORY_URL" ]; then
+                    echo "::error::AI_AGENT_ECR_REPOSITORY_URL does not match $CLOUDFORMATION_STACK"
+                    exit 1
+                  fi
+
+            - name: Login to Amazon ECR
+              uses: aws-actions/amazon-ecr-login@v2
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+              with:
+                  platforms: arm64
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Check immutable AI Agent image
+              id: image
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+              run: |
+                  set -euo pipefail
+
+                  REPOSITORY_NAME="${ECR_REPOSITORY_URL#*/}"
+                  IMAGE_COUNT="$(aws ecr list-images \
+                    --repository-name "$REPOSITORY_NAME" \
+                    --filter tagStatus=TAGGED \
+                    --query "length(imageIds[?imageTag=='sha-${{ github.sha }}'])" \
+                    --output text)"
+
+                  if [ "$IMAGE_COUNT" = '0' ]; then
+                    echo 'exists=false' >> "$GITHUB_OUTPUT"
+                  elif [ "$IMAGE_COUNT" = '1' ]; then
+                    echo 'exists=true' >> "$GITHUB_OUTPUT"
+                  else
+                    echo "::error::Unexpected immutable image count: $IMAGE_COUNT"
+                    exit 1
+                  fi
+
+            - name: Build and push AI Agent image
+              if: steps.image.outputs.exists != 'true'
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: ./services/learn-card-network/ai-agent/Dockerfile
+                  push: true
+                  platforms: linux/arm64
+                  build-args: GIT_SHA=${{ github.sha }}
+                  cache-from: type=gha,scope=ai-agent-image
+                  cache-to: type=gha,mode=max,scope=ai-agent-image
+                  tags: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}:sha-${{ github.sha }}
+
+            - name: Reject vulnerable runtime image
+              env:
+                  ECR_REPOSITORY_URL: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}
+              run: |
+                  set -euo pipefail
+
+                  REPOSITORY_NAME="${ECR_REPOSITORY_URL#*/}"
+                  ARM64_DIGEST="$(docker buildx imagetools inspect \
+                    "$ECR_REPOSITORY_URL:sha-${{ github.sha }}" \
+                    --raw | jq -r \
+                    '.manifests[] | select(.platform.os == "linux" and .platform.architecture == "arm64") | .digest')"
+
+                  test -n "$ARM64_DIGEST" || {
+                    echo "::error::Could not resolve the pushed ARM64 image digest"
+                    exit 1
+                  }
+
+                  aws ecr wait image-scan-complete \
+                    --repository-name "$REPOSITORY_NAME" \
+                    --image-id "imageDigest=$ARM64_DIGEST"
+
+                  FINDINGS="$(aws ecr describe-image-scan-findings \
+                    --repository-name "$REPOSITORY_NAME" \
+                    --image-id "imageDigest=$ARM64_DIGEST" \
+                    --query imageScanFindings.findingSeverityCounts \
+                    --output json)"
+                  CRITICAL_FINDINGS="$(jq -r '.CRITICAL // 0' <<< "$FINDINGS")"
+                  HIGH_FINDINGS="$(jq -r '.HIGH // 0' <<< "$FINDINGS")"
+
+                  if (( CRITICAL_FINDINGS > 0 || HIGH_FINDINGS > 0 )); then
+                    echo "::error::ARM64 runtime image has $CRITICAL_FINDINGS critical and $HIGH_FINDINGS high findings"
+                    exit 1
+                  fi
+
+            - name: Deploy ECS/Fargate service
+              env:
+                  CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
+              run: |
+                  aws cloudformation deploy \
+                    --stack-name "$CLOUDFORMATION_STACK" \
+                    --template-file services/learn-card-network/ai-agent/infra/aws/template.yml \
+                    --capabilities CAPABILITY_NAMED_IAM \
+                    --parameter-overrides \
+                      CreateService=true \
+                      ImageTag=sha-${{ github.sha }} \
+                      DeploymentId=${{ github.run_id }}-${{ github.run_attempt }} \
+                    --tags \
+                      Project=learncard \
+                      Service=learncard-ai-agent \
+                      Environment="$TARGET_ENVIRONMENT" \
+                    --no-fail-on-empty-changeset
+
+            - name: Verify readiness
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_seconds: 15
+                  max_attempts: 10
+                  retry_wait_seconds: 10
+                  command: bun -e "const r = await fetch('${{ vars.AI_AGENT_BASE_URL }}/api/health/ready'); if (!r.ok) throw new Error('Readiness returned ' + r.status); const body = await r.json(); if (!body.ok) throw new Error('Service is not ready')"
+
+            - name: Run authenticated staging smoke test
+              if: env.TARGET_ENVIRONMENT == 'staging'
+              env:
+                  AI_AGENT_SMOKE_BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
+                  AI_AGENT_SMOKE_SEED: ${{ secrets.AI_AGENT_SMOKE_SEED }}
+              run: bun run --cwd services/learn-card-network/ai-agent smoke:staging
