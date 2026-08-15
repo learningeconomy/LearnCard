@@ -1,6 +1,7 @@
 import React from 'react';
 
 import * as m from '../../../paraglide/messages.js';
+import X from 'learn-card-base/svgs/X.js';
 
 type ChecklistItem = {
     key: string;
@@ -44,7 +45,16 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                     className="absolute -bottom-20 -left-12 w-64 h-64 rounded-full bg-indigo-400/10 blur-2xl"
                 />
 
-                <div className="relative flex items-start justify-between gap-3 mb-3">
+                <button
+                    type="button"
+                    onClick={onDismiss}
+                    aria-label={m['dashboard.getStarted.dismiss']()}
+                    className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full hover:bg-white/15 transition-colors flex items-center justify-center text-white/70 hover:text-white text-lg leading-none"
+                >
+                    <X className="w-[15px] h-auto" />
+                </button>
+
+                <div className="relative flex items-start gap-3 mb-3">
                     <div className="flex-1 min-w-0">
                         <p className="text-[11px] font-medium tracking-[0.14em] text-indigo-200/90 uppercase">
                             {m['dashboard.getStarted.label']()}
@@ -56,14 +66,6 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                             {m['dashboard.getStarted.heroSubtitle']()}
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={onDismiss}
-                        aria-label={m['dashboard.getStarted.dismiss']()}
-                        className="shrink-0 w-8 h-8 rounded-full hover:bg-white/15 transition-colors flex items-center justify-center text-white/70 hover:text-white text-lg leading-none"
-                    >
-                        ×
-                    </button>
                 </div>
 
                 <div className="relative flex items-center gap-3 mb-5">
