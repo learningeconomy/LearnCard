@@ -56,7 +56,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                         onNotificationsClick={header.onNotificationsClick}
                         unreadCount={header.unreadCount}
                         roleSwitcher={header.roleSwitcher}
-                        topRightAction={
+                        QRCodeAction={
                             <button
                                 type="button"
                                 onClick={header.onScanQrTopRight}
