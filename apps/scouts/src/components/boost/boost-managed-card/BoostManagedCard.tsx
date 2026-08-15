@@ -307,7 +307,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
             <div className="flex w-full flex-col items-center justify-center">
                 {isDraft && (
                     <button
-                        className="flex rounded-[40px] w-[140px] h-[32px] justify-center items-center text-grayscale-900 bg-grayscale-200 shadow-bottom text-base font-medium"
+                        className="flex rounded-[40px] w-fit min-w-[140px] max-w-full h-[32px] px-3 justify-center items-center whitespace-nowrap text-grayscale-900 bg-grayscale-200 shadow-bottom text-sm leading-none font-medium"
                         onClick={e => {
                             e.stopPropagation();
                             handleEditOnClick();
