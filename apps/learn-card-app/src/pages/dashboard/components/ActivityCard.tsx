@@ -318,7 +318,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/notifications')}
-                        className="self-start text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-0.5"
+                        className="flex self-start text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-0.5"
                     >
                         {actionableTotal > MAX_ACTIONABLE
                             ? m['dashboard.activity.viewMore']({
