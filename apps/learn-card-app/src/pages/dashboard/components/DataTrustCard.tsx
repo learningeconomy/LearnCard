@@ -82,34 +82,34 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
                     <h2 className="mt-0.5 text-lg font-semibold text-grayscale-900">
                         {m['dashboard.dataTrust.title']()}
                     </h2>
-                    <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">
-                        <span className="font-medium text-grayscale-900">{statusText}</span>{' '}
-                        {detailText}
-                    </p>
-
-                    {!isEmpty && (
-                        <div className="mt-3 flex items-center gap-2 flex-wrap">
-                            <div className="flex -space-x-2">
-                                {shownProof.map(item => (
-                                    <ProofAvatar key={item.uri} item={item} />
-                                ))}
-                                {overflow > 0 && (
-                                    <span className="w-8 h-8 rounded-full ring-2 ring-white bg-grayscale-100 text-grayscale-600 text-xs font-medium flex items-center justify-center">
-                                        +{overflow}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-grayscale-600 group-hover:text-grayscale-900 transition-colors">
-                        {m['dashboard.dataTrust.manage']()}
-                        <ChevronRight className="w-3.5 h-3.5" />
-                    </span>
                 </div>
-
                 <ChevronRight className="hidden desktop:block shrink-0 w-5 h-5 mt-1 text-grayscale-400 group-hover:text-grayscale-600 transition-colors" />
             </div>
+            <div className="flex">
+                <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">
+                    <span className="font-medium text-grayscale-900">{statusText}</span>{' '}
+                    {detailText}
+                </p>
+
+                {!isEmpty && (
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                        <div className="flex -space-x-2">
+                            {shownProof.map(item => (
+                                <ProofAvatar key={item.uri} item={item} />
+                            ))}
+                            {overflow > 0 && (
+                                <span className="w-8 h-8 rounded-full ring-2 ring-white bg-grayscale-100 text-grayscale-600 text-xs font-medium flex items-center justify-center">
+                                    +{overflow}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+            <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-grayscale-600 group-hover:text-grayscale-900 transition-colors">
+                {m['dashboard.dataTrust.manage']()}
+                <ChevronRight className="w-3.5 h-3.5" />
+            </span>
         </button>
     );
 };
