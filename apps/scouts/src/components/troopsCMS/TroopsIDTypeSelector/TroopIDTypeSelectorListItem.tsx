@@ -60,7 +60,10 @@ const TroopIDTypeSelectorListItem: React.FC<{
                     </div>
                 </div>
 
-                <SlimCaretRight className="w-[20px] h-auto text-grayscale-400" strokeWidth="1" />
+                <SlimCaretRight
+                    className="rtl-mirror w-[20px] h-auto text-grayscale-400"
+                    strokeWidth="1"
+                />
             </button>
         </div>
     );

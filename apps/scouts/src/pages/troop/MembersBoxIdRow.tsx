@@ -8,7 +8,6 @@ import TroopUserIcon from '../../components/svgs/TroopUserIcon';
 import Pencil from '../../components/svgs/Pencil';
 
 import {
-    conditionalPluralize,
     ModalTypes,
     useCountBoostRecipients,
     useGetBoostPermissions,
@@ -17,11 +16,10 @@ import {
     useResolveBoost,
 } from 'learn-card-base';
 
-import {
-    getRoleFromCred,
-    getScoutDefaultsForRole,
-    getTroopIdThumbOrDefault,
-} from '../../helpers/troop.helpers';
+import { getRoleFromCred, getTroopIdThumbOrDefault } from '../../helpers/troop.helpers';
+import { ScoutsRoleEnum } from '../../stores/troopPageStore';
+import * as m from '../../paraglide/messages.js';
+import { formatLocaleCount } from '../../i18n/formatters';
 
 type MembersBoxIdRowProps = {
     boostUri: string;
@@ -38,7 +36,35 @@ const MembersBoxIdRow: React.FC<MembersBoxIdRowProps> = ({ boostUri }) => {
     const { credentialWithEdits } = useGetCredentialWithEdits(boost, boostUri);
 
     const role = getRoleFromCred(boost);
-    const { roleName } = getScoutDefaultsForRole(role);
+    const roleCopy = (() => {
+        switch (role) {
+            case ScoutsRoleEnum.leader:
+                return {
+                    id: m['troops.leaderId'](),
+                    one: m['troops.leaderOne'](),
+                    other: m['troops.leaderOther'](),
+                };
+            case ScoutsRoleEnum.national:
+                return {
+                    id: m['troops.nationalAdminId'](),
+                    one: m['troops.adminOne'](),
+                    other: m['troops.adminOther'](),
+                };
+            case ScoutsRoleEnum.global:
+                return {
+                    id: m['troops.globalAdminId'](),
+                    one: m['troops.adminOne'](),
+                    other: m['troops.adminOther'](),
+                };
+            case ScoutsRoleEnum.scout:
+            default:
+                return {
+                    id: m['troops.scoutId'](),
+                    one: m['troops.scoutOne'](),
+                    other: m['troops.scoutOther'](),
+                };
+        }
+    })();
 
     const { data: recipientCount } = useCountBoostRecipients(boostUri);
 
@@ -53,8 +79,8 @@ const MembersBoxIdRow: React.FC<MembersBoxIdRowProps> = ({ boostUri }) => {
                 credentialWithEdits,
                 'h-[40px] w-[40px] rounded-full object-cover'
             )}
-            mainText={`${roleName} ID`}
-            subText={conditionalPluralize(recipientCount, roleName)}
+            mainText={roleCopy.id}
+            subText={formatLocaleCount(recipientCount ?? 0, roleCopy)}
             onClick={() => {
                 newModal(
                     <ViewGeneralTroopIdModal credential={credentialWithEdits} boostUri={boostUri} />

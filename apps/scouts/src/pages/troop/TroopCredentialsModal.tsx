@@ -4,7 +4,6 @@ import {
     useCountFamilialBoosts,
     useGetBoostPermissions,
     useModal,
-    pluralize,
     ModalTypes,
     BoostPageViewMode,
     CredentialCategoryEnum,
@@ -18,6 +17,8 @@ import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoos
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 import { IonRow, IonCol, IonInput, IonContent } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
+import { selectLocalePlural } from '../../i18n/formatters';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('troop-credentials-modal');
 
@@ -110,14 +111,20 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
         switch (credentialType) {
             case CredentialCategoryEnum.meritBadge:
                 return {
-                    title: pluralize('Merit Badge', troopBadgeCount),
+                    title: selectLocalePlural(troopBadgeCount ?? 0, {
+                        one: m['common.countLabels.meritBadgeOne'](),
+                        other: m['common.countLabels.meritBadgeOther'](),
+                    }),
                     count: troopBadgeCount,
                     icon: <PurpleMeritBadgesIcon className="h-[50px] w-[50px]" />,
                     color: 'sp-purple-base',
                 };
             case CredentialCategoryEnum.socialBadge:
                 return {
-                    title: pluralize('Social Boost', troopBoostCount),
+                    title: selectLocalePlural(troopBoostCount ?? 0, {
+                        one: m['common.countLabels.socialBoostOne'](),
+                        other: m['common.countLabels.socialBoostOther'](),
+                    }),
                     count: troopBoostCount,
                     icon: <BlueBoostOutline2 className="h-[50px] w-[50px]" />,
                     color: 'sp-blue-ocean',
@@ -159,7 +166,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                         <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
                             <IonInput
                                 autocapitalize="on"
-                                placeholder="Search..."
+                                placeholder={m['troops.membersList.searchPlaceholder']()}
                                 value={search}
                                 className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
                                 onIonInput={e => setSearch(e?.detail?.value)}

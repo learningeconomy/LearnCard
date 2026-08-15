@@ -23,6 +23,7 @@ import {
 } from 'learn-card-base';
 import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
+import * as m from '../../paraglide/messages.js';
 import { LOGIN_REDIRECTS } from 'learn-card-base/constants/redirects';
 import { auth } from '../../firebase/firebase';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
@@ -109,7 +110,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"
                     />
-                    <p className="font-notoSans text-grayscale-900">Loading...</p>
+                    <p className="font-notoSans text-grayscale-900">{m['common.loading']()}</p>
                 </div>
             </IonPage>
         );
@@ -192,16 +193,16 @@ const ExternalConsentFlowDoor: React.FC = () => {
                             }}
                             className="bg-sp-purple-base text-grayscale-50 text-[16px] font-semibold font-notoSans normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom"
                         >
-                            Continue as {currentUser.name}
+                            {m['consentFlow.continueAs']({ name: currentUser.name })}
                         </button>
                         <div className="text-grayscale-900 text-[14px] font-notoSans">
-                            Not you?{' '}
+                            {m['consentFlow.notYou']()}{' '}
                             <button
                                 type="button"
                                 onClick={handleLogout}
                                 className="text-indigo-500 font-[600]"
                             >
-                                Logout
+                                {m['consentFlow.logout']()}
                             </button>
                         </div>
                     </div>
@@ -214,16 +215,16 @@ const ExternalConsentFlowDoor: React.FC = () => {
                             onClick={redirectToLogin}
                             className="bg-sp-purple-base text-grayscale-50 text-[16px] font-semibold font-notoSans normal w-full py-[12px] px-[10px] rounded-[40px] shadow-bottom"
                         >
-                            Sign up for LearnCard
+                            {m['consentFlow.signUpFor']()}
                         </button>
                         <div className="text-grayscale-900 text-[14px]">
-                            Have an account?{' '}
+                            {m['consentFlow.haveAccount']()}{' '}
                             <button
                                 type="button"
                                 onClick={redirectToLogin}
                                 className="text-indigo-500 font-[600]"
                             >
-                                Login
+                                {m['consentFlow.login']()}
                             </button>
                         </div>
                     </div>
@@ -234,7 +235,7 @@ const ExternalConsentFlowDoor: React.FC = () => {
                         LearnCard
                     </span>
                     <span className="text-grayscale-700 text-[14px] font-notoSans">
-                        Universal Learning & Work Portfolio
+                        {m['common.tagline']()}
                     </span>
                     <IonRow className="flex items-center justify-center">
                         <IonCol className="flex items-center justify-center font-notoSans">
@@ -242,16 +243,16 @@ const ExternalConsentFlowDoor: React.FC = () => {
                                 onClick={openPP}
                                 className="text-indigo-500 font-[600] text-[12px]"
                             >
-                                Privacy Policy
+                                {m['consentFlow.privacyPolicy']()}
                             </button>
                             <span className="text-grayscale-600 font-bold text-[12px]">
-                                &nbsp;•&nbsp;
+                                {m['consentFlow.separator']()}
                             </span>
                             <button
                                 onClick={openToS}
                                 className="text-indigo-500 font-[600] text-[12px]"
                             >
-                                Terms of Service
+                                {m['consentFlow.termsOfService']()}
                             </button>
                         </IonCol>
                     </IonRow>

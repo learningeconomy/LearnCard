@@ -84,6 +84,11 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
         brandMarkUrl: '/assets/icon/icon.png',
         appIconUrl: '/assets/icon/favicon.png',
     },
+    i18n: {
+        ...DEFAULT_LEARNCARD_TENANT_CONFIG.i18n,
+        defaultLanguage: 'en',
+        supportedLanguages: ['en', 'es', 'fr', 'ar'],
+    },
     features: {
         ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
         analytics: IS_SCOUTS_PRODUCTION_ENV,
