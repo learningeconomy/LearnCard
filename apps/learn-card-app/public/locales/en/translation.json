@@ -3763,7 +3763,7 @@
             "progress": "{{completed}} of {{total}}"
         },
         "dataTrust": {
-            "label": "Your data",
+            "label": "Data Sharing",
             "title": "Your data is yours",
             "emptyStatus": "Nothing is shared yet.",
             "sharingWithOne": "Sharing with {{count}} place.",
