@@ -45,7 +45,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                 className="inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border border-grayscale-200 bg-white animate-pop-in opacity-0"
                 style={{ animationDelay: `${index * 100}ms` }}
             >
-                <SkillsIcon className="w-4 h-4 shrink-0" />
+                <SkillsIcon className="w-[25px] h-[25px] shrink-0" />
                 <span className="text-base font-medium text-grayscale-900">{skill.title}</span>
 
                 <div className="flex items-center gap-1.5 ml-1">

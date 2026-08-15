@@ -73,7 +73,7 @@ const AppsCard: React.FC<AppsCardProps> = ({
             <section className="bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="text-[11px] font-medium tracking-[0.14em] text-grayscale-500 uppercase">
+                        <h2 className="text-xs font-medium tracking-[0.14em] text-grayscale-500 uppercase">
                             {headerLabel}
                         </h2>
                         <p className="mt-0.5 text-base desktop:text-lg font-semibold text-grayscale-900 leading-tight">
