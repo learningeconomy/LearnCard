@@ -111,23 +111,20 @@ const DashboardRoleSwitcher: React.FC = () => {
         });
     };
 
-    const pillClassName = `inline-flex items-center gap-1 pl-0.5 pr-2 py-0.5 rounded-full bg-grayscale-100 text-grayscale-700 text-xs font-medium transition-colors ${
+    const pillClassName = `inline-flex items-center gap-1 px-[10px] py-0.5 rounded-full bg-grayscale-100 text-grayscale-700 text-xs font-medium transition-colors ${
         isChildProfile ? 'cursor-default' : 'cursor-pointer hover:bg-grayscale-200'
     }`;
 
     const pillContents = (
         <>
-            <span
-                className="flex items-center justify-center h-[16px] w-[16px] rounded-full shrink-0"
-                style={{ backgroundColor: iconBgColors[activeRole] }}
-            >
+            <span className="flex items-center justify-center h-[25px] w-[25px] rounded-full shrink-0">
                 <img
                     src={roleIcons[activeRole]}
                     alt={m['dashboard.roleSwitcher.iconAlt']({ role: roleLabel })}
-                    className="h-[12px] w-[12px] object-contain"
+                    className="h-[25px] w-[25px] object-contain"
                 />
             </span>
-            <span>{roleLabel}</span>
+            <span className="text-[13px] font-semibold">{roleLabel}</span>
             {!isChildProfile && <CaretDown className="ml-0.5 text-grayscale-400 w-[9px]" />}
         </>
     );
