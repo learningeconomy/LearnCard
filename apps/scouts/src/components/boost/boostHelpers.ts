@@ -548,16 +548,21 @@ type BoostPresetMessage = (
     options?: { locale?: SupportedLanguage }
 ) => string;
 
+const BOOST_PRESET_CONTENT_FIELDS: BoostPresetContentField[] = [
+    'presetTitle',
+    'description',
+    'criteria',
+];
+
 const BOOST_PRESET_MESSAGE_CATEGORY: Record<string, 'socialBadge' | 'meritBadge'> = {
     [BoostCategoryOptionsEnum.socialBadge]: 'socialBadge',
     [BoostCategoryOptionsEnum.meritBadge]: 'meritBadge',
 };
 
-const resolveBoostPresetCopy = (
+const getBoostPresetMessageKey = (
     category: string,
     achievementType: string,
-    field: BoostPresetContentField,
-    locale: SupportedLanguage
+    field: BoostPresetContentField
 ): string | undefined => {
     const categoryKey = BOOST_PRESET_MESSAGE_CATEGORY[category];
     const normalizedType = achievementType?.replace(/^ext:/, '');
@@ -565,8 +570,39 @@ const resolveBoostPresetCopy = (
     if (!categoryKey || !normalizedType) return undefined;
 
     const subcategoryKey = `${normalizedType.charAt(0).toLowerCase()}${normalizedType.slice(1)}`;
-    const messageKey = `boostContent.subcategories.${categoryKey}.${subcategoryKey}.${field}`;
-    const message = m[messageKey as keyof typeof m] as BoostPresetMessage | undefined;
+
+    return `boostContent.subcategories.${categoryKey}.${subcategoryKey}.${field}`;
+};
+
+const BOOST_PRESET_MESSAGE_KEYS = new Set(
+    [BoostCategoryOptionsEnum.socialBadge, BoostCategoryOptionsEnum.meritBadge].flatMap(category =>
+        (CATEGORY_TO_SUBCATEGORY_LIST[category] ?? []).flatMap(({ type }) =>
+            BOOST_PRESET_CONTENT_FIELDS.map(field =>
+                getBoostPresetMessageKey(category, type, field)
+            ).filter((key): key is string => Boolean(key))
+        )
+    )
+);
+
+const BOOST_PRESET_MESSAGES = new Map<string, BoostPresetMessage>();
+
+for (const [key, value] of Object.entries(m)) {
+    if (BOOST_PRESET_MESSAGE_KEYS.has(key) && typeof value === 'function') {
+        BOOST_PRESET_MESSAGES.set(key, value as BoostPresetMessage);
+    }
+}
+
+const resolveBoostPresetCopy = (
+    category: string,
+    achievementType: string,
+    field: BoostPresetContentField,
+    locale: SupportedLanguage
+): string | undefined => {
+    const messageKey = getBoostPresetMessageKey(category, achievementType, field);
+
+    if (!messageKey) return undefined;
+
+    const message = BOOST_PRESET_MESSAGES.get(messageKey);
 
     return typeof message === 'function' ? message({}, { locale }) : undefined;
 };

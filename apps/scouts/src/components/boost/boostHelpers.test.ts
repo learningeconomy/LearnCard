@@ -6,6 +6,16 @@ import { BoostCategoryOptionsEnum } from 'learn-card-base/types/boostAndCredenti
 import { setLocale } from '../../paraglide/runtime.js';
 import { getBoostPresetLocalization, refreshLocalizedPresetFields } from './localizedPresetFields';
 
+vi.mock('../../paraglide/messages.js', async importOriginal => {
+    const messages = await importOriginal<Record<string, unknown>>();
+
+    return {
+        ...messages,
+        'boostContent.subcategories.socialBadge.notAPreset.description': () =>
+            'Unregistered preset copy',
+    };
+});
+
 let getDefaultBoostCriteria: typeof import('./boostHelpers').getDefaultBoostCriteria;
 let getDefaultBoostDescription: typeof import('./boostHelpers').getDefaultBoostDescription;
 let getDefaultBoostTitle: typeof import('./boostHelpers').getDefaultBoostTitle;
@@ -125,6 +135,14 @@ describe('localized Boost preset defaults', () => {
                 preset.criteria
             );
         }
+    });
+
+    it('rejects catalog messages that are not registered Boost presets', () => {
+        expect(
+            getDefaultBoostDescription(BoostCategoryOptionsEnum.socialBadge, 'ext:NotAPreset', {
+                locale: 'en',
+            })
+        ).toBe('');
     });
 });
 

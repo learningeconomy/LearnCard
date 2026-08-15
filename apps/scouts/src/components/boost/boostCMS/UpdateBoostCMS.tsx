@@ -109,6 +109,8 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
     // issueMode,
 }) => {
     const flags = useFlags();
+    // Snapshot the rollout policy when the editor opens so a streaming flag update cannot
+    // change preset content language in the middle of an in-progress draft.
     const presetLocalization = useRef(
         getBoostPresetLocalization(flags?.localizeBoostTemplateContent)
     ).current;
