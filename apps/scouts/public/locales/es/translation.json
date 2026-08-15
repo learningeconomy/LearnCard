@@ -262,6 +262,20 @@
                 "active": "Activo",
                 "couldNotVerify": "No se pudo verificar la credencial Boost."
             }
+        },
+        "credential": {
+            "about": "Acerca de",
+            "criteria": "Criterios",
+            "alignments": "Alineaciones",
+            "alignmentInfo": "Las alineaciones de tu credencial Open Badge vinculan tu logro con marcos, estándares o competencias establecidos. Cada alineación muestra cómo tu boost se relaciona directamente con habilidades, áreas de conocimiento y estándares profesionales reconocidos en tu campo.",
+            "verifiedSource": "Fuente verificada",
+            "occupationsPrograms": "Ocupaciones y programas",
+            "verifiedLabel": "Verificada",
+            "openAlignmentSource": "Abrir la fuente de la alineación",
+            "more": "Más",
+            "close": "Cerrar",
+            "by": "Por",
+            "verified": "Credencial verificada"
         }
     },
     "introSlides": {

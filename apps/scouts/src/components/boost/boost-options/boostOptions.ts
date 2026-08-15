@@ -16,6 +16,17 @@ import {
     BoostCategoryOptionsEnum,
     boostCategoryMetadata,
 } from 'learn-card-base/types/boostAndCredentialMetadata';
+
+import archeryMeritBadge from '../../../assets/images/merit-badges/archery.png';
+import astronomyMeritBadge from '../../../assets/images/merit-badges/astronomy.png';
+import chessMeritBadge from '../../../assets/images/merit-badges/chess.png';
+import dogCareMeritBadge from '../../../assets/images/merit-badges/dog-care.png';
+import engineeringMeritBadge from '../../../assets/images/merit-badges/engineering.png';
+import musicMeritBadge from '../../../assets/images/merit-badges/music.png';
+import nuclearScienceMeritBadge from '../../../assets/images/merit-badges/nuclear-science.png';
+import programmingMeritBadge from '../../../assets/images/merit-badges/programming.png';
+import spaceExplorationMeritBadge from '../../../assets/images/merit-badges/space-exploration.png';
+import wildernessSurvivalMeritBadge from '../../../assets/images/merit-badges/wilderness-survival.png';
 import * as m from '../../../paraglide/messages.js';
 
 export enum BoostUserTypeEnum {
@@ -1481,7 +1492,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
                 return m['boostContent.subcategories.meritBadge.archery.presetTitle']();
             },
             type: AchievementTypes.Archery,
-            image: 'https://www.scouting.org/wp-content/uploads/elementor/thumbs/Archery-qjjk7nbqjdp20a8bkyxk52eqcw9x9weiflmucyyp28.png',
+            image: archeryMeritBadge,
             get description() {
                 return m['boostContent.subcategories.meritBadge.archery.description']();
             },
@@ -1497,7 +1508,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
                 return m['boostContent.subcategories.meritBadge.astronomy.presetTitle']();
             },
             type: AchievementTypes.Astronomy,
-            image: 'https://www.scouting.org/wp-content/uploads/elementor/thumbs/Astronomy-qjjk7nbqjdp20a8bkyxk52eqcw9x9weiflmucyyp28.png',
+            image: astronomyMeritBadge,
             get description() {
                 return m['boostContent.subcategories.meritBadge.astronomy.description']();
             },
@@ -1513,7 +1524,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
                 return m['boostContent.subcategories.meritBadge.chess.presetTitle']();
             },
             type: AchievementTypes.Chess,
-            image: 'https://www.scouting.org/wp-content/uploads/elementor/thumbs/Chess-qjjk7o9kq7qcbw6yfhc6pk66ya5ahli8rqabu8xaw0.png',
+            image: chessMeritBadge,
             get description() {
                 return m['boostContent.subcategories.meritBadge.chess.description']();
             },
@@ -1529,7 +1540,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
                 return m['boostContent.subcategories.meritBadge.dogCare.presetTitle']();
             },
             type: AchievementTypes.DogCare,
-            image: 'https://www.scouting.org/wp-content/uploads/elementor/thumbs/DogCare-qjjk7nbqjdp20a8bkyxk52eqcw9x9weiflmucyyp28.png',
+            image: dogCareMeritBadge,
             get description() {
                 return m['boostContent.subcategories.meritBadge.dogCare.description']();
             },
@@ -1545,7 +1556,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
                 return m['boostContent.subcategories.meritBadge.engineering.presetTitle']();
             },
             type: AchievementTypes.Engineering,
-            image: 'https://www.scouting.org/wp-content/uploads/elementor/thumbs/Engineering-qjjk7o9kq7qcbw6yfhc6pk66ya5ahli8rqabu8xaw0.png',
+            image: engineeringMeritBadge,
             get description() {
                 return m['boostContent.subcategories.meritBadge.engineering.description']();
             },
@@ -1561,7 +1572,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
                 return m['boostContent.subcategories.meritBadge.music.presetTitle']();
             },
             type: AchievementTypes.Music,
-            image: 'https://www.scouting.org/wp-content/uploads/elementor/thumbs/Music-qjjk7o9kq7qcbw6yfhc6pk66ya5ahli8rqabu8xaw0.png',
+            image: musicMeritBadge,
             get description() {
                 return m['boostContent.subcategories.meritBadge.music.description']();
             },
@@ -1577,7 +1588,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
                 return m['boostContent.subcategories.meritBadge.nuclearScience.presetTitle']();
             },
             type: AchievementTypes.NuclearScience,
-            image: 'https://www.scouting.org/wp-content/uploads/elementor/thumbs/NuclearScience-qjjk7p7ex1rmni5l9zqta1xnjo0npalz3uxtbivwps.png',
+            image: nuclearScienceMeritBadge,
             get description() {
                 return m['boostContent.subcategories.meritBadge.nuclearScience.description']();
             },
@@ -1593,7 +1604,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
                 return m['boostContent.subcategories.meritBadge.programming.presetTitle']();
             },
             type: AchievementTypes.Programming,
-            image: 'https://www.scouting.org/wp-content/uploads/elementor/thumbs/Programming-qjjk7p7ex1rmni5l9zqta1xnjo0npalz3uxtbivwps.png',
+            image: programmingMeritBadge,
             get description() {
                 return m['boostContent.subcategories.meritBadge.programming.description']();
             },
@@ -1609,7 +1620,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
                 return m['boostContent.subcategories.meritBadge.spaceExploration.presetTitle']();
             },
             type: AchievementTypes.SpaceExploration,
-            image: 'https://www.scouting.org/wp-content/uploads/elementor/thumbs/SpaceExploration-qjjk7o9kq7qcbw6yfhc6pk66ya5ahli8rqabu8xaw0.png',
+            image: spaceExplorationMeritBadge,
             get description() {
                 return m['boostContent.subcategories.meritBadge.spaceExploration.description']();
             },
@@ -1625,7 +1636,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
                 return m['boostContent.subcategories.meritBadge.wildernessSurvival.presetTitle']();
             },
             type: AchievementTypes.WildernessSurvival,
-            image: 'https://www.scouting.org/wp-content/uploads/elementor/thumbs/WildernessSurvival-qjjk7o9kq7qcbw6yfhc6pk66ya5ahli8rqabu8xaw0.png',
+            image: wildernessSurvivalMeritBadge,
             get description() {
                 return m['boostContent.subcategories.meritBadge.wildernessSurvival.description']();
             },

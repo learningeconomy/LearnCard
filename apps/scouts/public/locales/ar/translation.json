@@ -262,6 +262,20 @@
                 "active": "نشط",
                 "couldNotVerify": "تعذّر التحقق من بيان اعتماد Boost."
             }
+        },
+        "credential": {
+            "about": "حول",
+            "criteria": "المعايير",
+            "alignments": "المواءمات",
+            "alignmentInfo": "تربط المواءمات في بيان اعتماد Open Badge إنجازك بأطر أو معايير أو كفاءات معتمدة. وتوضح كل مواءمة كيفية ارتباط Boost مباشرةً بالمهارات ومجالات المعرفة والمعايير المهنية المعترف بها في مجالك.",
+            "verifiedSource": "مصدر موثّق",
+            "occupationsPrograms": "المهن والبرامج",
+            "verifiedLabel": "موثّق",
+            "openAlignmentSource": "فتح مصدر المواءمة",
+            "more": "المزيد",
+            "close": "إغلاق",
+            "by": "بواسطة",
+            "verified": "بيان اعتماد موثّق"
         }
     },
     "introSlides": {

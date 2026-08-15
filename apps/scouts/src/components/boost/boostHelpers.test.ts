@@ -68,6 +68,14 @@ afterAll(() => {
 });
 
 describe('localized Boost preset defaults', () => {
+    it('uses bundled images for every Merit Badge preset', () => {
+        const externalImagePresets = categoryToSubcategoryList[BoostCategoryOptionsEnum.meritBadge]
+            .filter(preset => /^https?:\/\//.test(preset.image ?? ''))
+            .map(preset => preset.type);
+
+        expect(externalImagePresets).toEqual([]);
+    });
+
     it('uses the active locale when no content locale override is provided', () => {
         setLocale('es', { reload: false });
 

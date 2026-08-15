@@ -230,9 +230,10 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         thumbSrc={boost?.boostID?.idThumbnail}
                         subTextOverride={m['troops.membersList.issuedSub']({
                             count: recipientCount ?? 0,
-                            person: m[
-                                recipientCount === 1 ? 'boost.person_one' : 'boost.person_other'
-                            ](),
+                            person:
+                                recipientCount === 1
+                                    ? m['boost.personOne']()
+                                    : m['boost.personOther'](),
                         })}
                         issuedDateOverride={
                             <div className="flex">

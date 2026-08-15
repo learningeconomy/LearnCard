@@ -262,6 +262,20 @@
                 "active": "Active",
                 "couldNotVerify": "Boost Credential could not be verified."
             }
+        },
+        "credential": {
+            "about": "About",
+            "criteria": "Criteria",
+            "alignments": "Alignments",
+            "alignmentInfo": "Alignments in your Open Badge credential link your achievement to established frameworks, standards, or competencies. Each alignment shows how your boost directly relates to skills, knowledge areas, and professional standards that are recognized in your field.",
+            "verifiedSource": "Verified source",
+            "occupationsPrograms": "Occupations & programs",
+            "verifiedLabel": "Verified",
+            "openAlignmentSource": "Open alignment source",
+            "more": "More",
+            "close": "Close",
+            "by": "By",
+            "verified": "Verified Credential"
         }
     },
     "introSlides": {

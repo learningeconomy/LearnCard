@@ -262,6 +262,20 @@
                 "active": "Actif",
                 "couldNotVerify": "Le justificatif Boost n’a pas pu être vérifié."
             }
+        },
+        "credential": {
+            "about": "À propos",
+            "criteria": "Critères",
+            "alignments": "Alignements",
+            "alignmentInfo": "Les alignements de votre justificatif Open Badge relient votre réussite à des référentiels, normes ou compétences établis. Chaque alignement montre comment votre boost se rapporte directement à des compétences, des domaines de connaissances et des normes professionnelles reconnus dans votre domaine.",
+            "verifiedSource": "Source vérifiée",
+            "occupationsPrograms": "Métiers et programmes",
+            "verifiedLabel": "Vérifiée",
+            "openAlignmentSource": "Ouvrir la source de l’alignement",
+            "more": "Plus",
+            "close": "Fermer",
+            "by": "Par",
+            "verified": "Justificatif vérifié"
         }
     },
     "introSlides": {
