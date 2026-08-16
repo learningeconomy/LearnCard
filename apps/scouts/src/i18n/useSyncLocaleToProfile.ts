@@ -7,7 +7,8 @@ import { getEffectiveSupportedLanguages } from './detectLocale';
 import { SUPPORTED_LANGUAGES, useChangeLocale, useLocale } from './index';
 import type { SupportedLanguage } from './index';
 import { applyLocaleSyncAction, decideLocaleSync } from './localeSync';
-import { readPersistedLocale } from './localeStorage';
+import type { LocaleSyncEffects } from './localeSync';
+import { readManualLocaleChoice } from './localeStorage';
 
 const log = getLogger('i18n.sync-locale-to-profile');
 
@@ -24,8 +25,9 @@ export const useSyncLocaleToProfile = (): void => {
     const queryClient = useQueryClient();
     const writingRef = useRef(false);
     const pendingLocaleRef = useRef<SupportedLanguage | null>(null);
+    const mountedRef = useRef(true);
 
-    const rawProfileLocale = (profile as { locale?: string } | null | undefined)?.locale;
+    const rawProfileLocale = profile && 'locale' in profile ? profile.locale : undefined;
     const hasSavedProfileLocale = !!rawProfileLocale?.trim();
     const profileLocale = ((): SupportedLanguage | undefined => {
         const base = rawProfileLocale?.toLowerCase().split('-')[0];
@@ -41,12 +43,23 @@ export const useSyncLocaleToProfile = (): void => {
         );
 
     useEffect(() => {
+        mountedRef.current = true;
+
+        return () => {
+            mountedRef.current = false;
+            pendingLocaleRef.current = null;
+        };
+    }, []);
+
+    useEffect(() => {
         if (!isFetched || !profile?.profileId) return;
+
+        const manualLocaleChoice = readManualLocaleChoice();
 
         const action = decideLocaleSync(
             locale,
             profileLocale,
-            !!readPersistedLocale(),
+            manualLocaleChoice === locale,
             tenantSupportsProfileLocale,
             hasSavedProfileLocale
         );
@@ -56,14 +69,19 @@ export const useSyncLocaleToProfile = (): void => {
             return;
         }
 
-        const effects = {
-            changeLocale,
+        const effects: LocaleSyncEffects = {
+            changeLocale: nextLocale => {
+                if (mountedRef.current) changeLocale(nextLocale, { manual: false });
+            },
             updateProfile: async nextLocale => {
                 const wallet = await initWallet();
-                if (!wallet) return;
+                if (!mountedRef.current || !wallet) return;
                 await wallet.invoke.updateProfile({ locale: nextLocale });
             },
-            invalidateProfile: () => queryClient.invalidateQueries({ queryKey: ['getProfile'] }),
+            invalidateProfile: () =>
+                mountedRef.current
+                    ? queryClient.invalidateQueries({ queryKey: ['getProfile'] })
+                    : Promise.resolve(),
             onError: error => log.warn('Failed to sync locale to profile', error),
         };
 
@@ -80,14 +98,18 @@ export const useSyncLocaleToProfile = (): void => {
         writingRef.current = true;
 
         void (async () => {
-            while (pendingLocaleRef.current) {
-                const nextLocale = pendingLocaleRef.current;
-                pendingLocaleRef.current = null;
-                await applyLocaleSyncAction({ action: 'sync' }, nextLocale, effects);
+            try {
+                while (mountedRef.current && pendingLocaleRef.current) {
+                    const nextLocale = pendingLocaleRef.current;
+                    pendingLocaleRef.current = null;
+                    await applyLocaleSyncAction({ action: 'sync' }, nextLocale, effects);
+                }
+            } finally {
+                // Release the writer in the same continuation that observes the
+                // empty queue, leaving no gap where a newly queued locale is lost.
+                writingRef.current = false;
             }
-        })().finally(() => {
-            writingRef.current = false;
-        });
+        })();
     }, [
         locale,
         profileLocale,

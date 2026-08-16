@@ -19,8 +19,12 @@ describe('decideLocaleSync', () => {
         expect(decideLocaleSync('fr', 'es', true)).toEqual({ action: 'sync' });
     });
 
-    it('captures the UI locale when the profile has no saved locale', () => {
-        expect(decideLocaleSync('ar', undefined, false)).toEqual({ action: 'sync' });
+    it('does not persist an autodetected locale when the profile has no saved locale', () => {
+        expect(decideLocaleSync('ar', undefined, false)).toEqual({ action: 'none' });
+    });
+
+    it('seeds an empty profile only after an explicit locale choice', () => {
+        expect(decideLocaleSync('ar', undefined, true)).toEqual({ action: 'sync' });
     });
 
     it('preserves a saved profile locale that this client does not support', () => {
@@ -32,9 +36,12 @@ describe('decideLocaleSync', () => {
         });
     });
 
-    it('leaves a tenant-hidden profile locale alone', () => {
+    it('leaves a tenant-hidden profile locale alone without an explicit choice', () => {
         expect(decideLocaleSync('en', 'fr', false, false)).toEqual({ action: 'none' });
-        expect(decideLocaleSync('en', 'fr', true, false)).toEqual({ action: 'none' });
+    });
+
+    it('lets an explicit choice replace a tenant-hidden profile locale', () => {
+        expect(decideLocaleSync('en', 'fr', true, false)).toEqual({ action: 'sync' });
     });
 });
 

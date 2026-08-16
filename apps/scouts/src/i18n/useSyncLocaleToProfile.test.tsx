@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
     locale: 'en' as 'en' | 'es' | 'fr' | 'ar',
-    persistedLocale: undefined as string | undefined,
+    manualLocaleChoice: undefined as string | undefined,
     profileLocale: 'es' as string | undefined,
     supportedLanguages: ['en', 'es', 'fr', 'ar'] as Array<'en' | 'es' | 'fr' | 'ar'>,
     changeLocale: vi.fn(),
@@ -37,7 +37,7 @@ vi.mock('./detectLocale', () => ({
 }));
 
 vi.mock('./localeStorage', () => ({
-    readPersistedLocale: () => state.persistedLocale,
+    readManualLocaleChoice: () => state.manualLocaleChoice,
 }));
 
 import { LocaleProfileSync } from './useSyncLocaleToProfile';
@@ -53,7 +53,7 @@ const renderSync = (queryClient: QueryClient): void => {
 describe('LocaleProfileSync', () => {
     beforeEach(() => {
         state.locale = 'en';
-        state.persistedLocale = undefined;
+        state.manualLocaleChoice = undefined;
         state.profileLocale = 'es';
         state.supportedLanguages = ['en', 'es', 'fr', 'ar'];
         state.changeLocale.mockReset();
@@ -71,13 +71,29 @@ describe('LocaleProfileSync', () => {
 
         renderSync(queryClient);
 
-        await waitFor(() => expect(state.changeLocale).toHaveBeenCalledWith('es'));
+        await waitFor(() =>
+            expect(state.changeLocale).toHaveBeenCalledWith('es', { manual: false })
+        );
+        expect(state.updateProfile).not.toHaveBeenCalled();
+    });
+
+    it('does not treat a locale preserved from the previous account as a manual choice', async () => {
+        state.locale = 'fr';
+        state.profileLocale = 'es';
+        state.manualLocaleChoice = undefined;
+        const queryClient = new QueryClient();
+
+        renderSync(queryClient);
+
+        await waitFor(() =>
+            expect(state.changeLocale).toHaveBeenCalledWith('es', { manual: false })
+        );
         expect(state.updateProfile).not.toHaveBeenCalled();
     });
 
     it('persists an explicit local locale and invalidates the profile query', async () => {
         state.locale = 'fr';
-        state.persistedLocale = 'fr';
+        state.manualLocaleChoice = 'fr';
         const queryClient = new QueryClient();
         const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -91,7 +107,7 @@ describe('LocaleProfileSync', () => {
 
     it('does not overwrite a saved locale that ScoutPass does not support', () => {
         state.profileLocale = 'de';
-        state.persistedLocale = undefined;
+        state.manualLocaleChoice = undefined;
         const queryClient = new QueryClient();
 
         renderSync(queryClient);
@@ -111,13 +127,48 @@ describe('LocaleProfileSync', () => {
         expect(state.updateProfile).not.toHaveBeenCalled();
     });
 
+    it('persists an explicit choice over a locale hidden by the current tenant', async () => {
+        state.locale = 'es';
+        state.profileLocale = 'fr';
+        state.manualLocaleChoice = 'es';
+        state.supportedLanguages = ['en', 'es'];
+        const queryClient = new QueryClient();
+
+        renderSync(queryClient);
+
+        await waitFor(() => expect(state.updateProfile).toHaveBeenCalledWith({ locale: 'es' }));
+    });
+
+    it('does not seed an empty profile from an autodetected locale', async () => {
+        state.locale = 'ar';
+        state.profileLocale = undefined;
+        state.manualLocaleChoice = undefined;
+        const queryClient = new QueryClient();
+
+        renderSync(queryClient);
+
+        await waitFor(() => expect(state.initWallet).not.toHaveBeenCalled());
+        expect(state.updateProfile).not.toHaveBeenCalled();
+    });
+
+    it('seeds an empty profile after an explicit locale choice', async () => {
+        state.locale = 'ar';
+        state.profileLocale = undefined;
+        state.manualLocaleChoice = 'ar';
+        const queryClient = new QueryClient();
+
+        renderSync(queryClient);
+
+        await waitFor(() => expect(state.updateProfile).toHaveBeenCalledWith({ locale: 'ar' }));
+    });
+
     it('queues the latest locale when another profile write is already running', async () => {
         let rejectFirstWrite: (error: Error) => void = () => undefined;
         const firstWrite = new Promise<void>((_resolve, reject) => {
             rejectFirstWrite = reject;
         });
         state.locale = 'fr';
-        state.persistedLocale = 'fr';
+        state.manualLocaleChoice = 'fr';
         state.updateProfile
             .mockReset()
             .mockImplementationOnce(() => firstWrite)
@@ -132,7 +183,7 @@ describe('LocaleProfileSync', () => {
         await waitFor(() => expect(state.updateProfile).toHaveBeenCalledWith({ locale: 'fr' }));
 
         state.locale = 'ar';
-        state.persistedLocale = 'ar';
+        state.manualLocaleChoice = 'ar';
         view.rerender(
             <QueryClientProvider client={queryClient}>
                 <LocaleProfileSync />
@@ -150,7 +201,7 @@ describe('LocaleProfileSync', () => {
             rejectFirstWrite = reject;
         });
         state.locale = 'fr';
-        state.persistedLocale = 'fr';
+        state.manualLocaleChoice = 'fr';
         state.updateProfile.mockReset().mockImplementationOnce(() => firstWrite);
         const queryClient = new QueryClient();
         const view = render(
@@ -162,7 +213,7 @@ describe('LocaleProfileSync', () => {
         await waitFor(() => expect(state.updateProfile).toHaveBeenCalledWith({ locale: 'fr' }));
 
         state.locale = 'ar';
-        state.persistedLocale = 'ar';
+        state.manualLocaleChoice = 'ar';
         view.rerender(
             <QueryClientProvider client={queryClient}>
                 <LocaleProfileSync />
@@ -170,7 +221,7 @@ describe('LocaleProfileSync', () => {
         );
 
         state.locale = 'es';
-        state.persistedLocale = 'es';
+        state.manualLocaleChoice = 'es';
         view.rerender(
             <QueryClientProvider client={queryClient}>
                 <LocaleProfileSync />
@@ -181,5 +232,32 @@ describe('LocaleProfileSync', () => {
         await waitFor(() => expect(state.warn).toHaveBeenCalled());
         expect(state.updateProfile).toHaveBeenCalledTimes(1);
         expect(state.updateProfile).not.toHaveBeenCalledWith({ locale: 'ar' });
+    });
+
+    it('does not write the profile after the sync component unmounts', async () => {
+        let resolveWallet: (wallet: {
+            invoke: { updateProfile: typeof state.updateProfile };
+        }) => void = () => undefined;
+        state.locale = 'fr';
+        state.manualLocaleChoice = 'fr';
+        state.initWallet.mockReset().mockReturnValue(
+            new Promise(resolve => {
+                resolveWallet = resolve;
+            })
+        );
+        const queryClient = new QueryClient();
+        const view = render(
+            <QueryClientProvider client={queryClient}>
+                <LocaleProfileSync />
+            </QueryClientProvider>
+        );
+
+        await waitFor(() => expect(state.initWallet).toHaveBeenCalled());
+        view.unmount();
+        resolveWallet({ invoke: { updateProfile: state.updateProfile } });
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(state.updateProfile).not.toHaveBeenCalled();
     });
 });

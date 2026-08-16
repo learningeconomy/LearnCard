@@ -16,14 +16,17 @@ export const decideLocaleSync = (
     tenantSupportsProfileLocale = true,
     hasSavedProfileLocale = profileLocale !== undefined
 ): LocaleSyncAction => {
-    if (!profileLocale) return hasSavedProfileLocale ? { action: 'none' } : { action: 'sync' };
+    if (!profileLocale) {
+        if (hasSavedProfileLocale) return { action: 'none' };
+        return hasManualChoice ? { action: 'sync' } : { action: 'none' };
+    }
     if (profileLocale === uiLocale) return { action: 'none' };
+    if (hasManualChoice) return { action: 'sync' };
     if (!tenantSupportsProfileLocale) return { action: 'none' };
-    if (!hasManualChoice) return { action: 'restore', locale: profileLocale };
-    return { action: 'sync' };
+    return { action: 'restore', locale: profileLocale };
 };
 
-type LocaleSyncEffects = {
+export type LocaleSyncEffects = {
     changeLocale: (locale: SupportedLanguage) => void;
     updateProfile: (locale: SupportedLanguage) => Promise<void>;
     invalidateProfile: () => Promise<unknown>;
