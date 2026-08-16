@@ -145,7 +145,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
                         }`}
                     >
                         <div className="overflow-hidden min-h-0 flex flex-col">
-                            <div className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px] flex flex-col flex-1 min-h-0">
+                            <div className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px] flex flex-col flex-1 min-h-0 overflow-y-auto">
                                 {steps[currentStep] ?? null}
                             </div>
                         </div>
