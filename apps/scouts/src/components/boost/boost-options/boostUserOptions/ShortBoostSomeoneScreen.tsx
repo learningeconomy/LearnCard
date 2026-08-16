@@ -12,6 +12,7 @@ import BoostSearch from '../../boost-search/BoostSearch';
 import BoostShareableCode from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableCode';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 import { BoostCMSState } from '../../boost';
+import * as m from '../../../../paraglide/messages.js';
 
 type ShortBoostSomeoneScreenProps = {
     boostUri: string;
@@ -98,7 +99,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
             <IonGrid className="ion-padding">
                 <IonCol className="w-full flex items-center justify-between mt-8">
                     <div className="boost-issue-container w-full flex items-center justify-between mx-[20px] text-grayscale-900">
-                        <p className="boost-issue-to-text text-[25px]">Add Someone</p>
+                        <p className="boost-issue-to-text text-[25px]">{m['boost.addSomeone']()}</p>
                         <div
                             className="flex-shrink-0 cursor-pointer"
                             onClick={() => presentBoostSomeoneModal()}
@@ -114,7 +115,8 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                         className="flex items-center justify-center bg-sp-purple-base rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg disabled:opacity-[50%]"
                         disabled={localState?.issueTo.length === 0}
                     >
-                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Send
+                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['boost.send']()}
                     </button>
                     {boostStatus === 'LIVE' && (
                         <IonCol className="w-full flex items-center justify-center mt-[40px] p-0">
@@ -131,8 +133,8 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                                 }}
                                 className="flex items-center font-medium justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg normal tracking-wide"
                             >
-                                <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" /> Generate
-                                Link
+                                <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                                {m['boost.generateLink']()}
                             </button>
                         </IonCol>
                     )}
@@ -142,7 +144,7 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                         onClick={() => handleCloseModal()}
                         className="text-grayscale-900 text-center text-sm"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </IonGrid>

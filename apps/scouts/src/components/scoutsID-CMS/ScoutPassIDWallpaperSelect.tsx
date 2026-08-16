@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
+import * as m from '../../paraglide/messages.js';
+
 import { IonSpinner } from '@ionic/react';
 import Pencil from '../svgs/Pencil';
 import TrashBin from '../svgs/TrashBin';
@@ -49,18 +51,10 @@ export const ScoutPassIDWallpaperSelect: React.FC<{
                 >
                     {!wallpaper ? (
                         <div className="p-[6px]">
-                            <img
-                                alt="wallpaper empty state"
-                                src={EmptyImage}
-                                className="w-full h-full object-contain"
-                            />
+                            <img alt="" src={EmptyImage} className="w-full h-full object-contain" />
                         </div>
                     ) : (
-                        <img
-                            alt="badge thumbnail"
-                            src={wallpaper}
-                            className="w-full h-full object-cover"
-                        />
+                        <img alt="" src={wallpaper} className="w-full h-full object-cover" />
                     )}
                     {imageUploadLoading && (
                         <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
@@ -70,7 +64,7 @@ export const ScoutPassIDWallpaperSelect: React.FC<{
                 </div>
                 {!wallpaper && (
                     <p className="ml-[10px] font-notoSans text-sm font-bold text-grayscale-500">
-                        None
+                        {m['scoutsId.none']()}
                     </p>
                 )}
             </div>

@@ -2,6 +2,7 @@
 import ReaperGhost from '../../../assets/lotties/reaperghost.json';
 import Lottie from 'react-lottie-player';
 import { useErrorBoundary } from 'react-error-boundary';
+import * as m from '../../../paraglide/messages.js';
 
 const BoostErrorsDisplay: React.FC<{
     errorMessage?: string;
@@ -28,7 +29,7 @@ const BoostErrorsDisplay: React.FC<{
                 className="fle font-medium items-center mt-[20px] justify-center max-w-[200px] bg-indigo-500 rounded-full w-full px-[18px] py-[12px] text-white text-[20px]"
                 onClick={handleRefetch}
             >
-                Try again!
+                {m['error.retry']()}
             </button>
         </section>
     );
@@ -43,13 +44,13 @@ export const ErrorBoundaryFallback: React.FC<{
 
     return (
         <div role="alert" className="flex flex-col items-center justify-center w-full h-full">
-            <p className="font-semibold text-black">Something went wrong:</p>
-            <p>{error?.message || 'There was an error'}</p>
+            <p className="font-semibold text-black">{m['boost.somethingWentWrongLabel']()}</p>
+            <p>{error?.message || m['boost.thereWasAnError']()}</p>
             <button
                 className="flex items-center mt-[20px] font-medium justify-center max-w-[200px] bg-indigo-500 rounded-full w-full px-[18px] py-[12px] text-white text-[20px]"
                 onClick={resetBoundary}
             >
-                Try again!
+                {m['error.retry']()}
             </button>
         </div>
     );

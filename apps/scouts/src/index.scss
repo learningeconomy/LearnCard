@@ -18,6 +18,12 @@ body.scanner-active > * {
 
 @import './assets/sass/modals.scss';
 @import './assets/sass/header.scss';
+
+// Physical left/right navigation icons must follow the document direction.
+// Use the independent `scale` property so existing rotate transforms still compose.
+[dir='rtl'] .rtl-mirror {
+    scale: -1 1;
+}
 @import './assets/sass/notification.scss';
 @import './assets/sass/nav.scss';
 @import './assets/sass/learncard-card.scss';

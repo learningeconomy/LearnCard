@@ -2080,6 +2080,15 @@
             "accepted": "Accepted",
             "expiredHeader": "The boost claim link has expired or has reached the maximum number of times it can be claimed."
         },
+        "duplicate": {
+            "title": "Already saved",
+            "description": "Choose whether to skip this credential you've already saved or save another copy.",
+            "existingLabel": "Saved credential",
+            "issuedBy": "Issued by {{issuer}}",
+            "skip": "Skip This Copy",
+            "save": "Save Another Copy",
+            "skippedToast": "This copy wasn't added. Your saved credential is unchanged."
+        },
         "modal": {
             "earnedTitle": "You've Earned a Credential!",
             "claimedTitle": "Credential Claimed!",
