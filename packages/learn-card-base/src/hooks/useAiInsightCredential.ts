@@ -21,6 +21,7 @@ import { useGetCurrentLCNUser } from './useGetCurrentLCNUser';
 import { useConsentedContracts } from './useConsentedContracts';
 import { useGetCredentialsForSkills } from '../react-query/queries/vcQueries';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from '../constants/aiPassport';
+import { AiServiceError, getAiServiceError } from '../helpers/aiErrors';
 const log = getLogger('use-ai-insight-credential');
 
 // Types for pathway data
@@ -167,23 +168,27 @@ const createAiInsightCredentialInternal = async (
         return null;
     }
 
-    const responseText = await response.text();
-
     if (!response.ok) {
+        const aiServiceError = await getAiServiceError(response);
+
         logAiInsightCredentialError(
             'AI insight credential request failed',
-            new Error(responseText),
+            aiServiceError ?? new Error(`AI service returned ${response.status}`),
             {
                 did,
                 status: response.status,
-                statusText: response.statusText,
-                responseText,
+                code: aiServiceError?.payload.code,
             }
         );
+
+        if (aiServiceError) throw aiServiceError;
+
         throw new Error(
             `Failed to create AI Insight credential (${response.status} ${response.statusText})`
         );
     }
+
+    const responseText = await response.text();
 
     let aiInsightCredential: unknown;
     try {
@@ -479,6 +484,12 @@ export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean }
         refreshStatus,
         requestedAt,
     ]);
+
+    useEffect(() => {
+        if (!(query.error instanceof AiServiceError) || query.error.payload.retryable) return;
+
+        clearAiInsightRefreshState();
+    }, [query.error]);
 
     return query;
 };

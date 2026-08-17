@@ -16,6 +16,7 @@ import type {
     LearningPathway,
     ActiveSessionStatus,
 } from '../../types/ai-chat';
+import { parseAiErrorPayload, type AiClientError } from '../../helpers/aiErrors';
 
 export const messages = atom<ChatMessage[]>([]);
 export const streamingMessage = atom<ChatMessage | null>(null);
@@ -49,7 +50,9 @@ export const chatInputText = atom('');
  * this to emit failure telemetry. `at` makes each failure a distinct
  * value so repeated failures re-trigger subscribers.
  */
-export const lastAiError = atom<{ at: number; code?: string } | null>(null);
+export const lastAiError = atom<
+    AiClientError | { at: number; code?: string; event?: undefined; presented?: boolean } | null
+>(null);
 import { getLogger } from '../../logging/logger';
 const log = getLogger('chat-store');
 
@@ -204,6 +207,7 @@ let shouldReconnect = true;
 const SESSION_START_WATCHDOG_MS = 32_000;
 let startupWatchdog: number | undefined;
 let currentSessionStartRequestId: string | null = null;
+type PendingResponseKind = 'startup' | 'continuation';
 
 const isCurrentSessionStartFrame = (requestId: unknown) =>
     (requestId === undefined && currentSessionStartRequestId === null) ||
@@ -218,9 +222,9 @@ const clearSessionStartWatchdog = () => {
     startupWatchdog = undefined;
 };
 
-const beginSessionStartWatchdog = () => {
+const beginSessionStartWatchdog = (kind: PendingResponseKind = 'startup') => {
     clearSessionStartWatchdog();
-    currentSessionStartRequestId = null;
+    if (kind === 'startup') currentSessionStartRequestId = null;
 
     startupWatchdog = window.setTimeout(() => {
         startupWatchdog = undefined;
@@ -228,8 +232,20 @@ const beginSessionStartWatchdog = () => {
         isLoading.set(false);
         isTyping.set(false);
         planStreamActive.set(false);
-        lastAiError.set({ at: Date.now(), code: 'startup_timeout' });
-        showErrorModal('Something went wrong', 'Please try starting the session again.');
+
+        const isContinuation = kind === 'continuation';
+
+        lastAiError.set({
+            at: Date.now(),
+            code: isContinuation ? 'response_timeout' : 'startup_timeout',
+            presented: true,
+        });
+        showErrorModal(
+            'Something went wrong',
+            isContinuation
+                ? 'Please try starting the session response again.'
+                : 'Please try starting the session again.'
+        );
     }, SESSION_START_WATCHDOG_MS);
 };
 
@@ -255,6 +271,32 @@ const flushStream = () => {
 const scheduleFlush = () => {
     if (streamRaf != null) return;
     streamRaf = requestAnimationFrame(flushStream);
+};
+const preservePartialStreamingMessage = () => {
+    if (streamRaf != null) {
+        cancelAnimationFrame(streamRaf);
+        flushStream();
+    }
+
+    const pending = streamingMessage.get();
+
+    if (pending) {
+        messages.set([...messages.get(), pending]);
+        streamingMessage.set(null);
+    }
+
+    streamingId = null;
+};
+
+const stopPendingAiResponse = () => {
+    clearSessionStartWatchdog();
+    currentSessionStartRequestId = null;
+    preservePartialStreamingMessage();
+    isLoading.set(false);
+    isTyping.set(false);
+    isEndingSession.set(false);
+    showEndingSessionLoader.set(false);
+    planStreamActive.set(false);
 };
 
 // Load user's threads
@@ -690,7 +732,7 @@ export function connectWebSocket() {
             if (data.event === 'thread_updated') {
                 if (!isCurrentThreadFrame(data.threadId)) return;
 
-                if (data.phase === 'responding') isTyping.set(true);
+                if (data.phase === 'responding' && !lastAiError.get()) isTyping.set(true);
 
                 void loadThread(data.threadId).finally(() => {
                     if (data.phase !== 'responding') isTyping.set(false);
@@ -746,12 +788,35 @@ export function connectWebSocket() {
                 return;
             }
 
+            const aiServiceError = parseAiErrorPayload(data);
+
+            if (aiServiceError) {
+                if (
+                    typeof aiServiceError.requestId === 'string' &&
+                    !isCurrentSessionStartFrame(aiServiceError.requestId)
+                )
+                    return;
+                if (
+                    typeof aiServiceError.threadId === 'string' &&
+                    !isCurrentThreadFrame(aiServiceError.threadId)
+                )
+                    return;
+
+                stopPendingAiResponse();
+                lastAiError.set({ ...aiServiceError, at: Date.now() });
+
+                return;
+            }
+
             if (data.event === 'session_start_error') {
                 if (!isCurrentSessionStartFrame(data.requestId)) return;
-                clearSessionStartWatchdog();
-                isLoading.set(false);
-                isTyping.set(false);
-                planStreamActive.set(false);
+
+                stopPendingAiResponse();
+                lastAiError.set({
+                    at: Date.now(),
+                    code: typeof data.code === 'string' ? data.code : 'session_start_error',
+                    presented: true,
+                });
                 showErrorModal('Something went wrong', 'Please try starting the session again.');
                 return;
             }
@@ -762,17 +827,17 @@ export function connectWebSocket() {
                     !isCurrentSessionStartFrame(data.requestId)
                 )
                     return;
-                const isStartupPending = startupWatchdog !== undefined;
-                clearSessionStartWatchdog();
+                const isResponsePending = startupWatchdog !== undefined;
+                const presented = isResponsePending || typeof data.requestId === 'string';
+
                 log.error('Error:', data.error);
-                isLoading.set(false);
-                isTyping.set(false);
+                stopPendingAiResponse();
                 lastAiError.set({
                     at: Date.now(),
                     code: typeof data.error === 'string' ? data.error : 'server_error',
+                    presented,
                 });
-                planStreamActive.set(false);
-                if (isStartupPending || typeof data.requestId === 'string') {
+                if (presented) {
                     showErrorModal(
                         'Something went wrong',
                         'Please try starting the session again.'
@@ -784,7 +849,7 @@ export function connectWebSocket() {
             if (data.event === 'assistant_typing') {
                 if (data.threadId && !isCurrentThreadFrame(data.threadId)) return;
                 isLoading.set(false);
-                isTyping.set(true);
+                if (!lastAiError.get()) isTyping.set(true);
                 return;
             }
 
@@ -841,17 +906,7 @@ export function connectWebSocket() {
 
             if (data.done) {
                 clearSessionStartWatchdog();
-                // Flush any pending streaming tokens before committing
-                if (streamRaf != null) {
-                    cancelAnimationFrame(streamRaf);
-                    flushStream();
-                }
-                const pending = streamingMessage.get();
-                if (pending) {
-                    messages.set([...messages.get(), pending]);
-                    streamingMessage.set(null);
-                }
-                streamingId = null;
+                preservePartialStreamingMessage();
 
                 isTyping.set(false);
 
@@ -933,17 +988,7 @@ export function connectWebSocket() {
     ws.onclose = () => {
         if (ws !== socket) return;
 
-        // Flush any partial streaming message so interrupted streams aren't lost
-        if (streamRaf != null) {
-            cancelAnimationFrame(streamRaf);
-            flushStream();
-        }
-        const pending = streamingMessage.get();
-        if (pending) {
-            messages.set([...messages.get(), pending]);
-            streamingMessage.set(null);
-        }
-        streamingId = null;
+        preservePartialStreamingMessage();
 
         ws = null;
 
@@ -964,7 +1009,10 @@ export function connectWebSocket() {
         if (ws !== socket) return;
         log.error('WebSocket error:', err);
         const responsePending = isTyping.get() || isLoading.get() || !!streamingMessage.get();
-        if (responsePending) lastAiError.set({ at: Date.now(), code: 'websocket_error' });
+        if (!responsePending) return;
+
+        stopPendingAiResponse();
+        lastAiError.set({ at: Date.now(), code: 'websocket_error' });
     };
 
     return ws;
@@ -1005,6 +1053,8 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
         onReady(() => sendMessageWithQuestion(content, selectedQuestion));
         return;
     }
+
+    lastAiError.set(null);
 
     const currentMessages = messages.get();
     let newMessage: ChatMessage;
@@ -1328,15 +1378,18 @@ export async function startInsightsSession(topic: string, initialText?: string) 
 export function continuePlan() {
     const threadId = planReadyThread.get();
     if (!threadId) return;
-    // Add placeholder for continuation streaming to a new assistant message
-    const currentMsgs = messages.get();
-    messages.set([...currentMsgs, { role: 'assistant', content: '' }]);
     const socket = connectWebSocket();
     if (!socket || socket.readyState !== WebSocket.OPEN) {
         onReady(() => continuePlan());
         return;
     }
+
+    // Add placeholder for continuation streaming to a new assistant message
+    const currentMsgs = messages.get();
+    messages.set([...currentMsgs, { role: 'assistant', content: '' }]);
+    lastAiError.set(null);
     isTyping.set(true);
+    beginSessionStartWatchdog('continuation');
     socket.send(JSON.stringify(addActiveLocaleToPayload({ action: 'continue_plan', threadId })));
     planReady.set(false);
     planReadyThread.set(null);

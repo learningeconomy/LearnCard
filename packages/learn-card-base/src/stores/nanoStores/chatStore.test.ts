@@ -67,9 +67,36 @@ class FakeWebSocket {
 globalThis.WebSocket = FakeWebSocket as unknown as typeof WebSocket;
 globalThis.fetch = mocks.fetch as typeof fetch;
 
+const localeStorageValues = new Map<string, string>();
+const localeStorage: Storage = {
+    get length() {
+        return localeStorageValues.size;
+    },
+    clear: () => localeStorageValues.clear(),
+    getItem: key => localeStorageValues.get(key) ?? null,
+    key: index => Array.from(localeStorageValues.keys())[index] ?? null,
+    removeItem: key => localeStorageValues.delete(key),
+    setItem: (key, value) => localeStorageValues.set(key, value),
+};
+vi.stubGlobal('localStorage', localeStorage);
+
+if (!Promise.withResolvers) {
+    Promise.withResolvers = <T>() => {
+        let resolve!: PromiseWithResolvers<T>['resolve'];
+        let reject!: PromiseWithResolvers<T>['reject'];
+        const promise = new Promise<T>((promiseResolve, promiseReject) => {
+            resolve = promiseResolve;
+            reject = promiseReject;
+        });
+
+        return { promise, resolve, reject };
+    };
+}
+
 // The store must capture the fake browser WebSocket during module initialization.
 const {
     connectWebSocket,
+    continuePlan,
     credentialContextReadiness,
     currentThreadId,
     disconnectWebSocket,
@@ -334,6 +361,165 @@ describe('chat session startup', () => {
             'Something went wrong',
             'Please try starting the session again.'
         );
+    });
+
+    it('records typed quota errors and clears startup state without generic modal copy', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-quota' });
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+            operation: 'session_start',
+            requestId: 'request-quota',
+        });
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(planStreamActive.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            retryable: false,
+            operation: 'session_start',
+            requestId: 'request-quota',
+        });
+        expect(mocks.showErrorModal).not.toHaveBeenCalled();
+    });
+
+    it('terminates startup for unknown typed error codes', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-future' });
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_future_failure',
+            message: 'Safe public message',
+            retryable: false,
+            requestId: 'request-future',
+        });
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            code: 'ai_unknown_error',
+            rawCode: 'ai_provider_future_failure',
+        });
+    });
+
+    it('stops pending response indicators immediately when the WebSocket errors', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+
+        expect(isLoading.get()).toBe(true);
+        expect(isTyping.get()).toBe(true);
+
+        socket.onerror?.();
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(planStreamActive.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({ code: 'websocket_error' });
+    });
+
+    it('preserves a partial assistant response when a typed AI error interrupts streaming', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-stream');
+        messages.set([{ role: 'user', content: 'My question' }]);
+
+        socket.receive('Partial answer');
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+            operation: 'chat',
+            threadId: 'thread-stream',
+        });
+
+        expect(messages.get().map(message => message.content)).toEqual([
+            'My question',
+            'Partial answer',
+        ]);
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            code: 'ai_provider_quota_exhausted',
+            threadId: 'thread-stream',
+        });
+    });
+
+    it('preserves a partial assistant response when a legacy error interrupts streaming', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-legacy-stream');
+        messages.set([{ role: 'user', content: 'My question' }]);
+
+        socket.receive('Partial answer');
+        socket.receive({ error: 'provider failed' });
+
+        expect(messages.get().map(message => message.content)).toEqual([
+            'My question',
+            'Partial answer',
+        ]);
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            code: 'provider failed',
+            presented: false,
+        });
+    });
+
+    it('does not resurrect typing when a responding frame arrives after a quota error', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-quota');
+        isTyping.set(true);
+
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+            operation: 'chat',
+            threadId: 'thread-quota',
+        });
+        socket.receive({
+            event: 'thread_updated',
+            threadId: 'thread-quota',
+            phase: 'responding',
+        });
+        socket.receive({
+            event: 'assistant_typing',
+            threadId: 'thread-quota',
+        });
+
+        expect(lastAiError.get()).toMatchObject({
+            code: 'ai_provider_quota_exhausted',
+            threadId: 'thread-quota',
+        });
+        expect(isTyping.get()).toBe(false);
+    });
+
+    it('ignores typed AI errors correlated to a stale startup request', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-current' });
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+            requestId: 'request-stale',
+        });
+
+        expect(isLoading.get()).toBe(true);
+        expect(lastAiError.get()).toBeNull();
     });
 
     it('terminates loading for a legacy startup error before request acceptance', async () => {
@@ -624,6 +810,66 @@ describe('chat session startup', () => {
 
         reconnectedSocket?.receive({ done: true, threadId: 'thread-insights' });
         expect(isTyping.get()).toBe(false);
+    });
+
+    it('accepts a continuation error carrying the startup request ID', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-continuation' });
+        socket.receive({
+            event: 'plan_ready',
+            requestId: 'request-continuation',
+            threadId: 'thread-continuation',
+            title: 'Algebra',
+        });
+
+        continuePlan();
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+            requestId: 'request-continuation',
+            threadId: 'thread-continuation',
+        });
+
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            code: 'ai_provider_quota_exhausted',
+            requestId: 'request-continuation',
+        });
+    });
+
+    it('ends a silent plan continuation after 32 seconds', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-continuation');
+        planReady.set(true);
+        planReadyThread.set('thread-continuation');
+
+        continuePlan();
+
+        expect(socket.sent.map(payload => JSON.parse(payload))).toContainEqual({
+            action: 'continue_plan',
+            threadId: 'thread-continuation',
+            locale: 'en',
+        });
+        expect(isTyping.get()).toBe(true);
+
+        await vi.advanceTimersByTimeAsync(31_999);
+        expect(isTyping.get()).toBe(true);
+
+        await vi.advanceTimersByTimeAsync(1);
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            code: 'response_timeout',
+            presented: true,
+        });
+        expect(mocks.showErrorModal).toHaveBeenCalledWith(
+            'Something went wrong',
+            'Please try starting the session response again.'
+        );
     });
 
     it('does not time out an Insights response after its first content frame', async () => {

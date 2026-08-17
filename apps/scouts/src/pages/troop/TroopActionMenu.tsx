@@ -12,6 +12,7 @@ import AddUserIcon from '../../components/svgs/AddUserIcon';
 import IdentificationCard from '../../components/svgs/IdentificationCard';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { getScoutsNounForRole } from '../../helpers/troop.helpers';
+import * as m from '../../paraglide/messages.js';
 
 type TroopActionMenuProps = {
     handleCloseModal: () => void;
@@ -81,7 +82,7 @@ const TroopActionMenu: React.FC<TroopActionMenuProps> = ({
 
     boostMenuOptions.push({
         id: 1,
-        title: 'Invite Member',
+        title: m['troops.inviteMember'](),
         icon: <AddUserIcon className="text-grayscale-900" />,
         onClick: () => handleAddMember(),
     });
@@ -89,7 +90,7 @@ const TroopActionMenu: React.FC<TroopActionMenuProps> = ({
     if (handleInviteMember) {
         boostMenuOptions.push({
             id: 0,
-            title: 'Edit',
+            title: m['common.edit'](),
             icon: <Pencil className="text-grayscale-900" />,
             onClick: () => _handleEdit(),
         });
@@ -99,13 +100,13 @@ const TroopActionMenu: React.FC<TroopActionMenuProps> = ({
         boostMenuOptions.push(
             {
                 id: 2,
-                title: 'Share My ID',
+                title: m['troops.shareMyId'](),
                 icon: <ReplyIcon version="2" className="text-grayscale-900" />,
                 onClick: () => handleShare(),
             },
             {
                 id: 3,
-                title: 'My ID Details',
+                title: m['troops.myIdDetails'](),
                 icon: <IdentificationCard className="text-grayscale-900" />,
                 onClick: () => {
                     handleCloseModal?.();
@@ -118,7 +119,9 @@ const TroopActionMenu: React.FC<TroopActionMenuProps> = ({
     if (hasGlobalAdminID && role !== ScoutsRoleEnum.global) {
         boostMenuOptions.push({
             id: 4,
-            title: `Delete ${title ?? getScoutsNounForRole((role as ScoutsRoleEnum) ?? 1, true)}`,
+            title: m['troops.deleteNoun']({
+                noun: title ?? getScoutsNounForRole((role as ScoutsRoleEnum) ?? 1, true),
+            }),
             icon: <TrashBin className="text-grayscale-900" />,
             onClick: () => {
                 handleDelete?.();

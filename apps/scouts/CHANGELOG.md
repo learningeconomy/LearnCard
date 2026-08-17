@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.90.27
+
+### Patch Changes
+
+-   [#1466](https://github.com/learningeconomy/LearnCard/pull/1466) [`454793da3e4ef151a6e3bab129392df2004990b1`](https://github.com/learningeconomy/LearnCard/commit/454793da3e4ef151a6e3bab129392df2004990b1) Thanks [@Custard7](https://github.com/Custard7)! - fix: Web Version #
+
+-   Updated dependencies [[`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575), [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417)]:
+    -   @learncard/lca-api-plugin@2.0.0
+    -   @learncard/helpers@1.3.12
+    -   @learncard/react@2.12.1
+
 ## 1.90.26
 
 ### Patch Changes

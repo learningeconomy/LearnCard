@@ -1978,7 +1978,19 @@
         "noSessionsForTopicBody": "Vous n’avez pas encore de sessions pour « {{topic}} ». Démarrez-en une nouvelle pour discuter de ce sujet.",
         "completedOn": "<0>Terminé</0> le {{date}}",
         "topicLabel": "Sujet",
-        "appLabel": "Application"
+        "appLabel": "Application",
+        "errors": {
+            "quotaTitle": "Limite d’utilisation de l’IA LearnCard atteinte",
+            "quotaBody": "L’IA LearnCard a atteint sa limite d’utilisation actuelle. Veuillez réessayer plus tard.",
+            "rateTitle": "L’IA LearnCard est très sollicitée",
+            "rateBody": "Trop de personnes utilisent l’IA LearnCard actuellement. Veuillez réessayer dans quelques instants.",
+            "unavailableTitle": "L’IA LearnCard est temporairement indisponible",
+            "unavailableBody": "Veuillez réessayer plus tard.",
+            "timeoutTitle": "L’IA LearnCard a mis trop de temps à répondre",
+            "timeoutBody": "Veuillez réessayer.",
+            "unknownTitle": "L’IA LearnCard n’a pas pu terminer cette demande",
+            "unknownBody": "Veuillez réessayer plus tard."
+        }
     },
     "pathways": {
         "title": "Parcours",
@@ -2373,6 +2385,15 @@
         "boost": {
             "accepted": "Accepté",
             "expiredHeader": "Le lien de réclamation du Boost a expiré ou a atteint le nombre maximal de réclamations autorisées."
+        },
+        "duplicate": {
+            "title": "Déjà enregistré",
+            "description": "Choisissez d'ignorer ce justificatif déjà enregistré ou d'en enregistrer une autre copie.",
+            "existingLabel": "Justificatif enregistré",
+            "issuedBy": "Émis par {{issuer}}",
+            "skip": "Ignorer cette copie",
+            "save": "Enregistrer une autre copie",
+            "skippedToast": "Cette copie n'a pas été ajoutée. Votre justificatif enregistré reste inchangé."
         },
         "modal": {
             "earnedTitle": "Vous avez obtenu un justificatif !",

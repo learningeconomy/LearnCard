@@ -1,10 +1,16 @@
 import React from 'react';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import CaretDown from '../../svgs/CaretDown';
 import TroopsNetworkList from './TroopsNetworkList';
 
-import { TroopsCMSState, troopsCMSViewModeDefaults, TroopsCMSViewModeEnum } from '../troopCMSState';
+import {
+    TroopsCMSState,
+    troopsCMSViewModeDefaults,
+    viewModeTitle,
+    TroopsCMSViewModeEnum,
+} from '../troopCMSState';
 import { CredentialCategoryEnum, useGetIDs, useModal, ModalTypes } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
@@ -56,7 +62,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
     if (viewMode === TroopsCMSViewModeEnum.network) {
         const globalDefaults = troopsCMSViewModeDefaults?.global;
         const globalNetworkImage = globalDefaults?.image ?? '';
-        const globalNetworkTitle = globalDefaults?.title ?? '';
+        const globalNetworkTitle = viewModeTitle(globalDefaults?.titleKey);
         const globalColor = globalDefaults?.color ?? 'sp-purple-base';
 
         const globalNetwork = state?.parentID;
@@ -78,7 +84,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                                 src={
                                     globalNetwork?.appearance?.badgeThumbnail ?? globalNetworkImage
                                 }
-                                alt="network thumb"
+                                alt=""
                                 className="w-full h-full object-cover"
                             />
                         )}
@@ -87,7 +93,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                         <h4
                             className={`text-${globalColor} font-bold p-0 m-0 text-xs font-notoSans`}
                         >
-                            Global Network
+                            {m['troops.globalNetworkLabel']()}
                         </h4>
 
                         {isParentBoostLoading ? (
@@ -128,19 +134,19 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                     ) : (
                         <img
                             src={network?.appearance?.badgeThumbnail}
-                            alt="network thumb"
+                            alt=""
                             className="w-full h-full object-cover"
                         />
                     )}
                 </div>
                 <div className="flex flex-col items-start justify-center">
                     <h4 className="text-sp-fire-red font-bold p-0 m-0 text-xs font-notoSans">
-                        Network
+                        {m['troops.network']()}
                     </h4>
 
                     {isParentBoostLoading ? (
                         <p className="m-0 p-0 text-lg font-notoSans text-grayscale-900 line-clamp-1">
-                            ...
+                            {m['troops.loading']()}
                         </p>
                     ) : (
                         <p className="m-0 p-0 text-lg font-notoSans text-grayscale-900 line-clamp-1">

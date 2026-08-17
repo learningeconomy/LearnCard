@@ -53,12 +53,13 @@ services/*/node_modules/**
 services/*/*/node_modules
 services/*/*/node_modules/**
 
-# Build outputs
+# Build outputs and native task cache
 **/dist
 **/build
 **/.next
 **/.turbo
 **/.nx
+.nx-cache
 
 # The Pathways module owns a `src/pages/pathways/build/` subtree (the
 # "Build mode" — authoring UI, policy editors, history reducer, etc.).

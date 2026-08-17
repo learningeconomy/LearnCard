@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../paraglide/messages.js';
+
 import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
 
 export enum ScoutPassIDCMSTabsEnum {
@@ -31,7 +33,7 @@ const ScoutPassIDCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        Dark
+                        {m['scoutsId.dark']()}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -43,7 +45,7 @@ const ScoutPassIDCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        Light
+                        {m['scoutsId.light']()}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -55,7 +57,7 @@ const ScoutPassIDCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        Custom
+                        {m['scoutsId.custom']()}
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>

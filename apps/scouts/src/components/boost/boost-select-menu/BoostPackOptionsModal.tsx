@@ -8,11 +8,12 @@ import {
     useGetCurrentUserTroopIds,
     useGetBoostParents,
 } from 'learn-card-base';
-import { pluralize } from 'learn-card-base';
 
 import CaretLeft from '../../svgs/CaretLeft';
 import WorldScoutIcon from '../../svgs/WorldScoutsIcon';
 import Checkmark from '../../svgs/Checkmark';
+import * as m from '../../../paraglide/messages.js';
+import TransP from '../../../i18n/TransP';
 import {
     BadgePackOption,
     badgePackOptions,
@@ -22,6 +23,9 @@ import {
 } from './badge-pack.helper';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../boost-options/boostOptions';
 import useGetTroopNetwork from '../../hooks/useGetTroopNetwork';
+import { selectLocalePlural } from '../../../i18n/formatters';
+import { getLocalizedBoostPackTypeTitle } from './boostPackCopy';
+import { useLocale } from '../../../i18n';
 
 export const BoostPackOptionsModal: React.FC<{
     boostPackSelected: BadgePackOption;
@@ -38,6 +42,7 @@ export const BoostPackOptionsModal: React.FC<{
     networkPacks = [],
     category,
 }) => {
+    useLocale();
     const { closeModal } = useModal();
 
     const [search, setSearch] = useState('');
@@ -80,12 +85,12 @@ export const BoostPackOptionsModal: React.FC<{
                 <button
                     onClick={closeModal}
                     className="flex items-center mr-3 mt-1"
-                    aria-label="Close modal"
+                    aria-label={m['boost.closeModal']()}
                 >
-                    <CaretLeft className="text-grayscale-900 h-4 w-auto" />
+                    <CaretLeft className="rtl-mirror text-grayscale-900 h-4 w-auto" />
                 </button>
                 <h1 className="text-grayscale-900 text-[22px] font-notoSans">
-                    Select a Boost Pack
+                    {m['boost.selectBoostPack']()}
                 </h1>
             </header>
 
@@ -94,7 +99,7 @@ export const BoostPackOptionsModal: React.FC<{
                     <IonCol className="flex w-full items-center justify-start px-2">
                         <IonInput
                             autocapitalize="on"
-                            placeholder="Search..."
+                            placeholder={m['boost.searchPlaceholder']()}
                             value={search}
                             className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
                             onIonInput={e => setSearch(e.detail.value!)}
@@ -107,9 +112,14 @@ export const BoostPackOptionsModal: React.FC<{
                 {hasSearchResults && (
                     <div className="w-full px-4 pb-4">
                         <p className="text-grayscale-700">
-                            0{' '}
-                            {category === BoostCategoryOptionsEnum.socialBadge ? 'Boost' : 'Badge'}{' '}
-                            Packs found for <em className="font-medium not-italic">{search}</em>
+                            <TransP
+                                m={m['boost.noBoostPackFound']}
+                                values={{
+                                    type: getLocalizedBoostPackTypeTitle(undefined, category),
+                                    search,
+                                }}
+                                components={[<em key="em" className="font-medium not-italic" />]}
+                            />
                         </p>
                     </div>
                 )}
@@ -173,9 +183,17 @@ const BoostPackOptionItem: React.FC<{
 
     const parentName = parentBoosts?.records?.filter(r => r?.type !== 'ext:TroopID')?.[0]?.name;
 
-    const categoryDisplayWord =
-        category === BoostCategoryOptionsEnum.socialBadge ? 'Social Boost' : category;
-    const countName = pluralize(categoryDisplayWord, troopBoostCount || badgePackItemsCount);
+    const itemCount = troopBoostCount || badgePackItemsCount;
+    const countName =
+        category === BoostCategoryOptionsEnum.socialBadge
+            ? selectLocalePlural(itemCount, {
+                  one: m['common.countLabels.socialBoostOne'](),
+                  other: m['common.countLabels.socialBoostOther'](),
+              })
+            : selectLocalePlural(itemCount, {
+                  one: m['common.countLabels.meritBadgeOne'](),
+                  other: m['common.countLabels.meritBadgeOther'](),
+              });
     let displayCount = !troopIdDataLoading ? troopBoostCount : '--';
     if (badgePackOption?.type !== 'network' && badgePackOption?.type !== 'troop') {
         displayCount = badgePackItemsCount;
