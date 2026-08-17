@@ -1,5 +1,4 @@
 import React from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -19,7 +18,6 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     className = '',
     mode = 'default',
 }) => {
-    const flags = useFlags();
     const { newModal } = useModal();
     const { gate } = useLCNGatedAction();
     const brandingConfig = useBrandingConfig();
@@ -49,8 +47,6 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
-
-    if (!flags?.enableOnboardingChecklist) return null;
 
     const helperCopy = m['passport.buildMyLearnCard.helper']();
 

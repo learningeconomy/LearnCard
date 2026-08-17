@@ -25,13 +25,13 @@ Choose your preferred package manager:
 
 ```bash
 # Using npm
-npm install @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin dotenv
+npm install @learncard/init @learncard/claimable-boosts-plugin @learncard/lca-api-plugin dotenv
 
 # Using yarn
-yarn add @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin dotenv
+yarn add @learncard/init @learncard/claimable-boosts-plugin @learncard/lca-api-plugin dotenv
 
 # Using Bun
-bun add @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin dotenv
+bun add @learncard/init @learncard/claimable-boosts-plugin @learncard/lca-api-plugin dotenv
 
 ```
 
@@ -57,7 +57,7 @@ This script:
 
 <strong>import { initLearnCard } from '@learncard/init';
 </strong>import { getClaimableBoostsPlugin } from '@learncard/claimable-boosts-plugin';
-import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
+import { getLCAPlugin } from '@learncard/lca-api-plugin';
 
 const DEMO_SEED = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdee'
 const secure_seed = process.env.SECURE_SEED;
@@ -79,12 +79,12 @@ async function quickstartBoost() {
       allowRemoteContexts: true
     });
 
-    const signingLearnCard = await learnCard.addPlugin(
-      await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc')
+    const lcaApiLearnCard = await learnCard.addPlugin(
+      await getLCAPlugin(learnCard, 'https://api.learncard.app/trpc')
     );
 
-    const claimableLearnCard = await signingLearnCard.addPlugin(
-      await getClaimableBoostsPlugin(signingLearnCard)
+    const claimableLearnCard = await lcaApiLearnCard.addPlugin(
+      await getClaimableBoostsPlugin(lcaApiLearnCard)
     );
     console.log('LearnCard initialized with plugins.');
 

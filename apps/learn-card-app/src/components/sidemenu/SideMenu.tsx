@@ -3,10 +3,8 @@ import * as Sentry from '@sentry/browser';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useLocation, useHistory } from 'react-router-dom';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
-import { useModal, ModalTypes } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 import useAiSession from '../../hooks/useAiSession';
 import { useAnalytics } from '@analytics';
@@ -24,10 +22,6 @@ import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/The
 import LanguagePicker from './LanguagePicker';
 import CheckListButton from '../learncard/checklist/CheckListButton';
 import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
-import LaunchPadActionModal from '../../pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
-import NewAiSessionButton, {
-    NewAiSessionButtonEnum,
-} from '../new-ai-session/NewAiSessionButton/NewAiSessionButton';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
 
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
@@ -50,7 +44,6 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     const colors = getColorSet(ColorSetEnum.sideMenu);
     const resolvedAssets = useTenantBrandingAssets();
     const { isMobile } = useDeviceTypeByWidth();
-    const flags = useFlags();
     const history = useHistory();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
@@ -101,8 +94,6 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         }
     }, [location.pathname]);
 
-    const { newModal } = useModal({ desktop: ModalTypes.Cancel });
-
     if (!isLoggedIn) return <IonMenu contentId="main" />;
 
     const handleBoost = async () => {
@@ -111,29 +102,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
         const { prompted } = await gate();
         if (prompted) return;
 
-        // With simple-send on, "Issue Credentials" is a direct shortcut to the
-        // /issue page rather than the launchpad action grid.
-        if (flags?.enableSimpleSend) {
-            checkAndPromptRecovery(() => history.push('/issue'));
-            return;
-        }
-
-        // Both desktop and mobile open the launchpad action modal (LC-1921) —
-        // the same Freeform modal used by the launchpad greeting card's
-        // quick-action button. Mobile previously opened the AddToLearnCardMenu
-        // submenu directly; it now follows the desktop pattern.
-        newModal(
-            <LaunchPadActionModal />,
-            {
-                className:
-                    'w-full flex items-center justify-center bg-white/70 backdrop-blur-[5px]',
-                sectionClassName: '!max-w-[500px] disable-scrollbars',
-            },
-            {
-                desktop: ModalTypes.Freeform,
-                mobile: ModalTypes.Freeform,
-            }
-        );
+        checkAndPromptRecovery(() => history.push('/issue'));
     };
 
     return (
@@ -186,11 +155,6 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                 <div className="self-stretch mx-6 border-t border-solid border-grayscale-200" />
 
                                 <div className="flex flex-col justify-center items-center w-full gap-[10px] mt-4 mb-2">
-                                    {/* Disable New AI Session Button for now on Side Menu
-                                    {flags?.enableLaunchPadUpdates && (
-                                        <NewAiSessionButton type={NewAiSessionButtonEnum.sideMenu} />
-                                    )} */}
-
                                     <IonMenuToggle
                                         role="button"
                                         autoHide={false}

@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
 
 import * as m from '../../paraglide/messages.js';
@@ -85,7 +84,6 @@ import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 
 const DashboardPage: React.FC = () => {
     const history = useHistory();
-    const flags = useFlags();
     const { track } = useAnalytics();
     const { getIconSet, getColorSet } = useTheme();
     const brandingConfig = useBrandingConfig();
@@ -189,9 +187,8 @@ const DashboardPage: React.FC = () => {
 
     const { data: consentedContracts = [] } = useConsentedContracts();
 
-    const showAiInsights = Boolean(flags?.showAiInsights);
     const { isAiEnabled } = useAiFeatureGate();
-    const aiInsightsAllowed = showAiInsights && isAiEnabled;
+    const aiInsightsAllowed = isAiEnabled;
     const { data: existingAiInsightCredential } = useExistingAiInsightCredential({
         enabled: aiInsightsAllowed,
     });
@@ -391,7 +388,7 @@ const DashboardPage: React.FC = () => {
         hasSkillProfile,
         nextNodeTitle: goalSummary?.nextNode?.title,
         pathwaysEnabled,
-        showAiInsights: aiInsightsAllowed,
+        aiInsightsEnabled: aiInsightsAllowed,
     };
 
     const actionHandlers: ActionHandlers = {
@@ -410,7 +407,8 @@ const DashboardPage: React.FC = () => {
 
     const slotIcons: SlotIcons = {
         collect: sideMenuIcons.wallet,
-        understand: sideMenuIcons[CredentialCategoryEnum.skill],
+        understand: sideMenuIcons[CredentialCategoryEnum.aiInsight],
+        skills: sideMenuIcons[CredentialCategoryEnum.skill],
         navigate: sideMenuIcons.pathways,
     };
 

@@ -16,6 +16,7 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 type AddressBookContactItemButtonProps = {
     troopTypes: Record<string, { label: string; icon: JSX.Element }>;
@@ -46,7 +47,7 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
     const chooseBadgeTypeModal = () => {
         newModal(
             <div className="ion-padding bg-white text-grayscale-900 font-notoSans text-[20px]">
-                <h1>Choose Boost Type:</h1>
+                <h1>{m['addressBook.chooseBoostType']()}</h1>
                 <div className="flex flex-col items-center justify-center">
                     <button
                         className="flex items-center bg-white hover:border-solid hover:border-grayscale-200 hover:border-[1px] hover:bg-grayscale-100 hover:rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px] font-notoSans text-[17px] text-grayscale-800"
@@ -56,7 +57,7 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
                         }}
                     >
                         <BlueBoostOutline2 className="w-[40px] h-[40px] pr-[10px]" />
-                        Social Boost
+                        {m['addressBook.socialBoost']()}
                     </button>
                     <button
                         className="flex items-center bg-white hover:border-solid hover:border-grayscale-200 hover:border-[1px] hover:bg-grayscale-100 hover:rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px]  font-notoSans text-[17px] text-grayscale-800"
@@ -66,7 +67,7 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
                         }}
                     >
                         <PurpleMeritBadgesIcon className="w-[40px] h-[40px] pr-[10px]" />
-                        Merit Badge
+                        {m['addressBook.meritBadge']()}
                     </button>
                 </div>
             </div>,
@@ -108,13 +109,12 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
         );
     }
 
-    const currentUserStatus =
+    const currentUserAchievementType =
         chosenHighlightedCred && currentUserCreds.length > 0
-            ? troopTypes[chosenHighlightedCred?.credentialSubject?.achievement?.achievementType]
-                  ?.label
+            ? chosenHighlightedCred?.credentialSubject?.achievement?.achievementType
             : undefined;
 
-    return currentUserStatus === 'Scout' ? (
+    return currentUserAchievementType === 'ext:ScoutID' ? (
         <div className="flex items-center justify-end w-1/5">
             <button
                 onClick={() => {
@@ -128,7 +128,7 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
                 <BlueBoostOutline2 className="w-8 h-auto" />
             </button>
         </div>
-    ) : ['Leader', 'Global Admin', 'National Admin'].includes(currentUserStatus) ? (
+    ) : ['ext:TroopID', 'ext:GlobalID', 'ext:NetworkID'].includes(currentUserAchievementType) ? (
         <div className="flex items-center justify-end w-1/5">
             <button
                 onClick={() => {
@@ -143,7 +143,7 @@ export const AddressBookContactItemButton: React.FC<AddressBookContactItemButton
             </button>
         </div>
     ) : (
-        currentUserStatus === undefined && (
+        currentUserAchievementType === undefined && (
             <div className="flex items-center justify-end w-1/5">
                 <button
                     onClick={() => {

@@ -1978,7 +1978,19 @@
         "noSessionsForTopicBody": "Aún no tienes sesiones para \"{{topic}}\". Inicia una nueva para empezar a chatear sobre este tema.",
         "completedOn": "<0>Completado</0> el {{date}}",
         "topicLabel": "Tema",
-        "appLabel": "App"
+        "appLabel": "App",
+        "errors": {
+            "quotaTitle": "Se alcanzó el límite de uso de la IA de LearnCard",
+            "quotaBody": "La IA de LearnCard alcanzó su límite de uso actual. Inténtalo de nuevo más tarde.",
+            "rateTitle": "La IA de LearnCard está ocupada",
+            "rateBody": "Demasiadas personas están usando la IA de LearnCard ahora. Inténtalo de nuevo en breve.",
+            "unavailableTitle": "La IA de LearnCard no está disponible temporalmente",
+            "unavailableBody": "Inténtalo de nuevo más tarde.",
+            "timeoutTitle": "La IA de LearnCard tardó demasiado en responder",
+            "timeoutBody": "Inténtalo de nuevo.",
+            "unknownTitle": "La IA de LearnCard no pudo completar esta solicitud",
+            "unknownBody": "Inténtalo de nuevo más tarde."
+        }
     },
     "pathways": {
         "title": "Caminos",
@@ -2373,6 +2385,15 @@
         "boost": {
             "accepted": "Aceptada",
             "expiredHeader": "El enlace para reclamar el Boost ha caducado o ha alcanzado el número máximo de veces que puede reclamarse."
+        },
+        "duplicate": {
+            "title": "Ya está guardada",
+            "description": "Elige si quieres omitir esta credencial que ya guardaste o guardar otra copia.",
+            "existingLabel": "Credencial guardada",
+            "issuedBy": "Emitida por {{issuer}}",
+            "skip": "Omitir esta copia",
+            "save": "Guardar otra copia",
+            "skippedToast": "Esta copia no se añadió. Tu credencial guardada no cambió."
         },
         "modal": {
             "earnedTitle": "¡Has obtenido una credencial!",

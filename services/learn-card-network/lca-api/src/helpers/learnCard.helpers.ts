@@ -124,8 +124,9 @@ export const getSigningAuthorityLearnCard = async (
         });
         throw new Error(`No signing authority found for ownerDID="${ownerDID}" name="${name}"`);
     }
+    const cacheKey = `${sa.seed}|${ownerDID}`;
 
-    const cachedValue = saCardsCache.get(sa.seed);
+    const cachedValue = saCardsCache.get(cacheKey);
 
     if (cachedValue) {
         console.log('[LCA getSigningAuthorityLearnCard] Using cached SA LearnCard');
@@ -152,7 +153,7 @@ export const getSigningAuthorityLearnCard = async (
               allowRemoteContexts: true,
           });
 
-    saCardsCache.add(sa.seed, saLearnCard);
+    saCardsCache.add(cacheKey, saLearnCard);
 
     return saLearnCard;
 };
