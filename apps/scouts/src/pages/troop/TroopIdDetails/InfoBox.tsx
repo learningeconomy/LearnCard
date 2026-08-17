@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 type InfoBoxProps = {
     text: string;
@@ -21,7 +22,7 @@ const InfoBox: React.FC<InfoBoxProps> = ({ text, handleClose, backgroundColor = 
                 }}
                 className="text-indigo-500 font-[700] select-none"
             >
-                Close
+                {m['common.close']()}
             </button>
         </div>
     );

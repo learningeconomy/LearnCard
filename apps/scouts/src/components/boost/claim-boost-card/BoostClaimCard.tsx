@@ -11,6 +11,7 @@ import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFoote
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 
 import { VC, VP } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 import {
     getAchievementType,
@@ -146,7 +147,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 <div className="relative max-w-full max-h-[80vh]">
                                     <img
                                         src={selectedImage}
-                                        alt="Full size attachment"
+                                        alt={m['boost.fullSizeAttachment']()}
                                         className="max-w-full max-h-[80vh] object-contain"
                                     />
                                 </div>

@@ -6,6 +6,7 @@ import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import QrCodeUserCardModal from '../../../components/qrcode-user-card/QRCodeUserCard';
 import { BrandingEnum } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 const AddressBookContactCard: React.FC = () => {
     const currentUser = useCurrentUser();
@@ -37,14 +38,14 @@ const AddressBookContactCard: React.FC = () => {
                     {currentUser?.name}
                 </p>
                 <span className="font-notoSans text-[12px] font-semibold text-grayscale-600">
-                    My Contact Card
+                    {m['addressBook.myContactCard']()}
                 </span>
             </div>
             <button onClick={handleQrCodeClick} className="flex items-center ml-auto">
                 <section className="flex justify-center items-center h-9 w-9">
                     <QRCodeScanner className="h-[70%]" />
                 </section>
-                <SlimCaretRight className="text-grayscale-400 w-[24px] h-auto" />
+                <SlimCaretRight className="rtl-mirror text-grayscale-400 w-[24px] h-auto" />
             </button>
         </div>
     );

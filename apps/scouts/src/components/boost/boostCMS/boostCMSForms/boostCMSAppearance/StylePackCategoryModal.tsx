@@ -1,5 +1,6 @@
 import React from 'react';
 import { IonCol, IonRow } from '@ionic/react';
+import * as m from '../../../../../paraglide/messages.js';
 import { useModal } from 'learn-card-base';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
@@ -39,7 +40,7 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
 
     let boostOptions = boostVCTypeOptions[boostUserType] ?? [];
     if (flags?.disableCmsCustomization && !isAdmin) {
-        boostOptions = boostOptions.filter(item => item.title === targetType);
+        boostOptions = boostVCTypeOptions?.[boostUserType].filter(item => item.type === targetType);
     }
 
     return (
@@ -48,11 +49,13 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
                 <button
                     onClick={closeModal}
                     className="flex items-center mr-3 mt-1"
-                    aria-label="Close modal"
+                    aria-label={m['boost.closeModal']()}
                 >
-                    <CaretLeft className="text-grayscale-900 h-4 w-auto" />
+                    <CaretLeft className="rtl-mirror text-grayscale-900 h-4 w-auto" />
                 </button>
-                <h1 className="text-grayscale-900 text-[22px] font-notoSans">Select a Category</h1>
+                <h1 className="text-grayscale-900 text-[22px] font-notoSans">
+                    {m['boostCMS.selectCategory']()}
+                </h1>
             </header>
 
             <div className="flex flex-col items-center justify-between w-full bg-grayscale-100 rounded-t-[20px] pt-4">
@@ -70,10 +73,10 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
                         <div className="flex items-center flex-1 min-w-0">
                             <div className="flex flex-col min-w-0 ml-10">
                                 <h3 className="text-left font-semibold text-grayscale-900 uppercase text-xs font-notoSans">
-                                    All
+                                    {m['boostCMS.all']()}
                                 </h3>
                                 <p className="text-[17px] text-grayscale-900 font-normal text-left">
-                                    All Categories
+                                    {m['boostCMS.allCategories']()}
                                 </p>
                             </div>
                         </div>
@@ -114,7 +117,7 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
                                                 {title}
                                             </h3>
                                             <p className="text-[17px] text-grayscale-900 font-normal text-left">
-                                                {title} Style Packs
+                                                {m['boostCMS.stylePacksFor']({ title })}
                                             </p>
                                         </div>
                                     </div>

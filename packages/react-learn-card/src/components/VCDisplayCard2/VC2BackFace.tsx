@@ -16,6 +16,7 @@ import {
     VideoMetadata,
 } from '../../types';
 import LeftArrow from '../svgs/LeftArrow';
+import { useT } from '../../i18n';
 
 type FlippedComponentProps = React.PropsWithChildren<{
     flipId?: string;
@@ -69,6 +70,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     enableLightbox,
     customLinkedCredentialsComponent,
 }) => {
+    const t = useT();
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
         : undefined;
@@ -107,7 +109,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
 
                 {customDescription && (
                     <TruncateTextBox
-                        headerText="About"
+                        headerText={t('credential.about')}
                         text={description}
                         className="description-box"
                     >
@@ -116,7 +118,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 )}
                 {!customDescription && (description || expiration) && (
                     <TruncateTextBox
-                        headerText="About"
+                        headerText={t('credential.about')}
                         text={description}
                         className="description-box"
                     >
@@ -130,7 +132,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
 
                 {customCriteria && (
                     <TruncateTextBox
-                        headerText="Criteria"
+                        headerText={t('credential.criteria')}
                         text={description}
                         className="description-box"
                     >
@@ -139,7 +141,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 )}
                 {!customCriteria && criteria && (
                     <TruncateTextBox
-                        headerText="Criteria"
+                        headerText={t('credential.criteria')}
                         text={criteria}
                         className="criteria-box"
                     />

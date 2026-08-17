@@ -3,6 +3,7 @@ import React from 'react';
 import { IonSpinner } from '@ionic/react';
 
 import { boostCategoryOptions } from '../../boost-options/boostOptions';
+import * as m from '../../../../paraglide/messages.js';
 
 export const BoostPreviewFooter: React.FC<{
     selectedVCType: string;
@@ -12,7 +13,7 @@ export const BoostPreviewFooter: React.FC<{
     showIssueButton?: boolean;
     handleSubmit?: () => void;
     isLoading?: boolean;
-    isEditMode?: boolean
+    isEditMode?: boolean;
 }> = ({
     selectedVCType,
     showSaveAndQuitButton = true,
@@ -21,7 +22,7 @@ export const BoostPreviewFooter: React.FC<{
     handleSubmit = () => {},
     showIssueButton = false,
     isLoading = false,
-    isEditMode = false
+    isEditMode = false,
 }) => {
     const { color, IconComponent } = boostCategoryOptions[selectedVCType];
 
@@ -36,14 +37,10 @@ export const BoostPreviewFooter: React.FC<{
                     {isSaveLoading ? (
                         <>
                             <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
-                            <p className="w-full line-clamp-1 ">
-                                Saving...
-                            </p>
+                            <p className="w-full line-clamp-1 ">{m['common.saving']()}</p>
                         </>
                     ) : (
-                        <p className="w-full line-clamp-1 font-medium">
-                            Save
-                        </p>
+                        <p className="w-full line-clamp-1 font-medium">{m['common.save']()}</p>
                     )}
                 </button>
             )}
@@ -64,13 +61,11 @@ export const BoostPreviewFooter: React.FC<{
                         <>
                             <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
                             <p className="w-full line-clamp-1 font-medium">
-                                Loading...
+                                {m['common.loading']()}
                             </p>
                         </>
                     ) : (
-                        <p className="w-full line-clamp-1 font-medium ml-8">
-                            Send
-                        </p>
+                        <p className="w-full line-clamp-1 font-medium ml-8">{m['boost.send']()}</p>
                     )}
                 </button>
             )}

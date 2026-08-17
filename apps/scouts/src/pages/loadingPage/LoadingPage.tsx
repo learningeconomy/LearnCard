@@ -27,8 +27,8 @@ const LoadingPage: React.FC = () => {
             >
                 <IonRow className="h-full w-full flex items-center justify-center">
                     <IonCol className="w-full flex items-center justify-center flex-col">
-                        <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
-                        <img src={ScoutPassTextLogo} alt="ScoutPass text logo" className="mt-4" />
+                        <img src={ScoutPassLogo} alt="" className="w-[55px]" />
+                        <img src={ScoutPassTextLogo} alt="" className="mt-4" />
                         <IonSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
                     </IonCol>
                 </IonRow>
@@ -49,8 +49,8 @@ export const LoadingPageDumb: React.FC = () => {
             >
                 <IonRow className="h-full w-full flex items-center justify-center">
                     <IonCol className="w-full flex items-center justify-center flex-col">
-                        <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
-                        <img src={ScoutPassTextLogo} alt="ScoutPass text logo" className="mt-4" />
+                        <img src={ScoutPassLogo} alt="" className="w-[55px]" />
+                        <img src={ScoutPassTextLogo} alt="" className="mt-4" />
                         <IonSpinner name="crescent" color="light" className="scale-[1.75] mt-8" />
                     </IonCol>
                 </IonRow>

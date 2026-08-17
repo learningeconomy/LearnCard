@@ -4,6 +4,7 @@ import { useHistory, useLocation, Link, useParams } from 'react-router-dom';
 import { BrandingEnum, ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { IonContent, IonPage } from '@ionic/react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import * as m from '../../paraglide/messages.js';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
@@ -79,7 +80,7 @@ const LaunchPad: React.FC = () => {
                     />,
                     {
                         sectionClassName: '!max-w-[400px]',
-                        cancelButtonTextOverride: 'Maybe Later',
+                        cancelButtonTextOverride: m['launchPad.maybeLater'](),
                         topSectionClassName: '!py-[20px]',
                         androidClassName: isAndroid ? '!mb-[40px]' : '',
                     },
@@ -128,12 +129,22 @@ const LaunchPad: React.FC = () => {
     );
 
     const navButtons = [
-        { to: '/contacts', icon: <ContactsIcon />, text: 'Contacts', color: 'text-[#622599]' },
-        { to: '/troops', icon: <TroopsIcon />, text: 'Troops', color: 'text-[#248737]' },
+        {
+            to: '/contacts',
+            icon: <ContactsIcon />,
+            text: m['launchPad.contacts'](),
+            color: 'text-[#622599]',
+        },
+        {
+            to: '/troops',
+            icon: <TroopsIcon />,
+            text: m['launchPad.troops'](),
+            color: 'text-[#248737]',
+        },
         {
             to: '/notifications',
             icon: <AlertsIcon unreadCount={unreadCount} />,
-            text: 'Alerts',
+            text: m['launchPad.alerts'](),
             color: 'text-[#FF5655]',
             className: 'mt-1',
         },
@@ -181,9 +192,9 @@ const LaunchPad: React.FC = () => {
                         <button
                             onClick={handleBoostClick}
                             className="flex items-center justify-center w-[95%] py-2.5 rounded-full bg-sp-blue-ocean text-white font-notoSans text-[25px] leading-[130%] tracking-[-0.25px] mb-6 shadow-button"
-                            aria-label="Open boost menu"
+                            aria-label={m['launchPad.openBoostMenu']()}
                         >
-                            <span className="mr-2">Boost</span>
+                            <span className="mr-2">{m['launchPad.boost']()}</span>
                             <BoostOutline2
                                 outsideStar="#FFFFFF"
                                 insideStar="#03748D"
@@ -201,7 +212,7 @@ const LaunchPad: React.FC = () => {
 
                 <section className="mt-[-50px] relative">
                     <h2 className="w-full max-w-[600px] px-4 mx-auto font-rubik text-grayscale-900 font-medium text-2xl tracking-0.01">
-                        Latest News
+                        {m['launchPad.latestNews']()}
                     </h2>
                     <div className="bg-gray-100 px-4">
                         <ScoutsNewsList />

@@ -4,6 +4,7 @@ import { IonRow, IonCol, IonInput } from '@ionic/react';
 
 import Search from 'learn-card-base/svgs/Search';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
+import * as m from '../../../paraglide/messages.js';
 
 const AddressBookTabs: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -42,7 +43,7 @@ const AddressBookTabs: React.FC<{
                                     : ''
                             }`}
                         >
-                            {connectionCount ?? 0} Contact{connectionCount !== 1 ? 's' : ''}
+                            {m['addressBook.contactsCount']({ count: connectionCount ?? 0 })}
                         </button>
                         <button
                             onClick={() => {
@@ -55,7 +56,7 @@ const AddressBookTabs: React.FC<{
                                     : ''
                             }`}
                         >
-                            {requestCount ?? 0} Request{requestCount !== 1 ? 's' : ''}
+                            {m['addressBook.requestsCount']({ count: requestCount ?? 0 })}
                         </button>
                         <button
                             onClick={() => {
@@ -67,7 +68,7 @@ const AddressBookTabs: React.FC<{
                                     : ''
                             }`}
                         >
-                            {blockedCount ?? 0} Blocked
+                            {m['addressBook.blockedCount']({ count: blockedCount ?? 0 })}
                         </button>
                     </IonCol>
                 </IonRow>
@@ -79,7 +80,7 @@ const AddressBookTabs: React.FC<{
                     </div>
                     <IonInput
                         autocapitalize="on"
-                        placeholder="Search"
+                        placeholder={m['common.search']()}
                         value={search}
                         className="bg-grayscale-100 text-grayscale-800 ion-padding rounded-[15px] text-base font-medium tracking-wider subpixel-antialiased !pl-[40px]"
                         onIonInput={e => handleSearch(e.detail.value as string)}

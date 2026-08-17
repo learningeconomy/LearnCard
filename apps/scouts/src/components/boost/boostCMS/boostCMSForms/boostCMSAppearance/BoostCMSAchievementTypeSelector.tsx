@@ -9,6 +9,8 @@ import {
     constructCustomBoostType,
     isCustomBoostType,
 } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
+import { TransP } from '../../../../../i18n/TransP';
 
 import {
     boostCategoryOptions,
@@ -109,7 +111,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                             setSearch(e.detail.value ?? '');
                             setErrors({});
                         }}
-                        placeholder="Search..."
+                        placeholder={m['common.search']()}
                         type="text"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium font-notoSans tracking-widest text-base ${
                             errors.customType ? 'border-red-500 border-2' : ''
@@ -130,15 +132,18 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                     {filteredAchievementTypes.length === 0 && (
                         <div className="w-full text-left flex flex-col items-start justify-center">
                             <p className="text-grayscale-600 text-base font-normal font-notoSans">
-                                No results found for{' '}
-                                <span className="text-black italic">{search}</span>
+                                <TransP
+                                    m={m['common.searchResults.noResultsFor']}
+                                    values={{ query: search }}
+                                    components={[<span className="text-black italic" key="q" />]}
+                                />
                             </p>
                             {!flags?.disableCmsCustomization && (
                                 <button
                                     onClick={handleCustomType}
                                     className="text-indigo-600 text-base font-bold text-left font-notoSans"
                                 >
-                                    Use "{search}" anyways!
+                                    {m['boostCMS.useCustomType']({ search })}
                                 </button>
                             )}
                         </div>
@@ -166,7 +171,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                                     <div className="flex-1 flex flex-col items-center justify-start pl-4">
                                         {customType && (
                                             <p className="w-full text-gray-800 text-xs uppercase font-bold text-left font-notoSans">
-                                                Custom Type
+                                                {m['boostCMS.customType']()}
                                             </p>
                                         )}
                                         <p className="w-full text-grayscale-700 font-medium text-lg text-left capitalize font-notoSans">
@@ -203,7 +208,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                                     </div>
                                     <div className="flex-1 flex flex-col items-center justify-start pl-4">
                                         <p className="w-full text-gray-800 text-xs uppercase font-bold text-left font-notoSans">
-                                            Custom Type
+                                            {m['boostCMS.customType']()}
                                         </p>
                                         <p className="w-full text-grayscale-700 font-medium text-lg text-left capitalize font-notoSans">
                                             {title}

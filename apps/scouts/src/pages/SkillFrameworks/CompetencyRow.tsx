@@ -160,14 +160,17 @@ const CompetencyRow: React.FC<CompetencyRowProps> = ({
                                 );
                             }}
                         >
-                            <SlimCaretRight className="w-[24px] h-[24px]" strokeWidth="2" />
+                            <SlimCaretRight
+                                className="rtl-mirror w-[24px] h-[24px]"
+                                strokeWidth="2"
+                            />
                         </button>
                     </>
                 )}
             </div>
             {subskills?.map((subskill, index) => (
                 <div className="flex items-center gap-[10px] pl-[10px]" key={index}>
-                    <CornerDownRightArrow className="w-[25px] h-[25px]" />
+                    <CornerDownRightArrow className="rtl-mirror w-[25px] h-[25px]" />
 
                     {subskill.role === FrameworkNodeRole.tier ? (
                         <TierRow

@@ -9,6 +9,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import useGetTroopNetwork from './useGetTroopNetwork';
+import * as m from '../paraglide/messages.js';
 
 import TroopsCMSWrapper from '../components/troopsCMS/TroopsCMSWrapper';
 import TroopsIDCMSWrapper from '../components/troopsCMS/TroopsIDCMS/TroopIDCMSWrapper';
@@ -86,7 +87,7 @@ export const useEditTroopId = (credential: VC, uri?: string) => {
             closeModal();
         } catch (e) {
             log.error('handleEditBoostID::error', e);
-            presentToast(`Error editing boost ID`, {
+            presentToast(m['troops.toasts.errorEditingBoost'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

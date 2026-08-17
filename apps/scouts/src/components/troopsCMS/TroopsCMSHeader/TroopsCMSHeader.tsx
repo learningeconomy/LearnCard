@@ -2,6 +2,8 @@ import React from 'react';
 
 import { IonHeader, IonRow, IonToolbar } from '@ionic/react';
 import TroopsNetworkToggle from '../TroopsNetworkToggle/TroopsNetworkToggle';
+import TransP, { type ParaglideMessage } from '../../../i18n/TransP';
+import * as m from '../../../paraglide/messages.js';
 
 import {
     getTroopsCMSViewModeDefaults,
@@ -25,9 +27,26 @@ export const TroopsCMSHeader: React.FC<TroopsCMSHeaderProps> = ({
     editorMode,
     isParentBoostLoading,
 }) => {
-    const { title, Icon, color } = getTroopsCMSViewModeDefaults(viewMode);
+    const { Icon, color } = getTroopsCMSViewModeDefaults(viewMode);
 
     const isCreate = editorMode === TroopsCMSEditorModeEnum.create;
+    const headingMessages: Record<TroopsCMSViewModeEnum, ParaglideMessage> = {
+        [TroopsCMSViewModeEnum.global]: isCreate
+            ? m['troops.editor.newGlobalNetwork']
+            : m['troops.editor.editGlobalNetwork'],
+        [TroopsCMSViewModeEnum.network]: isCreate
+            ? m['troops.editor.newNationalNetwork']
+            : m['troops.editor.editNationalNetwork'],
+        [TroopsCMSViewModeEnum.troop]: isCreate
+            ? m['troops.editor.newTroop']
+            : m['troops.editor.editTroop'],
+        [TroopsCMSViewModeEnum.leader]: isCreate
+            ? m['troops.editor.newLeader']
+            : m['troops.editor.editLeader'],
+        [TroopsCMSViewModeEnum.member]: isCreate
+            ? m['troops.editor.newMember']
+            : m['troops.editor.editMember'],
+    };
 
     return (
         <IonHeader color="white" className="bg-white">
@@ -38,10 +57,14 @@ export const TroopsCMSHeader: React.FC<TroopsCMSHeaderProps> = ({
                             <Icon
                                 className={`max-w-[40px] max-h-[40px] h-[40px] w-[40px] shrink-1 mr-2 text-${color}`}
                             />
-                            {isCreate ? 'New' : 'Edit'}{' '}
-                            <span className={`font-semibold text-${color} m-0 p-0 ml-1 mt-[2px]`}>
-                                {title}
-                            </span>
+                            <TransP
+                                m={headingMessages[viewMode]}
+                                components={[
+                                    <span
+                                        className={`font-semibold text-${color} m-0 p-0 ml-1 mt-[2px]`}
+                                    />,
+                                ]}
+                            />
                         </h2>
 
                         <TroopsNetworkToggle

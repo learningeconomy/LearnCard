@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../../../../paraglide/messages.js';
 import {
     useImageUpload,
     UploadRes,
@@ -88,8 +89,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
         boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     const { CategoryImage } = categoryMetadata || {};
     const isDefaultImage = state?.appearance?.badgeThumbnail === CategoryImage;
-    const type = state?.basicInfo?.type;
-    const targetType = type === BoostCategoryOptionsEnum.socialBadge ? 'Boost' : type;
+    const targetType = state?.basicInfo?.type;
 
     const [activeStylePackCategory, setActiveStylePackCategory] = useState<StylePackCategories>(
         StylePackCategories.all
@@ -158,8 +158,8 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                 onClick={handleOpenCategoryModal}
                 className="rounded-full p-0 text-base font-semibold bg-white text-grayscale-800 px-3 py-2 flex items-center justify-center border border-gray-300 w-[180px] relative"
             >
-                <span>All</span>
-                <CaretLeft className="h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3" />
+                <span>{m['boostCMS.all']()}</span>
+                <CaretLeft className="rtl-mirror h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3" />
             </button>
         );
     } else {
@@ -174,7 +174,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                     <IconComponent className={`h-[20px] w-[20px] text-${color}`} />
                     <span>{title}</span>
                 </div>
-                <CaretLeft className="h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3" />
+                <CaretLeft className="rtl-mirror h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3" />
             </button>
         );
     }
@@ -187,20 +187,20 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                         <div className="max-w-[160px] m-auto flex justify-center">
                             <LoadingSpinner />
                         </div>
-                        <p className="mt-2 font-mouse text-3xl">Loading...</p>
+                        <p className="mt-2 font-mouse text-3xl">{m['common.loading']()}</p>
                     </div>
                 ) : (
                     <div className="w-full max-w-3xl mx-auto px-4 flex flex-wrap items-start justify-center">
                         <div className="w-full flex items-center justify-between bg-white px-4 py-3 mb-4 rounded-lg shadow-sm">
                             <p className="text-grayscale-900 font-semibold text-base whitespace-nowrap mr-2">
-                                Style Pack
+                                {m['boostCMS.stylePack']()}
                             </p>
                             {categoryButton}
                         </div>
                         {(!flags?.disableCmsCustomization || isAdmin) && (
                             <button onClick={handleImageSelect} className="boost-cms-badge">
                                 <Camera className="boost-cms-camera-icon text-white" />
-                                <span className="upload-text">Upload</span>
+                                <span className="upload-text">{m['common.upload']()}</span>
                             </button>
                         )}
                         {photo && !isDefaultImage && (
@@ -208,12 +208,12 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                 <img
                                     className="absolute left-0 top-0 w-full h-full object-cover z-50"
                                     src={photo}
-                                    alt="badge"
+                                    alt=""
                                 />
                                 <img
                                     className="absolute left-0 top-0 w-full h-full"
                                     src={TransparentGrid}
-                                    alt="transparent grid"
+                                    alt=""
                                 />
                                 {imageUploadLoading && (
                                     <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
@@ -239,7 +239,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                 <img
                                     className="absolute left-0 top-0 w-full h-full"
                                     src={TransparentGrid}
-                                    alt="transparent grid"
+                                    alt=""
                                 />
                                 <div className="absolute flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
                                     <IonSpinner
@@ -264,12 +264,12 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                     <img
                                         className="absolute left-0 top-0 w-full h-full"
                                         src={TransparentGrid}
-                                        alt="transparent grid"
+                                        alt=""
                                     />
                                     <img
                                         className="text-white z-50 w-full h-full object-cover"
                                         src={url}
-                                        alt="badge"
+                                        alt=""
                                     />
                                 </button>
                             );

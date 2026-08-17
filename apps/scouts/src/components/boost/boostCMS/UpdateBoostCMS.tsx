@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -49,10 +50,13 @@ import {
     getBoostAdmin,
     getBoostCredentialPreview,
     getDefaultAchievementTypeImage,
+    getDefaultBoostCriteria,
+    getDefaultBoostDescription,
     getDefaultBoostTitle,
     sendBoostCredential,
     updateBoost,
 } from '../boostHelpers';
+import { getBoostPresetLocalization } from '../localizedPresetFields';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
@@ -105,6 +109,11 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
     // issueMode,
 }) => {
     const flags = useFlags();
+    // Snapshot the rollout policy when the editor opens so a streaming flag update cannot
+    // change preset content language in the middle of an in-progress draft.
+    const presetLocalization = useRef(
+        getBoostPresetLocalization(flags?.localizeBoostTemplateContent)
+    ).current;
     const history = useHistory();
     const location = useLocation();
     const query = usePathQuery();
@@ -331,9 +340,21 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             categoryType === BoostCategoryOptionsEnum.socialBadge
         ) {
             // default ID title to selected achievementType
-            boostTitle = getDefaultBoostTitle(categoryType, achievementType);
-            description = getDefaultBoostDescription(categoryType, achievementType);
-            criteria = getDefaultBoostCriteria(categoryType, achievementType);
+            boostTitle = getDefaultBoostTitle(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
+            description = getDefaultBoostDescription(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
+            criteria = getDefaultBoostCriteria(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
         } else if (
             (_boostCategoryType === BoostCategoryOptionsEnum.id &&
                 categoryType !== BoostCategoryOptionsEnum.id) ||
@@ -467,7 +488,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
             if (updatedBoost) {
                 setIsSaveLoading(false);
-                presentToast('Boost saved successfully', {
+                presentToast(m['boostCMS.boostSaved'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -499,7 +520,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         } catch (e) {
             setIsSaveLoading(false);
             log.debug('error::savingBoost', e);
-            presentToast('Unable to save boost', {
+            presentToast(m['boostCMS.boostFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -537,7 +558,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             } catch (e) {
                 setIsPublishLoading(false);
                 log.debug('error::boosting::someone', e);
-                presentToast('Error issuing boost', {
+                presentToast(m['boostCMS.issueErr'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -588,7 +609,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast('Boost issued successfully', {
+                    presentToast(m['boostCMS.issuedOk'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -600,7 +621,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
                 if (_boostUri) {
                     setIsSaveLoading(false);
-                    presentToast('Boost saved successfully', {
+                    presentToast(m['boostCMS.boostSaved'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -621,7 +642,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         } catch (e) {
             setIsLoading(false);
             log.debug('error::boosting::someone', e);
-            presentToast('Error issuing boost', {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -800,7 +821,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     isLoading={loading}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m['boostCMS.assignAdmins']()}
                     hideBoostShareableCode
                 />
                 {/* <BoostCMSAdvancedSettingsForm
@@ -866,13 +887,13 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
     let loadingText = '';
     if (isBoostLoading) {
-        loadingText = 'Loading...';
+        loadingText = m['common.loading']();
     } else if (isLoading) {
-        loadingText = 'Sending...';
+        loadingText = m['boost.sending']();
     } else if (isPublishLoading) {
-        loadingText = 'Publishing...';
+        loadingText = m['boostCMS.publishing']();
     } else if (isSaveLoading) {
-        loadingText = 'Saving...';
+        loadingText = m['common.saving']();
     }
 
     return (
@@ -902,7 +923,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m['boostCMS.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>

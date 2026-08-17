@@ -18,6 +18,8 @@ import {
     constructCustomBoostType,
 } from 'learn-card-base';
 import X from 'learn-card-base/svgs/X';
+import * as m from '../../../../paraglide/messages.js';
+import { useLocale } from '../../../../i18n';
 
 const StateValidator = z.object({
     customType: z
@@ -50,21 +52,17 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
     showCloseButton,
     history,
 }) => {
+    const locale = useLocale();
+
     const flags = useFlags();
     const [customBoostType, setCustomBoostType] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const charCount = 22 - customBoostType.length;
 
     const { color, subColor, title, CategoryImage } = boostCategoryOptions[boostCategoryType];
-    // temp fix for request in polish doc
-    const _title = title === 'Badge' ? 'Boost' : title;
 
-    const subCategoryTypes = CATEGORY_TO_SUBCATEGORY_LIST[boostCategoryType].sort(
-        (a: { title: string; type: string }, b: { title: string; type: string }) => {
-            const textA = a?.title?.toUpperCase();
-            const textB = b?.title?.toUpperCase();
-            return textA < textB ? -1 : textA > textB ? 1 : 0;
-        }
+    const subCategoryTypes = [...CATEGORY_TO_SUBCATEGORY_LIST[boostCategoryType]].sort((a, b) =>
+        a.title.localeCompare(b.title, locale)
     );
 
     const boostOptionsItemList = subCategoryTypes?.map(({ title, type }, index) => {
@@ -129,10 +127,10 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                             className="text-grayscale-50 p-0 mr-[10px]"
                                             onClick={() => setSelectedCategoryType(null)}
                                         >
-                                            <CaretLeft className="h-auto w-3 text-white" />
+                                            <CaretLeft className="rtl-mirror h-auto w-3 text-white" />
                                         </button>
                                     )}
-                                    {_title}
+                                    {title}
                                 </h6>
                             </IonCol>
                         </IonRow>
@@ -144,7 +142,7 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                     />
                                     <img
                                         src={CategoryImage}
-                                        alt="category img"
+                                        alt=""
                                         className="z-50 w-[150px] h-[151px] mt-4"
                                     />
                                 </div>
@@ -164,7 +162,7 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                             setCustomBoostType(e.detail.value ?? '');
                                             setErrors({});
                                         }}
-                                        placeholder="Custom Type..."
+                                        placeholder={m['boost.customTypePlaceholder']()}
                                         type="text"
                                         className={`bg-white text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
                                             errors.customType ? 'border-red-500 border-2' : ''
@@ -195,7 +193,9 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                 <div className="flex items-center justify-center w-full">
                                     <div className="flex items-center justify-center w-full px-5 max-w-[95%]">
                                         <h2 className="divider-with-text-dynamic border-white border-solid border-b-[1px]">
-                                            <span className={`bg-${subColor} text-white`}>or</span>
+                                            <span className={`bg-${subColor} text-white`}>
+                                                {m['boost.or']()}
+                                            </span>
                                         </h2>
                                     </div>
                                 </div>
@@ -215,7 +215,7 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                 }}
                                 className="text-white text-center text-sm"
                             >
-                                Cancel
+                                {m['common.cancel']()}
                             </button>
                         </div>
                     </IonRow>
