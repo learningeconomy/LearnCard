@@ -305,6 +305,10 @@ export const isStandaloneCourseCredential = (rawCredential: Record<string, unkno
     const subject = getSingleCredentialSubject(rawCredential);
     if (!subject) return false;
 
+    // A Course that wraps other credentials is still a transcript/container. Rendering it as a
+    // standalone course would hide its top-level evidence and present one of its children instead.
+    if (asArray(subject.verifiableCredential as unknown[]).length > 0) return false;
+
     const achievement = subject.achievement as Record<string, unknown> | undefined;
     const courseName = achievement?.name;
     const issuer = rawCredential.issuer;
@@ -368,7 +372,14 @@ const getEvidenceMimeType = (id?: string): string | undefined => {
     if (!id) return undefined;
 
     if (id.startsWith('data:')) {
-        return id.slice(5, id.indexOf(';'));
+        const parameterStart = id.indexOf(';');
+        const payloadStart = id.indexOf(',');
+        if (payloadStart === -1) return undefined;
+
+        return id.slice(
+            5,
+            parameterStart === -1 ? payloadStart : Math.min(parameterStart, payloadStart)
+        );
     }
 
     if (/\.pdf$/i.test(id)) return 'application/pdf';
@@ -547,7 +558,8 @@ const mapResults = (
     // ResultDescription drives semantic meaning (for example GPA), so we resolve by explicit IDs only.
     return asArray<Record<string, unknown>>(result as Record<string, unknown>[]).flatMap(
         (entry, index) => {
-            if (entry.value === undefined) return [];
+            const value = entry.value ?? entry.status;
+            if (value === undefined) return [];
 
             const resultDescriptionId =
                 typeof entry.resultDescription === 'string' ? entry.resultDescription : undefined;
@@ -558,8 +570,8 @@ const mapResults = (
 
             const mapped: ResultDisplayModel = {
                 value: asMapped(
-                    entry.value as string | number | boolean,
-                    `${basePath}[${index}].value`,
+                    value as string | number | boolean,
+                    `${basePath}[${index}].${entry.value === undefined ? 'status' : 'value'}`,
                     'result.value',
                     sourceCredentialId
                 ),

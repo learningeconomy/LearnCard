@@ -105,6 +105,7 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         expect(model.courses[0]?.creditsEarned?.value).toBe(4);
         expect(model.courses[0]?.earnedAt?.value).toBe('2026-05-18T23:59:59Z');
         expect(model.courses[0]?.results[0]?.value.value).toBe('A-');
+        expect(model.courses[0]?.results[2]?.value.value).toBe('Completed');
         expect(model.header.issuerImage?.value).toBe(
             'https://aster-ridge.example/brand/institute-mark.png'
         );
@@ -136,6 +137,32 @@ describe('normalizeClrTranscriptDisplayModel', () => {
 
         expect(isStandaloneCourseCredential(keywordOnly)).toBe(false);
         expect(isStandaloneCourseCredential(unnamedIssuer)).toBe(false);
+    });
+
+    it('does not treat a Course credential with nested credentials as standalone', () => {
+        const credential = {
+            id: 'urn:test:course-wrapper',
+            type: ['VerifiableCredential', 'AchievementCredential'],
+            issuer: { id: 'did:example:issuer', name: 'Example Institution' },
+            evidence: [{ id: 'https://example.com/transcript.pdf' }],
+            credentialSubject: {
+                achievement: { achievementType: 'Course', name: 'Course wrapper' },
+                verifiableCredential: [
+                    {
+                        id: 'urn:test:nested-course',
+                        credentialSubject: {
+                            achievement: { achievementType: 'Course', name: 'Nested course' },
+                        },
+                    },
+                ],
+            },
+        };
+        const model = normalizeClrTranscriptDisplayModel(credential);
+
+        expect(isStandaloneCourseCredential(credential)).toBe(false);
+        expect(model.courses).toHaveLength(1);
+        expect(model.courses[0]?.name?.value).toBe('Nested course');
+        expect(model.evidence).toHaveLength(1);
     });
 
     it('keeps optional course fields optional when selecting the standalone presentation', () => {

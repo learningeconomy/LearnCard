@@ -22,6 +22,7 @@ import {
     ClrTranscriptSurface,
 } from '../../../../helpers/clrRenderer.helpers';
 import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
+import { getClrIssuerLogo } from '../../../clr-transcript/clrKind.helpers';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
 import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
@@ -234,8 +235,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     const clrCredential = useMemo(() => unwrapBoostCredential(credential), [credential]);
     const isStandaloneCourse = useMemo(
-        () => isStandaloneCourseCredential(clrCredential as unknown as Record<string, unknown>),
-        [clrCredential]
+        () =>
+            !isClrChildCredential &&
+            isStandaloneCourseCredential(clrCredential as unknown as Record<string, unknown>),
+        [clrCredential, isClrChildCredential]
     );
     const usesClrPresentation = isClrCredential || isClrChildCredential || isStandaloneCourse;
     const usesAcademicFullPage = isClrCredential || isStandaloneCourse;
@@ -259,23 +262,6 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const shouldUseHostCardPadding =
         isIssuerViewSelected ||
         getVCDisplayCardVariant(credential, categoryType, displayType) !== 'ribbon';
-    let previewWrapperPaddingClass = '';
-    let previewContentPaddingClass = '';
-
-    if (isStandaloneCourse) {
-        previewWrapperPaddingClass = 'px-0';
-        previewContentPaddingClass = '!p-0';
-    } else if (isMobile && isClrCredential) {
-        previewWrapperPaddingClass = 'px-0';
-        previewContentPaddingClass = '!p-0';
-    } else if (shouldUseHostCardPadding) {
-        previewWrapperPaddingClass = 'px-2';
-        previewContentPaddingClass = 'px-6';
-    }
-
-    const bgImage = credential?.display?.backgroundImager;
-    const showBackground = bgImage && isCertificate;
-
     const bgColor = usesAcademicFullPage ? 'bg-grayscale-100' : '';
 
     const clrModel = useMemo(
@@ -289,6 +275,18 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     );
     const clrEvidence = clrModel ? getDownloadableEvidence(clrModel.evidence) : [];
     const hasClrEvidence = clrEvidence.length > 0;
+    const standaloneCourse = isStandaloneCourse ? clrModel?.courses[0] : undefined;
+    const showsCoursePanel = Boolean(standaloneCourse && clrModel);
+    let previewWrapperPaddingClass = '';
+    let previewContentPaddingClass = '';
+
+    if (showsCoursePanel || (isMobile && isClrCredential)) {
+        previewWrapperPaddingClass = 'px-0';
+        previewContentPaddingClass = '!p-0';
+    } else if (shouldUseHostCardPadding) {
+        previewWrapperPaddingClass = 'px-2';
+        previewContentPaddingClass = 'px-6';
+    }
 
     if (isMedia) {
         return (
@@ -325,7 +323,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
             customIssueHistoryComponent={customIssueHistoryComponent}
             enableLightbox
             titleOverride={titleOverride}
-            handleClose={isCertificate ? handleCloseModal : undefined}
+            handleClose={isCertificate && !isStandaloneCourse ? handleCloseModal : undefined}
             hideNavButtons
             setIsFrontOverride={setIsFront}
             customLinkedCredentialsComponent={customLinkedCredentialsComponent}
@@ -334,9 +332,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     );
 
     let credentialContent: React.ReactNode;
-    const standaloneCourse = isStandaloneCourse ? clrModel?.courses[0] : undefined;
-
-    if (isStandaloneCourse) {
+    if (showsCoursePanel) {
         credentialContent =
             standaloneCourse && clrModel ? (
                 <div className="w-full max-w-[800px] mx-auto overflow-hidden bg-grayscale-100 shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl">
@@ -347,15 +343,13 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         associations={clrModel.associations}
                         competencies={clrModel.competencies}
                         issuerName={clrModel.header.issuerName?.value}
-                        issuerLogo={
-                            clrModel.header.issuerImage?.value ?? clrModel.header.image?.value
-                        }
+                        issuerLogo={getClrIssuerLogo(clrModel)}
                     />
                 </div>
             ) : (
                 credentialDisplay
             );
-    } else if ((isClrCredential || isClrChildCredential) && clrModel) {
+    } else if (isClrCredential && clrModel) {
         credentialContent = (
             <ClrTranscriptFullPage
                 model={clrModel}
@@ -386,19 +380,21 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 footerProps={{
                     handleClose: handleCloseModal,
                     handleDetails:
-                        isMobile && !isClrCredential && !isStandaloneCourse
+                        isMobile && !isClrCredential && !showsCoursePanel
                             ? () => openDetailsSideModal()
                             : undefined,
                     handleShare: handleShareBoost,
                     handleDotMenu: onDotsClick,
-                    useFullCloseButton: !isMobile || isClrCredential || isStandaloneCourse,
+                    useFullCloseButton: !isMobile || isClrCredential || showsCoursePanel,
                 }}
             >
                 <div className="flex h-full">
                     <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
                         <div
                             className={`w-full ${previewWrapperPaddingClass} flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
-                                isCertificate ? 'certificate-display-zoom' : ''
+                                isCertificate && !isStandaloneCourse
+                                    ? 'certificate-display-zoom'
+                                    : ''
                             } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
                         >
                             <section
@@ -412,7 +408,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             </section>
                         </div>
                     </section>
-                    {!isMobile && !isClrCredential && !isStandaloneCourse && (
+                    {!isMobile && !isClrCredential && !showsCoursePanel && (
                         <BoostDetailsSideBar
                             credential={selectedCredential}
                             categoryType={categoryType}

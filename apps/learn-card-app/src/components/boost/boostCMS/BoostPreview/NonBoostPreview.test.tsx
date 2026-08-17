@@ -62,9 +62,13 @@ vi.mock('learn-card-base/helpers/lifecycleVerification.helpers', () => ({
     applyLifecycleStatusToVerifications: (verifications: unknown[]) => verifications,
 }));
 vi.mock('learn-card-base/components/vcmodal/VCDisplayCardWrapper2', () => ({
-    default: ({ onDotsClick }: MenuProps) => (
+    default: ({
+        onDotsClick,
+        customFooterComponent,
+    }: MenuProps & { customFooterComponent?: React.ReactNode }) => (
         <div>
             <span>Generic credential preview</span>
+            {customFooterComponent}
             {onDotsClick && <button type="button">Embedded options</button>}
         </div>
     ),
@@ -81,7 +85,7 @@ vi.mock('learn-card-base/components/boost/boostFooter/BoostFooterLayout', () => 
 vi.mock('../../../render-method/RenderMethodDisplay', () => ({ default: () => null }));
 vi.mock('./BoostDetailsSideBar', () => ({ default: () => <div>Generic details sidebar</div> }));
 vi.mock('./BoostDetailsSideMenu', () => ({ default: () => null }));
-vi.mock('./VerifiedChildCLRFooter', () => ({ default: () => null }));
+vi.mock('./VerifiedChildCLRFooter', () => ({ default: () => <div>Verified child CLR</div> }));
 vi.mock('../../../boost-endorsements/EndorsementBadge', () => ({ default: () => null }));
 vi.mock('./BoostMediaPreview', () => ({
     default: ({ onDotsClick }: MenuProps) => (
@@ -226,6 +230,28 @@ describe('NonBoostPreview', () => {
         expect(screen.queryByText('Generic credential preview')).toBeNull();
         expect(screen.queryByText('Generic details sidebar')).toBeNull();
         expect(screen.queryByRole('button', { name: 'Footer details' })).toBeNull();
+    });
+
+    it('keeps a CLR child Course credential in the generic child presentation', () => {
+        render(
+            <NonBoostPreview
+                credential={courseCredential}
+                verificationItems={[]}
+                categoryType={BoostCategoryOptionsEnum.learningHistory}
+                customThumbComponent={null}
+                customBodyCardComponent={null}
+                customFooterComponent={null}
+                customIssueHistoryComponent={null}
+                handleCloseModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                isClrChildCredential
+                isPreview
+            />
+        );
+
+        expect(screen.getByText('Generic credential preview')).toBeTruthy();
+        expect(screen.getByText('Verified child CLR')).toBeTruthy();
+        expect(screen.queryByText('CLR course detail')).toBeNull();
     });
 
     it('falls back to the generic preview when a standalone Course cannot be normalized', () => {
