@@ -15,11 +15,6 @@ vi.mock('../config/bootstrapTenantConfig', () => ({
 vi.mock('learn-card-base', () => ({
     getLogger: () => (globalThis as any).mockLearnCardBaseLogger(),
 }));
-vi.mock('launchdarkly-react-client-sdk', () => ({ useFlags: () => ({}) }));
-vi.mock('../helpers/sendCredentialFlow.helpers', () => ({
-    setAnalyticsProvider: vi.fn(),
-    setSendCredentialTelemetryEnabled: vi.fn(),
-}));
 
 import { detectAnalyticsEnvironment, getSharedEventContext, newFlowId } from './sharedContext';
 import { applyPostHogHygiene, scrubUrl } from './providers/posthog';

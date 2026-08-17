@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, RouteComponentProps } from 'react-router-dom';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import Lottie from 'react-lottie-player';
 
 import {
@@ -75,7 +74,6 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
     otherUserProfileId,
 }) => {
     const width = useScreenWidth(true);
-    const flags = useFlags();
     const location = useLocation();
     const { handlePresentBoostModal } = useBoostModal(history);
 
@@ -92,7 +90,6 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
     const onCategoryRoute = pathName ? PATH_TO_CATEGORY[pathName] : null;
 
     useEffect(() => {
-        //Change default selectedVCType if on category route
         if (onCategoryRoute) {
             setSelectedVCType(onCategoryRoute);
         } else {
@@ -101,7 +98,6 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
     }, [onCategoryRoute]);
 
     const boostUserType = BoostUserTypeEnum.someone;
-
     const boostDropdownCategoryOptions = boostVCTypeOptions[boostUserType];
 
     const { color, IconComponent, title } = boostCategoryOptions[selectedVCType];

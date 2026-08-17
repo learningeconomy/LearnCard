@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('context');
 
@@ -8,10 +7,7 @@ import type { AnalyticsEventName, EventPayload } from './events';
 import { NoopProvider } from './providers/noop';
 import { getSharedEventContext, shouldDropEvents } from './sharedContext';
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
-import {
-    setAnalyticsProvider as setSendCredentialFlowProvider,
-    setSendCredentialTelemetryEnabled,
-} from '../helpers/sendCredentialFlow.helpers';
+import { setAnalyticsProvider as setSendCredentialFlowProvider } from '../helpers/sendCredentialFlow.helpers';
 
 /**
  * Lazily load and instantiate the appropriate analytics provider.
@@ -131,8 +127,6 @@ interface AnalyticsProviderProps {
 export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
     const [provider, setProvider] = useState<AnalyticsProvider>(() => new NoopProvider());
     const [isReady, setIsReady] = useState(false);
-    const flags = useFlags();
-    const sendCredentialTelemetryFlag = !!flags.enableSendCredentialPosthogTelemetry;
 
     useEffect(() => {
         let mounted = true;
@@ -164,12 +158,6 @@ export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
             mounted = false;
         };
     }, []);
-
-    // LC-1644: gate natural send-credential telemetry on the LD flag.
-    // Bench-triggered events bypass the gate inside sendCredentialFlow.helpers.
-    useEffect(() => {
-        setSendCredentialTelemetryEnabled(sendCredentialTelemetryFlag);
-    }, [sendCredentialTelemetryFlag]);
 
     const value = useMemo(() => ({ provider, isReady }), [provider, isReady]);
 
