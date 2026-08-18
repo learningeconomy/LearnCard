@@ -249,7 +249,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
             <h1 className="sr-only">{title || 'Credential details'}</h1>
             <BoostFooterLayout
                 footerProps={isMobile ? { handleBack: handleClose } : undefined}
-                contentClassName="pt-[30px] safe-area-top-margin"
+                contentClassName="pt-[30px] mt-[var(--ion-safe-area-top,0px)]"
             >
                 <div className="min-h-full mx-auto px-[2px]">
                     {!isMobile && (

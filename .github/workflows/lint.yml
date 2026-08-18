@@ -191,3 +191,18 @@ jobs:
 
             - name: Verify checked-in WASM matches the default init() URL
               run: node packages/plugins/didkit/scripts/check-wasm-url.mjs
+
+    # Pure-Node grep gate (no install): safe-area primitives (env(safe-area-*),
+    # --ion-safe-area-*, --lc-safe-*, useSafeArea, …) may only be referenced
+    # inside the surface layer. Legacy call sites are allowlisted shrink-only in
+    # scripts/safe-area-allowlist.json — see LC-1962 design doc.
+    SafeAreaGate:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Safe-area ownership gate
+              run: node scripts/check-safe-area.mjs

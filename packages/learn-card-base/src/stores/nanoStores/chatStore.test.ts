@@ -67,6 +67,19 @@ class FakeWebSocket {
 globalThis.WebSocket = FakeWebSocket as unknown as typeof WebSocket;
 globalThis.fetch = mocks.fetch as typeof fetch;
 
+const localeStorageValues = new Map<string, string>();
+const localeStorage: Storage = {
+    get length() {
+        return localeStorageValues.size;
+    },
+    clear: () => localeStorageValues.clear(),
+    getItem: key => localeStorageValues.get(key) ?? null,
+    key: index => Array.from(localeStorageValues.keys())[index] ?? null,
+    removeItem: key => localeStorageValues.delete(key),
+    setItem: (key, value) => localeStorageValues.set(key, value),
+};
+vi.stubGlobal('localStorage', localeStorage);
+
 if (!Promise.withResolvers) {
     Promise.withResolvers = <T>() => {
         let resolve!: PromiseWithResolvers<T>['resolve'];
@@ -121,6 +134,9 @@ describe('chat session startup', () => {
         FakeWebSocket.instances = [];
         mocks.showErrorModal.mockClear();
         mocks.fetch.mockClear();
+        // getActiveLocale reads this key; clear it so cases that don't set a
+        // language get the 'en' default rather than a previous test's value.
+        localStorage.removeItem('i18n.language');
         resetChatStores();
     });
 
@@ -143,8 +159,36 @@ describe('chat session startup', () => {
                 introStreamMode: 'structured',
                 did: 'did:example:learner',
                 mode: 'ai-tutor',
+                // LC-1901: every outbound frame carries the UI locale so the AI
+                // replies in the user's language. Defaults to 'en'.
+                locale: 'en',
             },
         ]);
+    });
+
+    // LC-1901: the locale rides on both the socket URL (read at connect time)
+    // and every payload (read per message), so assert both actually track the
+    // stored language rather than the 'en' default.
+    it('carries the active locale on the socket URL and the start payload', async () => {
+        localStorage.setItem('i18n.language', 'es');
+
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+
+        expect(new URL(socket.url).searchParams.get('locale')).toBe('es');
+        expect(JSON.parse(socket.sent[0]!)).toMatchObject({ locale: 'es' });
+    });
+
+    it('sanitizes a tampered locale before it reaches the backend', async () => {
+        localStorage.setItem('i18n.language', 'es"&evil=1');
+
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+
+        expect(JSON.parse(socket.sent[0]!)).toMatchObject({ locale: 'esevil1' });
+        expect(socket.url).not.toContain('evil=1');
     });
 
     it('renders partial structured fields as soon as they arrive', async () => {
@@ -809,6 +853,7 @@ describe('chat session startup', () => {
         expect(socket.sent.map(payload => JSON.parse(payload))).toContainEqual({
             action: 'continue_plan',
             threadId: 'thread-continuation',
+            locale: 'en',
         });
         expect(isTyping.get()).toBe(true);
 
