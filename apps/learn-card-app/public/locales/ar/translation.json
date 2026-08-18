@@ -3735,9 +3735,9 @@
             "meanwhile": "في هذه الأثناء",
             "emptyTitle": "لا توجد تنبيهات الآن",
             "emptySubtitle": "سنُعلمك هنا عندما يرغب أحدهم في التواصل معك أو إرسال شهادة إليك.",
-            "viewMore": "عرض {{count}} إضافية →",
-            "viewAllPending": "عرض كل المعلّق →",
-            "viewAllPassport": "عرض الكل في جواز السفر →",
+            "viewMore": "عرض {{count}} إضافية",
+            "viewAllPending": "عرض كل المعلّق",
+            "viewAllPassport": "عرض الكل في جواز السفر",
             "wantsToConnect": "يريد {{name}} التواصل معك",
             "requestedDataAccess": "طلب {{name}} الوصول إلى بياناتك",
             "someone": "شخص ما",
@@ -3775,7 +3775,7 @@
             "progress": "{{completed}} من {{total}}"
         },
         "dataTrust": {
-            "label": "بياناتك",
+            "label": "مشاركة البيانات",
             "title": "بياناتك ملك لك",
             "emptyStatus": "لم تتم مشاركة أي شيء بعد.",
             "sharingWithOne": "تتم المشاركة مع جهة واحدة.",
@@ -3795,7 +3795,8 @@
             "buildingProfile": "يتشكّل ملف تعلّمك كلما أضفت دورات وإنجازات وخبرات.",
             "groundedInOne": "مستند إلى سجل واحد مُوثَّق",
             "groundedInMany": "مستند إلى {{count}} سجلات مُوثَّقة",
-            "viewInsights": "عرض الرؤى →",
+            "viewInsights": "عرض الكل",
+            "noInsightsYet": "لا توجد رؤى بعد.",
             "tierStrongest": "الأقوى",
             "tierStrong": "قوي",
             "tierGrowing": "في تطور",
@@ -3808,8 +3809,8 @@
             "yourAppsLabel": "تطبيقاتك",
             "appsToExplore": "تطبيقات لاستكشافها",
             "jumpBackIn": "عُد إلى ما كنت عليه",
-            "browseAll": "تصفح الكل →",
-            "viewAll": "عرض الكل →"
+            "browseAll": "تصفح الكل",
+            "viewAll": "عرض الكل"
         },
         "appTile": {
             "new": "جديد",

@@ -3738,9 +3738,9 @@
             "meanwhile": "En attendant",
             "emptyTitle": "Aucune alerte pour le moment",
             "emptySubtitle": "Nous vous préviendrons ici lorsque quelqu'un voudra se connecter ou vous envoyer une certification.",
-            "viewMore": "Voir {{count}} de plus →",
-            "viewAllPending": "Voir tout ce qui est en attente →",
-            "viewAllPassport": "Tout voir dans le passeport →",
+            "viewMore": "Voir {{count}} de plus",
+            "viewAllPending": "Voir tout ce qui est en attente",
+            "viewAllPassport": "Tout voir dans le passeport",
             "wantsToConnect": "{{name}} souhaite se connecter",
             "requestedDataAccess": "{{name}} a demandé l'accès à vos données",
             "someone": "Quelqu'un",
@@ -3778,7 +3778,7 @@
             "progress": "{{completed}} sur {{total}}"
         },
         "dataTrust": {
-            "label": "Vos données",
+            "label": "Partage de données",
             "title": "Vos données vous appartiennent",
             "emptyStatus": "Rien n'est encore partagé.",
             "sharingWithOne": "Partagé avec {{count}} endroit.",
@@ -3798,7 +3798,8 @@
             "buildingProfile": "Votre profil d'apprentissage se précise à mesure que vous ajoutez des cours, des réalisations et des expériences.",
             "groundedInOne": "Fondé sur {{count}} enregistrement vérifié",
             "groundedInMany": "Fondé sur {{count}} enregistrements vérifiés",
-            "viewInsights": "Voir les aperçus →",
+            "viewInsights": "Tout voir",
+            "noInsightsYet": "Pas encore d'aperçus.",
             "tierStrongest": "Le plus fort",
             "tierStrong": "Fort",
             "tierGrowing": "En progression",
@@ -3811,8 +3812,8 @@
             "yourAppsLabel": "Vos apps",
             "appsToExplore": "Apps à explorer",
             "jumpBackIn": "Reprenez où vous en étiez",
-            "browseAll": "Tout parcourir →",
-            "viewAll": "Tout voir →"
+            "browseAll": "Tout parcourir",
+            "viewAll": "Tout voir"
         },
         "appTile": {
             "new": "Nouveau",
