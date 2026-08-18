@@ -109,6 +109,14 @@ jobs:
                       # The runner script owns the existing Playwright suite. Run the
                       # Axe-backed core-flow checks explicitly so accessibility remains
                       # part of the same real-backend E2E gate.
+                      #
+                      # ssh-action opens a non-interactive shell that never sources the
+                      # login profile, so the toolchain run-tests.sh resolves for itself
+                      # is not on PATH here — without this, `bun` exits 127 and fails the
+                      # step even when every Playwright suite has passed.
+                      export PATH="$HOME/.bun/bin:$HOME/.node/bin:$PATH"
+                      command -v bun >/dev/null || { echo "bun not found on the runner"; exit 1; }
+
                       cd workspace/LearnCard/apps/learn-card-app
                       bun run test:a11y
 
