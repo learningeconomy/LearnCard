@@ -114,7 +114,11 @@ test.describe('Wallet Credentials', () => {
 
         // Verify the Badges (social badge) category exists on User 2's wallet
         // (the LC-1919 Passport reorg renamed "Boosts" → "Badges").
-        const badgesCategory = page2.locator('[role="button"]').filter({ hasText: 'Badges' });
+        //
+        // Resolve by role, not by a '[role="button"]' attribute selector: LC-2071
+        // turned the category tile into a native <button>, which carries the
+        // button role implicitly and so matches no such attribute.
+        const badgesCategory = page2.getByRole('button', { name: /Badges/i });
         await expect(badgesCategory).toBeVisible({ timeout: 30_000 });
 
         // Click into the Badges category
