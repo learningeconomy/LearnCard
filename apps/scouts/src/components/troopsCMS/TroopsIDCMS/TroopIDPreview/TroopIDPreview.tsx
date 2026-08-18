@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { IonFooter, IonPage, IonToolbar } from '@ionic/react';
+import * as m from '../../../../paraglide/messages.js';
 import TroopsCMSLayout from '../../TroopsCMSLayout';
 import TroopIDPreviewFrontFace from './TroopIDPreviewFrontFace';
 import TroopIDPreviewBackFace from './TroopIDPreviewBackFace';
@@ -48,13 +49,13 @@ const TroopIDPreview: React.FC<{
                                     onClick={() => handleCloseModal()}
                                     className="bg-white text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                                 >
-                                    Close
+                                    {m['common.close']()}
                                 </button>
                                 <button
                                     onClick={() => setIsFront(!isFront)}
                                     className="bg-white text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                                 >
-                                    {isFront ? 'Details' : 'Back'}
+                                    {isFront ? m['common.details']() : m['common.back']()}
                                 </button>
                             </div>
                         </div>

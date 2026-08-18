@@ -13,6 +13,7 @@ import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificati
 import PushNotificationsSettings from '../push-notification-settings/PushNotificationsSettings';
 import ModalLayout from '../../layout/ModalLayout';
 import ChapiPrompt from '../chapi-prompt/ChapiPrompt';
+import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('user-profile-setup');
 
@@ -44,7 +45,7 @@ const UserProfileSetup: React.FC<{
     showNetworkSettings?: boolean;
     showNotificationsModal?: boolean;
 }> = ({
-    title = 'My Account',
+    title = m['auth.myAccount'](),
     handleCloseModal,
     handleLogout,
     showCancelButton = true,

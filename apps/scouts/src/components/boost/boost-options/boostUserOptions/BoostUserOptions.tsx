@@ -1,14 +1,6 @@
 import React from 'react';
 
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonGrid,
-    IonToolbar,
-    IonHeader,
-    IonPage,
-} from '@ionic/react';
+import { IonCol, IonContent, IonRow, IonGrid, IonToolbar, IonHeader, IonPage } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import BoostVCTypeOptions from '../boostVCTypeOptions/BoostVCTypeOptions';
@@ -16,6 +8,7 @@ import BoostVCTypeOptions from '../boostVCTypeOptions/BoostVCTypeOptions';
 import { BoostUserTypeEnum } from '../boostOptions';
 
 import { useModal, ModalTypes, useScreenWidth } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 
 const BoostUserOptions: React.FC<{
     handleCloseModal: () => void;
@@ -80,7 +73,8 @@ const BoostUserOptions: React.FC<{
                             onClick={handleBoostSelfModal}
                             className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white font-mouse text-3xl w-full shadow-lg  uppercase tracking-wide"
                         >
-                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Yourself
+                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                            {m['boost.yourself']()}
                         </button>
                     </IonCol>
                     <IonCol className="w-full flex items-center justify-center mt-1">
@@ -88,8 +82,8 @@ const BoostUserOptions: React.FC<{
                             onClick={handleBoostSomeoneModal}
                             className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white font-mouse text-3xl w-full shadow-lg uppercase tracking-wide"
                         >
-                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Someone
-                            Else
+                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                            {m['boost.someoneElse']()}
                         </button>
                     </IonCol>
                     <div className="w-full flex items-center justify-center mt-8">
@@ -97,7 +91,7 @@ const BoostUserOptions: React.FC<{
                             onClick={() => handleCloseModal()}
                             className="text-grayscale-900 text-center text-sm"
                         >
-                            Cancel
+                            {m['common.cancel']()}
                         </button>
                     </div>
                 </IonGrid>

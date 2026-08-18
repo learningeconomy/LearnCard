@@ -1,5 +1,6 @@
+import * as m from '../../../paraglide/messages.js';
 // oxlint-disable-next-line no-unused-vars
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -53,6 +54,7 @@ import {
     sendBoostCredential,
     addFallbackNameToCMSState,
 } from '../boostHelpers';
+import { getBoostPresetLocalization, refreshLocalizedPresetFields } from '../localizedPresetFields';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
 import {
     BrandingEnum,
@@ -84,6 +86,7 @@ import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import boostSearchStore from 'apps/scouts/src/stores/boostSearchStore';
 import { getLogger } from 'learn-card-base';
+import { useLocale } from '../../../i18n';
 const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<{
@@ -105,6 +108,12 @@ const BoostCMS: React.FC<{
     returnToParentAfterSave = false,
 }) => {
     const flags = useFlags();
+    // Snapshot the rollout policy when the editor opens so a streaming flag update cannot
+    // change preset content language in the middle of an in-progress draft.
+    const presetLocalization = useRef(
+        getBoostPresetLocalization(flags?.localizeBoostTemplateContent)
+    ).current;
+    const locale = useLocale();
     const history = useHistory();
     const location = useLocation();
     const query = usePathQuery();
@@ -150,9 +159,21 @@ const BoostCMS: React.FC<{
         ...initialBoostCMSState,
         basicInfo: {
             ...initialBoostCMSState.basicInfo,
-            name: getDefaultBoostTitle(_boostCategoryType, _boostSubCategoryType),
-            description: getDefaultBoostDescription(_boostCategoryType, _boostSubCategoryType),
-            narrative: getDefaultBoostCriteria(_boostCategoryType, _boostSubCategoryType),
+            name: getDefaultBoostTitle(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            description: getDefaultBoostDescription(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            narrative: getDefaultBoostCriteria(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
             type: _boostCategoryType, // main category
             achievementType: _boostSubCategoryType, // sub category type
         },
@@ -167,6 +188,23 @@ const BoostCMS: React.FC<{
             idBackgroundImage: getDefaultIDBackgroundImage(_boostCategoryType),
             idIssuerThumbnail: getDefaultIssuerImage(_boostCategoryType),
         },
+    });
+    const previousLocalizedPresetDefaults = useRef({
+        name: getDefaultBoostTitle(
+            _boostCategoryType,
+            _boostSubCategoryType,
+            presetLocalization.contentOptions
+        ),
+        description: getDefaultBoostDescription(
+            _boostCategoryType,
+            _boostSubCategoryType,
+            presetLocalization.contentOptions
+        ),
+        narrative: getDefaultBoostCriteria(
+            _boostCategoryType,
+            _boostSubCategoryType,
+            presetLocalization.contentOptions
+        ),
     });
 
     const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
@@ -183,6 +221,47 @@ const BoostCMS: React.FC<{
     const isMeritBadge = _boostCategoryType === BoostCategoryOptionsEnum.meritBadge;
 
     const issueToLength = state?.issueTo?.length || 0;
+
+    useEffect(() => {
+        const nextLocalizedPresetDefaults = {
+            name: getDefaultBoostTitle(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            description: getDefaultBoostDescription(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            narrative: getDefaultBoostCriteria(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+        };
+
+        setState(previousState => {
+            const refreshedPresetFields = refreshLocalizedPresetFields(
+                previousState.basicInfo,
+                previousLocalizedPresetDefaults.current,
+                nextLocalizedPresetDefaults,
+                presetLocalization.enabled
+            );
+
+            if (refreshedPresetFields === previousState.basicInfo) return previousState;
+
+            return {
+                ...previousState,
+                basicInfo: {
+                    ...previousState.basicInfo,
+                    ...refreshedPresetFields,
+                },
+            };
+        });
+
+        previousLocalizedPresetDefaults.current = nextLocalizedPresetDefaults;
+    }, [locale, _boostCategoryType, _boostSubCategoryType]);
 
     useEffect(() => {
         const loadOtherUser = async () => {
@@ -275,9 +354,21 @@ const BoostCMS: React.FC<{
             categoryType === BoostCategoryOptionsEnum.meritBadge
         ) {
             // default ID title to selected achievementType
-            boostTitle = getDefaultBoostTitle(categoryType, achievementType);
-            description = getDefaultBoostDescription(categoryType, achievementType);
-            criteria = getDefaultBoostCriteria(categoryType, achievementType);
+            boostTitle = getDefaultBoostTitle(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
+            description = getDefaultBoostDescription(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
+            criteria = getDefaultBoostCriteria(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
         } else if (
             (_boostCategoryType === BoostCategoryOptionsEnum.id &&
                 categoryType !== BoostCategoryOptionsEnum.id) ||
@@ -400,7 +491,7 @@ const BoostCMS: React.FC<{
 
             if (boostUri) {
                 setIsSaveLoading(false);
-                presentToast('Draft saved successfully', {
+                presentToast(m['boostCMS.draftSaved'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -423,7 +514,7 @@ const BoostCMS: React.FC<{
         } catch (e) {
             setIsSaveLoading(false);
             log.debug('error::savingBoost', e);
-            presentToast('Unable to save boost', {
+            presentToast(m['boostCMS.boostFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -477,7 +568,7 @@ const BoostCMS: React.FC<{
 
                 if (returnToParentAfterSave && handleCloseModal) {
                     setIsPublishLoading(false);
-                    presentToast('Boost published successfully', {
+                    presentToast(m['boostCMS.publishedOk'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -498,7 +589,7 @@ const BoostCMS: React.FC<{
         } catch (e) {
             setIsPublishLoading(false);
             log.debug('error::publishingBoost', e);
-            presentToast('Unable to publish boost', {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -568,7 +659,7 @@ const BoostCMS: React.FC<{
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast('Boost issued successfully', {
+                    presentToast(m['boostCMS.issuedOk'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -582,7 +673,7 @@ const BoostCMS: React.FC<{
 
                 if (boostUri) {
                     setIsSaveLoading(false);
-                    presentToast('Boost saved successfully', {
+                    presentToast(m['boostCMS.boostSaved'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -595,7 +686,7 @@ const BoostCMS: React.FC<{
         } catch (e) {
             setIsLoading(false);
             log.debug('error::boosting::someone', e);
-            presentToast('Error issuing boost', {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -679,7 +770,9 @@ const BoostCMS: React.FC<{
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? 'Continue Issuing' : 'Continue Editing';
+            currentStep === BoostCMSStepsEnum.issueTo
+                ? m['boostCMS.continueIssue']()
+                : m['boostCMS.continueEdit']();
         newModal(
             <BoostCMSConfirmationPrompt
                 state={state}
@@ -762,7 +855,7 @@ const BoostCMS: React.FC<{
                     boostUri={publishedBoostUri}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m['boostCMS.assignAdmins']()}
                     hideBoostShareableCode
                 />
             </>
@@ -801,13 +894,13 @@ const BoostCMS: React.FC<{
 
     let loadingText = '';
     if (isLoading) {
-        loadingText = 'Sending...';
+        loadingText = m['boost.sending']();
     } else if (isPublishLoading) {
-        loadingText = 'Publishing...';
+        loadingText = m['boostCMS.publishing']();
     } else if (isSaveLoading) {
-        loadingText = 'Saving...';
+        loadingText = m['common.saving']();
     } else if (stylePackLoading) {
-        loadingText = 'Loading...';
+        loadingText = m['common.loading']();
     }
 
     return (
@@ -842,7 +935,7 @@ const BoostCMS: React.FC<{
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m['boostCMS.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>

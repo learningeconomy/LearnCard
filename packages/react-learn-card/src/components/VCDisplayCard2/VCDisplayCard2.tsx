@@ -29,6 +29,7 @@ import {
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
 import { MeritBadgeDisplayCard } from '../MeritBadgeDisplayCard';
 import { KnownDIDRegistryType } from '../../types';
+import { useT } from '../../i18n';
 
 type FlippedComponentProps = React.PropsWithChildren<{
     flipId?: string;
@@ -169,6 +170,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     hideFrontFaceDetails,
     onVerifierClick,
 }) => {
+    const t = useT();
     const {
         title = '',
         createdAt,
@@ -537,12 +539,18 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                         />
                                     )}
                                     <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px] select-none">
-                                        <span className="text-[#4F4F4F]">Verified Credential</span>
+                                        <span className="text-[#4F4F4F]">
+                                            {t('credential.verified')}
+                                        </span>
                                         <span
                                             className="vc-footer-status uppercase"
                                             style={{ color: statusColor }}
                                         >
-                                            {worstVerificationStatus}
+                                            {t(
+                                                `verification.status.${String(
+                                                    worstVerificationStatus
+                                                ).toLowerCase()}`
+                                            )}
                                         </span>
                                     </div>
                                     <div

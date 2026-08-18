@@ -51,7 +51,7 @@ const CaretListItem: React.FC<CaretListItemProps> = ({
                 )}
                 {!caretOverride && (
                     <SlimCaretRight
-                        className="text-grayscale-400 h-[20px] w-[20px]"
+                        className="rtl-mirror text-grayscale-400 h-[20px] w-[20px]"
                         color="currentColor"
                     />
                 )}

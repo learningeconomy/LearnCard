@@ -8,6 +8,7 @@ import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConsentFlowReadSharingStatus from './ConsentFlowReadSharingStatus';
 import ConsentFlowReadSharingModal from './ConsentFlowReadSharingModal';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowReadSharingItemProps = {
     term: ConsentFlowTerms['read']['credentials']['categories'][string];
@@ -71,12 +72,12 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
                     {term.sharing && (
                         <span className="text-grayscale-600 font-poppins text-sm">
                             {term.shareAll
-                                ? 'Sharing All'
+                                ? m['consentFlow.sharingAll']()
                                 : `${term.shared?.length ?? 0}/${totalCount}`}
                         </span>
                     )}
 
-                    <SkinnyCaretRight className="h-[20px] w-[20px] text-grayscale-500" />
+                    <SkinnyCaretRight className="rtl-mirror h-[20px] w-[20px] text-grayscale-500" />
                 </section>
 
                 <IonRippleEffect />
