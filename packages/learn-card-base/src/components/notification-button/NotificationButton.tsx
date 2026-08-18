@@ -6,6 +6,10 @@ import NotificationIcon2 from 'learn-card-base/svgs/NotificationIcon2';
 import { useGetUnreadUserNotifications } from 'learn-card-base';
 import { getNotificationButtonColor } from 'learn-card-base/helpers/colorHelpers';
 
+const BellIcon: React.FC<{ className?: string }> = props => (
+    <NotificationIcon {...props} version="2" />
+);
+
 type NotificationButtonProps = {
     colorOverride?: string;
     /**
@@ -36,10 +40,7 @@ const NotificationButton: React.FC<NotificationButtonProps> = ({
     const unreadCount =
         data?.notifications && data?.notifications?.length > 0 ? data?.notifications?.length : null;
 
-    const Icon =
-        iconVariant === 'alerts'
-            ? NotificationIcon2
-            : (props: { className?: string }) => <NotificationIcon {...props} version="2" />;
+    const Icon = iconVariant === 'alerts' ? NotificationIcon2 : BellIcon;
 
     return (
         <button
