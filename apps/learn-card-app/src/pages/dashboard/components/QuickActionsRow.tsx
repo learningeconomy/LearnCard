@@ -37,7 +37,7 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ slots }) => {
                             <span className="text-xs font-semibold text-grayscale-900 break-words">
                                 {action.label}
                             </span>
-                            <span className="inline desktop:inline text-xs text-grayscale-500 leading-tight truncate">
+                            <span className="text-xs text-grayscale-500 leading-tight line-clamp-1">
                                 {action.caption}
                             </span>
                         </span>

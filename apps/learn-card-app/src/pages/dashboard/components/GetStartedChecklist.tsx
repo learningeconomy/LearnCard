@@ -49,13 +49,13 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                     type="button"
                     onClick={onDismiss}
                     aria-label={m['dashboard.getStarted.dismiss']()}
-                    className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full hover:bg-white/15 transition-colors flex items-center justify-center text-white/70 hover:text-white text-lg leading-none"
+                    className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full hover:bg-white/15 transition-colors flex items-center justify-center text-white/70 hover:text-white"
                 >
                     <X className="w-[15px] h-auto" />
                 </button>
 
                 <div className="relative flex items-start gap-3 mb-3">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-10">
                         <p className="text-[11px] font-medium tracking-[0.14em] text-indigo-200/90 uppercase">
                             {m['dashboard.getStarted.label']()}
                         </p>
