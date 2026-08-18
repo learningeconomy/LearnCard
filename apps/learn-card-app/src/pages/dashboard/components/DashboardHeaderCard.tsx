@@ -100,9 +100,9 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
             initialsAvatar
         );
 
-    const descriptorRole = (className: string) =>
+    const descriptorRoleContent =
         descriptor || roleSwitcher || roleFallback ? (
-            <div className={`mt-1 items-center gap-2 min-w-0 ${className}`}>
+            <div className="mt-1 flex items-center gap-2 min-w-0 desktop:ml-[76px]">
                 {descriptor && (
                     <p
                         className={`min-w-0 truncate text-sm leading-snug ${
@@ -182,10 +182,9 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                         <h1 className="text-xl font-semibold text-grayscale-900 leading-tight truncate">
                             {displayName || m['dashboard.header.welcome']()}
                         </h1>
-                        {descriptorRole('hidden desktop:flex')}
                     </div>
                 </div>
-                {descriptorRole('flex desktop:hidden')}
+                {descriptorRoleContent}
                 {QRCodeAction && (
                     <div className="absolute bottom-3 right-3 desktop:bottom-auto desktop:top-3">
                         {QRCodeAction}
