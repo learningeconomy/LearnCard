@@ -27,8 +27,6 @@ describe('LEARNCARD_APP_SHORTCUTS', () => {
         byTitle['Data Sharing'].getAction(helpers)();
         byTitle.Families.getAction(helpers)();
 
-        // Pathways points at the AI-namespaced route; the standalone
-        // /pathways journeys entry is a separate shortcut (JOURNEYS_SHORTCUT).
         expect(push.mock.calls.map(c => c[0])).toEqual([
             '/ai/insights',
             '/ai/pathways',
