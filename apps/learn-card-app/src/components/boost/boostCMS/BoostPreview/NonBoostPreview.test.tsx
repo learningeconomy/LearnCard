@@ -43,9 +43,6 @@ vi.mock('@analytics', () => ({
     AnalyticsEvents: { CREDENTIAL_VIEWED: 'credential-viewed' },
     useAnalytics: () => ({ track: vi.fn() }),
 }));
-vi.mock('../../../../hooks/useRenderMethodEnabled', () => ({
-    useRenderMethodEnabled: () => false,
-}));
 vi.mock('learn-card-base/stores/boostPreviewStore', () => ({
     BoostPreviewDisplayViewEnum: { Issuer: 'issuer', Default: 'default' },
 }));

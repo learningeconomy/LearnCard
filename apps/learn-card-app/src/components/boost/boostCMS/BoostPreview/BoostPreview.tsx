@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 
 import { IonPage } from '@ionic/react';
 import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
@@ -180,11 +179,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     issuancesSummaryComponent,
     isPreview = false,
 }) => {
-    const enableRenderMethod = useRenderMethodEnabled();
     const { track } = useAnalytics();
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
-    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(_credential as VC) : null;
+    const renderMethod = getSvgMustacheRenderMethod(_credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
     useEffect(() => {
@@ -193,11 +191,9 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     }, [credentialWithEdits?.id]);
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            enableRenderMethod && renderMethod
-                ? BoostPreviewDisplayViewEnum.Issuer
-                : BoostPreviewDisplayViewEnum.Default
+            renderMethod ? BoostPreviewDisplayViewEnum.Issuer : BoostPreviewDisplayViewEnum.Default
         );
-    }, [credentialWithEdits?.id, renderMethod?.template, enableRenderMethod]);
+    }, [credentialWithEdits?.id, renderMethod?.template]);
     const credential = credentialWithEdits ?? unwrappedCredential;
     const { newModal, closeModal } = useModal();
     const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
@@ -249,9 +245,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         credential?.display?.displayType === 'id' ||
         categoryType === 'ID';
     const isIssuerViewSelected =
-        enableRenderMethod &&
-        Boolean(renderMethod) &&
-        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
     const shouldUseHostCardPadding =
         isIssuerViewSelected ||
         getVCDisplayCardVariant(credential, categoryType, formattedDisplayType) !== 'ribbon';

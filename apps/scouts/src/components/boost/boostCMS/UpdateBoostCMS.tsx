@@ -134,7 +134,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
     const { data: boostPermissionData } = useGetBoostPermissions(_boostUri);
 
-    const overrideCustomize = boostPermissionData?.canEdit;
+    const overrideCustomize = boostPermissionData?.canEdit ?? false;
 
     const [search, setSearch] = useState<string>('');
     const { data: boostAppearanceBadgeList, isLoading: stylePackLoading } =
@@ -796,6 +796,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                         disabled={isEditDisabled}
                     />
                 )}
+
                 <BoostCMSBasicInfoForm
                     state={state}
                     overrideCustomize={overrideCustomize}
