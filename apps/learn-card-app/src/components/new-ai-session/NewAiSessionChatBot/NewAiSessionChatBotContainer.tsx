@@ -35,7 +35,7 @@ import {
     aiPassportApps,
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { AiSessionMode, sessionLoadingText } from '../newAiSession.helpers';
+import { AiSessionMode, getSessionLoadingText } from '../newAiSession.helpers';
 import { usePathQuery } from 'learn-card-base';
 
 import { chatBotStore, useChatBotQA } from '../../../stores/chatBotStore';
@@ -346,7 +346,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
                 onClose={isDesktop ? handleStartOver : undefined}
             />
             {showLoader && (
-                <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
+                <AiSessionLoader chatBotQA={chatBotQA} overrideText={getSessionLoadingText()} />
             )}
             {chatBotQA.map((qa, index) => {
                 if (qa.hidden) return null;
