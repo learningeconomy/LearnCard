@@ -124,7 +124,7 @@ jobs:
               if: always()
               continue-on-error: true
               run: |
-                  mkdir -p playwright-report test-results
+                  mkdir -p playwright-report test-results playwright-report-a11y test-results-a11y
                   echo "${{ secrets.E2E_EC2_SSH_KEY }}" > /tmp/ec2_key
                   chmod 600 /tmp/ec2_key
                   # Download HTML report
@@ -135,6 +135,14 @@ jobs:
                   scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
                     ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/test-results/* \
                     test-results/ || echo "Failed to download test results"
+                  # Download the Axe suite's report, which writes to its own paths so
+                  # it does not overwrite the main Playwright suite's artifacts
+                  scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+                    ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/playwright-report-a11y/* \
+                    playwright-report-a11y/ || echo "Failed to download a11y HTML report"
+                  scp -o StrictHostKeyChecking=no -i /tmp/ec2_key -r \
+                    ${{ secrets.E2E_EC2_USERNAME }}@${{ env.E2E_EC2_IP }}:~/learncard-e2e-runner/workspace/LearnCard/apps/learn-card-app/test-results-a11y/* \
+                    test-results-a11y/ || echo "Failed to download a11y test results"
                   rm /tmp/ec2_key
 
             - name: Upload Playwright report
@@ -145,6 +153,8 @@ jobs:
                   path: |
                       playwright-report/
                       test-results/
+                      playwright-report-a11y/
+                      test-results-a11y/
                   retention-days: 30
 
             - name: Cleanup EC2 (docker down, prune)
