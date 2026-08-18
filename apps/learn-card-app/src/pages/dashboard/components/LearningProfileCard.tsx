@@ -61,7 +61,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                         ))}
                     </div>
                     <span
-                        className={`text-[12px] font-semibold px-1.5 py-0.5 rounded-full ${tierClasses}`}
+                        className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${tierClasses}`}
                     >
                         {tierLabel}
                     </span>

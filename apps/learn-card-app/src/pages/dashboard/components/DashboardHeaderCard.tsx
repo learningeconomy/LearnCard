@@ -16,7 +16,7 @@ type DashboardHeaderCardProps = {
     onAvatarClick?: () => void;
     onNotificationsClick?: () => void;
     unreadCount?: number;
-    QRCodeAction?: React.ReactNode;
+    qrCodeAction?: React.ReactNode;
     roleSwitcher?: React.ReactNode;
 };
 
@@ -55,7 +55,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     onAvatarClick,
     onNotificationsClick,
     unreadCount = 0,
-    QRCodeAction,
+    qrCodeAction,
     roleSwitcher,
 }) => {
     const initials = getInitials(displayName);
@@ -142,7 +142,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                 </div>
             )}
 
-            <div className="relative p-[10px]">
+            <div className="relative p-2.5">
                 <div className="flex items-center gap-4">
                     <div className="shrink-0 relative">
                         {onAvatarClick ? (
@@ -177,7 +177,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                         )}
                     </div>
 
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 desktop:pr-12">
                         <p className="text-sm text-grayscale-500 leading-tight">{greeting}</p>
                         <h1 className="text-xl font-semibold text-grayscale-900 leading-tight truncate">
                             {displayName || m['dashboard.header.welcome']()}
@@ -185,9 +185,9 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                     </div>
                 </div>
                 {descriptorRoleContent}
-                {QRCodeAction && (
+                {qrCodeAction && (
                     <div className="absolute bottom-3 right-3 desktop:bottom-auto desktop:top-3">
-                        {QRCodeAction}
+                        {qrCodeAction}
                     </div>
                 )}
             </div>

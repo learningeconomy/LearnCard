@@ -111,7 +111,7 @@ const DashboardRoleSwitcher: React.FC = () => {
         });
     };
 
-    const pillClassName = `inline-flex items-center gap-1 px-[10px] py-0.5 rounded-full bg-grayscale-100 text-grayscale-700 text-xs font-medium transition-colors ${
+    const pillClassName = `inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-grayscale-100 text-grayscale-700 text-[13px] font-medium transition-colors ${
         isChildProfile ? 'cursor-default' : 'cursor-pointer hover:bg-grayscale-200'
     }`;
 

@@ -85,8 +85,8 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
                 </div>
                 <ChevronRight className="hidden desktop:block shrink-0 w-5 h-5 mt-1 text-grayscale-400 group-hover:text-grayscale-600 transition-colors" />
             </div>
-            <div className="flex">
-                <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">
+            <div className="flex flex-wrap">
+                <p className="min-w-0 flex-1 mt-1 text-sm text-grayscale-600 leading-relaxed">
                     <span className="font-medium text-grayscale-900">{statusText}</span>{' '}
                     {detailText}
                 </p>

@@ -37,7 +37,7 @@ const FeaturedAppTile: React.FC<FeaturedAppTileProps> = ({
         <button
             type="button"
             onClick={() => launch()}
-            className="group flex items-center gap-3 pt-3 rounded-2xl border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-left min-w-0 active:scale-[0.99] animate-fade-in-up"
+            className="group flex items-center gap-3 py-3 rounded-2xl border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-left min-w-0 active:scale-[0.99] animate-fade-in-up"
             style={{ animationDelay: `${animationDelayMs}ms` }}
             aria-label={
                 suggested
