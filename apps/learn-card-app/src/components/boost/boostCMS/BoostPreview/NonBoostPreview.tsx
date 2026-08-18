@@ -12,15 +12,19 @@ import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostMediaPreview from './BoostMediaPreview';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../../accessibility/AccessibleCredentialCard';
 import ClrTranscriptFullPage from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
 import {
     normalizeClrTranscriptDisplayModel,
     ClrTranscriptSurface,
 } from '../../../../helpers/clrRenderer.helpers';
 import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
-import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getAchievementType,
+    getCredentialName,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
@@ -35,6 +39,7 @@ import {
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import { AnalyticsEvents, useAnalytics } from '@analytics';
+import * as m from '../../../../paraglide/messages.js';
 
 type IssueHistory = {
     id?: string | number;
@@ -286,33 +291,41 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     }
 
     const credentialDisplay = (
-        <VCDisplayCardWrapper2
-            credential={credential}
-            issueeOverride={issueeOverride}
-            issuerOverride={issuerOverride}
-            issueHistory={issueHistory}
-            categoryType={categoryType}
-            verificationItems={verifications}
-            lifecycleStatus={lifecycleStatus}
-            customThumbComponent={customThumbComponent}
-            customBodyCardComponent={customBodyCardComponent}
-            customFooterComponent={
-                isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+        <AccessibleCredentialCard
+            label={
+                titleOverride ||
+                getCredentialName(credential) ||
+                m['claim.modal.credentialFallback']()
             }
-            subjectDID={subjectDID}
-            subjectImageComponent={subjectImageComponent}
-            issuerImageComponent={issuerImageComponent}
-            customDescription={customDescription}
-            customCriteria={customCriteria}
-            customIssueHistoryComponent={customIssueHistoryComponent}
-            enableLightbox
-            titleOverride={titleOverride}
-            handleClose={isCertificate ? handleCloseModal : undefined}
-            hideNavButtons
-            setIsFrontOverride={setIsFront}
-            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-            customBodyContentSlot={endorsementBadge}
-        />
+        >
+            <VCDisplayCardWrapper2
+                credential={credential}
+                issueeOverride={issueeOverride}
+                issuerOverride={issuerOverride}
+                issueHistory={issueHistory}
+                categoryType={categoryType}
+                verificationItems={verifications}
+                lifecycleStatus={lifecycleStatus}
+                customThumbComponent={customThumbComponent}
+                customBodyCardComponent={customBodyCardComponent}
+                customFooterComponent={
+                    isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+                }
+                subjectDID={subjectDID}
+                subjectImageComponent={subjectImageComponent}
+                issuerImageComponent={issuerImageComponent}
+                customDescription={customDescription}
+                customCriteria={customCriteria}
+                customIssueHistoryComponent={customIssueHistoryComponent}
+                enableLightbox
+                titleOverride={titleOverride}
+                handleClose={isCertificate ? handleCloseModal : undefined}
+                hideNavButtons
+                setIsFrontOverride={setIsFront}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                customBodyContentSlot={endorsementBadge}
+            />
+        </AccessibleCredentialCard>
     );
 
     let credentialContent: React.ReactNode;
@@ -341,6 +354,11 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     return (
         <IonPage>
+            <h1 className="sr-only">
+                {titleOverride ||
+                    getCredentialName(credential) ||
+                    m['claim.modal.credentialFallback']()}
+            </h1>
             <BoostFooterLayout
                 className={bgColor}
                 contentOwnsScroll

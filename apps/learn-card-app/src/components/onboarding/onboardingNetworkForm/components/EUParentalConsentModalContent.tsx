@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import * as m from '../../../../paraglide/messages.js';
 import { TransP } from '../../../../i18n/TransP';
-import { IonInput } from '@ionic/react';
 import { useWallet } from 'learn-card-base';
 import WarningCircle from '../../../svgs/WarningCircle';
 import { getLogger } from 'learn-card-base';
@@ -81,21 +80,37 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                             {m['onboarding.consent.eu.description']()}
                         </p>
                         <div className="mt-3">
-                            <IonInput
+                            <label htmlFor="eu-guardian-email" className="sr-only">
+                                {m['onboarding.consent.eu.placeholder']()}
+                            </label>
+                            <input
+                                id="eu-guardian-email"
                                 type="email"
                                 placeholder={m['onboarding.consent.eu.placeholder']()}
                                 value={email}
-                                onIonInput={e => {
+                                onChange={event => {
                                     setError('');
-                                    setEmail(e.detail.value ?? '');
+                                    setEmail(event.target.value);
                                 }}
-                                className={`bg-grayscale-100 text-grayscale-800 rounded-[12px] ion-padding font-medium tracking-wider text-base ${
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter' && !loading) {
+                                        event.preventDefault();
+                                        void handleSend();
+                                    }
+                                }}
+                                autoComplete="email"
+                                aria-invalid={Boolean(error)}
+                                aria-describedby={error ? 'eu-guardian-email-error' : undefined}
+                                className={`w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[12px] ion-padding font-medium tracking-wider text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
                                     error ? 'login-input-email-error' : ''
                                 }`}
-                                aria-label="Parent Email"
                             />
                             {error && (
-                                <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
+                                <p
+                                    id="eu-guardian-email-error"
+                                    role="alert"
+                                    className="p-0 m-0 w-full text-left mt-1 text-red-700 text-xs"
+                                >
                                     {error}
                                 </p>
                             )}
@@ -130,6 +145,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                             type="button"
                             onClick={handleSend}
                             disabled={loading}
+                            aria-busy={loading}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
                             {loading

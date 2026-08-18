@@ -111,7 +111,7 @@ const DashboardRoleSwitcher: React.FC = () => {
         });
     };
 
-    const pillClassName = `inline-flex items-center gap-1 pl-0.5 pr-2 py-0.5 rounded-full bg-grayscale-100 text-grayscale-700 text-xs font-medium transition-colors ${
+    const pillClassName = `inline-flex items-center gap-1 pl-0.5 pr-2 py-0.5 rounded-full bg-grayscale-100 text-grayscale-800 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
         isChildProfile ? 'cursor-default' : 'cursor-pointer hover:bg-grayscale-200'
     }`;
 
@@ -164,7 +164,7 @@ const DashboardRoleSwitcher: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => handleRoleChange(roleItem.type)}
-                                        className={`w-full flex items-center gap-2 p-[8px] rounded-[10px] font-poppins font-semibold text-[14px] text-grayscale-900 ${
+                                        className={`w-full flex items-center gap-2 p-[8px] rounded-[10px] font-poppins font-semibold text-[14px] text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                             focus ? 'bg-grayscale-100' : ''
                                         }`}
                                     >

@@ -72,11 +72,11 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
     return (
         <section className="bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up font-poppins w-full flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                <h2 className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                     {m['dashboard.learningProfile.title']()}
                 </h2>
                 {updatedAt && state !== 'empty' && (
-                    <span className="text-[11px] text-grayscale-400">
+                    <span className="text-[11px] text-grayscale-600">
                         {m['dashboard.learningProfile.updated']({
                             time: formatDistanceToNow(new Date(updatedAt), { addSuffix: true }),
                         })}
@@ -129,7 +129,12 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                                         <TransP
                                             m={m['dashboard.learningProfile.strongestIn']}
                                             values={{ title: strength.title }}
-                                            components={[<span className="text-emerald-700" />]}
+                                            components={[
+                                                <span
+                                                    key="skill-title"
+                                                    className="text-emerald-700"
+                                                />,
+                                            ]}
                                         />
                                     </p>
                                     {strength.summary && (
@@ -159,9 +164,10 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                     <div className="flex items-center gap-1.5">
                         <IonIcon
                             icon={shieldCheckmarkOutline}
+                            aria-hidden="true"
                             className="text-grayscale-400 text-sm"
                         />
-                        <span className="text-[11px] font-medium text-grayscale-500">
+                        <span className="text-[11px] font-medium text-grayscale-600">
                             {verifiedRecords === 1
                                 ? m['dashboard.learningProfile.groundedInOne']({
                                       count: verifiedRecords,
@@ -176,8 +182,9 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                 )}
 
                 <button
+                    type="button"
                     onClick={onViewInsights}
-                    className="text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ml-auto"
+                    className="text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ml-auto rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['dashboard.learningProfile.viewInsights']()}
                 </button>

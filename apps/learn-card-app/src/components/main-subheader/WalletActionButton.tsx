@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { useLocation, useHistory } from 'react-router-dom';
-import { IonContent, IonRow, IonCol, useIonModal, IonPage } from '@ionic/react';
+import React from 'react';
+import { useIonModal } from '@ionic/react';
 import SubHeaderActionMenu from './SubHeaderActionMenu';
-import Plus from 'learn-card-base/svgs/Plus';
-import modalStateStore from 'learn-card-base/stores/modalStateStore';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import { LocationState } from './MainSubHeader.types';
+
+import * as m from '../../paraglide/messages.js';
 
 interface SubheaderPlusActionButtonProps {
     iconColor?: string;
@@ -15,8 +14,6 @@ interface SubheaderPlusActionButtonProps {
 }
 
 const WalletActionButton: React.FC<SubheaderPlusActionButtonProps> = ({
-    iconColor = 'text-white',
-    location,
     handleSelfIssue,
     handleShareCreds,
 }) => {
@@ -26,9 +23,7 @@ const WalletActionButton: React.FC<SubheaderPlusActionButtonProps> = ({
         handleSelfIssue: () => handleSelfIssue(),
         handleShareCreds: () => handleShareCreds(),
         showCloseButton: true,
-        title: (
-          <></>
-        ),
+        title: <></>,
     });
 
     // Mobile Modal
@@ -47,6 +42,8 @@ const WalletActionButton: React.FC<SubheaderPlusActionButtonProps> = ({
     return (
         <>
             <button
+                type="button"
+                aria-label={m['wallet.actions']()}
                 onClick={e => {
                     e.preventDefault();
                     presentCenterModal({
@@ -55,11 +52,13 @@ const WalletActionButton: React.FC<SubheaderPlusActionButtonProps> = ({
                         showBackdrop: false,
                     });
                 }}
-                className="modal-btn-desktop round-bottom-shadow-btn flex items-center justify-center h-12 w-12 rounded-full bg-white sub-header-plus-btn-desktop"
+                className="modal-btn-desktop round-bottom-shadow-btn flex items-center justify-center h-12 w-12 rounded-full bg-white sub-header-plus-btn-desktop focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
-               <ThreeDots className="rotate-90 w-[24px] h-[24px]" />
+                <ThreeDots className="rotate-90 w-[24px] h-[24px]" />
             </button>
             <button
+                type="button"
+                aria-label={m['wallet.actions']()}
                 onClick={e => {
                     e.preventDefault();
                     presentSheetModal({
@@ -69,14 +68,9 @@ const WalletActionButton: React.FC<SubheaderPlusActionButtonProps> = ({
                         handleBehavior: 'cycle',
                     });
                 }}
-                className="modal-btn-mobile flex items-center justify-center h-12 w-12 rounded-full bg-white sub-header-plus-btn-mobile"
+                className="modal-btn-mobile round-bottom-shadow-btn flex items-center justify-center h-12 w-12 rounded-full bg-white sub-header-plus-btn-mobile p-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
-                <button
-                    type="button"
-                    className="round-bottom-shadow-btn flex items-center justify-center p-[10px]"
-                >
-                    <ThreeDots className="rotate-90 w-[24px] h-[24px]" />
-                </button>
+                <ThreeDots className="rotate-90 w-[24px] h-[24px]" />
             </button>
         </>
     );

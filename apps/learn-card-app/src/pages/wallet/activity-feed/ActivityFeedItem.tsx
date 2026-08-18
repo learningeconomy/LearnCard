@@ -77,7 +77,7 @@ export const ActivityFeedItem: React.FC<{
                         )}
                     </p>
                     {item.credentialType && (
-                        <p className="font-poppins text-[13px] text-grayscale-500 truncate">
+                        <p className="font-poppins text-[13px] text-grayscale-600 truncate">
                             {item.credentialType}
                         </p>
                     )}
@@ -94,7 +94,7 @@ export const ActivityFeedItem: React.FC<{
                     )}
                 </div>
 
-                <span className="font-poppins text-[13px] text-grayscale-500 whitespace-nowrap">
+                <span className="font-poppins text-[13px] text-grayscale-600 whitespace-nowrap">
                     {shortDate(item.timestamp)}
                 </span>
                 <CaretRight className="h-3 w-auto text-grayscale-400" />

@@ -13,7 +13,8 @@ import { getClaimInteractionDuplicateLookup } from './claimRequest.helpers';
 const log = getLogger('exchange-accept-credentials');
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../components/accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../components/accessibility/AccessibleCredentialCard';
 import BoostDetailsSideMenu from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideBar';
 
@@ -43,6 +44,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
     getAchievementType,
     getDefaultCategoryForCredential,
+    getCredentialName,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 
@@ -419,21 +421,23 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         const name = credential.name || 'Credential';
 
         return (
-            <VCDisplayCardWrapper2
-                useCurrentUserName
-                credential={credential}
-                overrideCardTitle={name}
-                customFooterComponent={<div />}
-                checkProof={false}
-                hideNavButtons
-                hideFrontFaceDetails={false}
-                // Disable the click-to-flip: the back face is superseded by the
-                // Details overlay. Passing a no-op setter (and omitting
-                // isFrontOverride) keeps the card fixed on its front face, the
-                // same way the read-only detail views (BoostPreview/ClaimBoost)
-                // suppress the flip.
-                setIsFrontOverride={() => {}}
-            />
+            <AccessibleCredentialCard label={name}>
+                <VCDisplayCardWrapper2
+                    useCurrentUserName
+                    credential={credential}
+                    overrideCardTitle={name}
+                    customFooterComponent={<div />}
+                    checkProof={false}
+                    hideNavButtons
+                    hideFrontFaceDetails={false}
+                    // Disable the click-to-flip: the back face is superseded by the
+                    // Details overlay. Passing a no-op setter (and omitting
+                    // isFrontOverride) keeps the card fixed on its front face, the
+                    // same way the read-only detail views (BoostPreview/ClaimBoost)
+                    // suppress the flip.
+                    setIsFrontOverride={() => {}}
+                />
+            </AccessibleCredentialCard>
         );
     };
 
@@ -512,7 +516,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                           })}
                                 </p>
 
-                                <p className="text-sm text-grayscale-500">
+                                <p className="text-sm text-grayscale-600">
                                     {selectedCredentials.length === 0
                                         ? m['claim.accept.selectOne']()
                                         : m['claim.accept.willAdd']()}
@@ -522,6 +526,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
                         {/* Select all / Deselect all toggle */}
                         <button
+                            type="button"
                             onClick={() => {
                                 if (selectedCredentials.length === credentials.length) {
                                     setSelectedIndices(new Set());
@@ -557,7 +562,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                     {m['claim.accept.noneTitle']()}
                                 </h1>
 
-                                <p className="text-grayscale-500 text-sm">
+                                <p className="text-grayscale-600 text-sm">
                                     {m['claim.accept.noneSub']()}
                                 </p>
                             </div>
@@ -599,6 +604,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                 {/* Action buttons */}
                                 <div className="space-y-3">
                                     <button
+                                        type="button"
                                         onClick={() => history.push('/')}
                                         className="w-full py-3 px-4 bg-grayscale-900 text-white font-medium text-sm rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                     >
@@ -607,6 +613,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                     </button>
 
                                     <button
+                                        type="button"
                                         onClick={() =>
                                             window.open('mailto:support@learncard.com', '_blank')
                                         }
@@ -656,6 +663,9 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
         return (
             <IonPage>
+                <h1 className="sr-only">
+                    {getCredentialName(credential) || m['claim.modal.credentialFallback']()}
+                </h1>
                 {claimLoadingOverlay}
                 <BoostFooterLayout
                     contentOwnsScroll

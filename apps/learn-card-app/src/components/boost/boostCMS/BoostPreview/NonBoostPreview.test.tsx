@@ -49,6 +49,7 @@ vi.mock('learn-card-base/stores/boostPreviewStore', () => ({
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     unwrapBoostCredential: (credential: VC) => credential,
     getAchievementType: () => 'Certification',
+    getCredentialName: () => 'Video of first badge',
 }));
 vi.mock('learn-card-base/helpers/lifecycleVerification.helpers', () => ({
     applyLifecycleStatusToVerifications: (verifications: unknown[]) => verifications,
@@ -58,7 +59,7 @@ vi.mock('learn-card-base/components/vcmodal/VCDisplayCardWrapper2', () => ({
         <div>{onDotsClick && <button type="button">Embedded options</button>}</div>
     ),
 }));
-vi.mock('learn-card-base/components/boost/boostFooter/BoostFooterLayout', () => ({
+vi.mock('../../../accessibility/AccessibleBoostFooterLayout', () => ({
     default: ({ children, footerProps }: FooterLayoutProps) => (
         <div>
             {children}

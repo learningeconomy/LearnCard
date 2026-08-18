@@ -11,7 +11,8 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
 
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../accessibility/AccessibleCredentialCard';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
 import {
@@ -46,6 +47,7 @@ import {
     isClrCredential,
     getClrLinkedCredentials,
     getClrLinkedCredentialCounts,
+    getCredentialName,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
@@ -486,32 +488,38 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         getVCDisplayCardVariant(displayCredential, category) !== 'ribbon';
 
     const credentialDisplay = (
-        <VCDisplayCardWrapper2
-            credential={credential}
-            hideNavButtons
-            lifecycleStatus={lifecycleStatus}
-            // isFrontOverride={isFront}
-            setIsFrontOverride={setIsFront}
-            onMediaClick={handleImageClick}
-            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-            bottomButton={
-                isID ? (
-                    <button
-                        onClick={e => {
-                            e.stopPropagation();
-                            handleBoostCredential();
-                        }}
-                        className="bg-teal-400 rounded-[30px] w-full p-[7px] font-poppins text-white text-[17px] font-[600] leading-[24px] tracking-[0.25px] mt-[10px] disabled:opacity-60"
-                        disabled={disableClaimButton}
-                    >
-                        {claimStatusText}
-                    </button>
-                ) : undefined
-            }
-            hideFrontFaceDetails={false}
-            claimStatusText={claimStatusText}
-            handleClaim={handleBoostCredential}
-        />
+        <AccessibleCredentialCard
+            label={getCredentialName(credential as VC) || m['claim.modal.credentialFallback']()}
+        >
+            <VCDisplayCardWrapper2
+                credential={credential}
+                hideNavButtons
+                lifecycleStatus={lifecycleStatus}
+                // isFrontOverride={isFront}
+                setIsFrontOverride={setIsFront}
+                onMediaClick={handleImageClick}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                bottomButton={
+                    isID ? (
+                        <button
+                            type="button"
+                            aria-busy={isClaimLoading}
+                            onClick={e => {
+                                e.stopPropagation();
+                                handleBoostCredential();
+                            }}
+                            className="bg-teal-400 rounded-[30px] w-full p-[7px] font-poppins text-white text-[17px] font-[600] leading-[24px] tracking-[0.25px] mt-[10px] disabled:opacity-60"
+                            disabled={disableClaimButton}
+                        >
+                            {claimStatusText}
+                        </button>
+                    ) : undefined
+                }
+                hideFrontFaceDetails={false}
+                claimStatusText={claimStatusText}
+                handleClaim={handleBoostCredential}
+            />
+        </AccessibleCredentialCard>
     );
 
     const openDetailsSideModal = () => {
@@ -550,6 +558,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     return (
         <IonPage className="flex items-center justify-center boost-cms-preview">
+            <h1 className="sr-only">
+                {getCredentialName(credential as VC) || m['claim.modal.credentialFallback']()}
+            </h1>
             {duplicateCredentialPrompt}
             <BoostFooterLayout
                 contentOwnsScroll
@@ -569,7 +580,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
             >
                 <div className="flex h-full w-full">
                     {(isClaimLoading || isCheckingDuplicate) && (
-                        <div className="absolute w-full h-full top-0 left-0 z-[10001] flex items-center justify-center flex-col boost-loading-wrapper">
+                        <div
+                            role="status"
+                            aria-live="polite"
+                            className="absolute w-full h-full top-0 left-0 z-[10001] flex items-center justify-center flex-col boost-loading-wrapper"
+                        >
                             <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
                                 <LoadingSpinner size="xl" label="Loading credential" />
                             </div>
@@ -612,7 +627,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                         <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
                                             <div className="w-full flex-grow h-full flex items-center justify-center bg-white">
                                                 <section className="loading-spinner-container flex flex-col items-center justify-center h-[100%] w-full opacity-50 ">
-                                                    <IonSpinner color="dark" />
+                                                    <IonSpinner
+                                                        role="status"
+                                                        aria-label={m['common.loading']()}
+                                                        color="dark"
+                                                    />
                                                 </section>
                                             </div>
                                         </section>
