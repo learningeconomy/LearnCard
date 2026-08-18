@@ -79,16 +79,21 @@ test.describe('Wallet Credentials', () => {
         // Claim the badge
         await page2.getByRole('button', { name: /claim/i }).click({ timeout: 30_000 });
 
-        // Click the badge card to open details
-        await page2
-            .getByRole('button', { name: new RegExp(TEST_CREDENTIAL_TITLE) })
-            .click({ timeout: 30_000 });
+        // Click the badge card to flip it. LC-2071 exposes the credential card as a
+        // labeled group rather than a role="button": a clickable card must not also
+        // contain focusable controls (the issuer badge), which axe reports as a
+        // serious `nested-interactive` violation. The card keeps its pointer click,
+        // and the same verification content is reachable by keyboard via the
+        // Details tab below.
+        const credentialCard = page2.getByRole('group', {
+            name: new RegExp(TEST_CREDENTIAL_TITLE),
+        });
+        await expect(credentialCard).toBeVisible({ timeout: 30_000 });
+        await credentialCard.click({ timeout: 30_000 });
 
-        // Accept the badge
-        // exact: true — avoids substring collision with sidemenu's "View version details" button
-        await page2
-            .getByRole('button', { name: 'Details', exact: true })
-            .click({ timeout: 30_000 });
+        // Accept the badge. LC-2071 wraps the boost preview tabs in a real tablist,
+        // so "Details" is now a tab rather than a plain button.
+        await page2.getByRole('tab', { name: 'Details', exact: true }).click({ timeout: 30_000 });
         await page2.getByRole('button', { name: 'Accept' }).click({ timeout: 30_000 });
 
         // Assert badge was claimed
