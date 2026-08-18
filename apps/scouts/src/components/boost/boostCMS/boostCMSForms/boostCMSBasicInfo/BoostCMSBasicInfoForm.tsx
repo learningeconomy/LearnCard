@@ -13,6 +13,7 @@ import { BoostCategoryOptionsEnum, useModal, ModalTypes } from 'learn-card-base'
 import { AddressSpec } from '../../../../locationSearch/location.helpers';
 import { SetState } from 'packages/shared-types/dist';
 import { boostCategoryOptions } from '../../../boost-options/boostOptions';
+import { commitExpirationDate } from '../boostCMSDatePicker.helpers';
 import * as m from '../../../../../paraglide/messages.js';
 import { formatLocaleDate } from '../../../../../i18n/formatters';
 
@@ -62,29 +63,25 @@ const BoostCMSBasicInfoForm: React.FC<{
         desktop: ModalTypes.Cancel,
     });
 
-    const { newModal: newLocationModal, closeModal: closeLocationModal } = useModal({
-        mobile: ModalTypes.FullScreen,
-        desktop: ModalTypes.FullScreen,
-    });
-
-    const openDatePicker = () => {
+    const openDatePicker = (): void => {
         newDatePickerModal(
             <div className="w-full h-full transparent flex items-center justify-center">
                 <IonDatetime
-                    onIonChange={e => {
-                        handleStateChange(
-                            'expirationDate',
-                            moment(e.detail.value as string).toISOString()
-                        );
-                    }}
+                    onIonChange={e =>
+                        commitExpirationDate(
+                            e.detail.value,
+                            expirationDate => handleStateChange('expirationDate', expirationDate),
+                            closeDatePickerModal
+                        )
+                    }
                     value={
-                        state?.basicInfo?.expirationDate
-                            ? moment(state?.basicInfo?.expirationDate).format('YYYY-MM-DD')
+                        basicInfo?.expirationDate
+                            ? moment(basicInfo.expirationDate).format('YYYY-MM-DD')
                             : null
                     }
                     id="datetime"
                     presentation="date"
-                    className="bg-white text-black rounded-[20px] shadow-3xl z-50 font-notoSans"
+                    className="bg-white text-black rounded-[20px] shadow-3xl z-50"
                     showDefaultButtons
                     color="indigo-500"
                     max="2050-12-31"
@@ -94,6 +91,10 @@ const BoostCMSBasicInfoForm: React.FC<{
             </div>
         );
     };
+    const { newModal: newLocationModal, closeModal: closeLocationModal } = useModal({
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
+    });
 
     const openLocationModal = () => {
         newLocationModal(
@@ -183,7 +184,6 @@ const BoostCMSBasicInfoForm: React.FC<{
                             <LocationIcon className="text-grayscale-600" />
                         </div>
                     )}
-
                     {!flags?.disableCmsCustomization && (
                         <>
                             <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
@@ -196,7 +196,6 @@ const BoostCMSBasicInfoForm: React.FC<{
                                     onIonChange={() => {
                                         const expiresValue = !basicInfo?.credentialExpires;
                                         handleStateChange('credentialExpires', expiresValue);
-                                        //if we are toggling the value to false (eg does not expire, clear expiration date if exists)
                                         if (!expiresValue) {
                                             handleStateChange('expirationDate', null);
                                         }
@@ -210,9 +209,7 @@ const BoostCMSBasicInfoForm: React.FC<{
                                     <button
                                         disabled={disabled}
                                         className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[16px] py-[12px] font-medium tracking-widest text-base font-notoSans"
-                                        onClick={() => {
-                                            openDatePicker();
-                                        }}
+                                        onClick={openDatePicker}
                                     >
                                         {basicInfo?.expirationDate
                                             ? formatLocaleDate(basicInfo?.expirationDate, {

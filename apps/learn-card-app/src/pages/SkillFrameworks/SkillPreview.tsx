@@ -146,8 +146,8 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
     const navPathTitle = navigationPath.map(n => n.targetName).join(' > ');
 
     return (
-        <div className="h-full relative bg-grayscale-50 overflow-hidden">
-            <div className="px-[15px] py-[10px] bg-white safe-area-top-margin flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid">
+        <div className="lc-content-owns-bottom h-full relative bg-grayscale-50 overflow-hidden">
+            <div className="px-[15px] py-[10px] bg-white mt-[var(--ion-safe-area-top,0px)] flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid">
                 <div className="flex items-center gap-[10px]">
                     {isTopLevel ? (
                         <FrameworkImage

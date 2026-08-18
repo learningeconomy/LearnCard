@@ -10,13 +10,10 @@ let client: PostHog | null | undefined;
  * value (including unset) is a hard no-op: captureBenchEvent returns false
  * without initializing the PostHog client.
  *
- * Mirrors the frontend LaunchDarkly flag `enableSendCredentialPosthogTelemetry`.
- * Brain-service has no LaunchDarkly client today, so we use an env var for
- * parity. Toggleable via `aws lambda update-function-configuration` without
- * a code redeploy.
+ * This backend operational switch is independent of frontend analytics configuration
+ * and can be changed without a code redeploy.
  */
-const isTelemetryEnabled = (): boolean =>
-    process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY === 'true';
+const isTelemetryEnabled = (): boolean => process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY === 'true';
 
 const getClient = (): PostHog | null => {
     if (client !== undefined) return client;
@@ -42,9 +39,7 @@ const getClient = (): PostHog | null => {
     return client;
 };
 
-export type BenchEventName =
-    | 'bench.appevent.iteration'
-    | 'bench.appevent.run';
+export type BenchEventName = 'bench.appevent.iteration' | 'bench.appevent.run';
 
 export const captureBenchEvent = async (
     event: BenchEventName,

@@ -63,7 +63,7 @@ const ClrTranscriptFullPage: React.FC<{
     };
 
     return (
-        <div className="flex flex-col w-full min-h-full">
+        <div className="flex flex-col w-full min-h-full pt-[var(--ion-safe-area-top,0px)]">
             <div className="py-0 sm:pb-10 px-0 sm:px-4 flex justify-center sm:rounded-xl">
                 <div className="max-w-[800px] w-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl sm:rounded-xl p-2 sm:p-10 space-y-4">
                     {/* Warnings — admin only */}

@@ -7,7 +7,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
-import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
+
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -158,7 +158,6 @@ const ClaimBoost: React.FC<{
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
-    const enableRenderMethod = useRenderMethodEnabled();
 
     const resolvePartnerId = (issuerId?: string) => {
         const profileId = getUserHandleFromDid(issuerId ?? '');
@@ -529,10 +528,7 @@ const ClaimBoost: React.FC<{
 
     const isFamily = category === CredentialCategoryEnum.family;
     const renderMethodSource = (_boost ?? boost ?? vc) as VC | undefined;
-    const renderMethod =
-        enableRenderMethod && renderMethodSource
-            ? getSvgMustacheRenderMethod(renderMethodSource)
-            : null;
+    const renderMethod = renderMethodSource ? getSvgMustacheRenderMethod(renderMethodSource) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(renderMethodSource as VC) as VC;
 
@@ -551,11 +547,9 @@ const ClaimBoost: React.FC<{
 
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            enableRenderMethod && renderMethod
-                ? BoostPreviewDisplayViewEnum.Issuer
-                : BoostPreviewDisplayViewEnum.Default
+            renderMethod ? BoostPreviewDisplayViewEnum.Issuer : BoostPreviewDisplayViewEnum.Default
         );
-    }, [renderMethod?.template, renderMethodSource?.id, enableRenderMethod]);
+    }, [renderMethod?.template, renderMethodSource?.id]);
 
     const appearance = boost?.display;
     const wallpaperImage = appearance?.backgroundImage;
@@ -598,9 +592,7 @@ const ClaimBoost: React.FC<{
     }
 
     const isIssuerViewSelected =
-        enableRenderMethod &&
-        Boolean(renderMethod) &&
-        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
     const shouldUseHostCardPadding =
         !renderMethodSource ||
         isIssuerViewSelected ||
@@ -674,7 +666,7 @@ const ClaimBoost: React.FC<{
                         className="flex flex-col items-center justify-center px-2 overflow-x-auto h-full pt-[30px]"
                     > */}
                         <section
-                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
+                            className={`w-full mt-[var(--ion-safe-area-top,0px)] overflow-y-auto max-h-full disable-scrollbars ${
                                 shouldUseHostCardPadding ? 'px-6' : ''
                             } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                         >

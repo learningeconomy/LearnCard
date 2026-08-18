@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import X from '../../../svgs/X';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import { IonPage } from '@ionic/react';
-import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
+
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import EndorsementThumb from 'learn-card-base/svgs/EndorsmentThumb';
@@ -62,7 +62,6 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     issuancesSummaryComponent,
     isPreview = false,
 }) => {
-    const enableRenderMethod = useRenderMethodEnabled();
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -164,11 +163,8 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                         </div>
                     )}
 
-                    {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
-                        <BoostDisplayStyleSelector
-                            credential={renderMethodCredential}
-                            enableRenderMethod={enableRenderMethod}
-                        />
+                    {!isMediaDisplay && renderMethodCredential && (
+                        <BoostDisplayStyleSelector credential={renderMethodCredential} />
                     )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
@@ -252,7 +248,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
         <IonPage className="max-w-full !bg-white/80 !backdrop-blur-sm !overflow-y-auto">
             <BoostFooterLayout
                 footerProps={isMobile ? { handleBack: handleClose } : undefined}
-                contentClassName="pt-[30px] safe-area-top-margin"
+                contentClassName="pt-[30px] mt-[var(--ion-safe-area-top,0px)]"
             >
                 <div className="min-h-full mx-auto px-[2px]">
                     {!isMobile && (

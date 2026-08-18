@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { IonLabel } from '@ionic/react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
@@ -13,11 +12,8 @@ import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './AiPathwaysWhatWould
 
 const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
     const { newModal } = useModal();
-    const flags = useFlags();
     const { getThemedCategoryIcons } = useTheme();
     const [searchQuery, setSearchQuery] = useState('');
-
-    const enableExplorePathways = flags?.enableExplorePathways ?? false;
 
     const { IconWithShape: PathwaysIcon } = getThemedCategoryIcons(
         CredentialCategoryEnum.aiPathway
@@ -42,8 +38,6 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
             }
         );
     };
-
-    if (!enableExplorePathways) return null;
 
     return (
         <div className="flex items-center justify-center w-full rounded-[15px] px-4 max-w-[600px]">

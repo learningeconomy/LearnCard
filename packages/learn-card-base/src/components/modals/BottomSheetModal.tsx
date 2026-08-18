@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import useModal from './useModal';
-import { useSafeArea } from '../../hooks/useSafeArea';
 
 import { ModalContainer } from './types/Modals';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
+import AppModal from './surfaces/AppModal';
 
 const DRAG_CLOSE_THRESHOLD = 96;
 
@@ -14,7 +14,6 @@ const BottomSheetModal: ModalContainer = ({ component, options, open }) => {
     const [isDragging, setIsDragging] = useState(false);
     const startYRef = useRef<number | null>(null);
     const dragOffsetRef = useRef(0);
-    const { bottom: safeAreaBottom } = useSafeArea();
 
     const optionalClass = options?.className || '';
     const sectionClass = options?.sectionClassName || '';
@@ -85,61 +84,56 @@ const BottomSheetModal: ModalContainer = ({ component, options, open }) => {
         event.currentTarget.setPointerCapture(event.pointerId);
     };
 
-    // Push the safe-area inset onto the <section> rather than the outer <aside>.
-    // The aside is `justify-content: flex-end`, so padding-bottom there would push
-    // the white sheet UP by the inset (~34px on iPhones with a home indicator),
-    // leaving the dimmer visible underneath. Putting the padding on the section
-    // lets its white background extend all the way to the device bottom while
-    // still keeping interactive content above the home indicator.
-    const sectionStyle: React.CSSProperties = {
-        paddingBottom: `${safeAreaBottom}px`,
-        ...(isDragging
-            ? {
-                  transform: `translateY(${dragOffset}px)`,
-                  transition: 'none',
-              }
-            : null),
-    };
+    // The bottom inset is owned by `.lc-surface--bottom-sheet` (padding on the
+    // white sheet), so only the drag transform remains inline.
+    const sectionStyle: React.CSSProperties | undefined = isDragging
+        ? {
+              transform: `translateY(${dragOffset}px)`,
+              transition: 'none',
+          }
+        : undefined;
 
     return (
-        <aside
-            id="cancel-modal"
-            className={`bottom-sheet-modal ${optionalClass} ${open ? 'open' : 'closed'} ${
+        <AppModal
+            rootId="cancel-modal"
+            variant="bottom-sheet"
+            open={open}
+            onDimmerClick={handleCloseModal}
+            hideDimmer
+            rootClassName={`bottom-sheet-modal ${optionalClass} ${
                 options?.hideDimmer ? 'hide-dimmer' : ''
             }`}
+            sectionClassName={`bottom-sheet-modal-section ${optionalClass} ${
+                options?.widen ? 'widen' : ''
+            } ${options?.addShadow ? 'add-shadow' : ''} ${sectionClass}`}
+            sectionStyle={sectionStyle}
+            beforeSection={
+                !options?.hideDimmer && (
+                    <button
+                        className="center-modal-dimmer"
+                        type="button"
+                        onClick={handleCloseModal}
+                        aria-label="modal-dimmer"
+                        aria-hidden
+                    />
+                )
+            }
         >
-            {!options?.hideDimmer && (
-                <button
-                    className="center-modal-dimmer"
-                    type="button"
-                    onClick={handleCloseModal}
-                    aria-label="modal-dimmer"
-                    aria-hidden
-                />
-            )}
-
-            <section
-                className={`bottom-sheet-modal-section ${optionalClass} ${
-                    options?.widen ? 'widen' : ''
-                } ${options?.addShadow ? 'add-shadow' : ''} ${sectionClass}`}
-                style={sectionStyle}
-            >
-                <div className="bottom-sheet-modal-handle-wrap">
-                    <div
-                        className="bottom-sheet-modal-handle"
-                        onPointerDown={handleDragStart}
-                        aria-label="Drag to close"
-                        role="presentation"
-                    >
-                        <span className="bottom-sheet-modal-handle-bar" />
-                    </div>
+            <div className="bottom-sheet-modal-handle-wrap">
+                <div
+                    className="bottom-sheet-modal-handle"
+                    onPointerDown={handleDragStart}
+                    aria-label="Drag to close"
+                    role="presentation"
+                >
+                    <span className="bottom-sheet-modal-handle-bar" />
                 </div>
+            </div>
 
-                <div className="bottom-sheet-modal-content">
-                    <GenericErrorBoundary>{component}</GenericErrorBoundary>
-                </div>
-            </section>
-        </aside>
+            <div className="bottom-sheet-modal-content">
+                <GenericErrorBoundary>{component}</GenericErrorBoundary>
+            </div>
+        </AppModal>
     );
 };
 

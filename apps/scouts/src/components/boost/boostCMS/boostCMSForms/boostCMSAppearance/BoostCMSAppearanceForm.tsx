@@ -57,8 +57,6 @@ const BoostCMSAppearanceForm: React.FC<{
 }) => {
     const flags = useFlags();
     const { credentials } = useHighlightedCredentials();
-
-    // Check if user is Global Admin or National Admin
     const isAdmin = credentials.some(cred => {
         const subject = cred?.credentialSubject;
         if (!subject || Array.isArray(subject)) return false;
@@ -226,7 +224,6 @@ const BoostCMSAppearanceForm: React.FC<{
                     </div>
                 )}
 
-                {/* Allow admins to upload background images even when CMS customization is disabled */}
                 {(!flags?.disableCmsCustomization || isAdmin) && (
                     <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
                         <h3 className="text-grayscale-700 text-left w-full">

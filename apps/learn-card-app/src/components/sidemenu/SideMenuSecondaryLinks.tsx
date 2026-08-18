@@ -45,8 +45,6 @@ const SideMenuSecondaryLinks: React.FC<{
     const hasFamilyID = records?.pages?.[0]?.records?.length > 0 ?? false;
 
     const canCreateFamilies = hasFamilyID || flags?.canCreateFamilies;
-    const showAiInsights = flags?.showAiInsights;
-    const hideAiPathways = flags?.hideAiPathways;
     // Pathways v2 ("Journey") visibility \u2014 see `usePathwaysEnabled`
     // for the tenant + LaunchDarkly layering. Identical gate to the
     // route mount in `Routes.tsx`, so we can never ship a nav entry
@@ -115,16 +113,6 @@ const SideMenuSecondaryLinks: React.FC<{
     const secondaryLinks = sideMenuLinks?.map(link => {
         if (link?.path === '/families' && !canCreateFamilies)
             return <React.Fragment key={link.path}></React.Fragment>;
-
-        if (link?.path === '/ai/topics' && !flags?.enableLaunchPadUpdates)
-            return <React.Fragment key={link.path}></React.Fragment>;
-
-        if (link?.path === '/ai/insights' && !showAiInsights)
-            return <React.Fragment key={link.path}></React.Fragment>;
-
-        if (link?.path === '/ai/pathways' && hideAiPathways) {
-            return <React.Fragment key={link.path}></React.Fragment>;
-        }
 
         if (link?.path === '/pathways' && !pathwaysEnabled) {
             return <React.Fragment key={link.path}></React.Fragment>;
