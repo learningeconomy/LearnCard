@@ -1,4 +1,5 @@
 @import './fonts';
+@import '../../components/modals/surfaces/surfaces.scss';
 
 #center-modal.new-post-overlay {
     overflow: hidden;
@@ -221,7 +222,7 @@
     bottom: 0;
     transition: all 300ms ease;
     animation: center-modal-background-intro 300ms normal none ease-out;
-    padding-top: calc(env(safe-area-inset-top) + 0px);
+    // padding-top removed [LC-1962]: the .lc-surface section owns the top inset now
 
     &.closed {
         background-color: transparent;
@@ -599,7 +600,7 @@
     position: fixed;
     height: 100%;
     width: 100vw;
-    top: env(safe-area-inset-top);
+    top: 0; // was env(safe-area-inset-top) [LC-1962]: .lc-overlay--inset-container padding owns it
     left: 0;
     right: 0;
     bottom: 0;
@@ -1338,7 +1339,7 @@
 }
 
 #full-screen-modal.modal-full-bg {
-    margin-top: calc(0px + env(safe-area-inset-top));
+    // margin-top removed [LC-1962]: surface owns the top inset
 
     .full-screen-modal-dimmer {
         background-color: #efefef;

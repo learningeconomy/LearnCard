@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
 import { useHistory, useLocation, Link } from 'react-router-dom';
@@ -26,7 +26,7 @@ import {
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import WalletActionButton from '../../components/main-subheader/WalletActionButton';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
-import { IonPage, IonContent, IonRow, IonCol, IonModal } from '@ionic/react';
+import { IonPage, IonContent, IonRow, IonCol, IonSpinner } from '@ionic/react';
 import WalletPageViewModeSelector from './WalletPageViewModeSelector';
 import MainHeader from '../../components/main-header/MainHeader';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
@@ -50,6 +50,16 @@ const ShareBoostsBundleModal = lazyWithRetry(
     () => import('../../components/creds-bundle/ShareBoostsBundleModal')
 );
 
+const SharedBundleModalFallback: React.FC = () => (
+    <IonPage>
+        <IonContent>
+            <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
+                <IonSpinner name="crescent" className="text-grayscale-700" />
+            </div>
+        </IonContent>
+    </IonPage>
+);
+
 const WalletPage: React.FC = () => {
     const flags = useFlags();
     const { newModal, closeModal } = useModal({
@@ -65,9 +75,6 @@ const WalletPage: React.FC = () => {
 
     const passportBgColor = colors?.defaults?.passportBgColor;
     const passportTextColor = colors?.defaults?.passportTextColor ?? 'text-grayscale-900';
-
-    const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
-    const [viewCredsIsOpen, setViewCredsIsOpen] = useState(false);
 
     const viewMode = passportPageStore.use.viewMode();
     const totalNewCredentialsCount = newCredsStore.use.totalNewCredentialsCount();
@@ -107,10 +114,24 @@ const WalletPage: React.FC = () => {
         };
     }, []);
 
-    const handleShareModal = () => setShareCredsIsOpen(true);
-    const handleCloseShareModal = () => setShareCredsIsOpen(false);
-    const handleViewModal = () => setViewCredsIsOpen(true);
-    const handleCloseViewModal = () => setViewCredsIsOpen(false);
+    const handleShareModal = () => {
+        newModal(
+            <Suspense fallback={<SharedBundleModalFallback />}>
+                <ShareBoostsBundleModal onDismiss={() => closeModal()} />
+            </Suspense>,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
+    const handleViewModal = () => {
+        newModal(
+            <Suspense fallback={<SharedBundleModalFallback />}>
+                <ViewSharedCredentials onDismiss={() => closeModal()} />
+            </Suspense>,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    };
 
     const categoryToPath = CATEGORY_TO_ROUTE;
 
@@ -278,14 +299,6 @@ const WalletPage: React.FC = () => {
                     </div>
                 </IonContent>
             </GenericErrorBoundary>
-
-            <IonModal className="main-header-modal" isOpen={shareCredsIsOpen}>
-                <ShareBoostsBundleModal onDismiss={handleCloseShareModal} />
-            </IonModal>
-
-            <IonModal className="main-header-modal" isOpen={viewCredsIsOpen}>
-                <ViewSharedCredentials onDismiss={handleCloseViewModal} />
-            </IonModal>
         </IonPage>
     );
 };

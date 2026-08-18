@@ -19,10 +19,10 @@ export const LoginConsentModal: React.FC<LoginConsentModalProps> = ({
     return (
         <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
             {/* Header */}
-            <div 
+            <div
                 className="border-b border-grayscale-200 p-6"
                 style={{
-                    paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+                    paddingTop: '1.5rem',
                 }}
             >
                 <h2 className="text-2xl font-bold text-grayscale-900 text-center">
@@ -57,9 +57,7 @@ export const LoginConsentModal: React.FC<LoginConsentModalProps> = ({
                             <span className="font-bold">{appName}</span> wants to connect to your{' '}
                             {brandingConfig?.name}
                         </p>
-                        <p className="text-sm text-grayscale-600">
-                            {appOrigin}
-                        </p>
+                        <p className="text-sm text-grayscale-600">{appOrigin}</p>
                     </div>
 
                     {/* Permissions Info */}
@@ -121,18 +119,19 @@ export const LoginConsentModal: React.FC<LoginConsentModalProps> = ({
 
                     {/* Privacy Note */}
                     <p className="text-xs text-grayscale-500 italic">
-                        Your credentials and private data remain secure. You can revoke access at any time.
+                        Your credentials and private data remain secure. You can revoke access at
+                        any time.
                     </p>
                 </div>
             </div>
 
             {/* Action Buttons */}
-            <div 
+            <div
                 className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                 style={{
-                    paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
-                    paddingLeft: 'max(1.5rem, env(safe-area-inset-left))',
-                    paddingRight: 'max(1.5rem, env(safe-area-inset-right))',
+                    paddingBottom: '1.5rem',
+                    paddingLeft: '1.5rem',
+                    paddingRight: '1.5rem',
                 }}
             >
                 <button

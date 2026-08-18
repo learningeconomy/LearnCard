@@ -358,12 +358,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         <div
                             className={`w-full ${previewWrapperPaddingClass} flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                                 isCertificate ? 'certificate-display-zoom' : ''
-                            } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
+                            } ${isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
                         >
                             <section
                                 className={`w-full overflow-y-auto max-h-full disable-scrollbars ${
                                     Capacitor.isNativePlatform() && !isClrCredential
-                                        ? 'pt-0 safe-area-top-margin'
+                                        ? 'pt-0 mt-[var(--ion-safe-area-top,0px)]'
                                         : 'pt-[30px]'
                                 } ${previewContentPaddingClass}`}
                             >
