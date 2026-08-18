@@ -171,6 +171,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
 
                 <button
                     onClick={onViewInsights}
+                    type="button"
                     className="flex items-center justify-center text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ml-auto"
                 >
                     {m['dashboard.learningProfile.viewInsights']()}
