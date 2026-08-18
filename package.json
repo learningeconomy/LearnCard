@@ -31,6 +31,7 @@
         "test:lc-2079": "bun run --cwd packages/learn-card-base test -- src/helpers/aiErrors.test.ts src/stores/nanoStores/chatStore.test.ts && bun run --cwd apps/learn-card-app test:unit -- src/helpers/aiError.helpers.test.ts src/components/new-ai-session/AiSessionErrorHandler.test.tsx",
         "verify:lc-2079": "bun run test:lc-2079 && bunx nx build learn-card-app",
         "validate-packages": "node scripts/validate-packages.mjs",
+        "check:safe-area": "node scripts/check-safe-area.mjs",
         "env:pull": "bash scripts/pull-env.sh",
         "env:backup": "bash scripts/backup-env.sh",
         "env:compare-backup": "bash scripts/compare-env-backup.sh",

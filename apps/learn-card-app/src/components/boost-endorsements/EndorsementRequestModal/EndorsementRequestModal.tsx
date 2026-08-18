@@ -179,7 +179,7 @@ export const EndorsementRequestModal: React.FC<{
 
     return (
         <div
-            className="flex h-full w-full flex-col items-center justify-center px-4"
+            className="relative flex h-full w-full flex-col items-center justify-center px-4"
             style={loggedOutBGStyles}
         >
             {credential ? (

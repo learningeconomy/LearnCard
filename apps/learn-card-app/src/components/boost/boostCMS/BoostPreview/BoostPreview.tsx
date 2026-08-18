@@ -385,10 +385,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         <div
                             className={`w-full flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                                 isCertificate ? 'certificate-display-zoom' : ''
-                            } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
+                            } ${isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
                         >
                             <section
-                                className={`w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
+                                className={`w-full mt-[var(--ion-safe-area-top,0px)] overflow-y-auto max-h-full disable-scrollbars ${
                                     shouldUseHostCardPadding ? 'px-6' : ''
                                 } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                             >
