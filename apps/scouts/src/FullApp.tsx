@@ -27,6 +27,7 @@ import {
     InAppMessageHost,
 } from 'learn-card-base';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
+import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
@@ -112,22 +113,24 @@ const FullApp: React.FC = () => {
             <IonReactRouter>
                 <Suspense fallback={<LoadingPageDumb />}>
                     <IonApp>
-                        <AuthCoordinatorProvider>
-                            <ModalsProvider>
-                                <div id="modal-mid-root"></div>
-                                <Toast />
-                                <NetworkListener />
-                                <AppUrlListener />
-                                <PushNotificationListener />
-                                <PresentVcModalListener />
-                                <UserProfileSetupListener />
-                                <AppRouter />
-                                <InAppMessageHost />
-                                <QRCodeScannerListener />
-                                {showScannerOverlay && <QRCodeScannerOverlay />}
-                                <AuthKeyDebugWidget />
-                            </ModalsProvider>
-                        </AuthCoordinatorProvider>
+                        <SharedI18nProvider>
+                            <AuthCoordinatorProvider>
+                                <ModalsProvider>
+                                    <div id="modal-mid-root"></div>
+                                    <Toast />
+                                    <NetworkListener />
+                                    <AppUrlListener />
+                                    <PushNotificationListener />
+                                    <PresentVcModalListener />
+                                    <UserProfileSetupListener />
+                                    <AppRouter />
+                                    <InAppMessageHost />
+                                    <QRCodeScannerListener />
+                                    {showScannerOverlay && <QRCodeScannerOverlay />}
+                                    <AuthKeyDebugWidget />
+                                </ModalsProvider>
+                            </AuthCoordinatorProvider>
+                        </SharedI18nProvider>
                     </IonApp>
                 </Suspense>
             </IonReactRouter>

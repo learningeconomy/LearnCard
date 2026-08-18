@@ -16,7 +16,6 @@ import { useJoinLCNetworkModal } from '../../components/network-prompts/hooks/us
 
 import {
     usePathQuery,
-    EarnedAndManagedTabs,
     CredentialListTabEnum,
     CredentialCategoryEnum,
     useIsCurrentUserLCNUser,
@@ -32,6 +31,9 @@ import {
     useModal,
     ModalTypes,
 } from 'learn-card-base';
+import EarnedAndManagedTabs from '../../components/earned-and-managed-tabs/ScoutPassEarnedAndManagedTabs';
+
+import * as m from '../../paraglide/messages.js';
 
 import { useLoadingLine } from '../../stores/loadingStore';
 import {
@@ -95,7 +97,7 @@ const BoostsPage: React.FC = () => {
     const plusButtonOverride = (
         <button
             type="button"
-            aria-label="plus-button"
+            aria-label={m['boost.newBoost']()}
             onClick={async () => {
                 const isCurrentLCNUser =
                     currentLCNUserLoading || typeof currentLCNUser === 'undefined'
@@ -129,10 +131,10 @@ const BoostsPage: React.FC = () => {
         viewMode: viewMode,
         defaultImg: imgSrc,
         category: BoostCategoryOptionsEnum.socialBadge as unknown as CredentialCategoryEnum,
-        title: 'Boosts',
+        title: m['skills.listTitle'](),
         bgFillerColor: '!bg-sp-blue-light-ocean',
         emptyImg: EmptySocialBoostIcon as any,
-        emptyMessage: "You don't have any Boosts yet.",
+        emptyMessage: m['skills.emptyBoosts'](),
         emptyMessageStyle: 'text-[#03748D] -mt-4',
     };
 

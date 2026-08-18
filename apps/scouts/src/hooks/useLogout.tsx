@@ -8,6 +8,7 @@ import { BrandingEnum, useToast, ToastTypeEnum, useModal, ModalTypes } from 'lea
 import { pushUtilities } from 'learn-card-base';
 import { useWallet } from 'learn-card-base';
 import LoggingOutModal from '../components/auth/LoggingOutModal';
+import * as m from '../paraglide/messages.js';
 
 import { useAuthCoordinator } from '../providers/AuthCoordinatorProvider';
 import { getLogger } from 'learn-card-base';
@@ -86,7 +87,7 @@ const useLogout = () => {
                 log.error('There was an issue logging out', e);
                 setIsLoggingOut(false);
                 closeModal();
-                presentToast('Oops, there was an issue logging out', {
+                presentToast(m['login.logoutError'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });

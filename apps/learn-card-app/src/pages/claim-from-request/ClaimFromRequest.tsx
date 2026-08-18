@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -32,6 +32,7 @@ import {
     type FlowLifecycle,
 } from '@analytics';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
+import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 
 import {
     getAchievementType,
@@ -57,6 +58,10 @@ import { AlertCircle, RefreshCw, Home, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import * as m from '../../paraglide/messages.js';
+import {
+    getClaimInteractionBoostUri,
+    getClaimInteractionDuplicateLookup,
+} from './claimRequest.helpers';
 
 export type RequestMetadata = {
     credentialName: string;
@@ -550,6 +555,10 @@ const ClaimFromRequest: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
     const { vc_request_url } = queryString.parse(search);
+    const claimInteractionBoostUri = useMemo(
+        () => getClaimInteractionBoostUri(vc_request_url),
+        [vc_request_url]
+    );
 
     const isLoggedIn = useIsLoggedIn();
 
@@ -557,6 +566,8 @@ const ClaimFromRequest: React.FC = () => {
 
     const { presentToast } = useToast();
     const presentClaimSuccessToast = useClaimSuccessToast();
+    const { isCheckingDuplicate, requestDuplicateResolution, duplicateCredentialPrompt } =
+        useDuplicateCredentialGuard();
 
     // Resolve the wallet category route for a just-claimed credential (e.g.
     // "/achievements", "/socialBadges"). Falls back to the passport ("/home")
@@ -717,12 +728,26 @@ const ClaimFromRequest: React.FC = () => {
             ]).catch(() => undefined);
         }
 
-        history?.push(route);
+        history.replace(route);
     };
 
     const handleClaimCredential = async () => {
         try {
             if (!credential) return;
+            const duplicateResolution = await requestDuplicateResolution(
+                credential,
+                getClaimInteractionDuplicateLookup(claimInteractionBoostUri)
+            );
+            if (duplicateResolution.action === 'cancel') return;
+            if (duplicateResolution.action === 'skip') {
+                void handleAfterCredentialClaim(credential);
+                presentToast(m['claim.duplicate.skippedToast'](), {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
             beginClaimAttempt(credential);
             setClaimingCredential(true);
 
@@ -735,7 +760,12 @@ const ClaimFromRequest: React.FC = () => {
             // in `components/boost/mutations.ts`. Without this publish
             // the reactor silently ignores the claim and no pathway
             // nodes flip.
-            const storeResult = await storeAndAddVCToWallet(credential, { title: name });
+            const storeResult = await storeAndAddVCToWallet(credential, {
+                title: name,
+                allowDuplicate: duplicateResolution.isDuplicate,
+                boostUri: claimInteractionBoostUri,
+            });
+            if (!storeResult.result) throw new Error('Credential was not added to LearnCard');
 
             const category = getDefaultCategoryForCredential(credential);
             const achievementType = getAchievementType(credential);
@@ -773,6 +803,18 @@ const ClaimFromRequest: React.FC = () => {
 
             presentClaimSuccessToast();
         } catch (e) {
+            if (e instanceof Error && e.message.includes('exists')) {
+                completeClaimAttempt(credential, AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                setClaimingCredential(false);
+                log.warn('Credential already exists in wallet index', e);
+                void handleAfterCredentialClaim(credential);
+                presentToast(m['toasts.alreadyClaimed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
             completeClaimAttempt(
                 credential,
                 AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
@@ -781,23 +823,18 @@ const ClaimFromRequest: React.FC = () => {
             setClaimingCredential(false);
             log.error('Error claiming credential', e);
 
-            if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast(m['toasts.alreadyClaimed'](), {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
-
-                void handleAfterCredentialClaim(credential);
-            } else {
-                presentToast(m['toasts.claimOops'](), {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
-            }
+            presentToast(m['toasts.claimOops'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
     const renderExchangeStep = () => {
+        if (isCheckingDuplicate && exchangeState.state !== ExchangeState.AcceptCredentials) {
+            return <ExchangeLoading />;
+        }
+
         switch (exchangeState.state) {
             case ExchangeState.PresentationRequest:
                 return (
@@ -814,6 +851,9 @@ const ClaimFromRequest: React.FC = () => {
                         verifiablePresentation={exchangeState.data}
                         onAccept={handleRequest}
                         strategy={exchangeState.strategy}
+                        requestDuplicateResolution={requestDuplicateResolution}
+                        isCheckingDuplicate={isCheckingDuplicate}
+                        sourceBoostUri={claimInteractionBoostUri}
                     />
                 );
             case ExchangeState.Redirect:
@@ -854,6 +894,7 @@ const ClaimFromRequest: React.FC = () => {
     }
     return (
         <IonPage>
+            {duplicateCredentialPrompt}
             <IonContent>{renderExchangeStep()}</IonContent>
         </IonPage>
     );

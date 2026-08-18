@@ -415,6 +415,7 @@ export const sendBoost = async ({
         async () => {
             const decryptedCredential = await decryptCredential(credential);
             let boostUri: string | undefined;
+            const sourceBoostUri = getBoostUri(boost.dataValues.id, domain);
             const fromProfile = getIssuerOwnerProfile(from);
 
             // Skip certification if requested or if credential can't be decrypted or if it's not a boost credential
@@ -562,6 +563,10 @@ export const sendBoost = async ({
                             ),
                             data: {
                                 vcUris: [boostUri!],
+                                metadata: {
+                                    ...(metadata ?? {}),
+                                    boostUri: sourceBoostUri,
+                                },
                             },
                         })
                     ).catch((err: unknown) => {

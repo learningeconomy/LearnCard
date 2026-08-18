@@ -7,7 +7,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
-import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
+
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooterLayout from '../../components/accessibility/AccessibleBoostFooterLayout';
 import AccessibleCredentialCard from '../../components/accessibility/AccessibleCredentialCard';
@@ -53,6 +53,7 @@ import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
+import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 
 import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { VC, VerificationItem } from '@learncard/types';
@@ -163,7 +164,6 @@ const ClaimBoost: React.FC<{
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
-    const enableRenderMethod = useRenderMethodEnabled();
 
     const resolvePartnerId = (issuerId?: string) => {
         const profileId = getUserHandleFromDid(issuerId ?? '');
@@ -192,6 +192,8 @@ const ClaimBoost: React.FC<{
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const { presentToast } = useToast();
     const presentClaimSuccessToast = useClaimSuccessToast();
+    const { isCheckingDuplicate, requestDuplicateResolution, duplicateCredentialPrompt } =
+        useDuplicateCredentialGuard();
 
     const { credentialWithEdits } = useGetCredentialWithEdits(boost);
 
@@ -359,11 +361,24 @@ const ClaimBoost: React.FC<{
     }, [boost, vc, isClaimed, boostUri, track]);
 
     const handleClaimBoost = async () => {
-        if (isClaimed) return;
-        const wallet = await initWallet();
+        if (isClaimed || isCheckingDuplicate) return;
+        if (!boost) return;
+        const duplicateResolution = await requestDuplicateResolution(boost, { boostUri });
+        if (duplicateResolution.action === 'cancel') return;
+        if (duplicateResolution.action === 'skip') {
+            setIsClaimed(true);
+            dismissClaimModal?.();
+            history.replace('/');
+            presentToast(m['claim.duplicate.skippedToast'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+            return;
+        }
 
         const { prompted } = await gate();
         if (prompted) return;
+        const wallet = await initWallet();
 
         try {
             beginClaimAttempt(boost);
@@ -371,8 +386,12 @@ const ClaimBoost: React.FC<{
             // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
             capture();
 
-            const claimedBoostUri = await wallet?.invoke?.claimBoostWithLink(boostUri, challenge);
-            await addVCtoWallet({ uri: claimedBoostUri });
+            const claimedBoostUri = await wallet.invoke.claimBoostWithLink(boostUri, challenge);
+            const addedToWallet = await addVCtoWallet({
+                uri: claimedBoostUri,
+                boostUri,
+            });
+            if (!addedToWallet) throw new Error('Credential was not added to LearnCard');
 
             const category = getDefaultCategoryForCredential(boost);
             const achievementType = getAchievementType(boost);
@@ -408,7 +427,7 @@ const ClaimBoost: React.FC<{
             if (category === CredentialCategoryEnum.family) {
                 history.replace(`/families?boostUri=${claimedBoostUri}&showPreview=true`);
             } else {
-                history?.push('/');
+                history.replace('/');
             }
 
             presentClaimSuccessToast();
@@ -446,7 +465,20 @@ const ClaimBoost: React.FC<{
     };
 
     const handleClaimRawCredential = async () => {
-        if (isClaimed || !vc) return;
+        if (isClaimed || isCheckingDuplicate || !vc) return;
+
+        const duplicateResolution = await requestDuplicateResolution(vc);
+        if (duplicateResolution.action === 'cancel') return;
+        if (duplicateResolution.action === 'skip') {
+            setIsClaimed(true);
+            dismissClaimModal?.();
+            history.replace('/');
+            presentToast(m['claim.duplicate.skippedToast'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+            return;
+        }
 
         const { prompted } = await gate();
         if (prompted) return;
@@ -454,14 +486,15 @@ const ClaimBoost: React.FC<{
         try {
             beginClaimAttempt(vc);
             setIsClaimLoading(true);
-            await uploadVcFromTextAndAddToWallet(vc);
+            const result = await uploadVcFromTextAndAddToWallet(vc);
+            if (!result?.success) throw new Error('Credential was not added to LearnCard');
             completeClaimAttempt(vc, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
 
             setIsClaimed(true);
             setIsClaimLoading(false);
             dismissClaimModal?.();
 
-            history?.push('/');
+            history.replace('/');
 
             presentClaimSuccessToast();
         } catch (e) {
@@ -501,19 +534,16 @@ const ClaimBoost: React.FC<{
 
     const isFamily = category === CredentialCategoryEnum.family;
     const renderMethodSource = (_boost ?? boost ?? vc) as VC | undefined;
-    const renderMethod =
-        enableRenderMethod && renderMethodSource
-            ? getSvgMustacheRenderMethod(renderMethodSource)
-            : null;
+    const renderMethod = renderMethodSource ? getSvgMustacheRenderMethod(renderMethodSource) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(renderMethodSource as VC) as VC;
 
     let actionButtonText = m['common.accept']();
 
-    if (isClaimLoading) {
+    if (isCheckingDuplicate || isClaimLoading) {
         actionButtonText = m['common.loading']();
         if (isFamily) actionButtonText = m['contacts.joining']();
-    } else if (!isClaimLoading && isClaimed) {
+    } else if (isClaimed) {
         actionButtonText = m['claim.boost.accepted']();
         if (isFamily) actionButtonText = m['contacts.joined']();
     } else {
@@ -523,11 +553,9 @@ const ClaimBoost: React.FC<{
 
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            enableRenderMethod && renderMethod
-                ? BoostPreviewDisplayViewEnum.Issuer
-                : BoostPreviewDisplayViewEnum.Default
+            renderMethod ? BoostPreviewDisplayViewEnum.Issuer : BoostPreviewDisplayViewEnum.Default
         );
-    }, [renderMethod?.template, renderMethodSource?.id, enableRenderMethod]);
+    }, [renderMethod?.template, renderMethodSource?.id]);
 
     const appearance = boost?.display;
     const wallpaperImage = appearance?.backgroundImage;
@@ -570,9 +598,7 @@ const ClaimBoost: React.FC<{
     }
 
     const isIssuerViewSelected =
-        enableRenderMethod &&
-        Boolean(renderMethod) &&
-        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
     const shouldUseHostCardPadding =
         !renderMethodSource ||
         isIssuerViewSelected ||
@@ -623,6 +649,7 @@ const ClaimBoost: React.FC<{
                 {getCredentialName((renderMethodSource ?? {}) as VC) ||
                     m['claim.modal.credentialFallback']()}
             </h1>
+            {duplicateCredentialPrompt}
             {/* <MainHeader
                 showBackButton={false}
                 customClassName="bg-white"
@@ -635,7 +662,8 @@ const ClaimBoost: React.FC<{
                     handleDetails: isMobile ? () => openDetailsSideModal() : undefined,
                     handleClaim: vc ? handleClaimRawCredential : handleClaimBoostAction,
                     claimBtnText: actionButtonText,
-                    disableClaimButton: loading || isClaimLoading || isClaimed,
+                    disableClaimButton:
+                        loading || isClaimLoading || isCheckingDuplicate || isClaimed,
                     useFullCloseButton: !isMobile,
                 }}
             >

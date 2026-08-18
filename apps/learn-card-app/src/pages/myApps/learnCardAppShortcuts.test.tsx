@@ -16,8 +16,7 @@ describe('LEARNCARD_APP_SHORTCUTS', () => {
 
     it('routes the 7 navigation shortcuts to the expected paths', () => {
         const push = vi.fn();
-        const openBoostAFriend = vi.fn();
-        const helpers = { push, openBoostAFriend };
+        const helpers = { push };
         const byTitle = Object.fromEntries(LEARNCARD_APP_SHORTCUTS.map(s => [s.title, s]));
 
         byTitle['Skill Insights'].getAction(helpers)();
@@ -28,8 +27,6 @@ describe('LEARNCARD_APP_SHORTCUTS', () => {
         byTitle['Data Sharing'].getAction(helpers)();
         byTitle.Families.getAction(helpers)();
 
-        // Pathways points at the AI-namespaced route; the standalone
-        // /pathways journeys entry is a separate shortcut (JOURNEYS_SHORTCUT).
         expect(push.mock.calls.map(c => c[0])).toEqual([
             '/ai/insights',
             '/ai/pathways',
@@ -39,16 +36,15 @@ describe('LEARNCARD_APP_SHORTCUTS', () => {
             '/privacy-and-data',
             '/families',
         ]);
-        expect(openBoostAFriend).not.toHaveBeenCalled();
     });
 
-    it('wires Boost a Friend to the boost-template opener, not a route', () => {
+    it('routes Boost a Friend to the permanent route', () => {
         const push = vi.fn();
-        const openBoostAFriend = vi.fn();
         const boost = LEARNCARD_APP_SHORTCUTS.find(s => s.title === 'Boost a Friend')!;
-        boost.getAction({ push, openBoostAFriend })();
-        expect(openBoostAFriend).toHaveBeenCalledTimes(1);
-        expect(push).not.toHaveBeenCalled();
+
+        boost.getAction({ push })();
+
+        expect(push).toHaveBeenCalledWith('/boost-a-friend');
     });
 
     it('gives every shortcut an icon and gradient stops', () => {

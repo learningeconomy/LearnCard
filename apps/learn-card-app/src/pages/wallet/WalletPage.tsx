@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import * as m from '../../paraglide/messages.js';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as m from '../../paraglide/messages.js';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
@@ -72,7 +72,6 @@ const WalletPage: React.FC = () => {
     const viewMode = passportPageStore.use.viewMode();
     const totalNewCredentialsCount = newCredsStore.use.totalNewCredentialsCount();
 
-    const showActivityFeed = Boolean(flags?.enablePassportActivityFeed);
     const { isAiEnabled, reason } = useAiFeatureGate();
     const { presentToast } = useToast();
 
@@ -276,7 +275,7 @@ const WalletPage: React.FC = () => {
                                     {renderWalletList}
                                 </IonCol>
                             </IonRow>
-                            {showActivityFeed && <PassportActivityFeed />}
+                            <PassportActivityFeed />
                         </div>
                     </div>
                 </IonContent>
