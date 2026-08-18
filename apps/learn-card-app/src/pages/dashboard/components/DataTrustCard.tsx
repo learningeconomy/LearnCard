@@ -61,7 +61,7 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
             type="button"
             onClick={onManage}
             aria-label={m['dashboard.dataTrust.manage']()}
-            className="group w-full text-left bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 hover:border-grayscale-300 transition-colors animate-fade-in-up"
+            className="group w-full text-start bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 hover:border-grayscale-300 transition-colors animate-fade-in-up"
         >
             <div className="flex items-start gap-4">
                 <span
@@ -83,7 +83,7 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
                         {m['dashboard.dataTrust.title']()}
                     </h2>
                 </div>
-                <ChevronRight className="hidden desktop:block shrink-0 w-5 h-5 mt-1 text-grayscale-400 group-hover:text-grayscale-600 transition-colors" />
+                <ChevronRight className="hidden desktop:block shrink-0 w-5 h-5 mt-1 text-grayscale-400 group-hover:text-grayscale-600 transition-colors rtl:rotate-180" />
             </div>
             <div className="flex flex-wrap">
                 <p className="min-w-0 flex-1 mt-1 text-sm text-grayscale-600 leading-relaxed">
@@ -106,9 +106,9 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
                     </div>
                 )}
             </div>
-            <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-grayscale-600 group-hover:text-grayscale-900 transition-colors">
+            <span className="mt-3 flex w-fit ms-auto items-center gap-1 text-xs font-medium text-grayscale-600 group-hover:text-grayscale-900 transition-colors">
                 {m['dashboard.dataTrust.manage']()}
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
             </span>
         </button>
     );

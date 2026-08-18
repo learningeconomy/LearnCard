@@ -85,10 +85,10 @@ const AppsCard: React.FC<AppsCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/launchpad')}
-                        className="flex items-center text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                        className="flex items-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
                     >
                         {m['dashboard.apps.browseAll']()}
-                        <ChevronRight className="w-5 h-5 text-grayscale-400" />
+                        <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
                     </button>
                 </div>
 
@@ -118,10 +118,10 @@ const AppsCard: React.FC<AppsCardProps> = ({
                 <button
                     type="button"
                     onClick={() => history.push('/launchpad')}
-                    className="flex items-center text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                    className="flex items-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
                 >
                     {m['dashboard.apps.viewAll']()}
-                    <ChevronRight className="w-5 h-5 text-grayscale-400" />
+                    <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
                 </button>
             </div>
 

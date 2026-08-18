@@ -172,10 +172,10 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                 <button
                     onClick={onViewInsights}
                     type="button"
-                    className="flex items-center justify-center text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ml-auto"
+                    className="flex items-center justify-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ms-auto"
                 >
                     {m['dashboard.learningProfile.viewInsights']()}
-                    <ChevronRight className="w-5 h-5 text-grayscale-400" />
+                    <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
                 </button>
             </div>
         </section>

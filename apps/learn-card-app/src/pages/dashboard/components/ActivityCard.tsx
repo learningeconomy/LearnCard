@@ -318,14 +318,14 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/notifications')}
-                        className="flex items-center self-start text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-0.5"
+                        className="flex items-center gap-1 self-end text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-0.5"
                     >
                         {actionableTotal > MAX_ACTIONABLE
                             ? m['dashboard.activity.viewMore']({
                                   count: actionableTotal - MAX_ACTIONABLE,
                               })
                             : m['dashboard.activity.viewAllPending']()}
-                        <ChevronRight className="w-5 h-5 text-grayscale-400" />
+                        <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
                     </button>
                 </div>
             )}
@@ -371,10 +371,10 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/wallet')}
-                        className="flex items-center self-start text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-1"
+                        className="flex items-center gap-1 self-end text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-1"
                     >
                         {m['dashboard.activity.viewAllPassport']()}
-                        <ChevronRight className="w-5 h-5 text-grayscale-400" />
+                        <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
                     </button>
                 </div>
             )}
