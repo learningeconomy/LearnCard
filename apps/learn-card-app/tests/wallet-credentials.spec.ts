@@ -79,22 +79,29 @@ test.describe('Wallet Credentials', () => {
         // Claim the badge
         await page2.getByRole('button', { name: /claim/i }).click({ timeout: 30_000 });
 
-        // Click the badge card to flip it. LC-2071 exposes the credential card as a
-        // labeled group rather than a role="button": a clickable card must not also
-        // contain focusable controls (the issuer badge), which axe reports as a
-        // serious `nested-interactive` violation. The card keeps its pointer click,
-        // and the same verification content is reachable by keyboard via the
-        // Details tab below.
+        // The claim modal opens with the credential card, the details sidebar and
+        // the Close/Accept footer all rendered, so assert the right credential is
+        // on screen and then accept it — which is what a recipient actually does.
+        //
+        // LC-2071 exposes the card as a labeled group rather than a role="button":
+        // a clickable card must not also contain focusable controls (the issuer
+        // badge), which axe reports as a serious `nested-interactive` violation.
+        //
+        // Deliberately no card click and no "Details" click before accepting.
+        // Both were no-ops that only introduced flake:
+        //   - the card's centre point is the "Unknown Issuer" badge, so clicking
+        //     the card opens CredentialIssuerPopover — an aria-modal overlay that
+        //     then intercepts every later click;
+        //   - the "Details" tab is already aria-selected, and it sits directly
+        //     under the "Boost Received" toast that fires as the badge arrives.
         const credentialCard = page2.getByRole('group', {
             name: new RegExp(TEST_CREDENTIAL_TITLE),
         });
         await expect(credentialCard).toBeVisible({ timeout: 30_000 });
-        await credentialCard.click({ timeout: 30_000 });
 
-        // Accept the badge. LC-2071 wraps the boost preview tabs in a real tablist,
-        // so "Details" is now a tab rather than a plain button.
-        await page2.getByRole('tab', { name: 'Details', exact: true }).click({ timeout: 30_000 });
-        await page2.getByRole('button', { name: 'Accept' }).click({ timeout: 30_000 });
+        const acceptButton = page2.getByRole('button', { name: 'Accept' });
+        await expect(acceptButton).toBeEnabled({ timeout: 30_000 });
+        await acceptButton.click({ timeout: 30_000 });
 
         // Assert badge was claimed
         await expect(page2.getByText(/successfully claimed/i)).toBeVisible({

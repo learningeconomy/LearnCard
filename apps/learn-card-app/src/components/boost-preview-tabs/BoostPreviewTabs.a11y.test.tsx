@@ -5,9 +5,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { BoostPreviewTabs } from './BoostPreviewTabs';
 import { BoostPreviewTabsEnum } from './boost-preview-tabs.helpers';
 
-// LC-2071 exposed these tabs as a real tablist. wallet-credentials.spec.ts
-// targets the "Details" control by its tab role, so lock that contract down
-// here — a silent revert to a plain button would break the E2E suite.
+// LC-2071 exposed these tabs as a real tablist rather than a row of plain
+// buttons. Nothing else covers that, so lock the semantics down here: the
+// control must stay a tab inside a tablist and report its own selected state.
 describe('BoostPreviewTabs accessibility contract', () => {
     it('exposes Details as a tab, not a button', () => {
         render(
