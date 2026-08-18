@@ -3,7 +3,7 @@ import React from 'react';
 import useModal from './useModal';
 import { insertParamsToFilestackUrl } from 'learn-card-base/filestack/images/filestack.helpers';
 import { ModalContainer } from './types/Modals';
-import GenericErrorBoundary from '../generic/GenericErrorBoundary';
+import AppModal from './surfaces/AppModal';
 
 export const FullScreenModal: ModalContainer = ({ component, options, open }) => {
     const { closeModal } = useModal();
@@ -24,12 +24,14 @@ export const FullScreenModal: ModalContainer = ({ component, options, open }) =>
     );
 
     return (
-        <aside
-            id="full-screen-modal"
-            className={`${optionalClass} ${open ? 'open' : 'closed'} ${
-                options?.hideDimmer ? 'hide-dimmer' : ''
-            }`}
-            style={
+        <AppModal
+            rootId="full-screen-modal"
+            variant="fullscreen"
+            open={open}
+            onDimmerClick={handleCloseModal}
+            hideDimmer={options?.hideDimmer}
+            rootClassName={`${optionalClass} ${options?.hideDimmer ? 'hide-dimmer' : ''}`}
+            rootStyle={
                 backgroundImage
                     ? {
                           backgroundImage: `url(${backgroundImage})`,
@@ -38,28 +40,13 @@ export const FullScreenModal: ModalContainer = ({ component, options, open }) =>
                       }
                     : undefined
             }
+            sectionClassName={`${optionalClass} ${options?.widen ? 'widen' : ''} ${
+                options?.addShadow ? 'add-shadow' : ''
+            } ${customSectionClass}`}
+            errorBoundaryButtons={[{ label: 'Close Modal', onClick: handleCloseModal }]}
         >
-            {!options?.hideDimmer && (
-                <button
-                    className="full-screen-modal-dimmer"
-                    type="button"
-                    onClick={handleCloseModal}
-                    aria-label="modal-dimmer"
-                    aria-hidden
-                />
-            )}
-            <section
-                className={`${optionalClass} ${options?.widen ? 'widen' : ''} ${
-                    options?.addShadow ? 'add-shadow' : ''
-                } ${customSectionClass}`}
-            >
-                <GenericErrorBoundary
-                    extraButtons={[{ label: 'Close Modal', onClick: handleCloseModal }]}
-                >
-                    {component}
-                </GenericErrorBoundary>
-            </section>
-        </aside>
+            {component}
+        </AppModal>
     );
 };
 
