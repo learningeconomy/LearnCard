@@ -49,7 +49,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                     type="button"
                     onClick={onDismiss}
                     aria-label={m['dashboard.getStarted.dismiss']()}
-                    className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full hover:bg-white/15 transition-colors flex items-center justify-center text-white/70 hover:text-white"
+                    className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full hover:bg-white/15 transition-colors flex items-center justify-center text-white/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <X className="w-[15px] h-auto" />
                 </button>
@@ -87,7 +87,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                                 type="button"
                                 onClick={item.onClick}
                                 disabled={item.done}
-                                className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-colors ${
+                                className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                     item.done
                                         ? 'bg-white/[0.06] cursor-default'
                                         : 'bg-white/10 hover:bg-white/20 active:scale-[0.99]'
@@ -121,7 +121,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                     <button
                         type="button"
                         onClick={nextItem.onClick}
-                        className={`relative w-full py-3 px-4 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] ${primaryButtonClass}`}
+                        className={`relative w-full py-3 px-4 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${primaryButtonClass}`}
                     >
                         {nextItem.label}
                     </button>
@@ -134,7 +134,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
         <section className="bg-white rounded-[20px] p-5 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
             <div className="flex items-start justify-between mb-3 gap-3">
                 <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                    <p className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                         {m['dashboard.getStarted.label']()}
                     </p>
                     <h2 className="mt-1 text-lg font-semibold text-grayscale-900 leading-tight">
@@ -145,7 +145,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                     type="button"
                     onClick={onDismiss}
                     aria-label={m['dashboard.getStarted.dismiss']()}
-                    className="shrink-0 w-7 h-7 rounded-full hover:bg-grayscale-100 transition-colors flex items-center justify-center text-grayscale-500 hover:text-grayscale-700"
+                    className="shrink-0 w-7 h-7 rounded-full hover:bg-grayscale-100 transition-colors flex items-center justify-center text-grayscale-600 hover:text-grayscale-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     ×
                 </button>
@@ -170,7 +170,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                             type="button"
                             onClick={item.onClick}
                             disabled={item.done}
-                            className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-colors ${
+                            className={`w-full flex items-center gap-3 p-3 rounded-2xl text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                 item.done
                                     ? 'bg-emerald-50 cursor-default'
                                     : 'bg-grayscale-100 hover:bg-grayscale-200'

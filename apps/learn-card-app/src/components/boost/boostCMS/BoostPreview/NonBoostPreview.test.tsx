@@ -3,13 +3,14 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { VC } from '@learncard/types';
+import { BoostCategoryOptionsEnum, DisplayTypeEnum } from 'learn-card-base';
 
 type MenuProps = {
     onDotsClick?: () => void;
 };
 
 type FooterLayoutProps = React.PropsWithChildren<{
-    footerProps?: { handleDotMenu?: () => void };
+    footerProps?: { handleDotMenu?: () => void; handleDetails?: () => void };
 }>;
 
 vi.mock('learn-card-base', () => ({
@@ -25,11 +26,15 @@ vi.mock('learn-card-base', () => ({
     ModalTypes: { Right: 'right' },
     useDeviceTypeByWidth: () => ({ isMobile: true }),
     DisplayTypeEnum: {
+        Course: 'course',
         Certificate: 'certificate',
         ID: 'id',
         Media: 'media',
     },
-    BoostCategoryOptionsEnum: { achievement: 'Achievement' },
+    BoostCategoryOptionsEnum: {
+        achievement: 'Achievement',
+        learningHistory: 'Learning History',
+    },
 }));
 
 vi.mock('@ionic/react', () => ({
@@ -49,27 +54,36 @@ vi.mock('learn-card-base/stores/boostPreviewStore', () => ({
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     unwrapBoostCredential: (credential: VC) => credential,
     getAchievementType: () => 'Certification',
+    getCredentialName: () => 'Video of first badge',
 }));
 vi.mock('learn-card-base/helpers/lifecycleVerification.helpers', () => ({
     applyLifecycleStatusToVerifications: (verifications: unknown[]) => verifications,
 }));
 vi.mock('learn-card-base/components/vcmodal/VCDisplayCardWrapper2', () => ({
-    default: ({ onDotsClick }: MenuProps) => (
-        <div>{onDotsClick && <button type="button">Embedded options</button>}</div>
+    default: ({
+        onDotsClick,
+        customFooterComponent,
+    }: MenuProps & { customFooterComponent?: React.ReactNode }) => (
+        <div>
+            <span>Generic credential preview</span>
+            {customFooterComponent}
+            {onDotsClick && <button type="button">Embedded options</button>}
+        </div>
     ),
 }));
-vi.mock('learn-card-base/components/boost/boostFooter/BoostFooterLayout', () => ({
+vi.mock('../../../accessibility/AccessibleBoostFooterLayout', () => ({
     default: ({ children, footerProps }: FooterLayoutProps) => (
         <div>
             {children}
             {footerProps?.handleDotMenu && <button type="button">Footer options</button>}
+            {footerProps?.handleDetails && <button type="button">Footer details</button>}
         </div>
     ),
 }));
 vi.mock('../../../render-method/RenderMethodDisplay', () => ({ default: () => null }));
-vi.mock('./BoostDetailsSideBar', () => ({ default: () => null }));
+vi.mock('./BoostDetailsSideBar', () => ({ default: () => <div>Generic details sidebar</div> }));
 vi.mock('./BoostDetailsSideMenu', () => ({ default: () => null }));
-vi.mock('./VerifiedChildCLRFooter', () => ({ default: () => null }));
+vi.mock('./VerifiedChildCLRFooter', () => ({ default: () => <div>Verified child CLR</div> }));
 vi.mock('../../../boost-endorsements/EndorsementBadge', () => ({ default: () => null }));
 vi.mock('./BoostMediaPreview', () => ({
     default: ({ onDotsClick }: MenuProps) => (
@@ -79,10 +93,44 @@ vi.mock('./BoostMediaPreview', () => ({
 vi.mock('../../../clr-transcript/surfaces/ClrTranscriptFullPage', () => ({
     default: () => null,
 }));
-vi.mock('../../../../helpers/clrRenderer.helpers', () => ({
-    normalizeClrTranscriptDisplayModel: () => null,
-    ClrTranscriptSurface: { Full: 'full' },
+vi.mock('../../../clr-transcript/ClrCourseDetailPanel', () => ({
+    default: () => <div>CLR course detail</div>,
 }));
+vi.mock('../../../../helpers/clrRenderer.helpers', () => {
+    const getAchievement = (rawCredential: Record<string, unknown>) => {
+        const subject = rawCredential.credentialSubject as Record<string, unknown> | undefined;
+        return subject?.achievement as Record<string, unknown> | undefined;
+    };
+
+    return {
+        isStandaloneCourseCredential: (rawCredential: Record<string, unknown>) => {
+            const achievement = getAchievement(rawCredential);
+            const issuer = rawCredential.issuer as Record<string, unknown> | undefined;
+
+            return (
+                achievement?.achievementType === 'Course' &&
+                Boolean(achievement.name) &&
+                Boolean(issuer?.name)
+            );
+        },
+        normalizeClrTranscriptDisplayModel: (rawCredential: Record<string, unknown>) => {
+            const achievement = getAchievement(rawCredential);
+
+            return {
+                courses:
+                    achievement?.achievementType === 'Course' &&
+                    rawCredential.id !== 'urn:credential:course-without-normalized-course'
+                        ? [{ name: { value: achievement.name } }]
+                        : [],
+                competencies: [],
+                associations: [],
+                evidence: [],
+                header: {},
+            };
+        },
+        ClrTranscriptSurface: { Full: 'full' },
+    };
+});
 vi.mock('../../../clr-transcript/clr.helpers', () => ({
     getDownloadableEvidence: () => [],
 }));
@@ -102,13 +150,26 @@ const credential = {
     display: { displayType: 'certificate' },
 } as unknown as VC;
 
+const courseCredential = {
+    ...credential,
+    id: 'urn:credential:course',
+    issuer: { id: 'did:example:issuer', name: 'Example Institution' },
+    credentialSubject: {
+        id: 'did:example:learner',
+        achievement: {
+            achievementType: 'Course',
+            name: 'Applied Data Ethics',
+        },
+    },
+} as unknown as VC;
+
 describe('NonBoostPreview', () => {
     it('only exposes credential options through the preview footer', () => {
         render(
             <NonBoostPreview
                 credential={credential}
                 verificationItems={[]}
-                categoryType="Achievement"
+                categoryType={BoostCategoryOptionsEnum.achievement}
                 customThumbComponent={null}
                 customBodyCardComponent={null}
                 customFooterComponent={null}
@@ -116,7 +177,7 @@ describe('NonBoostPreview', () => {
                 handleCloseModal={vi.fn()}
                 handleShareBoost={vi.fn()}
                 onDotsClick={vi.fn()}
-                displayType="certificate"
+                displayType={DisplayTypeEnum.Certificate}
                 isPreview
             />
         );
@@ -130,7 +191,7 @@ describe('NonBoostPreview', () => {
             <NonBoostPreview
                 credential={credential}
                 verificationItems={[]}
-                categoryType="Achievement"
+                categoryType={BoostCategoryOptionsEnum.achievement}
                 customThumbComponent={null}
                 customBodyCardComponent={null}
                 customFooterComponent={null}
@@ -138,11 +199,80 @@ describe('NonBoostPreview', () => {
                 handleCloseModal={vi.fn()}
                 handleShareBoost={vi.fn()}
                 onDotsClick={vi.fn()}
-                displayType="media"
+                displayType={DisplayTypeEnum.Media}
                 isPreview
             />
         );
 
         expect(screen.getByRole('button', { name: 'Media options' })).toBeTruthy();
+    });
+
+    it('uses the CLR course presentation for an eligible standalone Course credential', () => {
+        render(
+            <NonBoostPreview
+                credential={courseCredential}
+                verificationItems={[]}
+                categoryType={BoostCategoryOptionsEnum.learningHistory}
+                customThumbComponent={null}
+                customBodyCardComponent={null}
+                customFooterComponent={null}
+                customIssueHistoryComponent={null}
+                handleCloseModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                displayType={DisplayTypeEnum.Course}
+                isPreview
+            />
+        );
+
+        expect(screen.getByText('CLR course detail')).toBeTruthy();
+        expect(screen.queryByText('Generic credential preview')).toBeNull();
+        expect(screen.queryByText('Generic details sidebar')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Footer details' })).toBeNull();
+    });
+
+    it('keeps a CLR child Course credential in the generic child presentation', () => {
+        render(
+            <NonBoostPreview
+                credential={courseCredential}
+                verificationItems={[]}
+                categoryType={BoostCategoryOptionsEnum.learningHistory}
+                customThumbComponent={null}
+                customBodyCardComponent={null}
+                customFooterComponent={null}
+                customIssueHistoryComponent={null}
+                handleCloseModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                isClrChildCredential
+                isPreview
+            />
+        );
+
+        expect(screen.getByText('Generic credential preview')).toBeTruthy();
+        expect(screen.getByText('Verified child CLR')).toBeTruthy();
+        expect(screen.queryByText('CLR course detail')).toBeNull();
+    });
+
+    it('falls back to the generic preview when a standalone Course cannot be normalized', () => {
+        render(
+            <NonBoostPreview
+                credential={{
+                    ...courseCredential,
+                    id: 'urn:credential:course-without-normalized-course',
+                }}
+                verificationItems={[]}
+                categoryType={BoostCategoryOptionsEnum.learningHistory}
+                customThumbComponent={null}
+                customBodyCardComponent={null}
+                customFooterComponent={null}
+                customIssueHistoryComponent={null}
+                handleCloseModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                displayType={DisplayTypeEnum.Course}
+                isPreview
+            />
+        );
+
+        expect(screen.getByText('Generic credential preview')).toBeTruthy();
+        expect(screen.queryByText('CLR course detail')).toBeNull();
     });
 });

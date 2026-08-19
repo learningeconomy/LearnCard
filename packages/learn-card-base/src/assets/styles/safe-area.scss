@@ -1,0 +1,17 @@
+// packages/learn-card-base/src/assets/styles/safe-area.scss
+//
+// THE canonical device-inset tokens. Everything in the app derives from these
+// two variables; nothing outside the surface layer may read env(safe-area-*),
+// --safe-area-inset-*, or --ion-safe-area-* directly (enforced by
+// scripts/check-safe-area.mjs).
+//
+// Source of truth per platform:
+//   - Android edge-to-edge: Capacitor SystemBars publishes --safe-area-inset-*
+//     (capacitor.config.ts → SystemBars.insetsHandling: 'css') and keeps them
+//     synchronized across gesture/button-nav changes.
+//   - iOS WKWebView / mobile Safari / PWA: env(safe-area-inset-*) is live
+//     because index.html sets viewport-fit=cover.
+:root {
+    --lc-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+    --lc-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}

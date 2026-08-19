@@ -4,7 +4,6 @@ import { TransP } from '../../../i18n/TransP';
 import { useLocale } from '../../../i18n';
 import Countdown from 'react-countdown';
 import { useHistory } from 'react-router-dom';
-import ReactCodeInput from 'react-code-input';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { z } from 'zod';
 import { getLogger } from 'learn-card-base';
@@ -35,6 +34,7 @@ import {
 
 import { generatePK } from 'apps/learn-card-app/src/helpers/privateKeyHelpers';
 import AppStoreDownloadButtons from '../appStoreButtons/AppStoreDownloadButtons';
+import AccessibleCodeInput from './AccessibleCodeInput';
 
 const StateValidator = z.object({
     email: z.string().regex(EMAIL_REGEX, `Missing or Invalid Email`),
@@ -311,16 +311,16 @@ const EmailForm: React.FC<EmailFormProps> = ({
     if (currentStep === EmailFormStepsEnum.email) {
         formTitle = null;
 
-        const defaultEmailInputClassName =
-            'bg-white/20 text-white placeholder:text-white white-placeholder';
+        const defaultEmailInputClassName = 'bg-black/10 text-white placeholder:text-white';
         const resolvedEmailInputClassName = emailInputClassName ?? defaultEmailInputClassName;
 
         const emailError = errors.email?.[0];
+        const emailErrorId = emailError ? 'login-email-error' : undefined;
 
         const emailInputBaseClassName =
             emailInputVariant === 'appStore'
-                ? 'w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
-                : 'rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus:outline-none focus:ring-0 focus:border-transparent';
+                ? 'w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium text-base text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-emerald-500'
+                : 'rounded-[15px] w-full ion-padding font-medium tracking-widest text-base focus-visible:outline-none focus-visible:ring-0 focus-visible:border-transparent';
 
         const emailInputErrorClassName =
             emailInputVariant === 'appStore'
@@ -337,19 +337,32 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     emailErrorPlacement === 'below' ? 'flex flex-col' : 'flex items-center'
                 } justify-center`}
             >
+                <label htmlFor="login-email" className="sr-only">
+                    {m['login.email.label']()}
+                </label>
                 <input
-                    aria-label={m['login.email.label']()}
+                    id="login-email"
+                    aria-invalid={Boolean(emailError)}
+                    aria-describedby={emailErrorId}
                     className={`${emailInputBaseClassName} ${resolvedEmailInputClassName} ${emailInputErrorClassName}`}
                     placeholder={m['login.email.placeholder']()}
                     onChange={e => setEmail(e.target.value)}
                     value={email}
-                    type="text"
+                    type="email"
                 />
                 {emailError &&
                     (emailErrorPlacement === 'below' ? (
-                        <p className="w-full mt-2 text-red-500 font-medium">{emailError}</p>
+                        <p
+                            id={emailErrorId}
+                            role="alert"
+                            className="w-full mt-2 text-red-500 font-medium"
+                        >
+                            {emailError}
+                        </p>
                     ) : (
-                        <p className="login-input-error-msg">{emailError}</p>
+                        <p id={emailErrorId} role="alert" className="login-input-error-msg">
+                            {emailError}
+                        </p>
                     ))}
             </div>
         );
@@ -358,12 +371,15 @@ const EmailForm: React.FC<EmailFormProps> = ({
         if (isLoading) buttonTitle = m['common.sendingCode']();
         disabled = !email || isLoading;
     } else if (currentStep === EmailFormStepsEnum.verification) {
+        const verificationError = errors?.code?.[0] ?? codeError;
         formTitle = (
             <TransP
                 m={m['common.enterVerificationCode']}
                 components={[
-                    <span
+                    <button
                         key="0"
+                        type="button"
+                        aria-label="Start over"
                         className={startOverClassNameOverride ?? 'text-white underline font-bold'}
                         onClick={resetForm}
                     />,
@@ -372,8 +388,11 @@ const EmailForm: React.FC<EmailFormProps> = ({
         );
         activeStep = (
             <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
-                <ReactCodeInput
-                    name="phoneVerification"
+                <AccessibleCodeInput
+                    name="emailVerification"
+                    label={m['common.enterVerificationCode']()}
+                    errorId={verificationError ? 'login-email-code-error' : undefined}
+                    isValid={!verificationError}
                     inputMode="numeric"
                     fields={6}
                     type="text"
@@ -382,13 +401,14 @@ const EmailForm: React.FC<EmailFormProps> = ({
                         verificationCodeInputClassName ?? ''
                     } ${errors.code || codeError ? 'react-code-input-error' : ''}`}
                 />
-                {errors?.code?.[0] && (
-                    <p className="w-full text-center mt-2 text-red-500 font-medium">
-                        {errors?.code?.[0]}
+                {verificationError && (
+                    <p
+                        id="login-email-code-error"
+                        role="alert"
+                        className="w-full text-center mt-2 text-red-500 font-medium"
+                    >
+                        {verificationError}
                     </p>
-                )}
-                {codeError && (
-                    <p className="w-full text-center mt-2 text-red-500 font-medium">{codeError}</p>
                 )}
             </IonCol>
         );
@@ -413,6 +433,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
             {activeStep}
             <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
+                    type="submit"
                     className={`ion-padding w-full font-bold rounded-[15px] disabled:opacity-50 ${
                         !loginButtonBgColor ? 'bg-grayscale-900' : ''
                     } ${!loginButtonTextColor ? 'text-white' : ''} ${buttonClassName}`}
@@ -434,6 +455,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                         renderer={({ seconds, completed }) =>
                             completed ? (
                                 <button
+                                    type="button"
                                     onClick={e => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -448,6 +470,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                                 </button>
                             ) : (
                                 <button
+                                    type="button"
                                     disabled
                                     className={
                                         resendCodeButtonClassNameOverride ??

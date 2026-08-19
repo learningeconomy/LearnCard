@@ -42,7 +42,10 @@ type PageState =
 type LCNOpenInvoke = {
     getGuardianPendingCredential: (token: string) => Promise<CredentialInfo>;
     sendGuardianChallenge: (token: string) => Promise<{ message: string }>;
-    approveGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string; alreadyLinked: boolean }>;
+    approveGuardianCredential: (
+        token: string,
+        otpCode: string
+    ) => Promise<{ message: string; alreadyLinked: boolean }>;
     rejectGuardianCredential: (token: string, otpCode: string) => Promise<{ message: string }>;
     approveGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
     rejectGuardianCredentialInApp: (inboxCredentialId: string) => Promise<{ success: boolean }>;
@@ -65,7 +68,7 @@ const GuardianCredentialApprovalPage: React.FC = () => {
     const { brandName } = useBrandingConfig();
     const { theme } = useTheme();
     const bgColor =
-        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#047857';
 
     const [state, setState] = useState<PageState>('loading');
     const [credentialInfo, setCredentialInfo] = useState<CredentialInfo | null>(null);
@@ -73,7 +76,6 @@ const GuardianCredentialApprovalPage: React.FC = () => {
     const [resultMessage, setResultMessage] = useState<string>('');
     const [otpCode, setOtpCode] = useState<string>('');
     const [canSkipOtp, setCanSkipOtp] = useState<boolean>(false);
-
 
     // Initialize wallet once
     const invokeRef = useRef<LCNOpenInvoke | null>(null);
@@ -160,7 +162,9 @@ const GuardianCredentialApprovalPage: React.FC = () => {
         if (!invokeRef.current || !credentialInfo?.inboxCredentialId) return;
         setState('approving');
         try {
-            await invokeRef.current.approveGuardianCredentialInApp(credentialInfo.inboxCredentialId);
+            await invokeRef.current.approveGuardianCredentialInApp(
+                credentialInfo.inboxCredentialId
+            );
             setResultMessage('Credential approved.');
             setState('approved');
         } catch (e: unknown) {
@@ -186,12 +190,19 @@ const GuardianCredentialApprovalPage: React.FC = () => {
 
     return (
         <IonPage>
-            <IonContent fullscreen className="flex flex-col flex-grow" style={{ ['--background' as any]: bgColor }}>
+            <IonContent
+                fullscreen
+                className="flex flex-col flex-grow"
+                style={{ ['--background' as any]: bgColor }}
+            >
                 <div
                     className="h-full w-full flex flex-col items-center justify-center px-6 text-center text-white"
                     style={{ backgroundColor: bgColor }}
                 >
-                    <a href="/login" className="flex flex-col items-center justify-center w-full mb-8">
+                    <a
+                        href="/login"
+                        className="flex flex-col items-center justify-center w-full mb-8"
+                    >
                         <img
                             src={brandMarkLight}
                             alt={`${brandName} brand mark`}
@@ -207,122 +218,138 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                         </div>
                     )}
 
-                    {(state === 'ready' || state === 'sending_code' || state === 'code_sent') && credentialInfo && (
-                        <>
-                            <h1 className="text-2xl font-bold mb-2">Guardian Approval Required</h1>
-                            <p className="text-white/80 max-w-[520px] mb-6">
-                                <strong>{credentialInfo.issuer.displayName}</strong> wants to issue a
-                                credential to one of your students.
-                            </p>
+                    {(state === 'ready' || state === 'sending_code' || state === 'code_sent') &&
+                        credentialInfo && (
+                            <>
+                                <h1 className="text-2xl font-bold mb-2">
+                                    Guardian Approval Required
+                                </h1>
+                                <p className="text-white/80 max-w-[520px] mb-6">
+                                    <strong>{credentialInfo.issuer.displayName}</strong> wants to
+                                    issue a credential to one of your students.
+                                </p>
 
-                            <div className="bg-white/10 rounded-2xl px-6 py-5 mb-8 w-full max-w-md text-left">
-                                {credentialInfo.credentialName && (
-                                    <div className="mb-3">
-                                        <p className="text-white/70 text-xs uppercase tracking-wider mb-1">Credential</p>
-                                        <p className="text-white font-semibold text-lg">{credentialInfo.credentialName}</p>
+                                <div className="bg-white/10 rounded-2xl px-6 py-5 mb-8 w-full max-w-md text-left">
+                                    {credentialInfo.credentialName && (
+                                        <div className="mb-3">
+                                            <p className="text-white/70 text-xs uppercase tracking-wider mb-1">
+                                                Credential
+                                            </p>
+                                            <p className="text-white font-semibold text-lg">
+                                                {credentialInfo.credentialName}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div className="mb-1">
+                                        <p className="text-white/70 text-xs uppercase tracking-wider mb-1">
+                                            Issued by
+                                        </p>
+                                        <p className="text-white">
+                                            {credentialInfo.issuer.displayName}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {state === 'ready' && !canSkipOtp && (
+                                    <div className="w-full max-w-sm">
+                                        <p className="text-white/80 text-sm mb-4">
+                                            To approve or reject, we'll send a verification code to
+                                            your email.
+                                        </p>
+                                        <p className="text-white/70 text-xs mb-4 leading-relaxed">
+                                            By approving, your account will be linked with the
+                                            student's account and you'll be able to manage their
+                                            future credential approvals directly from your
+                                            notifications.
+                                        </p>
+                                        <IonButton
+                                            expand="block"
+                                            color="light"
+                                            onClick={handleSendCode}
+                                            disabled={isProcessing}
+                                        >
+                                            Send Verification Code
+                                        </IonButton>
                                     </div>
                                 )}
-                                <div className="mb-1">
-                                    <p className="text-white/70 text-xs uppercase tracking-wider mb-1">Issued by</p>
-                                    <p className="text-white">{credentialInfo.issuer.displayName}</p>
-                                </div>
-                            </div>
 
-                            {state === 'ready' && !canSkipOtp && (
-                                <div className="w-full max-w-sm">
-                                    <p className="text-white/80 text-sm mb-4">
-                                        To approve or reject, we'll send a verification code to your email.
-                                    </p>
-                                    <p className="text-white/70 text-xs mb-4 leading-relaxed">
-                                        By approving, your account will be linked with the student's account
-                                        and you'll be able to manage their future credential approvals directly
-                                        from your notifications.
-                                    </p>
-                                    <IonButton
-                                        expand="block"
-                                        color="light"
-                                        onClick={handleSendCode}
-                                        disabled={isProcessing}
-                                    >
-                                        Send Verification Code
-                                    </IonButton>
-                                </div>
-                            )}
+                                {state === 'ready' && canSkipOtp && (
+                                    <div className="w-full max-w-sm">
+                                        <p className="text-white/80 text-sm mb-4">
+                                            You have a guardian relationship with this student. You
+                                            can approve or reject this credential directly.
+                                        </p>
+                                        <IonButton
+                                            expand="block"
+                                            color="light"
+                                            onClick={handleApproveInApp}
+                                            disabled={isProcessing}
+                                        >
+                                            Approve
+                                        </IonButton>
+                                        <IonButton
+                                            expand="block"
+                                            fill="outline"
+                                            color="light"
+                                            onClick={handleRejectInApp}
+                                            disabled={isProcessing}
+                                            className="mt-2"
+                                        >
+                                            Reject
+                                        </IonButton>
+                                    </div>
+                                )}
 
-                            {state === 'ready' && canSkipOtp && (
-                                <div className="w-full max-w-sm">
-                                    <p className="text-white/80 text-sm mb-4">
-                                        You have a guardian relationship with this student.
-                                        You can approve or reject this credential directly.
-                                    </p>
-                                    <IonButton
-                                        expand="block"
-                                        color="light"
-                                        onClick={handleApproveInApp}
-                                        disabled={isProcessing}
-                                    >
-                                        Approve
-                                    </IonButton>
-                                    <IonButton
-                                        expand="block"
-                                        fill="outline"
-                                        color="light"
-                                        onClick={handleRejectInApp}
-                                        disabled={isProcessing}
-                                        className="mt-2"
-                                    >
-                                        Reject
-                                    </IonButton>
-                                </div>
-                            )}
+                                {state === 'sending_code' && (
+                                    <div className="flex flex-col items-center gap-3">
+                                        <IonSpinner color="light" />
+                                        <p className="font-semibold text-lg">Sending code…</p>
+                                    </div>
+                                )}
 
-                            {state === 'sending_code' && (
-                                <div className="flex flex-col items-center gap-3">
-                                    <IonSpinner color="light" />
-                                    <p className="font-semibold text-lg">Sending code…</p>
-                                </div>
-                            )}
-
-                            {state === 'code_sent' && (
-                                <div className="flex flex-col gap-3 w-full max-w-sm">
-                                    <p className="text-white/80 text-sm mb-2">
-                                        Enter the 6-digit code we sent to your email.
-                                    </p>
-                                    <ReactCodeInput
-                                        name="guardianOtp"
-                                        inputMode="numeric"
-                                        fields={6}
-                                        type="text"
-                                        onChange={setOtpCode}
-                                        className="react-code-input"
-                                    />
-                                    <IonButton
-                                        expand="block"
-                                        color="light"
-                                        onClick={handleApprove}
-                                        disabled={isProcessing || otpCode.length !== 6}
-                                    >
-                                        Approve
-                                    </IonButton>
-                                    <IonButton
-                                        expand="block"
-                                        fill="outline"
-                                        color="light"
-                                        onClick={handleReject}
-                                        disabled={isProcessing || otpCode.length !== 6}
-                                    >
-                                        Reject
-                                    </IonButton>
-                                    <button
-                                        className="text-white/80 text-sm underline mt-2 bg-transparent border-none cursor-pointer"
-                                        onClick={() => { setOtpCode(''); setState('ready'); }}
-                                    >
-                                        Resend code
-                                    </button>
-                                </div>
-                            )}
-                        </>
-                    )}
+                                {state === 'code_sent' && (
+                                    <div className="flex flex-col gap-3 w-full max-w-sm">
+                                        <p className="text-white/80 text-sm mb-2">
+                                            Enter the 6-digit code we sent to your email.
+                                        </p>
+                                        <ReactCodeInput
+                                            name="guardianOtp"
+                                            inputMode="numeric"
+                                            fields={6}
+                                            type="text"
+                                            onChange={setOtpCode}
+                                            className="react-code-input"
+                                        />
+                                        <IonButton
+                                            expand="block"
+                                            color="light"
+                                            onClick={handleApprove}
+                                            disabled={isProcessing || otpCode.length !== 6}
+                                        >
+                                            Approve
+                                        </IonButton>
+                                        <IonButton
+                                            expand="block"
+                                            fill="outline"
+                                            color="light"
+                                            onClick={handleReject}
+                                            disabled={isProcessing || otpCode.length !== 6}
+                                        >
+                                            Reject
+                                        </IonButton>
+                                        <button
+                                            className="text-white/80 text-sm underline mt-2 bg-transparent border-none cursor-pointer"
+                                            onClick={() => {
+                                                setOtpCode('');
+                                                setState('ready');
+                                            }}
+                                        >
+                                            Resend code
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
 
                     {(state === 'approving' || state === 'rejecting') && (
                         <div className="flex flex-col items-center gap-3">
@@ -337,10 +364,12 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                         <>
                             <h1 className="text-2xl font-bold mb-2">Credential Approved</h1>
                             <p className="text-white/80 max-w-[520px] mb-6">
-                                {resultMessage || 'The credential has been approved. The recipient can now claim it.'}
+                                {resultMessage ||
+                                    'The credential has been approved. The recipient can now claim it.'}
                             </p>
                             <p className="text-white/80 text-sm max-w-[420px] mb-4">
-                                Sign in or create a {brandName} account with this email to manage future approvals directly in the app.
+                                Sign in or create a {brandName} account with this email to manage
+                                future approvals directly in the app.
                             </p>
                             <a
                                 href="/login"
@@ -355,8 +384,8 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                         <>
                             <h1 className="text-2xl font-bold mb-2">Credential Approved</h1>
                             <p className="text-white/80 max-w-[520px] mb-6">
-                                The credential has been approved. Your {brandName} account has been linked to
-                                this profile.
+                                The credential has been approved. Your {brandName} account has been
+                                linked to this profile.
                             </p>
                             <a
                                 href="/login"
@@ -367,13 +396,12 @@ const GuardianCredentialApprovalPage: React.FC = () => {
                         </>
                     )}
 
-
-
                     {state === 'rejected' && (
                         <>
                             <h1 className="text-2xl font-bold mb-2">Credential Rejected</h1>
                             <p className="text-white/80 max-w-[520px] mb-4">
-                                {resultMessage || 'The credential has been rejected and will not be issued.'}
+                                {resultMessage ||
+                                    'The credential has been rejected and will not be issued.'}
                             </p>
                         </>
                     )}

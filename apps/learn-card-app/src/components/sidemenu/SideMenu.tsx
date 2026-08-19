@@ -155,14 +155,18 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                 <div className="self-stretch mx-6 border-t border-solid border-grayscale-200" />
 
                                 <div className="flex flex-col justify-center items-center w-full gap-[10px] mt-4 mb-2">
-                                    <IonMenuToggle
-                                        role="button"
-                                        autoHide={false}
-                                        onClick={handleBoost}
-                                        className={`text-[17px] flex items-center justify-center gap-[10px] font-semibold py-[5px] rounded-full w-full max-w-[90%] h-[45px] max-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
-                                    >
-                                        {m['issue.title']()}
-                                        <GearPlusIcon className="w-[30px] h-[30px] text-grayscale-800" />
+                                    <IonMenuToggle autoHide={false} className="w-full max-w-[90%]">
+                                        <button
+                                            type="button"
+                                            onClick={handleBoost}
+                                            className={`text-[17px] flex items-center justify-center gap-[10px] font-semibold py-[5px] rounded-full w-full h-[45px] max-h-[45px] shadow-soft-bottom focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${colors.secondaryButtonColor}`}
+                                        >
+                                            {m['issue.title']()}
+                                            <GearPlusIcon
+                                                className="w-[30px] h-[30px] text-grayscale-800"
+                                                aria-hidden="true"
+                                            />
+                                        </button>
                                     </IonMenuToggle>
                                 </div>
                             </div>
@@ -204,7 +208,9 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                             <LanguagePicker />
 
                             <GenericErrorBoundary>
-                                <CheckListButton mode="sidemenu" className="mx-4 my-1" />
+                                <div className="mx-4 my-1">
+                                    <CheckListButton mode="sidemenu" />
+                                </div>
                             </GenericErrorBoundary>
 
                             <GenericErrorBoundary>

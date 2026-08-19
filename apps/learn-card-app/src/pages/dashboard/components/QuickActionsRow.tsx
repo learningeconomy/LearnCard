@@ -28,7 +28,7 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ slots }) => {
                         key={slot}
                         type="button"
                         onClick={action.onClick}
-                        className="group flex w-full min-h-[76px] items-center gap-4 bg-white rounded-[20px] py-4 px-4 border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-start min-w-0"
+                        className="group flex w-full min-h-[76px] items-center gap-4 bg-white rounded-[20px] py-4 px-4 border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-start min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         <span className="shrink-0 w-9 h-9 rounded-full bg-grayscale-100 group-hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800">
                             <Icon className="w-[30px] h-[30px]" />

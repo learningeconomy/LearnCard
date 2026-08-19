@@ -102,6 +102,9 @@ import {
 } from '../components/debug/authDebugEvents';
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
+import { useLocale } from '../i18n';
+import { createPreAuthEmailPayload } from '../i18n/preAuthEmail';
+import { clearStoragePreservingLocale } from '../i18n/storage';
 import * as m from '../paraglide/messages.js';
 import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
@@ -410,6 +413,7 @@ const AuthSessionManager: React.FC<{
 }> = ({ children, authProvider }) => {
     const coordinator = useBaseAuthCoordinator();
     const authConfig = getAuthConfig();
+    const locale = useLocale();
 
     // --- Enriched state ---
     const [wallet, setWallet] = useState<BespokeLearnCard | null>(null);
@@ -1096,7 +1100,7 @@ const AuthSessionManager: React.FC<{
                         const res = await fetch(`${serverUrl}/send-login-verification-code`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ email }),
+                            body: JSON.stringify(createPreAuthEmailPayload(email, locale)),
                         });
 
                         const data = await res.json().catch(() => ({}));
@@ -1557,7 +1561,7 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
         currentUserStore.set.currentUserPK(null);
         currentUserStore.set.currentUserIsLoggedIn(false);
 
-        window.localStorage.clear();
+        clearStoragePreservingLocale(window.localStorage);
         window.sessionStorage.clear();
 
         firstStartupStore.set.introSlidesCompleted(true);

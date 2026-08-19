@@ -22,6 +22,7 @@
     },
     "scripts": {
         "prepare": "husky install",
+        "lint": "node scripts/lint-a11y.cjs",
         "lint:staged": "lint-staged",
         "build": "nx run-many -t build --all --exclude=docs,reference",
         "build:bootstrap": "nx run-many -t build --projects=types,helpers,core,vc-plugin,email-templates",
@@ -30,6 +31,7 @@
         "test:lc-2079": "bun run --cwd packages/learn-card-base test -- src/helpers/aiErrors.test.ts src/stores/nanoStores/chatStore.test.ts && bun run --cwd apps/learn-card-app test:unit -- src/helpers/aiError.helpers.test.ts src/components/new-ai-session/AiSessionErrorHandler.test.tsx",
         "verify:lc-2079": "bun run test:lc-2079 && bunx nx build learn-card-app",
         "validate-packages": "node scripts/validate-packages.mjs",
+        "check:safe-area": "node scripts/check-safe-area.mjs",
         "env:pull": "bash scripts/pull-env.sh",
         "env:backup": "bash scripts/backup-env.sh",
         "env:compare-backup": "bash scripts/compare-env-backup.sh",
@@ -52,6 +54,7 @@
         "eslint-config-airbnb-typescript": "^17.0.0",
         "eslint-import-resolver-typescript": "^2.7.1",
         "eslint-plugin-import": "^2.27.5",
+        "eslint-plugin-jsx-a11y": "^6.10.2",
         "eslint-plugin-prettier": "^4.2.1",
         "eslint-plugin-react": "^7.32.2",
         "husky": "8.0.3",

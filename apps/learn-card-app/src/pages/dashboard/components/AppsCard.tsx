@@ -85,7 +85,7 @@ const AppsCard: React.FC<AppsCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/launchpad')}
-                        className="flex items-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                        className="flex items-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {m['dashboard.apps.browseAll']()}
                         <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
@@ -112,13 +112,13 @@ const AppsCard: React.FC<AppsCardProps> = ({
     return (
         <section className="bg-white rounded-[20px] p-4 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
             <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                <h2 className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                     {headerLabel}
                 </h2>
                 <button
                     type="button"
                     onClick={() => history.push('/launchpad')}
-                    className="flex items-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                    className="flex items-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['dashboard.apps.viewAll']()}
                     <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />

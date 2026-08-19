@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
+import * as m from '../../paraglide/messages.js';
 
 import {
     IonCol,
@@ -115,6 +116,8 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
         <IonHeader className="learn-card-header ion-no-border relative">
             <IonProgressBar
                 type="indeterminate"
+                aria-label={m['common.loading']()}
+                aria-hidden={!isLoading}
                 className={`absolute top-0 z-9999 transition-opacity ${
                     isLoading ? 'opacity-100' : 'opacity-0'
                 }`}

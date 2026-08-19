@@ -67,6 +67,7 @@ vi.mock('@analytics', () => ({
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getAchievementType: () => 'Achievement',
+    getCredentialName: (value: VC) => value.name,
     getDefaultCategoryForCredential: () => 'Achievement',
 }));
 vi.mock('learn-card-base/helpers/verificationPrettifier', () => ({
@@ -90,7 +91,7 @@ vi.mock('uuid', () => ({ v4: () => 'event-id' }));
 vi.mock('learn-card-base/components/vcmodal/VCDisplayCardWrapper2', () => ({
     default: () => <div>Credential card</div>,
 }));
-vi.mock('learn-card-base/components/boost/boostFooter/BoostFooterLayout', () => ({
+vi.mock('../../components/accessibility/AccessibleBoostFooterLayout', () => ({
     default: ({
         children,
         footerProps,

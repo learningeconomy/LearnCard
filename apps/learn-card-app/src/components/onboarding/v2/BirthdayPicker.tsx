@@ -11,6 +11,8 @@ type BirthdayPickerProps = {
 const ITEM_HEIGHT = 40;
 const VISIBLE_ITEMS = 5;
 const SPACER_COUNT = Math.floor(VISIBLE_ITEMS / 2);
+const getScrollBehavior = (): ScrollBehavior =>
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 
 const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, className = '' }) => {
     const now = new Date();
@@ -161,7 +163,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
                 const targetScroll = index * ITEM_HEIGHT;
                 if (Math.abs(scrollTop - targetScroll) > 1) {
                     isProgrammaticScroll.current[type] = true;
-                    ref.current.scrollTo({ top: targetScroll, behavior: 'smooth' });
+                    ref.current.scrollTo({ top: targetScroll, behavior: getScrollBehavior() });
                     setTimeout(() => {
                         isProgrammaticScroll.current[type] = false;
                     }, 300);
@@ -181,7 +183,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
                 const targetScroll = index * ITEM_HEIGHT;
                 if (Math.abs(ref.current.scrollTop - targetScroll) > 1) {
                     isProgrammaticScroll.current[type] = true;
-                    ref.current.scrollTo({ top: targetScroll, behavior: 'smooth' });
+                    ref.current.scrollTo({ top: targetScroll, behavior: getScrollBehavior() });
                     setTimeout(() => {
                         isProgrammaticScroll.current[type] = false;
                     }, 300);
@@ -205,7 +207,10 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
         setter(val);
         if (ref.current) {
             isProgrammaticScroll.current[type] = true;
-            ref.current.scrollTo({ top: index * ITEM_HEIGHT, behavior: 'smooth' });
+            ref.current.scrollTo({
+                top: index * ITEM_HEIGHT,
+                behavior: getScrollBehavior(),
+            });
             setTimeout(() => {
                 isProgrammaticScroll.current[type] = false;
             }, 300);
@@ -233,7 +238,10 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
         setter(nextVal);
         if (ref.current) {
             isProgrammaticScroll.current[type] = true;
-            ref.current.scrollTo({ top: nextIndex * ITEM_HEIGHT, behavior: 'smooth' });
+            ref.current.scrollTo({
+                top: nextIndex * ITEM_HEIGHT,
+                behavior: getScrollBehavior(),
+            });
             setTimeout(() => {
                 isProgrammaticScroll.current[type] = false;
             }, 300);
@@ -259,6 +267,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
                 ref={ref}
                 role="listbox"
                 aria-label={columnLabel}
+                aria-activedescendant={`onboarding-${type}-${selectedVal}`}
                 tabIndex={0}
                 className="flex-1 h-[200px] overflow-y-auto snap-y snap-mandatory relative z-10 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 [&::-webkit-scrollbar]:hidden"
                 style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
@@ -276,13 +285,21 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
                     return (
                         <div
                             key={opt}
+                            id={`onboarding-${type}-${opt}`}
                             role="option"
                             aria-selected={isSelected}
+                            tabIndex={-1}
                             onClick={() => handleItemClick(type, ref, index, opt, setter)}
+                            onKeyDown={event => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    handleItemClick(type, ref, index, opt, setter);
+                                }
+                            }}
                             className={`flex items-center justify-center snap-center cursor-pointer tabular-nums transition-all duration-200 ${
                                 isSelected
                                     ? 'text-emerald-700 font-semibold text-lg scale-100 opacity-100'
-                                    : 'text-grayscale-400 text-base scale-95 opacity-60 hover:opacity-80'
+                                    : 'text-grayscale-600 text-base scale-95 opacity-100'
                             }`}
                             style={{ height: ITEM_HEIGHT }}
                         >
@@ -304,7 +321,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
             className={`flex flex-col items-center w-full font-poppins ${className}`}
         >
             {!hasInteracted && (
-                <p className="text-xs text-grayscale-500 mb-2 animate-fade-in-up">
+                <p className="text-xs text-grayscale-600 mb-2 animate-fade-in-up">
                     {m['onboarding.scrollToChoose']()}
                 </p>
             )}

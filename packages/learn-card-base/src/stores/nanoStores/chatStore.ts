@@ -8,6 +8,7 @@ import { showToast } from './toastStore';
 import { showErrorModal } from './ErrorModalStore';
 
 import { networkStore } from '../NetworkStore';
+import { addActiveLocaleToPayload, addActiveLocaleToUrl } from '../../i18n';
 import type {
     ChatMessage,
     Thread,
@@ -484,7 +485,7 @@ export function connectWebSocket() {
     const wsUrl = getBackendUrl().replace(/^http/, 'ws');
     const threadIdQuery = currentThreadId.get() ? `&threadId=${currentThreadId.get()}` : '';
 
-    ws = new WebSocket(`${wsUrl}?did=${did}${threadIdQuery}`);
+    ws = new WebSocket(addActiveLocaleToUrl(`${wsUrl}?did=${did}${threadIdQuery}`));
     const socket = ws;
 
     ws.onmessage = event => {
@@ -1126,11 +1127,13 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
     }
 
     socket.send(
-        JSON.stringify({
-            message: newMessage,
-            threadId,
-            selectedQuestion,
-        })
+        JSON.stringify(
+            addActiveLocaleToPayload({
+                message: newMessage,
+                threadId,
+                selectedQuestion,
+            })
+        )
     );
 }
 
@@ -1387,7 +1390,7 @@ export function continuePlan() {
     lastAiError.set(null);
     isTyping.set(true);
     beginSessionStartWatchdog('continuation');
-    socket.send(JSON.stringify({ action: 'continue_plan', threadId }));
+    socket.send(JSON.stringify(addActiveLocaleToPayload({ action: 'continue_plan', threadId })));
     planReady.set(false);
     planReadyThread.set(null);
 }
@@ -1408,10 +1411,13 @@ export async function finishSession(onSuccess?: () => void) {
         ]);
         sessionEnded.set(true);
 
-        const res = await fetch(`${getBackendUrl()}/threads/finish?did=${did}`, {
-            method: 'POST',
-            body: JSON.stringify({ threadId, did }),
-        });
+        const res = await fetch(
+            addActiveLocaleToUrl(`${getBackendUrl()}/threads/finish?did=${did}`),
+            {
+                method: 'POST',
+                body: JSON.stringify({ threadId, did }),
+            }
+        );
 
         // In most cases the summary will come through the existing WebSocket
         // listener as a `conversation_summary` event. However, if the WS is not
@@ -1486,8 +1492,12 @@ export function disconnectWebSocket() {
 // Send a payload as soon as the socket is open. Avoids polling setTimeout loops
 // for the "send right after connect" race that can otherwise add up to 100ms of
 // idle wait per first message.
-function sendWhenReady(payload: unknown) {
-    const json = JSON.stringify(payload);
+// `Record<string, unknown>` rather than `unknown`: the old runtime `typeof
+// payload === 'object'` guard also accepted arrays, which would have spread into
+// `{0: …, 1: …}`. Every caller passes an object literal, so the type makes that
+// structurally impossible instead of relying on the check.
+function sendWhenReady(payload: Record<string, unknown>) {
+    const json = JSON.stringify(addActiveLocaleToPayload(payload));
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(json);
         return;
@@ -1531,10 +1541,12 @@ export async function closeInsightsSession(threadId?: string) {
     }
 
     socket.send(
-        JSON.stringify({
-            action: 'close_insights_session',
-            threadId: activeThreadId,
-        })
+        JSON.stringify(
+            addActiveLocaleToPayload({
+                action: 'close_insights_session',
+                threadId: activeThreadId,
+            })
+        )
     );
 
     // Optimistically reset state

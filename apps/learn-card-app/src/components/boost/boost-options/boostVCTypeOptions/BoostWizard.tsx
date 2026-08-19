@@ -26,6 +26,7 @@ import AiSessionLoader from '../../../new-ai-session/AiSessionLoader';
 import { useTheme } from '../../../../theme/hooks/useTheme';
 
 import * as m from '../../../../paraglide/messages.js';
+import { getLocale } from '../../../../paraglide/runtime.js';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-wizard');
@@ -123,7 +124,13 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                 type,
                 skills,
                 narrative,
-            } = await wallet.invoke.generateBoostInfo(description);
+                // Paraglide's `getLocale()` rather than learn-card-base's
+                // `getActiveLocale()`: this file is in the app, so it can read the
+                // active locale directly. `getActiveLocale` exists only because
+                // learn-card-base can't import the app's paraglide instance, and it
+                // resolves to the same value — LocaleProvider syncs <html lang> on
+                // every locale change, which is that helper's fallback.
+            } = await wallet.invoke.generateBoostInfo(description, getLocale());
 
             const [generatedImageUrl, generatedBackgroundUrl, generatedSkills] = await Promise.all([
                 (async () => {
