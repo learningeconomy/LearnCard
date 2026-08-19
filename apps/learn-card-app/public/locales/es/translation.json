@@ -3814,9 +3814,9 @@
             "meanwhile": "Mientras tanto",
             "emptyTitle": "No hay alertas por ahora",
             "emptySubtitle": "Te avisaremos aquí cuando alguien quiera conectarse o enviarte una credencial.",
-            "viewMore": "Ver {{count}} más →",
-            "viewAllPending": "Ver todo lo pendiente →",
-            "viewAllPassport": "Ver todo en el pasaporte →",
+            "viewMore": "Ver {{count}} más",
+            "viewAllPending": "Ver todo lo pendiente",
+            "viewAllPassport": "Ver todo en el pasaporte",
             "wantsToConnect": "{{name}} quiere conectarse",
             "requestedDataAccess": "{{name}} solicitó acceso a tus datos",
             "someone": "Alguien",
@@ -3854,7 +3854,7 @@
             "progress": "{{completed}} de {{total}}"
         },
         "dataTrust": {
-            "label": "Tus datos",
+            "label": "Compartir datos",
             "title": "Tus datos son tuyos",
             "emptyStatus": "Aún no compartes nada.",
             "sharingWithOne": "Compartiendo con {{count}} lugar.",
@@ -3874,7 +3874,8 @@
             "buildingProfile": "Tu perfil de aprendizaje toma forma a medida que agregas cursos, logros y experiencias.",
             "groundedInOne": "Basado en {{count}} registro verificado",
             "groundedInMany": "Basado en {{count}} registros verificados",
-            "viewInsights": "Ver perspectivas →",
+            "viewInsights": "Ver todo",
+            "noInsightsYet": "Aún no hay perspectivas.",
             "tierStrongest": "Más fuerte",
             "tierStrong": "Fuerte",
             "tierGrowing": "En desarrollo",
@@ -3887,8 +3888,8 @@
             "yourAppsLabel": "Tus apps",
             "appsToExplore": "Apps para explorar",
             "jumpBackIn": "Retoma donde lo dejaste",
-            "browseAll": "Ver todas →",
-            "viewAll": "Ver todas →"
+            "browseAll": "Ver todas",
+            "viewAll": "Ver todas"
         },
         "appTile": {
             "new": "Nuevo",

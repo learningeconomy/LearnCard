@@ -64,7 +64,7 @@ const ProfileAlertsIsland: React.FC<ProfileAlertsIslandProps> = ({
             <div ref={notificationButtonContainerRef} className="contents">
                 <NotificationButton
                     colorOverride={notificationColorOverride ?? 'text-grayscale-900'}
-                    iconVariant="alerts"
+                    iconVariant="bell"
                     onOpen={openNotifications}
                 />
             </div>

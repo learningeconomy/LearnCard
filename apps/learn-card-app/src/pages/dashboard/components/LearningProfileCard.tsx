@@ -2,6 +2,7 @@ import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { shieldCheckmarkOutline } from 'ionicons/icons';
 import { formatDistanceToNow } from 'date-fns';
+import { ChevronRight } from 'lucide-react';
 
 import type {
     DashboardLearningProfileViewModel,
@@ -44,8 +45,8 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                 className="inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border border-grayscale-200 bg-white animate-pop-in opacity-0"
                 style={{ animationDelay: `${index * 100}ms` }}
             >
-                <SkillsIcon className="w-4 h-4 shrink-0" />
-                <span className="text-xs font-medium text-grayscale-900">{skill.title}</span>
+                <SkillsIcon className="w-[25px] h-[25px] shrink-0" />
+                <span className="text-base font-medium text-grayscale-900">{skill.title}</span>
 
                 <div className="flex items-center gap-1.5 ml-1">
                     <div className="flex items-end gap-0.5 h-2.5">
@@ -60,7 +61,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                         ))}
                     </div>
                     <span
-                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${tierClasses}`}
+                        className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${tierClasses}`}
                     >
                         {tierLabel}
                     </span>
@@ -97,16 +98,9 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        {[1, 2, 3].map(i => (
-                            <div
-                                key={i}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-dashed border-grayscale-200 bg-grayscale-10 animate-pulse-opacity"
-                                style={{ animationDelay: `${i * 150}ms` }}
-                            >
-                                <div className="w-3 h-3 rounded-full bg-grayscale-200" />
-                                <div className="w-12 h-2 rounded-full bg-grayscale-200" />
-                            </div>
-                        ))}
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            {m['dashboard.learningProfile.noInsightsYet']()}
+                        </p>
                     </div>
                 </div>
             ) : (
@@ -167,7 +161,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                             aria-hidden="true"
                             className="text-grayscale-400 text-sm"
                         />
-                        <span className="text-[11px] font-medium text-grayscale-600">
+                        <span className="text-xs font-medium text-grayscale-600">
                             {verifiedRecords === 1
                                 ? m['dashboard.learningProfile.groundedInOne']({
                                       count: verifiedRecords,
@@ -184,9 +178,10 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                 <button
                     type="button"
                     onClick={onViewInsights}
-                    className="text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ml-auto rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="flex items-center justify-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ml-auto rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     {m['dashboard.learningProfile.viewInsights']()}
+                    <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
                 </button>
             </div>
         </section>

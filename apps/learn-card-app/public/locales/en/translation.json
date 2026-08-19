@@ -3820,9 +3820,9 @@
             "meanwhile": "Meanwhile",
             "emptyTitle": "No alerts right now",
             "emptySubtitle": "We'll let you know here when someone wants to connect or send you a credential.",
-            "viewMore": "View {{count}} more →",
-            "viewAllPending": "View all pending →",
-            "viewAllPassport": "View all in passport →",
+            "viewMore": "View {{count}} more",
+            "viewAllPending": "View all pending",
+            "viewAllPassport": "View all in passport",
             "wantsToConnect": "{{name}} wants to connect",
             "requestedDataAccess": "{{name}} requested data access",
             "someone": "Someone",
@@ -3860,7 +3860,7 @@
             "progress": "{{completed}} of {{total}}"
         },
         "dataTrust": {
-            "label": "Your data",
+            "label": "Data Sharing",
             "title": "Your data is yours",
             "emptyStatus": "Nothing is shared yet.",
             "sharingWithOne": "Sharing with {{count}} place.",
@@ -3880,7 +3880,8 @@
             "buildingProfile": "Your learning profile takes shape as you add courses, achievements, and experiences.",
             "groundedInOne": "Grounded in {{count}} verified record",
             "groundedInMany": "Grounded in {{count}} verified records",
-            "viewInsights": "View insights →",
+            "viewInsights": "View All",
+            "noInsightsYet": "No insights yet.",
             "tierStrongest": "Strongest",
             "tierStrong": "Strong",
             "tierGrowing": "Growing",
@@ -3893,8 +3894,8 @@
             "yourAppsLabel": "Your apps",
             "appsToExplore": "Apps to explore",
             "jumpBackIn": "Jump back in",
-            "browseAll": "Browse all →",
-            "viewAll": "View all →"
+            "browseAll": "Browse all",
+            "viewAll": "View all"
         },
         "appTile": {
             "new": "New",

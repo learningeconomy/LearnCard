@@ -30,14 +30,14 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ slots }) => {
                         onClick={action.onClick}
                         className="group flex w-full min-h-[76px] items-center gap-4 bg-white rounded-[20px] py-4 px-4 border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-start min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
-                        <span className="shrink-0 w-11 h-11 rounded-full bg-grayscale-100 group-hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800">
+                        <span className="shrink-0 w-9 h-9 rounded-full bg-grayscale-100 group-hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800">
                             <Icon className="w-[30px] h-[30px]" />
                         </span>
                         <span className="flex flex-col min-w-0">
                             <span className="text-xs font-semibold text-grayscale-900 break-words">
                                 {action.label}
                             </span>
-                            <span className="text-xs text-grayscale-500 leading-4 line-clamp-2 break-words">
+                            <span className="text-xs text-grayscale-500 leading-tight line-clamp-1">
                                 {action.caption}
                             </span>
                         </span>
