@@ -102,7 +102,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
 
     const descriptorRoleContent =
         descriptor || roleSwitcher || roleFallback ? (
-            <div className="mt-1 flex items-center gap-2 min-w-0 pe-12 desktop:pe-0 desktop:ms-[76px]">
+            <div className="flex items-center gap-2 min-w-0 pe-12 desktop:pe-0 desktop:ms-[76px]">
                 {descriptor && (
                     <p
                         className={`min-w-0 truncate text-sm leading-snug ${

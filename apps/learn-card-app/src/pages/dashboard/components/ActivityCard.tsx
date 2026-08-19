@@ -132,11 +132,7 @@ const MeanwhileTips: React.FC<{ tips: EmptyTip[] }> = ({ tips }) => (
                         <span className="block text-sm font-medium text-grayscale-900 truncate">
                             {tip.title}
                         </span>
-<<<<<<< HEAD
-                        <span className="block text-xs text-grayscale-500 truncate">
-=======
-                        <span className="block text-[11px] text-grayscale-600 truncate">
->>>>>>> main
+                        <span className="block text-xs text-grayscale-600 truncate">
                             {tip.subtitle}
                         </span>
                     </span>
@@ -185,7 +181,7 @@ const ActionableRow: React.FC<{
                     {item.title}
                 </p>
                 {item.subtitle && (
-                    <p className="text-[11px] text-grayscale-600 truncate leading-tight mt-0.5">
+                    <p className="text-xs text-grayscale-600 truncate leading-tight mt-0.5">
                         {item.subtitle}
                     </p>
                 )}
