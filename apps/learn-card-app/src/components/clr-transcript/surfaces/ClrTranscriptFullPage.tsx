@@ -21,6 +21,7 @@ import type {
 import { selectClrTranscriptView } from '../../../helpers/clrRenderer.helpers';
 
 import type { VC } from '@learncard/types';
+import { getClrIssuerLogo } from '../clrKind.helpers';
 
 const ClrTranscriptFullPage: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -32,7 +33,7 @@ const ClrTranscriptFullPage: React.FC<{
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const selectedView = selectClrTranscriptView(model, options);
-    const issuerLogo = model.header.image?.value;
+    const issuerLogo = getClrIssuerLogo(model);
 
     const handleSelectProgram = (program: ProgramDisplayModel) => {
         newModal(

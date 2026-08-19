@@ -16,6 +16,7 @@ import type { VC } from '@learncard/types';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 import type { ClrTranscriptDisplayModel } from '../../helpers/clrRenderer.helpers';
 import { formatClrGpa } from './clr.helpers';
+import { getClrIssuerLogo } from './clrKind.helpers';
 
 const ClrTranscriptSummaryHeader: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -24,7 +25,7 @@ const ClrTranscriptSummaryHeader: React.FC<{
     adminMode?: boolean;
 }> = ({ model, boost, boostUri, adminMode = false }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
-    const issuerLogo = model.header.image?.value;
+    const issuerLogo = getClrIssuerLogo(model);
     const transcriptTitle = model.header.title?.value || 'Official Academic Transcript';
     const scrollToCourseHistory = () => {
         document.getElementById('course-history')?.scrollIntoView({
