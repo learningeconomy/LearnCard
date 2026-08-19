@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { generateOptimizedSrcSet, isFilestackUrl, optimizeUrl } from 'learn-card-base';
+import { generateOptimizedSrcSet, isOptimizableFilestackUrl, optimizeUrl } from 'learn-card-base';
 
 /**
  * Widths offered to the browser for the desktop login background.
@@ -33,7 +33,7 @@ export type DesktopLoginBackgroundProps = {
  * URL (a tenant's bundled `/branding/...` file) renders as-is.
  */
 const DesktopLoginBackground: React.FC<DesktopLoginBackgroundProps> = ({ src }) => {
-    const isOptimizable = isFilestackUrl(src);
+    const isOptimizable = isOptimizableFilestackUrl(src);
 
     return (
         <img
