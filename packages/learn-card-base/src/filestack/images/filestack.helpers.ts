@@ -239,3 +239,53 @@ export const insertParamsToFilestackUrl = (filestackUrl: string | undefined, ins
         `https://cdn.filestackcontent.com/${insertion}`
     );
 };
+
+/** Whether a URL is served by the Filestack CDN (and so accepts transformation tasks). */
+export const isFilestackUrl = (url: string | undefined): url is string =>
+    Boolean(url?.startsWith('https://cdn.filestackcontent.com/'));
+
+/**
+ * Resizes a Filestack image and converts it to a modern format at an explicit
+ * quality, replacing any resize/quality/output tasks already on the URL.
+ *
+ * Prefer this over `resizeAndChangeQuality` when the source is a PNG. The
+ * standalone `quality=value:N` task only applies to JPEG output — Filestack
+ * silently ignores it for PNG and WebP, so `resize=width:1600/quality=value:75`
+ * on a PNG still returns a full-weight PNG. Quality for a converted image has to
+ * ride on the `output` task itself (`output=format:webp,quality:75`).
+ *
+ * Non-Filestack URLs are returned untouched.
+ *
+ * @param url Filestack URL
+ * @param width Target output width
+ * @param quality Quality value (1-100)
+ * @param format Output format
+ *
+ * @return Filestack URL
+ */
+export const optimizeUrl = (
+    url: string,
+    { width, quality = 75, format = 'webp' }: { width: number; quality?: number; format?: string }
+): string => {
+    if (!isFilestackUrl(url)) return url;
+
+    const urlParams = getUrlParams(url).filter(param => !param.match(/^(resize|quality|output)=/));
+
+    urlParams.splice(-1, 0, `resize=width:${width}`, `output=format:${format},quality:${quality}`);
+
+    return getUrlFromUrlParams(urlParams);
+};
+
+/**
+ * Generates a responsive srcset string of optimized Filestack renditions.
+ *
+ * @param url Filestack URL
+ * @param widths list of widths
+ *
+ * @return srcset string
+ */
+export const generateOptimizedSrcSet = (
+    url: string,
+    widths: number[],
+    options: { quality?: number; format?: string } = {}
+): string => widths.map(width => `${optimizeUrl(url, { ...options, width })} ${width}w`).join(', ');
