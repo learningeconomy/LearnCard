@@ -43,16 +43,20 @@ export const AiInsightsPromptListItem: React.FC<{ prompt: string }> = ({ prompt 
             {
                 id: 1,
                 question: 'What would you like to learn about?',
+                questionKey: 'aiSession.chat.topicSelectionQuestion',
                 answer: prompt,
                 type: ChatBotQuestionsEnum.TopicSelection,
                 phraseToEmphasize: 'learn',
+                emphasisKey: 'aiSession.chat.topicSelectionEmphasis',
             },
             {
                 id: 2,
                 question: 'What app do you want to use?',
+                questionKey: 'aiSession.chat.appSelectionQuestion',
                 answer: 1,
                 type: ChatBotQuestionsEnum.AppSelection,
                 phraseToEmphasize: 'What app',
+                emphasisKey: 'aiSession.chat.appSelectionEmphasis',
             },
         ]);
         setInternalAiChatBot(true);

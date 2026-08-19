@@ -21,6 +21,7 @@ export const AppStoreDownloadButtons: React.FC = () => {
                     href={appStoreUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Download LearnCard on the App Store"
                     className="min-w-[134px] min-h-[40px] max-w-[134px] max-h-[40px] overflow-hidden"
                     onClick={e => {
                         e.stopPropagation();
@@ -34,6 +35,7 @@ export const AppStoreDownloadButtons: React.FC = () => {
                     href={playStoreUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label="Get LearnCard on Google Play"
                     className="min-w-[134px] min-h-[40px] max-w-[134px] max-h-[40px] overflow-hidden"
                     onClick={e => {
                         e.stopPropagation();

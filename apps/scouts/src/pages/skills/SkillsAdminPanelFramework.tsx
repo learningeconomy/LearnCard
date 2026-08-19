@@ -39,7 +39,7 @@ const SkillsAdminPanelFramework: React.FC<SkillsAdminPanelFrameworkProps> = ({
                 />
             </div>
 
-            <SlimCaretRight className="ml-auto w-[30px] h-[30px] text-grayscale-400" />
+            <SlimCaretRight className="rtl-mirror ml-auto w-[30px] h-[30px] text-grayscale-400" />
         </button>
     );
 };

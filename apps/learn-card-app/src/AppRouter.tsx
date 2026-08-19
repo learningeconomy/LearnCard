@@ -61,6 +61,8 @@ import { AI_ROUTES } from './constants/aiRoutes';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
+import ModalAccessibilityManager from './components/accessibility/ModalAccessibilityManager';
+import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 
 const log = getLogger('app-router');
 
@@ -475,32 +477,46 @@ const AppRouter: React.FC = () => {
                 authenticated subtree) so useLocale()/useGetProfile() work. */}
             <LocaleProfileSync />
             <GenericErrorBoundary>
-                {showOfflineBootGate ? (
-                    <OfflineBootGate />
-                ) : initLoading ? (
-                    <LoginLoadingPage />
-                ) : (
-                    <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
-                        <IonSplitPane
-                            contentId="main"
-                            className={
-                                collapsed
-                                    ? 'side-menu-split-pane-container-collapsed'
-                                    : 'side-menu-split-pane-container-visible'
-                            }
-                        >
-                            <GenericErrorBoundary>
-                                {isLoggedIn && !hideSideMenu && (
-                                    <SideMenu branding={BrandingEnum.learncard} />
-                                )}
-                                <div id="main" className="w-full">
-                                    <MobileNavBar />
-                                </div>
-                            </GenericErrorBoundary>
-                        </IonSplitPane>
-                    </div>
-                )}
+                <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
+                    {showOfflineBootGate ? (
+                        <OfflineBootGate />
+                    ) : initLoading ? (
+                        <LoginLoadingPage />
+                    ) : (
+                        <>
+                            <a
+                                href="#main"
+                                onClick={event => {
+                                    event.preventDefault();
+                                    document.getElementById('main')?.focus();
+                                }}
+                                className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[10000] focus-visible:rounded-[20px] focus-visible:bg-white focus-visible:px-4 focus-visible:py-3 focus-visible:text-sm focus-visible:font-medium focus-visible:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            >
+                                Skip to main content
+                            </a>
+                            <IonSplitPane
+                                contentId="main"
+                                className={
+                                    collapsed
+                                        ? 'side-menu-split-pane-container-collapsed'
+                                        : 'side-menu-split-pane-container-visible'
+                                }
+                            >
+                                <GenericErrorBoundary>
+                                    {isLoggedIn && !hideSideMenu && (
+                                        <SideMenu branding={BrandingEnum.learncard} />
+                                    )}
+                                    <main id="main" tabIndex={-1} className="w-full">
+                                        <MobileNavBar />
+                                    </main>
+                                </GenericErrorBoundary>
+                            </IonSplitPane>
+                        </>
+                    )}
+                </div>
                 <Modals />
+                <ModalAccessibilityManager />
+                <ReducedMotionManager />
             </GenericErrorBoundary>
         </SharedI18nProvider>
     );

@@ -108,7 +108,7 @@ const SkeletonRow: React.FC<{ index: number }> = ({ index }) => (
 
 const MeanwhileTips: React.FC<{ tips: EmptyTip[] }> = ({ tips }) => (
     <div className="mt-auto pt-3 border-t border-grayscale-100 flex flex-col gap-1">
-        <p className="text-[11px] font-medium tracking-wider text-grayscale-400 uppercase px-1 mb-1">
+        <p className="text-[11px] font-medium tracking-wider text-grayscale-600 uppercase px-1 mb-1">
             {m['dashboard.activity.meanwhile']()}
         </p>
         {tips.map(tip => {
@@ -118,7 +118,7 @@ const MeanwhileTips: React.FC<{ tips: EmptyTip[] }> = ({ tips }) => (
                     key={tip.key}
                     type="button"
                     onClick={tip.onClick}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-grayscale-10 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-grayscale-10 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <span className="shrink-0 w-9 h-9 rounded-full bg-grayscale-100 flex items-center justify-center text-grayscale-700">
                         {TipIcon ? (
@@ -131,7 +131,7 @@ const MeanwhileTips: React.FC<{ tips: EmptyTip[] }> = ({ tips }) => (
                         <span className="block text-sm font-medium text-grayscale-900 truncate">
                             {tip.title}
                         </span>
-                        <span className="block text-[11px] text-grayscale-500 truncate">
+                        <span className="block text-[11px] text-grayscale-600 truncate">
                             {tip.subtitle}
                         </span>
                     </span>
@@ -152,7 +152,7 @@ const ActionableRow: React.FC<{
         <button
             type="button"
             onClick={item.onClick}
-            className="w-full flex items-center gap-2.5 py-2 pl-2 pr-2.5 rounded-xl border-l-2 border-amber-300 bg-amber-50/40 hover:bg-amber-50 active:scale-[0.99] transition-all text-left animate-fade-in-up"
+            className="w-full flex items-center gap-2.5 py-2 pl-2 pr-2.5 rounded-xl border-l-2 border-amber-300 bg-amber-50/40 hover:bg-amber-50 active:scale-[0.99] transition-all text-left animate-fade-in-up focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             style={{ animationDelay: `${animationDelayMs}ms` }}
         >
             <span className="shrink-0 relative w-7 h-7">
@@ -269,7 +269,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     if (!hasActionable && !hasPassive) {
         return (
             <section className="bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up flex flex-col desktop:min-h-[420px]">
-                <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase mb-3">
+                <h2 className="text-xs font-medium tracking-wider text-grayscale-600 uppercase mb-3">
                     {m['dashboard.activity.title']()}
                 </h2>
                 <div className="flex flex-col items-center text-center py-6 desktop:py-8">
@@ -294,7 +294,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     <p className="text-sm font-semibold text-grayscale-900">
                         {m['dashboard.activity.emptyTitle']()}
                     </p>
-                    <p className="mt-1 text-xs text-grayscale-500 leading-relaxed max-w-[260px]">
+                    <p className="mt-1 text-xs text-grayscale-600 leading-relaxed max-w-[260px]">
                         {m['dashboard.activity.emptySubtitle']()}
                     </p>
                 </div>
@@ -305,7 +305,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
     return (
         <section className="bg-white rounded-[20px] p-4 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up flex flex-col">
-            <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase mb-2">
+            <h2 className="text-xs font-medium tracking-wider text-grayscale-600 uppercase mb-2">
                 {m['dashboard.activity.title']()}
             </h2>
 
@@ -317,7 +317,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/notifications')}
-                        className="self-start text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-0.5"
+                        className="self-start text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-0.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {actionableTotal > MAX_ACTIONABLE
                             ? m['dashboard.activity.viewMore']({
@@ -369,7 +369,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                     <button
                         type="button"
                         onClick={() => history.push('/wallet')}
-                        className="self-start text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-1"
+                        className="self-start text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {m['dashboard.activity.viewAllPassport']()}
                     </button>

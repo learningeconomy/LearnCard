@@ -6,22 +6,28 @@ import { IonContent, IonPage, IonRow } from '@ionic/react';
 
 import ScoutPassTextLogo from '../../../assets/images/scoutpass-text-logo.svg';
 import ScoutPassLogo from '../../../assets/images/scoutpass-logo.svg';
-
-const messages = _.shuffle([
-    'Badges coming right up!',
-    'Waving a magic boost wand!',
-    'Fetching your badge brilliance!',
-    'Unlocking your secret stardust!',
-    'Brewing your digital delights!',
-    'Summoning your boost superpowers!',
-    'Your digital treasure is near!',
-    'Preparing your badge bonanza!',
-    'Badges loading with pizzazz!',
-    'Get ready for boost spark!',
-]);
+import * as m from '../../../paraglide/messages.js';
+import { useLocale } from '../../../i18n';
 
 export const LoginLoadingPage: React.FC = () => {
+    const locale = useLocale();
     const [currentColorIndex, setCurrentColorIndex] = useState(0);
+    const messages = useMemo(
+        () =>
+            _.shuffle([
+                m['login.loadingMessages.badgesComing'](),
+                m['login.loadingMessages.magicBoostWand'](),
+                m['login.loadingMessages.badgeBrilliance'](),
+                m['login.loadingMessages.secretStardust'](),
+                m['login.loadingMessages.digitalDelights'](),
+                m['login.loadingMessages.boostSuperpowers'](),
+                m['login.loadingMessages.digitalTreasure'](),
+                m['login.loadingMessages.badgeBonanza'](),
+                m['login.loadingMessages.badgesPizzazz'](),
+                m['login.loadingMessages.boostSpark'](),
+            ]),
+        [locale]
+    );
     const colors = useMemo(
         () => [
             '#622599', // scouts purple
@@ -49,21 +55,21 @@ export const LoginLoadingPage: React.FC = () => {
                     style={{ backgroundColor: colors[currentColorIndex] }}
                 >
                     <div className="w-full flex items-center justify-center flex-col absolute top-[40%] left-[50%] translate-x-[-50%]">
-                        <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
-                        <img src={ScoutPassTextLogo} alt="ScoutPass text logo" className="mt-4" />
+                        <img src={ScoutPassLogo} alt="" className="w-[55px]" />
+                        <img src={ScoutPassTextLogo} alt="" className="mt-4" />
                         <div className="w-full flex items-center justify-center text-center text-[18px] px-6 mt-[20px]">
-                        <Typewriter
-                            options={{
-                                strings: messages,
-                                autoStart: true,
-                                loop: true,
-                                delay: 70,
-                                deleteSpeed: 50,
-                            }}
-                        />
+                            <Typewriter
+                                key={locale}
+                                options={{
+                                    strings: messages,
+                                    autoStart: true,
+                                    loop: true,
+                                    delay: 70,
+                                    deleteSpeed: 50,
+                                }}
+                            />
+                        </div>
                     </div>
-                    </div>
-                  
                 </IonRow>
             </IonContent>
         </IonPage>

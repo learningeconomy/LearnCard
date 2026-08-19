@@ -7,9 +7,10 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
-import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
+
 // import MainHeader from '../../components/main-header/MainHeader';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../components/accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../components/accessibility/AccessibleCredentialCard';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../components/render-method/RenderMethodDisplay';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
@@ -52,6 +53,7 @@ import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
+import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 
 import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { VC, VerificationItem } from '@learncard/types';
@@ -59,6 +61,7 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import {
     getAchievementType,
+    getCredentialName,
     getDefaultCategoryForCredential,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
@@ -98,7 +101,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{
                         {issuerProfileImageElement ? (
                             issuerProfileImageElement
                         ) : (
-                            <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
+                            <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-grayscale-100 text-emerald-700 font-semibold text-xl">
                                 {getEmojiFromDidString(issuerName)}
                             </div>
                         )}
@@ -112,7 +115,11 @@ const ClaimBoostBodyPreviewOverride: React.FC<{
                             <strong className="font-[700] capitalize">{issuerName}</strong>
                         </span>
                     </div>
-                    <CredentialVerificationDisplay credential={boostVC} showText />
+                    <CredentialVerificationDisplay
+                        credential={boostVC}
+                        showText
+                        className="claim-boost-verification-status"
+                    />
                 </div>
             </>
         );
@@ -157,7 +164,6 @@ const ClaimBoost: React.FC<{
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
-    const enableRenderMethod = useRenderMethodEnabled();
 
     const resolvePartnerId = (issuerId?: string) => {
         const profileId = getUserHandleFromDid(issuerId ?? '');
@@ -186,6 +192,8 @@ const ClaimBoost: React.FC<{
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const { presentToast } = useToast();
     const presentClaimSuccessToast = useClaimSuccessToast();
+    const { isCheckingDuplicate, requestDuplicateResolution, duplicateCredentialPrompt } =
+        useDuplicateCredentialGuard();
 
     const { credentialWithEdits } = useGetCredentialWithEdits(boost);
 
@@ -353,11 +361,24 @@ const ClaimBoost: React.FC<{
     }, [boost, vc, isClaimed, boostUri, track]);
 
     const handleClaimBoost = async () => {
-        if (isClaimed) return;
-        const wallet = await initWallet();
+        if (isClaimed || isCheckingDuplicate) return;
+        if (!boost) return;
+        const duplicateResolution = await requestDuplicateResolution(boost, { boostUri });
+        if (duplicateResolution.action === 'cancel') return;
+        if (duplicateResolution.action === 'skip') {
+            setIsClaimed(true);
+            dismissClaimModal?.();
+            history.replace('/');
+            presentToast(m['claim.duplicate.skippedToast'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+            return;
+        }
 
         const { prompted } = await gate();
         if (prompted) return;
+        const wallet = await initWallet();
 
         try {
             beginClaimAttempt(boost);
@@ -365,8 +386,12 @@ const ClaimBoost: React.FC<{
             // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
             capture();
 
-            const claimedBoostUri = await wallet?.invoke?.claimBoostWithLink(boostUri, challenge);
-            await addVCtoWallet({ uri: claimedBoostUri });
+            const claimedBoostUri = await wallet.invoke.claimBoostWithLink(boostUri, challenge);
+            const addedToWallet = await addVCtoWallet({
+                uri: claimedBoostUri,
+                boostUri,
+            });
+            if (!addedToWallet) throw new Error('Credential was not added to LearnCard');
 
             const category = getDefaultCategoryForCredential(boost);
             const achievementType = getAchievementType(boost);
@@ -402,7 +427,7 @@ const ClaimBoost: React.FC<{
             if (category === CredentialCategoryEnum.family) {
                 history.replace(`/families?boostUri=${claimedBoostUri}&showPreview=true`);
             } else {
-                history?.push('/');
+                history.replace('/');
             }
 
             presentClaimSuccessToast();
@@ -440,7 +465,20 @@ const ClaimBoost: React.FC<{
     };
 
     const handleClaimRawCredential = async () => {
-        if (isClaimed || !vc) return;
+        if (isClaimed || isCheckingDuplicate || !vc) return;
+
+        const duplicateResolution = await requestDuplicateResolution(vc);
+        if (duplicateResolution.action === 'cancel') return;
+        if (duplicateResolution.action === 'skip') {
+            setIsClaimed(true);
+            dismissClaimModal?.();
+            history.replace('/');
+            presentToast(m['claim.duplicate.skippedToast'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+            return;
+        }
 
         const { prompted } = await gate();
         if (prompted) return;
@@ -448,14 +486,15 @@ const ClaimBoost: React.FC<{
         try {
             beginClaimAttempt(vc);
             setIsClaimLoading(true);
-            await uploadVcFromTextAndAddToWallet(vc);
+            const result = await uploadVcFromTextAndAddToWallet(vc);
+            if (!result?.success) throw new Error('Credential was not added to LearnCard');
             completeClaimAttempt(vc, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
 
             setIsClaimed(true);
             setIsClaimLoading(false);
             dismissClaimModal?.();
 
-            history?.push('/');
+            history.replace('/');
 
             presentClaimSuccessToast();
         } catch (e) {
@@ -495,19 +534,16 @@ const ClaimBoost: React.FC<{
 
     const isFamily = category === CredentialCategoryEnum.family;
     const renderMethodSource = (_boost ?? boost ?? vc) as VC | undefined;
-    const renderMethod =
-        enableRenderMethod && renderMethodSource
-            ? getSvgMustacheRenderMethod(renderMethodSource)
-            : null;
+    const renderMethod = renderMethodSource ? getSvgMustacheRenderMethod(renderMethodSource) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(renderMethodSource as VC) as VC;
 
     let actionButtonText = m['common.accept']();
 
-    if (isClaimLoading) {
+    if (isCheckingDuplicate || isClaimLoading) {
         actionButtonText = m['common.loading']();
         if (isFamily) actionButtonText = m['contacts.joining']();
-    } else if (!isClaimLoading && isClaimed) {
+    } else if (isClaimed) {
         actionButtonText = m['claim.boost.accepted']();
         if (isFamily) actionButtonText = m['contacts.joined']();
     } else {
@@ -517,11 +553,9 @@ const ClaimBoost: React.FC<{
 
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            enableRenderMethod && renderMethod
-                ? BoostPreviewDisplayViewEnum.Issuer
-                : BoostPreviewDisplayViewEnum.Default
+            renderMethod ? BoostPreviewDisplayViewEnum.Issuer : BoostPreviewDisplayViewEnum.Default
         );
-    }, [renderMethod?.template, renderMethodSource?.id, enableRenderMethod]);
+    }, [renderMethod?.template, renderMethodSource?.id]);
 
     const appearance = boost?.display;
     const wallpaperImage = appearance?.backgroundImage;
@@ -564,28 +598,30 @@ const ClaimBoost: React.FC<{
     }
 
     const isIssuerViewSelected =
-        enableRenderMethod &&
-        Boolean(renderMethod) &&
-        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
     const shouldUseHostCardPadding =
         !renderMethodSource ||
         isIssuerViewSelected ||
         getVCDisplayCardVariant(displayCredential, category ?? undefined) !== 'ribbon';
 
     const renderClaimCredentialDisplay = (credentialToDisplay: VC) => (
-        <VCDisplayCardWrapper2
-            useCurrentUserName
-            credential={credentialToDisplay}
-            customBodyCardComponent={credentialBodyOverride}
-            customFooterComponent={<div />}
-            checkProof={false}
-            // isFrontOverride={isFront}
-            setIsFrontOverride={setIsFront}
-            hideNavButtons
-            hideFrontFaceDetails={false}
-            claimStatusText={actionButtonText}
-            handleClaim={handleClaimBoost}
-        />
+        <AccessibleCredentialCard
+            label={getCredentialName(credentialToDisplay) || m['claim.modal.credentialFallback']()}
+        >
+            <VCDisplayCardWrapper2
+                useCurrentUserName
+                credential={credentialToDisplay}
+                customBodyCardComponent={credentialBodyOverride}
+                customFooterComponent={<div />}
+                checkProof={false}
+                // isFrontOverride={isFront}
+                setIsFrontOverride={setIsFront}
+                hideNavButtons
+                hideFrontFaceDetails={false}
+                claimStatusText={actionButtonText}
+                handleClaim={handleClaimBoost}
+            />
+        </AccessibleCredentialCard>
     );
     const boostCredentialWithId = boost
         ? ({ ...((_boost ?? boost) as VC), boostId: boostUri } as VC)
@@ -608,7 +644,12 @@ const ClaimBoost: React.FC<{
     };
 
     return (
-        <IonPage>
+        <IonPage className="claim-boost-a11y-surface">
+            <h1 className="sr-only">
+                {getCredentialName((renderMethodSource ?? {}) as VC) ||
+                    m['claim.modal.credentialFallback']()}
+            </h1>
+            {duplicateCredentialPrompt}
             {/* <MainHeader
                 showBackButton={false}
                 customClassName="bg-white"
@@ -621,6 +662,8 @@ const ClaimBoost: React.FC<{
                     handleDetails: isMobile ? () => openDetailsSideModal() : undefined,
                     handleClaim: vc ? handleClaimRawCredential : handleClaimBoostAction,
                     claimBtnText: actionButtonText,
+                    disableClaimButton:
+                        loading || isClaimLoading || isCheckingDuplicate || isClaimed,
                     useFullCloseButton: !isMobile,
                 }}
             >
@@ -638,14 +681,18 @@ const ClaimBoost: React.FC<{
                         className="flex flex-col items-center justify-center px-2 overflow-x-auto h-full pt-[30px]"
                     > */}
                         <section
-                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
+                            className={`w-full mt-[var(--ion-safe-area-top,0px)] overflow-y-auto max-h-full disable-scrollbars ${
                                 shouldUseHostCardPadding ? 'px-6' : ''
                             } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                         >
                             <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
                                 {loading && (
-                                    <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
-                                        <IonSpinner color="black" />
+                                    <section
+                                        role="status"
+                                        aria-live="polite"
+                                        className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full"
+                                    >
+                                        <IonSpinner aria-hidden="true" color="black" />
                                         <p className="mt-2 font-bold text-lg">
                                             {m['common.loading']()}
                                         </p>

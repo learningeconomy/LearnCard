@@ -5,6 +5,7 @@ import NotificationButton from 'learn-card-base/components/notification-button/N
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
 import useOpenNotifications from '../notifications/useOpenNotifications';
+import * as m from '../../paraglide/messages.js';
 
 type ProfileAlertsIslandProps = {
     branding?: BrandingEnum;
@@ -28,6 +29,18 @@ const ProfileAlertsIsland: React.FC<ProfileAlertsIslandProps> = ({
     const isLoggedIn = useIsLoggedIn();
     const openMyLearnCard = useOpenMyLearnCard(branding);
     const openNotifications = useOpenNotifications();
+    const notificationButtonContainerRef = React.useRef<HTMLDivElement>(null);
+    const alertsLabel = m['sidemenu.links.alerts']();
+
+    React.useLayoutEffect(() => {
+        const button =
+            notificationButtonContainerRef.current?.querySelector<HTMLButtonElement>('button');
+
+        if (!button) return;
+
+        button.type = 'button';
+        button.setAttribute('aria-label', alertsLabel);
+    }, [alertsLabel]);
 
     if (!isLoggedIn) return null;
 
@@ -48,11 +61,13 @@ const ProfileAlertsIsland: React.FC<ProfileAlertsIslandProps> = ({
                     customImageClass="w-full h-full object-cover"
                 />
             </button>
-            <NotificationButton
-                colorOverride={notificationColorOverride ?? 'text-grayscale-900'}
-                iconVariant="alerts"
-                onOpen={openNotifications}
-            />
+            <div ref={notificationButtonContainerRef} className="contents">
+                <NotificationButton
+                    colorOverride={notificationColorOverride ?? 'text-grayscale-900'}
+                    iconVariant="alerts"
+                    onOpen={openNotifications}
+                />
+            </div>
         </div>
     );
 };

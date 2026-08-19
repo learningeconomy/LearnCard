@@ -44,7 +44,7 @@ const AppTile: React.FC<AppTileProps> = ({
         <button
             type="button"
             onClick={() => launch()}
-            className={`group ${visibilityClass} flex-col items-center gap-1.5 text-center w-[80px] active:scale-[0.95] transition-transform animate-fade-in-up`}
+            className={`group ${visibilityClass} flex-col items-center gap-1.5 text-center w-[80px] rounded-[18px] active:scale-[0.95] transition-transform animate-fade-in-up focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500`}
             style={{ animationDelay: `${animationDelayMs}ms` }}
             aria-label={
                 suggested

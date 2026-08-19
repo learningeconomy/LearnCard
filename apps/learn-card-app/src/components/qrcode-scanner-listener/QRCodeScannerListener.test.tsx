@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => {
         startScan: vi.fn(async () => undefined),
         stopScan: vi.fn(async () => undefined),
         presentToast: vi.fn(),
+        newModal: vi.fn(),
+        closeModal: vi.fn(),
         getShowScanner: () => showScanner,
         setShowScanner: (value: boolean) => {
             showScanner = value;
@@ -44,8 +46,10 @@ vi.mock('@ionic/react', () => ({
 }));
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ debug: vi.fn(), error: vi.fn(), warn: vi.fn() }),
+    ModalTypes: { Center: 'center', FullScreen: 'fullscreen' },
     ToastTypeEnum: { Error: 'error' },
     useToast: () => ({ presentToast: mocks.presentToast }),
+    useModal: () => ({ newModal: mocks.newModal, closeModal: mocks.closeModal }),
 }));
 vi.mock('learn-card-base/stores/QRCodeScannerStore', () => ({
     default: {
@@ -106,6 +110,32 @@ describe('QRCodeScannerListener', () => {
         expect(mocks.listenerRemovers[0]).toHaveBeenCalledOnce();
         expect(mocks.listenerRemovers[1]).toHaveBeenCalledOnce();
         expect(mocks.stopScan).toHaveBeenCalledTimes(2);
+    });
+
+    it('opens a scanned boost in the shared full-screen modal', async () => {
+        mocks.route.mockResolvedValueOnce({
+            kind: 'open_claim_boost',
+            boost: { uri: 'lc:boost:test', challenge: 'test-challenge' },
+        });
+
+        render(<QRCodeScannerListener />);
+        await waitFor(() => expect(mocks.callbacks).toHaveLength(1));
+
+        await act(async () => {
+            mocks.callbacks[0]({ barcode: { rawValue: 'https://learncard.app/boost/test' } });
+        });
+
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledOnce());
+
+        const [content, options, modalTypes] = mocks.newModal.mock.calls[0];
+
+        expect(content.props).toMatchObject({
+            uri: 'lc:boost:test',
+            claimChallenge: 'test-challenge',
+            vc: null,
+        });
+        expect(options).toEqual({ hideButton: true });
+        expect(modalTypes).toEqual({ desktop: 'fullscreen', mobile: 'fullscreen' });
     });
 
     it('keeps the active scan when the router function changes identity', async () => {

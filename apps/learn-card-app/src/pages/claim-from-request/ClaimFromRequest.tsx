@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -32,6 +32,7 @@ import {
     type FlowLifecycle,
 } from '@analytics';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
+import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 
 import {
     getAchievementType,
@@ -57,6 +58,10 @@ import { AlertCircle, RefreshCw, Home, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import * as m from '../../paraglide/messages.js';
+import {
+    getClaimInteractionBoostUri,
+    getClaimInteractionDuplicateLookup,
+} from './claimRequest.helpers';
 
 export type RequestMetadata = {
     credentialName: string;
@@ -342,7 +347,7 @@ const ExchangeErrorDisplay: React.FC<{
                         {friendlyError.title}
                     </h1>
 
-                    <p className="text-grayscale-500 text-sm">We couldn't complete your request</p>
+                    <p className="text-grayscale-600 text-sm">We couldn't complete your request</p>
                 </div>
 
                 {/* Content */}
@@ -366,7 +371,7 @@ const ExchangeErrorDisplay: React.FC<{
                         {/* Technical details (collapsed by default feeling) */}
                         {errorData && rawErrorMessage !== friendlyError.description && (
                             <details className="group">
-                                <summary className="text-xs text-grayscale-400 cursor-pointer hover:text-grayscale-600 transition-colors">
+                                <summary className="text-xs text-grayscale-600 cursor-pointer hover:text-grayscale-900 transition-colors">
                                     Show technical details
                                 </summary>
 
@@ -382,6 +387,7 @@ const ExchangeErrorDisplay: React.FC<{
                     {/* Action buttons */}
                     <div className="space-y-3">
                         <button
+                            type="button"
                             onClick={() => onRetry()}
                             className="w-full py-3 px-4 bg-grayscale-900 text-white font-medium text-sm rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                         >
@@ -390,6 +396,7 @@ const ExchangeErrorDisplay: React.FC<{
                         </button>
 
                         <button
+                            type="button"
                             onClick={onCancel}
                             className="w-full py-3 px-4 text-sm text-grayscale-600 font-medium rounded-[20px] hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                         >
@@ -548,6 +555,10 @@ const ClaimFromRequest: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
     const { vc_request_url } = queryString.parse(search);
+    const claimInteractionBoostUri = useMemo(
+        () => getClaimInteractionBoostUri(vc_request_url),
+        [vc_request_url]
+    );
 
     const isLoggedIn = useIsLoggedIn();
 
@@ -555,6 +566,8 @@ const ClaimFromRequest: React.FC = () => {
 
     const { presentToast } = useToast();
     const presentClaimSuccessToast = useClaimSuccessToast();
+    const { isCheckingDuplicate, requestDuplicateResolution, duplicateCredentialPrompt } =
+        useDuplicateCredentialGuard();
 
     // Resolve the wallet category route for a just-claimed credential (e.g.
     // "/achievements", "/socialBadges"). Falls back to the passport ("/home")
@@ -715,12 +728,26 @@ const ClaimFromRequest: React.FC = () => {
             ]).catch(() => undefined);
         }
 
-        history?.push(route);
+        history.replace(route);
     };
 
     const handleClaimCredential = async () => {
         try {
             if (!credential) return;
+            const duplicateResolution = await requestDuplicateResolution(
+                credential,
+                getClaimInteractionDuplicateLookup(claimInteractionBoostUri)
+            );
+            if (duplicateResolution.action === 'cancel') return;
+            if (duplicateResolution.action === 'skip') {
+                void handleAfterCredentialClaim(credential);
+                presentToast(m['claim.duplicate.skippedToast'](), {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
             beginClaimAttempt(credential);
             setClaimingCredential(true);
 
@@ -733,7 +760,12 @@ const ClaimFromRequest: React.FC = () => {
             // in `components/boost/mutations.ts`. Without this publish
             // the reactor silently ignores the claim and no pathway
             // nodes flip.
-            const storeResult = await storeAndAddVCToWallet(credential, { title: name });
+            const storeResult = await storeAndAddVCToWallet(credential, {
+                title: name,
+                allowDuplicate: duplicateResolution.isDuplicate,
+                boostUri: claimInteractionBoostUri,
+            });
+            if (!storeResult.result) throw new Error('Credential was not added to LearnCard');
 
             const category = getDefaultCategoryForCredential(credential);
             const achievementType = getAchievementType(credential);
@@ -771,6 +803,18 @@ const ClaimFromRequest: React.FC = () => {
 
             presentClaimSuccessToast();
         } catch (e) {
+            if (e instanceof Error && e.message.includes('exists')) {
+                completeClaimAttempt(credential, AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                setClaimingCredential(false);
+                log.warn('Credential already exists in wallet index', e);
+                void handleAfterCredentialClaim(credential);
+                presentToast(m['toasts.alreadyClaimed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
             completeClaimAttempt(
                 credential,
                 AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
@@ -779,23 +823,18 @@ const ClaimFromRequest: React.FC = () => {
             setClaimingCredential(false);
             log.error('Error claiming credential', e);
 
-            if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast(m['toasts.alreadyClaimed'](), {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
-
-                void handleAfterCredentialClaim(credential);
-            } else {
-                presentToast(m['toasts.claimOops'](), {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
-            }
+            presentToast(m['toasts.claimOops'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
     const renderExchangeStep = () => {
+        if (isCheckingDuplicate && exchangeState.state !== ExchangeState.AcceptCredentials) {
+            return <ExchangeLoading />;
+        }
+
         switch (exchangeState.state) {
             case ExchangeState.PresentationRequest:
                 return (
@@ -812,6 +851,9 @@ const ClaimFromRequest: React.FC = () => {
                         verifiablePresentation={exchangeState.data}
                         onAccept={handleRequest}
                         strategy={exchangeState.strategy}
+                        requestDuplicateResolution={requestDuplicateResolution}
+                        isCheckingDuplicate={isCheckingDuplicate}
+                        sourceBoostUri={claimInteractionBoostUri}
                     />
                 );
             case ExchangeState.Redirect:
@@ -852,6 +894,7 @@ const ClaimFromRequest: React.FC = () => {
     }
     return (
         <IonPage>
+            {duplicateCredentialPrompt}
             <IonContent>{renderExchangeStep()}</IonContent>
         </IonPage>
     );

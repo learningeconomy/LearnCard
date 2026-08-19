@@ -61,7 +61,7 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
             type="button"
             onClick={onManage}
             aria-label={m['dashboard.dataTrust.manage']()}
-            className="group w-full text-left bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 hover:border-grayscale-300 transition-colors animate-fade-in-up"
+            className="group w-full text-left bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 hover:border-grayscale-300 transition-colors animate-fade-in-up focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
         >
             <div className="flex items-start gap-4">
                 <span
@@ -76,7 +76,7 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
                 </span>
 
                 <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                    <p className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                         {m['dashboard.dataTrust.label']()}
                     </p>
                     <h2 className="mt-0.5 text-lg font-semibold text-grayscale-900">

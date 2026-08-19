@@ -149,7 +149,7 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                         className={`z-10 h-full w-fit text-${badgeBackgroundColor}`}
                         image={badgeThumbnail}
                     />
-                    <div className="absolute bottom-[-8%] right-[50%] translate-x-1/2 bg-white rounded-full p-1 h-[28px] w-[28px] flex items-center justify-center z-[9999]">
+                    <div className="absolute bottom-[-8%] right-[50%] z-20 flex h-[28px] w-[28px] translate-x-1/2 items-center justify-center rounded-full bg-white p-1">
                         <IconComponentOverride className={`text-${_colorOverride} h-[18px]`} />
                     </div>
                 </div>
@@ -182,10 +182,10 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                         </div>
                         {isCertDisplayType && (
                             <CertRibbon
-                                className={`absolute top-[-6%] z-[9999] w-[120px] h-[120px] text-${_colorOverride} ${certRibbonCustomClass}`}
+                                className={`absolute top-[-6%] z-10 w-[120px] h-[120px] text-${_colorOverride} ${certRibbonCustomClass}`}
                             />
                         )}
-                        <div className="absolute bottom-[1%] right-[50%] translate-x-1/2 bg-white rounded-full p-1 h-[28px] w-[28px] flex items-center justify-center z-[9999]">
+                        <div className="absolute bottom-[1%] right-[50%] z-20 flex h-[28px] w-[28px] translate-x-1/2 items-center justify-center rounded-full bg-white p-1">
                             <IconComponentOverride className={`text-${_colorOverride} h-[18px]`} />
                         </div>
                     </div>

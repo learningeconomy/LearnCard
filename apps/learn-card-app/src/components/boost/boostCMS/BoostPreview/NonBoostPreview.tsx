@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
 import { Capacitor } from '@capacitor/core';
-import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 
 import { IonPage } from '@ionic/react';
 import { getVCDisplayCardVariant } from '@learncard/react';
@@ -13,7 +12,8 @@ import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostMediaPreview from './BoostMediaPreview';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../../accessibility/AccessibleCredentialCard';
 import ClrTranscriptFullPage from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
 import ClrCourseDetailPanel from '../../../clr-transcript/ClrCourseDetailPanel';
 import {
@@ -23,8 +23,11 @@ import {
 } from '../../../../helpers/clrRenderer.helpers';
 import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
 import { getClrIssuerLogo } from '../../../clr-transcript/clrKind.helpers';
-import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getAchievementType,
+    getCredentialName,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
@@ -39,6 +42,7 @@ import {
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import { AnalyticsEvents, useAnalytics } from '@analytics';
+import * as m from '../../../../paraglide/messages.js';
 
 type IssueHistory = {
     id?: string | number;
@@ -118,12 +122,11 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     displayType,
     isPreview = false,
 }) => {
-    const enableRenderMethod = useRenderMethodEnabled();
     const { track } = useAnalytics();
     const { initWallet } = useWallet();
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const viewedCredentialIdRef = React.useRef<string | undefined>(undefined);
-    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
+    const renderMethod = getSvgMustacheRenderMethod(credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
     useEffect(() => {
@@ -132,11 +135,9 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     }, [credential?.id]);
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            enableRenderMethod && renderMethod
-                ? BoostPreviewDisplayViewEnum.Issuer
-                : BoostPreviewDisplayViewEnum.Default
+            renderMethod ? BoostPreviewDisplayViewEnum.Issuer : BoostPreviewDisplayViewEnum.Default
         );
-    }, [credential?.id, renderMethod?.template, enableRenderMethod]);
+    }, [credential?.id, renderMethod?.template]);
     const [isFront, setIsFront] = useState(true);
     const { newModal, closeModal } = useModal();
 
@@ -256,9 +257,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         !isStandaloneCourse &&
         (displayType === DisplayTypeEnum.Media || credential?.display?.displayType === 'media');
     const isIssuerViewSelected =
-        enableRenderMethod &&
-        Boolean(renderMethod) &&
-        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
     const shouldUseHostCardPadding =
         isIssuerViewSelected ||
         getVCDisplayCardVariant(credential, categoryType, displayType) !== 'ribbon';
@@ -302,33 +301,41 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     }
 
     const credentialDisplay = (
-        <VCDisplayCardWrapper2
-            credential={credential}
-            issueeOverride={issueeOverride}
-            issuerOverride={issuerOverride}
-            issueHistory={issueHistory}
-            categoryType={categoryType}
-            verificationItems={verifications}
-            lifecycleStatus={lifecycleStatus}
-            customThumbComponent={customThumbComponent}
-            customBodyCardComponent={customBodyCardComponent}
-            customFooterComponent={
-                isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+        <AccessibleCredentialCard
+            label={
+                titleOverride ||
+                getCredentialName(credential) ||
+                m['claim.modal.credentialFallback']()
             }
-            subjectDID={subjectDID}
-            subjectImageComponent={subjectImageComponent}
-            issuerImageComponent={issuerImageComponent}
-            customDescription={customDescription}
-            customCriteria={customCriteria}
-            customIssueHistoryComponent={customIssueHistoryComponent}
-            enableLightbox
-            titleOverride={titleOverride}
-            handleClose={isCertificate && !isStandaloneCourse ? handleCloseModal : undefined}
-            hideNavButtons
-            setIsFrontOverride={setIsFront}
-            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-            customBodyContentSlot={endorsementBadge}
-        />
+        >
+            <VCDisplayCardWrapper2
+                credential={credential}
+                issueeOverride={issueeOverride}
+                issuerOverride={issuerOverride}
+                issueHistory={issueHistory}
+                categoryType={categoryType}
+                verificationItems={verifications}
+                lifecycleStatus={lifecycleStatus}
+                customThumbComponent={customThumbComponent}
+                customBodyCardComponent={customBodyCardComponent}
+                customFooterComponent={
+                    isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+                }
+                subjectDID={subjectDID}
+                subjectImageComponent={subjectImageComponent}
+                issuerImageComponent={issuerImageComponent}
+                customDescription={customDescription}
+                customCriteria={customCriteria}
+                customIssueHistoryComponent={customIssueHistoryComponent}
+                enableLightbox
+                titleOverride={titleOverride}
+                handleClose={isCertificate && !isStandaloneCourse ? handleCloseModal : undefined}
+                hideNavButtons
+                setIsFrontOverride={setIsFront}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                customBodyContentSlot={endorsementBadge}
+            />
+        </AccessibleCredentialCard>
     );
 
     let credentialContent: React.ReactNode;
@@ -374,6 +381,11 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     return (
         <IonPage>
+            <h1 className="sr-only">
+                {titleOverride ||
+                    getCredentialName(credential) ||
+                    m['claim.modal.credentialFallback']()}
+            </h1>
             <BoostFooterLayout
                 className={bgColor}
                 contentOwnsScroll
@@ -395,12 +407,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                                 isCertificate && !isStandaloneCourse
                                     ? 'certificate-display-zoom'
                                     : ''
-                            } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
+                            } ${isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
                         >
                             <section
                                 className={`w-full overflow-y-auto max-h-full disable-scrollbars ${
                                     Capacitor.isNativePlatform() && !usesAcademicFullPage
-                                        ? 'pt-0 safe-area-top-margin'
+                                        ? 'pt-0 mt-[var(--ion-safe-area-top,0px)]'
                                         : 'pt-[30px]'
                                 } ${previewContentPaddingClass}`}
                             >

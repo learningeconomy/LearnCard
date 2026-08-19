@@ -11,7 +11,7 @@ import {
     BoostAddressBookViewMode,
     BoostAddressBookEditMode,
 } from '../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBook';
-import { conditionalPluralize, useWallet } from 'learn-card-base';
+import { useWallet } from 'learn-card-base';
 import { BoostCMSIssueTo, ShortBoostState } from '../boost';
 import { LCNProfile } from '@learncard/types';
 import { UnsignedVC, VC } from '@learncard/types';
@@ -23,6 +23,8 @@ import boostSearchStore from '../../../stores/boostSearchStore';
 import { ScoutsRoleEnum } from '../../../stores/troopPageStore';
 import { MemberTabsEnum } from '../../../pages/troop/TroopPageMembersBox';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+import { formatLocaleCount } from '../../../i18n/formatters';
 const log = getLogger('boost-search');
 
 type BoostSearchProps = {
@@ -148,9 +150,12 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
     let showNoSearchResults =
         !searchLoading && search?.length > 0 && searchResults && searchResults.length === 0;
 
-    let noConnectionsString = 'No connections yet';
-    let headerText = conditionalPluralize(contactCount ?? 0, 'Contact');
-    let searchPlaceholder = 'Search ScoutPass Network...';
+    let noConnectionsString = m['boost.noConnectionsYet']();
+    let headerText = formatLocaleCount(contactCount ?? 0, {
+        one: m['boost.contactOne'](),
+        other: m['boost.contactOther'](),
+    });
+    let searchPlaceholder = m['boost.searchScoutPass']();
 
     let connectionsToShow = connections;
 
@@ -163,9 +168,14 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             showSearchLoader = false; // Uses filter, not network profile search, so always false
             showSearchResults = false; // Again, doesn't use network profile search
             showNoSearchResults = !scoutsLoading && scouts?.length === 0 && search?.length > 0;
-            noConnectionsString = 'No troop members';
-            headerText = conditionalPluralize(scouts?.length ?? 0, 'Scout');
-            searchPlaceholder = `Search ${contextCredential?.name ?? 'Troop'}...`;
+            noConnectionsString = m['boost.noTroopMembers']();
+            headerText = formatLocaleCount(scouts?.length ?? 0, {
+                one: m['boost.scoutMemberOne'](),
+                other: m['boost.scoutMemberOther'](),
+            });
+            searchPlaceholder = m['boost.searchTroop']({
+                name: contextCredential?.name ?? m['boost.troop'](),
+            });
             connectionsToShow = scouts ?? [];
         }
         if (isNetworkAdmin) {
@@ -178,9 +188,14 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             showSearchResults = false; // Again, doesn't use network profile search
             showNoSearchResults =
                 !networkLoading && networkMembers?.length === 0 && search?.length > 0;
-            noConnectionsString = 'No network members';
-            headerText = conditionalPluralize(networkMembers?.length ?? 0, 'Network Member');
-            searchPlaceholder = `Search ${contextCredential?.name ?? 'Network'}...`;
+            noConnectionsString = m['boost.noNetworkMembers']();
+            headerText = formatLocaleCount(networkMembers?.length ?? 0, {
+                one: m['boost.networkMemberLabelOne'](),
+                other: m['boost.networkMemberLabelOther'](),
+            });
+            searchPlaceholder = m['boost.searchNetwork']({
+                name: contextCredential?.name ?? m['boost.network'](),
+            });
             connectionsToShow = networkMembers;
         }
     }
@@ -201,7 +216,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                             setSearch?.('');
                                         }}
                                     >
-                                        <CaretLeft className="h-auto w-3 text-grayscale-900" />
+                                        <CaretLeft className="rtl-mirror h-auto w-3 text-grayscale-900" />
                                     </button>
                                     <h3 className="text-grayscale-900 flex items-center justify-start text-2xl">
                                         {headerText}
@@ -283,7 +298,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                 style={{ width: '100%', height: '100%' }}
                             />
                         </div>
-                        <strong>No search results</strong>
+                        <strong>{m['boost.noSearchResults']()}</strong>
                     </section>
                 )}
                 <footer className="pb-[15px] bg-white fixed bottom-0 w-full" color="white">
@@ -294,7 +309,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                     onClick={handleSaveContacts}
                                     className="relative flex flex-1 items-center justify-center bg-sp-purple-base rounded-full px-[18px] py-[8px] text-white text-2xl w-full shadow-lg text-center"
                                 >
-                                    Save
+                                    {m['common.save']()}
                                 </button>
                             </IonCol>
                         </div>
