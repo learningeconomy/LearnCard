@@ -52,6 +52,7 @@ import EUParentalConsentModalContent from '../../components/onboarding/onboardin
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
 import LoginWelcomePanel from './LoginWelcomePanel';
+import DesktopLoginBackground from './DesktopLoginBackground';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -690,16 +691,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                                     {alternateBgComponent ? (
                                         alternateBgComponent
                                     ) : desktopLoginBg ? (
-                                        <img
-                                            src={desktopLoginBg}
-                                            alt=""
-                                            aria-hidden="true"
-                                            className="w-full h-full object-contain"
-                                            onError={e => {
-                                                (e.target as HTMLImageElement).style.display =
-                                                    'none';
-                                            }}
-                                        />
+                                        <DesktopLoginBackground src={desktopLoginBg} />
                                     ) : (
                                         <LoginWelcomePanel />
                                     )}
