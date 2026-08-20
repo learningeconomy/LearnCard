@@ -33,7 +33,9 @@ export const ActivityFilterPopover: React.FC<Props> = ({ id, selected, onApply, 
                         filterId === 'all'
                             ? null
                             : getThemedCategory(filterId as CredentialCategoryEnum);
-                    const Icon = themed?.icons?.Icon ?? themed?.icons?.IconWithShape;
+                    const Icon = isSelected
+                        ? themed?.icons?.IconWhite ?? themed?.icons?.IconSolid
+                        : themed?.icons?.IconDark ?? themed?.icons?.IconSolid;
                     return (
                         <button
                             key={String(filterId)}
