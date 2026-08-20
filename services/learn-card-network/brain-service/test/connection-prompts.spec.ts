@@ -23,7 +23,7 @@ import { neogma } from '@instance';
 import { Profile } from '@models';
 import { ProfileType } from 'types/profile';
 
-import { getUser } from './helpers/getClient';
+import { getClient, getUser } from './helpers/getClient';
 
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
@@ -142,6 +142,138 @@ describe('credential claim connection prompts', () => {
         expect(claimerPrompt?.counterpart).not.toHaveProperty('bio');
         expect(claimerPrompt?.counterpart).not.toHaveProperty('email');
         expect(await getPendingConnectionPrompts(profileA)).toHaveLength(1);
+    });
+
+    describe('authenticated profile routes', () => {
+        it('requires full authentication for connection prompt reads and actions', async () => {
+            const created = await createPrompts('credential:claim-1');
+            const noAuthClient = getClient();
+
+            await expect(noAuthClient.profile.pendingConnectionPrompts()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userB.clients.partialAuth.profile.connectionPromptStatus({
+                    promptId: created.claimerPrompt!.promptId,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(
+                userB.clients.partialAuth.profile.skipConnectionPrompt({
+                    promptId: created.claimerPrompt!.promptId,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('lists only the authenticated viewer prompts with a public counterpart', async () => {
+            await createPrompts('credential:claim-1');
+
+            const pending = await userB.clients.fullAuth.profile.pendingConnectionPrompts();
+
+            expect(pending).toHaveLength(1);
+            expect(pending[0]?.counterpart.profileId).toBe(profileA.profileId);
+            expect(pending[0]?.counterpart).not.toHaveProperty('did');
+            expect(pending[0]?.counterpart).not.toHaveProperty('email');
+        });
+
+        it('skips only the authenticated viewer prompt', async () => {
+            const created = await createPrompts('credential:claim-1');
+
+            await expect(
+                userB.clients.fullAuth.profile.skipConnectionPrompt({
+                    promptId: created.claimerPrompt!.promptId,
+                })
+            ).resolves.toEqual({
+                promptId: created.claimerPrompt!.promptId,
+                status: 'SKIPPED',
+            });
+            await expect(
+                userA.clients.fullAuth.profile.connectionPromptStatus({
+                    promptId: created.senderPrompt!.promptId,
+                })
+            ).resolves.toMatchObject({ status: 'PENDING' });
+        });
+
+        it('does not let another viewer read or act on a prompt id', async () => {
+            const created = await createPrompts('credential:claim-1');
+            const promptId = created.claimerPrompt!.promptId;
+
+            await expect(
+                userA.clients.fullAuth.profile.connectionPromptStatus({ promptId })
+            ).resolves.toEqual({ promptId, status: 'STALE' });
+            await expect(
+                userA.clients.fullAuth.profile.skipConnectionPrompt({ promptId })
+            ).resolves.toEqual({ promptId, status: 'STALE' });
+            await expect(
+                userB.clients.fullAuth.profile.connectionPromptStatus({ promptId })
+            ).resolves.toEqual({ promptId, status: 'PENDING' });
+        });
+
+        it('reports an overwritten prompt id as stale', async () => {
+            const first = await createPrompts('credential:claim-1');
+            await userB.clients.fullAuth.profile.skipConnectionPrompt({
+                promptId: first.claimerPrompt!.promptId,
+            });
+            const later = await createPrompts('credential:claim-2');
+
+            expect(later.claimerPrompt?.promptId).not.toBe(first.claimerPrompt?.promptId);
+            await expect(
+                userB.clients.fullAuth.profile.connectionPromptStatus({
+                    promptId: first.claimerPrompt!.promptId,
+                })
+            ).resolves.toEqual({
+                promptId: first.claimerPrompt!.promptId,
+                status: 'STALE',
+            });
+        });
+
+        it('connects immediately from a prompt and resolves both directions', async () => {
+            const created = await createPrompts('credential:claim-1');
+
+            await expect(
+                userA.clients.fullAuth.profile.connectWithConnectionPrompt({
+                    promptId: created.senderPrompt!.promptId,
+                })
+            ).resolves.toEqual({
+                promptId: created.senderPrompt!.promptId,
+                status: 'CONNECTED',
+            });
+            expect(await areProfilesConnected(profileA, profileB)).toBe(true);
+            await expect(
+                userB.clients.fullAuth.profile.connectionPromptStatus({
+                    promptId: created.claimerPrompt!.promptId,
+                })
+            ).resolves.toMatchObject({ status: 'CONNECTED' });
+        });
+
+        it('returns connected without creating another connection when already connected', async () => {
+            const created = await createPrompts('credential:claim-1');
+            await connectProfiles(profileA, profileB, false);
+
+            const countConnectionEdges = async (): Promise<number> => {
+                const result = await neogma.queryRunner.run(
+                    `
+                        MATCH (:Profile { profileId: $profileAId })
+                              -[connection:CONNECTED_WITH]-
+                              (:Profile { profileId: $profileBId })
+                        RETURN count(connection) AS count
+                    `,
+                    { profileAId: profileA.profileId, profileBId: profileB.profileId }
+                );
+
+                return Number(result.records[0]?.get('count'));
+            };
+
+            expect(await countConnectionEdges()).toBe(2);
+            await expect(
+                userB.clients.fullAuth.profile.connectWithConnectionPrompt({
+                    promptId: created.claimerPrompt!.promptId,
+                })
+            ).resolves.toEqual({
+                promptId: created.claimerPrompt!.promptId,
+                status: 'CONNECTED',
+            });
+            expect(await countConnectionEdges()).toBe(2);
+        });
     });
 
     it('does not reopen a skipped prompt for the same trigger but reopens for a later claim', async () => {
