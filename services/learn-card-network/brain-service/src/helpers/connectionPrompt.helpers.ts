@@ -132,7 +132,11 @@ export const createConnectionPromptsForClaim = async (
                             ELSE null
                         END,
                         prompt.notificationDeliveryAttemptToken = null,
-                        prompt.notificationDeliveryAttemptedAt = null
+                        prompt.notificationDeliveryAttemptedAt = null,
+                        prompt.notificationDeliveryMayHaveSucceeded = CASE
+                            WHEN direction.role = 'sender' THEN false
+                            ELSE null
+                        END
                 )
                 RETURN collect({
                     role: direction.role,
@@ -205,6 +209,18 @@ const claimSenderPromptNotificationDelivery = async (
             WITH first, prompt,
                  CASE
                      WHEN prompt IS NOT NULL
+                       AND prompt.notificationDeliveryAttemptToken IS NOT NULL
+                       AND (
+                           prompt.notificationDeliveryAttemptedAt IS NULL
+                           OR prompt.notificationDeliveryAttemptedAt <= $staleBefore
+                       )
+                     THEN true
+                     ELSE false
+                 END AS reclaimingStaleAttempt
+            WITH first, prompt,
+                 reclaimingStaleAttempt,
+                 CASE
+                     WHEN prompt IS NOT NULL
                        AND prompt.status = 'PENDING'
                        AND prompt.triggerId = $triggerId
                        AND coalesce(prompt.notificationDelivered, false) = false
@@ -218,7 +234,10 @@ const claimSenderPromptNotificationDelivery = async (
                  END AS canClaim
             FOREACH (_ IN CASE WHEN canClaim THEN [1] ELSE [] END |
                 SET prompt.notificationDeliveryAttemptToken = $attemptToken,
-                    prompt.notificationDeliveryAttemptedAt = $attemptedAt
+                    prompt.notificationDeliveryAttemptedAt = $attemptedAt,
+                    prompt.notificationDeliveryMayHaveSucceeded =
+                        coalesce(prompt.notificationDeliveryMayHaveSucceeded, false)
+                        OR reclaimingStaleAttempt
             )
             REMOVE first.__connectionPromptPairLock
             RETURN canClaim AS claimed
@@ -257,13 +276,14 @@ const markSenderPromptNotificationDelivered = async (
               AND prompt.notificationDeliveryAttemptToken = $attemptToken
             SET prompt.notificationDelivered = true
             REMOVE prompt.notificationDeliveryAttemptToken,
-                   prompt.notificationDeliveryAttemptedAt
+                   prompt.notificationDeliveryAttemptedAt,
+                   prompt.notificationDeliveryMayHaveSucceeded
         `,
         { viewerId: viewer.profileId, promptId, triggerId, attemptToken }
     );
 };
 
-const skipSenderPromptAfterNotificationRejection = async (
+const resolveSenderPromptAfterNotificationRejection = async (
     viewer: ProfileType,
     promptId: string,
     triggerId: string,
@@ -278,7 +298,12 @@ const skipSenderPromptAfterNotificationRejection = async (
               AND prompt.triggerId = $triggerId
               AND coalesce(prompt.notificationDelivered, false) = false
               AND prompt.notificationDeliveryAttemptToken = $attemptToken
-            SET prompt.status = 'SKIPPED', prompt.updatedAt = $updatedAt
+            WITH prompt,
+                 coalesce(prompt.notificationDeliveryMayHaveSucceeded, false)
+                     AS deliveryMayHaveSucceeded
+            FOREACH (_ IN CASE WHEN deliveryMayHaveSucceeded THEN [] ELSE [1] END |
+                SET prompt.status = 'SKIPPED', prompt.updatedAt = $updatedAt
+            )
             REMOVE prompt.notificationDeliveryAttemptToken,
                    prompt.notificationDeliveryAttemptedAt
         `,
@@ -296,7 +321,8 @@ const releaseSenderPromptNotificationDelivery = async (
     viewer: ProfileType,
     promptId: string,
     triggerId: string,
-    attemptToken: string
+    attemptToken: string,
+    deliveryMayHaveSucceeded: boolean
 ): Promise<void> => {
     await neogma.queryRunner.run(
         `
@@ -307,10 +333,19 @@ const releaseSenderPromptNotificationDelivery = async (
               AND prompt.triggerId = $triggerId
               AND coalesce(prompt.notificationDelivered, false) = false
               AND prompt.notificationDeliveryAttemptToken = $attemptToken
+            SET prompt.notificationDeliveryMayHaveSucceeded =
+                coalesce(prompt.notificationDeliveryMayHaveSucceeded, false)
+                OR $deliveryMayHaveSucceeded
             REMOVE prompt.notificationDeliveryAttemptToken,
                    prompt.notificationDeliveryAttemptedAt
         `,
-        { viewerId: viewer.profileId, promptId, triggerId, attemptToken }
+        {
+            viewerId: viewer.profileId,
+            promptId,
+            triggerId,
+            attemptToken,
+            deliveryMayHaveSucceeded,
+        }
     );
 };
 
@@ -403,7 +438,8 @@ export const handleConnectionPromptsForCredentialClaim = async (
                         input.sender,
                         result.senderPrompt.promptId,
                         input.triggerId,
-                        attemptToken
+                        attemptToken,
+                        true
                     );
                 } catch (releaseError) {
                     console.error('Failed to release connection prompt notification delivery', {
@@ -425,7 +461,7 @@ export const handleConnectionPromptsForCredentialClaim = async (
             });
 
             try {
-                await skipSenderPromptAfterNotificationRejection(
+                await resolveSenderPromptAfterNotificationRejection(
                     input.sender,
                     result.senderPrompt.promptId,
                     input.triggerId,
@@ -445,7 +481,8 @@ export const handleConnectionPromptsForCredentialClaim = async (
                         input.sender,
                         result.senderPrompt.promptId,
                         input.triggerId,
-                        attemptToken
+                        attemptToken,
+                        false
                     );
                 } catch (releaseError) {
                     console.error('Failed to release connection prompt notification delivery', {

@@ -518,6 +518,7 @@ describe('credential claim connection prompts', () => {
         delivered: boolean;
         attemptToken: string | null;
         attemptedAt: string | null;
+        mayHaveSucceeded: boolean;
     }> => {
         const result = await neogma.queryRunner.run(
             `
@@ -528,7 +529,9 @@ describe('credential claim connection prompts', () => {
                        prompt.status AS status,
                        coalesce(prompt.notificationDelivered, false) AS delivered,
                        prompt.notificationDeliveryAttemptToken AS attemptToken,
-                       prompt.notificationDeliveryAttemptedAt AS attemptedAt
+                       prompt.notificationDeliveryAttemptedAt AS attemptedAt,
+                       coalesce(prompt.notificationDeliveryMayHaveSucceeded, false)
+                           AS mayHaveSucceeded
             `,
             { senderId: profileA.profileId, claimerId: profileB.profileId }
         );
@@ -540,6 +543,7 @@ describe('credential claim connection prompts', () => {
             delivered: record.get('delivered') as boolean,
             attemptToken: record.get('attemptToken') as string | null,
             attemptedAt: record.get('attemptedAt') as string | null,
+            mayHaveSucceeded: record.get('mayHaveSucceeded') as boolean,
         };
     };
 
@@ -627,6 +631,7 @@ describe('credential claim connection prompts', () => {
             const [publicPrompt] = await getPendingConnectionPrompts(profileA);
             expect(publicPrompt).not.toHaveProperty('notificationDeliveryAttemptToken');
             expect(publicPrompt).not.toHaveProperty('notificationDeliveryAttemptedAt');
+            expect(publicPrompt).not.toHaveProperty('notificationDeliveryMayHaveSucceeded');
 
             await neogma.queryRunner.run(
                 `
@@ -719,6 +724,122 @@ describe('credential claim connection prompts', () => {
                 delivered: false,
             });
         } finally {
+            notificationSpy.mockRestore();
+        }
+    });
+
+    it('keeps a prompt pending when retry rejects after an earlier enqueue acknowledgement write fails', async () => {
+        const triggerId = 'credential:uncertain-after-ack-write-failure';
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValueOnce(undefined)
+            .mockRejectedValueOnce(new Error('injected retry enqueue rejection'));
+        const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+        let failAcknowledgement = true;
+        const queryRunnerSpy = vi
+            .spyOn(neogma.queryRunner, 'run')
+            .mockImplementation(async (query, params) => {
+                if (
+                    failAcknowledgement &&
+                    typeof query === 'string' &&
+                    query.includes('notificationDelivered = true')
+                ) {
+                    failAcknowledgement = false;
+                    throw new Error('injected acknowledgement write failure');
+                }
+
+                return originalRun(query, params);
+            });
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        try {
+            await handleClaim(triggerId);
+            await expect(handleClaim(triggerId)).resolves.toMatchObject({
+                senderNotificationFailed: true,
+            });
+
+            expect(notificationSpy).toHaveBeenCalledTimes(2);
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'PENDING',
+                delivered: false,
+                attemptToken: null,
+                attemptedAt: null,
+                mayHaveSucceeded: true,
+            });
+        } finally {
+            consoleErrorSpy.mockRestore();
+            queryRunnerSpy.mockRestore();
+            notificationSpy.mockRestore();
+        }
+    });
+
+    it('keeps a prompt pending when a stale owner may have enqueued before its rejecting takeover', async () => {
+        const triggerId = 'credential:uncertain-stale-takeover';
+        let releaseFirstAcknowledgement: (() => void) | undefined;
+        let signalFirstAcknowledgement: (() => void) | undefined;
+        const firstAcknowledgementStarted = new Promise<void>(resolve => {
+            signalFirstAcknowledgement = resolve;
+        });
+        const firstAcknowledgementGate = new Promise<void>(resolve => {
+            releaseFirstAcknowledgement = resolve;
+        });
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValueOnce(undefined)
+            .mockRejectedValueOnce(new Error('injected takeover enqueue rejection'));
+        const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+        let holdFirstAcknowledgement = true;
+        const queryRunnerSpy = vi
+            .spyOn(neogma.queryRunner, 'run')
+            .mockImplementation(async (query, params) => {
+                if (
+                    holdFirstAcknowledgement &&
+                    typeof query === 'string' &&
+                    query.includes('notificationDelivered = true')
+                ) {
+                    holdFirstAcknowledgement = false;
+                    signalFirstAcknowledgement?.();
+                    await firstAcknowledgementGate;
+                }
+
+                return originalRun(query, params);
+            });
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        let firstHandler: ReturnType<typeof handleClaim> | undefined;
+
+        try {
+            firstHandler = handleClaim(triggerId);
+            await firstAcknowledgementStarted;
+
+            await originalRun(
+                `
+                    MATCH ()-[prompt:CONNECTION_PROMPT]->()
+                    WHERE prompt.triggerId = $triggerId
+                      AND prompt.notificationDeliveryAttemptToken IS NOT NULL
+                    SET prompt.notificationDeliveryAttemptedAt = $attemptedAt
+                `,
+                { triggerId, attemptedAt: new Date(0).toISOString() }
+            );
+
+            await expect(handleClaim(triggerId)).resolves.toMatchObject({
+                senderNotificationFailed: true,
+            });
+            releaseFirstAcknowledgement?.();
+            await firstHandler;
+
+            expect(notificationSpy).toHaveBeenCalledTimes(2);
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'PENDING',
+                delivered: false,
+                attemptToken: null,
+                attemptedAt: null,
+                mayHaveSucceeded: true,
+            });
+        } finally {
+            releaseFirstAcknowledgement?.();
+            if (firstHandler) await firstHandler;
+            consoleErrorSpy.mockRestore();
+            queryRunnerSpy.mockRestore();
             notificationSpy.mockRestore();
         }
     });
