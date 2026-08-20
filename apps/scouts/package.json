@@ -120,7 +120,7 @@
         "docker-build": "VITE_DOCKER_SOURCE=true LCN_URL=http://localhost:4000/trpc CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc NODE_OPTIONS=\"--max-old-space-size=8192\" vite build -d",
         "test-playwright": "playwright test",
         "test-ui": "playwright test --ui",
-        "test": "bun test tests/vite-config.test.ts tests/boost-cms-date-picker.test.ts",
+        "test": "bun test tests/vite-config.test.ts tests/boost-cms-date-picker.test.ts && NODE_OPTIONS=--no-experimental-webstorage vitest run --config vitest.config.ts",
         "test-debug": "PLAYWRIGHT_SLOW_MO=1000 playwright test --headed --debug",
         "test-report": "playwright show-report",
         "write-test": "playwright codegen --ignore-https-errors --load-storage=demoState.json https://localhost:3000",

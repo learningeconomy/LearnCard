@@ -158,12 +158,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     // --- End Limit Search Scope ---
 
     useEffect(() => {
-        if ((state as any)?.[collectionPropName]?.length > 0) {
-            setLocalIssueTo(((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) || []);
-        } else {
-            return;
-        }
-    }, [state]);
+        const stateIssueTo = (state as any)?.[collectionPropName] as BoostCMSIssueTo[] | undefined;
+
+        if (stateIssueTo) setLocalIssueTo(stateIssueTo);
+    }, [state, collectionPropName]);
 
     const { newModal: newContactOptionsModal, closeModal: closeContactOptionsModal } = useModal({
         mobile: ModalTypes.Cancel,
@@ -256,6 +254,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 [collectionPropName]: [...localIssueTo],
             };
         });
+        _setIssueTo?.([...localIssueTo]);
         handleCloseModal?.(true);
         setSearch?.('');
     };

@@ -131,4 +131,76 @@ describe('BoostAddressBook contact selection', () => {
 
         expect(cmsState.issueTo).toEqual([contact]);
     });
+
+    it('does not restore contacts after deselecting all, saving, and reopening', async () => {
+        let cmsState = { issueTo: [contact] };
+        let openerIssueTo = [contact];
+        const setState = vi.fn((update: React.SetStateAction<typeof cmsState>) => {
+            cmsState = typeof update === 'function' ? update(cmsState) : update;
+        });
+        const setOpenerIssueTo = vi.fn((contacts: typeof openerIssueTo) => {
+            openerIssueTo = contacts;
+        });
+
+        const renderPicker = () =>
+            render(
+                <BoostAddressBook
+                    state={cmsState as never}
+                    setState={setState as never}
+                    viewMode={BoostAddressBookViewMode.full}
+                    mode={BoostAddressBookEditMode.edit}
+                    _issueTo={openerIssueTo}
+                    _setIssueTo={setOpenerIssueTo as never}
+                    search=""
+                    setSearch={vi.fn()}
+                    searchResults={[]}
+                    isLoading={false}
+                    recipients={[]}
+                    recipientsLoading={false}
+                    boostUri="urn:boost:test"
+                />
+            );
+
+        renderPicker();
+        expect(await screen.findByRole('button', { name: 'Selected contact' })).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Selected contact' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        cleanup();
+        renderPicker();
+
+        expect(await screen.findByRole('button', { name: 'Add contact' })).toBeTruthy();
+    });
+
+    it('syncs committed empty selections without discarding a supplied modal selection', async () => {
+        const renderPicker = (pickerState: Record<string, unknown>) => (
+            <BoostAddressBook
+                state={pickerState as never}
+                setState={vi.fn()}
+                viewMode={BoostAddressBookViewMode.full}
+                mode={BoostAddressBookEditMode.edit}
+                _issueTo={[contact]}
+                _setIssueTo={vi.fn()}
+                search=""
+                setSearch={vi.fn()}
+                searchResults={[]}
+                isLoading={false}
+                recipients={[]}
+                recipientsLoading={false}
+                boostUri="urn:boost:test"
+            />
+        );
+
+        const { rerender } = render(renderPicker({ issueTo: [contact] }));
+        expect(await screen.findByRole('button', { name: 'Selected contact' })).toBeTruthy();
+
+        rerender(renderPicker({ issueTo: [] }));
+        expect(await screen.findByRole('button', { name: 'Add contact' })).toBeTruthy();
+
+        cleanup();
+        render(renderPicker({}));
+
+        expect(await screen.findByRole('button', { name: 'Selected contact' })).toBeTruthy();
+    });
 });
