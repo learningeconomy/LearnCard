@@ -278,6 +278,86 @@ describe('notification mutations — alerts island unread count', () => {
         await waitFor(() => expect(queryClient.getQueryData(ACTIVE_KEY)).toEqual(original));
     });
 
+    it('serializes notification updates per viewer so a failed update preserves a concurrent success', async () => {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        const original = {
+            pages: [
+                {
+                    hasMore: false,
+                    notifications: [
+                        {
+                            _id: 'notification-a',
+                            read: false,
+                            archived: false,
+                            type: 'BOOST_ACCEPTED',
+                            sent: '2026-08-20T12:00:00.000Z',
+                            actionStatus: 'PENDING',
+                        },
+                        {
+                            _id: 'notification-b',
+                            read: false,
+                            archived: false,
+                            type: 'BOOST_ACCEPTED',
+                            sent: '2026-08-20T12:01:00.000Z',
+                            actionStatus: 'PENDING',
+                        },
+                    ],
+                },
+            ],
+            pageParams: [undefined],
+        };
+        queryClient.setQueryData(ACTIVE_KEY, original);
+        let rejectFirst!: (reason: unknown) => void;
+        mockUpdateNotificationMeta.mockImplementation((notificationId: string) => {
+            if (notificationId === 'notification-a') {
+                return new Promise((_resolve, reject) => {
+                    rejectFirst = reject;
+                });
+            }
+
+            return Promise.resolve(true);
+        });
+
+        const { result: first } = renderHook(() => useUpdateNotification(), {
+            wrapper: makeWrapper(queryClient),
+        });
+        const { result: second } = renderHook(() => useUpdateNotification(), {
+            wrapper: makeWrapper(queryClient),
+        });
+
+        first.current.mutate({
+            notificationId: 'notification-a',
+            payload: { actionStatus: 'REJECTED' },
+        });
+        second.current.mutate({
+            notificationId: 'notification-b',
+            payload: { actionStatus: 'COMPLETED' },
+        });
+
+        await waitFor(() =>
+            expect(mockUpdateNotificationMeta).toHaveBeenCalledWith('notification-a', {
+                actionStatus: 'REJECTED',
+            })
+        );
+        expect(mockUpdateNotificationMeta).not.toHaveBeenCalledWith('notification-b', {
+            actionStatus: 'COMPLETED',
+        });
+
+        rejectFirst(new Error('server error'));
+
+        await waitFor(() =>
+            expect(mockUpdateNotificationMeta).toHaveBeenCalledWith('notification-b', {
+                actionStatus: 'COMPLETED',
+            })
+        );
+        await waitFor(() => expect(second.current.isSuccess).toBe(true));
+        const updated = queryClient.getQueryData(ACTIVE_KEY) as typeof original;
+        expect(updated.pages[0]?.notifications).toEqual([
+            original.pages[0]!.notifications[0],
+            { ...original.pages[0]!.notifications[1], actionStatus: 'COMPLETED' },
+        ]);
+    });
+
     it('rolls back the optimistic unread decrement when the mutation fails', async () => {
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         seedUnread(queryClient, ['n1', 'n2']);

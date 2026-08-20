@@ -50,6 +50,83 @@ type UpdateNotificationContext = {
     previousUnread?: PageType;
 };
 
+const restoreNotificationMembership = (
+    current: InfiniteData<PageType> | undefined,
+    previous: InfiniteData<PageType> | undefined,
+    notificationId: string
+): InfiniteData<PageType> | undefined => {
+    if (!current && !previous) return undefined;
+
+    let previousLocation:
+        | { pageIndex: number; notificationIndex: number; notification: NotificationType }
+        | undefined;
+    previous?.pages.some((page, pageIndex) => {
+        const notificationIndex = page.notifications.findIndex(
+            notification => notification._id === notificationId
+        );
+        if (notificationIndex < 0) return false;
+
+        previousLocation = {
+            pageIndex,
+            notificationIndex,
+            notification: page.notifications[notificationIndex]!,
+        };
+        return true;
+    });
+
+    const basis = current ?? previous!;
+    const pages = basis.pages.map(page => ({
+        ...page,
+        notifications: page.notifications.filter(
+            notification => notification._id !== notificationId
+        ),
+    }));
+
+    if (previousLocation) {
+        const { pageIndex, notificationIndex, notification } = previousLocation;
+        const targetPage = pages[pageIndex] ?? previous?.pages[pageIndex];
+        if (targetPage) {
+            const notifications = [...targetPage.notifications];
+            notifications.splice(
+                Math.min(notificationIndex, notifications.length),
+                0,
+                notification
+            );
+            pages[pageIndex] = { ...targetPage, notifications };
+        }
+    }
+
+    return { ...basis, pages };
+};
+
+const restoreUnreadNotification = (
+    current: PageType | undefined,
+    previous: PageType | undefined,
+    notificationId: string
+): PageType | undefined => {
+    if (!current && !previous) return undefined;
+
+    const previousIndex =
+        previous?.notifications.findIndex(notification => notification._id === notificationId) ??
+        -1;
+    const previousNotification =
+        previousIndex >= 0 ? previous?.notifications[previousIndex] : undefined;
+    const basis = current ?? previous!;
+    const notifications = basis.notifications.filter(
+        notification => notification._id !== notificationId
+    );
+
+    if (previousNotification) {
+        notifications.splice(
+            Math.min(previousIndex, notifications.length),
+            0,
+            previousNotification
+        );
+    }
+
+    return { ...basis, notifications };
+};
+
 export const useMarkAllNotificationsRead = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
@@ -342,17 +419,33 @@ export const useUpdateNotification = () => {
             };
         },
 
-        onError: (_error, _variables, context) => {
+        onError: (_error, { notificationId }, context) => {
             // Restore every optimistic write from onMutate. Without this, a
             // failed mutation would leave the active/archive lists and — most
             // visibly — the header alerts-island unread badge stuck showing the
             // optimistic (decremented) value until the next refetch.
             if (!context) return;
 
-            queryClient.setQueryData(context.activeQueryKey, context.previousData);
-            queryClient.setQueryData(context.archiveQueryKey, context.previousArchiveData);
-            if (context.previousUnread !== undefined) {
-                queryClient.setQueryData(context.unreadQueryKey, context.previousUnread);
+            const active = restoreNotificationMembership(
+                queryClient.getQueryData<InfiniteData<PageType>>(context.activeQueryKey),
+                context.previousData,
+                notificationId
+            );
+            const archive = restoreNotificationMembership(
+                queryClient.getQueryData<InfiniteData<PageType>>(context.archiveQueryKey),
+                context.previousArchiveData,
+                notificationId
+            );
+            if (active !== undefined) queryClient.setQueryData(context.activeQueryKey, active);
+            if (archive !== undefined) queryClient.setQueryData(context.archiveQueryKey, archive);
+
+            const unread = restoreUnreadNotification(
+                queryClient.getQueryData<PageType>(context.unreadQueryKey),
+                context.previousUnread,
+                notificationId
+            );
+            if (unread !== undefined) {
+                queryClient.setQueryData(context.unreadQueryKey, unread);
             }
         },
 
@@ -367,6 +460,7 @@ export const useUpdateNotification = () => {
                 queryKey: ['useGetUserNotifications', resolvedDid],
             });
         },
+        scope: { id: `notification:${switchedDid ?? ''}` },
     });
 };
 

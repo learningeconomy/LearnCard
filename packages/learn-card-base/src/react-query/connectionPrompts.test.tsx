@@ -381,6 +381,86 @@ describe('connection prompt mutations', () => {
         expect(queryClient.getQueryState(statusKey)).toBeUndefined();
     });
 
+    it('does not overwrite another viewer cache when the current viewer action fails', async () => {
+        const request = deferred<LCNConnectionPromptActionResult>();
+        mockSkipConnectionPrompt.mockReturnValue(request.promise);
+        const queryClient = makeQueryClient();
+        seedActionCaches(queryClient);
+        const otherDid = 'did:web:other-viewer';
+        const otherPendingKey = connectionPromptKeys.pending(otherDid);
+        const otherStatusKey = connectionPromptKeys.status(otherDid, OTHER_PROMPT_ID);
+        queryClient.setQueryData(otherPendingKey, [otherPrompt]);
+        queryClient.setQueryData(otherStatusKey, {
+            promptId: OTHER_PROMPT_ID,
+            status: 'PENDING',
+        });
+
+        const { result } = renderHook(() => useSkipConnectionPromptMutation(), {
+            wrapper: makeWrapper(queryClient),
+        });
+
+        act(() => result.current.mutate(PROMPT_ID));
+        await waitFor(() =>
+            expect(queryClient.getQueryData(connectionPromptKeys.pending(SWITCHED_DID))).toEqual([
+                otherPrompt,
+            ])
+        );
+
+        queryClient.setQueryData(otherPendingKey, []);
+        queryClient.setQueryData(otherStatusKey, {
+            promptId: OTHER_PROMPT_ID,
+            status: 'CONNECTED',
+        });
+        request.reject(new Error('server error'));
+
+        await waitFor(() => expect(result.current.isError).toBe(true));
+        expect(queryClient.getQueryData(otherPendingKey)).toEqual([]);
+        expect(queryClient.getQueryData(otherStatusKey)).toEqual({
+            promptId: OTHER_PROMPT_ID,
+            status: 'CONNECTED',
+        });
+    });
+
+    it('serializes prompt actions for one viewer so a failed action cannot roll back a success', async () => {
+        const skipRequest = deferred<LCNConnectionPromptActionResult>();
+        mockSkipConnectionPrompt.mockReturnValue(skipRequest.promise);
+        mockConnectWithConnectionPrompt.mockResolvedValue({
+            promptId: OTHER_PROMPT_ID,
+            status: 'CONNECTED',
+        });
+        const queryClient = makeQueryClient();
+        seedActionCaches(queryClient);
+
+        const { result: skipResult } = renderHook(() => useSkipConnectionPromptMutation(), {
+            wrapper: makeWrapper(queryClient),
+        });
+        const { result: connectResult } = renderHook(
+            () => useConnectWithConnectionPromptMutation(),
+            { wrapper: makeWrapper(queryClient) }
+        );
+
+        act(() => {
+            skipResult.current.mutate(PROMPT_ID);
+            connectResult.current.mutate(OTHER_PROMPT_ID);
+        });
+
+        await waitFor(() => expect(mockSkipConnectionPrompt).toHaveBeenCalledWith(PROMPT_ID));
+        expect(mockConnectWithConnectionPrompt).not.toHaveBeenCalled();
+
+        skipRequest.reject(new Error('server error'));
+
+        await waitFor(() =>
+            expect(mockConnectWithConnectionPrompt).toHaveBeenCalledWith(OTHER_PROMPT_ID)
+        );
+        await waitFor(() => expect(connectResult.current.isSuccess).toBe(true));
+        expect(queryClient.getQueryData(connectionPromptKeys.pending(SWITCHED_DID))).toEqual([
+            prompt,
+        ]);
+        expect(
+            queryClient.getQueryData(connectionPromptKeys.status(SWITCHED_DID, OTHER_PROMPT_ID))
+        ).toEqual({ promptId: OTHER_PROMPT_ID, status: 'CONNECTED' });
+    });
+
     it('invalidates pending prompts only after credential acceptance succeeds', async () => {
         mockAcceptCredential.mockResolvedValue(true);
         const queryClient = makeQueryClient();

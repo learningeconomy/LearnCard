@@ -53,8 +53,17 @@ export const useConnectionPromptStatus = (promptId?: string, enabled = true) => 
 };
 
 type PromptMutationContext = {
-    promptSnapshots: [QueryKey, unknown][];
-    createdQueryKeys: QueryKey[];
+    pending: {
+        queryKey: QueryKey;
+        existed: boolean;
+        prompt: LCNConnectionPrompt | undefined;
+        index: number;
+    };
+    status: {
+        queryKey: QueryKey;
+        existed: boolean;
+        data: LCNConnectionPromptActionResult | undefined;
+    };
 };
 
 const optimisticallyResolvePrompt = async (
@@ -63,13 +72,19 @@ const optimisticallyResolvePrompt = async (
     promptId: string,
     status: 'SKIPPED' | 'CONNECTED'
 ): Promise<PromptMutationContext> => {
-    await queryClient.cancelQueries({ queryKey: connectionPromptKeys.all });
-
-    const promptSnapshots = queryClient.getQueriesData({ queryKey: connectionPromptKeys.all });
     const pendingKey = connectionPromptKeys.pending(did);
     const statusKey = connectionPromptKeys.status(did, promptId);
+    await Promise.all([
+        queryClient.cancelQueries({ queryKey: pendingKey, exact: true }),
+        queryClient.cancelQueries({ queryKey: statusKey, exact: true }),
+    ]);
+
     const pending = queryClient.getQueryData<LCNConnectionPrompt[]>(pendingKey);
-    const createdQueryKeys = queryClient.getQueryState(statusKey) ? [] : [statusKey];
+    const statusData = queryClient.getQueryData<LCNConnectionPromptActionResult>(statusKey);
+    const pendingExisted = Boolean(queryClient.getQueryState(pendingKey));
+    const statusExisted = Boolean(queryClient.getQueryState(statusKey));
+    const pendingIndex = pending?.findIndex(prompt => prompt.promptId === promptId) ?? -1;
+    const pendingPrompt = pendingIndex >= 0 ? pending?.[pendingIndex] : undefined;
 
     if (pending) {
         queryClient.setQueryData<LCNConnectionPrompt[]>(
@@ -80,19 +95,47 @@ const optimisticallyResolvePrompt = async (
 
     queryClient.setQueryData<LCNConnectionPromptActionResult>(statusKey, { promptId, status });
 
-    return { promptSnapshots, createdQueryKeys };
+    return {
+        pending: {
+            queryKey: pendingKey,
+            existed: pendingExisted,
+            prompt: pendingPrompt,
+            index: pendingIndex,
+        },
+        status: { queryKey: statusKey, existed: statusExisted, data: statusData },
+    };
 };
 
 const restorePromptSnapshots = (
     queryClient: QueryClient,
     context?: PromptMutationContext
 ): void => {
-    context?.createdQueryKeys.forEach(queryKey => {
-        queryClient.removeQueries({ queryKey, exact: true });
-    });
-    context?.promptSnapshots.forEach(([queryKey, data]) => {
-        queryClient.setQueryData(queryKey, data);
-    });
+    if (!context) return;
+
+    if (context.pending.existed) {
+        const current =
+            queryClient.getQueryData<LCNConnectionPrompt[]>(context.pending.queryKey) ?? [];
+        if (
+            context.pending.prompt &&
+            !current.some(prompt => prompt.promptId === context.pending.prompt?.promptId)
+        ) {
+            const restored = [...current];
+            restored.splice(
+                Math.min(context.pending.index, restored.length),
+                0,
+                context.pending.prompt
+            );
+            queryClient.setQueryData(context.pending.queryKey, restored);
+        }
+    } else {
+        queryClient.removeQueries({ queryKey: context.pending.queryKey, exact: true });
+    }
+
+    if (context.status.existed) {
+        queryClient.setQueryData(context.status.queryKey, context.status.data);
+    } else {
+        queryClient.removeQueries({ queryKey: context.status.queryKey, exact: true });
+    }
 };
 
 const invalidatePromptActionCaches = async (
@@ -127,6 +170,7 @@ export const useSkipConnectionPromptMutation = () => {
             queryClient.setQueryData(connectionPromptKeys.status(switchedDid, promptId), result);
             await invalidatePromptActionCaches(queryClient, switchedDid);
         },
+        scope: { id: `connectionPrompt:${switchedDid}` },
     });
 };
 
@@ -148,5 +192,6 @@ export const useConnectWithConnectionPromptMutation = () => {
             queryClient.setQueryData(connectionPromptKeys.status(switchedDid, promptId), result);
             await invalidatePromptActionCaches(queryClient, switchedDid);
         },
+        scope: { id: `connectionPrompt:${switchedDid}` },
     });
 };
