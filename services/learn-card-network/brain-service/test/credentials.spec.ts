@@ -417,7 +417,18 @@ describe('Credentials', () => {
 
             try {
                 await expect(
-                    userB.clients.fullAuth.credential.acceptCredential({ uri })
+                    userB.clients.fullAuth.credential.acceptCredential({
+                        uri,
+                        options: {
+                            metadata: {
+                                campaign: 'fall',
+                                connectionPrompt: {
+                                    promptId: 'spoofed',
+                                    counterpartProfileId: 'spoofed',
+                                },
+                            },
+                        },
+                    })
                 ).resolves.toBe(true);
             } finally {
                 consoleErrorSpy.mockRestore();
@@ -433,7 +444,7 @@ describe('Credentials', () => {
             });
             expect(acceptedCalls[1]?.[0]).toMatchObject({
                 message: getNotificationMessage('boostAccepted', 'en', { name: '' }),
-                data: { vcUris: [uri] },
+                data: { vcUris: [uri], metadata: { campaign: 'fall' } },
             });
             expect(acceptedCalls[1]?.[0]?.data?.metadata?.connectionPrompt).toBeUndefined();
             expect(await userB.clients.fullAuth.credential.receivedCredentials()).toHaveLength(1);

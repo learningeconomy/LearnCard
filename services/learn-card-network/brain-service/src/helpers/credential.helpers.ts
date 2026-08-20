@@ -154,6 +154,12 @@ export const acceptCredential = async (
             promptResult.senderNotificationFailed);
 
     if (shouldSendLegacyNotification) {
+        const legacyNotificationMetadata = options.metadata
+            ? Object.fromEntries(
+                  Object.entries(options.metadata).filter(([key]) => key !== 'connectionPrompt')
+              )
+            : undefined;
+
         await addNotificationToQueue({
             type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
             to: sourceProfile,
@@ -165,7 +171,10 @@ export const acceptCredential = async (
                     name: profile.displayName,
                 }
             ),
-            data: { vcUris: [uri], ...(options?.metadata ? { metadata: options.metadata } : {}) },
+            data: {
+                vcUris: [uri],
+                ...(legacyNotificationMetadata ? { metadata: legacyNotificationMetadata } : {}),
+            },
         });
     }
 

@@ -111,3 +111,30 @@ Observed RED: claim acceptance resolved, but only the rejected actionable enqueu
 -   Shared connection-prompt regressions passed: 27/27.
 -   `NX_DAEMON=false bunx nx build network-brain-service --output-style=static` passed.
 -   Prettier and `git diff --check` passed.
+
+## Review Round 2 — Legacy Metadata Hardening
+
+### Root Cause and Fix
+
+After an actionable enqueue failure, the legacy `BOOST_ACCEPTED` fallback forwarded caller-provided metadata unchanged. A caller could therefore inject the reserved `connectionPrompt` key into a non-actionable fallback notification. The fallback now creates a new metadata object that removes only `connectionPrompt`; all unrelated caller metadata remains intact. The actionable-success path, graph prompt state, claim result, and stable-trigger idempotency are unchanged.
+
+### Assertion RED
+
+Command:
+
+```bash
+SEED=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  bun run test -- run test/credentials.spec.ts \
+  -t "falls back to one legacy notification" --reporter=verbose
+```
+
+Observed RED: the fallback claim still succeeded and the unrelated `campaign` field survived, but the legacy notification also contained the spoofed object (`expected { promptId: 'spoofed', counterpartProfileId: 'spoofed' } to be undefined`).
+
+### GREEN and Regression Evidence
+
+-   The same fallback test passed after filtering the reserved key. It verifies claim success, one rejected actionable attempt followed by exactly one legacy fallback, preserved `campaign: 'fall'`, and absent `metadata.connectionPrompt`.
+-   All focused `acceptCredential` cases passed: 12/12, including actionable success suppressing the legacy notification.
+-   Task 3 focused files passed: 334/334.
+-   Shared connection-prompt regressions passed: 27/27.
+-   `NX_DAEMON=false bunx nx build network-brain-service --output-style=static` passed.
+-   Prettier and `git diff --check` passed.
