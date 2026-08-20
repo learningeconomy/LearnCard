@@ -118,7 +118,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const [loading, setLoading] = useState<boolean>(false);
     const [issueMode, setIssueMode] = useState<BoostUserTypeEnum>(BoostUserTypeEnum.someone);
     const [localIssueTo, setLocalIssueTo] = useState<BoostCMSIssueTo[]>(
-        ((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) || []
+        _issueTo ?? ((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) ?? []
     );
 
     // --- Limit Search Scope for Troop Leaders / Admins ---
@@ -158,12 +158,12 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     // --- End Limit Search Scope ---
 
     useEffect(() => {
-        if ((state as any)?.[collectionPropName]?.length > 0) {
-            setLocalIssueTo(((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) || []);
-        } else {
-            return;
-        }
-    }, [state]);
+        if (viewMode !== BoostAddressBookViewMode.list) return;
+
+        const stateIssueTo = (state as any)?.[collectionPropName] as BoostCMSIssueTo[] | undefined;
+
+        if (stateIssueTo) setLocalIssueTo(stateIssueTo);
+    }, [state, collectionPropName, viewMode]);
 
     const { newModal: newContactOptionsModal, closeModal: closeContactOptionsModal } = useModal({
         mobile: ModalTypes.Cancel,
@@ -253,9 +253,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         setState(prevState => {
             return {
                 ...prevState,
-                [collectionPropName]: [...(_issueTo || [])],
+                [collectionPropName]: [...localIssueTo],
             };
         });
+        _setIssueTo?.([...localIssueTo]);
         handleCloseModal?.(true);
         setSearch?.('');
     };
@@ -384,8 +385,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={connectionsToShow}
                             mode={mode}
-                            _issueTo={_issueTo || []}
-                            _setIssueTo={_setIssueTo as any}
+                            _issueTo={localIssueTo}
+                            _setIssueTo={setLocalIssueTo}
                             collectionPropName={collectionPropName}
                         />
                     )}
@@ -410,8 +411,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={(searchResults || []) as any}
                             mode={mode}
-                            _issueTo={_issueTo || []}
-                            _setIssueTo={_setIssueTo as any}
+                            _issueTo={localIssueTo}
+                            _setIssueTo={setLocalIssueTo}
                             collectionPropName={collectionPropName}
                         />
                     )}
