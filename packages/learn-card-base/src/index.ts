@@ -12,6 +12,7 @@ export * from './components/learnCard/learn-card-activity-list/LearnCardActivity
 export * from './components/learnCard/LearnCardActivity';
 export * from './components/learnCard/learn-card/LearnCard';
 export * from './components/profilePicture/ProfilePicture';
+export * from './components/connection-prompts';
 export * from './components/social-logins/SocialLogins';
 export * from './components/sidemenu/SideMenu';
 export * from './components/Background/CurvedBackdrop';

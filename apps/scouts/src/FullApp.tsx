@@ -25,7 +25,9 @@ import {
     lazyWithRetry,
     Toast,
     InAppMessageHost,
+    ConnectionPromptCoordinator,
 } from 'learn-card-base';
+import * as m from './paraglide/messages.js';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';
@@ -125,6 +127,21 @@ const FullApp: React.FC = () => {
                                     <PushNotificationListener />
                                     <PresentVcModalListener />
                                     <UserProfileSetupListener />
+                                    <ConnectionPromptCoordinator
+                                        copy={{
+                                            title: name =>
+                                                m['connectionPrompts.title']().replace(
+                                                    '{name}',
+                                                    name
+                                                ),
+                                            description: m['connectionPrompts.description'](),
+                                            connect: m['connectionPrompts.connect'](),
+                                            skipForNow: m['connectionPrompts.skipForNow'](),
+                                            connecting: m['connectionPrompts.connecting'](),
+                                            skipping: m['connectionPrompts.skipping'](),
+                                            error: m['connectionPrompts.error'](),
+                                        }}
+                                    />
                                     <AppRouter />
                                     <InAppMessageHost />
                                     <QRCodeScannerListener />

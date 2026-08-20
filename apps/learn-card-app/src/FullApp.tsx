@@ -19,7 +19,9 @@ import {
     ensureReactQueryTableExists,
     getLogger,
     InAppMessageHost,
+    ConnectionPromptCoordinator,
 } from 'learn-card-base';
+import * as m from './paraglide/messages.js';
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
@@ -214,6 +216,21 @@ const FullApp: React.FC = () => {
                                         <PresentVcModalListener />
                                         <CredentialSyncListener />
                                         <NotificationToastListener />
+                                        <ConnectionPromptCoordinator
+                                            copy={{
+                                                title: name =>
+                                                    m['connectionPrompts.title']().replace(
+                                                        '{name}',
+                                                        name
+                                                    ),
+                                                description: m['connectionPrompts.description'](),
+                                                connect: m['connectionPrompts.connect'](),
+                                                skipForNow: m['connectionPrompts.skipForNow'](),
+                                                connecting: m['connectionPrompts.connecting'](),
+                                                skipping: m['connectionPrompts.skipping'](),
+                                                error: m['connectionPrompts.error'](),
+                                            }}
+                                        />
                                         {/* Subscribes the pathway-progress reactor to
                                             the wallet event bus. Placed alongside the
                                             other app-level listeners so every claim

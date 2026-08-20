@@ -1,4 +1,16 @@
 {
+    "connectionPrompts": {
+        "title": "هل تريد التواصل مع {name}؟",
+        "description": "ابقَ على تواصل وتابع ما يأتي بعد ذلك.",
+        "connect": "تواصل",
+        "skipForNow": "تخطي الآن",
+        "connecting": "جارٍ التواصل...",
+        "skipping": "جارٍ التخطي...",
+        "error": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+        "connected": "تم التواصل",
+        "skipped": "تم التخطي",
+        "claimedType": "تم استلام الاعتماد"
+    },
     "common": {
         "share": "مشاركة",
         "open": "فتح",
