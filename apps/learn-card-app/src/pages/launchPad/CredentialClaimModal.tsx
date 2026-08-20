@@ -203,7 +203,12 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 
             if (acceptResult.status === 'rejected') {
                 log.warn('Failed to accept credential server-side:', acceptResult.reason);
-            } else {
+            } else if (
+                wallet &&
+                addResult.status === 'fulfilled' &&
+                addResult.value === true &&
+                acceptResult.value === true
+            ) {
                 // Prompt visibility depends on both the network acceptance and the
                 // credential being present locally. Invalidate only after both have
                 // succeeded so a fast local write cannot dismiss the prompt early.

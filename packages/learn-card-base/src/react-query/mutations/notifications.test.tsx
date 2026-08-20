@@ -376,6 +376,22 @@ describe('notification mutations — alerts island unread count', () => {
         await waitFor(() => expect(unreadIds(queryClient)).toEqual(['n1', 'n2']));
     });
 
+    it('leaves unread membership unchanged when an actionStatus-only mutation fails', async () => {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        seedUnread(queryClient, ['n1', 'n2']);
+        mockUpdateNotificationMeta.mockRejectedValue(new Error('server error'));
+
+        const { result } = renderHook(() => useUpdateNotification(), {
+            wrapper: makeWrapper(queryClient),
+        });
+
+        await result.current
+            .mutateAsync({ notificationId: 'n1', payload: { actionStatus: 'REJECTED' } })
+            .catch(() => {});
+
+        await waitFor(() => expect(unreadIds(queryClient)).toEqual(['n1', 'n2']));
+    });
+
     it('useMarkNotificationRead optimistically decrements the unread cache and invalidates it', async () => {
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');

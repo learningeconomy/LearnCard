@@ -61,8 +61,7 @@ type PromptMutationContext = {
     };
     status: {
         queryKey: QueryKey;
-        existed: boolean;
-        data: LCNConnectionPromptActionResult | undefined;
+        state: ReturnType<QueryClient['getQueryState']>;
     };
 };
 
@@ -80,9 +79,8 @@ const optimisticallyResolvePrompt = async (
     ]);
 
     const pending = queryClient.getQueryData<LCNConnectionPrompt[]>(pendingKey);
-    const statusData = queryClient.getQueryData<LCNConnectionPromptActionResult>(statusKey);
+    const statusState = queryClient.getQueryState<LCNConnectionPromptActionResult>(statusKey);
     const pendingExisted = Boolean(queryClient.getQueryState(pendingKey));
-    const statusExisted = Boolean(queryClient.getQueryState(statusKey));
     const pendingIndex = pending?.findIndex(prompt => prompt.promptId === promptId) ?? -1;
     const pendingPrompt = pendingIndex >= 0 ? pending?.[pendingIndex] : undefined;
 
@@ -102,7 +100,7 @@ const optimisticallyResolvePrompt = async (
             prompt: pendingPrompt,
             index: pendingIndex,
         },
-        status: { queryKey: statusKey, existed: statusExisted, data: statusData },
+        status: { queryKey: statusKey, state: statusState },
     };
 };
 
@@ -131,8 +129,11 @@ const restorePromptSnapshots = (
         queryClient.removeQueries({ queryKey: context.pending.queryKey, exact: true });
     }
 
-    if (context.status.existed) {
-        queryClient.setQueryData(context.status.queryKey, context.status.data);
+    if (context.status.state) {
+        queryClient
+            .getQueryCache()
+            .find({ queryKey: context.status.queryKey, exact: true })
+            ?.setState(context.status.state);
     } else {
         queryClient.removeQueries({ queryKey: context.status.queryKey, exact: true });
     }

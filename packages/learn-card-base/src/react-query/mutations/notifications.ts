@@ -48,6 +48,7 @@ type UpdateNotificationContext = {
     previousData?: InfiniteData<PageType>;
     previousArchiveData?: InfiniteData<PageType>;
     previousUnread?: PageType;
+    unreadTouched: boolean;
 };
 
 const restoreNotificationMembership = (
@@ -416,6 +417,7 @@ export const useUpdateNotification = () => {
                 previousData: currentTabData,
                 previousArchiveData: currentArchiveData,
                 previousUnread,
+                unreadTouched: isReadUpdate,
             };
         },
 
@@ -439,13 +441,15 @@ export const useUpdateNotification = () => {
             if (active !== undefined) queryClient.setQueryData(context.activeQueryKey, active);
             if (archive !== undefined) queryClient.setQueryData(context.archiveQueryKey, archive);
 
-            const unread = restoreUnreadNotification(
-                queryClient.getQueryData<PageType>(context.unreadQueryKey),
-                context.previousUnread,
-                notificationId
-            );
-            if (unread !== undefined) {
-                queryClient.setQueryData(context.unreadQueryKey, unread);
+            if (context.unreadTouched) {
+                const unread = restoreUnreadNotification(
+                    queryClient.getQueryData<PageType>(context.unreadQueryKey),
+                    context.previousUnread,
+                    notificationId
+                );
+                if (unread !== undefined) {
+                    queryClient.setQueryData(context.unreadQueryKey, unread);
+                }
             }
         },
 

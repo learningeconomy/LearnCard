@@ -89,7 +89,7 @@ describe('CredentialClaimModal connection prompt cache', () => {
     });
 
     it('invalidates prompts only after server acceptance and local storage both succeed', async () => {
-        const accept = deferred<void>();
+        const accept = deferred<boolean>();
         const add = deferred<boolean>();
         const wallet = {
             invoke: {
@@ -127,9 +127,87 @@ describe('CredentialClaimModal connection prompt cache', () => {
         await act(async () => add.resolve(true));
         expect(queryClient.getQueryState(promptQueryKey)?.isInvalidated).toBe(false);
 
-        await act(async () => accept.resolve());
+        await act(async () => accept.resolve(true));
         await waitFor(() => {
             expect(queryClient.getQueryState(promptQueryKey)?.isInvalidated).toBe(true);
         });
+    });
+
+    it('withholds prompt invalidation when local storage returns false without failing the claim UI', async () => {
+        const wallet = {
+            invoke: {
+                acceptCredential: mocks.acceptCredential.mockResolvedValue(true),
+                queryNotifications: mocks.queryNotifications,
+                updateNotificationMeta: mocks.updateNotificationMeta,
+            },
+            read: { get: vi.fn().mockResolvedValue(credential) },
+        };
+        mocks.initWallet.mockResolvedValue(wallet);
+        mocks.addVCtoWallet.mockResolvedValue(false);
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+        });
+        const promptQueryKey = ['connectionPrompts', 'pending', 'did:key:viewer'];
+        queryClient.setQueryData(promptQueryKey, [{ id: 'prompt-1' }]);
+
+        render(
+            <QueryClientProvider client={queryClient}>
+                <CredentialClaimModal
+                    credentialUri="lc:credential:one"
+                    credential={credential}
+                    onDismiss={vi.fn()}
+                />
+            </QueryClientProvider>
+        );
+
+        fireEvent.click(await screen.findByRole('button', { name: 'Accept Credential' }));
+
+        await screen.findByText('Claimed');
+        expect(queryClient.getQueryState(promptQueryKey)?.isInvalidated).toBe(false);
+        expect(mocks.presentToast).toHaveBeenCalledWith(
+            'Credential claimed',
+            expect.objectContaining({ type: 'success' })
+        );
+    });
+
+    it('withholds prompt invalidation when no wallet is available without failing the claim UI', async () => {
+        mocks.initWallet.mockResolvedValue(undefined);
+        mocks.addVCtoWallet.mockResolvedValue(true);
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+        });
+        const promptQueryKey = ['connectionPrompts', 'pending', 'did:key:viewer'];
+        queryClient.setQueryData(promptQueryKey, [{ id: 'prompt-1' }]);
+
+        render(
+            <QueryClientProvider client={queryClient}>
+                <CredentialClaimModal
+                    credentialUri="lc:credential:one"
+                    credential={credential}
+                    onDismiss={vi.fn()}
+                />
+            </QueryClientProvider>
+        );
+
+        const preparingButton = await screen.findByRole('button', { name: 'Preparing' });
+        // Exercise handleClaim's defensive missing-wallet branch directly. The normal UI keeps
+        // this button disabled, but the handler must still avoid treating a missing wallet as a
+        // fulfilled server acceptance if it is invoked during an external/racy event dispatch.
+        const reactPropsKey = Object.keys(preparingButton).find(key =>
+            key.startsWith('__reactProps$')
+        )!;
+        const { onClick } = (preparingButton as unknown as Record<string, { onClick: () => void }>)[
+            reactPropsKey
+        ];
+        await act(async () => onClick());
+
+        await screen.findByText('Claimed');
+        expect(queryClient.getQueryState(promptQueryKey)?.isInvalidated).toBe(false);
+        expect(mocks.presentToast).toHaveBeenCalledWith(
+            'Credential claimed',
+            expect.objectContaining({ type: 'success' })
+        );
     });
 });

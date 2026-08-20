@@ -381,6 +381,38 @@ describe('connection prompt mutations', () => {
         expect(queryClient.getQueryState(statusKey)).toBeUndefined();
     });
 
+    it('restores an existing undefined status cache when connect fails', async () => {
+        const request = deferred<LCNConnectionPromptActionResult>();
+        mockConnectWithConnectionPrompt.mockReturnValue(request.promise);
+        const queryClient = makeQueryClient();
+        queryClient.setQueryData(connectionPromptKeys.pending(SWITCHED_DID), [prompt]);
+        const statusKey = connectionPromptKeys.status(SWITCHED_DID, PROMPT_ID);
+        queryClient.getQueryCache().build(queryClient, {
+            queryKey: statusKey,
+            queryFn: async () => ({ promptId: PROMPT_ID, status: 'PENDING' as const }),
+        });
+        const previousStatusState = queryClient.getQueryState(statusKey);
+        expect(previousStatusState).toBeDefined();
+        expect(queryClient.getQueryData(statusKey)).toBeUndefined();
+
+        const { result } = renderHook(() => useConnectWithConnectionPromptMutation(), {
+            wrapper: makeWrapper(queryClient),
+        });
+
+        act(() => result.current.mutate(PROMPT_ID));
+        await waitFor(() =>
+            expect(queryClient.getQueryData(statusKey)).toEqual({
+                promptId: PROMPT_ID,
+                status: 'CONNECTED',
+            })
+        );
+
+        request.reject(new Error('server error'));
+
+        await waitFor(() => expect(result.current.isError).toBe(true));
+        expect(queryClient.getQueryState(statusKey)).toEqual(previousStatusState);
+    });
+
     it('does not overwrite another viewer cache when the current viewer action fails', async () => {
         const request = deferred<LCNConnectionPromptActionResult>();
         mockSkipConnectionPrompt.mockReturnValue(request.promise);
