@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Search, X, Mail, Loader2, Calendar, Check } from 'lucide-react';
 import { useGetSearchProfiles, useGetConnections } from 'learn-card-base';
 import useDebounce from '../../../hooks/useDebounce';
@@ -9,6 +9,7 @@ import {
     isEmail,
 } from '../../issue/components/recipientTypes';
 import * as m from '../../../paraglide/messages.js';
+import ScanRecipientButton from '../../../components/recipient-picker/ScanRecipientButton';
 
 const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
@@ -106,6 +107,27 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
         onRecipientsChange(newRecipients);
     };
 
+    const handleScannedRecipient = useCallback(
+        (recipient: Extract<Recipient, { kind: 'profile' }>): void => {
+            const existingIndex = recipients.findIndex(
+                existing =>
+                    existing.kind === 'profile' && existing.profileId === recipient.profileId
+            );
+
+            if (existingIndex === -1) {
+                onRecipientsChange([...recipients, recipient]);
+                return;
+            }
+
+            onRecipientsChange(
+                recipients.map((existing, index) =>
+                    index === existingIndex ? recipient : existing
+                )
+            );
+        },
+        [onRecipientsChange, recipients]
+    );
+
     const isValidEmail = isEmail(query);
 
     const displayList = useMemo(() => {
@@ -200,18 +222,23 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                             spellCheck={false}
                             autoCapitalize="none"
                             autoCorrect="off"
-                            className="w-full py-3.5 pl-12 pr-10 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all"
+                            className="w-full py-3.5 pl-12 pr-20 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all"
                         />
                         {query && (
                             <button
                                 type="button"
                                 onClick={() => setQuery('')}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
+                                className="absolute right-12 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
                                 aria-label={m['aiPathways.clearSearch']()}
                             >
                                 <X className="w-4 h-4" />
                             </button>
                         )}
+                        <ScanRecipientButton
+                            recipients={recipients}
+                            onRecipientScanned={handleScannedRecipient}
+                            className="right-3"
+                        />
                     </div>
 
                     <div className="flex-1 overflow-y-auto scrollbar-hide -mx-2 px-2">
@@ -238,7 +265,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                                                     displayName:
                                                         profile.displayName || profile.profileId,
                                                     image: profile.image,
-                                                    did: profile.did,
+                                                    did: 'did' in profile ? profile.did : undefined,
                                                 })
                                             }
                                             className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left ${

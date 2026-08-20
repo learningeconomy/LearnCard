@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
+import {
+    BarcodeScanner,
+    BarcodeFormat,
+    LensFacing,
+    type BarcodeScannedEvent,
+} from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 
 import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
@@ -14,6 +19,15 @@ import * as m from '../../paraglide/messages.js';
 import { useClaimInputRouter } from '../../hooks/useClaimInputRouter';
 
 const log = getLogger('qr-scanner');
+
+// Native v8 still emits the one-result event used by the app, although the
+// package declaration only exposes the newer batched event overload.
+const nativeBarcodeScanner = BarcodeScanner as typeof BarcodeScanner & {
+    addListener(
+        eventName: 'barcodeScanned',
+        listenerFunc: (event: BarcodeScannedEvent) => void
+    ): Promise<PluginListenerHandle>;
+};
 
 export const QRCodeScannerListener: React.FC = () => {
     const { presentToast } = useToast();
@@ -147,8 +161,44 @@ export const QRCodeScannerListener: React.FC = () => {
                 log.warn('scan::cleanup-error', error);
             }
 
-            QRCodeScannerStore.set.showScanner(false);
-            await handleScanRef.current(rawValue);
+            const onResult = QRCodeScannerStore.set.consumeResultHandler();
+
+            if (!onResult) {
+                QRCodeScannerStore.set.closeScanner();
+
+                try {
+                    await handleScanRef.current(rawValue);
+                } catch (error) {
+                    log.error('scan::result-handler-error', error);
+                    presentToastRef.current(m['scanner.failed'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                }
+
+                return;
+            }
+
+            try {
+                const feedback = await onResult(rawValue);
+
+                if (feedback && QRCodeScannerStore.get.showScanner()) {
+                    QRCodeScannerStore.set.feedbackMessage(feedback.message);
+
+                    const durationMs = feedback.durationMs ?? 650;
+                    if (durationMs > 0) {
+                        await new Promise(resolve => window.setTimeout(resolve, durationMs));
+                    }
+                }
+            } catch (error) {
+                log.error('scan::result-handler-error', error);
+                presentToastRef.current(m['scanner.failed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            } finally {
+                QRCodeScannerStore.set.closeScanner();
+            }
         };
 
         const startScanning = async () => {
@@ -156,10 +206,11 @@ export const QRCodeScannerListener: React.FC = () => {
                 await previousCleanupPromise;
                 if (disposed) return;
 
-                const registeredListener = await BarcodeScanner.addListener(
+                const registeredListener = await nativeBarcodeScanner.addListener(
                     'barcodeScanned',
                     result => {
-                        void handleBarcodeScanned(result.barcode.rawValue);
+                        const rawValue = result.barcode.rawValue;
+                        if (rawValue) void handleBarcodeScanned(rawValue);
                     }
                 );
 
@@ -189,7 +240,7 @@ export const QRCodeScannerListener: React.FC = () => {
                     log.warn('scan::cleanup-error', cleanupError);
                 }
 
-                QRCodeScannerStore.set.showScanner(false);
+                QRCodeScannerStore.set.closeScanner();
                 presentToastRef.current(m['scanner.failed'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
@@ -201,6 +252,9 @@ export const QRCodeScannerListener: React.FC = () => {
 
         return () => {
             disposed = true;
+            if (!QRCodeScannerStore.get.showScanner()) {
+                QRCodeScannerStore.set.closeScanner();
+            }
             cleanupPromiseRef.current = previousCleanupPromise
                 .then(stopOwnedScan)
                 .catch(error => log.warn('scan::cleanup-error', error));
