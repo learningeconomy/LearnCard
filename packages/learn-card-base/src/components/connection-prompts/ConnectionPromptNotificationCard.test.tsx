@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
     ConnectionPromptNotificationCard,
+    deriveConnectionPromptNotificationState,
     type ConnectionPromptNotificationCopy,
 } from './ConnectionPromptNotificationCard';
 
@@ -109,6 +110,54 @@ describe('ConnectionPromptNotificationCard', () => {
         state.skip.mockResolvedValue({ promptId, status: 'SKIPPED' });
         state.updateNotification.mockResolvedValue(true);
     });
+
+    it.each([
+        {
+            name: 'cached pending refetch',
+            serverStatus: 'PENDING',
+            resolvedStatus: 'PENDING',
+            isFetching: true,
+            effectiveStatus: 'PENDING',
+            canAct: false,
+        },
+        {
+            name: 'connected response before local effect',
+            serverStatus: 'CONNECTED',
+            resolvedStatus: 'PENDING',
+            isFetching: false,
+            effectiveStatus: 'CONNECTED',
+            canAct: false,
+        },
+        {
+            name: 'skipped response before local effect',
+            serverStatus: 'SKIPPED',
+            resolvedStatus: 'PENDING',
+            isFetching: false,
+            effectiveStatus: 'SKIPPED',
+            canAct: false,
+        },
+        {
+            name: 'connected mutation while cache remains pending',
+            serverStatus: 'PENDING',
+            resolvedStatus: 'CONNECTED',
+            isFetching: false,
+            effectiveStatus: 'CONNECTED',
+            canAct: false,
+        },
+    ] as const)(
+        'derives $name synchronously without exposing stale actions',
+        ({ serverStatus, resolvedStatus, isFetching, effectiveStatus, canAct }) => {
+            expect(
+                deriveConnectionPromptNotificationState({
+                    serverStatus,
+                    resolvedStatus,
+                    isLoading: false,
+                    isFetching,
+                    isError: false,
+                })
+            ).toEqual({ effectiveStatus, canAct });
+        }
+    );
 
     it('shows the sender message and explicit actions only for a pending server status', () => {
         const { container } = renderCard();

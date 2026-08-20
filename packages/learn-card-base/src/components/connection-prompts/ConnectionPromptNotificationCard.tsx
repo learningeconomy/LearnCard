@@ -37,6 +37,43 @@ export type ConnectionPromptNotificationCardProps = {
 
 type PendingAction = 'connect' | 'skip' | null;
 
+type ConnectionPromptNotificationStateInput = {
+    serverStatus?: LCNConnectionPromptActionStatus;
+    resolvedStatus?: LCNConnectionPromptActionStatus;
+    isLoading: boolean;
+    isFetching: boolean;
+    isError: boolean;
+};
+
+export const deriveConnectionPromptNotificationState = ({
+    serverStatus,
+    resolvedStatus,
+    isLoading,
+    isFetching,
+    isError,
+}: ConnectionPromptNotificationStateInput): {
+    effectiveStatus: LCNConnectionPromptActionStatus | undefined;
+    canAct: boolean;
+} => {
+    // Terminal server state wins immediately; a terminal mutation result only bridges cached PENDING.
+    const effectiveStatus =
+        serverStatus && serverStatus !== 'PENDING'
+            ? serverStatus
+            : resolvedStatus && resolvedStatus !== 'PENDING'
+            ? resolvedStatus
+            : serverStatus ?? resolvedStatus;
+
+    return {
+        effectiveStatus,
+        canAct:
+            !isLoading &&
+            !isFetching &&
+            !isError &&
+            serverStatus === 'PENDING' &&
+            effectiveStatus === 'PENDING',
+    };
+};
+
 const notificationActionStatusForPrompt = (
     status: LCNConnectionPromptActionStatus
 ): 'COMPLETED' | 'REJECTED' | null => {
@@ -74,17 +111,19 @@ export const ConnectionPromptNotificationCard: React.FC<ConnectionPromptNotifica
         if (serverStatus?.status) setResolvedStatus(serverStatus.status);
     }, [serverStatus?.status]);
 
+    const { effectiveStatus, canAct } = deriveConnectionPromptNotificationState({
+        serverStatus: serverStatus?.status,
+        resolvedStatus,
+        isLoading,
+        isFetching,
+        isError,
+    });
+
     const runAction = async (
         action: Exclude<PendingAction, null>,
         handler: (promptId: string) => Promise<LCNConnectionPromptActionResult>
     ): Promise<void> => {
-        if (
-            actionInFlightRef.current ||
-            isLoading ||
-            isFetching ||
-            isError ||
-            resolvedStatus !== 'PENDING'
-        ) {
+        if (actionInFlightRef.current || !canAct) {
             return;
         }
 
@@ -116,11 +155,10 @@ export const ConnectionPromptNotificationCard: React.FC<ConnectionPromptNotifica
     };
 
     const busy = pendingAction !== null;
-    const canAct = !isLoading && !isFetching && !isError && resolvedStatus === 'PENDING';
     const resolvedLabel =
-        resolvedStatus === 'CONNECTED'
+        effectiveStatus === 'CONNECTED'
             ? copy.connected
-            : resolvedStatus === 'SKIPPED' || resolvedStatus === 'STALE'
+            : effectiveStatus === 'SKIPPED' || effectiveStatus === 'STALE'
             ? copy.skipped
             : null;
 
@@ -192,7 +230,7 @@ export const ConnectionPromptNotificationCard: React.FC<ConnectionPromptNotifica
                     </div>
                 )}
 
-                {isFetching && resolvedStatus === 'PENDING' && (
+                {isFetching && effectiveStatus === 'PENDING' && (
                     <span
                         aria-hidden="true"
                         className="mt-4 h-10 w-32 rounded-[20px] bg-grayscale-100 animate-pulse"
