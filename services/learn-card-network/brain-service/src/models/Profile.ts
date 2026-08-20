@@ -43,6 +43,8 @@ type ConnectionPromptRelationshipProps = {
     triggeredAt: string;
     updatedAt: string;
     notificationDelivered?: boolean;
+    notificationDeliveryAttemptToken?: string;
+    notificationDeliveryAttemptedAt?: string;
 };
 
 export type ProfileRelationships = {
@@ -180,6 +182,14 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                     notificationDelivered: {
                         property: 'notificationDelivered',
                         schema: { type: 'boolean', required: false },
+                    },
+                    notificationDeliveryAttemptToken: {
+                        property: 'notificationDeliveryAttemptToken',
+                        schema: { type: 'string', required: false },
+                    },
+                    notificationDeliveryAttemptedAt: {
+                        property: 'notificationDeliveryAttemptedAt',
+                        schema: { type: 'string', required: false },
                     },
                 },
             },

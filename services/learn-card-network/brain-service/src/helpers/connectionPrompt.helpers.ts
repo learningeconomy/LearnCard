@@ -53,6 +53,8 @@ type PromptStatusRow = {
     status: 'PENDING' | 'SKIPPED' | 'CONNECTED';
 };
 
+const SENDER_NOTIFICATION_ATTEMPT_LEASE_MS = 5 * 60 * 1000;
+
 export const markConnectionPromptsSkipped = async (
     first: ProfileType,
     second: ProfileType
@@ -128,7 +130,9 @@ export const createConnectionPromptsForClaim = async (
                         prompt.notificationDelivered = CASE
                             WHEN direction.role = 'sender' THEN false
                             ELSE null
-                        END
+                        END,
+                        prompt.notificationDeliveryAttemptToken = null,
+                        prompt.notificationDeliveryAttemptedAt = null
                 )
                 RETURN collect({
                     role: direction.role,
@@ -181,9 +185,66 @@ export const createConnectionPromptsForClaim = async (
     }, {});
 };
 
+const claimSenderPromptNotificationDelivery = async (
+    viewer: ProfileType,
+    counterpart: ProfileType,
+    promptId: string,
+    triggerId: string
+): Promise<string | undefined> => {
+    const attemptToken = randomUUID();
+    const attemptedAt = new Date();
+    const result = await runConnectionPairQuery(
+        `
+            MATCH (first:Profile { profileId: $firstId })
+            SET first.__connectionPromptPairLock =
+                coalesce(first.__connectionPromptPairLock, 0) + 1
+            WITH first
+            OPTIONAL MATCH (viewer:Profile { profileId: $viewerId })
+                  -[prompt:CONNECTION_PROMPT { promptId: $promptId }]->
+                  (counterpart:Profile { profileId: $counterpartId })
+            WITH first, prompt,
+                 CASE
+                     WHEN prompt IS NOT NULL
+                       AND prompt.status = 'PENDING'
+                       AND prompt.triggerId = $triggerId
+                       AND coalesce(prompt.notificationDelivered, false) = false
+                       AND (
+                           prompt.notificationDeliveryAttemptToken IS NULL
+                           OR prompt.notificationDeliveryAttemptedAt IS NULL
+                           OR prompt.notificationDeliveryAttemptedAt <= $staleBefore
+                       )
+                     THEN true
+                     ELSE false
+                 END AS canClaim
+            FOREACH (_ IN CASE WHEN canClaim THEN [1] ELSE [] END |
+                SET prompt.notificationDeliveryAttemptToken = $attemptToken,
+                    prompt.notificationDeliveryAttemptedAt = $attemptedAt
+            )
+            REMOVE first.__connectionPromptPairLock
+            RETURN canClaim AS claimed
+        `,
+        {
+            firstId: [viewer.profileId, counterpart.profileId].sort()[0],
+            viewerId: viewer.profileId,
+            counterpartId: counterpart.profileId,
+            promptId,
+            triggerId,
+            attemptToken,
+            attemptedAt: attemptedAt.toISOString(),
+            staleBefore: new Date(
+                attemptedAt.getTime() - SENDER_NOTIFICATION_ATTEMPT_LEASE_MS
+            ).toISOString(),
+        }
+    );
+
+    return result.records[0]?.get('claimed') === true ? attemptToken : undefined;
+};
+
 const markSenderPromptNotificationDelivered = async (
     viewer: ProfileType,
-    promptId: string
+    promptId: string,
+    triggerId: string,
+    attemptToken: string
 ): Promise<void> => {
     await neogma.queryRunner.run(
         `
@@ -191,10 +252,65 @@ const markSenderPromptNotificationDelivered = async (
                   -[prompt:CONNECTION_PROMPT { promptId: $promptId }]->
                   (:Profile)
             WHERE prompt.status = 'PENDING'
+              AND prompt.triggerId = $triggerId
               AND coalesce(prompt.notificationDelivered, false) = false
+              AND prompt.notificationDeliveryAttemptToken = $attemptToken
             SET prompt.notificationDelivered = true
+            REMOVE prompt.notificationDeliveryAttemptToken,
+                   prompt.notificationDeliveryAttemptedAt
         `,
-        { viewerId: viewer.profileId, promptId }
+        { viewerId: viewer.profileId, promptId, triggerId, attemptToken }
+    );
+};
+
+const skipSenderPromptAfterNotificationRejection = async (
+    viewer: ProfileType,
+    promptId: string,
+    triggerId: string,
+    attemptToken: string
+): Promise<void> => {
+    await neogma.queryRunner.run(
+        `
+            MATCH (viewer:Profile { profileId: $viewerId })
+                  -[prompt:CONNECTION_PROMPT { promptId: $promptId }]->
+                  (:Profile)
+            WHERE prompt.status = 'PENDING'
+              AND prompt.triggerId = $triggerId
+              AND coalesce(prompt.notificationDelivered, false) = false
+              AND prompt.notificationDeliveryAttemptToken = $attemptToken
+            SET prompt.status = 'SKIPPED', prompt.updatedAt = $updatedAt
+            REMOVE prompt.notificationDeliveryAttemptToken,
+                   prompt.notificationDeliveryAttemptedAt
+        `,
+        {
+            viewerId: viewer.profileId,
+            promptId,
+            triggerId,
+            attemptToken,
+            updatedAt: new Date().toISOString(),
+        }
+    );
+};
+
+const releaseSenderPromptNotificationDelivery = async (
+    viewer: ProfileType,
+    promptId: string,
+    triggerId: string,
+    attemptToken: string
+): Promise<void> => {
+    await neogma.queryRunner.run(
+        `
+            MATCH (viewer:Profile { profileId: $viewerId })
+                  -[prompt:CONNECTION_PROMPT { promptId: $promptId }]->
+                  (:Profile)
+            WHERE prompt.status = 'PENDING'
+              AND prompt.triggerId = $triggerId
+              AND coalesce(prompt.notificationDelivered, false) = false
+              AND prompt.notificationDeliveryAttemptToken = $attemptToken
+            REMOVE prompt.notificationDeliveryAttemptToken,
+                   prompt.notificationDeliveryAttemptedAt
+        `,
+        { viewerId: viewer.profileId, promptId, triggerId, attemptToken }
     );
 };
 
@@ -222,6 +338,28 @@ export const handleConnectionPromptsForCredentialClaim = async (
         result.senderPrompt?.triggerId === input.triggerId &&
         !result.senderPrompt.notificationDelivered
     ) {
+        let attemptToken: string | undefined;
+
+        try {
+            attemptToken = await claimSenderPromptNotificationDelivery(
+                input.sender,
+                input.claimer,
+                result.senderPrompt.promptId,
+                input.triggerId
+            );
+        } catch (error) {
+            console.error('Failed to claim connection prompt notification delivery', {
+                claimerProfileId: input.claimer.profileId,
+                senderProfileId: input.sender.profileId,
+                promptId: result.senderPrompt.promptId,
+                triggerId: input.triggerId,
+                error,
+            });
+            return result;
+        }
+
+        if (!attemptToken) return result;
+
         try {
             await addNotificationToQueue({
                 type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
@@ -247,7 +385,9 @@ export const handleConnectionPromptsForCredentialClaim = async (
             try {
                 await markSenderPromptNotificationDelivered(
                     input.sender,
-                    result.senderPrompt.promptId
+                    result.senderPrompt.promptId,
+                    input.triggerId,
+                    attemptToken
                 );
             } catch (error) {
                 console.error('Failed to acknowledge connection prompt notification delivery', {
@@ -257,6 +397,23 @@ export const handleConnectionPromptsForCredentialClaim = async (
                     triggerId: input.triggerId,
                     error,
                 });
+
+                try {
+                    await releaseSenderPromptNotificationDelivery(
+                        input.sender,
+                        result.senderPrompt.promptId,
+                        input.triggerId,
+                        attemptToken
+                    );
+                } catch (releaseError) {
+                    console.error('Failed to release connection prompt notification delivery', {
+                        claimerProfileId: input.claimer.profileId,
+                        senderProfileId: input.sender.profileId,
+                        promptId: result.senderPrompt.promptId,
+                        triggerId: input.triggerId,
+                        error: releaseError,
+                    });
+                }
             }
         } catch (error) {
             console.error('Failed to enqueue post-claim connection prompt notification', {
@@ -268,7 +425,12 @@ export const handleConnectionPromptsForCredentialClaim = async (
             });
 
             try {
-                await skipConnectionPrompt(input.sender, result.senderPrompt.promptId);
+                await skipSenderPromptAfterNotificationRejection(
+                    input.sender,
+                    result.senderPrompt.promptId,
+                    input.triggerId,
+                    attemptToken
+                );
             } catch (recoveryError) {
                 console.error('Failed to recover undeliverable sender connection prompt', {
                     claimerProfileId: input.claimer.profileId,
@@ -277,6 +439,23 @@ export const handleConnectionPromptsForCredentialClaim = async (
                     triggerId: input.triggerId,
                     error: recoveryError,
                 });
+
+                try {
+                    await releaseSenderPromptNotificationDelivery(
+                        input.sender,
+                        result.senderPrompt.promptId,
+                        input.triggerId,
+                        attemptToken
+                    );
+                } catch (releaseError) {
+                    console.error('Failed to release connection prompt notification delivery', {
+                        claimerProfileId: input.claimer.profileId,
+                        senderProfileId: input.sender.profileId,
+                        promptId: result.senderPrompt.promptId,
+                        triggerId: input.triggerId,
+                        error: releaseError,
+                    });
+                }
             }
 
             return { ...result, senderNotificationFailed: true };

@@ -516,6 +516,8 @@ describe('credential claim connection prompts', () => {
         promptId: string;
         status: string;
         delivered: boolean;
+        attemptToken: string | null;
+        attemptedAt: string | null;
     }> => {
         const result = await neogma.queryRunner.run(
             `
@@ -524,7 +526,9 @@ describe('credential claim connection prompts', () => {
                       (:Profile { profileId: $claimerId })
                 RETURN prompt.promptId AS promptId,
                        prompt.status AS status,
-                       coalesce(prompt.notificationDelivered, false) AS delivered
+                       coalesce(prompt.notificationDelivered, false) AS delivered,
+                       prompt.notificationDeliveryAttemptToken AS attemptToken,
+                       prompt.notificationDeliveryAttemptedAt AS attemptedAt
             `,
             { senderId: profileA.profileId, claimerId: profileB.profileId }
         );
@@ -534,6 +538,8 @@ describe('credential claim connection prompts', () => {
             promptId: record.get('promptId') as string,
             status: record.get('status') as string,
             delivered: record.get('delivered') as boolean,
+            attemptToken: record.get('attemptToken') as string | null,
+            attemptedAt: record.get('attemptedAt') as string | null,
         };
     };
 
@@ -544,6 +550,135 @@ describe('credential claim connection prompts', () => {
             triggerId,
             vcUris: [`lc:network:credential:${triggerId}`],
         });
+
+    it('allows only one concurrent same-trigger handler to own sender prompt delivery', async () => {
+        const triggerId = 'credential:concurrent-delivery-owner';
+        let releaseFirstEnqueue: (() => void) | undefined;
+        let signalFirstEnqueue: (() => void) | undefined;
+        const firstEnqueueStarted = new Promise<void>(resolve => {
+            signalFirstEnqueue = resolve;
+        });
+        const firstEnqueueGate = new Promise<void>(resolve => {
+            releaseFirstEnqueue = resolve;
+        });
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockImplementationOnce(async () => {
+                signalFirstEnqueue?.();
+                await firstEnqueueGate;
+            })
+            .mockRejectedValueOnce(new Error('a second owner must never enqueue'));
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        let firstHandler: ReturnType<typeof handleClaim> | undefined;
+
+        try {
+            firstHandler = handleClaim(triggerId);
+            await firstEnqueueStarted;
+            const secondResult = await handleClaim(triggerId);
+            releaseFirstEnqueue?.();
+            await firstHandler;
+
+            expect(notificationSpy).toHaveBeenCalledTimes(1);
+            expect(secondResult).not.toHaveProperty('senderNotificationFailed');
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'PENDING',
+                delivered: true,
+                attemptToken: null,
+                attemptedAt: null,
+            });
+        } finally {
+            releaseFirstEnqueue?.();
+            if (firstHandler) await firstHandler;
+            consoleErrorSpy.mockRestore();
+            notificationSpy.mockRestore();
+        }
+    });
+
+    it('keeps a fresh delivery owner exclusive and reclaims its stale lease', async () => {
+        const triggerId = 'credential:stale-delivery-owner';
+        const committed = await createPrompts(triggerId);
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue(undefined);
+
+        await neogma.queryRunner.run(
+            `
+                MATCH (:Profile { profileId: $senderId })
+                      -[prompt:CONNECTION_PROMPT { promptId: $promptId }]->
+                      (:Profile)
+                SET prompt.notificationDeliveryAttemptToken = $attemptToken,
+                    prompt.notificationDeliveryAttemptedAt = $attemptedAt
+            `,
+            {
+                senderId: profileA.profileId,
+                promptId: committed.senderPrompt!.promptId,
+                attemptToken: 'crashed-owner',
+                attemptedAt: new Date().toISOString(),
+            }
+        );
+
+        try {
+            await handleClaim(triggerId);
+            expect(notificationSpy).not.toHaveBeenCalled();
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'PENDING',
+                delivered: false,
+            });
+            const [publicPrompt] = await getPendingConnectionPrompts(profileA);
+            expect(publicPrompt).not.toHaveProperty('notificationDeliveryAttemptToken');
+            expect(publicPrompt).not.toHaveProperty('notificationDeliveryAttemptedAt');
+
+            await neogma.queryRunner.run(
+                `
+                    MATCH ()-[prompt:CONNECTION_PROMPT { promptId: $promptId }]->()
+                    SET prompt.notificationDeliveryAttemptedAt = $attemptedAt
+                `,
+                {
+                    promptId: committed.senderPrompt!.promptId,
+                    attemptedAt: new Date(0).toISOString(),
+                }
+            );
+
+            await handleClaim(triggerId);
+            expect(notificationSpy).toHaveBeenCalledTimes(1);
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'PENDING',
+                delivered: true,
+                attemptToken: null,
+                attemptedAt: null,
+            });
+        } finally {
+            notificationSpy.mockRestore();
+        }
+    });
+
+    it('keeps delivery ownership persistence failure nonfatal', async () => {
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue(undefined);
+        const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+        const queryRunnerSpy = vi
+            .spyOn(neogma.queryRunner, 'run')
+            .mockImplementation(async (query, params) => {
+                if (typeof query === 'string' && query.includes('AS canClaim')) {
+                    throw new Error('injected delivery ownership write failure');
+                }
+
+                return originalRun(query, params);
+            });
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        try {
+            await expect(handleClaim('credential:ownership-write-failure')).resolves.toMatchObject({
+                senderPrompt: { isNew: true },
+            });
+            expect(notificationSpy).not.toHaveBeenCalled();
+        } finally {
+            consoleErrorSpy.mockRestore();
+            queryRunnerSpy.mockRestore();
+            notificationSpy.mockRestore();
+        }
+    });
 
     it('delivers an undelivered same-trigger sender prompt after a crash between commit and enqueue', async () => {
         const triggerId = 'credential:crash-before-enqueue';
