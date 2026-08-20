@@ -89,7 +89,7 @@ export const useTheme = () => {
     const theme = loadThemeSchema(selectedTheme);
 
     const { colors, icons, styles } = theme;
-    console.log('theme', theme);
+
     const getIconSet = <T extends IconSetEnum>(iconSetType: T) => {
         const iconSet = icons[iconSetType];
         return iconSet ?? EMPTY_ICONS;
