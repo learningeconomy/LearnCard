@@ -232,16 +232,69 @@ describe('ConnectionPromptCoordinator', () => {
         expect(state.dismissToast).toHaveBeenCalledOnce();
     });
 
-    it('treats native close as one durable Skip action', async () => {
+    it('keeps the modal open with skipping feedback until one native Skip succeeds', async () => {
+        const request = deferred<void>();
         state.prompts = [alice];
+        state.skip.mockImplementation(async promptId => {
+            await request.promise;
+            state.prompts = state.prompts.filter(prompt => prompt.promptId !== promptId);
+        });
+        renderCoordinator();
+        await advance(150);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Native Close' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Native Close' }));
+
+        expect(state.skip).toHaveBeenCalledOnce();
+        expect(state.skip).toHaveBeenCalledWith(alice.promptId);
+        expect(state.connect).not.toHaveBeenCalled();
+        expect(
+            (screen.getByRole('button', { name: 'Skipping...' }) as HTMLButtonElement).disabled
+        ).toBe(true);
+        expect(
+            (screen.getByRole('button', { name: 'Connect' }) as HTMLButtonElement).disabled
+        ).toBe(true);
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+
+        await act(async () => {
+            request.resolve(undefined);
+            await request.promise;
+        });
+
+        expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
+        expect(state.skip).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the modal open with a friendly retry after native Skip fails', async () => {
+        const request = deferred<void>();
+        state.prompts = [alice];
+        state.skip
+            .mockImplementationOnce(() => request.promise.then(() => undefined))
+            .mockResolvedValueOnce(undefined);
         renderCoordinator();
         await advance(150);
 
         fireEvent.click(screen.getByRole('button', { name: 'Native Close' }));
 
         expect(state.skip).toHaveBeenCalledOnce();
-        expect(state.skip).toHaveBeenCalledWith(alice.promptId);
-        expect(state.connect).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Skipping...' })).toBeTruthy();
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+
+        await act(async () => {
+            request.reject(new Error('raw native skip failure'));
+            await request.promise.catch(() => undefined);
+        });
+
+        expect(screen.getByRole('alert').textContent).toBe(copy.error);
+        expect(screen.queryByText('raw native skip failure')).toBeNull();
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Native Close' }));
+            await Promise.resolve();
+        });
+        expect(state.skip).toHaveBeenCalledTimes(2);
+        expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
     });
 
     it('does not turn a successful explicit Connect into a Skip', async () => {
@@ -282,7 +335,10 @@ describe('ConnectionPromptCoordinator', () => {
         expect(state.skip).not.toHaveBeenCalled();
         expect(screen.getByRole('alert').textContent).toBe(copy.error);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Native Close' }));
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Native Close' }));
+            await Promise.resolve();
+        });
         expect(state.skip).toHaveBeenCalledOnce();
         expect(state.skip).toHaveBeenCalledWith(alice.promptId);
     });
@@ -335,21 +391,22 @@ describe('ConnectionPromptCoordinator', () => {
         expect(state.skip).not.toHaveBeenCalled();
     });
 
-    it('durably skips once when closeAllModals removes its owned prompt', async () => {
+    it('treats closeAllModals as administrative removal without Skip', async () => {
         state.prompts = [alice];
-        state.skip.mockImplementation(async promptId => {
-            state.prompts = state.prompts.filter(prompt => prompt.promptId !== promptId);
-        });
         renderCoordinator();
         await advance(150);
+        const staleActions = capturedPromptActions;
 
         fireEvent.click(screen.getByRole('button', { name: 'Close All' }));
+
+        await act(async () => {
+            await staleActions?.onConnect(alice.promptId);
+            await staleActions?.onSkip(alice.promptId);
+        });
         await advance(300);
-        await advance(500);
 
         expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
-        expect(state.skip).toHaveBeenCalledOnce();
-        expect(state.skip).toHaveBeenCalledWith(alice.promptId);
+        expect(state.skip).not.toHaveBeenCalled();
         expect(state.connect).not.toHaveBeenCalled();
     });
 

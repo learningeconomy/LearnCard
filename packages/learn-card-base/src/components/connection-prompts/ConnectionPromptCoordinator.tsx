@@ -11,7 +11,10 @@ import { switchedProfileStore } from '../../stores/walletStore';
 import { useModalsContext } from '../modals/ModalsContext';
 import { ModalTypes } from '../modals/types/Modals';
 import { useModal } from '../modals/useModal';
-import ConnectionPromptModal, { type ConnectionPromptCopy } from './ConnectionPromptModal';
+import ConnectionPromptModal, {
+    type ConnectionPromptCopy,
+    type ConnectionPromptModalActions,
+} from './ConnectionPromptModal';
 
 export type ConnectionPromptCoordinatorProps = {
     copy: ConnectionPromptCopy;
@@ -72,15 +75,11 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
             return;
         }
 
-        const promptId = activePromptIdRef.current;
         ownedModalIdRef.current = null;
         activePromptIdRef.current = null;
-
-        if (!promptId || resolvedRef.current || actionInFlightRef.current) return;
-
         resolvedRef.current = true;
-        void skipPrompt.mutateAsync(promptId);
-    }, [modals, skipPrompt]);
+        actionInFlightRef.current = false;
+    }, [modals]);
 
     useEffect(() => {
         if (!viewerKey || modals.length > 0 || !nextPrompt || activePromptIdRef.current) return;
@@ -95,6 +94,8 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
             const promptViewerKey = viewerKey;
             let modalId: number | null = null;
+            const promptModalActionsRef: React.MutableRefObject<ConnectionPromptModalActions | null> =
+                { current: null };
             const ownsPromptModal = (): boolean =>
                 currentViewerKeyRef.current === promptViewerKey &&
                 activePromptIdRef.current === nextPrompt.promptId &&
@@ -140,12 +141,13 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
                 if (!ownsPromptModal()) return true;
                 if (actionInFlightRef.current && !resolvedRef.current) return false;
 
+                if (!resolvedRef.current) {
+                    promptModalActionsRef.current?.requestSkip();
+                    return false;
+                }
+
                 activePromptIdRef.current = null;
                 ownedModalIdRef.current = null;
-                if (resolvedRef.current) return true;
-
-                resolvedRef.current = true;
-                void skipPrompt.mutateAsync(nextPrompt.promptId);
 
                 return true;
             };
@@ -156,6 +158,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
                     copy={copy}
                     onConnect={handleConnect}
                     onSkip={handleSkip}
+                    actionsRef={promptModalActionsRef}
                 />,
                 { hideButton: false, onClose: handleClose }
             );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useImperativeHandle, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import type { LCNConnectionPrompt } from '@learncard/types';
 import { alertCircleOutline } from 'ionicons/icons';
@@ -20,6 +20,11 @@ export type ConnectionPromptModalProps = {
     copy: ConnectionPromptCopy;
     onConnect: (promptId: string) => Promise<void>;
     onSkip: (promptId: string) => Promise<void>;
+    actionsRef?: React.MutableRefObject<ConnectionPromptModalActions | null>;
+};
+
+export type ConnectionPromptModalActions = {
+    requestSkip: () => void;
 };
 
 type PendingAction = 'connect' | 'skip' | null;
@@ -29,29 +34,38 @@ export const ConnectionPromptModal: React.FC<ConnectionPromptModalProps> = ({
     copy,
     onConnect,
     onSkip,
+    actionsRef,
 }) => {
     const [pendingAction, setPendingAction] = useState<PendingAction>(null);
     const [hasError, setHasError] = useState(false);
     const counterpartName = prompt.counterpart.displayName || prompt.counterpart.profileId;
     const busy = pendingAction !== null;
 
-    const runAction = async (
-        action: Exclude<PendingAction, null>,
-        handler: (promptId: string) => Promise<void>
-    ): Promise<void> => {
-        if (busy) return;
+    const runAction = useCallback(
+        async (
+            action: Exclude<PendingAction, null>,
+            handler: (promptId: string) => Promise<void>
+        ): Promise<void> => {
+            if (busy) return;
 
-        setPendingAction(action);
-        setHasError(false);
+            setPendingAction(action);
+            setHasError(false);
 
-        try {
-            await handler(prompt.promptId);
-        } catch {
-            setHasError(true);
-        } finally {
-            setPendingAction(null);
-        }
-    };
+            try {
+                await handler(prompt.promptId);
+            } catch {
+                setHasError(true);
+            } finally {
+                setPendingAction(null);
+            }
+        },
+        [busy, prompt.promptId]
+    );
+
+    useImperativeHandle(actionsRef, () => ({ requestSkip: () => void runAction('skip', onSkip) }), [
+        onSkip,
+        runAction,
+    ]);
 
     return (
         <div className="font-poppins p-6 text-center space-y-5 bg-white rounded-[20px]">
