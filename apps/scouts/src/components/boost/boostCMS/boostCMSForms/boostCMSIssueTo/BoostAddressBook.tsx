@@ -32,6 +32,7 @@ import {
     BoostUserTypeEnum,
     useModal,
     ModalTypes,
+    useGetSearchProfiles,
 } from 'learn-card-base';
 
 import Plus from 'learn-card-base/svgs/Plus';
@@ -97,10 +98,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     _issueTo,
     _setIssueTo,
 
-    search,
+    search: searchProp,
     setSearch,
-    searchResults,
-    isLoading,
+    searchResults: searchResultsProp,
+    isLoading: isLoadingProp,
 
     recipients,
     recipientsLoading,
@@ -113,6 +114,12 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     hideBoostShareableCode = false,
 }) => {
     const { initWallet } = useWallet();
+    const contextCredential = boostSearchStore.use.contextCredential();
+    const searchBoostUri = boostSearchStore.use.boostUri();
+    const role = boostSearchStore.use.role();
+    const isTroopLeader = role === ScoutsRoleEnum.leader;
+    const isNetworkAdmin = role === ScoutsRoleEnum.national;
+    const isFullView = viewMode === BoostAddressBookViewMode.full;
 
     const [connections, setConnections] = useState<BoostCMSIssueTo[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
@@ -120,6 +127,15 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const [localIssueTo, setLocalIssueTo] = useState<BoostCMSIssueTo[]>(
         ((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) || []
     );
+    const [modalSearch, setModalSearch] = useState(searchProp ?? '');
+    const { data: modalSearchResults, isLoading: modalSearchLoading } = useGetSearchProfiles(
+        modalSearch,
+        isFullView && !isTroopLeader && !isNetworkAdmin
+    );
+
+    const search = isFullView ? modalSearch : searchProp;
+    const searchResults = isFullView ? modalSearchResults : searchResultsProp;
+    const isLoading = isFullView ? modalSearchLoading : isLoadingProp;
 
     // --- Limit Search Scope for Troop Leaders / Admins ---
     //   (should really refactor since so much of this code is from BoostSearch)
@@ -127,12 +143,6 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const parentBoost = parentBoosts?.records?.[0]; // just default to the first one, guess we're just assuming there's only one
     const parentBoostUri = parentBoost?.uri;
     const { data: resolvedCredential } = useResolveBoost(parentBoostUri);
-
-    const contextCredential = boostSearchStore.use.contextCredential();
-    const searchBoostUri = boostSearchStore.use.boostUri();
-    const role = boostSearchStore.use.role();
-    const isTroopLeader = role === ScoutsRoleEnum.leader;
-    const isNetworkAdmin = role === ScoutsRoleEnum.national;
 
     const { scoutRecipients: rawScouts, isLoading: scoutsLoading } = useTroopMembers(
         contextCredential as any,
@@ -190,7 +200,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 }
                 search={search}
                 setSearch={setSearch}
-                searchResults={searchResults}
+                searchResults={searchResultsProp}
                 isLoading={isLoading}
                 collectionPropName={collectionPropName}
             />
@@ -214,7 +224,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 _setIssueTo={setLocalIssueTo as any}
                 search={search || ''}
                 setSearch={setSearch as any}
-                searchResults={searchResults || []}
+                searchResults={searchResultsProp || []}
                 isLoading={!!isLoading}
                 collectionPropName={collectionPropName}
                 boostUri={boostUri}
@@ -264,7 +274,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         loadConnections();
     }, [isTroopLeader, rawScouts]);
 
-    const handleSearch = async (profileId: string) => setSearch?.(profileId);
+    const handleSearch = (profileId: string) => {
+        if (isFullView) setModalSearch(profileId);
+        setSearch?.(profileId);
+    };
 
     let contactCount =
         (search?.length ?? 0) > 0 && (searchResults?.length ?? 0) > 0
