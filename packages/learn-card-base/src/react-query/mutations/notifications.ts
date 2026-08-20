@@ -14,6 +14,7 @@ const log = getLogger('notifications');
 type NotificationMeta = {
     archived?: boolean;
     read?: boolean;
+    actionStatus?: 'PENDING' | 'COMPLETED' | 'REJECTED';
 };
 
 type UpdateNotificationVariables = {
@@ -27,7 +28,7 @@ type NotificationType = {
     archived: boolean;
     sent: string;
     type: string;
-    actionStatus?: string;
+    actionStatus?: NotificationMeta['actionStatus'];
     [key: string]: any;
 };
 
@@ -117,6 +118,7 @@ export const useUpdateNotification = () => {
             const isArchiving = updatedNotification?.payload?.archived === true;
             const isUnarchiving = updatedNotification?.payload?.archived === false;
             const isReadUpdate = Boolean(updatedNotification?.payload?.read);
+            const actionStatus = updatedNotification?.payload?.actionStatus;
 
             // 1. Define both query keys
             const activeQueryKey = [
@@ -138,9 +140,10 @@ export const useUpdateNotification = () => {
 
             // 2. Cancel any outgoing refetches for the caches we're about to
             // touch so they don't overwrite the optimistic update.
-            await queryClient.cancelQueries({
-                queryKey: isArchiving ? activeQueryKey : archiveQueryKey,
-            });
+            await Promise.all([
+                queryClient.cancelQueries({ queryKey: activeQueryKey }),
+                queryClient.cancelQueries({ queryKey: archiveQueryKey }),
+            ]);
             if (isReadUpdate) {
                 await queryClient.cancelQueries({ queryKey: unreadQueryKey });
             }
@@ -155,6 +158,36 @@ export const useUpdateNotification = () => {
             const notificationToUnarchive = currentArchiveData?.pages
                 ?.flatMap(page => page.notifications)
                 ?.find(notification => notification?._id === updatedNotification.notificationId);
+
+            const updateActionStatus = (
+                data: InfiniteData<PageType> | undefined
+            ): InfiniteData<PageType> | undefined => {
+                if (!data || !actionStatus) return data;
+
+                return {
+                    ...data,
+                    pages: data.pages.map((page: PageType) => ({
+                        ...page,
+                        notifications: page.notifications.map((notification: NotificationType) =>
+                            notification?._id === updatedNotification.notificationId
+                                ? { ...notification, actionStatus }
+                                : notification
+                        ),
+                    })),
+                };
+            };
+
+            if (actionStatus) {
+                queryClient.setQueryData<PaginatedNotificationsType>(
+                    activeQueryKey,
+                    updateActionStatus(currentTabData)
+                );
+                queryClient.setQueryData<PaginatedNotificationsType>(
+                    archiveQueryKey,
+                    updateActionStatus(currentArchiveData)
+                );
+            }
+
             if (isArchiving) {
                 // Remove from active
                 if (currentTabData?.pages?.[0]?.notifications) {
@@ -184,6 +217,7 @@ export const useUpdateNotification = () => {
                                           ...notificationToArchive,
                                           archived: true,
                                           read: true,
+                                          ...(actionStatus ? { actionStatus } : {}),
                                       },
                                       ...page.notifications,
                                   ],
@@ -205,6 +239,7 @@ export const useUpdateNotification = () => {
                                         ...notificationToArchive,
                                         archived: true,
                                         read: true,
+                                        ...(actionStatus ? { actionStatus } : {}),
                                     },
                                 ],
                             },
@@ -241,6 +276,7 @@ export const useUpdateNotification = () => {
                                           ...notificationToUnarchive,
                                           archived: false,
                                           read: true,
+                                          ...(actionStatus ? { actionStatus } : {}),
                                       },
                                       ...page.notifications,
                                   ],
@@ -261,7 +297,11 @@ export const useUpdateNotification = () => {
                         ...page,
                         notifications: page.notifications.map((notification: NotificationType) =>
                             notification?._id === updatedNotification.notificationId
-                                ? { ...notification, read: true }
+                                ? {
+                                      ...notification,
+                                      read: true,
+                                      ...(actionStatus ? { actionStatus } : {}),
+                                  }
                                 : notification
                         ),
                     }));

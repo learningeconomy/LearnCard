@@ -1,7 +1,7 @@
 /*mutations related to boosts */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { useWallet, insertItem } from 'learn-card-base';
+import { connectionPromptKeys, useWallet, insertItem } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { VC, Boost, CredentialRecord, VP, VCValidator } from '@learncard/types';
 
@@ -59,6 +59,8 @@ export const useAddCredentialToWallet = () => {
         },
         onSuccess: async (data: useAddCredentialToWalletReturn) => {
             const { category, vc, uri, id } = data;
+
+            await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
 
             await queryClient.cancelQueries({ queryKey: ['useGetCredentialList', category] });
             await queryClient.invalidateQueries({
