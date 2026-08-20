@@ -1,4 +1,5 @@
 import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import type { LCNConnectionPromptStatus, LCNConnectionPromptSurface } from '@learncard/types';
 
 import { neogma } from '@instance';
 
@@ -34,6 +35,15 @@ type CredentialRelationshipProps = {
     unsuspendedAt?: string;
 } & Record<string, unknown>;
 
+type ConnectionPromptRelationshipProps = {
+    promptId: string;
+    status: LCNConnectionPromptStatus;
+    triggerId: string;
+    surface: LCNConnectionPromptSurface;
+    triggeredAt: string;
+    updatedAt: string;
+};
+
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     connectedWith: ModelRelatedNodesI<
@@ -43,6 +53,12 @@ export type ProfileRelationships = {
         { sources?: string[] }
     >;
     blocked: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    connectionPrompt: ModelRelatedNodesI<
+        typeof Profile,
+        ProfileInstance,
+        ConnectionPromptRelationshipProps,
+        ConnectionPromptRelationshipProps
+    >;
     managedBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
@@ -131,6 +147,37 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 },
             },
             blocked: { model: 'self', direction: 'out', name: 'BLOCKED' },
+            connectionPrompt: {
+                model: 'self',
+                direction: 'out',
+                name: 'CONNECTION_PROMPT',
+                properties: {
+                    promptId: {
+                        property: 'promptId',
+                        schema: { type: 'string', required: true },
+                    },
+                    status: {
+                        property: 'status',
+                        schema: { type: 'string', required: true },
+                    },
+                    triggerId: {
+                        property: 'triggerId',
+                        schema: { type: 'string', required: true },
+                    },
+                    surface: {
+                        property: 'surface',
+                        schema: { type: 'string', required: true },
+                    },
+                    triggeredAt: {
+                        property: 'triggeredAt',
+                        schema: { type: 'string', required: true },
+                    },
+                    updatedAt: {
+                        property: 'updatedAt',
+                        schema: { type: 'string', required: true },
+                    },
+                },
+            },
             managedBy: { model: 'self', direction: 'out', name: 'MANAGED_BY' },
             credentialSent: {
                 model: Credential,

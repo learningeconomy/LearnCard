@@ -11,6 +11,10 @@ import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helper
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
+import {
+    markConnectionPromptsConnected,
+    markConnectionPromptsSkipped,
+} from '@helpers/connectionPrompt.helpers';
 import { FlatProfileType, ProfileType } from 'types/profile';
 import { inflateObject } from './objects.helpers';
 
@@ -343,6 +347,7 @@ export const connectProfiles = async (
 
     // Ensure mutual connectedWith edges with a stable 'manual' source tag
     await ensureMutualConnectionWithSource(source.profileId, target.profileId, 'manual');
+    await markConnectionPromptsConnected(source, target);
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
@@ -652,6 +657,7 @@ export const blockProfile = async (source: ProfileType, target: ProfileType): Pr
             },
         }),
     ]);
+    await markConnectionPromptsSkipped(source, target);
 
     return true;
 };
