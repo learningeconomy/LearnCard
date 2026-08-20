@@ -49,6 +49,7 @@ vi.mock('learn-card-base', () => ({
     getLogger: () => ({ debug: vi.fn() }),
     useGetBoostParents: () => ({ data: { records: [] } }),
     useGetCurrentLCNUser: () => ({ currentLCNUser: undefined, currentLCNUserLoading: false }),
+    useGetSearchProfiles: () => ({ data: [], isLoading: false }),
     useModal: () => ({ newModal, closeModal: vi.fn() }),
     useResolveBoost: () => ({ data: undefined }),
     useWallet: () => ({

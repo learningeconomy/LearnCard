@@ -130,7 +130,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const [modalSearch, setModalSearch] = useState(searchProp ?? '');
     const { data: modalSearchResults, isLoading: modalSearchLoading } = useGetSearchProfiles(
         modalSearch,
-        isFullView && !isTroopLeader && !isNetworkAdmin
+        {
+            enabled: isFullView && !isTroopLeader && !isNetworkAdmin && modalSearch.length > 0,
+        }
     );
 
     const search = isFullView ? modalSearch : searchProp;
@@ -200,7 +202,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 }
                 search={search}
                 setSearch={setSearch}
-                searchResults={searchResultsProp}
+                searchResults={searchResults}
                 isLoading={isLoading}
                 collectionPropName={collectionPropName}
             />
@@ -224,7 +226,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 _setIssueTo={setLocalIssueTo as any}
                 search={search || ''}
                 setSearch={setSearch as any}
-                searchResults={searchResultsProp || []}
+                searchResults={searchResults || []}
                 isLoading={!!isLoading}
                 collectionPropName={collectionPropName}
                 boostUri={boostUri}
@@ -276,7 +278,11 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     }, [isTroopLeader, rawScouts]);
 
     const handleSearch = (profileId: string) => {
-        if (isFullView) setModalSearch(profileId);
+        if (isFullView) {
+            setModalSearch(profileId);
+            return;
+        }
+
         setSearch?.(profileId);
     };
 

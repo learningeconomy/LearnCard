@@ -140,7 +140,9 @@ const BoostCMS: React.FC<{
     const [search, setSearch] = useState<string>('');
     const { data: boostAppearanceBadgeList, isLoading: stylePackLoading } =
         useScoutPassStylesPackRegistry();
-    const { data: searchResults, isLoading: loading } = useGetSearchProfiles(search ?? '');
+    const { data: searchResults, isLoading: loading } = useGetSearchProfiles(search ?? '', {
+        enabled: false,
+    });
     const { mutate: addCredentialToWallet } = useAddCredentialToWallet();
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,

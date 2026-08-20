@@ -10,13 +10,37 @@ import {
     BoostAddressBookViewMode,
 } from './BoostAddressBook';
 
-const { networkProfile } = vi.hoisted(() => ({
-    networkProfile: {
-        profileId: 'network-user',
-        displayName: 'Network Result',
-        did: 'did:example:network-user',
-    },
-}));
+const { networkProfile, scoutProfile, roleState, scoutRecipients, searchProfiles } = vi.hoisted(
+    () => ({
+        networkProfile: {
+            profileId: 'network-user',
+            displayName: 'Network Result',
+            did: 'did:example:network-user',
+        },
+        scoutProfile: {
+            profileId: 'troop-user',
+            displayName: 'Troop Member',
+            did: 'did:example:troop-user',
+        },
+        roleState: { current: undefined as string | undefined },
+        scoutRecipients: {
+            current: [] as Array<{ to: { profileId: string; displayName: string; did: string } }>,
+        },
+        searchProfiles: vi.fn((query: string, options: { enabled?: boolean } = {}) => ({
+            data:
+                (options.enabled ?? true) && query === 'network-user'
+                    ? [
+                          {
+                              profileId: 'network-user',
+                              displayName: 'Network Result',
+                              did: 'did:example:network-user',
+                          },
+                      ]
+                    : [],
+            isLoading: false,
+        })),
+    })
+);
 
 vi.mock('@ionic/react', () => {
     const Container = ({ children }: React.PropsWithChildren) => <div>{children}</div>;
@@ -52,10 +76,7 @@ vi.mock('learn-card-base', () => ({
         currentLCNUser: undefined,
         currentLCNUserLoading: false,
     }),
-    useGetSearchProfiles: (query: string) => ({
-        data: query === networkProfile.profileId ? [networkProfile] : [],
-        isLoading: false,
-    }),
+    useGetSearchProfiles: searchProfiles,
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
     useResolveBoost: () => ({ data: undefined }),
     useWallet: () => ({ initWallet: () => new Promise(() => {}) }),
@@ -66,7 +87,7 @@ vi.mock('learn-card-base/svgs/Plus', () => ({ default: () => null }));
 vi.mock('react-lottie-player', () => ({ default: () => null }));
 
 vi.mock('../../../../../hooks/useTroopMembers', () => ({
-    default: () => ({ scoutRecipients: [], isLoading: false }),
+    default: () => ({ scoutRecipients: scoutRecipients.current, isLoading: false }),
 }));
 vi.mock('../../../../../hooks/useNetworkMembers', () => ({
     default: () => ({ data: { pages: [] }, isLoading: false }),
@@ -76,7 +97,7 @@ vi.mock('../../../../../stores/boostSearchStore', () => ({
         use: {
             contextCredential: () => undefined,
             boostUri: () => undefined,
-            role: () => undefined,
+            role: () => roleState.current,
         },
         set: {
             boostUri: vi.fn(),
@@ -105,6 +126,8 @@ vi.mock('./BoostAddressBookContactList', () => ({
 describe('BoostAddressBook network search', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        roleState.current = undefined;
+        scoutRecipients.current = [];
     });
 
     it('shows Scout network results when the user has no contacts', async () => {
@@ -131,5 +154,60 @@ describe('BoostAddressBook network search', () => {
         });
 
         expect(await screen.findByText(networkProfile.displayName)).toBeTruthy();
+    });
+
+    it('does not enable global profile search before the user types', () => {
+        render(
+            <BoostAddressBook
+                state={{ issueTo: [] } as any}
+                setState={vi.fn()}
+                viewMode={BoostAddressBookViewMode.full}
+                mode={BoostAddressBookEditMode.edit}
+                _issueTo={[]}
+                _setIssueTo={vi.fn()}
+                search=""
+                setSearch={vi.fn()}
+                searchResults={[]}
+                isLoading={false}
+                recipients={[]}
+                recipientsLoading={false}
+                boostUri="boost:example"
+            />
+        );
+
+        expect(searchProfiles).toHaveBeenCalledWith('', { enabled: false });
+    });
+
+    it('keeps troop-leader search scoped to troop members', async () => {
+        roleState.current = 'leader';
+        scoutRecipients.current = [{ to: scoutProfile }];
+
+        render(
+            <BoostAddressBook
+                state={{ issueTo: [] } as any}
+                setState={vi.fn()}
+                viewMode={BoostAddressBookViewMode.full}
+                mode={BoostAddressBookEditMode.edit}
+                _issueTo={[]}
+                _setIssueTo={vi.fn()}
+                search=""
+                setSearch={vi.fn()}
+                searchResults={[networkProfile]}
+                isLoading={false}
+                recipients={[]}
+                recipientsLoading={false}
+                boostUri="boost:example"
+            />
+        );
+
+        fireEvent.change(screen.getByRole('textbox'), {
+            target: { value: scoutProfile.profileId },
+        });
+
+        expect(await screen.findByText(scoutProfile.displayName)).toBeTruthy();
+        expect(screen.queryByText(networkProfile.displayName)).toBeNull();
+        expect(searchProfiles).toHaveBeenLastCalledWith(scoutProfile.profileId, {
+            enabled: false,
+        });
     });
 });
