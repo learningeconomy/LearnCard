@@ -62,9 +62,9 @@ export type ModalOptions = {
      * Callback function that is called when closing the modal by "natively"
      *
      * In other words, this function is called when the user clicks the X button, or clicks on
-     * the dimmer to close the modal
+     * the dimmer to close the modal. Centered modals remain open when this returns false.
      */
-    onClose?: () => void;
+    onClose?: () => boolean | void;
 
     /**
      * Confirmation prompt to display before closing modal natively"

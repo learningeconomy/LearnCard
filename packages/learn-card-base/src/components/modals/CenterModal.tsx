@@ -17,7 +17,7 @@ export const CenterModal: ModalContainer = ({ component, options, open }) => {
     const handleCloseModal = () => {
         if (options.disableCloseHandlers) return;
 
-        options?.onClose?.();
+        if (options?.onClose?.() === false) return;
         closeModal();
     };
 

@@ -26,14 +26,18 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     const switchedDid = switchedProfileStore.use.switchedDid();
     const viewerKey = isLoggedIn ? switchedDid ?? 'primary-profile' : null;
     const previousViewerKeyRef = useRef(viewerKey);
+    const currentViewerKeyRef = useRef(viewerKey);
+    currentViewerKeyRef.current = viewerKey;
     const activePromptIdRef = useRef<string | null>(null);
+    const ownedModalIdRef = useRef<number | null>(null);
     const resolvedRef = useRef(false);
+    const actionInFlightRef = useRef(false);
     const { data: pendingPrompts = [] } = usePendingConnectionPrompts(isLoggedIn);
     const connectPrompt = useConnectWithConnectionPromptMutation();
     const skipPrompt = useSkipConnectionPromptMutation();
     const { dismissToast } = useToast();
     const { modals } = useModalsContext();
-    const { newModal, closeModal } = useModal({
+    const { newModal, closeModalById } = useModal({
         desktop: ModalTypes.Center,
         mobile: ModalTypes.Center,
     });
@@ -49,10 +53,34 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     useEffect(() => {
         if (previousViewerKeyRef.current === viewerKey) return;
 
+        const ownedModalId = ownedModalIdRef.current;
         previousViewerKeyRef.current = viewerKey;
         activePromptIdRef.current = null;
-        resolvedRef.current = false;
-    }, [viewerKey]);
+        ownedModalIdRef.current = null;
+        resolvedRef.current = true;
+        actionInFlightRef.current = false;
+
+        if (ownedModalId !== null) closeModalById(ownedModalId);
+    }, [closeModalById, viewerKey]);
+
+    useEffect(() => {
+        const ownedModalId = ownedModalIdRef.current;
+        if (
+            ownedModalId === null ||
+            modals.some(modal => modal.id === ownedModalId && modal.open)
+        ) {
+            return;
+        }
+
+        const promptId = activePromptIdRef.current;
+        ownedModalIdRef.current = null;
+        activePromptIdRef.current = null;
+
+        if (!promptId || resolvedRef.current || actionInFlightRef.current) return;
+
+        resolvedRef.current = true;
+        void skipPrompt.mutateAsync(promptId);
+    }, [modals, skipPrompt]);
 
     useEffect(() => {
         if (!viewerKey || modals.length > 0 || !nextPrompt || activePromptIdRef.current) return;
@@ -62,31 +90,67 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
             activePromptIdRef.current = nextPrompt.promptId;
             resolvedRef.current = false;
+            actionInFlightRef.current = false;
             dismissToast();
 
+            const promptViewerKey = viewerKey;
+            let modalId: number | null = null;
+            const ownsPromptModal = (): boolean =>
+                currentViewerKeyRef.current === promptViewerKey &&
+                activePromptIdRef.current === nextPrompt.promptId &&
+                ownedModalIdRef.current === modalId;
+
             const handleConnect = async (promptId: string): Promise<void> => {
-                await connectPrompt.mutateAsync(promptId);
+                if (!ownsPromptModal() || actionInFlightRef.current) return;
+
+                actionInFlightRef.current = true;
+                try {
+                    await connectPrompt.mutateAsync(promptId);
+                } catch (error) {
+                    if (ownsPromptModal()) actionInFlightRef.current = false;
+                    throw error;
+                }
+
+                if (!ownsPromptModal()) return;
+
                 resolvedRef.current = true;
-                closeModal();
+                actionInFlightRef.current = false;
+                if (modalId !== null) closeModalById(modalId);
             };
 
             const handleSkip = async (promptId: string): Promise<void> => {
-                await skipPrompt.mutateAsync(promptId);
+                if (!ownsPromptModal() || actionInFlightRef.current) return;
+
+                actionInFlightRef.current = true;
+                try {
+                    await skipPrompt.mutateAsync(promptId);
+                } catch (error) {
+                    if (ownsPromptModal()) actionInFlightRef.current = false;
+                    throw error;
+                }
+
+                if (!ownsPromptModal()) return;
+
                 resolvedRef.current = true;
-                closeModal();
+                actionInFlightRef.current = false;
+                if (modalId !== null) closeModalById(modalId);
             };
 
-            const handleClose = (): void => {
-                if (activePromptIdRef.current !== nextPrompt.promptId) return;
+            const handleClose = (): boolean => {
+                if (!ownsPromptModal()) return true;
+                if (actionInFlightRef.current && !resolvedRef.current) return false;
 
                 activePromptIdRef.current = null;
-                if (resolvedRef.current) return;
+                ownedModalIdRef.current = null;
+                if (resolvedRef.current) return true;
 
                 resolvedRef.current = true;
                 void skipPrompt.mutateAsync(nextPrompt.promptId);
+
+                return true;
             };
 
-            newModal(
+            modalId = newModal(
                 <ConnectionPromptModal
                     prompt={nextPrompt}
                     copy={copy}
@@ -95,11 +159,12 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
                 />,
                 { hideButton: false, onClose: handleClose }
             );
+            ownedModalIdRef.current = modalId;
         }, PRESENTATION_DELAY_MS);
 
         return () => clearTimeout(timeout);
     }, [
-        closeModal,
+        closeModalById,
         connectPrompt,
         copy,
         dismissToast,

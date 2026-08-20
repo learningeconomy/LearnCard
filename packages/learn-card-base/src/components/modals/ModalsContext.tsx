@@ -12,13 +12,16 @@ export type ModalsContextValues = {
 
 export type ModalActionsContextValues = {
     /** Opens a new modal */
-    newModal: (component: ModalComponent, type: ModalType, options?: ModalOptions) => void;
+    newModal: (component: ModalComponent, type: ModalType, options?: ModalOptions) => number;
 
     /** Replaces the current modal */
     replaceModal: (component: ModalComponent, options?: ModalOptions, type?: ModalType) => void;
 
     /** Closes the top modal */
     closeModal: () => void;
+
+    /** Closes a specific modal without disturbing entries stacked above it. */
+    closeModalById: (modalId: number) => void;
 
     /** Closes all modals */
     closeAllModals: () => void;
@@ -46,23 +49,14 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const newModal = useCallback(
         (component: ModalComponent, type: ModalType, options?: ModalOptions) => {
+            const modalId = currentId.current;
+            currentId.current += 1;
+
             setModals(oldModals => {
-                // Keep the id numbers under control
-                if (oldModals.length === 0) currentId.current = 0;
-
-                // For some reason duplicate ids are periodically given out, this check prevents that from
-                // happening
-                if (
-                    oldModals.length > 0 &&
-                    currentId.current <= oldModals[oldModals.length - 1].id
-                ) {
-                    currentId.current = oldModals[oldModals.length - 1].id + 1;
-                }
-
-                oldModals.push({ component, type, options, open: true, id: currentId.current });
-
-                currentId.current += 1;
+                oldModals.push({ component, type, options, open: true, id: modalId });
             });
+
+            return modalId;
         },
         [setModals]
     );
@@ -107,6 +101,30 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         });
     }, [setModals]);
 
+    const closeModalById = useCallback(
+        (modalId: number) => {
+            setModals(_modals => {
+                const modalToClose = _modals.find(modal => modal.id === modalId && modal.open);
+                if (!modalToClose) return;
+
+                modalToClose.open = false;
+                modalToClose.options?.onClose?.();
+
+                setTimeout(
+                    () =>
+                        setModals(oldModals => {
+                            const modalIndex = oldModals.findIndex(modal => modal.id === modalId);
+                            if (modalIndex === -1) return;
+
+                            oldModals.splice(modalIndex, 1);
+                        }),
+                    300
+                );
+            });
+        },
+        [setModals]
+    );
+
     const closeAllModals = useCallback(() => {
         setModals(oldModals => oldModals.map(modal => ({ ...modal, open: false })));
         setTimeout(() => setModals([]), 300);
@@ -115,7 +133,7 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return (
         <ModalsContextProvider value={{ modals }}>
             <ModalActionsContextProvider
-                value={{ newModal, replaceModal, closeModal, closeAllModals }}
+                value={{ newModal, replaceModal, closeModal, closeModalById, closeAllModals }}
             >
                 {children}
             </ModalActionsContextProvider>

@@ -7,9 +7,13 @@ import type { LCNConnectionPrompt } from '@learncard/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ModalsProvider, useModalsContext } from '../modals/ModalsContext';
+import CenterModal from '../modals/CenterModal';
 import { useModal } from '../modals/useModal';
 import { ConnectionPromptCoordinator } from './ConnectionPromptCoordinator';
-import type { ConnectionPromptCopy } from './ConnectionPromptModal';
+import ConnectionPromptModal, {
+    type ConnectionPromptCopy,
+    type ConnectionPromptModalProps,
+} from './ConnectionPromptModal';
 
 // ConnectionPromptModal renders UserProfilePicture. Its sibling signed-in avatar reaches the
 // root barrel through a legacy color-helper import, which is unrelated to coordinator behavior.
@@ -91,27 +95,73 @@ const bob = makePrompt(
     '2026-08-20T12:01:00.000Z'
 );
 
+const deferred = <T,>() => {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+        resolve = resolvePromise;
+        reject = rejectPromise;
+    });
+
+    return { promise, resolve, reject };
+};
+
+let capturedPromptActions: Pick<ConnectionPromptModalProps, 'onConnect' | 'onSkip'> | null = null;
+
 const ModalHarness: React.FC = () => {
     const { modals } = useModalsContext();
-    const { newModal, closeModal } = useModal();
-    const current = modals.at(-1);
+    const { newModal, closeAllModals } = useModal();
+    const current = modals.findLast(modal => modal.open);
+
+    if (
+        React.isValidElement<ConnectionPromptModalProps>(current?.component) &&
+        current.component.type === ConnectionPromptModal
+    ) {
+        capturedPromptActions = {
+            onConnect: current.component.props.onConnect,
+            onSkip: current.component.props.onSkip,
+        };
+    }
 
     return (
         <>
-            <button type="button" onClick={() => newModal(<div>Existing modal</div>)}>
+            <button
+                type="button"
+                onClick={() => newModal(<div>Existing modal</div>, { hideButton: false })}
+            >
                 Open Existing
             </button>
             <button
                 type="button"
                 onClick={() => {
-                    current?.options?.onClose?.();
-                    closeModal();
+                    document.querySelector<HTMLButtonElement>('.center-modal-x')?.click();
                 }}
             >
                 Native Close
             </button>
+            <button type="button" onClick={closeAllModals}>
+                Close All
+            </button>
+            <button
+                type="button"
+                onClick={() => void capturedPromptActions?.onConnect(alice.promptId)}
+            >
+                Run Captured Connect
+            </button>
+            <button
+                type="button"
+                onClick={() => void capturedPromptActions?.onSkip(alice.promptId)}
+            >
+                Run Captured Skip
+            </button>
             <output data-testid="modal-count">{modals.length}</output>
-            {current?.component}
+            {current && (
+                <CenterModal
+                    component={current.component}
+                    options={current.options}
+                    open={current.open}
+                />
+            )}
         </>
     );
 };
@@ -139,6 +189,7 @@ describe('ConnectionPromptCoordinator', () => {
         state.connect.mockReset().mockResolvedValue(undefined);
         state.skip.mockReset().mockResolvedValue(undefined);
         state.dismissToast.mockReset();
+        capturedPromptActions = null;
     });
 
     afterEach(() => {
@@ -209,6 +260,99 @@ describe('ConnectionPromptCoordinator', () => {
         expect(state.skip).not.toHaveBeenCalled();
     });
 
+    it('suppresses native dismissal during Connect and resets the guard after failure', async () => {
+        const request = deferred<void>();
+        state.prompts = [alice];
+        state.connect.mockReturnValue(request.promise);
+        renderCoordinator();
+        await advance(150);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Native Close' }));
+
+        expect(state.connect).toHaveBeenCalledOnce();
+        expect(state.skip).not.toHaveBeenCalled();
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+
+        await act(async () => {
+            request.reject(new Error('connect failed'));
+            await request.promise.catch(() => undefined);
+        });
+
+        expect(state.skip).not.toHaveBeenCalled();
+        expect(screen.getByRole('alert').textContent).toBe(copy.error);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Native Close' }));
+        expect(state.skip).toHaveBeenCalledOnce();
+        expect(state.skip).toHaveBeenCalledWith(alice.promptId);
+    });
+
+    it('suppresses native dismissal while an explicit Skip is pending', async () => {
+        const request = deferred<void>();
+        state.prompts = [alice];
+        state.skip.mockReturnValue(request.promise);
+        renderCoordinator();
+        await advance(150);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Skip for Now' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Native Close' }));
+
+        expect(state.skip).toHaveBeenCalledOnce();
+        expect(state.skip).toHaveBeenCalledWith(alice.promptId);
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+
+        await act(async () => {
+            request.reject(new Error('skip failed'));
+            await request.promise.catch(() => undefined);
+        });
+
+        expect(state.skip).toHaveBeenCalledOnce();
+        expect(screen.getByRole('alert').textContent).toBe(copy.error);
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+    });
+
+    it('closes only its owned modal when another modal is stacked during Connect', async () => {
+        const request = deferred<void>();
+        state.prompts = [alice];
+        state.connect.mockReturnValue(request.promise);
+        renderCoordinator();
+        await advance(150);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Open Existing' }));
+        expect(screen.getByText('Existing modal')).toBeTruthy();
+        expect(screen.getByTestId('modal-count').textContent).toBe('2');
+
+        await act(async () => {
+            request.resolve(undefined);
+            await request.promise;
+        });
+        await advance(300);
+
+        expect(screen.getByText('Existing modal')).toBeTruthy();
+        expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
+        expect(screen.getByTestId('modal-count').textContent).toBe('1');
+        expect(state.skip).not.toHaveBeenCalled();
+    });
+
+    it('durably skips once when closeAllModals removes its owned prompt', async () => {
+        state.prompts = [alice];
+        state.skip.mockImplementation(async promptId => {
+            state.prompts = state.prompts.filter(prompt => prompt.promptId !== promptId);
+        });
+        renderCoordinator();
+        await advance(150);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close All' }));
+        await advance(300);
+        await advance(500);
+
+        expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
+        expect(state.skip).toHaveBeenCalledOnce();
+        expect(state.skip).toHaveBeenCalledWith(alice.promptId);
+        expect(state.connect).not.toHaveBeenCalled();
+    });
+
     it('queues different counterparts one at a time without reopening the active pair', async () => {
         state.prompts = [bob, alice];
         state.skip.mockImplementation(async promptId => {
@@ -240,10 +384,11 @@ describe('ConnectionPromptCoordinator', () => {
     it.each([
         ['logout', () => (state.loggedIn = false)],
         ['switched-profile change', () => (state.switchedDid = 'did:web:new-profile')],
-    ])('clears the active prompt before an old modal closes on %s', async (_label, resetViewer) => {
+    ])('closes the owned modal and rejects stale actions on %s', async (_label, resetViewer) => {
         state.prompts = [alice];
         const view = renderCoordinator();
         await advance(150);
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
 
         resetViewer();
         view.rerender(
@@ -252,8 +397,15 @@ describe('ConnectionPromptCoordinator', () => {
                 <ModalHarness />
             </ModalsProvider>
         );
-        fireEvent.click(screen.getByRole('button', { name: 'Native Close' }));
 
+        expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Run Captured Connect' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Run Captured Skip' }));
+
+        expect(state.connect).not.toHaveBeenCalled();
         expect(state.skip).not.toHaveBeenCalled();
+
+        await advance(300);
+        expect(screen.getByTestId('modal-count').textContent).toBe('0');
     });
 });

@@ -74,7 +74,7 @@ export const ConnectionPromptModal: React.FC<ConnectionPromptModalProps> = ({
             {hasError && (
                 <div
                     role="alert"
-                    className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 text-left"
+                    className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 text-start"
                 >
                     <IonIcon
                         icon={alertCircleOutline}

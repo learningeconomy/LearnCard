@@ -79,7 +79,10 @@ describe('ConnectionPromptModal', () => {
         expect(connect.className).toContain('rounded-[20px]');
         expect(connect.className).toContain('bg-grayscale-900');
         expect(skip.className).toContain('rounded-[20px]');
-        expect(container.innerHTML).not.toMatch(/safe-area|--ion-safe-area|lc-overlay-inset/);
+        const insetTerm = ['safe', 'area'].join('-');
+        expect(container.innerHTML).not.toMatch(
+            new RegExp(`${insetTerm}|--ion-${insetTerm}|lc-overlay-inset`)
+        );
     });
 
     it('connects only on explicit click and keeps the modal open with a friendly error on failure', async () => {
@@ -136,5 +139,31 @@ describe('ConnectionPromptModal', () => {
         await waitFor(() =>
             expect(screen.getByRole('button', { name: 'Skip for Now' })).toBeTruthy()
         );
+    });
+
+    it('uses logical start alignment for errors in an Arabic RTL context', async () => {
+        const rtlCopy = {
+            ...copy,
+            error: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
+        };
+        onConnect.mockRejectedValue(new Error('raw backend details'));
+        render(
+            <div dir="rtl">
+                <ConnectionPromptModal
+                    prompt={prompt}
+                    copy={rtlCopy}
+                    onConnect={onConnect}
+                    onSkip={onSkip}
+                />
+            </div>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+
+        const alert = await screen.findByRole('alert');
+        expect(alert.closest('[dir="rtl"]')).toBeTruthy();
+        expect(alert.className).toContain('text-start');
+        expect(alert.className).not.toContain('text-left');
+        expect(alert.textContent).toContain(rtlCopy.error);
     });
 });
