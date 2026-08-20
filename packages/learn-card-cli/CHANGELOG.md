@@ -1,5 +1,12 @@
 # @learncard/cli
 
+## 3.4.14
+
+### Patch Changes
+
+-   Updated dependencies [[`e8f3934e12cc6fd8550db6539e637bf4aea75c87`](https://github.com/learningeconomy/LearnCard/commit/e8f3934e12cc6fd8550db6539e637bf4aea75c87)]:
+    -   @learncard/render-method-plugin@4.0.3
+
 ## 3.4.13
 
 ### Patch Changes
