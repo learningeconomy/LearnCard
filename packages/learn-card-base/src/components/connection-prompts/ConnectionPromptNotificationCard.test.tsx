@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
         | LCNConnectionPromptActionResult
         | undefined,
     statusLoading: false,
+    statusFetching: false,
     statusError: false,
     connect: vi.fn<(promptId: string) => Promise<LCNConnectionPromptActionResult>>(),
     skip: vi.fn<(promptId: string) => Promise<LCNConnectionPromptActionResult>>(),
@@ -35,6 +36,7 @@ vi.mock('../../react-query/connectionPrompts', () => ({
     useConnectionPromptStatus: () => ({
         data: state.status,
         isLoading: state.statusLoading,
+        isFetching: state.statusFetching,
         isError: state.statusError,
     }),
     useConnectWithConnectionPromptMutation: () => ({ mutateAsync: state.connect }),
@@ -101,6 +103,7 @@ describe('ConnectionPromptNotificationCard', () => {
         vi.clearAllMocks();
         state.status = { promptId, status: 'PENDING' };
         state.statusLoading = false;
+        state.statusFetching = false;
         state.statusError = false;
         state.connect.mockResolvedValue({ promptId, status: 'CONNECTED' });
         state.skip.mockResolvedValue({ promptId, status: 'SKIPPED' });
@@ -147,7 +150,9 @@ describe('ConnectionPromptNotificationCard', () => {
 
         request.resolve({ promptId, status: 'CONNECTED' });
 
-        await waitFor(() => expect(screen.getByText('Connected')).toBeTruthy());
+        const resolvedStatus = await screen.findByRole('status');
+        expect(resolvedStatus.textContent).toContain('Connected');
+        expect(resolvedStatus.getAttribute('aria-live')).toBe('polite');
         expect(state.updateNotification).toHaveBeenCalledWith({
             notificationId: 'notification-1',
             payload: { actionStatus: 'COMPLETED', read: true },
@@ -198,6 +203,32 @@ describe('ConnectionPromptNotificationCard', () => {
         state.statusLoading = true;
         renderCard();
 
+        expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Skip for Now' })).toBeNull();
+    });
+
+    it('withholds cached pending actions while the current status is refetching', () => {
+        state.status = { promptId, status: 'PENDING' };
+        state.statusFetching = true;
+        const view = renderCard();
+
+        expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Skip for Now' })).toBeNull();
+
+        state.status = { promptId, status: 'CONNECTED' };
+        state.statusFetching = false;
+        view.rerender(
+            <ConnectionPromptNotificationCard
+                notificationId="notification-1"
+                promptMetadata={{ promptId, counterpartProfileId: counterpart.profileId }}
+                counterpart={counterpart}
+                title="Alice claimed your credential"
+                issueDate="August 20, 2026"
+                copy={copy}
+            />
+        );
+
+        expect(screen.getByText('Connected')).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Skip for Now' })).toBeNull();
     });

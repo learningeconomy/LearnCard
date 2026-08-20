@@ -7,6 +7,7 @@ import lizardflame from '../../../assets/lotties/lizardflame.json';
 import NotificationCardContainer from './NotificationCardContainer';
 
 import { useGetUserNotifications } from 'learn-card-base';
+import { deduplicateConnectionPromptNotifications } from 'learn-card-base/components/connection-prompts/deduplicateConnectionPromptNotifications';
 import { useLoadingLine } from '../../../stores/loadingStore';
 
 import {
@@ -43,18 +44,17 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     const queryOptions = { options, filter };
 
+    const flatNotifications = (data?.pages?.flatMap(group => group?.notifications ?? []) ??
+        []) as NotificationType[];
+    const visibleNotifications = deduplicateConnectionPromptNotifications(flatNotifications);
     const renderNotifications =
         data &&
-        data.pages.map((group, i) => (
-            <React.Fragment key={i}>
-                {group?.notifications?.map((notification: NotificationType) => (
-                    <NotificationCardContainer
-                        queryOptions={queryOptions}
-                        notification={notification}
-                        key={notification?._id}
-                    />
-                ))}
-            </React.Fragment>
+        visibleNotifications.map(notification => (
+            <NotificationCardContainer
+                queryOptions={queryOptions}
+                notification={notification}
+                key={notification?._id}
+            />
         ));
 
     const handleRefetch = () => {

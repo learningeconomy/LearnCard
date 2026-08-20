@@ -57,6 +57,7 @@ export const ConnectionPromptNotificationCard: React.FC<ConnectionPromptNotifica
     const {
         data: serverStatus,
         isLoading,
+        isFetching,
         isError,
     } = useConnectionPromptStatus(promptMetadata.promptId);
     const connectPrompt = useConnectWithConnectionPromptMutation();
@@ -77,7 +78,15 @@ export const ConnectionPromptNotificationCard: React.FC<ConnectionPromptNotifica
         action: Exclude<PendingAction, null>,
         handler: (promptId: string) => Promise<LCNConnectionPromptActionResult>
     ): Promise<void> => {
-        if (actionInFlightRef.current || resolvedStatus !== 'PENDING') return;
+        if (
+            actionInFlightRef.current ||
+            isLoading ||
+            isFetching ||
+            isError ||
+            resolvedStatus !== 'PENDING'
+        ) {
+            return;
+        }
 
         actionInFlightRef.current = true;
         setPendingAction(action);
@@ -107,7 +116,7 @@ export const ConnectionPromptNotificationCard: React.FC<ConnectionPromptNotifica
     };
 
     const busy = pendingAction !== null;
-    const canAct = !isLoading && !isError && resolvedStatus === 'PENDING';
+    const canAct = !isLoading && !isFetching && !isError && resolvedStatus === 'PENDING';
     const resolvedLabel =
         resolvedStatus === 'CONNECTED'
             ? copy.connected
@@ -183,8 +192,19 @@ export const ConnectionPromptNotificationCard: React.FC<ConnectionPromptNotifica
                     </div>
                 )}
 
+                {isFetching && resolvedStatus === 'PENDING' && (
+                    <span
+                        aria-hidden="true"
+                        className="mt-4 h-10 w-32 rounded-[20px] bg-grayscale-100 animate-pulse"
+                    />
+                )}
+
                 {resolvedLabel && (
-                    <span className="mt-4 inline-flex rounded-[20px] bg-grayscale-100 px-4 py-2 text-sm font-medium text-grayscale-700">
+                    <span
+                        role="status"
+                        aria-live="polite"
+                        className="mt-4 inline-flex rounded-[20px] bg-grayscale-100 px-4 py-2 text-sm font-medium text-grayscale-700"
+                    >
                         {resolvedLabel}
                     </span>
                 )}
