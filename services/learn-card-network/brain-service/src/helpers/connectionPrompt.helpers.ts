@@ -44,39 +44,23 @@ type PromptStatusRow = {
     status: 'PENDING' | 'SKIPPED' | 'CONNECTED';
 };
 
-const updateCurrentPromptsForPair = async (
-    firstProfileId: string,
-    secondProfileId: string,
-    status: 'SKIPPED' | 'CONNECTED'
+export const markConnectionPromptsSkipped = async (
+    first: ProfileType,
+    second: ProfileType
 ): Promise<void> => {
     await neogma.queryRunner.run(
         `
             MATCH (first:Profile { profileId: $firstProfileId })
             MATCH (second:Profile { profileId: $secondProfileId })
             MATCH (first)-[prompt:CONNECTION_PROMPT]-(second)
-            SET prompt.status = $status, prompt.updatedAt = $updatedAt
+            SET prompt.status = 'SKIPPED', prompt.updatedAt = $updatedAt
         `,
         {
-            firstProfileId,
-            secondProfileId,
-            status,
+            firstProfileId: first.profileId,
+            secondProfileId: second.profileId,
             updatedAt: new Date().toISOString(),
         }
     );
-};
-
-export const markConnectionPromptsConnected = async (
-    first: ProfileType,
-    second: ProfileType
-): Promise<void> => {
-    await updateCurrentPromptsForPair(first.profileId, second.profileId, 'CONNECTED');
-};
-
-export const markConnectionPromptsSkipped = async (
-    first: ProfileType,
-    second: ProfileType
-): Promise<void> => {
-    await updateCurrentPromptsForPair(first.profileId, second.profileId, 'SKIPPED');
 };
 
 export const createConnectionPromptsForClaim = async (
@@ -261,7 +245,22 @@ const restoreConsumedPrompt = async (viewer: ProfileType, promptId: string): Pro
         `
             MATCH (viewer:Profile { profileId: $viewerId })
                   -[prompt:CONNECTION_PROMPT { promptId: $promptId, status: 'CONNECTED' }]->
-                  (:Profile)
+                  (counterpart:Profile)
+            WITH viewer, counterpart, prompt,
+                 CASE WHEN viewer.profileId < counterpart.profileId
+                      THEN viewer ELSE counterpart END AS first,
+                 CASE WHEN viewer.profileId < counterpart.profileId
+                      THEN counterpart ELSE viewer END AS second
+            SET first.__connectionPromptPairLock = true
+            REMOVE first.__connectionPromptPairLock
+            SET second.__connectionPromptPairLock = true
+            REMOVE second.__connectionPromptPairLock
+            SET prompt.__connectionPromptLock = true
+            REMOVE prompt.__connectionPromptLock
+            WITH viewer, counterpart, prompt
+            WHERE prompt.status = 'CONNECTED'
+              AND NOT EXISTS { MATCH (viewer)-[:CONNECTED_WITH]-(counterpart) }
+              AND NOT EXISTS { MATCH (viewer)-[:BLOCKED]-(counterpart) }
             SET prompt.status = 'PENDING', prompt.updatedAt = $updatedAt
         `,
         { viewerId: viewer.profileId, promptId, updatedAt: new Date().toISOString() }

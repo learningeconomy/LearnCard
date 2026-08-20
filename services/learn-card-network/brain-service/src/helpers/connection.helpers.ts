@@ -11,10 +11,7 @@ import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helper
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
-import {
-    markConnectionPromptsConnected,
-    markConnectionPromptsSkipped,
-} from '@helpers/connectionPrompt.helpers';
+import { markConnectionPromptsSkipped } from '@helpers/connectionPrompt.helpers';
 import { FlatProfileType, ProfileType } from 'types/profile';
 import { inflateObject } from './objects.helpers';
 
@@ -345,9 +342,45 @@ export const connectProfiles = async (
         }),
     ]);
 
-    // Ensure mutual connectedWith edges with a stable 'manual' source tag
-    await ensureMutualConnectionWithSource(source.profileId, target.profileId, 'manual');
-    await markConnectionPromptsConnected(source, target);
+    await neogma.queryRunner.run(
+        `
+            MATCH (a:Profile { profileId: $aId }), (b:Profile { profileId: $bId })
+            WITH a, b,
+                 CASE WHEN a.profileId < b.profileId THEN a ELSE b END AS first,
+                 CASE WHEN a.profileId < b.profileId THEN b ELSE a END AS second
+            SET first.__connectionPromptPairLock = true
+            REMOVE first.__connectionPromptPairLock
+            SET second.__connectionPromptPairLock = true
+            REMOVE second.__connectionPromptPairLock
+            WITH a, b
+            MERGE (a)-[r:CONNECTED_WITH]->(b)
+            ON CREATE SET r.sources = [$key]
+            ON MATCH SET r.sources = CASE
+                WHEN r.sources IS NULL THEN [$key]
+                WHEN NOT $key IN r.sources THEN r.sources + $key
+                ELSE r.sources
+            END
+            MERGE (b)-[r2:CONNECTED_WITH]->(a)
+            ON CREATE SET r2.sources = [$key]
+            ON MATCH SET r2.sources = CASE
+                WHEN r2.sources IS NULL THEN [$key]
+                WHEN NOT $key IN r2.sources THEN r2.sources + $key
+                ELSE r2.sources
+            END
+            WITH a, b
+            OPTIONAL MATCH (a)-[prompt:CONNECTION_PROMPT]-(b)
+            FOREACH (_ IN CASE WHEN prompt IS NULL THEN [] ELSE [1] END |
+                SET prompt.status = $status, prompt.updatedAt = $updatedAt
+            )
+        `,
+        {
+            aId: source.profileId,
+            bId: target.profileId,
+            key: 'manual',
+            status: 'CONNECTED',
+            updatedAt: new Date().toISOString(),
+        }
+    );
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,

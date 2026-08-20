@@ -1,9 +1,11 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as LearnCardTypes from '@learncard/types';
+import * as notifications from '@helpers/notifications.helpers';
 
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
+    areProfilesConnected,
     blockProfile,
     connectProfiles,
     disconnectProfiles,
@@ -252,6 +254,109 @@ describe('credential claim connection prompts', () => {
             promptId: created.senderPrompt!.promptId,
             status: 'CONNECTED',
         });
+    });
+
+    it('rolls back connection edges when pair-wide prompt resolution fails', async () => {
+        const created = await createPrompts('credential:claim-1');
+        const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+        const queryRunnerSpy = vi
+            .spyOn(neogma.queryRunner, 'run')
+            .mockImplementation(async (query, params) => {
+                if (
+                    typeof query === 'string' &&
+                    query.includes('CONNECTION_PROMPT') &&
+                    params?.status === 'CONNECTED'
+                ) {
+                    throw new Error('prompt resolution fault');
+                }
+
+                return originalRun(query, params);
+            });
+
+        try {
+            await expect(
+                connectWithConnectionPrompt(profileB, created.claimerPrompt!.promptId)
+            ).rejects.toThrow('prompt resolution fault');
+        } finally {
+            queryRunnerSpy.mockRestore();
+        }
+
+        expect(await areProfilesConnected(profileA, profileB)).toBe(false);
+        expect(await getPendingConnectionPrompts(profileA)).toHaveLength(1);
+        expect(await getPendingConnectionPrompts(profileB)).toHaveLength(1);
+    });
+
+    it('commits connection edges and both prompts before notification failure', async () => {
+        const created = await createPrompts('credential:claim-1');
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockRejectedValueOnce(new Error('notification fault'));
+
+        try {
+            await expect(connectProfiles(profileB, profileA, false)).rejects.toThrow(
+                'notification fault'
+            );
+        } finally {
+            notificationSpy.mockRestore();
+        }
+
+        expect(await areProfilesConnected(profileA, profileB)).toBe(true);
+        expect(
+            await getConnectionPromptStatus(profileA, created.senderPrompt!.promptId)
+        ).toMatchObject({ status: 'CONNECTED' });
+        expect(
+            await getConnectionPromptStatus(profileB, created.claimerPrompt!.promptId)
+        ).toMatchObject({ status: 'CONNECTED' });
+        await expect(
+            connectWithConnectionPrompt(profileB, created.claimerPrompt!.promptId)
+        ).resolves.toMatchObject({ status: 'CONNECTED' });
+    });
+
+    it('does not restore a consumed prompt after a concurrent connection succeeds', async () => {
+        const created = await createPrompts('credential:claim-1');
+        const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+        let failNextConnectionWrite = true;
+        let injectConcurrentConnection = true;
+        const queryRunnerSpy = vi
+            .spyOn(neogma.queryRunner, 'run')
+            .mockImplementation(async (query, params) => {
+                if (
+                    failNextConnectionWrite &&
+                    typeof query === 'string' &&
+                    query.includes('MERGE (a)-[r:CONNECTED_WITH]') &&
+                    params?.status === 'CONNECTED'
+                ) {
+                    failNextConnectionWrite = false;
+                    throw new Error('connection write fault');
+                }
+
+                if (
+                    injectConcurrentConnection &&
+                    typeof query === 'string' &&
+                    query.includes("SET prompt.status = 'PENDING'")
+                ) {
+                    injectConcurrentConnection = false;
+                    await connectProfiles(profileA, profileB, false);
+                }
+
+                return originalRun(query, params);
+            });
+
+        try {
+            await expect(
+                connectWithConnectionPrompt(profileB, created.claimerPrompt!.promptId)
+            ).rejects.toThrow('connection write fault');
+        } finally {
+            queryRunnerSpy.mockRestore();
+        }
+
+        expect(await areProfilesConnected(profileA, profileB)).toBe(true);
+        expect(
+            await getConnectionPromptStatus(profileA, created.senderPrompt!.promptId)
+        ).toMatchObject({ status: 'CONNECTED' });
+        expect(
+            await getConnectionPromptStatus(profileB, created.claimerPrompt!.promptId)
+        ).toMatchObject({ status: 'CONNECTED' });
     });
 
     it('ordinary connection acceptance resolves both directed prompts permanently', async () => {
