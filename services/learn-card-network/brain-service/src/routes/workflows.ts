@@ -708,7 +708,11 @@ async function handleInboxClaimPresentation(
             const integrationId = inboxCredential.integrationId;
             const issuerProfileForActivity = await getProfileByDid(inboxCredential.issuerDid);
             if (issuerProfileForActivity) {
-                if (holderProfile) {
+                if (
+                    holderProfile &&
+                    !(inboxCredential.signingAuthority as { listingSlug?: string } | undefined)
+                        ?.listingSlug
+                ) {
                     await handleConnectionPromptsForCredentialClaim({
                         claimer: holderProfile,
                         sender: issuerProfileForActivity,

@@ -11,7 +11,7 @@ import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helper
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
-import { markConnectionPromptsSkipped } from '@helpers/connectionPrompt.helpers';
+import { runConnectionPairQuery } from '@helpers/connectionPair.helpers';
 import { FlatProfileType, ProfileType } from 'types/profile';
 import { inflateObject } from './objects.helpers';
 
@@ -291,6 +291,20 @@ export const areProfilesConnected = async (
 };
 
 /** Connects two profiles */
+export const sendConnectionAcceptedNotification = async (
+    source: ProfileType,
+    target: ProfileType
+): Promise<void> => {
+    await addNotificationToQueue({
+        type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
+        to: target,
+        from: source,
+        message: getNotificationMessage('connectionAccepted', resolveRecipientLocale(target), {
+            name: source.displayName,
+        }),
+    });
+};
+
 export const connectProfiles = async (
     source: ProfileType,
     target: ProfileType,
@@ -325,71 +339,64 @@ export const connectProfiles = async (
         }
     }
 
-    await Promise.all([
-        Profile.deleteRelationships({
-            alias: 'connectionRequested',
-            where: {
-                source: { profileId: source.profileId },
-                target: { profileId: target.profileId },
-            },
-        }),
-        Profile.deleteRelationships({
-            alias: 'connectionRequested',
-            where: {
-                source: { profileId: target.profileId },
-                target: { profileId: source.profileId },
-            },
-        }),
-    ]);
-
-    await neogma.queryRunner.run(
+    const graphResult = await runConnectionPairQuery(
         `
+            MATCH (first:Profile { profileId: $firstId })
+            SET first.__connectionPromptPairLock =
+                coalesce(first.__connectionPromptPairLock, 0) + 1
+            WITH first
             MATCH (a:Profile { profileId: $aId }), (b:Profile { profileId: $bId })
-            WITH a, b,
-                 CASE WHEN a.profileId < b.profileId THEN a ELSE b END AS first,
-                 CASE WHEN a.profileId < b.profileId THEN b ELSE a END AS second
-            SET first.__connectionPromptPairLock = true
-            REMOVE first.__connectionPromptPairLock
-            SET second.__connectionPromptPairLock = true
-            REMOVE second.__connectionPromptPairLock
-            WITH a, b
-            MERGE (a)-[r:CONNECTED_WITH]->(b)
-            ON CREATE SET r.sources = [$key]
-            ON MATCH SET r.sources = CASE
-                WHEN r.sources IS NULL THEN [$key]
-                WHEN NOT $key IN r.sources THEN r.sources + $key
-                ELSE r.sources
-            END
-            MERGE (b)-[r2:CONNECTED_WITH]->(a)
-            ON CREATE SET r2.sources = [$key]
-            ON MATCH SET r2.sources = CASE
-                WHEN r2.sources IS NULL THEN [$key]
-                WHEN NOT $key IN r2.sources THEN r2.sources + $key
-                ELSE r2.sources
-            END
-            WITH a, b
+            OPTIONAL MATCH (a)-[blocked:BLOCKED]-(b)
+            WITH a, b, first, count(blocked) > 0 AS isBlocked
+            OPTIONAL MATCH (a)-[request:CONNECTION_REQUESTED]-(b)
+            WITH a, b, first, isBlocked, collect(request) AS requests
+            FOREACH (request IN CASE WHEN isBlocked THEN [] ELSE requests END |
+                DELETE request
+            )
+            FOREACH (_ IN CASE WHEN isBlocked THEN [] ELSE [1] END |
+                MERGE (a)-[r:CONNECTED_WITH]->(b)
+                ON CREATE SET r.sources = [$key]
+                ON MATCH SET r.sources = CASE
+                    WHEN r.sources IS NULL THEN [$key]
+                    WHEN NOT $key IN r.sources THEN r.sources + $key
+                    ELSE r.sources
+                END
+                MERGE (b)-[r2:CONNECTED_WITH]->(a)
+                ON CREATE SET r2.sources = [$key]
+                ON MATCH SET r2.sources = CASE
+                    WHEN r2.sources IS NULL THEN [$key]
+                    WHEN NOT $key IN r2.sources THEN r2.sources + $key
+                    ELSE r2.sources
+                END
+            )
+            WITH a, b, first, isBlocked
             OPTIONAL MATCH (a)-[prompt:CONNECTION_PROMPT]-(b)
-            FOREACH (_ IN CASE WHEN prompt IS NULL THEN [] ELSE [1] END |
+            FOREACH (_ IN CASE WHEN isBlocked OR prompt IS NULL THEN [] ELSE [1] END |
                 SET prompt.status = $status, prompt.updatedAt = $updatedAt
             )
+            REMOVE first.__connectionPromptPairLock
+            RETURN NOT isBlocked AS connected
         `,
         {
             aId: source.profileId,
             bId: target.profileId,
+            firstId: [source.profileId, target.profileId].sort()[0],
             key: 'manual',
             status: 'CONNECTED',
             updatedAt: new Date().toISOString(),
         }
     );
 
-    await addNotificationToQueue({
-        type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
-        to: target,
-        from: source,
-        message: getNotificationMessage('connectionAccepted', resolveRecipientLocale(target), {
-            name: source.displayName,
-        }),
-    });
+    const connected = Boolean(graphResult.records[0]?.get('connected'));
+    if (!connected) {
+        if (validate) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Profiles are blocked!' });
+        }
+
+        return false;
+    }
+
+    await sendConnectionAcceptedNotification(source, target);
 
     return true;
 };
@@ -653,44 +660,36 @@ export const isRelationshipBlocked = async (
 
 /** Blocks a profile */
 export const blockProfile = async (source: ProfileType, target: ProfileType): Promise<boolean> => {
-    await Promise.all([
-        Profile.deleteRelationships({
-            alias: 'connectedWith',
-            where: {
-                source: { profileId: source.profileId },
-                target: { profileId: target.profileId },
-            },
-        }),
-        Profile.deleteRelationships({
-            alias: 'connectedWith',
-            where: {
-                source: { profileId: target.profileId },
-                target: { profileId: source.profileId },
-            },
-        }),
-        Profile.deleteRelationships({
-            alias: 'connectionRequested',
-            where: {
-                source: { profileId: source.profileId },
-                target: { profileId: target.profileId },
-            },
-        }),
-        Profile.deleteRelationships({
-            alias: 'connectionRequested',
-            where: {
-                source: { profileId: target.profileId },
-                target: { profileId: source.profileId },
-            },
-        }),
-        Profile.relateTo({
-            alias: 'blocked',
-            where: {
-                source: { profileId: source.profileId },
-                target: { profileId: target.profileId },
-            },
-        }),
-    ]);
-    await markConnectionPromptsSkipped(source, target);
+    await runConnectionPairQuery(
+        `
+            MATCH (first:Profile { profileId: $firstId })
+            SET first.__connectionPromptPairLock =
+                coalesce(first.__connectionPromptPairLock, 0) + 1
+            WITH first
+            MATCH (source:Profile { profileId: $sourceId })
+            MATCH (target:Profile { profileId: $targetId })
+            OPTIONAL MATCH (source)-[connection:CONNECTED_WITH]-(target)
+            WITH source, target, first, collect(connection) AS connections
+            FOREACH (connection IN connections | DELETE connection)
+            WITH source, target, first
+            OPTIONAL MATCH (source)-[request:CONNECTION_REQUESTED]-(target)
+            WITH source, target, first, collect(request) AS requests
+            FOREACH (request IN requests | DELETE request)
+            MERGE (source)-[:BLOCKED]->(target)
+            WITH source, target, first
+            OPTIONAL MATCH (source)-[prompt:CONNECTION_PROMPT]-(target)
+            FOREACH (_ IN CASE WHEN prompt IS NULL THEN [] ELSE [1] END |
+                SET prompt.status = 'SKIPPED', prompt.updatedAt = $updatedAt
+            )
+            REMOVE first.__connectionPromptPairLock
+        `,
+        {
+            sourceId: source.profileId,
+            targetId: target.profileId,
+            firstId: [source.profileId, target.profileId].sort()[0],
+            updatedAt: new Date().toISOString(),
+        }
+    );
 
     return true;
 };

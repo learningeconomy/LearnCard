@@ -140,44 +140,6 @@ export const acceptCredential = async (
         });
     }
 
-    const promptResult = await handleConnectionPromptsForCredentialClaim({
-        claimer: profile,
-        sender: sourceProfile,
-        triggerId: `credential:${id}`,
-        vcUris: [uri],
-        metadata: options.metadata,
-    });
-
-    const shouldSendLegacyNotification =
-        !options?.skipNotification &&
-        ((!alreadyReceived && !promptResult.senderPrompt?.isNew) ||
-            promptResult.senderNotificationFailed);
-
-    if (shouldSendLegacyNotification) {
-        const legacyNotificationMetadata = options.metadata
-            ? Object.fromEntries(
-                  Object.entries(options.metadata).filter(([key]) => key !== 'connectionPrompt')
-              )
-            : undefined;
-
-        await addNotificationToQueue({
-            type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
-            to: sourceProfile,
-            from: profile,
-            message: getNotificationMessage(
-                'boostAccepted',
-                resolveRecipientLocale(sourceProfile),
-                {
-                    name: profile.displayName,
-                }
-            ),
-            data: {
-                vcUris: [uri],
-                ...(legacyNotificationMetadata ? { metadata: legacyNotificationMetadata } : {}),
-            },
-        });
-    }
-
     if (!alreadyReceived) {
         const originalActivityId = pendingVc.relationship.activityId;
         const integrationId = pendingVc.relationship.integrationId;
@@ -199,6 +161,56 @@ export const acceptCredential = async (
             source: 'claim',
             metadata: options?.metadata,
         });
+    }
+
+    const promptResult = isProfileType(pendingVc.source)
+        ? await handleConnectionPromptsForCredentialClaim({
+              claimer: profile,
+              sender: sourceProfile,
+              triggerId: `credential:${id}`,
+              vcUris: [uri],
+              metadata: options.metadata,
+          })
+        : {};
+
+    const shouldSendLegacyNotification =
+        !options?.skipNotification &&
+        !alreadyReceived &&
+        (!promptResult.senderPrompt?.isNew || promptResult.senderNotificationFailed);
+
+    if (shouldSendLegacyNotification) {
+        const legacyNotificationMetadata = options.metadata
+            ? Object.fromEntries(
+                  Object.entries(options.metadata).filter(([key]) => key !== 'connectionPrompt')
+              )
+            : undefined;
+
+        try {
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+                to: sourceProfile,
+                from: profile,
+                message: getNotificationMessage(
+                    'boostAccepted',
+                    resolveRecipientLocale(sourceProfile),
+                    {
+                        name: profile.displayName,
+                    }
+                ),
+                data: {
+                    vcUris: [uri],
+                    ...(legacyNotificationMetadata ? { metadata: legacyNotificationMetadata } : {}),
+                },
+            });
+        } catch (error) {
+            console.error('Failed to enqueue legacy credential claim notification', {
+                claimerProfileId: profile.profileId,
+                senderProfileId: sourceProfile.profileId,
+                credentialId: id,
+                credentialUri: uri,
+                error,
+            });
+        }
     }
 
     return true;

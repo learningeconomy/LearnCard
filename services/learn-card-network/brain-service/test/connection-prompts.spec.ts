@@ -27,8 +27,10 @@ import { getClient, getUser } from './helpers/getClient';
 
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+let userC: Awaited<ReturnType<typeof getUser>>;
 let profileA: ProfileType;
 let profileB: ProfileType;
+let profileC: ProfileType;
 
 const createPrompts = (triggerId: string) =>
     createConnectionPromptsForClaim({
@@ -114,6 +116,7 @@ describe('credential claim connection prompts', () => {
     beforeAll(async () => {
         userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
+        userC = await getUser('c'.repeat(64));
     });
 
     beforeEach(async () => {
@@ -121,9 +124,11 @@ describe('credential claim connection prompts', () => {
 
         await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
         await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
 
         profileA = (await getProfileByProfileId('usera'))!;
         profileB = (await getProfileByProfileId('userb'))!;
+        profileC = (await getProfileByProfileId('userc'))!;
     });
 
     afterAll(async () => {
@@ -143,6 +148,154 @@ describe('credential claim connection prompts', () => {
         expect(claimerPrompt?.counterpart).not.toHaveProperty('email');
         expect(await getPendingConnectionPrompts(profileA)).toHaveLength(1);
     });
+
+    it('returns pending prompts oldest-first from both the helper and authenticated route', async () => {
+        await createPrompts('credential:older');
+        await createConnectionPromptsForClaim({
+            claimer: profileB,
+            sender: profileC,
+            triggerId: 'credential:newer',
+        });
+        await neogma.queryRunner.run(
+            `
+                MATCH (:Profile { profileId: $viewerId })
+                      -[prompt:CONNECTION_PROMPT]->
+                      (counterpart:Profile)
+                SET prompt.triggeredAt = CASE counterpart.profileId
+                    WHEN $olderCounterpartId THEN $olderAt
+                    ELSE $newerAt
+                END
+            `,
+            {
+                viewerId: profileB.profileId,
+                olderCounterpartId: profileA.profileId,
+                olderAt: '2026-08-20T10:00:00.000Z',
+                newerAt: '2026-08-20T11:00:00.000Z',
+            }
+        );
+
+        expect(
+            (await getPendingConnectionPrompts(profileB)).map(
+                prompt => prompt.counterpart.profileId
+            )
+        ).toEqual(['usera', 'userc']);
+        expect(
+            (await userB.clients.fullAuth.profile.pendingConnectionPrompts()).map(
+                prompt => prompt.counterpart.profileId
+            )
+        ).toEqual(['usera', 'userc']);
+    });
+
+    const acquireOrderedPairGate = async (): Promise<() => Promise<void>> => {
+        const session = neogma.queryRunner.getDriver().session();
+        const transaction = session.beginTransaction();
+
+        await transaction.run(
+            `
+                MATCH (first:Profile { profileId: $firstId })
+                SET first.__connectionPromptPairLock =
+                    coalesce(first.__connectionPromptPairLock, 0) + 1
+            `,
+            { firstId: [profileA.profileId, profileB.profileId].sort()[0] }
+        );
+
+        return async () => {
+            await transaction.commit();
+            await session.close();
+        };
+    };
+
+    const waitForBlockedTransaction = async (queryMarker: string): Promise<void> => {
+        for (let attempt = 0; attempt < 200; attempt += 1) {
+            const result = await neogma.queryRunner.run(
+                `
+                    SHOW TRANSACTIONS YIELD currentQuery, status
+                    WHERE currentQuery CONTAINS $queryMarker
+                      AND status STARTS WITH 'Blocked by:'
+                    RETURN count(*) AS count
+                `,
+                { queryMarker }
+            );
+            if (Number(result.records[0]?.get('count')) >= 1) return;
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+
+        throw new Error(`Timed out waiting for blocked Neo4j transaction: ${queryMarker}`);
+    };
+
+    const countPairRelationships = async (): Promise<{
+        blocked: number;
+        connected: number;
+    }> => {
+        const result = await neogma.queryRunner.run(
+            `
+                MATCH (a:Profile { profileId: $aId }), (b:Profile { profileId: $bId })
+                OPTIONAL MATCH (a)-[blocked:BLOCKED]-(b)
+                WITH a, b, count(DISTINCT blocked) AS blocked
+                OPTIONAL MATCH (a)-[connected:CONNECTED_WITH]-(b)
+                RETURN blocked, count(DISTINCT connected) AS connected
+            `,
+            { aId: profileA.profileId, bId: profileB.profileId }
+        );
+
+        return {
+            blocked: Number(result.records[0]?.get('blocked')),
+            connected: Number(result.records[0]?.get('connected')),
+        };
+    };
+
+    it.each([['prompt connect', 'block'] as const, ['block', 'prompt connect'] as const])(
+        'serializes concurrent %s before %s without leaving blocked and connected relationships',
+        async firstOperation => {
+            const created = await createPrompts(`credential:race-${firstOperation}`);
+            const connect = () =>
+                connectWithConnectionPrompt(profileB, created.claimerPrompt!.promptId);
+            const block = () => blockProfile(profileA, profileB);
+            let firstPromise: Promise<unknown> | undefined;
+            let secondPromise: Promise<unknown> | undefined;
+            let releaseGate: (() => Promise<void>) | undefined;
+            let gateReleased = false;
+
+            try {
+                releaseGate = await acquireOrderedPairGate();
+                firstPromise = firstOperation === 'prompt connect' ? connect() : block();
+                await waitForBlockedTransaction(
+                    firstOperation === 'prompt connect'
+                        ? 'shouldNotify'
+                        : 'MERGE (source)-[:BLOCKED]->(target)'
+                );
+                await releaseGate();
+                gateReleased = true;
+                secondPromise = firstOperation === 'prompt connect' ? block() : connect();
+                const settled = await Promise.allSettled([firstPromise, secondPromise]);
+                const rejected = settled.filter(
+                    (result): result is PromiseRejectedResult => result.status === 'rejected'
+                );
+                expect(rejected.map(result => String(result.reason))).toEqual([]);
+                const fulfilled = settled.filter(
+                    (result): result is PromiseFulfilledResult<unknown> =>
+                        result.status === 'fulfilled'
+                );
+                expect(fulfilled).toHaveLength(2);
+                if (fulfilled.length !== 2) return;
+
+                const [firstResult, secondResult] = fulfilled.map(result => result.value);
+                const connectResult =
+                    firstOperation === 'prompt connect' ? firstResult : secondResult;
+
+                expect(await countPairRelationships()).toEqual({ blocked: 1, connected: 0 });
+                expect(connectResult).toMatchObject({
+                    status: firstOperation === 'prompt connect' ? 'CONNECTED' : 'SKIPPED',
+                });
+                await expect(
+                    getConnectionPromptStatus(profileB, created.claimerPrompt!.promptId)
+                ).resolves.toMatchObject({ status: 'SKIPPED' });
+            } finally {
+                if (!gateReleased && releaseGate) await releaseGate();
+                await Promise.allSettled([firstPromise, secondPromise].filter(Boolean));
+            }
+        }
+    );
 
     describe('authenticated profile routes', () => {
         it('requires full authentication for connection prompt reads and actions', async () => {
@@ -446,53 +599,6 @@ describe('credential claim connection prompts', () => {
         await expect(
             connectWithConnectionPrompt(profileB, created.claimerPrompt!.promptId)
         ).resolves.toMatchObject({ status: 'CONNECTED' });
-    });
-
-    it('does not restore a consumed prompt after a concurrent connection succeeds', async () => {
-        const created = await createPrompts('credential:claim-1');
-        const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
-        let failNextConnectionWrite = true;
-        let injectConcurrentConnection = true;
-        const queryRunnerSpy = vi
-            .spyOn(neogma.queryRunner, 'run')
-            .mockImplementation(async (query, params) => {
-                if (
-                    failNextConnectionWrite &&
-                    typeof query === 'string' &&
-                    query.includes('MERGE (a)-[r:CONNECTED_WITH]') &&
-                    params?.status === 'CONNECTED'
-                ) {
-                    failNextConnectionWrite = false;
-                    throw new Error('connection write fault');
-                }
-
-                if (
-                    injectConcurrentConnection &&
-                    typeof query === 'string' &&
-                    query.includes("SET prompt.status = 'PENDING'")
-                ) {
-                    injectConcurrentConnection = false;
-                    await connectProfiles(profileA, profileB, false);
-                }
-
-                return originalRun(query, params);
-            });
-
-        try {
-            await expect(
-                connectWithConnectionPrompt(profileB, created.claimerPrompt!.promptId)
-            ).rejects.toThrow('connection write fault');
-        } finally {
-            queryRunnerSpy.mockRestore();
-        }
-
-        expect(await areProfilesConnected(profileA, profileB)).toBe(true);
-        expect(
-            await getConnectionPromptStatus(profileA, created.senderPrompt!.promptId)
-        ).toMatchObject({ status: 'CONNECTED' });
-        expect(
-            await getConnectionPromptStatus(profileB, created.claimerPrompt!.promptId)
-        ).toMatchObject({ status: 'CONNECTED' });
     });
 
     it('ordinary connection acceptance resolves both directed prompts permanently', async () => {

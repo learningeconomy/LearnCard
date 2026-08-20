@@ -15,6 +15,7 @@ import { inflateObject } from '@helpers/objects.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
+import { runConnectionPairQuery } from '@helpers/connectionPair.helpers';
 import { FlatProfileType, ProfileType } from 'types/profile';
 
 export type CreateConnectionPromptsForClaimInput = {
@@ -194,9 +195,23 @@ export const handleConnectionPromptsForCredentialClaim = async (
             console.error('Failed to enqueue post-claim connection prompt notification', {
                 claimerProfileId: input.claimer.profileId,
                 senderProfileId: input.sender.profileId,
+                promptId: result.senderPrompt.promptId,
                 triggerId: input.triggerId,
                 error,
             });
+
+            try {
+                await skipConnectionPrompt(input.sender, result.senderPrompt.promptId);
+            } catch (recoveryError) {
+                console.error('Failed to recover undeliverable sender connection prompt', {
+                    claimerProfileId: input.claimer.profileId,
+                    senderProfileId: input.sender.profileId,
+                    promptId: result.senderPrompt.promptId,
+                    triggerId: input.triggerId,
+                    error: recoveryError,
+                });
+            }
+
             return { ...result, senderNotificationFailed: true };
         }
     }
@@ -213,7 +228,7 @@ export const getPendingConnectionPrompts = async (
                   -[prompt:CONNECTION_PROMPT { status: 'PENDING' }]->
                   (counterpart:Profile)
             RETURN properties(prompt) AS prompt, counterpart
-            ORDER BY prompt.triggeredAt DESC
+            ORDER BY prompt.triggeredAt ASC
         `,
         { viewerId: viewer.profileId }
     );
@@ -254,19 +269,48 @@ export const skipConnectionPrompt = async (
     viewer: ProfileType,
     promptId: string
 ): Promise<LCNConnectionPromptActionResult> => {
-    const result = await neogma.queryRunner.run(
+    const counterpartResult = await neogma.queryRunner.run(
         `
-            MATCH (viewer:Profile { profileId: $viewerId })
-                  -[prompt:CONNECTION_PROMPT { promptId: $promptId }]->
-                  (:Profile)
-            SET prompt.__connectionPromptLock = true
-            REMOVE prompt.__connectionPromptLock
-            WITH prompt
-            WHERE prompt.status = 'PENDING'
-            SET prompt.status = 'SKIPPED', prompt.updatedAt = $updatedAt
-            RETURN prompt.promptId AS promptId, prompt.status AS status
+            MATCH (:Profile { profileId: $viewerId })
+                  -[:CONNECTION_PROMPT { promptId: $promptId }]->
+                  (counterpart:Profile)
+            RETURN counterpart.profileId AS counterpartId
+            LIMIT 1
         `,
-        { viewerId: viewer.profileId, promptId, updatedAt: new Date().toISOString() }
+        { viewerId: viewer.profileId, promptId }
+    );
+    const counterpartId = counterpartResult.records[0]?.get('counterpartId') as string | undefined;
+
+    if (!counterpartId) return getConnectionPromptStatus(viewer, promptId);
+
+    const result = await runConnectionPairQuery(
+        `
+            MATCH (first:Profile { profileId: $firstId })
+            SET first.__connectionPromptPairLock =
+                coalesce(first.__connectionPromptPairLock, 0) + 1
+            WITH first
+            MATCH (viewer:Profile { profileId: $viewerId })
+            MATCH (counterpart:Profile { profileId: $counterpartId })
+            OPTIONAL MATCH (viewer)
+                  -[prompt:CONNECTION_PROMPT { promptId: $promptId }]->
+                  (counterpart)
+            WITH prompt, first
+            FOREACH (_ IN CASE
+                WHEN prompt IS NOT NULL AND prompt.status = 'PENDING' THEN [1]
+                ELSE []
+            END |
+                SET prompt.status = 'SKIPPED', prompt.updatedAt = $updatedAt
+            )
+            REMOVE first.__connectionPromptPairLock
+            RETURN $promptId AS promptId, coalesce(prompt.status, 'STALE') AS status
+        `,
+        {
+            viewerId: viewer.profileId,
+            counterpartId,
+            firstId: [viewer.profileId, counterpartId].sort()[0],
+            promptId,
+            updatedAt: new Date().toISOString(),
+        }
     );
     const [row] = convertQueryResultToPropertiesObjectArray<PromptStatusRow>(result);
 
@@ -275,91 +319,120 @@ export const skipConnectionPrompt = async (
     return getConnectionPromptStatus(viewer, promptId);
 };
 
-const consumeConnectionPrompt = async (
-    viewer: ProfileType,
-    promptId: string
-): Promise<ProfileType | undefined> => {
-    const result = await neogma.queryRunner.run(
-        `
-            MATCH (viewer:Profile { profileId: $viewerId })
-                  -[prompt:CONNECTION_PROMPT { promptId: $promptId }]->
-                  (counterpart:Profile)
-            SET prompt.__connectionPromptLock = true
-            REMOVE prompt.__connectionPromptLock
-            WITH prompt, counterpart
-            WHERE prompt.status = 'PENDING'
-            SET prompt.status = 'CONNECTED', prompt.updatedAt = $updatedAt
-            RETURN counterpart
-        `,
-        { viewerId: viewer.profileId, promptId, updatedAt: new Date().toISOString() }
-    );
-    const [row] = convertQueryResultToPropertiesObjectArray<{ counterpart: FlatProfileType }>(
-        result
-    );
-
-    return row ? inflateObject<ProfileType>(row.counterpart as any) : undefined;
-};
-
-const restoreConsumedPrompt = async (viewer: ProfileType, promptId: string): Promise<void> => {
-    await neogma.queryRunner.run(
-        `
-            MATCH (viewer:Profile { profileId: $viewerId })
-                  -[prompt:CONNECTION_PROMPT { promptId: $promptId, status: 'CONNECTED' }]->
-                  (counterpart:Profile)
-            WITH viewer, counterpart, prompt,
-                 CASE WHEN viewer.profileId < counterpart.profileId
-                      THEN viewer ELSE counterpart END AS first,
-                 CASE WHEN viewer.profileId < counterpart.profileId
-                      THEN counterpart ELSE viewer END AS second
-            SET first.__connectionPromptPairLock = true
-            REMOVE first.__connectionPromptPairLock
-            SET second.__connectionPromptPairLock = true
-            REMOVE second.__connectionPromptPairLock
-            SET prompt.__connectionPromptLock = true
-            REMOVE prompt.__connectionPromptLock
-            WITH viewer, counterpart, prompt
-            WHERE prompt.status = 'CONNECTED'
-              AND NOT EXISTS { MATCH (viewer)-[:CONNECTED_WITH]-(counterpart) }
-              AND NOT EXISTS { MATCH (viewer)-[:BLOCKED]-(counterpart) }
-            SET prompt.status = 'PENDING', prompt.updatedAt = $updatedAt
-        `,
-        { viewerId: viewer.profileId, promptId, updatedAt: new Date().toISOString() }
-    );
-};
-
 export const connectWithConnectionPrompt = async (
     viewer: ProfileType,
     promptId: string
 ): Promise<LCNConnectionPromptActionResult> => {
-    const counterpart = await consumeConnectionPrompt(viewer, promptId);
-    if (!counterpart) return getConnectionPromptStatus(viewer, promptId);
-
-    const { areProfilesConnected, connectProfiles, isRelationshipBlocked } = await import(
-        './connection.helpers'
+    const counterpartResult = await neogma.queryRunner.run(
+        `
+            MATCH (:Profile { profileId: $viewerId })
+                  -[:CONNECTION_PROMPT { promptId: $promptId }]->
+                  (counterpart:Profile)
+            RETURN counterpart.profileId AS counterpartId
+            LIMIT 1
+        `,
+        { viewerId: viewer.profileId, promptId }
     );
+    const counterpartId = counterpartResult.records[0]?.get('counterpartId') as string | undefined;
 
-    if (await isRelationshipBlocked(viewer, counterpart)) {
-        await markConnectionPromptsSkipped(viewer, counterpart);
-        return getConnectionPromptStatus(viewer, promptId);
-    }
+    if (!counterpartId) return getConnectionPromptStatus(viewer, promptId);
 
-    if (await areProfilesConnected(viewer, counterpart)) {
-        return LCNConnectionPromptActionResultValidator.parse({ promptId, status: 'CONNECTED' });
-    }
+    const result = await runConnectionPairQuery(
+        `
+            MATCH (first:Profile { profileId: $firstId })
+            SET first.__connectionPromptPairLock =
+                coalesce(first.__connectionPromptPairLock, 0) + 1
+            WITH first
+            MATCH (a:Profile { profileId: $viewerId })
+            MATCH (b:Profile { profileId: $counterpartId })
+            OPTIONAL MATCH (a)-[prompt:CONNECTION_PROMPT { promptId: $promptId }]->(b)
+            WITH a, b, prompt, first
+            OPTIONAL MATCH (a)-[blocked:BLOCKED]-(b)
+            WITH a, b, prompt, first,
+                 count(blocked) > 0 AS isBlocked,
+                 prompt IS NOT NULL AND prompt.status = 'PENDING' AS isPending
+            OPTIONAL MATCH (a)-[existingConnection:CONNECTED_WITH]-(b)
+            WITH a, b, prompt, first, isBlocked, isPending,
+                 count(existingConnection) > 0 AS hadConnection
+            OPTIONAL MATCH (a)-[request:CONNECTION_REQUESTED]-(b)
+            WITH a, b, prompt, first, isBlocked, isPending, hadConnection,
+                 collect(request) AS requests
+            FOREACH (request IN CASE WHEN isPending AND NOT isBlocked THEN requests ELSE [] END |
+                DELETE request
+            )
+            FOREACH (_ IN CASE WHEN isPending AND NOT isBlocked THEN [1] ELSE [] END |
+                MERGE (a)-[r:CONNECTED_WITH]->(b)
+                ON CREATE SET r.sources = [$key]
+                ON MATCH SET r.sources = CASE
+                    WHEN r.sources IS NULL THEN [$key]
+                    WHEN NOT $key IN r.sources THEN r.sources + $key
+                    ELSE r.sources
+                END
+                MERGE (b)-[r2:CONNECTED_WITH]->(a)
+                ON CREATE SET r2.sources = [$key]
+                ON MATCH SET r2.sources = CASE
+                    WHEN r2.sources IS NULL THEN [$key]
+                    WHEN NOT $key IN r2.sources THEN r2.sources + $key
+                    ELSE r2.sources
+                END
+            )
+            WITH a, b, prompt, first, isBlocked, isPending, hadConnection
+            OPTIONAL MATCH (a)-[pairPrompt:CONNECTION_PROMPT]-(b)
+            FOREACH (_ IN CASE
+                WHEN pairPrompt IS NOT NULL AND isPending AND isBlocked THEN [1]
+                ELSE []
+            END |
+                SET pairPrompt.status = 'SKIPPED', pairPrompt.updatedAt = $updatedAt
+            )
+            FOREACH (_ IN CASE
+                WHEN pairPrompt IS NOT NULL AND isPending AND NOT isBlocked THEN [1]
+                ELSE []
+            END |
+                SET pairPrompt.status = $status, pairPrompt.updatedAt = $updatedAt
+            )
+            REMOVE first.__connectionPromptPairLock
+            RETURN CASE
+                       WHEN prompt IS NULL THEN 'STALE'
+                       WHEN NOT isPending THEN prompt.status
+                       WHEN isBlocked THEN 'SKIPPED'
+                       ELSE $status
+                   END AS status,
+                   b AS counterpart,
+                   isPending AND NOT isBlocked AND NOT hadConnection AS shouldNotify
+        `,
+        {
+            viewerId: viewer.profileId,
+            counterpartId,
+            firstId: [viewer.profileId, counterpartId].sort()[0],
+            promptId,
+            key: 'manual',
+            status: 'CONNECTED',
+            updatedAt: new Date().toISOString(),
+        }
+    );
+    const [row] = convertQueryResultToPropertiesObjectArray<{
+        status: LCNConnectionPromptActionResult['status'];
+        counterpart: FlatProfileType;
+        shouldNotify: boolean;
+    }>(result);
 
-    try {
-        await connectProfiles(viewer, counterpart, false);
-    } catch (error) {
-        if (await areProfilesConnected(viewer, counterpart)) {
-            return LCNConnectionPromptActionResultValidator.parse({
+    if (!row) return getConnectionPromptStatus(viewer, promptId);
+
+    if (row.status === 'CONNECTED' && row.shouldNotify) {
+        const counterpart = inflateObject<ProfileType>(row.counterpart as any);
+        const { sendConnectionAcceptedNotification } = await import('./connection.helpers');
+
+        try {
+            await sendConnectionAcceptedNotification(viewer, counterpart);
+        } catch (error) {
+            console.error('Failed to enqueue connection prompt acceptance notification', {
+                viewerProfileId: viewer.profileId,
+                counterpartProfileId: counterpart.profileId,
                 promptId,
-                status: 'CONNECTED',
+                error,
             });
         }
-
-        await restoreConsumedPrompt(viewer, promptId);
-        throw error;
     }
 
-    return LCNConnectionPromptActionResultValidator.parse({ promptId, status: 'CONNECTED' });
+    return LCNConnectionPromptActionResultValidator.parse({ promptId, status: row.status });
 };

@@ -8,6 +8,7 @@ import {
     ConsentFlowContract,
     ConsentFlowTerms,
     ConsentFlowTransaction,
+    CredentialActivity,
 } from '@models';
 import * as Notifications from '@helpers/notifications.helpers';
 import { addNotificationToQueueSpy } from './helpers/spies';
@@ -42,6 +43,7 @@ describe('Credentials', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
+            await CredentialActivity.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
             await ConsentFlowTerms.delete({ detach: true, where: {} });
             await ConsentFlowTransaction.delete({ detach: true, where: {} });
@@ -89,6 +91,7 @@ describe('Credentials', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
+            await CredentialActivity.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
@@ -448,6 +451,117 @@ describe('Credentials', () => {
             });
             expect(acceptedCalls[1]?.[0]?.data?.metadata?.connectionPrompt).toBeUndefined();
             expect(await userB.clients.fullAuth.credential.receivedCredentials()).toHaveLength(1);
+        });
+
+        it('skips the undeliverable sender prompt for the same trigger and reopens it on a later claim', async () => {
+            const firstUri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            addNotificationToQueueSpy.mockClear();
+            addNotificationToQueueSpy.mockRejectedValueOnce(
+                new Error('injected actionable enqueue failure')
+            );
+            addNotificationToQueueSpy.mockResolvedValueOnce(undefined);
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userB.clients.fullAuth.credential.acceptCredential({ uri: firstUri })
+                ).resolves.toBe(true);
+            } finally {
+                consoleErrorSpy.mockRestore();
+            }
+
+            const attemptedPromptId = addNotificationToQueueSpy.mock.calls[0]?.[0]?.data?.metadata
+                ?.connectionPrompt?.promptId as string;
+            expect(attemptedPromptId).toEqual(expect.any(String));
+            await expect(
+                userA.clients.fullAuth.profile.connectionPromptStatus({
+                    promptId: attemptedPromptId,
+                })
+            ).resolves.toMatchObject({ status: 'SKIPPED' });
+            await expect(
+                userA.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
+            await expect(
+                userB.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(1);
+
+            addNotificationToQueueSpy.mockClear();
+            await expect(
+                userB.clients.fullAuth.credential.acceptCredential({ uri: firstUri })
+            ).resolves.toBe(true);
+            expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
+            await expect(
+                userA.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
+
+            const laterUri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            addNotificationToQueueSpy.mockClear();
+            await expect(
+                userB.clients.fullAuth.credential.acceptCredential({ uri: laterUri })
+            ).resolves.toBe(true);
+
+            const [laterSenderPrompt] =
+                await userA.clients.fullAuth.profile.pendingConnectionPrompts();
+            expect(laterSenderPrompt).toMatchObject({
+                status: 'PENDING',
+                triggerId: `credential:${laterUri.split(':').at(-1)}`,
+            });
+            expect(laterSenderPrompt?.promptId).not.toBe(attemptedPromptId);
+            expect(
+                addNotificationToQueueSpy.mock.calls.filter(
+                    call =>
+                        call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED &&
+                        call[0]?.data?.metadata?.connectionPrompt
+                )
+            ).toHaveLength(1);
+        });
+
+        it('keeps acceptance, activity, and recoverable prompts when actionable and legacy enqueues fail', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            addNotificationToQueueSpy.mockClear();
+            addNotificationToQueueSpy.mockRejectedValueOnce(
+                new Error('injected actionable enqueue failure')
+            );
+            addNotificationToQueueSpy.mockRejectedValueOnce(
+                new Error('injected legacy enqueue failure')
+            );
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userB.clients.fullAuth.credential.acceptCredential({ uri })
+                ).resolves.toBe(true);
+            } finally {
+                consoleErrorSpy.mockRestore();
+            }
+
+            expect(await userB.clients.fullAuth.credential.receivedCredentials()).toHaveLength(1);
+            const activities = await CredentialActivity.findMany({
+                where: { eventType: 'CLAIMED', credentialUri: uri },
+            });
+            expect(activities).toHaveLength(1);
+
+            const [claimerPrompt] = await userB.clients.fullAuth.profile.pendingConnectionPrompts();
+            expect(claimerPrompt).toMatchObject({ status: 'PENDING', surface: 'POST_CLAIM' });
+            const attemptedPromptId = addNotificationToQueueSpy.mock.calls[0]?.[0]?.data?.metadata
+                ?.connectionPrompt?.promptId as string;
+            await expect(
+                userA.clients.fullAuth.profile.connectionPromptStatus({
+                    promptId: attemptedPromptId,
+                })
+            ).resolves.toMatchObject({ status: 'SKIPPED' });
+            await expect(
+                userA.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
         });
 
         it('recovers a failed prompt write on retry without reopening skipped same-trigger prompts or duplicating notifications', async () => {

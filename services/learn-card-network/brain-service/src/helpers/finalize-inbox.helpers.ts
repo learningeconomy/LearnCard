@@ -140,7 +140,11 @@ export async function finalizeInboxCredentialsForProfile(
                 await markInboxCredentialAsIsAccepted(inboxCredential.id);
                 await createClaimedRelationship(profile.profileId, inboxCredential.id, 'finalize');
 
-                if (senderProfile) {
+                if (
+                    senderProfile &&
+                    !(inboxCredential.signingAuthority as { listingSlug?: string } | undefined)
+                        ?.listingSlug
+                ) {
                     await handleConnectionPromptsForCredentialClaim({
                         claimer: profile,
                         sender: senderProfile,

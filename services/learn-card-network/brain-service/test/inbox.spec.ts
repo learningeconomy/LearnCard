@@ -1073,7 +1073,7 @@ describe('Universal Inbox', () => {
             expect(claimerPrompts.every(prompt => inboxTriggerIds.includes(prompt.triggerId))).toBe(
                 true
             );
-            expect(triggeredAt).toEqual([...triggeredAt].sort((a, b) => b - a));
+            expect(triggeredAt).toEqual([...triggeredAt].sort((a, b) => a - b));
             expect(senderAPrompts).toHaveLength(1);
             expect(senderCPrompts).toHaveLength(1);
             expect(await areProfilesConnected(claimer!, senderA!)).toBe(false);
@@ -1085,6 +1085,31 @@ describe('Universal Inbox', () => {
                     call[0]?.data?.metadata?.connectionPrompt
             );
             expect(promptNotifications).toHaveLength(2);
+        });
+
+        it('claims a workflow inbox credential issued by an application without creating prompts', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const issued = await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                recipient: { type: 'email', value: 'workflow-app-issuer@test.com' },
+            });
+            await updateInboxCredential(issued.issuanceId, {
+                signingAuthority: {
+                    endpoint: 'https://example.com/app-signing',
+                    name: 'application',
+                    listingSlug: 'test-application',
+                },
+            });
+
+            await expect(claimFromInboxUrl(userB, issued.claimUrl)).resolves.toHaveLength(1);
+            await expect(
+                userA.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
+            await expect(
+                userB.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
         });
 
         it('does not prompt for a DID-only holder until that DID has a profile', async () => {
@@ -1975,6 +2000,43 @@ describe('Universal Inbox', () => {
                 counterpart: { profileId: 'usera' },
             });
             expect(laterPrompt?.promptId).not.toBe(firstClaimerPrompt?.promptId);
+        });
+
+        it('finalizes a verified-contact application issuance without creating prompts', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const issued = await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                recipient: { type: 'email', value: 'finalize-app-issuer@test.com' },
+            });
+            await updateInboxCredential(issued.issuanceId, {
+                isAccepted: true,
+                signingAuthority: {
+                    endpoint: 'https://example.com/app-signing',
+                    name: 'application',
+                    listingSlug: 'test-application',
+                },
+            });
+            await userB.clients.fullAuth.contactMethods.addContactMethod({
+                type: 'email',
+                value: 'finalize-app-issuer@test.com',
+            });
+            await userB.clients.fullAuth.contactMethods.verifyContactMethod({
+                token: sendSpy.mock.calls.at(-1)?.[0].templateModel.verificationToken,
+            });
+
+            await expect(userB.clients.fullAuth.inbox.finalize({})).resolves.toMatchObject({
+                processed: 1,
+                claimed: 1,
+                errors: 0,
+            });
+            await expect(
+                userA.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
+            await expect(
+                userB.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(0);
         });
 
         it('keeps finalization successful when prompt creation fails', async () => {
