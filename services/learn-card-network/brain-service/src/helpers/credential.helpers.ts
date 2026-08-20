@@ -148,7 +148,12 @@ export const acceptCredential = async (
         metadata: options.metadata,
     });
 
-    if (!alreadyReceived && !promptResult.senderPrompt?.isNew && !options?.skipNotification) {
+    const shouldSendLegacyNotification =
+        !options?.skipNotification &&
+        ((!alreadyReceived && !promptResult.senderPrompt?.isNew) ||
+            promptResult.senderNotificationFailed);
+
+    if (shouldSendLegacyNotification) {
         await addNotificationToQueue({
             type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
             to: sourceProfile,

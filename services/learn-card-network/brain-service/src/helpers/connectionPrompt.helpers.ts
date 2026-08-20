@@ -32,6 +32,7 @@ type PromptTransition = {
 export type ConnectionPromptCreationResult = {
     claimerPrompt?: PromptTransition;
     senderPrompt?: PromptTransition;
+    senderNotificationFailed?: boolean;
 };
 
 type PromptCreationRow = {
@@ -190,12 +191,13 @@ export const handleConnectionPromptsForCredentialClaim = async (
                 },
             });
         } catch (error) {
-            console.error('Failed to create post-claim connection prompts', {
+            console.error('Failed to enqueue post-claim connection prompt notification', {
                 claimerProfileId: input.claimer.profileId,
                 senderProfileId: input.sender.profileId,
                 triggerId: input.triggerId,
                 error,
             });
+            return { ...result, senderNotificationFailed: true };
         }
     }
 

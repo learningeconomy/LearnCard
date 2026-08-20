@@ -81,3 +81,33 @@ Observed GREEN after adding best-effort handling: all 12 focused `acceptCredenti
 
 -   The build initially could not start an Nx plugin worker inside the sandbox. The approved escalated rerun completed successfully; this was an environment restriction, not a code failure.
 -   Test output includes the repository's expected DIDKit native-addon fallback warning on this machine.
+
+## Review Round 1 — Actionable Delivery Fallback
+
+### Root Cause and Fix
+
+The actionable enqueue catch preserved `senderPrompt.isNew: true`, so `acceptCredential` treated graph creation as notification delivery and suppressed the legacy event. Stable-trigger retries then correctly avoided recreating the prompt, but also had no delivery to recover.
+
+`ConnectionPromptCreationResult` now reports `senderNotificationFailed` when the new sender prompt was stored but its actionable event was not enqueued. `acceptCredential` attempts the existing legacy `BOOST_ACCEPTED` fallback for that explicit outcome, including recovery calls for already-received credentials. A successful actionable enqueue still returns no failure outcome and suppresses legacy delivery.
+
+### Assertion RED
+
+Command:
+
+```bash
+SEED=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  bun run test -- run test/credentials.spec.ts \
+  -t "falls back to one legacy notification" --reporter=verbose
+```
+
+Observed RED: claim acceptance resolved, but only the rejected actionable enqueue attempt occurred (`expected [Array(1)] to have a length of 2 but got 1`); no legacy fallback was attempted.
+
+### GREEN and Regression Evidence
+
+-   The same fallback test passed after the outcome change. It verifies the first actionable attempt carries typed `connectionPrompt` metadata, the second legacy enqueue has no actionable metadata, exactly one enqueue resolves, the credential remains received, and the claim call succeeds.
+-   `creates directed prompts and one actionable sender notification without connecting profiles` passed against the real e2e queue and still observes exactly one actionable event, proving successful actionable delivery does not also enqueue legacy.
+-   All focused `acceptCredential` cases passed: 12/12.
+-   Task 3 focused files passed: 334/334.
+-   Shared connection-prompt regressions passed: 27/27.
+-   `NX_DAEMON=false bunx nx build network-brain-service --output-style=static` passed.
+-   Prettier and `git diff --check` passed.

@@ -403,7 +403,7 @@ describe('Credentials', () => {
             expect(await userB.clients.fullAuth.credential.receivedCredentials()).toHaveLength(1);
         });
 
-        it('keeps acceptance successful when the actionable notification enqueue fails', async () => {
+        it('falls back to one legacy notification when the actionable enqueue fails', async () => {
             const uri = await userA.clients.fullAuth.credential.sendCredential({
                 profileId: 'userb',
                 credential: testVc,
@@ -412,6 +412,7 @@ describe('Credentials', () => {
             addNotificationToQueueSpy.mockRejectedValueOnce(
                 new Error('injected notification enqueue failure')
             );
+            addNotificationToQueueSpy.mockResolvedValueOnce(undefined);
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
             try {
@@ -422,11 +423,19 @@ describe('Credentials', () => {
                 consoleErrorSpy.mockRestore();
             }
 
-            expect(
-                addNotificationToQueueSpy.mock.calls.filter(
-                    call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
-                )
-            ).toHaveLength(1);
+            const acceptedCalls = addNotificationToQueueSpy.mock.calls.filter(
+                call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+            );
+            expect(acceptedCalls).toHaveLength(2);
+            expect(acceptedCalls[0]?.[0]?.data?.metadata?.connectionPrompt).toEqual({
+                promptId: expect.any(String),
+                counterpartProfileId: 'userb',
+            });
+            expect(acceptedCalls[1]?.[0]).toMatchObject({
+                message: getNotificationMessage('boostAccepted', 'en', { name: '' }),
+                data: { vcUris: [uri] },
+            });
+            expect(acceptedCalls[1]?.[0]?.data?.metadata?.connectionPrompt).toBeUndefined();
             expect(await userB.clients.fullAuth.credential.receivedCredentials()).toHaveLength(1);
         });
 
