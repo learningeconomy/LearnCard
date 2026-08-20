@@ -10,7 +10,7 @@ import {
     BoostAddressBookViewMode,
 } from './BoostAddressBook';
 
-const { contact, emptyPages, emptyScouts } = vi.hoisted(() => ({
+const { contact, emptyPages, emptyScouts, newModal } = vi.hoisted(() => ({
     contact: {
         profileId: 'test-contact',
         displayName: 'Test Contact',
@@ -18,6 +18,7 @@ const { contact, emptyPages, emptyScouts } = vi.hoisted(() => ({
     },
     emptyPages: [] as never[],
     emptyScouts: [] as never[],
+    newModal: vi.fn(),
 }));
 
 vi.mock('@ionic/react', () => {
@@ -48,7 +49,7 @@ vi.mock('learn-card-base', () => ({
     getLogger: () => ({ debug: vi.fn() }),
     useGetBoostParents: () => ({ data: { records: [] } }),
     useGetCurrentLCNUser: () => ({ currentLCNUser: undefined, currentLCNUserLoading: false }),
-    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+    useModal: () => ({ newModal, closeModal: vi.fn() }),
     useResolveBoost: () => ({ data: undefined }),
     useWallet: () => ({
         initWallet: async () => ({
@@ -95,7 +96,10 @@ vi.mock('./BoostAddressBookContactOptions', () => ({ default: () => null }));
 vi.mock('./BoostShareableCode', () => ({ default: () => null }));
 
 describe('BoostAddressBook contact selection', () => {
-    afterEach(cleanup);
+    afterEach(() => {
+        cleanup();
+        newModal.mockClear();
+    });
 
     it('keeps a selected contact live until the selection is saved', async () => {
         let cmsState = { issueTo: [] as (typeof contact)[] };
@@ -173,14 +177,14 @@ describe('BoostAddressBook contact selection', () => {
         expect(await screen.findByRole('button', { name: 'Add contact' })).toBeTruthy();
     });
 
-    it('syncs committed empty selections without discarding a supplied modal selection', async () => {
+    it('does not discard a local selection when outer CMS state changes', async () => {
         const renderPicker = (pickerState: Record<string, unknown>) => (
             <BoostAddressBook
                 state={pickerState as never}
                 setState={vi.fn()}
                 viewMode={BoostAddressBookViewMode.full}
                 mode={BoostAddressBookEditMode.edit}
-                _issueTo={[contact]}
+                _issueTo={[]}
                 _setIssueTo={vi.fn()}
                 search=""
                 setSearch={vi.fn()}
@@ -192,15 +196,43 @@ describe('BoostAddressBook contact selection', () => {
             />
         );
 
-        const { rerender } = render(renderPicker({ issueTo: [contact] }));
-        expect(await screen.findByRole('button', { name: 'Selected contact' })).toBeTruthy();
-
-        rerender(renderPicker({ issueTo: [] }));
+        const { rerender } = render(renderPicker({ issueTo: [] }));
         expect(await screen.findByRole('button', { name: 'Add contact' })).toBeTruthy();
 
-        cleanup();
-        render(renderPicker({}));
+        fireEvent.click(screen.getByRole('button', { name: 'Add contact' }));
+        expect(screen.getByRole('button', { name: 'Selected contact' })).toBeTruthy();
+
+        rerender(renderPicker({ issueTo: [], unrelatedField: 'changed' }));
 
         expect(await screen.findByRole('button', { name: 'Selected contact' })).toBeTruthy();
+    });
+
+    it('syncs a committed empty selection into the list view', () => {
+        const renderList = (issueTo: (typeof contact)[]) => (
+            <BoostAddressBook
+                state={{ issueTo } as never}
+                setState={vi.fn()}
+                viewMode={BoostAddressBookViewMode.list}
+                mode={BoostAddressBookEditMode.edit}
+                search=""
+                setSearch={vi.fn()}
+                searchResults={[]}
+                isLoading={false}
+                recipients={[]}
+                recipientsLoading={false}
+                boostUri="urn:boost:test"
+                showContactOptions={false}
+            />
+        );
+
+        const { rerender } = render(renderList([contact]));
+        rerender(renderList([]));
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'Add contact' })[0]);
+
+        const openedPicker = newModal.mock.calls.at(-1)?.[0] as React.ReactElement<{
+            _issueTo: (typeof contact)[];
+        }>;
+        expect(openedPicker.props._issueTo).toEqual([]);
     });
 });
