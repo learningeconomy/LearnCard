@@ -232,6 +232,15 @@ describe('ConnectionPromptCoordinator', () => {
         expect(state.dismissToast).toHaveBeenCalledOnce();
     });
 
+    it('uses prompt id to select deterministically when timestamps are equal', async () => {
+        state.prompts = [{ ...bob, triggeredAt: alice.triggeredAt }, alice];
+        renderCoordinator();
+        await advance(150);
+
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+        expect(screen.queryByRole('heading', { name: 'Connect with Bob?' })).toBeNull();
+    });
+
     it('keeps the modal open with skipping feedback until one native Skip succeeds', async () => {
         const request = deferred<void>();
         state.prompts = [alice];

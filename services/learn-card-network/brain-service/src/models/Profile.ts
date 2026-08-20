@@ -39,6 +39,7 @@ type ConnectionPromptRelationshipProps = {
     promptId: string;
     status: LCNConnectionPromptStatus;
     triggerId: string;
+    coveredTriggerIds?: string[];
     surface: LCNConnectionPromptSurface;
     triggeredAt: string;
     updatedAt: string;
@@ -167,6 +168,10 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                     triggerId: {
                         property: 'triggerId',
                         schema: { type: 'string', required: true },
+                    },
+                    coveredTriggerIds: {
+                        property: 'coveredTriggerIds',
+                        schema: { type: 'array', items: { type: 'string' }, required: false },
                     },
                     surface: {
                         property: 'surface',

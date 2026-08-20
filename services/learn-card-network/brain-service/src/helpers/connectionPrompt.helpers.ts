@@ -53,7 +53,55 @@ type PromptStatusRow = {
     status: 'PENDING' | 'SKIPPED' | 'CONNECTED';
 };
 
+type NotificationTransportOutcome = 'accepted' | 'definitivelyRejected' | 'uncertain';
+
+type NotificationTransportError = {
+    $metadata?: { httpStatusCode?: number };
+};
+
 const SENDER_NOTIFICATION_ATTEMPT_LEASE_MS = 5 * 60 * 1000;
+
+const normalizeNotificationTransportResult = (result: unknown): NotificationTransportOutcome => {
+    if (result === false) return 'definitivelyRejected';
+
+    // `undefined` is the documented unit-test no-op result. Direct webhook delivery returns true,
+    // while SQS returns a successful response object (normally with MessageId or 2xx metadata).
+    if (result === undefined || result === true) return 'accepted';
+    if (typeof result === 'object' && result !== null) {
+        const response = result as {
+            MessageId?: unknown;
+            $metadata?: { httpStatusCode?: unknown };
+        };
+
+        if (typeof response.MessageId === 'string') return 'accepted';
+        if (
+            typeof response.$metadata?.httpStatusCode === 'number' &&
+            response.$metadata.httpStatusCode >= 200 &&
+            response.$metadata.httpStatusCode < 300
+        ) {
+            return 'accepted';
+        }
+    }
+
+    return 'uncertain';
+};
+
+const normalizeNotificationTransportError = (error: unknown): NotificationTransportOutcome => {
+    const statusCode = (error as NotificationTransportError | undefined)?.$metadata?.httpStatusCode;
+
+    // A non-retryable client response proves the transport rejected the request. Timeouts and
+    // throttling remain ambiguous because the transport may have accepted before the error surfaced.
+    if (
+        typeof statusCode === 'number' &&
+        statusCode >= 400 &&
+        statusCode < 500 &&
+        ![408, 425, 429].includes(statusCode)
+    ) {
+        return 'definitivelyRejected';
+    }
+
+    return 'uncertain';
+};
 
 export const markConnectionPromptsSkipped = async (
     first: ProfileType,
@@ -117,13 +165,19 @@ export const createConnectionPromptsForClaim = async (
                 MATCH (counterpart:Profile { profileId: direction.counterpartId })
                 MERGE (viewer)-[prompt:CONNECTION_PROMPT]->(counterpart)
                 WITH prompt, direction,
+                     coalesce(
+                         prompt.coveredTriggerIds,
+                         CASE WHEN prompt.triggerId IS NULL THEN [] ELSE [prompt.triggerId] END
+                     ) AS coveredTriggerIds
+                WITH prompt, direction, coveredTriggerIds,
                      prompt.promptId IS NULL OR (
-                         prompt.status <> 'PENDING' AND prompt.triggerId <> $triggerId
+                         prompt.status <> 'PENDING' AND NOT $triggerId IN coveredTriggerIds
                      ) AS isNew
                 FOREACH (_ IN CASE WHEN isNew THEN [1] ELSE [] END |
                     SET prompt.promptId = direction.promptId,
                         prompt.status = 'PENDING',
                         prompt.triggerId = $triggerId,
+                        prompt.coveredTriggerIds = [$triggerId],
                         prompt.surface = direction.surface,
                         prompt.triggeredAt = $now,
                         prompt.updatedAt = $now,
@@ -137,6 +191,15 @@ export const createConnectionPromptsForClaim = async (
                             WHEN direction.role = 'sender' THEN false
                             ELSE null
                         END
+                )
+                FOREACH (_ IN CASE
+                    WHEN NOT isNew
+                      AND prompt.status = 'PENDING'
+                      AND NOT $triggerId IN coveredTriggerIds
+                    THEN [1]
+                    ELSE []
+                END |
+                    SET prompt.coveredTriggerIds = coveredTriggerIds + $triggerId
                 )
                 RETURN collect({
                     role: direction.role,
@@ -395,8 +458,10 @@ export const handleConnectionPromptsForCredentialClaim = async (
 
         if (!attemptToken) return result;
 
+        let transportOutcome: NotificationTransportOutcome;
+
         try {
-            await addNotificationToQueue({
+            const transportResult = await addNotificationToQueue({
                 type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
                 to: input.sender,
                 from: input.claimer,
@@ -417,6 +482,20 @@ export const handleConnectionPromptsForCredentialClaim = async (
                 },
             });
 
+            transportOutcome = normalizeNotificationTransportResult(transportResult);
+        } catch (error) {
+            transportOutcome = normalizeNotificationTransportError(error);
+            console.error('Failed to enqueue post-claim connection prompt notification', {
+                claimerProfileId: input.claimer.profileId,
+                senderProfileId: input.sender.profileId,
+                promptId: result.senderPrompt.promptId,
+                triggerId: input.triggerId,
+                outcome: transportOutcome,
+                error,
+            });
+        }
+
+        if (transportOutcome === 'accepted') {
             try {
                 await markSenderPromptNotificationDelivered(
                     input.sender,
@@ -451,52 +530,68 @@ export const handleConnectionPromptsForCredentialClaim = async (
                     });
                 }
             }
-        } catch (error) {
-            console.error('Failed to enqueue post-claim connection prompt notification', {
-                claimerProfileId: input.claimer.profileId,
-                senderProfileId: input.sender.profileId,
-                promptId: result.senderPrompt.promptId,
-                triggerId: input.triggerId,
-                error,
-            });
 
+            return result;
+        }
+
+        if (transportOutcome === 'uncertain') {
             try {
-                await resolveSenderPromptAfterNotificationRejection(
+                await releaseSenderPromptNotificationDelivery(
                     input.sender,
                     result.senderPrompt.promptId,
                     input.triggerId,
-                    attemptToken
+                    attemptToken,
+                    true
                 );
-            } catch (recoveryError) {
-                console.error('Failed to recover undeliverable sender connection prompt', {
+            } catch (releaseError) {
+                console.error('Failed to release connection prompt notification delivery', {
                     claimerProfileId: input.claimer.profileId,
                     senderProfileId: input.sender.profileId,
                     promptId: result.senderPrompt.promptId,
                     triggerId: input.triggerId,
-                    error: recoveryError,
+                    error: releaseError,
                 });
-
-                try {
-                    await releaseSenderPromptNotificationDelivery(
-                        input.sender,
-                        result.senderPrompt.promptId,
-                        input.triggerId,
-                        attemptToken,
-                        false
-                    );
-                } catch (releaseError) {
-                    console.error('Failed to release connection prompt notification delivery', {
-                        claimerProfileId: input.claimer.profileId,
-                        senderProfileId: input.sender.profileId,
-                        promptId: result.senderPrompt.promptId,
-                        triggerId: input.triggerId,
-                        error: releaseError,
-                    });
-                }
             }
 
-            return { ...result, senderNotificationFailed: true };
+            return result;
         }
+
+        try {
+            await resolveSenderPromptAfterNotificationRejection(
+                input.sender,
+                result.senderPrompt.promptId,
+                input.triggerId,
+                attemptToken
+            );
+        } catch (recoveryError) {
+            console.error('Failed to recover undeliverable sender connection prompt', {
+                claimerProfileId: input.claimer.profileId,
+                senderProfileId: input.sender.profileId,
+                promptId: result.senderPrompt.promptId,
+                triggerId: input.triggerId,
+                error: recoveryError,
+            });
+
+            try {
+                await releaseSenderPromptNotificationDelivery(
+                    input.sender,
+                    result.senderPrompt.promptId,
+                    input.triggerId,
+                    attemptToken,
+                    false
+                );
+            } catch (releaseError) {
+                console.error('Failed to release connection prompt notification delivery', {
+                    claimerProfileId: input.claimer.profileId,
+                    senderProfileId: input.sender.profileId,
+                    promptId: result.senderPrompt.promptId,
+                    triggerId: input.triggerId,
+                    error: releaseError,
+                });
+            }
+        }
+
+        return { ...result, senderNotificationFailed: true };
     }
 
     return result;
@@ -511,7 +606,7 @@ export const getPendingConnectionPrompts = async (
                   -[prompt:CONNECTION_PROMPT { status: 'PENDING' }]->
                   (counterpart:Profile)
             RETURN properties(prompt) AS prompt, counterpart
-            ORDER BY prompt.triggeredAt ASC
+            ORDER BY prompt.triggeredAt ASC, prompt.promptId ASC
         `,
         { viewerId: viewer.profileId }
     );

@@ -412,9 +412,7 @@ describe('Credentials', () => {
                 credential: testVc,
             });
             addNotificationToQueueSpy.mockClear();
-            addNotificationToQueueSpy.mockRejectedValueOnce(
-                new Error('injected notification enqueue failure')
-            );
+            addNotificationToQueueSpy.mockResolvedValueOnce(false);
             addNotificationToQueueSpy.mockResolvedValueOnce(undefined);
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
@@ -453,15 +451,45 @@ describe('Credentials', () => {
             expect(await userB.clients.fullAuth.credential.receivedCredentials()).toHaveLength(1);
         });
 
+        it('does not send a legacy fallback when actionable delivery is uncertain', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            addNotificationToQueueSpy.mockClear();
+            addNotificationToQueueSpy.mockImplementationOnce(async () => {
+                throw new Error('timeout after transport acceptance');
+            });
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userB.clients.fullAuth.credential.acceptCredential({ uri })
+                ).resolves.toBe(true);
+            } finally {
+                consoleErrorSpy.mockRestore();
+            }
+
+            const acceptedCalls = addNotificationToQueueSpy.mock.calls.filter(
+                call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+            );
+            expect(acceptedCalls).toHaveLength(1);
+            expect(acceptedCalls[0]?.[0]?.data?.metadata?.connectionPrompt).toEqual({
+                promptId: expect.any(String),
+                counterpartProfileId: 'userb',
+            });
+            await expect(
+                userA.clients.fullAuth.profile.pendingConnectionPrompts()
+            ).resolves.toHaveLength(1);
+        });
+
         it('skips the undeliverable sender prompt for the same trigger and reopens it on a later claim', async () => {
             const firstUri = await userA.clients.fullAuth.credential.sendCredential({
                 profileId: 'userb',
                 credential: testVc,
             });
             addNotificationToQueueSpy.mockClear();
-            addNotificationToQueueSpy.mockRejectedValueOnce(
-                new Error('injected actionable enqueue failure')
-            );
+            addNotificationToQueueSpy.mockResolvedValueOnce(false);
             addNotificationToQueueSpy.mockResolvedValueOnce(undefined);
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
@@ -528,9 +556,7 @@ describe('Credentials', () => {
                 credential: testVc,
             });
             addNotificationToQueueSpy.mockClear();
-            addNotificationToQueueSpy.mockRejectedValueOnce(
-                new Error('injected actionable enqueue failure')
-            );
+            addNotificationToQueueSpy.mockResolvedValueOnce(false);
             addNotificationToQueueSpy.mockRejectedValueOnce(
                 new Error('injected legacy enqueue failure')
             );

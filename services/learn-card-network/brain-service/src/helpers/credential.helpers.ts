@@ -125,8 +125,18 @@ export const acceptCredential = async (
         await processClaimHooks(profile, pendingVc.target);
 
         await setDefaultClaimedRole(profile, pendingVc.target);
+    }
 
+    // Automatic connection batches can partially commit because every target pair owns an
+    // independent transaction. Re-run this idempotent reconciliation even after the credential is
+    // already received, while retaining an error until new-acceptance-only side effects finish.
+    let automaticConnectionFailed = false;
+    let automaticConnectionError: unknown;
+    try {
         await ensureConnectionsForCredentialAcceptance(profile, pendingVc.target.id);
+    } catch (error) {
+        automaticConnectionFailed = true;
+        automaticConnectionError = error;
     }
 
     const sourceProfile = isProfileType(pendingVc.source)
@@ -212,6 +222,8 @@ export const acceptCredential = async (
             });
         }
     }
+
+    if (automaticConnectionFailed) throw automaticConnectionError;
 
     return true;
 };

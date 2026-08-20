@@ -49,7 +49,11 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
         () =>
             [...pendingPrompts]
                 .filter(prompt => prompt.surface === 'POST_CLAIM')
-                .sort((left, right) => left.triggeredAt.localeCompare(right.triggeredAt))[0],
+                .sort(
+                    (left, right) =>
+                        left.triggeredAt.localeCompare(right.triggeredAt) ||
+                        left.promptId.localeCompare(right.promptId)
+                )[0],
         [pendingPrompts]
     );
 

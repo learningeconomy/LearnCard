@@ -45,15 +45,16 @@ export const getConnections = async (
  */
 export const getBoostConnectionSourceKey = (boostId: string): string => `boost:${boostId}`;
 
-/**
- * Ensures mutual CONNECTED_WITH relationships exist between two profiles, adding the provided source key
- */
-export const ensureMutualConnectionWithSource = async (
+// Pair writes take one canonical lock each. Process sorted groups in small deterministic waves so
+// large cohorts cannot create unbounded Neo4j concurrency or acquire multiple pair locks together.
+const AUTOMATIC_CONNECTION_CONCURRENCY_LIMIT = 8;
+
+const ensureMutualConnectionWithSources = async (
     aProfileId: string,
     bProfileId: string,
-    sourceKey: string
+    sourceKeys: string[]
 ): Promise<void> => {
-    if (aProfileId === bProfileId) return;
+    if (aProfileId === bProfileId || sourceKeys.length === 0) return;
 
     const cypher = `
         MATCH (first:Profile { profileId: $firstId })
@@ -65,19 +66,17 @@ export const ensureMutualConnectionWithSource = async (
         WITH a, b, first, count(blocked) > 0 AS isBlocked
         FOREACH (_ IN CASE WHEN isBlocked THEN [] ELSE [1] END |
             MERGE (a)-[r:CONNECTED_WITH]->(b)
-            ON CREATE SET r.sources = [$key]
-            ON MATCH SET r.sources = CASE
-                WHEN r.sources IS NULL THEN [$key]
-                WHEN NOT $key IN r.sources THEN r.sources + $key
-                ELSE r.sources
-            END
+            ON CREATE SET r.sources = $keys
+            ON MATCH SET r.sources = reduce(
+                sources = coalesce(r.sources, []), key IN $keys |
+                CASE WHEN key IN sources THEN sources ELSE sources + key END
+            )
             MERGE (b)-[r2:CONNECTED_WITH]->(a)
-            ON CREATE SET r2.sources = [$key]
-            ON MATCH SET r2.sources = CASE
-                WHEN r2.sources IS NULL THEN [$key]
-                WHEN NOT $key IN r2.sources THEN r2.sources + $key
-                ELSE r2.sources
-            END
+            ON CREATE SET r2.sources = $keys
+            ON MATCH SET r2.sources = reduce(
+                sources = coalesce(r2.sources, []), key IN $keys |
+                CASE WHEN key IN sources THEN sources ELSE sources + key END
+            )
         )
         WITH a, b, first, isBlocked
         OPTIONAL MATCH (a)-[prompt:CONNECTION_PROMPT]-(b)
@@ -91,9 +90,20 @@ export const ensureMutualConnectionWithSource = async (
         aId: aProfileId,
         bId: bProfileId,
         firstId: [aProfileId, bProfileId].sort()[0],
-        key: sourceKey,
+        keys: sourceKeys,
         updatedAt: new Date().toISOString(),
     });
+};
+
+/**
+ * Ensures mutual CONNECTED_WITH relationships exist between two profiles, adding the provided source key
+ */
+export const ensureMutualConnectionWithSource = async (
+    aProfileId: string,
+    bProfileId: string,
+    sourceKey: string
+): Promise<void> => {
+    await ensureMutualConnectionWithSources(aProfileId, bProfileId, [sourceKey]);
 };
 
 /**
@@ -105,25 +115,31 @@ export const ensureMutualConnectionsForRows = async (
 ): Promise<void> => {
     if (rows.length === 0) return;
 
-    const orderedRows = [...rows]
-        .filter(row => row.targetId !== selfId)
-        .sort((first, second) => {
-            const firstPair = [selfId, first.targetId].sort().join('\0');
-            const secondPair = [selfId, second.targetId].sort().join('\0');
+    const sourceKeysByTarget = rows.reduce<Map<string, Set<string>>>((groups, row) => {
+        if (row.targetId === selfId) return groups;
 
-            if (firstPair < secondPair) return -1;
-            if (firstPair > secondPair) return 1;
-            if (first.boostId < second.boostId) return -1;
-            if (first.boostId > second.boostId) return 1;
-            return 0;
-        });
+        const sourceKeys = groups.get(row.targetId) ?? new Set<string>();
+        sourceKeys.add(getBoostConnectionSourceKey(row.boostId));
+        groups.set(row.targetId, sourceKeys);
 
-    for (const row of orderedRows) {
-        await ensureMutualConnectionWithSource(
-            selfId,
-            row.targetId,
-            getBoostConnectionSourceKey(row.boostId)
+        return groups;
+    }, new Map());
+    const groups = [...sourceKeysByTarget.entries()]
+        .map(([targetId, sourceKeys]) => ({ targetId, sourceKeys: [...sourceKeys].sort() }))
+        .sort((first, second) => first.targetId.localeCompare(second.targetId));
+
+    for (let offset = 0; offset < groups.length; offset += AUTOMATIC_CONNECTION_CONCURRENCY_LIMIT) {
+        const wave = groups.slice(offset, offset + AUTOMATIC_CONNECTION_CONCURRENCY_LIMIT);
+        const results = await Promise.allSettled(
+            wave.map(group =>
+                ensureMutualConnectionWithSources(selfId, group.targetId, group.sourceKeys)
+            )
         );
+        const rejected = results.find(
+            (result): result is PromiseRejectedResult => result.status === 'rejected'
+        );
+
+        if (rejected) throw rejected.reason;
     }
 };
 

@@ -152,6 +152,7 @@ describe('credential claim connection prompts', () => {
         const [senderPrompt] = await getPendingConnectionPrompts(profileA);
         expect(senderPrompt).toBeDefined();
         expect(senderPrompt).not.toHaveProperty('notificationDelivered');
+        expect(senderPrompt).not.toHaveProperty('coveredTriggerIds');
     });
 
     it('returns pending prompts oldest-first from both the helper and authenticated route', async () => {
@@ -176,6 +177,46 @@ describe('credential claim connection prompts', () => {
                 olderCounterpartId: profileA.profileId,
                 olderAt: '2026-08-20T10:00:00.000Z',
                 newerAt: '2026-08-20T11:00:00.000Z',
+            }
+        );
+
+        expect(
+            (await getPendingConnectionPrompts(profileB)).map(
+                prompt => prompt.counterpart.profileId
+            )
+        ).toEqual(['usera', 'userc']);
+        expect(
+            (await userB.clients.fullAuth.profile.pendingConnectionPrompts()).map(
+                prompt => prompt.counterpart.profileId
+            )
+        ).toEqual(['usera', 'userc']);
+    });
+
+    it('uses prompt id as the stable oldest-first tie-breaker in helper and route results', async () => {
+        await createPrompts('credential:tie-a');
+        await createConnectionPromptsForClaim({
+            claimer: profileB,
+            sender: profileC,
+            triggerId: 'credential:tie-c',
+        });
+        const tiedAt = '2026-08-20T10:00:00.000Z';
+        await neogma.queryRunner.run(
+            `
+                MATCH (:Profile { profileId: $viewerId })
+                      -[prompt:CONNECTION_PROMPT]->
+                      (counterpart:Profile)
+                SET prompt.triggeredAt = $tiedAt,
+                    prompt.promptId = CASE counterpart.profileId
+                        WHEN $firstCounterpartId THEN $firstPromptId
+                        ELSE $secondPromptId
+                    END
+            `,
+            {
+                viewerId: profileB.profileId,
+                tiedAt,
+                firstCounterpartId: profileA.profileId,
+                firstPromptId: '11111111-1111-4111-8111-111111111111',
+                secondPromptId: '22222222-2222-4222-8222-222222222222',
             }
         );
 
@@ -382,6 +423,78 @@ describe('credential claim connection prompts', () => {
         }
     );
 
+    it('groups repeated automatic rows by pair and bounds independent pair transactions', async () => {
+        const targets = Array.from(
+            { length: 30 },
+            (_, index) => `load-target-${String(index).padStart(2, '0')}`
+        );
+        const rows = targets.flatMap(targetId => [
+            { boostId: 'boost-c', targetId },
+            { boostId: 'boost-a', targetId },
+            { boostId: 'boost-b', targetId },
+            { boostId: 'boost-a', targetId },
+        ]);
+        const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+        let releaseQueries: (() => void) | undefined;
+        const queryGate = new Promise<void>(resolve => {
+            releaseQueries = resolve;
+        });
+        const groupedCalls: Array<Record<string, unknown>> = [];
+        let active = 0;
+        let maximumConcurrency = 0;
+        const queryRunnerSpy = vi
+            .spyOn(neogma.queryRunner, 'run')
+            .mockImplementation(async (query, params) => {
+                if (
+                    typeof query === 'string' &&
+                    query.includes('MERGE (a)-[r:CONNECTED_WITH]') &&
+                    params?.aId === profileA.profileId
+                ) {
+                    groupedCalls.push(params);
+                    active += 1;
+                    maximumConcurrency = Math.max(maximumConcurrency, active);
+                    await queryGate;
+
+                    try {
+                        return await originalRun(query, params);
+                    } finally {
+                        active -= 1;
+                    }
+                }
+
+                return originalRun(query, params);
+            });
+        const operation = ensureMutualConnectionsForRows(profileA.profileId, rows);
+
+        try {
+            // Worker startup is synchronous until each worker reaches its first query, so this
+            // measures configured fan-out without relying on wall-clock sleeps.
+            expect(groupedCalls).toHaveLength(8);
+            releaseQueries?.();
+            await operation;
+
+            expect(groupedCalls).toHaveLength(targets.length);
+            expect(maximumConcurrency).toBeGreaterThan(1);
+            expect(maximumConcurrency).toBeLessThanOrEqual(8);
+            expect(groupedCalls.map(call => call.bId)).toEqual(targets);
+            expect(groupedCalls.map(call => call.firstId)).toEqual(
+                targets.map(targetId => [profileA.profileId, targetId].sort()[0])
+            );
+            expect(groupedCalls.every(call => Array.isArray(call.keys))).toBe(true);
+            expect(
+                groupedCalls.every(
+                    call =>
+                        (call.keys as string[]).join(',') ===
+                        'boost:boost-a,boost:boost-b,boost:boost-c'
+                )
+            ).toBe(true);
+        } finally {
+            releaseQueries?.();
+            await operation.catch(() => undefined);
+            queryRunnerSpy.mockRestore();
+        }
+    });
+
     it.each([
         ['single', 'automatic connection'] as const,
         ['single', 'block'] as const,
@@ -506,6 +619,18 @@ describe('credential claim connection prompts', () => {
             await expect(getPendingConnectionPrompts(profileB)).resolves.toMatchObject([
                 { triggerId: firstTrigger },
             ]);
+            const coveredResult = await neogma.queryRunner.run(
+                `
+                    MATCH (:Profile { profileId: $aId })-[prompt:CONNECTION_PROMPT]-
+                          (:Profile { profileId: $bId })
+                    RETURN prompt.coveredTriggerIds AS coveredTriggerIds
+                `,
+                { aId: profileA.profileId, bId: profileB.profileId }
+            );
+            const expectedCoveredTriggers = [...new Set([firstTrigger, secondTrigger])];
+            expect(
+                coveredResult.records.map(record => record.get('coveredTriggerIds') as string[])
+            ).toEqual([expectedCoveredTriggers, expectedCoveredTriggers]);
         } finally {
             if (!gateReleased && releaseGate) await releaseGate();
             await Promise.allSettled([firstPromise, secondPromise].filter(Boolean));
@@ -728,12 +853,77 @@ describe('credential claim connection prompts', () => {
         }
     });
 
+    it('treats a resolved false transport result as a definitive rejection', async () => {
+        const triggerId = 'credential:resolved-false';
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue(false);
+
+        try {
+            await expect(handleClaim(triggerId)).resolves.toMatchObject({
+                senderNotificationFailed: true,
+            });
+            expect(notificationSpy).toHaveBeenCalledOnce();
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'SKIPPED',
+                delivered: false,
+                attemptToken: null,
+                attemptedAt: null,
+                mayHaveSucceeded: false,
+            });
+        } finally {
+            notificationSpy.mockRestore();
+        }
+    });
+
+    it('keeps an ambiguous timeout retryable without marking the prompt delivered', async () => {
+        const triggerId = 'credential:ambiguous-timeout';
+        let simulatedTransportAcceptance = false;
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockImplementationOnce(async () => {
+                simulatedTransportAcceptance = true;
+                throw new Error('timeout after transport acceptance');
+            })
+            .mockResolvedValueOnce(true);
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        try {
+            await expect(handleClaim(triggerId)).resolves.not.toHaveProperty(
+                'senderNotificationFailed'
+            );
+            expect(simulatedTransportAcceptance).toBe(true);
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'PENDING',
+                delivered: false,
+                attemptToken: null,
+                attemptedAt: null,
+                mayHaveSucceeded: true,
+            });
+
+            await expect(handleClaim(triggerId)).resolves.not.toHaveProperty(
+                'senderNotificationFailed'
+            );
+            expect(notificationSpy).toHaveBeenCalledTimes(2);
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'PENDING',
+                delivered: true,
+                attemptToken: null,
+                attemptedAt: null,
+                mayHaveSucceeded: false,
+            });
+        } finally {
+            consoleErrorSpy.mockRestore();
+            notificationSpy.mockRestore();
+        }
+    });
+
     it('keeps a prompt pending when retry rejects after an earlier enqueue acknowledgement write fails', async () => {
         const triggerId = 'credential:uncertain-after-ack-write-failure';
         const notificationSpy = vi
             .spyOn(notifications, 'addNotificationToQueue')
             .mockResolvedValueOnce(undefined)
-            .mockRejectedValueOnce(new Error('injected retry enqueue rejection'));
+            .mockResolvedValueOnce(false);
         const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
         let failAcknowledgement = true;
         const queryRunnerSpy = vi
@@ -786,7 +976,7 @@ describe('credential claim connection prompts', () => {
         const notificationSpy = vi
             .spyOn(notifications, 'addNotificationToQueue')
             .mockResolvedValueOnce(undefined)
-            .mockRejectedValueOnce(new Error('injected takeover enqueue rejection'));
+            .mockResolvedValueOnce(false);
         const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
         let holdFirstAcknowledgement = true;
         const queryRunnerSpy = vi
@@ -889,7 +1079,7 @@ describe('credential claim connection prompts', () => {
         const triggerId = 'credential:enqueue-and-recovery-failure';
         const notificationSpy = vi
             .spyOn(notifications, 'addNotificationToQueue')
-            .mockRejectedValueOnce(new Error('injected enqueue rejection'))
+            .mockResolvedValueOnce(false)
             .mockResolvedValueOnce(undefined);
         const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
         let failRecovery = true;
@@ -953,7 +1143,7 @@ describe('credential claim connection prompts', () => {
     it('reopens a rejected sender prompt for a distinct trigger and acknowledges its delivery', async () => {
         const notificationSpy = vi
             .spyOn(notifications, 'addNotificationToQueue')
-            .mockRejectedValueOnce(new Error('injected definitive enqueue rejection'))
+            .mockResolvedValueOnce(false)
             .mockResolvedValueOnce(undefined);
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
@@ -1140,6 +1330,62 @@ describe('credential claim connection prompts', () => {
         expect(repeated.claimerPrompt?.isNew).toBe(false);
         expect(repeated.senderPrompt?.promptId).toBe(first.senderPrompt?.promptId);
         expect(repeated.senderPrompt?.isNew).toBe(false);
+    });
+
+    it('does not reopen either direction for a trigger covered while pending', async () => {
+        const triggerA = 'credential:covered-a';
+        const triggerB = 'credential:covered-b';
+        const triggerC = 'credential:unseen-c';
+        const first = await createPrompts(triggerA);
+        const coalesced = await createPrompts(triggerB);
+
+        expect(coalesced.claimerPrompt?.promptId).toBe(first.claimerPrompt?.promptId);
+        expect(coalesced.senderPrompt?.promptId).toBe(first.senderPrompt?.promptId);
+        const coveredResult = await neogma.queryRunner.run(
+            `
+                MATCH (:Profile { profileId: $aId })-[prompt:CONNECTION_PROMPT]-
+                      (:Profile { profileId: $bId })
+                RETURN prompt.promptId AS promptId,
+                       prompt.coveredTriggerIds AS coveredTriggerIds
+                ORDER BY prompt.promptId
+            `,
+            { aId: profileA.profileId, bId: profileB.profileId }
+        );
+        expect(
+            coveredResult.records.map(record => record.get('coveredTriggerIds') as string[])
+        ).toEqual([
+            [triggerA, triggerB],
+            [triggerA, triggerB],
+        ]);
+
+        await Promise.all([
+            skipConnectionPrompt(profileB, first.claimerPrompt!.promptId),
+            skipConnectionPrompt(profileA, first.senderPrompt!.promptId),
+        ]);
+
+        expect(await createPrompts(triggerB)).toEqual({});
+        await expect(
+            getConnectionPromptStatus(profileB, first.claimerPrompt!.promptId)
+        ).resolves.toEqual({ promptId: first.claimerPrompt!.promptId, status: 'SKIPPED' });
+        await expect(
+            getConnectionPromptStatus(profileA, first.senderPrompt!.promptId)
+        ).resolves.toEqual({ promptId: first.senderPrompt!.promptId, status: 'SKIPPED' });
+
+        const reopened = await createPrompts(triggerC);
+        expect(reopened.claimerPrompt?.promptId).not.toBe(first.claimerPrompt?.promptId);
+        expect(reopened.senderPrompt?.promptId).not.toBe(first.senderPrompt?.promptId);
+        const reopenedResult = await neogma.queryRunner.run(
+            `
+                MATCH (:Profile { profileId: $aId })-[prompt:CONNECTION_PROMPT]-
+                      (:Profile { profileId: $bId })
+                RETURN prompt.coveredTriggerIds AS coveredTriggerIds
+                ORDER BY prompt.promptId
+            `,
+            { aId: profileA.profileId, bId: profileB.profileId }
+        );
+        expect(
+            reopenedResult.records.map(record => record.get('coveredTriggerIds') as string[])
+        ).toEqual([[triggerC], [triggerC]]);
     });
 
     it('does not create prompts for a claim sent to self', async () => {
