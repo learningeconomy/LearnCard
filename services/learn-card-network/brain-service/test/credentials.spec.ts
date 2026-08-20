@@ -13,6 +13,8 @@ import * as Notifications from '@helpers/notifications.helpers';
 import { addNotificationToQueueSpy } from './helpers/spies';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { areProfilesConnected, connectProfiles } from '@helpers/connection.helpers';
+import { neogma } from '@instance';
 import {
     getDidDocForProfile,
     getDidDocForProfileManager,
@@ -213,6 +215,8 @@ describe('Credentials', () => {
 
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            addNotificationToQueueSpy.mockClear();
         });
 
         afterAll(async () => {
@@ -243,6 +247,253 @@ describe('Credentials', () => {
             await expect(
                 userB.clients.fullAuth.credential.acceptCredential({ uri })
             ).resolves.not.toThrow();
+        });
+
+        it('creates directed prompts and one actionable sender notification without connecting profiles', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            vi.mocked(Notifications.addNotificationToQueue).mockRestore();
+            const previousE2eTestValue = process.env.IS_E2E_TEST;
+            process.env.IS_E2E_TEST = 'true';
+
+            try {
+                await userB.clients.fullAuth.credential.acceptCredential({
+                    uri,
+                    options: {
+                        metadata: {
+                            campaign: 'fall',
+                            connectionPrompt: {
+                                promptId: 'spoofed',
+                                counterpartProfileId: 'spoofed',
+                            },
+                        },
+                    },
+                });
+
+                const [claimerPrompts, senderPrompts, claimer, sender, notificationQueue] =
+                    await Promise.all([
+                        userB.clients.fullAuth.profile.pendingConnectionPrompts(),
+                        userA.clients.fullAuth.profile.pendingConnectionPrompts(),
+                        userB.clients.fullAuth.profile.getProfile(),
+                        userA.clients.fullAuth.profile.getProfile(),
+                        noAuthClient.test.notificationQueue(),
+                    ]);
+
+                expect(claimerPrompts).toHaveLength(1);
+                expect(claimerPrompts[0]).toMatchObject({
+                    surface: 'POST_CLAIM',
+                    triggerId: `credential:${uri.split(':').at(-1)}`,
+                    counterpart: { profileId: 'usera' },
+                });
+                expect(senderPrompts).toHaveLength(1);
+                expect(senderPrompts[0]).toMatchObject({
+                    surface: 'NOTIFICATION',
+                    triggerId: `credential:${uri.split(':').at(-1)}`,
+                    counterpart: { profileId: 'userb' },
+                });
+                expect(await areProfilesConnected(claimer!, sender!)).toBe(false);
+
+                const acceptedNotifications = notificationQueue.filter(
+                    notification =>
+                        notification.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+                );
+                expect(acceptedNotifications).toHaveLength(1);
+                expect(acceptedNotifications[0]?.data).toEqual({
+                    vcUris: [uri],
+                    metadata: {
+                        campaign: 'fall',
+                        connectionPrompt: {
+                            promptId: senderPrompts[0]?.promptId,
+                            counterpartProfileId: 'userb',
+                        },
+                    },
+                });
+            } finally {
+                if (previousE2eTestValue === undefined) delete process.env.IS_E2E_TEST;
+                else process.env.IS_E2E_TEST = previousE2eTestValue;
+                vi.spyOn(Notifications, 'addNotificationToQueue').mockImplementation(
+                    addNotificationToQueueSpy
+                );
+            }
+        });
+
+        it('sends the actionable notification even when ordinary claim notifications are skipped', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            addNotificationToQueueSpy.mockClear();
+
+            await userB.clients.fullAuth.credential.acceptCredential({
+                uri,
+                options: { skipNotification: true },
+            });
+
+            const acceptedCalls = addNotificationToQueueSpy.mock.calls.filter(
+                call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+            );
+            expect(acceptedCalls).toHaveLength(1);
+            expect(acceptedCalls[0]?.[0]?.data?.metadata?.connectionPrompt).toEqual({
+                promptId: expect.any(String),
+                counterpartProfileId: 'userb',
+            });
+        });
+
+        it('preserves the ordinary boost-accepted notification when no sender prompt is eligible', async () => {
+            const sender = (await userA.clients.fullAuth.profile.getProfile())!;
+            const claimer = (await userB.clients.fullAuth.profile.getProfile())!;
+            await connectProfiles(sender, claimer, false);
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            addNotificationToQueueSpy.mockClear();
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri });
+
+            const acceptedCalls = addNotificationToQueueSpy.mock.calls.filter(
+                call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+            );
+            expect(acceptedCalls).toHaveLength(1);
+            expect(acceptedCalls[0]?.[0]?.message.body).toBe(
+                `${claimer.displayName} has accepted your boost!`
+            );
+            expect(acceptedCalls[0]?.[0]?.data?.metadata?.connectionPrompt).toBeUndefined();
+        });
+
+        it('does not create connection prompts for self-issued credential acceptance', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'usera',
+                credential: testVc,
+            });
+
+            await userA.clients.fullAuth.credential.acceptCredential({ uri });
+
+            expect(await userA.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+        });
+
+        it('keeps acceptance successful when prompt creation fails', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+            const queryRunnerSpy = vi
+                .spyOn(neogma.queryRunner, 'run')
+                .mockImplementation(async (...args) => {
+                    if (String(args[0]).includes('MERGE (viewer)-[prompt:CONNECTION_PROMPT]')) {
+                        throw new Error('injected prompt write failure');
+                    }
+
+                    return originalRun(...args);
+                });
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userB.clients.fullAuth.credential.acceptCredential({ uri })
+                ).resolves.toBe(true);
+            } finally {
+                queryRunnerSpy.mockRestore();
+                consoleErrorSpy.mockRestore();
+            }
+
+            expect(await userB.clients.fullAuth.credential.receivedCredentials()).toHaveLength(1);
+        });
+
+        it('keeps acceptance successful when the actionable notification enqueue fails', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            addNotificationToQueueSpy.mockClear();
+            addNotificationToQueueSpy.mockRejectedValueOnce(
+                new Error('injected notification enqueue failure')
+            );
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userB.clients.fullAuth.credential.acceptCredential({ uri })
+                ).resolves.toBe(true);
+            } finally {
+                consoleErrorSpy.mockRestore();
+            }
+
+            expect(
+                addNotificationToQueueSpy.mock.calls.filter(
+                    call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+                )
+            ).toHaveLength(1);
+            expect(await userB.clients.fullAuth.credential.receivedCredentials()).toHaveLength(1);
+        });
+
+        it('recovers a failed prompt write on retry without reopening skipped same-trigger prompts or duplicating notifications', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+            const queryRunnerSpy = vi
+                .spyOn(neogma.queryRunner, 'run')
+                .mockImplementation(async (...args) => {
+                    if (String(args[0]).includes('MERGE (viewer)-[prompt:CONNECTION_PROMPT]')) {
+                        throw new Error('injected prompt write failure');
+                    }
+
+                    return originalRun(...args);
+                });
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            addNotificationToQueueSpy.mockClear();
+            try {
+                await userB.clients.fullAuth.credential.acceptCredential({
+                    uri,
+                    options: { skipNotification: true },
+                });
+            } finally {
+                queryRunnerSpy.mockRestore();
+                consoleErrorSpy.mockRestore();
+            }
+
+            expect(await userB.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+            expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
+
+            await userB.clients.fullAuth.credential.acceptCredential({
+                uri,
+                options: { skipNotification: true },
+            });
+
+            const claimerPrompts = await userB.clients.fullAuth.profile.pendingConnectionPrompts();
+            const senderPrompts = await userA.clients.fullAuth.profile.pendingConnectionPrompts();
+            expect(claimerPrompts).toHaveLength(1);
+            expect(senderPrompts).toHaveLength(1);
+            expect(
+                addNotificationToQueueSpy.mock.calls.filter(
+                    call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+                )
+            ).toHaveLength(1);
+
+            await Promise.all([
+                userB.clients.fullAuth.profile.skipConnectionPrompt({
+                    promptId: claimerPrompts[0]!.promptId,
+                }),
+                userA.clients.fullAuth.profile.skipConnectionPrompt({
+                    promptId: senderPrompts[0]!.promptId,
+                }),
+            ]);
+            addNotificationToQueueSpy.mockClear();
+
+            await userB.clients.fullAuth.credential.acceptCredential({
+                uri,
+                options: { skipNotification: true },
+            });
+
+            expect(await userB.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+            expect(await userA.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+            expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
         });
 
         it('localizes the boost-accepted notification to the recipient (sender) profile locale', async () => {

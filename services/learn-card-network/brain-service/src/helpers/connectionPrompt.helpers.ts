@@ -6,18 +6,21 @@ import {
     LCNConnectionPromptActionResultValidator,
     LCNConnectionPromptSurface,
     LCNConnectionPromptValidator,
+    LCNNotificationTypeEnumValidator,
     LCNPublicProfileValidator,
 } from '@learncard/types';
 import { neogma } from '@instance';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { FlatProfileType, ProfileType } from 'types/profile';
 
-type CreateConnectionPromptsForClaimInput = {
+export type CreateConnectionPromptsForClaimInput = {
     claimer: ProfileType;
     sender: ProfileType;
     triggerId: string;
-    vcUris?: string[];
 };
 
 type PromptTransition = {
@@ -142,6 +145,61 @@ export const createConnectionPromptsForClaim = async (
 
         return creationResult;
     }, {});
+};
+
+export const handleConnectionPromptsForCredentialClaim = async (
+    input: CreateConnectionPromptsForClaimInput & {
+        vcUris?: string[];
+        metadata?: Record<string, unknown>;
+    }
+): Promise<ConnectionPromptCreationResult> => {
+    let result: ConnectionPromptCreationResult;
+
+    try {
+        result = await createConnectionPromptsForClaim(input);
+    } catch (error) {
+        console.error('Failed to create post-claim connection prompts', {
+            claimerProfileId: input.claimer.profileId,
+            senderProfileId: input.sender.profileId,
+            triggerId: input.triggerId,
+            error,
+        });
+        return {};
+    }
+
+    if (result.senderPrompt?.isNew) {
+        try {
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+                to: input.sender,
+                from: input.claimer,
+                message: getNotificationMessage(
+                    'boostAcceptedConnect',
+                    resolveRecipientLocale(input.sender),
+                    { name: input.claimer.displayName }
+                ),
+                data: {
+                    vcUris: input.vcUris,
+                    metadata: {
+                        ...input.metadata,
+                        connectionPrompt: {
+                            promptId: result.senderPrompt.promptId,
+                            counterpartProfileId: input.claimer.profileId,
+                        },
+                    },
+                },
+            });
+        } catch (error) {
+            console.error('Failed to create post-claim connection prompts', {
+                claimerProfileId: input.claimer.profileId,
+                senderProfileId: input.sender.profileId,
+                triggerId: input.triggerId,
+                error,
+            });
+        }
+    }
+
+    return result;
 };
 
 export const getPendingConnectionPrompts = async (

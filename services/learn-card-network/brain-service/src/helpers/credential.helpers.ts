@@ -22,6 +22,7 @@ import { ProfileType } from 'types/profile';
 import { AppStoreListingType } from 'types/app-store-listing';
 import { processClaimHooks } from './claim-hooks.helpers';
 import { ensureConnectionsForCredentialAcceptance } from './connection.helpers';
+import { handleConnectionPromptsForCredentialClaim } from './connectionPrompt.helpers';
 
 const isProfileType = (source: ProfileType | AppStoreListingType): source is ProfileType => {
     return 'profileId' in source;
@@ -111,21 +112,22 @@ export const acceptCredential = async (
     }
     // Acceptance is idempotent so clients can safely recover after a completed
     // request whose response was interrupted or whose local follow-up failed.
-    const alreadyReceived = await getCredentialReceivedByProfile(id, profile);
-    if (alreadyReceived) return true;
+    const alreadyReceived = Boolean(await getCredentialReceivedByProfile(id, profile));
 
-    await createReceivedCredentialRelationship(
-        profile,
-        pendingVc.source,
-        pendingVc.target,
-        pendingVc.relationship.metadata
-    );
+    if (!alreadyReceived) {
+        await createReceivedCredentialRelationship(
+            profile,
+            pendingVc.source,
+            pendingVc.target,
+            pendingVc.relationship.metadata
+        );
 
-    await processClaimHooks(profile, pendingVc.target);
+        await processClaimHooks(profile, pendingVc.target);
 
-    await setDefaultClaimedRole(profile, pendingVc.target);
+        await setDefaultClaimedRole(profile, pendingVc.target);
 
-    await ensureConnectionsForCredentialAcceptance(profile, pendingVc.target.id);
+        await ensureConnectionsForCredentialAcceptance(profile, pendingVc.target.id);
+    }
 
     const sourceProfile = isProfileType(pendingVc.source)
         ? pendingVc.source
@@ -138,7 +140,15 @@ export const acceptCredential = async (
         });
     }
 
-    if (!options?.skipNotification) {
+    const promptResult = await handleConnectionPromptsForCredentialClaim({
+        claimer: profile,
+        sender: sourceProfile,
+        triggerId: `credential:${id}`,
+        vcUris: [uri],
+        metadata: options.metadata,
+    });
+
+    if (!alreadyReceived && !promptResult.senderPrompt?.isNew && !options?.skipNotification) {
         await addNotificationToQueue({
             type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
             to: sourceProfile,
@@ -154,24 +164,28 @@ export const acceptCredential = async (
         });
     }
 
-    const originalActivityId = pendingVc.relationship.activityId;
-    const integrationId = pendingVc.relationship.integrationId;
+    if (!alreadyReceived) {
+        const originalActivityId = pendingVc.relationship.activityId;
+        const integrationId = pendingVc.relationship.integrationId;
 
-    const boostId = await getBoostIdForCredentialInstance(pendingVc.target);
-    const boostUri = boostId ? constructUri('boost', boostId, getDomainFromUri(uri)) : undefined;
+        const boostId = await getBoostIdForCredentialInstance(pendingVc.target);
+        const boostUri = boostId
+            ? constructUri('boost', boostId, getDomainFromUri(uri))
+            : undefined;
 
-    await logCredentialClaimed({
-        activityId: originalActivityId,
-        actorProfileId: sourceProfile.profileId,
-        recipientType: 'profile',
-        recipientIdentifier: profile.profileId,
-        recipientProfileId: profile.profileId,
-        credentialUri: uri,
-        boostUri,
-        integrationId,
-        source: 'claim',
-        metadata: options?.metadata,
-    });
+        await logCredentialClaimed({
+            activityId: originalActivityId,
+            actorProfileId: sourceProfile.profileId,
+            recipientType: 'profile',
+            recipientIdentifier: profile.profileId,
+            recipientProfileId: profile.profileId,
+            credentialUri: uri,
+            boostUri,
+            integrationId,
+            source: 'claim',
+            metadata: options?.metadata,
+        });
+    }
 
     return true;
 };
