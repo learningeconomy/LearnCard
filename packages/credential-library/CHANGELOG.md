@@ -1,5 +1,11 @@
 # @learncard/credential-library
 
+## 1.0.16
+
+### Patch Changes
+
+-   [#1478](https://github.com/learningeconomy/LearnCard/pull/1478) [`7c4bebd5aa638a99835b575b6afb995f14fd3c68`](https://github.com/learningeconomy/LearnCard/commit/7c4bebd5aa638a99835b575b6afb995f14fd3c68) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1920] - Render Standalone OBv3 Courses with the CLR Course UI
+
 ## 1.0.15
 
 ### Patch Changes

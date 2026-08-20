@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.90.29
+
+### Patch Changes
+
+-   [#1467](https://github.com/learningeconomy/LearnCard/pull/1467) [`acacc07ad13696776d72265bf9bbce46c68a45ca`](https://github.com/learningeconomy/LearnCard/commit/acacc07ad13696776d72265bf9bbce46c68a45ca) Thanks [@goblincore](https://github.com/goblincore)! - Keep ScoutPass account locales synchronized for translated backend notifications without carrying language choices across accounts on shared devices.
+
+-   [#1481](https://github.com/learningeconomy/LearnCard/pull/1481) [`e8f3934e12cc6fd8550db6539e637bf4aea75c87`](https://github.com/learningeconomy/LearnCard/commit/e8f3934e12cc6fd8550db6539e637bf4aea75c87) Thanks [@smurflo2](https://github.com/smurflo2)! - Remove stale LaunchDarkly gates and keep the shipped LearnCard and ScoutPass experiences as the permanent paths.
+
+-   [#1483](https://github.com/learningeconomy/LearnCard/pull/1483) [`0ba6da5ede21c585966cd058864e70b7af398a20`](https://github.com/learningeconomy/LearnCard/commit/0ba6da5ede21c585966cd058864e70b7af398a20) Thanks [@gerardopar](https://github.com/gerardopar)! - Sync ScoutPass Pods
+
+-   [#1461](https://github.com/learningeconomy/LearnCard/pull/1461) [`3d7ac1b68478116242ded6437405bfafcd85c450`](https://github.com/learningeconomy/LearnCard/commit/3d7ac1b68478116242ded6437405bfafcd85c450) Thanks [@goblincore](https://github.com/goblincore)! - Surface-owned safe-area insets (LC-1962): AppModal primitive owns device insets for all modal variants; canonical --lc-safe-\* tokens reconcile iOS env() and Android SystemBars; raw IonModal usage removed or migrated to useModal; per-component safe-area handling swept from modal content; CI gate prevents regressions; ?insets dev simulator for desktop verification.
+
+-   [#1417](https://github.com/learningeconomy/LearnCard/pull/1417) [`c2b599ab13e2ccaff84dcb96c590e787b7040a9e`](https://github.com/learningeconomy/LearnCard/commit/c2b599ab13e2ccaff84dcb96c590e787b7040a9e) Thanks [@goblincore](https://github.com/goblincore)! - Add Paraglide localization for ScoutPass in English, Spanish, French, and Arabic, including locale-aware UI copy, dates, RTL behavior, and stable localized Boost presets.
+
+-   [#1479](https://github.com/learningeconomy/LearnCard/pull/1479) [`848d7130e57f9306f9f55491d4c48f31fd8d856e`](https://github.com/learningeconomy/LearnCard/commit/848d7130e57f9306f9f55491d4c48f31fd8d856e) Thanks [@smurflo2](https://github.com/smurflo2)! - Bump the ScoutPass app version.
+
 ## 1.90.27
 
 ### Patch Changes
