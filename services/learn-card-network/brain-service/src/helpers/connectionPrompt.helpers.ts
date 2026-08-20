@@ -27,7 +27,9 @@ export type CreateConnectionPromptsForClaimInput = {
 type PromptTransition = {
     promptId: string;
     surface: LCNConnectionPromptSurface;
+    triggerId: string;
     isNew: boolean;
+    notificationDelivered?: boolean;
 };
 
 export type ConnectionPromptCreationResult = {
@@ -40,8 +42,10 @@ type PromptCreationRow = {
     role: 'claimer' | 'sender';
     promptId: string;
     surface: LCNConnectionPromptSurface;
+    triggerId: string;
     status: string;
     isNew: boolean;
+    notificationDelivered: boolean;
 };
 
 type PromptStatusRow = {
@@ -91,40 +95,66 @@ export const createConnectionPromptsForClaim = async (
         },
     ];
 
-    const result = await neogma.queryRunner.run(
+    const result = await runConnectionPairQuery(
         `
+            MATCH (first:Profile { profileId: $firstId })
+            SET first.__connectionPromptPairLock =
+                coalesce(first.__connectionPromptPairLock, 0) + 1
+            WITH first
             MATCH (claimer:Profile { profileId: $claimerId })
             MATCH (sender:Profile { profileId: $senderId })
-            WHERE coalesce(claimer.isServiceProfile, false) = false
-              AND coalesce(sender.isServiceProfile, false) = false
-              AND NOT EXISTS { MATCH (claimer)-[:BLOCKED]-(sender) }
-              AND NOT EXISTS { MATCH (claimer)-[:CONNECTED_WITH]-(sender) }
-            WITH claimer, sender
-            UNWIND $directions AS direction
-            MATCH (viewer:Profile { profileId: direction.viewerId })
-            MATCH (counterpart:Profile { profileId: direction.counterpartId })
-            MERGE (viewer)-[prompt:CONNECTION_PROMPT]->(counterpart)
-            WITH prompt, direction,
-                 prompt.promptId IS NULL OR (
-                     prompt.status <> 'PENDING' AND prompt.triggerId <> $triggerId
-                 ) AS isNew
-            FOREACH (_ IN CASE WHEN isNew THEN [1] ELSE [] END |
-                SET prompt.promptId = direction.promptId,
-                    prompt.status = 'PENDING',
-                    prompt.triggerId = $triggerId,
-                    prompt.surface = direction.surface,
-                    prompt.triggeredAt = $now,
-                    prompt.updatedAt = $now
-            )
-            RETURN direction.role AS role,
-                   prompt.promptId AS promptId,
-                   prompt.surface AS surface,
-                   prompt.status AS status,
-                   isNew
+            CALL {
+                WITH claimer, sender
+                WITH claimer, sender
+                WHERE coalesce(claimer.isServiceProfile, false) = false
+                  AND coalesce(sender.isServiceProfile, false) = false
+                  AND NOT EXISTS { MATCH (claimer)-[:BLOCKED]-(sender) }
+                  AND NOT EXISTS { MATCH (claimer)-[:CONNECTED_WITH]-(sender) }
+                UNWIND $directions AS direction
+                MATCH (viewer:Profile { profileId: direction.viewerId })
+                MATCH (counterpart:Profile { profileId: direction.counterpartId })
+                MERGE (viewer)-[prompt:CONNECTION_PROMPT]->(counterpart)
+                WITH prompt, direction,
+                     prompt.promptId IS NULL OR (
+                         prompt.status <> 'PENDING' AND prompt.triggerId <> $triggerId
+                     ) AS isNew
+                FOREACH (_ IN CASE WHEN isNew THEN [1] ELSE [] END |
+                    SET prompt.promptId = direction.promptId,
+                        prompt.status = 'PENDING',
+                        prompt.triggerId = $triggerId,
+                        prompt.surface = direction.surface,
+                        prompt.triggeredAt = $now,
+                        prompt.updatedAt = $now,
+                        prompt.notificationDelivered = CASE
+                            WHEN direction.role = 'sender' THEN false
+                            ELSE null
+                        END
+                )
+                RETURN collect({
+                    role: direction.role,
+                    promptId: prompt.promptId,
+                    surface: prompt.surface,
+                    triggerId: prompt.triggerId,
+                    status: prompt.status,
+                    isNew: isNew,
+                    notificationDelivered: coalesce(prompt.notificationDelivered, false)
+                }) AS rows
+            }
+            REMOVE first.__connectionPromptPairLock
+            WITH rows
+            UNWIND rows AS row
+            RETURN row.role AS role,
+                   row.promptId AS promptId,
+                   row.surface AS surface,
+                   row.triggerId AS triggerId,
+                   row.status AS status,
+                   row.isNew AS isNew,
+                   row.notificationDelivered AS notificationDelivered
         `,
         {
             claimerId: input.claimer.profileId,
             senderId: input.sender.profileId,
+            firstId: [input.claimer.profileId, input.sender.profileId].sort()[0],
             triggerId: input.triggerId,
             directions,
             now,
@@ -139,7 +169,9 @@ export const createConnectionPromptsForClaim = async (
         const transition: PromptTransition = {
             promptId: row.promptId,
             surface: row.surface,
+            triggerId: row.triggerId,
             isNew: row.isNew,
+            ...(row.role === 'sender' ? { notificationDelivered: row.notificationDelivered } : {}),
         };
 
         if (row.role === 'claimer') creationResult.claimerPrompt = transition;
@@ -147,6 +179,23 @@ export const createConnectionPromptsForClaim = async (
 
         return creationResult;
     }, {});
+};
+
+const markSenderPromptNotificationDelivered = async (
+    viewer: ProfileType,
+    promptId: string
+): Promise<void> => {
+    await neogma.queryRunner.run(
+        `
+            MATCH (viewer:Profile { profileId: $viewerId })
+                  -[prompt:CONNECTION_PROMPT { promptId: $promptId }]->
+                  (:Profile)
+            WHERE prompt.status = 'PENDING'
+              AND coalesce(prompt.notificationDelivered, false) = false
+            SET prompt.notificationDelivered = true
+        `,
+        { viewerId: viewer.profileId, promptId }
+    );
 };
 
 export const handleConnectionPromptsForCredentialClaim = async (
@@ -169,7 +218,10 @@ export const handleConnectionPromptsForCredentialClaim = async (
         return {};
     }
 
-    if (result.senderPrompt?.isNew) {
+    if (
+        result.senderPrompt?.triggerId === input.triggerId &&
+        !result.senderPrompt.notificationDelivered
+    ) {
         try {
             await addNotificationToQueue({
                 type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
@@ -191,6 +243,21 @@ export const handleConnectionPromptsForCredentialClaim = async (
                     },
                 },
             });
+
+            try {
+                await markSenderPromptNotificationDelivered(
+                    input.sender,
+                    result.senderPrompt.promptId
+                );
+            } catch (error) {
+                console.error('Failed to acknowledge connection prompt notification delivery', {
+                    claimerProfileId: input.claimer.profileId,
+                    senderProfileId: input.sender.profileId,
+                    promptId: result.senderPrompt.promptId,
+                    triggerId: input.triggerId,
+                    error,
+                });
+            }
         } catch (error) {
             console.error('Failed to enqueue post-claim connection prompt notification', {
                 claimerProfileId: input.claimer.profileId,

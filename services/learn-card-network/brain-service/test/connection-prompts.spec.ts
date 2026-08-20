@@ -9,6 +9,8 @@ import {
     blockProfile,
     connectProfiles,
     disconnectProfiles,
+    ensureMutualConnectionsForRows,
+    ensureMutualConnectionWithSource,
     requestConnection,
     unblockProfile,
 } from '@helpers/connection.helpers';
@@ -17,6 +19,7 @@ import {
     createConnectionPromptsForClaim,
     getConnectionPromptStatus,
     getPendingConnectionPrompts,
+    handleConnectionPromptsForCredentialClaim,
     skipConnectionPrompt,
 } from '@helpers/connectionPrompt.helpers';
 import { neogma } from '@instance';
@@ -146,7 +149,9 @@ describe('credential claim connection prompts', () => {
         expect(claimerPrompt?.counterpart).not.toHaveProperty('did');
         expect(claimerPrompt?.counterpart).not.toHaveProperty('bio');
         expect(claimerPrompt?.counterpart).not.toHaveProperty('email');
-        expect(await getPendingConnectionPrompts(profileA)).toHaveLength(1);
+        const [senderPrompt] = await getPendingConnectionPrompts(profileA);
+        expect(senderPrompt).toBeDefined();
+        expect(senderPrompt).not.toHaveProperty('notificationDelivered');
     });
 
     it('returns pending prompts oldest-first from both the helper and authenticated route', async () => {
@@ -205,7 +210,7 @@ describe('credential claim connection prompts', () => {
         };
     };
 
-    const waitForBlockedTransaction = async (queryMarker: string): Promise<void> => {
+    const waitForBlockedTransaction = async (queryMarker: string): Promise<boolean> => {
         for (let attempt = 0; attempt < 200; attempt += 1) {
             const result = await neogma.queryRunner.run(
                 `
@@ -216,11 +221,11 @@ describe('credential claim connection prompts', () => {
                 `,
                 { queryMarker }
             );
-            if (Number(result.records[0]?.get('count')) >= 1) return;
+            if (Number(result.records[0]?.get('count')) >= 1) return true;
             await new Promise(resolve => setTimeout(resolve, 10));
         }
 
-        throw new Error(`Timed out waiting for blocked Neo4j transaction: ${queryMarker}`);
+        return false;
     };
 
     const countPairRelationships = async (): Promise<{
@@ -259,11 +264,13 @@ describe('credential claim connection prompts', () => {
             try {
                 releaseGate = await acquireOrderedPairGate();
                 firstPromise = firstOperation === 'prompt connect' ? connect() : block();
-                await waitForBlockedTransaction(
-                    firstOperation === 'prompt connect'
-                        ? 'shouldNotify'
-                        : 'MERGE (source)-[:BLOCKED]->(target)'
-                );
+                expect(
+                    await waitForBlockedTransaction(
+                        firstOperation === 'prompt connect'
+                            ? 'shouldNotify'
+                            : 'MERGE (source)-[:BLOCKED]->(target)'
+                    )
+                ).toBe(true);
                 await releaseGate();
                 gateReleased = true;
                 secondPromise = firstOperation === 'prompt connect' ? block() : connect();
@@ -296,6 +303,421 @@ describe('credential claim connection prompts', () => {
             }
         }
     );
+
+    type AutomaticWriter = 'single' | 'bulk';
+
+    const runAutomaticWriter = async (
+        writer: AutomaticWriter,
+        sourceKey = 'boost:auto-connect-test'
+    ): Promise<void> => {
+        if (writer === 'single') {
+            await ensureMutualConnectionWithSource(
+                profileA.profileId,
+                profileB.profileId,
+                sourceKey
+            );
+            return;
+        }
+
+        await ensureMutualConnectionsForRows(profileA.profileId, [
+            { boostId: sourceKey.replace(/^boost:/, ''), targetId: profileB.profileId },
+        ]);
+    };
+
+    const getPairConnectionSources = async (): Promise<string[][]> => {
+        const result = await neogma.queryRunner.run(
+            `
+                MATCH (:Profile { profileId: $aId })
+                      -[connection:CONNECTED_WITH]-
+                      (:Profile { profileId: $bId })
+                RETURN connection.sources AS sources
+                ORDER BY sources
+            `,
+            { aId: profileA.profileId, bId: profileB.profileId }
+        );
+
+        return result.records.map(record => record.get('sources') as string[]);
+    };
+
+    it.each<AutomaticWriter>(['single', 'bulk'])(
+        '%s automatic writer refuses a sequentially blocked pair',
+        async writer => {
+            await blockProfile(profileA, profileB);
+
+            await runAutomaticWriter(writer);
+
+            expect(await countPairRelationships()).toEqual({ blocked: 1, connected: 0 });
+        }
+    );
+
+    it.each<AutomaticWriter>(['single', 'bulk'])(
+        '%s automatic writer preserves its source and resolves existing pair prompts',
+        async writer => {
+            const created = await createPrompts(`credential:auto-${writer}`);
+
+            await runAutomaticWriter(writer);
+
+            expect(await getPairConnectionSources()).toEqual([
+                ['boost:auto-connect-test'],
+                ['boost:auto-connect-test'],
+            ]);
+            await expect(
+                getConnectionPromptStatus(profileA, created.senderPrompt!.promptId)
+            ).resolves.toMatchObject({ status: 'CONNECTED' });
+            await expect(
+                getConnectionPromptStatus(profileB, created.claimerPrompt!.promptId)
+            ).resolves.toMatchObject({ status: 'CONNECTED' });
+        }
+    );
+
+    it.each<AutomaticWriter>(['single', 'bulk'])(
+        '%s automatic writer cannot reconnect after Block and Block removes an earlier automatic connection',
+        async writer => {
+            await runAutomaticWriter(writer, `boost:${writer}-first`);
+            await blockProfile(profileA, profileB);
+            expect(await countPairRelationships()).toEqual({ blocked: 1, connected: 0 });
+
+            await runAutomaticWriter(writer, `boost:${writer}-after-block`);
+            expect(await countPairRelationships()).toEqual({ blocked: 1, connected: 0 });
+        }
+    );
+
+    it.each([
+        ['single', 'automatic connection'] as const,
+        ['single', 'block'] as const,
+        ['bulk', 'automatic connection'] as const,
+        ['bulk', 'block'] as const,
+    ])(
+        'serializes concurrent %s writer with %s first and leaves a blocked-only pair',
+        async (writer, firstOperation) => {
+            let firstPromise: Promise<unknown> | undefined;
+            let secondPromise: Promise<unknown> | undefined;
+            let releaseGate: (() => Promise<void>) | undefined;
+            let gateReleased = false;
+
+            try {
+                releaseGate = await acquireOrderedPairGate();
+                firstPromise =
+                    firstOperation === 'automatic connection'
+                        ? runAutomaticWriter(writer)
+                        : blockProfile(profileA, profileB);
+                expect(
+                    await waitForBlockedTransaction(
+                        firstOperation === 'automatic connection'
+                            ? 'SET first.__connectionPromptPairLock'
+                            : 'MERGE (source)-[:BLOCKED]->(target)'
+                    )
+                ).toBe(true);
+                await releaseGate();
+                gateReleased = true;
+                secondPromise =
+                    firstOperation === 'automatic connection'
+                        ? blockProfile(profileA, profileB)
+                        : runAutomaticWriter(writer);
+
+                await expect(Promise.all([firstPromise, secondPromise])).resolves.toBeDefined();
+                expect(await countPairRelationships()).toEqual({ blocked: 1, connected: 0 });
+            } finally {
+                if (!gateReleased && releaseGate) await releaseGate();
+                await Promise.allSettled([firstPromise, secondPromise].filter(Boolean));
+            }
+        }
+    );
+
+    it.each([
+        ['prompt creation', 'block'] as const,
+        ['block', 'prompt creation'] as const,
+        ['prompt creation', 'connect'] as const,
+        ['connect', 'prompt creation'] as const,
+    ])('serializes concurrent %s before %s', async (firstOperation, secondOperation) => {
+        const create = () => createPrompts(`credential:create-race-${firstOperation}`);
+        const connect = () => connectProfiles(profileA, profileB, false);
+        const block = () => blockProfile(profileA, profileB);
+        const operation = (name: string): Promise<unknown> => {
+            if (name === 'prompt creation') return create();
+            if (name === 'connect') return connect();
+            return block();
+        };
+        let firstPromise: Promise<unknown> | undefined;
+        let secondPromise: Promise<unknown> | undefined;
+        let releaseGate: (() => Promise<void>) | undefined;
+        let gateReleased = false;
+
+        try {
+            releaseGate = await acquireOrderedPairGate();
+            firstPromise = operation(firstOperation);
+            expect(
+                await waitForBlockedTransaction(
+                    firstOperation === 'prompt creation'
+                        ? 'SET first.__connectionPromptPairLock'
+                        : firstOperation === 'block'
+                        ? 'MERGE (source)-[:BLOCKED]->(target)'
+                        : 'RETURN NOT isBlocked AS connected'
+                )
+            ).toBe(true);
+            await releaseGate();
+            gateReleased = true;
+            secondPromise = operation(secondOperation);
+            const [firstResult, secondResult] = await Promise.all([firstPromise, secondPromise]);
+            const creationResult = (
+                firstOperation === 'prompt creation' ? firstResult : secondResult
+            ) as Awaited<ReturnType<typeof createPrompts>>;
+
+            expect(await getPendingConnectionPrompts(profileA)).toHaveLength(0);
+            expect(await getPendingConnectionPrompts(profileB)).toHaveLength(0);
+            if (firstOperation === 'prompt creation') {
+                expect(creationResult.claimerPrompt?.promptId).toEqual(expect.any(String));
+            } else {
+                expect(creationResult).toEqual({});
+            }
+        } finally {
+            if (!gateReleased && releaseGate) await releaseGate();
+            await Promise.allSettled([firstPromise, secondPromise].filter(Boolean));
+        }
+    });
+
+    it.each([
+        ['credential:same-trigger', 'credential:same-trigger'] as const,
+        ['credential:first-trigger', 'credential:later-trigger'] as const,
+    ])('serializes concurrent same-pair claims %s and %s', async (firstTrigger, secondTrigger) => {
+        let firstPromise: Promise<Awaited<ReturnType<typeof createPrompts>>> | undefined;
+        let secondPromise: Promise<Awaited<ReturnType<typeof createPrompts>>> | undefined;
+        let releaseGate: (() => Promise<void>) | undefined;
+        let gateReleased = false;
+
+        try {
+            releaseGate = await acquireOrderedPairGate();
+            firstPromise = createPrompts(firstTrigger);
+            expect(await waitForBlockedTransaction('SET first.__connectionPromptPairLock')).toBe(
+                true
+            );
+            await releaseGate();
+            gateReleased = true;
+            secondPromise = createPrompts(secondTrigger);
+            const [first, second] = await Promise.all([firstPromise, secondPromise]);
+
+            expect(second.claimerPrompt?.promptId).toBe(first.claimerPrompt?.promptId);
+            expect(second.senderPrompt?.promptId).toBe(first.senderPrompt?.promptId);
+            expect([first.claimerPrompt?.isNew, second.claimerPrompt?.isNew].sort()).toEqual([
+                false,
+                true,
+            ]);
+            expect(await getPendingConnectionPrompts(profileA)).toHaveLength(1);
+            await expect(getPendingConnectionPrompts(profileB)).resolves.toMatchObject([
+                { triggerId: firstTrigger },
+            ]);
+        } finally {
+            if (!gateReleased && releaseGate) await releaseGate();
+            await Promise.allSettled([firstPromise, secondPromise].filter(Boolean));
+        }
+    });
+
+    const getSenderPromptDeliveryState = async (): Promise<{
+        promptId: string;
+        status: string;
+        delivered: boolean;
+    }> => {
+        const result = await neogma.queryRunner.run(
+            `
+                MATCH (:Profile { profileId: $senderId })
+                      -[prompt:CONNECTION_PROMPT]->
+                      (:Profile { profileId: $claimerId })
+                RETURN prompt.promptId AS promptId,
+                       prompt.status AS status,
+                       coalesce(prompt.notificationDelivered, false) AS delivered
+            `,
+            { senderId: profileA.profileId, claimerId: profileB.profileId }
+        );
+        const record = result.records[0]!;
+
+        return {
+            promptId: record.get('promptId') as string,
+            status: record.get('status') as string,
+            delivered: record.get('delivered') as boolean,
+        };
+    };
+
+    const handleClaim = (triggerId: string) =>
+        handleConnectionPromptsForCredentialClaim({
+            claimer: profileB,
+            sender: profileA,
+            triggerId,
+            vcUris: [`lc:network:credential:${triggerId}`],
+        });
+
+    it('delivers an undelivered same-trigger sender prompt after a crash between commit and enqueue', async () => {
+        const triggerId = 'credential:crash-before-enqueue';
+        const committed = await createPrompts(triggerId);
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue(undefined);
+
+        try {
+            const recovered = await handleClaim(triggerId);
+
+            expect(recovered.senderPrompt?.promptId).toBe(committed.senderPrompt?.promptId);
+            expect(notificationSpy).toHaveBeenCalledTimes(1);
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                promptId: committed.senderPrompt?.promptId,
+                status: 'PENDING',
+                delivered: true,
+            });
+        } finally {
+            notificationSpy.mockRestore();
+        }
+    });
+
+    it('does not deliver a different trigger while an earlier sender prompt remains pending', async () => {
+        const committed = await createPrompts('credential:pending-original-trigger');
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue(undefined);
+
+        try {
+            const later = await handleClaim('credential:different-trigger');
+
+            expect(later.senderPrompt?.promptId).toBe(committed.senderPrompt?.promptId);
+            expect(notificationSpy).not.toHaveBeenCalled();
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                promptId: committed.senderPrompt?.promptId,
+                status: 'PENDING',
+                delivered: false,
+            });
+        } finally {
+            notificationSpy.mockRestore();
+        }
+    });
+
+    it('retries delivery after enqueue succeeds but acknowledgement persistence fails', async () => {
+        const triggerId = 'credential:ack-write-failure';
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue(undefined);
+        const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+        let failAcknowledgement = true;
+        const queryRunnerSpy = vi
+            .spyOn(neogma.queryRunner, 'run')
+            .mockImplementation(async (query, params) => {
+                if (
+                    failAcknowledgement &&
+                    typeof query === 'string' &&
+                    query.includes('notificationDelivered = true')
+                ) {
+                    failAcknowledgement = false;
+                    throw new Error('injected acknowledgement write failure');
+                }
+
+                return originalRun(query, params);
+            });
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        try {
+            await expect(handleClaim(triggerId)).resolves.toMatchObject({
+                senderPrompt: { isNew: true },
+            });
+            expect(await getSenderPromptDeliveryState()).toMatchObject({ delivered: false });
+
+            await expect(handleClaim(triggerId)).resolves.toMatchObject({
+                senderPrompt: { isNew: false },
+            });
+            expect(notificationSpy).toHaveBeenCalledTimes(2);
+            expect(await getSenderPromptDeliveryState()).toMatchObject({ delivered: true });
+        } finally {
+            consoleErrorSpy.mockRestore();
+            queryRunnerSpy.mockRestore();
+            notificationSpy.mockRestore();
+        }
+    });
+
+    it('retries a rejected enqueue when conditional sender-prompt recovery also fails', async () => {
+        const triggerId = 'credential:enqueue-and-recovery-failure';
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockRejectedValueOnce(new Error('injected enqueue rejection'))
+            .mockResolvedValueOnce(undefined);
+        const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+        let failRecovery = true;
+        const queryRunnerSpy = vi
+            .spyOn(neogma.queryRunner, 'run')
+            .mockImplementation(async (query, params) => {
+                if (
+                    failRecovery &&
+                    typeof query === 'string' &&
+                    query.includes("SET prompt.status = 'SKIPPED'")
+                ) {
+                    failRecovery = false;
+                    throw new Error('injected recovery write failure');
+                }
+
+                return originalRun(query, params);
+            });
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        try {
+            await expect(handleClaim(triggerId)).resolves.toMatchObject({
+                senderNotificationFailed: true,
+            });
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'PENDING',
+                delivered: false,
+            });
+
+            await expect(handleClaim(triggerId)).resolves.not.toHaveProperty(
+                'senderNotificationFailed'
+            );
+            expect(notificationSpy).toHaveBeenCalledTimes(2);
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'PENDING',
+                delivered: true,
+            });
+        } finally {
+            consoleErrorSpy.mockRestore();
+            queryRunnerSpy.mockRestore();
+            notificationSpy.mockRestore();
+        }
+    });
+
+    it('does not redeliver an acknowledged sender prompt for the same trigger', async () => {
+        const triggerId = 'credential:acknowledged';
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue(undefined);
+
+        try {
+            await handleClaim(triggerId);
+            expect(await getSenderPromptDeliveryState()).toMatchObject({ delivered: true });
+
+            await handleClaim(triggerId);
+            expect(notificationSpy).toHaveBeenCalledTimes(1);
+        } finally {
+            notificationSpy.mockRestore();
+        }
+    });
+
+    it('reopens a rejected sender prompt for a distinct trigger and acknowledges its delivery', async () => {
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockRejectedValueOnce(new Error('injected definitive enqueue rejection'))
+            .mockResolvedValueOnce(undefined);
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        try {
+            const first = await handleClaim('credential:rejected-first');
+            expect(await getSenderPromptDeliveryState()).toMatchObject({ status: 'SKIPPED' });
+
+            const later = await handleClaim('credential:reopened-later');
+            expect(later.senderPrompt?.promptId).not.toBe(first.senderPrompt?.promptId);
+            expect(notificationSpy).toHaveBeenCalledTimes(2);
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                promptId: later.senderPrompt?.promptId,
+                status: 'PENDING',
+                delivered: true,
+            });
+        } finally {
+            consoleErrorSpy.mockRestore();
+            notificationSpy.mockRestore();
+        }
+    });
 
     describe('authenticated profile routes', () => {
         it('requires full authentication for connection prompt reads and actions', async () => {

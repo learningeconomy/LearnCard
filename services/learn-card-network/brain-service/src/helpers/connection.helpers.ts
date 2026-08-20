@@ -56,24 +56,44 @@ export const ensureMutualConnectionWithSource = async (
     if (aProfileId === bProfileId) return;
 
     const cypher = `
+        MATCH (first:Profile { profileId: $firstId })
+        SET first.__connectionPromptPairLock =
+            coalesce(first.__connectionPromptPairLock, 0) + 1
+        WITH first
         MATCH (a:Profile { profileId: $aId }), (b:Profile { profileId: $bId })
-        MERGE (a)-[r:CONNECTED_WITH]->(b)
-        ON CREATE SET r.sources = [$key]
-        ON MATCH SET r.sources = CASE
-            WHEN r.sources IS NULL THEN [$key]
-            WHEN NOT $key IN r.sources THEN r.sources + $key
-            ELSE r.sources
-        END
-        MERGE (b)-[r2:CONNECTED_WITH]->(a)
-        ON CREATE SET r2.sources = [$key]
-        ON MATCH SET r2.sources = CASE
-            WHEN r2.sources IS NULL THEN [$key]
-            WHEN NOT $key IN r2.sources THEN r2.sources + $key
-            ELSE r2.sources
-        END
+        OPTIONAL MATCH (a)-[blocked:BLOCKED]-(b)
+        WITH a, b, first, count(blocked) > 0 AS isBlocked
+        FOREACH (_ IN CASE WHEN isBlocked THEN [] ELSE [1] END |
+            MERGE (a)-[r:CONNECTED_WITH]->(b)
+            ON CREATE SET r.sources = [$key]
+            ON MATCH SET r.sources = CASE
+                WHEN r.sources IS NULL THEN [$key]
+                WHEN NOT $key IN r.sources THEN r.sources + $key
+                ELSE r.sources
+            END
+            MERGE (b)-[r2:CONNECTED_WITH]->(a)
+            ON CREATE SET r2.sources = [$key]
+            ON MATCH SET r2.sources = CASE
+                WHEN r2.sources IS NULL THEN [$key]
+                WHEN NOT $key IN r2.sources THEN r2.sources + $key
+                ELSE r2.sources
+            END
+        )
+        WITH a, b, first, isBlocked
+        OPTIONAL MATCH (a)-[prompt:CONNECTION_PROMPT]-(b)
+        FOREACH (_ IN CASE WHEN isBlocked OR prompt IS NULL THEN [] ELSE [1] END |
+            SET prompt.status = 'CONNECTED', prompt.updatedAt = $updatedAt
+        )
+        REMOVE first.__connectionPromptPairLock
     `;
 
-    await neogma.queryRunner.run(cypher, { aId: aProfileId, bId: bProfileId, key: sourceKey });
+    await runConnectionPairQuery(cypher, {
+        aId: aProfileId,
+        bId: bProfileId,
+        firstId: [aProfileId, bProfileId].sort()[0],
+        key: sourceKey,
+        updatedAt: new Date().toISOString(),
+    });
 };
 
 /**
@@ -85,30 +105,26 @@ export const ensureMutualConnectionsForRows = async (
 ): Promise<void> => {
     if (rows.length === 0) return;
 
-    const cypher = `
-        UNWIND $rows AS row
-        WITH row, $selfId AS selfId
-        WITH row.boostId AS boostId, row.targetId AS targetId, selfId
-        WHERE targetId <> selfId
-        WITH boostId, targetId, 'boost:' + boostId AS key, selfId
-        MATCH (a:Profile { profileId: selfId }), (b:Profile { profileId: targetId })
-        MERGE (a)-[r:CONNECTED_WITH]->(b)
-        ON CREATE SET r.sources = [key]
-        ON MATCH SET r.sources = CASE
-            WHEN r.sources IS NULL THEN [key]
-            WHEN NOT key IN r.sources THEN r.sources + key
-            ELSE r.sources
-        END
-        MERGE (b)-[r2:CONNECTED_WITH]->(a)
-        ON CREATE SET r2.sources = [key]
-        ON MATCH SET r2.sources = CASE
-            WHEN r2.sources IS NULL THEN [key]
-            WHEN NOT key IN r2.sources THEN r2.sources + key
-            ELSE r2.sources
-        END
-    `;
+    const orderedRows = [...rows]
+        .filter(row => row.targetId !== selfId)
+        .sort((first, second) => {
+            const firstPair = [selfId, first.targetId].sort().join('\0');
+            const secondPair = [selfId, second.targetId].sort().join('\0');
 
-    await neogma.queryRunner.run(cypher, { selfId, rows });
+            if (firstPair < secondPair) return -1;
+            if (firstPair > secondPair) return 1;
+            if (first.boostId < second.boostId) return -1;
+            if (first.boostId > second.boostId) return 1;
+            return 0;
+        });
+
+    for (const row of orderedRows) {
+        await ensureMutualConnectionWithSource(
+            selfId,
+            row.targetId,
+            getBoostConnectionSourceKey(row.boostId)
+        );
+    }
 };
 
 /**

@@ -42,6 +42,7 @@ type ConnectionPromptRelationshipProps = {
     surface: LCNConnectionPromptSurface;
     triggeredAt: string;
     updatedAt: string;
+    notificationDelivered?: boolean;
 };
 
 export type ProfileRelationships = {
@@ -175,6 +176,10 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                     updatedAt: {
                         property: 'updatedAt',
                         schema: { type: 'string', required: true },
+                    },
+                    notificationDelivered: {
+                        property: 'notificationDelivered',
+                        schema: { type: 'boolean', required: false },
                     },
                 },
             },
