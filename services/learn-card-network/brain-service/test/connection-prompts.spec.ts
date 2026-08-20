@@ -193,13 +193,17 @@ describe('credential claim connection prompts', () => {
             ).resolves.toMatchObject({ status: 'PENDING' });
         });
 
-        it('does not let another viewer read or act on a prompt id', async () => {
+        it('does not let another viewer read, skip, or connect with a prompt id', async () => {
             const created = await createPrompts('credential:claim-1');
             const promptId = created.claimerPrompt!.promptId;
 
             await expect(
                 userA.clients.fullAuth.profile.connectionPromptStatus({ promptId })
             ).resolves.toEqual({ promptId, status: 'STALE' });
+            await expect(
+                userA.clients.fullAuth.profile.connectWithConnectionPrompt({ promptId })
+            ).resolves.toEqual({ promptId, status: 'STALE' });
+            expect(await areProfilesConnected(profileA, profileB)).toBe(false);
             await expect(
                 userA.clients.fullAuth.profile.skipConnectionPrompt({ promptId })
             ).resolves.toEqual({ promptId, status: 'STALE' });
