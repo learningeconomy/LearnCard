@@ -9,7 +9,11 @@ import { randomUUID } from 'crypto';
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
 
-const IS_TEST_ENVIRONMENT = String(process.env.NODE_ENV) === 'test';
+const isTestEnvironment = (): boolean => String(process.env.NODE_ENV) === 'test';
+
+type NotificationDeliveryOptions = {
+    propagateDirectWebhookTransportErrors?: boolean;
+};
 
 type NotificationWebhookResponseRecord = Record<string, unknown>;
 
@@ -116,7 +120,10 @@ const sqs = new SQSClient({
     ...(pollUrl && { endpoint: pollUrl.split('/').slice(0, -1).join('/') }),
 });
 
-export async function addNotificationToQueue(notification: LCNNotification) {
+export async function addNotificationToQueue(
+    notification: LCNNotification,
+    options: NotificationDeliveryOptions = {}
+) {
     if (process.env.IS_E2E_TEST) {
         /**
          * For end-to-end tests, store the last delivery in cache
@@ -125,7 +132,7 @@ export async function addNotificationToQueue(notification: LCNNotification) {
     }
 
     // If running unit tests, do not attempt to deliver (keep legacy behavior for tests)
-    if (IS_TEST_ENVIRONMENT) {
+    if (isTestEnvironment()) {
         return;
     }
 
@@ -135,7 +142,7 @@ export async function addNotificationToQueue(notification: LCNNotification) {
             'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
         );
 
-        return sendNotification(notification);
+        return sendNotification(notification, options);
     }
 
     const command = new SendMessageCommand({
@@ -146,7 +153,12 @@ export async function addNotificationToQueue(notification: LCNNotification) {
     return sqs.send(command);
 }
 
-export async function sendNotification(notification: LCNNotification) {
+export async function sendNotification(
+    notification: LCNNotification,
+    options: NotificationDeliveryOptions = {}
+) {
+    let directWebhookRequestStarted = false;
+
     try {
         const notificationsWebhook = resolveNotificationWebhookUrl(notification);
 
@@ -186,17 +198,23 @@ export async function sendNotification(notification: LCNNotification) {
             // Set a timeout to abort the fetch request
             const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
 
-            const response = await fetch(notificationsWebhook, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${didJwt}`,
-                },
-                body: JSON.stringify(notification),
-                signal,
-            });
+            let response: Response;
+            try {
+                directWebhookRequestStarted = true;
+                response = await fetch(notificationsWebhook, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${didJwt}`,
+                    },
+                    body: JSON.stringify(notification),
+                    signal,
+                });
+            } finally {
+                clearTimeout(timeoutId);
+            }
 
-            clearTimeout(timeoutId);
+            if (!response.ok) return false;
 
             const responseText = await response.text();
 
@@ -215,7 +233,7 @@ export async function sendNotification(notification: LCNNotification) {
             );
 
             if (!notificationDelivered) {
-                throw new Error('Notifications Endpoint returned a malformed result');
+                return false;
             }
 
             try {
@@ -238,8 +256,12 @@ export async function sendNotification(notification: LCNNotification) {
             return notificationDelivered;
         }
     } catch (error) {
-        if (!IS_TEST_ENVIRONMENT) {
+        if (!isTestEnvironment()) {
             console.error('Notifications Helpers - Error While Sending:', error);
+        }
+
+        if (options.propagateDirectWebhookTransportErrors && directWebhookRequestStarted) {
+            throw error;
         }
     }
     return false;

@@ -461,26 +461,29 @@ export const handleConnectionPromptsForCredentialClaim = async (
         let transportOutcome: NotificationTransportOutcome;
 
         try {
-            const transportResult = await addNotificationToQueue({
-                type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
-                to: input.sender,
-                from: input.claimer,
-                message: getNotificationMessage(
-                    'boostAcceptedConnect',
-                    resolveRecipientLocale(input.sender),
-                    { name: input.claimer.displayName }
-                ),
-                data: {
-                    vcUris: input.vcUris,
-                    metadata: {
-                        ...input.metadata,
-                        connectionPrompt: {
-                            promptId: result.senderPrompt.promptId,
-                            counterpartProfileId: input.claimer.profileId,
+            const transportResult = await addNotificationToQueue(
+                {
+                    type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+                    to: input.sender,
+                    from: input.claimer,
+                    message: getNotificationMessage(
+                        'boostAcceptedConnect',
+                        resolveRecipientLocale(input.sender),
+                        { name: input.claimer.displayName }
+                    ),
+                    data: {
+                        vcUris: input.vcUris,
+                        metadata: {
+                            ...input.metadata,
+                            connectionPrompt: {
+                                promptId: result.senderPrompt.promptId,
+                                counterpartProfileId: input.claimer.profileId,
+                            },
                         },
                     },
                 },
-            });
+                { propagateDirectWebhookTransportErrors: true }
+            );
 
             transportOutcome = normalizeNotificationTransportResult(transportResult);
         } catch (error) {
