@@ -90,9 +90,13 @@ it('mounts one localized connection prompt coordinator in the ScoutPass shell', 
 });
 
 it('mounts exactly one shared modal accessibility manager in the ScoutPass shell', () => {
-    const source = readFileSync(`${process.cwd()}/src/FullApp.tsx`, 'utf8');
+    const fullAppSource = readFileSync(`${process.cwd()}/src/FullApp.tsx`, 'utf8');
+    const appRouterSource = readFileSync(`${process.cwd()}/src/AppRouter.tsx`, 'utf8');
 
-    expect(source.match(/<ModalAccessibilityManager\s*\/>/g) ?? []).toHaveLength(1);
+    expect([
+        ...fullAppSource.matchAll(/<ModalAccessibilityManager\s*\/>/g),
+        ...appRouterSource.matchAll(/<ModalAccessibilityManager\s*\/>/g),
+    ]).toHaveLength(1);
     render(<FullApp />);
     expect(screen.getAllByTestId('modal-accessibility-manager')).toHaveLength(1);
 });
