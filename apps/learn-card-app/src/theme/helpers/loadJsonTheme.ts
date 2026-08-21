@@ -287,6 +287,17 @@ const buildTheme = (config: ThemeJsonConfig): Theme => {
                 ) as CategoryIcons['IconWithLightShape'];
             }
 
+            // IconSolid, IconDark, IconWhite are pre-colored and don't need palette wrapping
+            if (catIcons.IconSolid) {
+                wrapped.IconSolid = catIcons.IconSolid;
+            }
+            if (catIcons.IconDark) {
+                wrapped.IconDark = catIcons.IconDark;
+            }
+            if (catIcons.IconWhite) {
+                wrapped.IconWhite = catIcons.IconWhite;
+            }
+
             themedIcons[cat] = wrapped;
         }
     }
