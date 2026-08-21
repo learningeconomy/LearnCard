@@ -2,10 +2,10 @@ import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet } from 'learn-card-base';
-import { useGetPreferencesForDid } from 'learn-card-base';
 import { configureSentryTransport, configureLoggerContext } from 'learn-card-base';
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { getLogger } from 'learn-card-base';
+import { useFeedbackReportingEligibility } from '../feedback/reporting/eligibility';
 const log = getLogger('sentry');
 
 export type UseSentryIdentifyOptions = {
@@ -109,13 +109,15 @@ export const initSentryFromTenant = (): void => {
 export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
     const currentUser = useCurrentUser();
     const { getDID } = useWallet();
-    const { data: preferences } = useGetPreferencesForDid();
-    // Default true so existing users without stored preferences are unaffected
-    const bugReportsEnabled = preferences?.bugReportsEnabled ?? true;
+    const reportingEligibility = useFeedbackReportingEligibility();
+    const bugReportsEnabled = reportingEligibility.bug;
 
     useEffect(() => {
         // Keep logger privacy gate in sync with user preferences
-        configureLoggerContext({ bugReportsEnabled });
+        configureLoggerContext({
+            bugReportsEnabled,
+            diagnosticIdentity: reportingEligibility.profileId ?? null,
+        });
 
         if (Sentry.getClient()) {
             if (currentUser && bugReportsEnabled) {
@@ -147,5 +149,5 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
                 Sentry.setTag('packageVersion', __PACKAGE_VERSION__);
             }
         }
-    }, [currentUser, bugReportsEnabled]);
+    }, [currentUser, bugReportsEnabled, reportingEligibility.profileId]);
 };

@@ -211,6 +211,8 @@ describe('normalizeScreenName', () => {
         ['/claim-from-dashboard', '/claim-from-dashboard'],
         ['/credential/urn%3Auuid%3A1234', '/credential/:id'],
         ['/profile/user-123', '/profile/:id'],
+        ['/connect/alice', '/connect/:profileId'],
+        ['/connect/alice-smith', '/connect/:profileId'],
         ['/boost/did:web:example.com', '/boost/:id'],
         ['/pathways/42/detail', '/pathways/:id/detail'],
     ])('normalizes %s to %s', (input, expected) => {

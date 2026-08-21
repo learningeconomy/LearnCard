@@ -22,6 +22,7 @@
  */
 
 import * as Sentry from '@sentry/react';
+import type { Event } from '@sentry/react';
 
 import type { FeedbackReport } from './types';
 
@@ -91,6 +92,68 @@ const buildAttachments = (report: FeedbackReport): FeedbackAttachment[] => {
     return attachments;
 };
 
+/** Context fields approved for the feedback event's non-indexed extras. */
+const buildExtras = (report: FeedbackReport): Record<string, unknown> => {
+    const extras: Record<string, unknown> = {};
+    const { app, device, network, recentRoutes } = report.context;
+
+    if (app) extras.app = app;
+    if (device) extras.device = device;
+    if (network) extras.network = network;
+    if (recentRoutes.length > 0) extras.recentRoutes = recentRoutes;
+
+    return extras;
+};
+
+/**
+ * Reconstruct a feedback event from an explicit allowlist.
+ *
+ * Sentry 8 merges global and isolation scopes before running a supplied
+ * scope's processors. Rebuilding here therefore removes identified user
+ * state, breadcrumbs, and every unapproved tag/context/extra. The same
+ * reconstruction runs once more in `beforeSendEvent`, after Sentry adds its
+ * propagation trace, so the transported envelope cannot regain trace data.
+ */
+const buildAllowlistedEvent = (event: Event, report: FeedbackReport): Event => {
+    const extras = buildExtras(report);
+    const feedback = {
+        message: report.message,
+        ...(report.associatedEventId ? { associated_event_id: report.associatedEventId } : {}),
+    };
+
+    return {
+        ...(event.event_id ? { event_id: event.event_id } : {}),
+        ...(event.timestamp ? { timestamp: event.timestamp } : {}),
+        ...(event.environment ? { environment: event.environment } : {}),
+        ...(event.release ? { release: event.release } : {}),
+        ...(event.dist ? { dist: event.dist } : {}),
+        ...(event.platform ? { platform: event.platform } : {}),
+        ...(event.sdk ? { sdk: event.sdk } : {}),
+        type: 'feedback',
+        level: 'info',
+        contexts: { feedback },
+        tags: buildTags(report),
+        ...(Object.keys(extras).length > 0 ? { extra: extras } : {}),
+    };
+};
+
+/** Mutate the SDK's final event object immediately before envelope creation. */
+const applyAllowlistInPlace = (event: Event, report: FeedbackReport): void => {
+    const allowlisted = buildAllowlistedEvent(event, report);
+
+    for (const key of Object.keys(event)) delete (event as Record<string, unknown>)[key];
+    Object.assign(event, allowlisted);
+};
+
+/** Generate the 32-hex event id accepted by the Sentry envelope protocol. */
+const createFeedbackEventId = (): string => {
+    const bytes = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+};
+
+const SENTRY_DELIVERY_TIMEOUT_MS = 5_000;
+
 /**
  * Submit a bug report to Sentry and resolve with the feedback event ID.
  *
@@ -98,35 +161,60 @@ const buildAttachments = (report: FeedbackReport): FeedbackAttachment[] => {
  * available — success is never claimed for an undelivered report.
  */
 export const submitSentryFeedback = async (report: FeedbackReport): Promise<{ id?: string }> => {
-    if (!Sentry.getClient()) {
+    const client = Sentry.getClient();
+    if (!client) {
         throw new Error(FEEDBACK_TRANSPORT_ERROR_MESSAGE);
     }
 
-    const { context, associatedEventId } = report;
-
     const attachments = buildAttachments(report);
-    const hint = attachments.length > 0 ? { attachments } : {};
+    const eventId = createFeedbackEventId();
+    const hint = {
+        event_id: eventId,
+        ...(attachments.length > 0 ? { attachments } : {}),
+    };
 
-    // Start from an empty scope so the feedback event cannot inherit the
-    // app's identified user, breadcrumbs, tags, extras, or contexts.
+    // A new Scope has no client in Sentry 8.34. Bind the installed client so
+    // captureFeedback actually enters the delivery pipeline.
     const feedbackScope = new Sentry.Scope();
-    const eventId = Sentry.withScope(feedbackScope, scope => {
-        // Structured, privacy-safe context travels as scope extras — never as
-        // tags — so it stays searchable per-event without polluting the tag space.
-        if (context.app) scope.setExtra('app', context.app);
-        if (context.device) scope.setExtra('device', context.device);
-        if (context.network) scope.setExtra('network', context.network);
-        if (context.recentRoutes.length > 0) scope.setExtra('recentRoutes', context.recentRoutes);
+    feedbackScope.setClient(client);
+    feedbackScope.addEventProcessor(event => buildAllowlistedEvent(event, report));
 
-        return Sentry.captureFeedback(
-            {
-                message: report.message,
-                ...(associatedEventId ? { associatedEventId } : {}),
-                tags: buildTags(report),
-            },
-            hint
-        );
+    let deliveryStatus: number | undefined;
+    const stopFinalAllowlist = client.on('beforeSendEvent', event => {
+        if (event.event_id === eventId) applyAllowlistInPlace(event, report);
+    });
+    const stopDeliveryObserver = client.on('afterSendEvent', (event, response) => {
+        if (event.event_id === eventId) deliveryStatus = response.statusCode;
     });
 
-    return eventId ? { id: eventId } : {};
+    try {
+        const capturedEventId = Sentry.captureFeedback(
+            {
+                message: report.message,
+                ...(report.associatedEventId
+                    ? { associatedEventId: report.associatedEventId }
+                    : {}),
+                tags: buildTags(report),
+            },
+            hint,
+            feedbackScope
+        );
+
+        const flushed = await client.flush(SENTRY_DELIVERY_TIMEOUT_MS);
+        const delivered =
+            capturedEventId === eventId &&
+            flushed &&
+            deliveryStatus !== undefined &&
+            deliveryStatus >= 200 &&
+            deliveryStatus < 300;
+
+        if (!delivered) throw new Error(FEEDBACK_TRANSPORT_ERROR_MESSAGE);
+
+        return { id: eventId };
+    } catch {
+        throw new Error(FEEDBACK_TRANSPORT_ERROR_MESSAGE);
+    } finally {
+        stopFinalAllowlist();
+        stopDeliveryObserver();
+    }
 };

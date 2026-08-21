@@ -152,8 +152,8 @@ const shakeSensingArbiter = createShakeSensingArbiter();
  * - screenshot observation has its own lifecycle and is not churned by shake
  *   flag changes.
  *
- * Foreground starts fail-closed: shakes arriving before the initial app state
- * resolves are ignored.
+ * Foreground starts fail-closed: shakes arriving before both the lifecycle
+ * listener registration and an app-state confirmation are ignored.
  */
 export const useAutomaticFeedbackTriggers = ({
     enabled,
@@ -213,6 +213,9 @@ export const useAutomaticFeedbackTriggers = ({
         let disposed = false;
         const handles: PluginListenerHandle[] = [];
         let receivedAppStateChange = false;
+        let lifecycleListenerReady = false;
+        let lifecycleListenerFailed = false;
+        let latestAppState: boolean | undefined;
 
         const track = (registration: Promise<PluginListenerHandle>): void => {
             registration
@@ -235,6 +238,20 @@ export const useAutomaticFeedbackTriggers = ({
         let isForeground = false;
         let lastShakeAt: number | undefined;
 
+        const applyAppState = (): void => {
+            if (
+                disposed ||
+                lifecycleListenerFailed ||
+                !lifecycleListenerReady ||
+                latestAppState === undefined
+            ) {
+                return;
+            }
+
+            isForeground = latestAppState;
+            shakeSensingArbiter.request(shakeSensingOwner, isForeground);
+        };
+
         const handleShake = (): void => {
             if (!isForeground) return;
 
@@ -245,23 +262,40 @@ export const useAutomaticFeedbackTriggers = ({
             forward('shake');
         };
 
-        track(
-            App.addListener('appStateChange', state => {
+        App.addListener('appStateChange', state => {
+            if (disposed || lifecycleListenerFailed) return;
+
+            receivedAppStateChange = true;
+            latestAppState = state.isActive;
+            applyAppState();
+        })
+            .then(handle => {
+                if (disposed) {
+                    void handle.remove();
+                    return;
+                }
+
+                handles.push(handle);
+                lifecycleListenerReady = true;
+                applyAppState();
+            })
+            .catch(error => {
                 if (disposed) return;
 
-                receivedAppStateChange = true;
-                isForeground = state.isActive;
-                shakeSensingArbiter.request(shakeSensingOwner, state.isActive);
-            })
-        );
+                lifecycleListenerFailed = true;
+                lifecycleListenerReady = false;
+                isForeground = false;
+                shakeSensingArbiter.release(shakeSensingOwner);
+                log.warn('feedback.automatic.app-state-listener-failed', error);
+            });
         track(ShakeObserver.addListener('shake', handleShake));
 
         App.getState()
             .then(({ isActive }) => {
-                if (disposed || receivedAppStateChange) return;
+                if (disposed || lifecycleListenerFailed || receivedAppStateChange) return;
 
-                isForeground = isActive;
-                if (isActive) shakeSensingArbiter.request(shakeSensingOwner, true);
+                latestAppState = isActive;
+                applyAppState();
             })
             .catch(error => {
                 // Fail closed: without a confirmed state, sensing stays off.

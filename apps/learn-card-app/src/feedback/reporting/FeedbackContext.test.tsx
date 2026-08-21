@@ -170,6 +170,17 @@ const deps: FeedbackProviderDeps = {
     transport,
 };
 
+const createDeferred = <T,>() => {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+        resolve = resolvePromise;
+        reject = rejectPromise;
+    });
+
+    return { promise, resolve, reject };
+};
+
 let controller: FeedbackController | undefined;
 
 const Consumer: React.FC = () => {
@@ -254,6 +265,70 @@ describe('FeedbackProvider automatic triggers wiring', () => {
 });
 
 describe('FeedbackProvider reportProblem', () => {
+    it('keeps concurrent explicit reports single-flight from capture through dismissal', async () => {
+        const screenshot = createDeferred<FeedbackScreenshot | undefined>();
+        captureScreenshot.mockReturnValueOnce(screenshot.promise);
+        renderProvider();
+
+        let firstReport!: Promise<void>;
+        let secondReport!: Promise<void>;
+        act(() => {
+            firstReport = controller!.reportProblem({ source: 'settings' });
+            secondReport = controller!.reportProblem({ source: 'settings' });
+        });
+
+        expect(captureScreenshot).toHaveBeenCalledTimes(1);
+        expect(collectContext).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            screenshot.resolve(SCREENSHOT);
+            await Promise.all([firstReport, secondReport]);
+        });
+
+        expect(modalHost.openModal).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            await controller!.reportProblem({ source: 'settings' });
+        });
+        expect(captureScreenshot).toHaveBeenCalledTimes(1);
+        expect(modalHost.openModal).toHaveBeenCalledTimes(1);
+
+        const [, modalOptions] = composerCall();
+        act(() => {
+            (modalOptions.onClose as () => void)();
+        });
+
+        await act(async () => {
+            await controller!.reportProblem({ source: 'settings' });
+        });
+        expect(captureScreenshot).toHaveBeenCalledTimes(2);
+        expect(modalHost.openModal).toHaveBeenCalledTimes(2);
+    });
+
+    it('shares the explicit single-flight guard across problem and idea entry points', async () => {
+        const screenshot = createDeferred<FeedbackScreenshot | undefined>();
+        captureScreenshot.mockReturnValueOnce(screenshot.promise);
+        renderProvider();
+
+        let report!: Promise<void>;
+        let idea!: Promise<void>;
+        act(() => {
+            report = controller!.reportProblem({ source: 'settings' });
+            idea = controller!.shareIdea();
+        });
+
+        expect(captureScreenshot).toHaveBeenCalledTimes(1);
+        expect(collectContext).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            screenshot.resolve(SCREENSHOT);
+            await Promise.all([report, idea]);
+        });
+
+        expect(modalHost.openModal).toHaveBeenCalledTimes(1);
+        expect(composerCall()[0].props.draft.kind).toBe('bug');
+    });
+
     it('opens the composer from Settings even while another modal is open', async () => {
         busy.value = true;
         renderProvider();
@@ -522,6 +597,26 @@ describe('FeedbackProvider reportProblem', () => {
         expect(modalHost.presentToast).not.toHaveBeenCalled();
     });
 
+    it('normalizes an alphabetic profile id in minimal current-route context', async () => {
+        window.history.pushState({}, '', '/connect/alice-smith');
+        renderProvider({ now: () => clock.nowMs, captureScreenshot, transport });
+
+        await act(async () => {
+            await controller?.reportProblem({
+                source: 'micro-feedback',
+                submitImmediately: true,
+                initialMessage: 'broken button',
+            });
+        });
+
+        expect(submit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                context: expect.objectContaining({ currentRoute: '/connect/:profileId' }),
+            })
+        );
+        window.history.pushState({}, '', '/');
+    });
+
     it('rejects immediate submission without a non-empty message', async () => {
         renderProvider();
 
@@ -708,6 +803,29 @@ describe('FeedbackProvider reportProblem', () => {
 });
 
 describe('FeedbackProvider shareIdea', () => {
+    it('keeps concurrent explicit idea captures single-flight', async () => {
+        const context = createDeferred<FeedbackContextData>();
+        collectContext.mockReturnValueOnce(context.promise);
+        renderProvider();
+
+        let firstIdea!: Promise<void>;
+        let secondIdea!: Promise<void>;
+        act(() => {
+            firstIdea = controller!.shareIdea();
+            secondIdea = controller!.shareIdea();
+        });
+
+        expect(collectContext).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            context.resolve(CONTEXT);
+            await Promise.all([firstIdea, secondIdea]);
+        });
+
+        expect(modalHost.openModal).toHaveBeenCalledTimes(1);
+        expect(composerCall()[0].props.draft.kind).toBe('idea');
+    });
+
     it('collects idea context without a screenshot and opens the composer while busy', async () => {
         busy.value = true;
         renderProvider();

@@ -101,6 +101,21 @@ const createDeferred = (): {
     return { promise, resolve: () => resolvePromise?.() };
 };
 
+const createRegistrationDeferred = (): {
+    promise: Promise<ListenerHandle>;
+    resolve: (handle: ListenerHandle) => void;
+    reject: (reason?: unknown) => void;
+} => {
+    let resolvePromise!: (handle: ListenerHandle) => void;
+    let rejectPromise!: (reason?: unknown) => void;
+    const promise = new Promise<ListenerHandle>((resolve, reject) => {
+        resolvePromise = resolve;
+        rejectPromise = reject;
+    });
+
+    return { promise, resolve: resolvePromise, reject: rejectPromise };
+};
+
 /** Captured native callbacks, populated by the mocked addListener fns. */
 let shakeCallback: (() => void) | undefined;
 let screenshotCallback: ((event: { capturedAt: string }) => void) | undefined;
@@ -225,6 +240,66 @@ describe('useAutomaticFeedbackTriggers', () => {
         await flush();
 
         expect(shakeHost.start).not.toHaveBeenCalled();
+
+        unmount();
+    });
+
+    it('never starts shake sensing when app-state listener registration rejects', async () => {
+        appHost.addListener.mockRejectedValueOnce(new Error('listener unavailable'));
+
+        const { unmount } = mount();
+        await flush();
+        await flush();
+
+        expect(shakeHost.start).not.toHaveBeenCalled();
+        shakeCallback!();
+        expect(reportProblem).not.toHaveBeenCalledWith({ source: 'shake' });
+
+        expect(screenshotHost.addListener).toHaveBeenCalledTimes(1);
+        screenshotCallback!({ capturedAt: '2026-08-21T00:00:00.000Z' });
+        expect(reportProblem).toHaveBeenCalledWith({ source: 'screenshot' });
+
+        unmount();
+    });
+
+    it('ignores a stale app-state registration rejection after a new effect owns sensing', async () => {
+        const oldRegistration = createRegistrationDeferred();
+        appHost.addListener
+            .mockImplementationOnce((_event: string, cb: (s: never) => void) => {
+                appStateCallback = cb as typeof appStateCallback;
+                return oldRegistration.promise;
+            })
+            .mockImplementationOnce(
+                async (_event: string, cb: (s: never) => void): Promise<ListenerHandle> => {
+                    appStateCallback = cb as typeof appStateCallback;
+                    return createHandle();
+                }
+            );
+
+        const { rerender, unmount } = mount();
+        await flush();
+        expect(shakeHost.start).not.toHaveBeenCalled();
+
+        flags.value = { shakeToReportEnabled: false };
+        rerender({ hookEnabled: true });
+        await flush();
+
+        flags.value = { shakeToReportEnabled: true };
+        rerender({ hookEnabled: true });
+        await flush();
+
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
+        const stopCallsBeforeStaleRejection = shakeHost.stop.mock.calls.length;
+
+        await act(async () => {
+            oldRegistration.reject(new Error('old listener unavailable'));
+            await Promise.resolve();
+        });
+        await flush();
+
+        expect(shakeHost.stop).toHaveBeenCalledTimes(stopCallsBeforeStaleRejection);
+        shakeCallback!();
+        expect(reportProblem).toHaveBeenCalledWith({ source: 'shake' });
 
         unmount();
     });

@@ -21,34 +21,53 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FEEDBACK_TRANSPORT_ERROR_MESSAGE, submitSentryFeedback } from './sentryFeedbackTransport';
 import type { FeedbackReport } from './types';
 
-const { scopeMock, ScopeMock, withScopeMock, captureFeedbackMock, getClientMock } = vi.hoisted(
-    () => {
-        const scopeMock = { setTag: vi.fn(), setExtra: vi.fn() };
+const { scopeMock, ScopeMock, captureFeedbackMock, getClientMock, clientMock, clientHooks } =
+    vi.hoisted(() => {
+        const clientHooks = {
+            beforeSendEvent: [] as Array<(event: Record<string, unknown>) => void>,
+            afterSendEvent: [] as Array<
+                (event: Record<string, unknown>, response: { statusCode: number }) => void
+            >,
+        };
+        const clientMock = {
+            on: vi.fn(
+                (
+                    hook: 'beforeSendEvent' | 'afterSendEvent',
+                    callback:
+                        | ((event: Record<string, unknown>) => void)
+                        | ((
+                              event: Record<string, unknown>,
+                              response: { statusCode: number }
+                          ) => void)
+                ) => {
+                    const callbacks = clientHooks[hook] as Array<typeof callback>;
+                    callbacks.push(callback);
+                    return vi.fn(() => {
+                        const index = callbacks.indexOf(callback);
+                        if (index >= 0) callbacks.splice(index, 1);
+                    });
+                }
+            ),
+            flush: vi.fn(async () => true),
+        };
+        const scopeMock = {
+            setClient: vi.fn(),
+            addEventProcessor: vi.fn(),
+        };
         return {
             scopeMock,
             ScopeMock: vi.fn(() => scopeMock),
-            withScopeMock: vi.fn(
-                (
-                    scopeOrCallback:
-                        | typeof scopeMock
-                        | ((activeScope: typeof scopeMock) => unknown),
-                    callback?: (activeScope: typeof scopeMock) => unknown
-                ) =>
-                    callback
-                        ? callback(scopeOrCallback as typeof scopeMock)
-                        : (scopeOrCallback as (activeScope: typeof scopeMock) => unknown)(scopeMock)
-            ),
             captureFeedbackMock: vi.fn(),
             getClientMock: vi.fn(),
+            clientMock,
+            clientHooks,
         };
-    }
-);
+    });
 
 vi.mock('@sentry/react', () => ({
     Scope: ScopeMock,
     getClient: getClientMock,
     captureFeedback: captureFeedbackMock,
-    withScope: withScopeMock,
 }));
 
 const diagnosticLogs = [
@@ -95,8 +114,20 @@ const bugReport: FeedbackReport = {
 describe('submitSentryFeedback', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        getClientMock.mockReturnValue({ options: {} });
-        captureFeedbackMock.mockReturnValue('feedback-event-9');
+        clientHooks.beforeSendEvent.splice(0);
+        clientHooks.afterSendEvent.splice(0);
+        getClientMock.mockReturnValue(clientMock);
+        clientMock.flush.mockResolvedValue(true);
+        captureFeedbackMock.mockImplementation(
+            (_params: unknown, hint: { event_id: string }, _scope: unknown): string => {
+                const event = { event_id: hint.event_id };
+                clientHooks.beforeSendEvent.forEach(callback => callback(event));
+                clientHooks.afterSendEvent.forEach(callback =>
+                    callback(event, { statusCode: 200 })
+                );
+                return hint.event_id;
+            }
+        );
     });
 
     it('calls captureFeedback with the Sentry 8.34 payload signature', async () => {
@@ -116,6 +147,7 @@ describe('submitSentryFeedback', () => {
                 }),
             }),
             expect.objectContaining({
+                event_id: expect.stringMatching(/^[a-f0-9]{32}$/),
                 attachments: expect.arrayContaining([
                     expect.objectContaining({
                         filename: 'feedback-screenshot.png',
@@ -126,7 +158,8 @@ describe('submitSentryFeedback', () => {
                         contentType: 'application/json',
                     }),
                 ]),
-            })
+            }),
+            scopeMock
         );
     });
 
@@ -176,28 +209,51 @@ describe('submitSentryFeedback', () => {
         );
     });
 
-    it('passes structured context as scope extras, not scope tags', async () => {
+    it('reconstructs structured context from an allowlist after inherited scope merge', async () => {
         await submitSentryFeedback(bugReport);
 
-        expect(scopeMock.setTag).not.toHaveBeenCalled();
-        expect(scopeMock.setExtra).toHaveBeenCalledWith('app', bugReport.context.app);
-        expect(scopeMock.setExtra).toHaveBeenCalledWith('device', bugReport.context.device);
-        expect(scopeMock.setExtra).toHaveBeenCalledWith('network', bugReport.context.network);
-        expect(scopeMock.setExtra).toHaveBeenCalledWith(
-            'recentRoutes',
-            bugReport.context.recentRoutes
-        );
+        const processor = scopeMock.addEventProcessor.mock.calls[0][0];
+        const processed = processor({
+            event_id: 'feedback-event-9',
+            user: { id: 'did:key:secret' },
+            tags: { inherited: 'secret' },
+            extra: { inherited: 'secret' },
+            contexts: { inherited: { secret: true } },
+            breadcrumbs: [{ message: 'secret' }],
+            fingerprint: ['secret'],
+            transaction: 'secret',
+        });
+
+        expect(processed.extra).toEqual({
+            app: bugReport.context.app,
+            device: bugReport.context.device,
+            network: bugReport.context.network,
+            recentRoutes: bugReport.context.recentRoutes,
+        });
+        expect(processed.contexts).toEqual({
+            feedback: {
+                message: bugReport.message,
+                associated_event_id: bugReport.associatedEventId,
+            },
+        });
+        expect(processed.user).toBeUndefined();
+        expect(processed.breadcrumbs).toBeUndefined();
+        expect(processed.fingerprint).toBeUndefined();
+        expect(processed.transaction).toBeUndefined();
     });
 
-    it('captures on a clean scope instead of inheriting user, breadcrumb, or tag data', async () => {
+    it('binds the installed client to a clean scope and passes it explicitly', async () => {
         await submitSentryFeedback(bugReport);
 
         expect(ScopeMock).toHaveBeenCalledTimes(1);
-        expect(withScopeMock).toHaveBeenCalledWith(scopeMock, expect.any(Function));
+        expect(scopeMock.setClient).toHaveBeenCalledWith(clientMock);
+        expect(scopeMock.addEventProcessor).toHaveBeenCalledWith(expect.any(Function));
+        expect(captureFeedbackMock.mock.calls[0][2]).toBe(scopeMock);
     });
 
     it('resolves with the Sentry event id', async () => {
-        await expect(submitSentryFeedback(bugReport)).resolves.toEqual({ id: 'feedback-event-9' });
+        const result = await submitSentryFeedback(bugReport);
+        expect(result.id).toMatch(/^[a-f0-9]{32}$/);
     });
 
     it('omits the attachments key when there is nothing to attach', async () => {
@@ -222,6 +278,27 @@ describe('submitSentryFeedback', () => {
             FEEDBACK_TRANSPORT_ERROR_MESSAGE
         );
         expect(captureFeedbackMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects instead of claiming success when delivery is not acknowledged', async () => {
+        captureFeedbackMock.mockImplementation(
+            (_params, hint: { event_id: string }) => hint.event_id
+        );
+
+        await expect(submitSentryFeedback(bugReport)).rejects.toThrow(
+            FEEDBACK_TRANSPORT_ERROR_MESSAGE
+        );
+    });
+
+    it('rejects with the friendly transport error when capture throws', async () => {
+        captureFeedbackMock.mockImplementationOnce(() => {
+            throw new Error('capture pipeline failed');
+        });
+
+        await expect(submitSentryFeedback(bugReport)).rejects.toThrow(
+            FEEDBACK_TRANSPORT_ERROR_MESSAGE
+        );
+        expect(clientMock.flush).not.toHaveBeenCalled();
     });
 
     it('omits optional tags that are not present', async () => {

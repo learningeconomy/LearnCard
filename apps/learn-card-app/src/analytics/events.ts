@@ -345,12 +345,6 @@ export interface AnalyticsEventPayloads {
         sentiment: FeedbackSentiment;
         reasons: string[];
         hasFreeText: boolean;
-        /**
-         * Optional free text. Only attached when the user's
-         * `bugReportsEnabled` preference allows it — treat as
-         * user-supplied PII downstream.
-         */
-        userNote?: string;
     };
 
     [AnalyticsEvents.FEEDBACK_FOLLOWUP_DISMISSED]: {

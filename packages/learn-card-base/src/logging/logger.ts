@@ -2,7 +2,11 @@
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-import { recordDiagnosticLog, setDiagnosticLogCollectionEnabled } from './diagnosticLogBuffer';
+import {
+    clearDiagnosticLogs,
+    recordDiagnosticLog,
+    setDiagnosticLogCollectionEnabled,
+} from './diagnosticLogBuffer';
 
 interface Parsed {
     message: string;
@@ -220,6 +224,7 @@ export interface SentryTransport {
 let _transport: SentryTransport | null = null; // null = dev mode, no Sentry forwarding
 let _bugReportsEnabled = true; // mirrors user's bugReportsEnabled preference; default true so existing users without stored prefs are unaffected
 let _tenantId: string | undefined; // included as a Sentry tag on every captured event
+let _diagnosticIdentity: string | null | undefined;
 
 /** Call after Sentry.init() so the logger can forward events. */
 export const configureSentryTransport = (t: SentryTransport | null): void => {
@@ -230,7 +235,15 @@ export const configureSentryTransport = (t: SentryTransport | null): void => {
 export const configureLoggerContext = (opts: {
     bugReportsEnabled?: boolean;
     tenantId?: string | null;
+    /** Opaque owner key for the process-global diagnostic buffer. */
+    diagnosticIdentity?: string | null;
 }): void => {
+    if (opts.diagnosticIdentity !== undefined) {
+        if (_diagnosticIdentity !== undefined && _diagnosticIdentity !== opts.diagnosticIdentity) {
+            clearDiagnosticLogs();
+        }
+        _diagnosticIdentity = opts.diagnosticIdentity;
+    }
     if (opts.bugReportsEnabled !== undefined) {
         _bugReportsEnabled = opts.bugReportsEnabled;
         // Disabling bug reports also stops and clears the diagnostic buffer.

@@ -68,7 +68,6 @@ export const FeedbackFollowUpSheet: React.FC<FeedbackFollowUpSheetProps> = ({
             sentiment,
             reasons: selected,
             hasFreeText: trimmedNote.length > 0,
-            ...(trimmedNote ? { userNote: trimmedNote } : {}),
         });
 
         if (bugReportsEnabled && (selected.includes('broken') || trimmedNote)) {

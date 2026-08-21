@@ -40,7 +40,7 @@ import { captureFeedbackScreenshot } from './captureScreenshot';
 import { collectFeedbackContext } from './collectFeedbackContext';
 import { createFeedbackTransport, type FeedbackAnalyticsAdapter } from './createFeedbackTransport';
 import { useFeedbackReportingEligibility } from './eligibility';
-import { getRecentFeedbackRoutes } from './routeHistory';
+import { getRecentFeedbackRoutes, normalizeFeedbackRoute } from './routeHistory';
 import {
     isAutomaticFeedbackSource,
     isPendingFeedbackExpired,
@@ -117,16 +117,6 @@ export const useFeedback = (): FeedbackController => {
 
 /** Wallet display version used when the app/plugin calls cannot resolve one. */
 const FALLBACK_VERSION = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'unknown';
-const ROUTE_WORD = /^[a-zA-Z][a-zA-Z-]*$/;
-
-/** Mirror the route-history normalization without loading analytics providers. */
-const normalizeMinimalRoute = (pathname: string): string => {
-    const segments = pathname.split('/').filter(Boolean);
-    if (segments.length === 0) return '/';
-
-    return `/${segments.map(segment => (ROUTE_WORD.test(segment) ? segment : ':id')).join('/')}`;
-};
-
 /**
  * Default context collector. The tenant id resolves offline-only: by capture
  * time the config is always bootstrapped (baked, cached, or defaults), so
@@ -163,7 +153,7 @@ const defaultCollectMinimalContext = async (): Promise<FeedbackContextData> => {
 
     const recentRoutes = getRecentFeedbackRoutes();
     return {
-        currentRoute: recentRoutes.at(-1) ?? normalizeMinimalRoute(window.location.pathname),
+        currentRoute: recentRoutes.at(-1) ?? normalizeFeedbackRoute(window.location.pathname),
         recentRoutes,
         ...(tenantId ? { tenantId } : {}),
         app: { platform: 'web', displayVersion: FALLBACK_VERSION },
@@ -208,6 +198,13 @@ export const FeedbackProvider: React.FC<{
     /** The single deferred automatic draft; newest wins, never persisted. */
     const pendingRef = useRef<FeedbackDraft | undefined>(undefined);
 
+    /**
+     * Owns the composer lifecycle from explicit capture start through modal
+     * dismissal. The token prevents concurrent captures and stale modal
+     * callbacks from replacing or closing another feedback flow.
+     */
+    const composerFlowOwnerRef = useRef<symbol | undefined>(undefined);
+
     /** Whether the feedback composer is currently presented. */
     const isComposerOpenRef = useRef(false);
     const composerModalIdRef = useRef<number | undefined>(undefined);
@@ -224,13 +221,33 @@ export const FeedbackProvider: React.FC<{
         profileId: eligibility.profileId,
     });
 
-    const closeFeedbackComposer = useCallback(() => {
-        const modalId = composerModalIdRef.current;
-        composerModalIdRef.current = undefined;
-        isComposerOpenRef.current = false;
+    const beginComposerFlow = useCallback((): symbol | undefined => {
+        if (composerFlowOwnerRef.current !== undefined) return undefined;
 
-        if (modalId !== undefined) closeModalById(modalId);
-    }, [closeModalById]);
+        const owner = Symbol('feedback-composer-flow');
+        composerFlowOwnerRef.current = owner;
+        return owner;
+    }, []);
+
+    const releaseComposerFlow = useCallback((owner: symbol) => {
+        if (composerFlowOwnerRef.current === owner) {
+            composerFlowOwnerRef.current = undefined;
+        }
+    }, []);
+
+    const closeFeedbackComposer = useCallback(
+        (owner?: symbol) => {
+            if (owner !== undefined && composerFlowOwnerRef.current !== owner) return;
+
+            const modalId = composerModalIdRef.current;
+            composerModalIdRef.current = undefined;
+            isComposerOpenRef.current = false;
+            composerFlowOwnerRef.current = undefined;
+
+            if (modalId !== undefined) closeModalById(modalId);
+        },
+        [closeModalById]
+    );
 
     const dismissFeedbackPrompt = useCallback(() => {
         const prompt = promptToastRef.current;
@@ -273,8 +290,9 @@ export const FeedbackProvider: React.FC<{
     ]);
 
     const submitAndClose = useCallback(
-        async (report: FeedbackReport, captureGeneration: number) => {
+        async (report: FeedbackReport, captureGeneration: number, owner: symbol) => {
             if (
+                composerFlowOwnerRef.current !== owner ||
                 captureGeneration !== eligibilityGenerationRef.current ||
                 !eligibilityRef.current[report.kind]
             ) {
@@ -291,8 +309,7 @@ export const FeedbackProvider: React.FC<{
                 throw error;
             }
 
-            isComposerOpenRef.current = false;
-            closeFeedbackComposer();
+            closeFeedbackComposer(owner);
             toastStore.set.presentToast(m['feedback.reporting.thanks']());
         },
         [closeFeedbackComposer]
@@ -304,30 +321,55 @@ export const FeedbackProvider: React.FC<{
      * modal options — it must never close a modal itself, or the modal beneath
      * the composer could be affected.
      */
-    const handleComposerClosed = useCallback(() => {
+    const handleComposerClosed = useCallback((owner: symbol) => {
+        if (composerFlowOwnerRef.current !== owner) return;
+
         isComposerOpenRef.current = false;
         composerModalIdRef.current = undefined;
+        composerFlowOwnerRef.current = undefined;
     }, []);
 
     const openComposer = useCallback(
-        (draft: FeedbackDraft) => {
+        (draft: FeedbackDraft, requestedOwner?: symbol): boolean => {
+            const owner = requestedOwner ?? beginComposerFlow();
+            if (owner === undefined || composerFlowOwnerRef.current !== owner) return false;
+
             const captureGeneration = eligibilityGenerationRef.current;
             isComposerOpenRef.current = true;
 
             const composer = (
                 <FeedbackComposer
                     draft={draft}
-                    onCancel={closeFeedbackComposer}
-                    onSubmit={report => submitAndClose(report, captureGeneration)}
+                    onCancel={() => closeFeedbackComposer(owner)}
+                    onSubmit={report => submitAndClose(report, captureGeneration, owner)}
                 />
             );
-            composerModalIdRef.current = newModal(
-                composer,
-                { sectionClassName: '!max-w-[480px]', onClose: handleComposerClosed },
-                { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
-            );
+
+            try {
+                composerModalIdRef.current = newModal(
+                    composer,
+                    {
+                        sectionClassName: '!max-w-[480px]',
+                        onClose: () => handleComposerClosed(owner),
+                    },
+                    { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+                );
+                return true;
+            } catch (error) {
+                isComposerOpenRef.current = false;
+                composerModalIdRef.current = undefined;
+                releaseComposerFlow(owner);
+                throw error;
+            }
         },
-        [closeFeedbackComposer, handleComposerClosed, newModal, submitAndClose]
+        [
+            beginComposerFlow,
+            closeFeedbackComposer,
+            handleComposerClosed,
+            newModal,
+            releaseComposerFlow,
+            submitAndClose,
+        ]
     );
 
     const presentPromptToast = useCallback(
@@ -417,9 +459,11 @@ export const FeedbackProvider: React.FC<{
             const source = options.source ?? 'settings';
             const now = depsRef.current.now ?? Date.now;
 
-            if (isAutomaticFeedbackSource(source) && isComposerOpenRef.current) {
-                // Feedback UI is already active — never queue a second report
-                // behind an open composer.
+            const isAutomatic = isAutomaticFeedbackSource(source);
+
+            if (isAutomatic && composerFlowOwnerRef.current !== undefined) {
+                // A feedback composer flow is already capturing or presented —
+                // never queue another automatic report behind it.
                 return;
             }
 
@@ -453,61 +497,79 @@ export const FeedbackProvider: React.FC<{
                 return;
             }
 
+            let explicitOwner: symbol | undefined;
+            if (!isAutomatic && options.submitImmediately !== true) {
+                explicitOwner = beginComposerFlow();
+                if (explicitOwner === undefined) return;
+            }
+
             if (source === 'shake') {
                 const timestamp = now();
                 if (isShakeInCooldown(timestamp, lastShakeAtRef.current)) return;
                 lastShakeAtRef.current = timestamp;
             }
 
-            const draft = await captureBugDraft(source, options);
+            let keepExplicitOwnership = false;
+            try {
+                const draft = await captureBugDraft(source, options);
 
-            if (
-                captureGeneration !== eligibilityGenerationRef.current ||
-                !eligibilityRef.current.bug
-            ) {
-                return;
-            }
-
-            if (options.submitImmediately === true) {
-                // Micro-feedback follow-up compatibility path: submit the same
-                // privacy-safe draft without ever opening a composer.
-                const message = options.initialMessage?.trim() ?? '';
-                if (!message) {
-                    throw new Error('submitImmediately requires a non-empty initialMessage');
+                if (
+                    captureGeneration !== eligibilityGenerationRef.current ||
+                    !eligibilityRef.current.bug
+                ) {
+                    return;
                 }
 
-                await transportRef.current.submit({ ...draft, message });
-                return;
-            }
+                if (options.submitImmediately === true) {
+                    // Micro-feedback follow-up compatibility path: submit the same
+                    // privacy-safe draft without ever opening a composer.
+                    const message = options.initialMessage?.trim() ?? '';
+                    if (!message) {
+                        throw new Error('submitImmediately requires a non-empty initialMessage');
+                    }
 
-            if (!isAutomaticFeedbackSource(source)) {
-                // Explicit entry points always open — the feedback modal
-                // stacks above whatever is already on screen (e.g. Settings).
+                    await transportRef.current.submit({ ...draft, message });
+                    return;
+                }
+
+                if (!isAutomatic) {
+                    // Explicit entry points always open — the feedback modal
+                    // stacks above whatever is already on screen (e.g. Settings).
+                    keepExplicitOwnership = openComposer(draft, explicitOwner);
+                    return;
+                }
+
+                if (composerFlowOwnerRef.current !== undefined) return;
+
+                if (isBusyRef.current) {
+                    // Capture now, present later. A newer automatic draft simply
+                    // replaces this one.
+                    pendingRef.current = draft;
+                    return;
+                }
+
+                if (source === 'screenshot') {
+                    presentPromptToast(draft);
+                    return;
+                }
+
+                // Shake while idle opens the composer right away.
                 openComposer(draft);
-                return;
+            } finally {
+                if (explicitOwner !== undefined && !keepExplicitOwnership) {
+                    releaseComposerFlow(explicitOwner);
+                }
             }
-
-            if (isBusyRef.current) {
-                // Capture now, present later. A newer automatic draft simply
-                // replaces this one.
-                pendingRef.current = draft;
-                return;
-            }
-
-            if (source === 'screenshot') {
-                presentPromptToast(draft);
-                return;
-            }
-
-            // Shake while idle opens the composer right away.
-            openComposer(draft);
         },
-        [captureBugDraft, openComposer, presentPromptToast]
+        [beginComposerFlow, captureBugDraft, openComposer, presentPromptToast, releaseComposerFlow]
     );
 
     const shareIdea = useCallback(
         async (options: ShareIdeaOptions = {}) => {
             if (!eligibilityRef.current.idea) return;
+
+            const owner = beginComposerFlow();
+            if (owner === undefined) return;
 
             const captureGeneration = eligibilityGenerationRef.current;
 
@@ -517,24 +579,34 @@ export const FeedbackProvider: React.FC<{
                 ...depsRef.current,
             };
 
-            const context = await collectContext({ kind: 'idea' });
+            let keepOwnership = false;
+            try {
+                const context = await collectContext({ kind: 'idea' });
 
-            if (
-                captureGeneration !== eligibilityGenerationRef.current ||
-                !eligibilityRef.current.idea
-            ) {
-                return;
+                if (
+                    captureGeneration !== eligibilityGenerationRef.current ||
+                    !eligibilityRef.current.idea
+                ) {
+                    return;
+                }
+
+                keepOwnership = openComposer(
+                    {
+                        kind: 'idea',
+                        source: options.source ?? 'settings',
+                        capturedAt: new Date(now()).toISOString(),
+                        context,
+                        ...(options.initialMessage
+                            ? { initialMessage: options.initialMessage }
+                            : {}),
+                    },
+                    owner
+                );
+            } finally {
+                if (!keepOwnership) releaseComposerFlow(owner);
             }
-
-            openComposer({
-                kind: 'idea',
-                source: options.source ?? 'settings',
-                capturedAt: new Date(now()).toISOString(),
-                context,
-                ...(options.initialMessage ? { initialMessage: options.initialMessage } : {}),
-            });
         },
-        [openComposer]
+        [beginComposerFlow, openComposer, releaseComposerFlow]
     );
 
     const controller = useMemo<FeedbackController>(

@@ -116,6 +116,13 @@ describe('FeedbackFollowUpSheet micro-feedback reporting', () => {
             initialMessage: 'Screen froze after claiming',
             submitImmediately: true,
         });
+        expect(track).toHaveBeenCalledWith('feedback_followup_submitted', {
+            surface: 'claim',
+            sentiment: 'bad',
+            reasons: [],
+            hasFreeText: true,
+        });
+        expect(JSON.stringify(track.mock.calls)).not.toContain('Screen froze after claiming');
         await waitFor(() => expect(closeModal).toHaveBeenCalledTimes(1));
     });
 

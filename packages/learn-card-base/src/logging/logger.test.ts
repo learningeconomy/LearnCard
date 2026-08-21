@@ -158,6 +158,22 @@ describe('PII scrubbing', () => {
 // ---------------------------------------------------------------------------
 
 describe('privacy gate', () => {
+    it('clears process-global diagnostics when the opaque reporting identity changes', () => {
+        configureLoggerContext({
+            bugReportsEnabled: true,
+            diagnosticIdentity: 'adult-a',
+        });
+        logger.info('first profile event');
+        expect(getDiagnosticLogs()).toHaveLength(1);
+
+        configureLoggerContext({
+            bugReportsEnabled: true,
+            diagnosticIdentity: 'adult-b',
+        });
+
+        expect(getDiagnosticLogs()).toEqual([]);
+    });
+
     it('suppresses Sentry transport when bugReportsEnabled is false', () => {
         const transport = makeMockTransport();
         configureSentryTransport(transport);
