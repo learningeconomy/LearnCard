@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
     LearnCloud Network API
 
@@ -11,13 +9,15 @@
     Do not edit the class manually.
 """  # noqa: E501
 
+
 import warnings
 from pydantic import validate_call, Field, StrictFloat, StrictStr, StrictInt
 from typing import Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated
 
-from pydantic import StrictBool, StrictInt, StrictStr
+from pydantic import Field, StrictBool, StrictStr
 from typing import List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.credential_received_credentials200_response_inner import CredentialReceivedCredentials200ResponseInner
 from openapi_client.models.presentation_accept_presentation_request import PresentationAcceptPresentationRequest
 from openapi_client.models.presentation_send_presentation_request import PresentationSendPresentationRequest
@@ -607,7 +607,7 @@ class PresentationsApi:
     @validate_call
     def presentation_incoming_presentations(
         self,
-        limit: Optional[StrictInt] = None,
+        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -683,7 +683,7 @@ class PresentationsApi:
     @validate_call
     def presentation_incoming_presentations_with_http_info(
         self,
-        limit: Optional[StrictInt] = None,
+        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -759,7 +759,7 @@ class PresentationsApi:
     @validate_call
     def presentation_incoming_presentations_without_preload_content(
         self,
-        limit: Optional[StrictInt] = None,
+        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -902,7 +902,7 @@ class PresentationsApi:
     @validate_call
     def presentation_received_presentations(
         self,
-        limit: Optional[StrictInt] = None,
+        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -978,7 +978,7 @@ class PresentationsApi:
     @validate_call
     def presentation_received_presentations_with_http_info(
         self,
-        limit: Optional[StrictInt] = None,
+        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -1054,7 +1054,7 @@ class PresentationsApi:
     @validate_call
     def presentation_received_presentations_without_preload_content(
         self,
-        limit: Optional[StrictInt] = None,
+        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         var_from: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -1498,7 +1498,7 @@ class PresentationsApi:
     @validate_call
     def presentation_sent_presentations(
         self,
-        limit: Optional[StrictInt] = None,
+        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         to: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -1574,7 +1574,7 @@ class PresentationsApi:
     @validate_call
     def presentation_sent_presentations_with_http_info(
         self,
-        limit: Optional[StrictInt] = None,
+        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         to: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,
@@ -1650,7 +1650,7 @@ class PresentationsApi:
     @validate_call
     def presentation_sent_presentations_without_preload_content(
         self,
-        limit: Optional[StrictInt] = None,
+        limit: Optional[Annotated[int, Field(lt=100, strict=True, gt=0)]] = None,
         to: Optional[StrictStr] = None,
         _request_timeout: Union[
             None,

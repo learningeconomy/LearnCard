@@ -38,6 +38,7 @@ class TestInboxFinalize200Response(unittest.TestCase):
                 processed = 1.337,
                 claimed = 1.337,
                 errors = 1.337,
+                guardian_pending = 1.337,
                 verifiable_credentials = [
                     {
                         'key' : null
@@ -49,6 +50,7 @@ class TestInboxFinalize200Response(unittest.TestCase):
                 processed = 1.337,
                 claimed = 1.337,
                 errors = 1.337,
+                guardian_pending = 1.337,
                 verifiable_credentials = [
                     {
                         'key' : null

@@ -24,6 +24,7 @@ from openapi_client.models.boost_get_paginated_boost_recipients_request_query im
 from openapi_client.models.boost_get_paginated_boost_recipients_with_children_request_number_of_generations import BoostGetPaginatedBoostRecipientsWithChildrenRequestNumberOfGenerations
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
     """
@@ -40,7 +41,8 @@ class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "uri", "includeUnacceptedBoosts", "numberOfGenerations", "boostQuery", "profileQuery"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -52,8 +54,7 @@ class BoostGetPaginatedBoostRecipientsWithChildrenRequest(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
