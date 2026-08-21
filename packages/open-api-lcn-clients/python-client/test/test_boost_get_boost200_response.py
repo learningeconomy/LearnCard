@@ -38,6 +38,7 @@ class TestBoostGetBoost200Response(unittest.TestCase):
                 name = '',
                 type = '',
                 category = '',
+                created = '',
                 status = 'DRAFT',
                 auto_connect_recipients = True,
                 meta = {
@@ -45,6 +46,7 @@ class TestBoostGetBoost200Response(unittest.TestCase):
                     },
                 default_permissions = openapi_client.models.boost_get_boost_200_response_default_permissions.boost_getBoost_200_response_defaultPermissions(
                     role = '', 
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 
@@ -59,6 +61,7 @@ class TestBoostGetBoost200Response(unittest.TestCase):
                 allow_anyone_to_create_children = True,
                 claim_permissions = openapi_client.models.boost_get_boost_200_response_claim_permissions.boost_getBoost_200_response_claimPermissions(
                     role = '', 
+                    can_view = True, 
                     can_edit = True, 
                     can_issue = True, 
                     can_revoke = True, 

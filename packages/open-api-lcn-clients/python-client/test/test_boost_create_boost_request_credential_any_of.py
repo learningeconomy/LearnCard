@@ -55,7 +55,8 @@ class TestBoostCreateBoostRequestCredentialAnyOf(unittest.TestCase):
                 valid_until = '',
                 status = None,
                 terms_of_use = None,
-                evidence = None
+                evidence = None,
+                render_method = None
             )
         else:
             return BoostCreateBoostRequestCredentialAnyOf(

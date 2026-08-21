@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **uri** | **str** |  | 
 **updates** | [**BoostUpdateBoostRequestUpdates**](BoostUpdateBoostRequestUpdates.md) |  | 
+**skills** | [**List[BoostSendRequestTemplateSkillsInner]**](BoostSendRequestTemplateSkillsInner.md) |  | [optional] 
 
 ## Example
 

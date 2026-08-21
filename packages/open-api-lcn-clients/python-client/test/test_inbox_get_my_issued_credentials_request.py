@@ -45,7 +45,7 @@ class TestInboxGetMyIssuedCredentialsRequest(unittest.TestCase):
                     is_accepted = True, 
                     issuer_did = '', 
                     boost_uri = '', ),
-                recipient = None
+                recipient = openapi_client.models.inbox_get_my_issued_credentials_request_recipient.inbox_getMyIssuedCredentials_request_recipient()
             )
         else:
             return InboxGetMyIssuedCredentialsRequest(

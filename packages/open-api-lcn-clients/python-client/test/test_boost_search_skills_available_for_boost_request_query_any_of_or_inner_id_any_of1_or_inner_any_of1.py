@@ -39,7 +39,6 @@ class TestBoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrIn
             )
         else:
             return BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1(
-                regex = '',
         )
         """
 
