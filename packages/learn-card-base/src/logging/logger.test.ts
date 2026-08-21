@@ -6,6 +6,7 @@ import {
     getLogger,
     type SentryTransport,
 } from './logger';
+import { clearDiagnosticLogs, getDiagnosticLogs } from './diagnosticLogBuffer';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -17,7 +18,10 @@ function makeMockTransport(): SentryTransport & {
     const calls: { method: string; args: unknown[] }[] = [];
     return {
         calls,
-        captureException: (...args) => calls.push({ method: 'captureException', args }),
+        captureException: (...args) => {
+            calls.push({ method: 'captureException', args });
+            return undefined;
+        },
         captureMessage: (...args) => calls.push({ method: 'captureMessage', args }),
         addBreadcrumb: (...args) => calls.push({ method: 'addBreadcrumb', args }),
         withScope: (...args) => calls.push({ method: 'withScope', args }),
@@ -32,12 +36,14 @@ beforeEach(() => {
     configureSentryTransport(null);
     // Pass null (not undefined) to actually clear tenantId between tests
     configureLoggerContext({ bugReportsEnabled: true, tenantId: null });
+    clearDiagnosticLogs();
     vi.restoreAllMocks();
 });
 
 afterAll(() => {
     configureSentryTransport(null);
     configureLoggerContext({ bugReportsEnabled: true, tenantId: null });
+    clearDiagnosticLogs();
 });
 
 // ---------------------------------------------------------------------------
@@ -608,5 +614,100 @@ describe('rest-args contract', () => {
         const extra = call!.args[3] as Record<string, unknown>;
         expect(extra.value).toBe('lc:boost:abc');
         expect(extra.error).toBe('Error: fetch failed');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Diagnostic buffer integration (LC-2086)
+// ---------------------------------------------------------------------------
+
+describe('diagnostic buffer integration', () => {
+    it('records sanitized info, warning, and error entries when bug reports are enabled', () => {
+        configureLoggerContext({ bugReportsEnabled: true });
+        getLogger('feedback-test').info('opened', { email: 'alice@example.com', route: '/wallet' });
+        expect(getDiagnosticLogs()).toEqual([
+            expect.objectContaining({
+                level: 'info',
+                scope: 'feedback-test',
+                message: 'opened',
+                data: expect.objectContaining({ email: '[scrubbed]', route: '/wallet' }),
+            }),
+        ]);
+    });
+
+    it('maps info, warn, and error to their buffer levels and stores sanitized errors', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const log = getLogger('feedback');
+        log.info('step one');
+        log.warn('retrying', { attempt: 2 });
+        log.error('failed', new Error('boom for alice@example.com'));
+
+        const entries = getDiagnosticLogs();
+        expect(entries.map(entry => entry.level)).toEqual(['info', 'warning', 'error']);
+        expect(entries[0]).toMatchObject({ scope: 'feedback', message: 'step one' });
+        expect(entries[1].data).toMatchObject({ attempt: 2 });
+        expect(entries[2].data).toMatchObject({
+            error: { name: 'Error', message: 'boom for [scrubbed-email]' },
+        });
+    });
+
+    it('records leftover values in the entry data', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        logger.error('failed to fetch boost', 'lc:boost:abc');
+
+        expect(getDiagnosticLogs()[0].data).toEqual({ value: 'lc:boost:abc' });
+    });
+
+    it('clears and stops the diagnostic buffer when bug reports are disabled', () => {
+        vi.spyOn(console, 'info').mockImplementation(() => {});
+        logger.info('before');
+        configureLoggerContext({ bugReportsEnabled: false });
+        logger.info('after');
+        expect(getDiagnosticLogs()).toEqual([]);
+    });
+
+    it('does not record production-dropped debug calls', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+        vi.stubEnv('NODE_ENV', 'production');
+        try {
+            logger.debug('verbose detail');
+            expect(getDiagnosticLogs()).toEqual([]);
+        } finally {
+            vi.unstubAllEnvs();
+        }
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Captured event IDs (LC-2086)
+// ---------------------------------------------------------------------------
+
+describe('captured event ids', () => {
+    it('returns the captured Sentry event id from error()', () => {
+        const transport = makeMockTransport();
+        transport.captureException = () => 'event-123';
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        expect(logger.error('boom', new Error('boom'))).toBe('event-123');
+    });
+
+    it('returns undefined from error() when only a message is captured', () => {
+        const transport = makeMockTransport();
+        transport.captureMessage = () => 'event-456';
+        configureSentryTransport(transport);
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        expect(logger.error('string error only')).toBeUndefined();
+    });
+
+    it('returns undefined from error() when no transport is registered', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        expect(logger.error('console only', new Error('boom'))).toBeUndefined();
     });
 });

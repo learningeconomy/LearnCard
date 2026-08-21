@@ -303,3 +303,4 @@ export * from './svgs/ScoutsLogo';
 export * from './svgs/ScoutLogoAndText';
 export * from './svgs/Compass';
 export * from './logging/logger';
+export * from './logging/diagnosticLogBuffer';
