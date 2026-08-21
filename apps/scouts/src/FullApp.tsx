@@ -25,9 +25,7 @@ import {
     lazyWithRetry,
     Toast,
     InAppMessageHost,
-    ConnectionPromptCoordinator,
 } from 'learn-card-base';
-import * as m from './paraglide/messages.js';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';
@@ -38,7 +36,6 @@ import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeSc
 import NetworkListener from './components/network-listener/NetworkListener';
 import UserProfileSetupListener from './components/user-profile/UserProfileSetupListener';
 import { QRCodeScannerStore } from 'learn-card-base';
-import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
@@ -122,28 +119,12 @@ const FullApp: React.FC = () => {
                                 <LocaleProfileSync />
                                 <ModalsProvider>
                                     <div id="modal-mid-root"></div>
-                                    <ModalAccessibilityManager />
                                     <Toast />
                                     <NetworkListener />
                                     <AppUrlListener />
                                     <PushNotificationListener />
                                     <PresentVcModalListener />
                                     <UserProfileSetupListener />
-                                    <ConnectionPromptCoordinator
-                                        copy={{
-                                            title: name =>
-                                                m['connectionPrompts.title']().replace(
-                                                    '{name}',
-                                                    name
-                                                ),
-                                            description: m['connectionPrompts.description'](),
-                                            connect: m['connectionPrompts.connect'](),
-                                            skipForNow: m['connectionPrompts.skipForNow'](),
-                                            connecting: m['connectionPrompts.connecting'](),
-                                            skipping: m['connectionPrompts.skipping'](),
-                                            error: m['connectionPrompts.error'](),
-                                        }}
-                                    />
                                     <AppRouter />
                                     <InAppMessageHost />
                                     <QRCodeScannerListener />

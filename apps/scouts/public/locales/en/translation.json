@@ -1,16 +1,4 @@
 {
-    "connectionPrompts": {
-        "title": "Connect with {name}?",
-        "description": "Stay in touch and recognize what comes next.",
-        "connect": "Connect",
-        "skipForNow": "Skip for Now",
-        "connecting": "Connecting...",
-        "skipping": "Skipping...",
-        "error": "Something went wrong. Please try again.",
-        "connected": "Connected",
-        "skipped": "Skipped",
-        "claimedType": "Credential claimed"
-    },
     "common": {
         "share": "Share",
         "open": "Open",

@@ -1,9 +1,7 @@
 import React from 'react';
-import { LCNConnectionPromptMetadataValidator } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
 import { formatLocaleDate } from '../../../i18n/formatters';
 import {
-    ConnectionPromptNotificationCard,
     useUpdateNotification,
     useAcceptConnectionRequestMutation,
     useMarkNotificationRead,
@@ -58,16 +56,12 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     }
 
     const { type, message, from, to, sent } = notification;
-    const messageBody = message && 'body' in message ? message.body ?? '' : '';
     const [presentAlert, dismissAlert] = useIonAlert();
     const displayDate = formatLocaleDate(sent, {
         month: 'long',
         day: 'numeric',
         year: 'numeric',
     });
-    const parsedPrompt = LCNConnectionPromptMetadataValidator.safeParse(
-        notification.data?.metadata?.connectionPrompt
-    );
 
     const queryClient = useQueryClient();
     const {
@@ -267,33 +261,6 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                 handleCancelClick={handleArchiveNotification}
                 issueDate={displayDate}
                 cardLoading={isLoading}
-            />
-        );
-    }
-    if (type === NOTIFICATION_TYPES.BOOST_ACCEPTED && parsedPrompt.success) {
-        return (
-            <ConnectionPromptNotificationCard
-                notificationId={notification._id!}
-                promptMetadata={parsedPrompt.data}
-                counterpart={
-                    typeof notification.from === 'string'
-                        ? { profileId: parsedPrompt.data.counterpartProfileId }
-                        : notification.from
-                }
-                title={messageBody}
-                issueDate={displayDate}
-                copy={{
-                    title: name => m['connectionPrompts.title']().replace('{name}', name),
-                    description: m['connectionPrompts.description'](),
-                    connect: m['connectionPrompts.connect'](),
-                    skipForNow: m['connectionPrompts.skipForNow'](),
-                    connecting: m['connectionPrompts.connecting'](),
-                    skipping: m['connectionPrompts.skipping'](),
-                    error: m['connectionPrompts.error'](),
-                    connected: m['connectionPrompts.connected'](),
-                    skipped: m['connectionPrompts.skipped'](),
-                    claimedType: m['connectionPrompts.claimedType'](),
-                }}
             />
         );
     }
