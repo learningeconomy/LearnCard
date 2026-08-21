@@ -110,7 +110,7 @@ let capturedPromptActions: Pick<ConnectionPromptModalProps, 'onConnect' | 'onSki
 
 const ModalHarness: React.FC = () => {
     const { modals } = useModalsContext();
-    const { newModal, closeAllModals } = useModal();
+    const { newModal, replaceModal, closeAllModals } = useModal();
     const current = modals.findLast(modal => modal.open);
 
     if (
@@ -141,6 +141,9 @@ const ModalHarness: React.FC = () => {
             </button>
             <button type="button" onClick={closeAllModals}>
                 Close All
+            </button>
+            <button type="button" onClick={() => replaceModal(<div>Replacement modal</div>)}>
+                Replace Current
             </button>
             <button
                 type="button"
@@ -397,6 +400,75 @@ describe('ConnectionPromptCoordinator', () => {
         expect(screen.getByText('Existing modal')).toBeTruthy();
         expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
         expect(screen.getByTestId('modal-count').textContent).toBe('1');
+        expect(state.skip).not.toHaveBeenCalled();
+    });
+
+    it('does not close a same-ID replacement when a deferred Connect settles', async () => {
+        const request = deferred<void>();
+        state.prompts = [alice];
+        state.connect.mockReturnValue(request.promise);
+        renderCoordinator();
+        await advance(150);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Replace Current' }));
+        expect(screen.getByText('Replacement modal')).toBeTruthy();
+
+        await act(async () => {
+            request.resolve(undefined);
+            await request.promise;
+        });
+        await advance(300);
+
+        expect(screen.getByText('Replacement modal')).toBeTruthy();
+        expect(screen.getByTestId('modal-count').textContent).toBe('1');
+        expect(state.connect).toHaveBeenCalledOnce();
+        expect(state.skip).not.toHaveBeenCalled();
+    });
+
+    it('does not close a same-ID replacement when a deferred Skip settles', async () => {
+        const request = deferred<void>();
+        state.prompts = [alice];
+        state.skip.mockReturnValue(request.promise);
+        renderCoordinator();
+        await advance(150);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Skip for Now' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Replace Current' }));
+        expect(screen.getByText('Replacement modal')).toBeTruthy();
+
+        await act(async () => {
+            request.resolve(undefined);
+            await request.promise;
+        });
+        await advance(300);
+
+        expect(screen.getByText('Replacement modal')).toBeTruthy();
+        expect(screen.getByTestId('modal-count').textContent).toBe('1');
+        expect(state.skip).toHaveBeenCalledOnce();
+        expect(state.connect).not.toHaveBeenCalled();
+    });
+
+    it('does not close a same-ID replacement during viewer teardown', async () => {
+        state.prompts = [alice];
+        const view = renderCoordinator();
+        await advance(150);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Replace Current' }));
+        expect(screen.getByText('Replacement modal')).toBeTruthy();
+
+        state.loggedIn = false;
+        view.rerender(
+            <ModalsProvider>
+                <ConnectionPromptCoordinator copy={copy} />
+                <ModalHarness />
+            </ModalsProvider>
+        );
+        await advance(300);
+
+        expect(screen.getByText('Replacement modal')).toBeTruthy();
+        expect(screen.getByTestId('modal-count').textContent).toBe('1');
+        expect(state.connect).not.toHaveBeenCalled();
         expect(state.skip).not.toHaveBeenCalled();
     });
 

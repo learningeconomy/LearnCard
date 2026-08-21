@@ -9,12 +9,14 @@ export const useModal = ({
 }: Partial<ModalType> = {}) => {
     const {
         newModal: _newModal,
+        newModalWithToken: _newModalWithToken,
         replaceModal,
         closeModal,
         forceCloseModal,
         requestCloseModal,
         closeModalById,
         forceCloseModalById,
+        forceCloseModalByToken,
         closeAllModals,
     } = useModalActionsContext();
 
@@ -29,14 +31,27 @@ export const useModal = ({
         [_newModal, _desktop, _mobile]
     );
 
+    const newModalWithToken = useCallback(
+        (
+            component: ModalComponent,
+            options?: ModalOptions,
+            { desktop = _desktop, mobile = _mobile } = { desktop: _desktop, mobile: _mobile }
+        ) => {
+            return _newModalWithToken(component, { desktop, mobile }, options);
+        },
+        [_newModalWithToken, _desktop, _mobile]
+    );
+
     return {
         newModal,
+        newModalWithToken,
         replaceModal,
         closeModal,
         forceCloseModal,
         requestCloseModal,
         closeModalById,
         forceCloseModalById,
+        forceCloseModalByToken,
         closeAllModals,
     };
 };

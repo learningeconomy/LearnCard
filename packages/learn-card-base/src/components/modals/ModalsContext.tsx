@@ -3,7 +3,7 @@ import { createContext } from '../../helpers/context.helpers';
 
 import { useFreezelessImmer } from 'learn-card-base/hooks/useFreezelessImmer';
 
-import { Modal, ModalComponent, ModalOptions, ModalType } from './types/Modals';
+import { Modal, ModalComponent, ModalInstanceToken, ModalOptions, ModalType } from './types/Modals';
 
 export type ModalsContextValues = {
     /** The Modal Stack */
@@ -13,6 +13,13 @@ export type ModalsContextValues = {
 export type ModalActionsContextValues = {
     /** Opens a new modal */
     newModal: (component: ModalComponent, type: ModalType, options?: ModalOptions) => number;
+
+    /** Opens a new modal and returns the exact instance token for ownership-sensitive cleanup. */
+    newModalWithToken: (
+        component: ModalComponent,
+        type: ModalType,
+        options?: ModalOptions
+    ) => ModalInstanceToken;
 
     /** Replaces the current modal */
     replaceModal: (component: ModalComponent, options?: ModalOptions, type?: ModalType) => void;
@@ -35,6 +42,9 @@ export type ModalActionsContextValues = {
     /** Administratively closes a specific modal without invoking its cleanup callback. */
     forceCloseModalById: (modalId: number) => void;
 
+    /** Administratively closes only the exact modal instance represented by the token. */
+    forceCloseModalByToken: (token: ModalInstanceToken) => void;
+
     /** Closes all modals */
     closeAllModals: () => void;
 };
@@ -43,8 +53,8 @@ export const [useModalsContext, ModalsContextProvider] = createContext<ModalsCon
 export const [useModalActionsContext, ModalActionsContextProvider] =
     createContext<ModalActionsContextValues>();
 
-const getModalInstanceKey = (modal: Pick<Modal, 'id' | 'generation'>): string =>
-    `${modal.id}:${modal.generation}`;
+const getModalInstanceKey = ({ id, generation }: ModalInstanceToken): string =>
+    `${id}:${generation}`;
 
 const clearPendingForModalId = (pendingInstances: Set<string>, modalId: number): void => {
     for (const instanceKey of pendingInstances) {
@@ -71,9 +81,9 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         });
     }, [modals.length]);
 
-    const newModal = useCallback(
+    const newModalWithToken = useCallback(
         (component: ModalComponent, type: ModalType, options?: ModalOptions) => {
-            const modalId = currentId.current;
+            const token: ModalInstanceToken = { id: currentId.current, generation: 0 };
             currentId.current += 1;
 
             setModals(oldModals => {
@@ -82,20 +92,25 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     type,
                     options,
                     open: true,
-                    id: modalId,
-                    generation: 0,
+                    ...token,
                 });
             });
 
-            return modalId;
+            return token;
         },
         [setModals]
+    );
+
+    const newModal = useCallback(
+        (component: ModalComponent, type: ModalType, options?: ModalOptions) =>
+            newModalWithToken(component, type, options).id,
+        [newModalWithToken]
     );
 
     const replaceModal = useCallback(
         (component: ModalComponent, options?: ModalOptions, type?: ModalType) => {
             setModals(oldModals => {
-                const currentModal = oldModals[oldModals.length - 1];
+                const currentModal = oldModals.findLast(modal => modal.open);
 
                 if (currentModal) {
                     pendingUserCloseInstancesRef.current.delete(getModalInstanceKey(currentModal));
@@ -167,6 +182,11 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         [closeModalInstance]
     );
 
+    const forceCloseModalByToken = useCallback(
+        ({ id, generation }: ModalInstanceToken) => closeModalInstance(id, generation, false),
+        [closeModalInstance]
+    );
+
     const requestCloseModal = useCallback(async (): Promise<boolean> => {
         const modalToClose = modalsRef.current.findLast(modal => modal.open);
         if (!modalToClose || modalToClose.options?.disableCloseHandlers) return false;
@@ -206,12 +226,14 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             <ModalActionsContextProvider
                 value={{
                     newModal,
+                    newModalWithToken,
                     replaceModal,
                     closeModal,
                     forceCloseModal,
                     requestCloseModal,
                     closeModalById,
                     forceCloseModalById,
+                    forceCloseModalByToken,
                     closeAllModals,
                 }}
             >

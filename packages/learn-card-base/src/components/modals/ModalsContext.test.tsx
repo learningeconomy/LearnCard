@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import React from 'react';
+import React, { act } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -117,5 +117,28 @@ describe('ModalsProvider', () => {
 
         expect(cleanupCallback).not.toHaveBeenCalled();
         expect(screen.getByTestId('open-modal-count').textContent).toBe('0');
+    });
+
+    it('does not replace a closing modal or leak it past scheduled removal', async () => {
+        vi.useFakeTimers();
+        try {
+            render(
+                <ModalsProvider>
+                    <ModalHarness />
+                </ModalsProvider>
+            );
+            fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Close Programmatically' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Replace' }));
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(300);
+            });
+
+            expect(screen.getByTestId('modal-count').textContent).toBe('0');
+            expect(screen.getByTestId('open-modal-count').textContent).toBe('0');
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

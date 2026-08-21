@@ -133,6 +133,11 @@ export type ModalOptions = {
 
 export type ModalComponent = ReactNode;
 
+export type ModalInstanceToken = Readonly<{
+    id: number;
+    generation: number;
+}>;
+
 export type Modal = {
     component: ModalComponent;
     type: ModalType;

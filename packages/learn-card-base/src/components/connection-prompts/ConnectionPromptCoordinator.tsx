@@ -9,7 +9,7 @@ import {
 import { useIsLoggedIn } from '../../stores/currentUserStore';
 import { switchedProfileStore } from '../../stores/walletStore';
 import { useModalsContext } from '../modals/ModalsContext';
-import { ModalTypes } from '../modals/types/Modals';
+import { ModalTypes, type ModalInstanceToken } from '../modals/types/Modals';
 import { useModal } from '../modals/useModal';
 import ConnectionPromptModal, {
     type ConnectionPromptCopy,
@@ -32,7 +32,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     const currentViewerKeyRef = useRef(viewerKey);
     currentViewerKeyRef.current = viewerKey;
     const activePromptIdRef = useRef<string | null>(null);
-    const ownedModalIdRef = useRef<number | null>(null);
+    const ownedModalTokenRef = useRef<ModalInstanceToken | null>(null);
     const resolvedRef = useRef(false);
     const actionInFlightRef = useRef(false);
     const { data: pendingPrompts = [] } = usePendingConnectionPrompts(isLoggedIn);
@@ -40,7 +40,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     const skipPrompt = useSkipConnectionPromptMutation();
     const { dismissToast } = useToast();
     const { modals } = useModalsContext();
-    const { newModal, forceCloseModalById } = useModal({
+    const { newModalWithToken, forceCloseModalByToken } = useModal({
         desktop: ModalTypes.Center,
         mobile: ModalTypes.Center,
     });
@@ -60,26 +60,31 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     useEffect(() => {
         if (previousViewerKeyRef.current === viewerKey) return;
 
-        const ownedModalId = ownedModalIdRef.current;
+        const ownedModalToken = ownedModalTokenRef.current;
         previousViewerKeyRef.current = viewerKey;
         activePromptIdRef.current = null;
-        ownedModalIdRef.current = null;
+        ownedModalTokenRef.current = null;
         resolvedRef.current = true;
         actionInFlightRef.current = false;
 
-        if (ownedModalId !== null) forceCloseModalById(ownedModalId);
-    }, [forceCloseModalById, viewerKey]);
+        if (ownedModalToken !== null) forceCloseModalByToken(ownedModalToken);
+    }, [forceCloseModalByToken, viewerKey]);
 
     useEffect(() => {
-        const ownedModalId = ownedModalIdRef.current;
+        const ownedModalToken = ownedModalTokenRef.current;
         if (
-            ownedModalId === null ||
-            modals.some(modal => modal.id === ownedModalId && modal.open)
+            ownedModalToken === null ||
+            modals.some(
+                modal =>
+                    modal.id === ownedModalToken.id &&
+                    modal.generation === ownedModalToken.generation &&
+                    modal.open
+            )
         ) {
             return;
         }
 
-        ownedModalIdRef.current = null;
+        ownedModalTokenRef.current = null;
         activePromptIdRef.current = null;
         resolvedRef.current = true;
         actionInFlightRef.current = false;
@@ -97,13 +102,15 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
             dismissToast();
 
             const promptViewerKey = viewerKey;
-            let modalId: number | null = null;
+            let modalToken: ModalInstanceToken | null = null;
             const promptModalActionsRef: React.MutableRefObject<ConnectionPromptModalActions | null> =
                 { current: null };
             const ownsPromptModal = (): boolean =>
+                modalToken !== null &&
                 currentViewerKeyRef.current === promptViewerKey &&
                 activePromptIdRef.current === nextPrompt.promptId &&
-                ownedModalIdRef.current === modalId;
+                ownedModalTokenRef.current?.id === modalToken?.id &&
+                ownedModalTokenRef.current?.generation === modalToken?.generation;
 
             const handleConnect = async (promptId: string): Promise<void> => {
                 if (!ownsPromptModal() || actionInFlightRef.current) return;
@@ -120,7 +127,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
                 resolvedRef.current = true;
                 actionInFlightRef.current = false;
-                if (modalId !== null) forceCloseModalById(modalId);
+                if (modalToken !== null) forceCloseModalByToken(modalToken);
             };
 
             const handleSkip = async (promptId: string): Promise<void> => {
@@ -138,7 +145,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
                 resolvedRef.current = true;
                 actionInFlightRef.current = false;
-                if (modalId !== null) forceCloseModalById(modalId);
+                if (modalToken !== null) forceCloseModalByToken(modalToken);
             };
 
             const handleClose = (): boolean => {
@@ -151,12 +158,12 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
                 }
 
                 activePromptIdRef.current = null;
-                ownedModalIdRef.current = null;
+                ownedModalTokenRef.current = null;
 
                 return true;
             };
 
-            modalId = newModal(
+            modalToken = newModalWithToken(
                 <ConnectionPromptModal
                     prompt={nextPrompt}
                     copy={copy}
@@ -166,7 +173,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
                 />,
                 { hideButton: false, onClose: handleClose }
             );
-            ownedModalIdRef.current = modalId;
+            ownedModalTokenRef.current = modalToken;
         }, PRESENTATION_DELAY_MS);
 
         return () => clearTimeout(timeout);
@@ -174,9 +181,9 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
         connectPrompt,
         copy,
         dismissToast,
-        forceCloseModalById,
+        forceCloseModalByToken,
         modals.length,
-        newModal,
+        newModalWithToken,
         nextPrompt,
         skipPrompt,
         viewerKey,
