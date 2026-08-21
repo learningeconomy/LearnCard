@@ -83,7 +83,7 @@ import { AnalyticsEvents, useAnalytics } from '@analytics';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
-import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland.js';
+import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 
 const DashboardPage: React.FC = () => {
     const history = useHistory();
