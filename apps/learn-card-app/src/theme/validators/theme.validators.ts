@@ -64,6 +64,7 @@ const IconPaletteSchema = z.object({
     primaryLight: z.string().optional(),
     accent: z.string().optional(),
     stroke: z.string().optional(),
+    secondary: z.string().optional(),
 });
 
 export const ThemeSchema = z

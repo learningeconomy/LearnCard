@@ -8,6 +8,7 @@ import * as m from '../../paraglide/messages.js';
 import Search from 'learn-card-base/svgs/Search';
 
 import MainHeader from '../../components/main-header/MainHeader';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 import AppGrid from './AppGrid';
 import AppGridTile from './AppGridTile';
@@ -58,6 +59,7 @@ const MyAppsLanding: React.FC = () => {
     const { isMobile } = useDeviceTypeByWidth();
     const { apps: moreApps, isSuggested, isLoading: isLoadingMore } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
+    const onHeaderScroll = useHeaderScrollSync();
     const pathwaysEnabled = usePathwaysEnabled();
 
     const shortcuts = useMemo(
@@ -148,7 +150,7 @@ const MyAppsLanding: React.FC = () => {
                     <ProfileAlertsIsland />
                 </div>
             )}
-            <IonContent fullscreen color="grayscale-100">
+            <IonContent fullscreen color="grayscale-100" scrollEvents onIonScroll={onHeaderScroll}>
                 <div className="flex w-full flex-col items-center gap-8 px-4 pb-10 pt-4 md:gap-12 md:pt-6">
                     <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">
                         <div className="flex items-center justify-between gap-3 md:contents">

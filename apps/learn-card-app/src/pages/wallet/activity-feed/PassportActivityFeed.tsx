@@ -145,9 +145,9 @@ export const PassportActivityFeed: React.FC = () => {
                             {m['passport.activity.filter']()}
                         </span>
                         {activeFilterCount > 0 && (
-                            <span className="text-indigo-500">{activeFilterCount}</span>
+                            <span className="text-indigo-500 text-[13px]">{activeFilterCount}</span>
                         )}
-                        <SortButton className="h-[18px] w-[18px] text-indigo-500" />
+                        <SortButton className="h-[24px] w-[24px] text-indigo-500" />
                     </button>
                     {filterOpen && (
                         <div ref={filterPopoverRef} className="absolute right-0 top-[110%] z-10">
