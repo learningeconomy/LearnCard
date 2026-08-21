@@ -129,3 +129,35 @@ confirmed on representative iOS and Android devices before broad flag rollout.
 Existing native dependency warnings (including Capacitor package patch-version
 skew and CocoaPods/Gradle deprecation warnings) were not changed because they
 are unrelated to this task and did not prevent compilation.
+
+## Review fix round 1: cross-effect sensing arbitration
+
+The original hook serialized native operations only inside each shake effect.
+That left separate queues after a flag or eligibility rerender. With the first
+effect's `start` pending, a disable queued its cleanup `stop`, while an immediate
+re-enable created a new queue whose idempotent `start` could finish first. When
+the old pending operation later resolved, its delayed `stop` ran last and left
+an enabled, foreground hook with sensing disabled.
+
+Added a hook-instance `ShakeSensingArbiter` held in a React ref. Every effect
+generation now writes its desired state into the same arbiter. Only one native
+operation can be in flight; after it resolves or rejects, the arbiter compares
+the state it attempted with the newest requested state and keeps draining until
+they match. Intermediate state changes may be coalesced, so an obsolete cleanup
+cannot run after the current desired start.
+
+TDD evidence:
+
+1. RED: added an adversarial deferred-start regression that disables and
+   immediately re-enables the flag before releasing the first `start`. The old
+   implementation reported 18 passes and 1 failure, with the mocked native
+   sensor ending stopped (`expected false to be true`).
+2. GREEN: the ref-backed arbiter makes the same test finish with `start` as the
+   final completed operation and sensing enabled; the complete focused suite
+   reports 19 passes.
+3. Additional coverage holds the first `start` through unmount and verifies the
+   arbiter ultimately calls `stop`, and injects rejected `start` and `stop`
+   promises to verify they are logged/handled and do not prevent a later state
+   request from being applied.
+
+No native source or registration file changed in this review round.

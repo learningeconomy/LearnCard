@@ -37,6 +37,10 @@ const screenshotHost = vi.hoisted(() => ({
     addListener: vi.fn(),
 }));
 
+const loggerHost = vi.hoisted(() => ({
+    warn: vi.fn(),
+}));
+
 vi.mock('@capacitor/core', () => ({
     Capacitor: {
         isNativePlatform: () => capacitorState.isNative,
@@ -74,7 +78,7 @@ vi.mock('launchdarkly-react-client-sdk', () => ({
 // The learn-card-base barrel pulls the web3auth stack and cannot load under
 // jsdom; stub the exact surface the hook consumes.
 vi.mock('learn-card-base', () => ({
-    getLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
+    getLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: loggerHost.warn, error: vi.fn() }),
 }));
 
 import { useAutomaticFeedbackTriggers } from './useAutomaticFeedbackTriggers';
@@ -84,6 +88,18 @@ interface ListenerHandle {
 }
 
 const createHandle = (): ListenerHandle => ({ remove: vi.fn(async () => undefined) });
+
+const createDeferred = (): {
+    promise: Promise<void>;
+    resolve: () => void;
+} => {
+    let resolvePromise: (() => void) | undefined;
+    const promise = new Promise<void>(resolve => {
+        resolvePromise = resolve;
+    });
+
+    return { promise, resolve: () => resolvePromise?.() };
+};
 
 /** Captured native callbacks, populated by the mocked addListener fns. */
 let shakeCallback: (() => void) | undefined;
@@ -240,6 +256,112 @@ describe('useAutomaticFeedbackTriggers', () => {
         expect(shakeHost.stop).toHaveBeenCalledTimes(1);
 
         unmount();
+    });
+
+    it('converges to the latest started state across a deferred start and rapid effect reruns', async () => {
+        const firstStart = createDeferred();
+        const completedOperations: Array<'start' | 'stop'> = [];
+        let nativeSensing = false;
+
+        shakeHost.start
+            .mockImplementationOnce(async () => {
+                await firstStart.promise;
+                nativeSensing = true;
+                completedOperations.push('start');
+            })
+            .mockImplementation(async () => {
+                nativeSensing = true;
+                completedOperations.push('start');
+            });
+        shakeHost.stop.mockImplementation(async () => {
+            nativeSensing = false;
+            completedOperations.push('stop');
+        });
+
+        const { rerender, unmount } = mount();
+        await flush();
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
+
+        flags.value = { shakeToReportEnabled: false };
+        rerender({ hookEnabled: true });
+        flags.value = { shakeToReportEnabled: true };
+        rerender({ hookEnabled: true });
+        await flush();
+
+        await act(async () => {
+            firstStart.resolve();
+            await Promise.resolve();
+        });
+        await flush();
+        await flush();
+
+        expect(nativeSensing).toBe(true);
+        expect(completedOperations.at(-1)).toBe('start');
+
+        unmount();
+    });
+
+    it('converges to stopped when unmounted during a deferred start', async () => {
+        const firstStart = createDeferred();
+        let nativeSensing = false;
+
+        shakeHost.start.mockImplementationOnce(async () => {
+            await firstStart.promise;
+            nativeSensing = true;
+        });
+        shakeHost.stop.mockImplementation(async () => {
+            nativeSensing = false;
+        });
+
+        const { unmount } = mount();
+        await flush();
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
+
+        unmount();
+        expect(shakeHost.stop).not.toHaveBeenCalled();
+
+        await act(async () => {
+            firstStart.resolve();
+            await Promise.resolve();
+        });
+        await flush();
+
+        expect(shakeHost.stop).toHaveBeenCalledTimes(1);
+        expect(nativeSensing).toBe(false);
+    });
+
+    it('handles rejected native start and stop operations and continues converging', async () => {
+        shakeHost.start.mockRejectedValueOnce(new Error('start failed'));
+        shakeHost.stop.mockRejectedValueOnce(new Error('stop failed'));
+
+        const { unmount } = mount();
+
+        await waitFor(() => {
+            expect(loggerHost.warn).toHaveBeenCalledWith(
+                'feedback.automatic.shake-sensing-failed',
+                expect.objectContaining({ message: 'start failed' })
+            );
+        });
+
+        act(() => {
+            appStateCallback!({ isActive: false });
+        });
+        await waitFor(() => {
+            expect(loggerHost.warn).toHaveBeenCalledWith(
+                'feedback.automatic.shake-sensing-failed',
+                expect.objectContaining({ message: 'stop failed' })
+            );
+        });
+
+        act(() => {
+            appStateCallback!({ isActive: true });
+        });
+        await waitFor(() => {
+            expect(shakeHost.start).toHaveBeenCalledTimes(2);
+        });
+
+        unmount();
+        await flush();
     });
 
     it('calls reportProblem({ source: "shake" }) once inside ten seconds', async () => {

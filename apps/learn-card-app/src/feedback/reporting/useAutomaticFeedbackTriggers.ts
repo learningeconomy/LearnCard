@@ -21,6 +21,47 @@ export interface AutomaticFeedbackTriggersInput {
     reportProblem: (options: ReportProblemOptions) => Promise<void>;
 }
 
+interface ShakeSensingArbiter {
+    request: (shouldStart: boolean) => void;
+}
+
+/** Serialize native sensing calls and converge to the latest requested state. */
+const createShakeSensingArbiter = (): ShakeSensingArbiter => {
+    let desiredState = false;
+    let isDraining = false;
+
+    const drain = async (): Promise<void> => {
+        while (true) {
+            const stateBeingApplied = desiredState;
+
+            try {
+                if (stateBeingApplied) {
+                    await ShakeObserver.start(SHAKE_OBSERVER_OPTIONS);
+                } else {
+                    await ShakeObserver.stop();
+                }
+            } catch (error) {
+                log.warn('feedback.automatic.shake-sensing-failed', error);
+            }
+
+            if (stateBeingApplied === desiredState) {
+                isDraining = false;
+                return;
+            }
+        }
+    };
+
+    return {
+        request: shouldStart => {
+            desiredState = shouldStart;
+            if (isDraining) return;
+
+            isDraining = true;
+            void drain();
+        },
+    };
+};
+
 /**
  * Mount the automatic feedback triggers: the local start/stop shake observer
  * (iOS and Android, gated by the LaunchDarkly `shakeToReportEnabled` flag —
@@ -56,6 +97,11 @@ export const useAutomaticFeedbackTriggers = ({
     // churns on controller identity changes.
     const reportProblemRef = useRef(reportProblem);
     reportProblemRef.current = reportProblem;
+
+    const sensingArbiterRef = useRef<ShakeSensingArbiter | null>(null);
+    if (!sensingArbiterRef.current) {
+        sensingArbiterRef.current = createShakeSensingArbiter();
+    }
 
     useEffect(() => {
         if (!enabled) return;
@@ -97,7 +143,6 @@ export const useAutomaticFeedbackTriggers = ({
         let disposed = false;
         const handles: PluginListenerHandle[] = [];
         let receivedAppStateChange = false;
-        let sensingQueue = Promise.resolve();
 
         const track = (registration: Promise<PluginListenerHandle>): void => {
             registration
@@ -120,23 +165,6 @@ export const useAutomaticFeedbackTriggers = ({
         let isForeground = false;
         let lastShakeAt: number | undefined;
 
-        const setSensing = (shouldStart: boolean): void => {
-            sensingQueue = sensingQueue
-                .catch(() => undefined)
-                .then(async () => {
-                    if (shouldStart && disposed) return;
-
-                    if (shouldStart) {
-                        await ShakeObserver.start(SHAKE_OBSERVER_OPTIONS);
-                    } else {
-                        await ShakeObserver.stop();
-                    }
-                })
-                .catch(error => {
-                    log.warn('feedback.automatic.shake-sensing-failed', error);
-                });
-        };
-
         const handleShake = (): void => {
             if (!isForeground) return;
 
@@ -151,7 +179,7 @@ export const useAutomaticFeedbackTriggers = ({
             App.addListener('appStateChange', state => {
                 receivedAppStateChange = true;
                 isForeground = state.isActive;
-                setSensing(state.isActive);
+                sensingArbiterRef.current?.request(state.isActive);
             })
         );
         track(ShakeObserver.addListener('shake', handleShake));
@@ -161,7 +189,7 @@ export const useAutomaticFeedbackTriggers = ({
                 if (disposed || receivedAppStateChange) return;
 
                 isForeground = isActive;
-                if (isActive) setSensing(true);
+                if (isActive) sensingArbiterRef.current?.request(true);
             })
             .catch(error => {
                 // Fail closed: without a confirmed state, sensing stays off.
@@ -171,7 +199,7 @@ export const useAutomaticFeedbackTriggers = ({
         return () => {
             disposed = true;
             isForeground = false;
-            setSensing(false);
+            sensingArbiterRef.current?.request(false);
             handles.forEach(handle => {
                 void handle.remove();
             });
