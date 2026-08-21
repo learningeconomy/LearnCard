@@ -45,7 +45,7 @@ const getModalDom = (): {
  */
 const ModalAccessibilityManager: React.FC = () => {
     const { modals } = useModalsContext();
-    const { closeModal } = useModalActionsContext();
+    const { requestCloseModal } = useModalActionsContext();
     const returnFocusByModalIdRef = useRef(new Map<number, HTMLElement | null>());
     const activeModalIdRef = useRef<number | null>(null);
     const activeDialogRef = useRef<HTMLElement | null>(null);
@@ -204,7 +204,7 @@ const ModalAccessibilityManager: React.FC = () => {
 
             if (event.key === 'Escape' && !topModal.options?.disableCloseHandlers) {
                 event.preventDefault();
-                closeModal();
+                void requestCloseModal();
                 return;
             }
 
@@ -241,7 +241,7 @@ const ModalAccessibilityManager: React.FC = () => {
             dialog.removeAttribute('aria-label');
             dialog.removeAttribute('tabindex');
         };
-    }, [closeModal, domRevision, openModalIds, topModal]);
+    }, [domRevision, openModalIds, requestCloseModal, topModal]);
 
     return null;
 };

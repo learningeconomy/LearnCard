@@ -17,10 +17,16 @@ export type ModalActionsContextValues = {
     /** Replaces the current modal */
     replaceModal: (component: ModalComponent, options?: ModalOptions, type?: ModalType) => void;
 
-    /** Closes the top modal */
+    /** Closes the top modal without invoking its user-dismissal callback. */
     closeModal: () => void;
 
-    /** Closes a specific modal without disturbing entries stacked above it. */
+    /**
+     * Requests that the user dismiss the top modal. The modal remains open while its callback
+     * settles, and a false result or rejection vetoes removal.
+     */
+    requestCloseModal: () => Promise<boolean>;
+
+    /** Closes a specific modal without invoking its user-dismissal callback. */
     closeModalById: (modalId: number) => void;
 
     /** Closes all modals */
@@ -34,6 +40,9 @@ export const [useModalActionsContext, ModalActionsContextProvider] =
 export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [modals, setModals] = useFreezelessImmer<Modal[]>([]);
     const currentId = useRef(0);
+    const modalsRef = useRef(modals);
+    const pendingUserCloseIdsRef = useRef(new Set<number>());
+    modalsRef.current = modals;
 
     // Disable dimmer for all but top modal
     useEffect(() => {
@@ -85,7 +94,7 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             const { id } = modalToClose;
             modalToClose.open = false;
-            modalToClose?.options?.onClose?.();
+            pendingUserCloseIdsRef.current.delete(id);
 
             setTimeout(
                 () =>
@@ -108,7 +117,7 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 if (!modalToClose) return;
 
                 modalToClose.open = false;
-                modalToClose.options?.onClose?.();
+                pendingUserCloseIdsRef.current.delete(modalId);
 
                 setTimeout(
                     () =>
@@ -125,7 +134,32 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         [setModals]
     );
 
+    const requestCloseModal = useCallback(async (): Promise<boolean> => {
+        const modalToClose = modalsRef.current.findLast(modal => modal.open);
+        if (!modalToClose || modalToClose.options?.disableCloseHandlers) return false;
+
+        const { id, options } = modalToClose;
+        if (pendingUserCloseIdsRef.current.has(id)) return false;
+
+        pendingUserCloseIdsRef.current.add(id);
+
+        let shouldClose = true;
+        try {
+            shouldClose = (await options?.onClose?.()) !== false;
+        } catch {
+            shouldClose = false;
+        } finally {
+            pendingUserCloseIdsRef.current.delete(id);
+        }
+
+        if (!shouldClose) return false;
+
+        closeModalById(id);
+        return true;
+    }, [closeModalById]);
+
     const closeAllModals = useCallback(() => {
+        pendingUserCloseIdsRef.current.clear();
         setModals(oldModals => oldModals.map(modal => ({ ...modal, open: false })));
         setTimeout(() => setModals([]), 300);
     }, [setModals]);
@@ -133,7 +167,14 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return (
         <ModalsContextProvider value={{ modals }}>
             <ModalActionsContextProvider
-                value={{ newModal, replaceModal, closeModal, closeModalById, closeAllModals }}
+                value={{
+                    newModal,
+                    replaceModal,
+                    closeModal,
+                    requestCloseModal,
+                    closeModalById,
+                    closeAllModals,
+                }}
             >
                 {children}
             </ModalActionsContextProvider>

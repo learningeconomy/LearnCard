@@ -11,6 +11,7 @@ export const useModal = ({
         newModal: _newModal,
         replaceModal,
         closeModal,
+        requestCloseModal,
         closeModalById,
         closeAllModals,
     } = useModalActionsContext();
@@ -26,7 +27,14 @@ export const useModal = ({
         [_newModal, _desktop, _mobile]
     );
 
-    return { newModal, replaceModal, closeModal, closeModalById, closeAllModals };
+    return {
+        newModal,
+        replaceModal,
+        closeModal,
+        requestCloseModal,
+        closeModalById,
+        closeAllModals,
+    };
 };
 
 export default useModal;
