@@ -551,7 +551,65 @@ describe('Credentials', () => {
             }
         });
 
-        it('treats a non-accepted direct webhook response as definitive and uses one legacy fallback', async () => {
+        it('treats a structured not-stored response as definitive and uses one legacy fallback', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            vi.mocked(Notifications.addNotificationToQueue).mockRestore();
+            const previousNodeEnv = process.env.NODE_ENV;
+            const previousIsOffline = process.env.IS_OFFLINE;
+            process.env.NODE_ENV = 'development';
+            process.env.IS_OFFLINE = 'true';
+            const learnCardSpy = vi
+                .spyOn(LearnCardHelpers, 'getDidWebLearnCard')
+                .mockResolvedValue({
+                    invoke: { getDidAuthVp: async () => 'test-did-auth-vp' },
+                } as any);
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+                ok: true,
+                status: 200,
+                text: async () => JSON.stringify({ success: false }),
+            } as Response);
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userB.clients.fullAuth.credential.acceptCredential({ uri })
+                ).resolves.toBe(true);
+
+                expect(fetchSpy).toHaveBeenCalledTimes(2);
+                const state = await neogma.queryRunner.run(
+                    `
+                        MATCH (:Profile { profileId: 'usera' })
+                              -[prompt:CONNECTION_PROMPT]->
+                              (:Profile { profileId: 'userb' })
+                        RETURN prompt.status AS status,
+                               coalesce(prompt.notificationDelivered, false) AS delivered,
+                               coalesce(prompt.notificationDeliveryMayHaveSucceeded, false)
+                                   AS mayHaveSucceeded
+                    `
+                );
+                expect(state.records[0]?.toObject()).toEqual({
+                    status: 'SKIPPED',
+                    delivered: false,
+                    mayHaveSucceeded: false,
+                });
+            } finally {
+                consoleErrorSpy.mockRestore();
+                fetchSpy.mockRestore();
+                learnCardSpy.mockRestore();
+                if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+                else process.env.NODE_ENV = previousNodeEnv;
+                if (previousIsOffline === undefined) delete process.env.IS_OFFLINE;
+                else process.env.IS_OFFLINE = previousIsOffline;
+                vi.spyOn(Notifications, 'addNotificationToQueue').mockImplementation(
+                    addNotificationToQueueSpy
+                );
+            }
+        });
+
+        it('keeps a direct 5xx response uncertain without sending a legacy fallback', async () => {
             const uri = await userA.clients.fullAuth.credential.sendCredential({
                 profileId: 'userb',
                 credential: testVc,
@@ -578,7 +636,7 @@ describe('Credentials', () => {
                     userB.clients.fullAuth.credential.acceptCredential({ uri })
                 ).resolves.toBe(true);
 
-                expect(fetchSpy).toHaveBeenCalledTimes(2);
+                expect(fetchSpy).toHaveBeenCalledTimes(1);
                 const state = await neogma.queryRunner.run(
                     `
                         MATCH (:Profile { profileId: 'usera' })
@@ -591,9 +649,9 @@ describe('Credentials', () => {
                     `
                 );
                 expect(state.records[0]?.toObject()).toEqual({
-                    status: 'SKIPPED',
+                    status: 'PENDING',
                     delivered: false,
-                    mayHaveSucceeded: false,
+                    mayHaveSucceeded: true,
                 });
             } finally {
                 consoleErrorSpy.mockRestore();

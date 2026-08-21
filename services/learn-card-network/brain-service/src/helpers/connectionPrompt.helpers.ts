@@ -53,7 +53,7 @@ type PromptStatusRow = {
     status: 'PENDING' | 'SKIPPED' | 'CONNECTED';
 };
 
-type NotificationTransportOutcome = 'accepted' | 'definitivelyRejected' | 'uncertain';
+type NotificationTransportOutcome = 'accepted' | 'queued' | 'definitivelyRejected' | 'uncertain';
 
 type NotificationTransportError = {
     $metadata?: { httpStatusCode?: number };
@@ -73,13 +73,13 @@ const normalizeNotificationTransportResult = (result: unknown): NotificationTran
             $metadata?: { httpStatusCode?: unknown };
         };
 
-        if (typeof response.MessageId === 'string') return 'accepted';
+        if (typeof response.MessageId === 'string') return 'queued';
         if (
             typeof response.$metadata?.httpStatusCode === 'number' &&
             response.$metadata.httpStatusCode >= 200 &&
             response.$metadata.httpStatusCode < 300
         ) {
-            return 'accepted';
+            return 'queued';
         }
     }
 
@@ -346,6 +346,25 @@ const markSenderPromptNotificationDelivered = async (
     );
 };
 
+export const acknowledgeConnectionPromptNotificationDelivery = async (
+    viewerProfileId: string,
+    promptId: string
+): Promise<void> => {
+    await neogma.queryRunner.run(
+        `
+            MATCH (viewer:Profile { profileId: $viewerProfileId })
+                  -[prompt:CONNECTION_PROMPT { promptId: $promptId }]->
+                  (:Profile)
+            WHERE prompt.status = 'PENDING'
+            SET prompt.notificationDelivered = true
+            REMOVE prompt.notificationDeliveryAttemptToken,
+                   prompt.notificationDeliveryAttemptedAt,
+                   prompt.notificationDeliveryMayHaveSucceeded
+        `,
+        { viewerProfileId, promptId }
+    );
+};
+
 const resolveSenderPromptAfterNotificationRejection = async (
     viewer: ProfileType,
     promptId: string,
@@ -536,6 +555,8 @@ export const handleConnectionPromptsForCredentialClaim = async (
 
             return result;
         }
+
+        if (transportOutcome === 'queued') return result;
 
         if (transportOutcome === 'uncertain') {
             try {

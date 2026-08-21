@@ -17,6 +17,16 @@ type NotificationDeliveryOptions = {
 
 type NotificationWebhookResponseRecord = Record<string, unknown>;
 
+const isDefinitiveWebhookRejection = (statusCode: number): boolean => {
+    return statusCode >= 400 && statusCode < 500 && ![408, 425, 429].includes(statusCode);
+};
+
+const createWebhookTransportError = (statusCode: number): Error => {
+    return Object.assign(new Error(`Notification webhook transport failed with ${statusCode}`), {
+        $metadata: { httpStatusCode: statusCode },
+    });
+};
+
 const LOCAL_WEBHOOK_HOSTNAMES = new Set(['localhost', '127.0.0.1', 'host.docker.internal']);
 
 const isNotificationWebhookResponseRecord = (
@@ -214,7 +224,11 @@ export async function sendNotification(
                 clearTimeout(timeoutId);
             }
 
-            if (!response.ok) return false;
+            if (!response.ok) {
+                if (isDefinitiveWebhookRejection(response.status)) return false;
+
+                throw createWebhookTransportError(response.status);
+            }
 
             const responseText = await response.text();
 

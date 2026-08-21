@@ -832,6 +832,29 @@ describe('credential claim connection prompts', () => {
         }
     });
 
+    it('keeps an SQS-queued sender prompt unacknowledged for the worker', async () => {
+        const triggerId = 'credential:queued-for-worker';
+        const notificationSpy = vi
+            .spyOn(notifications, 'addNotificationToQueue')
+            .mockResolvedValue({ MessageId: 'queued-message-id' } as any);
+
+        try {
+            await expect(handleClaim(triggerId)).resolves.toMatchObject({
+                senderPrompt: { isNew: true },
+            });
+            expect(notificationSpy).toHaveBeenCalledOnce();
+            expect(await getSenderPromptDeliveryState()).toMatchObject({
+                status: 'PENDING',
+                delivered: false,
+                attemptToken: expect.any(String),
+                attemptedAt: expect.any(String),
+                mayHaveSucceeded: false,
+            });
+        } finally {
+            notificationSpy.mockRestore();
+        }
+    });
+
     it('does not deliver a different trigger while an earlier sender prompt remains pending', async () => {
         const committed = await createPrompts('credential:pending-original-trigger');
         const notificationSpy = vi
