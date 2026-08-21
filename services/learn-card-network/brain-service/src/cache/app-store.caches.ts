@@ -3,6 +3,7 @@ import { readAppStoreListingById } from '@accesslayer/app-store-listing/read';
 import {
     getIntegrationForListing,
     getBoostForListingByTemplateAlias,
+    getConsentContractForListingByScopeHash,
 } from '@accesslayer/app-store-listing/relationships/read';
 import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
 import {
@@ -28,6 +29,7 @@ const LISTING_CACHE_TTL_MS = 30_000;
 const INTEGRATION_CACHE_TTL_MS = 30_000;
 const OWNER_CACHE_TTL_MS = 30_000;
 const SA_CACHE_TTL_MS = 30_000;
+const CONTRACT_CACHE_TTL_MS = 30_000;
 
 const boostByAliasCache =
     getLRUCache<Awaited<ReturnType<typeof getBoostForListingByTemplateAlias>>>(200);
@@ -40,6 +42,8 @@ const listingSaCache =
     getLRUCache<Awaited<ReturnType<typeof getPrimarySigningAuthorityForListing>>>(200);
 const integrationSaCache =
     getLRUCache<Awaited<ReturnType<typeof getPrimarySigningAuthorityForIntegration>>>(200);
+const consentContractByScopeCache =
+    getLRUCache<Awaited<ReturnType<typeof getConsentContractForListingByScopeHash>>>(200);
 
 export const getBoostForListingCached = async (
     listingId: string,
@@ -52,6 +56,33 @@ export const getBoostForListingCached = async (
     const value = await getBoostForListingByTemplateAlias(listingId, templateAlias, domain);
     boostByAliasCache.add(key, value, BOOST_CACHE_TTL_MS);
     return value;
+};
+
+export const invalidateBoostForListingCache = (
+    listingId: string,
+    templateAlias: string,
+    domain: string
+) => {
+    boostByAliasCache.invalidate(`${listingId}|${templateAlias}|${domain}`);
+};
+
+export const getConsentContractForListingByScopeHashCached = async (
+    listingId: string,
+    scopeHash: string
+) => {
+    const key = `${listingId}|${scopeHash}`;
+    const hit = consentContractByScopeCache.get(key);
+    if (hit !== undefined) return hit;
+    const value = await getConsentContractForListingByScopeHash(listingId, scopeHash);
+    consentContractByScopeCache.add(key, value, CONTRACT_CACHE_TTL_MS);
+    return value;
+};
+
+export const invalidateConsentContractForListingByScopeHashCache = (
+    listingId: string,
+    scopeHash: string
+) => {
+    consentContractByScopeCache.invalidate(`${listingId}|${scopeHash}`);
 };
 
 export const readAppStoreListingByIdCached = async (listingId: string) => {
@@ -85,6 +116,10 @@ export const getPrimarySigningAuthorityForListingCached = async (listing: AppSto
     const value = await getPrimarySigningAuthorityForListing(listing);
     listingSaCache.add(key, value, SA_CACHE_TTL_MS);
     return value;
+};
+
+export const invalidateListingSigningAuthorityCache = (listingId: string) => {
+    listingSaCache.invalidate(listingId);
 };
 
 export const getPrimarySigningAuthorityForIntegrationCached = async (integrationId: string) => {
