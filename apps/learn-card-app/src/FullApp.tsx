@@ -49,6 +49,7 @@ import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
 import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
+import { FeedbackProvider } from './feedback/reporting';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
 
@@ -220,7 +221,9 @@ const FullApp: React.FC = () => {
                                             and session-end event — wherever it's
                                             published — flows through one reactor. */}
                                         <PathwayProgressReactorMount />
-                                        <AppRouter />
+                                        <FeedbackProvider>
+                                            <AppRouter />
+                                        </FeedbackProvider>
                                         <InAppMessageHost />
                                         <QRCodeScannerListener />
 
