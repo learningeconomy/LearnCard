@@ -42,6 +42,37 @@ export type ThreadCredentialContext = {
     title?: string;
 };
 
+export type LearningCommonsDebugStandard = {
+    statementCode: string;
+    description: string;
+    caseIdentifierURI: string;
+    jurisdiction: string;
+    academicSubject: string;
+    gradeLevel: string[];
+    author: string;
+    license: string;
+    attributionStatement: string;
+};
+
+export type LearningCommonsDebugGrounding = {
+    source: {
+        provider: 'Learning Commons';
+        searchScore?: number;
+        targetUrl: string;
+        retrievedAt: string;
+    };
+    target: LearningCommonsDebugStandard;
+    prerequisite?: LearningCommonsDebugStandard;
+    relationship?: {
+        relationshipType: 'buildsTowards';
+        description: string;
+    };
+};
+
+export type LearningCommonsDebugState =
+    | { status: 'idle' | 'pending' | 'unavailable'; grounding?: never }
+    | { status: 'grounded'; grounding: LearningCommonsDebugGrounding };
+
 export type Thread = {
     id: string;
     did: string;

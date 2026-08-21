@@ -1,5 +1,6 @@
 import { atom } from 'nanostores';
 import { v4 as uuid } from 'uuid';
+import { z } from 'zod';
 
 import { auth } from './authStore';
 import { resetArtifactsStore } from './artifactsStore';
@@ -15,6 +16,7 @@ import type {
     ThreadCredentialContext,
     LearningPathway,
     ActiveSessionStatus,
+    LearningCommonsDebugState,
 } from '../../types/ai-chat';
 import { parseAiErrorPayload, type AiClientError } from '../../helpers/aiErrors';
 
@@ -29,6 +31,7 @@ export const showEndingSessionLoader = atom(false);
 export const activeQuestions = atom<string[]>([]);
 export const suggestedTopics = atom<string[]>([]);
 export const topicCredentials = atom<ThreadCredentialContext[]>([]);
+export const learningCommonsDebug = atom<LearningCommonsDebugState>({ status: 'idle' });
 export const sessionEnded = atom(false);
 export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
@@ -139,6 +142,35 @@ const CREDENTIAL_INGESTION_PHASES = {
     error: true,
 } satisfies Record<NonNullable<CredentialContextReadiness['ingestionPhase']>, true>;
 
+const LearningCommonsDebugStandardValidator = z.object({
+    statementCode: z.string(),
+    description: z.string(),
+    caseIdentifierURI: z.string(),
+    jurisdiction: z.string(),
+    academicSubject: z.string(),
+    gradeLevel: z.array(z.string()),
+    author: z.string(),
+    license: z.string(),
+    attributionStatement: z.string(),
+});
+
+const LearningCommonsDebugGroundingValidator = z.object({
+    source: z.object({
+        provider: z.literal('Learning Commons'),
+        searchScore: z.number().optional(),
+        targetUrl: z.string(),
+        retrievedAt: z.string(),
+    }),
+    target: LearningCommonsDebugStandardValidator,
+    prerequisite: LearningCommonsDebugStandardValidator.optional(),
+    relationship: z
+        .object({
+            relationshipType: z.literal('buildsTowards'),
+            description: z.string(),
+        })
+        .optional(),
+});
+
 /** Returns whether a thread has explicit lifecycle or legacy summary evidence of ending. */
 export const hasThreadEnded = (thread: Thread | undefined): boolean =>
     Boolean(thread?.ended_at || thread?.active === false || thread?.summaries?.length);
@@ -172,6 +204,7 @@ export function resetChatSessionStores() {
     planReady.set(false);
     planReadyThread.set(null);
     credentialContextReadiness.set({ status: 'idle', count: 0 });
+    learningCommonsDebug.set({ status: 'idle' });
     currentTopicUri.set(null);
     currentAiPathwayUri.set(null);
     sessionStartedAt.set(null);
@@ -497,6 +530,22 @@ export function connectWebSocket() {
                 if (typeof data.requestId === 'string') {
                     currentSessionStartRequestId = data.requestId;
                 }
+
+                return;
+            }
+
+            if (data.event === 'learning_commons_grounding') {
+                if (!isCurrentSessionStartFrame(data.requestId)) return;
+
+                if (data.grounding === null) {
+                    learningCommonsDebug.set({ status: 'unavailable' });
+                    return;
+                }
+
+                const result = LearningCommonsDebugGroundingValidator.safeParse(data.grounding);
+
+                if (result.success)
+                    learningCommonsDebug.set({ status: 'grounded', grounding: result.data });
 
                 return;
             }
