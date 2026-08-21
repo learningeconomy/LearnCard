@@ -32,6 +32,13 @@ export class NoopProvider implements AnalyticsProvider {
         }
     }
 
+    async trackAnonymous<E extends AnalyticsEventName>(
+        _event: E,
+        _properties: EventPayload<E>
+    ): Promise<void> {
+        throw new Error('Anonymous analytics is unavailable');
+    }
+
     async page(name: string, properties?: Record<string, unknown>): Promise<void> {
         if (import.meta.env.DEV) {
             log.debug('[Analytics:Noop] page', { name, properties });

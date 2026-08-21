@@ -10,6 +10,26 @@ type CaptureLike = {
     $set_once?: Record<string, unknown>;
 } | null;
 
+/** Consumed by `before_send`; never leaves the SDK boundary. */
+const ANONYMOUS_CAPTURE_PROPERTY = '__learncard_anonymous_capture';
+
+type AnonymousCaptureEnvelope = {
+    distinctId: string;
+    properties: Record<string, unknown>;
+};
+
+const isAnonymousCaptureEnvelope = (value: unknown): value is AnonymousCaptureEnvelope => {
+    if (!value || typeof value !== 'object') return false;
+
+    const envelope = value as Partial<AnonymousCaptureEnvelope>;
+    return (
+        typeof envelope.distinctId === 'string' &&
+        !!envelope.properties &&
+        typeof envelope.properties === 'object' &&
+        !Array.isArray(envelope.properties)
+    );
+};
+
 /**
  * Query params that are safe to keep on captured URLs. Everything else
  * is stripped — claim/exchange URLs (`vc_request_url`, OIDC4VCI offers,
@@ -72,7 +92,19 @@ export const applyPostHogHygiene = <T extends CaptureLike>(event: T): T | null =
     if (!event) return null;
     if (shouldDropEvents()) return null;
 
-    event.properties = { ...event.properties, ...getSharedEventContext() };
+    const anonymousCapture = event.properties?.[ANONYMOUS_CAPTURE_PROPERTY];
+    if (isAnonymousCaptureEnvelope(anonymousCapture)) {
+        const token = event.properties?.token;
+        event.properties = {
+            ...anonymousCapture.properties,
+            ...getSharedEventContext(),
+            ...(typeof token === 'string' ? { token } : {}),
+            distinct_id: anonymousCapture.distinctId,
+            $process_person_profile: false,
+        };
+    } else {
+        event.properties = { ...event.properties, ...getSharedEventContext() };
+    }
 
     scrubUrlBag(event.properties);
     scrubUrlBag(event.properties.$set as Record<string, unknown> | undefined);
@@ -145,6 +177,25 @@ export class PostHogProvider implements AnalyticsProvider {
         } catch (error) {
             log.error('[Analytics:PostHog] track error', error);
         }
+    }
+
+    async trackAnonymous<E extends AnalyticsEventName>(
+        event: E,
+        properties: EventPayload<E>
+    ): Promise<void> {
+        if (!this.posthog) throw new Error('PostHog is unavailable');
+
+        const distinctId = globalThis.crypto.randomUUID();
+        const captured = this.posthog.capture(event, {
+            distinct_id: distinctId,
+            $process_person_profile: false,
+            [ANONYMOUS_CAPTURE_PROPERTY]: {
+                distinctId,
+                properties: properties as Record<string, unknown>,
+            },
+        });
+
+        if (!captured) throw new Error('PostHog did not accept the event');
     }
 
     async page(name: string, properties?: Record<string, unknown>): Promise<void> {

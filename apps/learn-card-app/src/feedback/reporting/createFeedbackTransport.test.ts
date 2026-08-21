@@ -67,34 +67,39 @@ const bugReport: FeedbackReport = {
 
 describe('createFeedbackTransport', () => {
     let track: ReturnType<typeof vi.fn>;
+    let trackAnonymous: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         vi.clearAllMocks();
         track = vi.fn().mockResolvedValue(undefined);
+        trackAnonymous = vi.fn().mockResolvedValue(undefined);
     });
 
-    it('sends ideas through the typed analytics adapter without bug diagnostics', async () => {
+    it('sends ideas only through the anonymous analytics operation without bug diagnostics', async () => {
         const transport = createFeedbackTransport({
             track,
+            trackAnonymous,
             isReady: true,
             providerName: 'posthog',
         });
 
         await transport.submit(ideaReport);
 
-        expect(track).toHaveBeenCalledTimes(1);
-        expect(track).toHaveBeenCalledWith(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, {
+        expect(trackAnonymous).toHaveBeenCalledTimes(1);
+        expect(trackAnonymous).toHaveBeenCalledWith(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, {
             source: 'settings',
             message: 'Add a compact credential view',
             currentRoute: '/wallet',
             appVersion: '1.98.3',
         });
+        expect(track).not.toHaveBeenCalled();
         expect(submitSentryFeedback).not.toHaveBeenCalled();
     });
 
     it('omits appVersion when the report has no app context', async () => {
         const transport = createFeedbackTransport({
             track,
+            trackAnonymous,
             isReady: true,
             providerName: 'posthog',
         });
@@ -102,7 +107,7 @@ describe('createFeedbackTransport', () => {
         const { app, ...contextWithoutApp } = ideaReport.context;
         await transport.submit({ ...ideaReport, context: contextWithoutApp });
 
-        expect(track).toHaveBeenCalledWith(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, {
+        expect(trackAnonymous).toHaveBeenCalledWith(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, {
             source: 'settings',
             message: 'Add a compact credential view',
             currentRoute: '/wallet',
@@ -112,6 +117,7 @@ describe('createFeedbackTransport', () => {
     it('resolves without an id once the provider accepts the event', async () => {
         const transport = createFeedbackTransport({
             track,
+            trackAnonymous,
             isReady: true,
             providerName: 'posthog',
         });
@@ -122,6 +128,7 @@ describe('createFeedbackTransport', () => {
     it('routes bugs to the Sentry adapter and never touches analytics', async () => {
         const transport = createFeedbackTransport({
             track,
+            trackAnonymous,
             isReady: true,
             providerName: 'posthog',
         });
@@ -131,10 +138,16 @@ describe('createFeedbackTransport', () => {
         expect(submitSentryFeedback).toHaveBeenCalledTimes(1);
         expect(submitSentryFeedback).toHaveBeenCalledWith(bugReport);
         expect(track).not.toHaveBeenCalled();
+        expect(trackAnonymous).not.toHaveBeenCalled();
     });
 
     it('routes bugs to Sentry even when analytics is unavailable', async () => {
-        const transport = createFeedbackTransport({ track, isReady: false, providerName: 'noop' });
+        const transport = createFeedbackTransport({
+            track,
+            trackAnonymous,
+            isReady: false,
+            providerName: 'noop',
+        });
 
         await expect(transport.submit(bugReport)).resolves.toEqual({ id: 'sentry-event-1' });
         expect(track).not.toHaveBeenCalled();
@@ -143,6 +156,7 @@ describe('createFeedbackTransport', () => {
     it('rejects ideas with the friendly transport error when analytics is not ready', async () => {
         const transport = createFeedbackTransport({
             track,
+            trackAnonymous,
             isReady: false,
             providerName: 'posthog',
         });
@@ -152,7 +166,12 @@ describe('createFeedbackTransport', () => {
     });
 
     it('rejects ideas when the provider is not PostHog and never reports success through noop', async () => {
-        const transport = createFeedbackTransport({ track, isReady: true, providerName: 'noop' });
+        const transport = createFeedbackTransport({
+            track,
+            trackAnonymous,
+            isReady: true,
+            providerName: 'noop',
+        });
 
         await expect(transport.submit(ideaReport)).rejects.toThrow(
             FEEDBACK_TRANSPORT_ERROR_MESSAGE
@@ -160,14 +179,18 @@ describe('createFeedbackTransport', () => {
         expect(track).not.toHaveBeenCalled();
     });
 
-    it('rejects ideas when the analytics track call itself fails', async () => {
-        track.mockRejectedValue(new Error('posthog offline'));
+    it('maps anonymous analytics rejection to the friendly retryable error', async () => {
+        trackAnonymous.mockRejectedValue(new Error('posthog offline'));
         const transport = createFeedbackTransport({
             track,
+            trackAnonymous,
             isReady: true,
             providerName: 'posthog',
         });
 
-        await expect(transport.submit(ideaReport)).rejects.toThrow('posthog offline');
+        await expect(transport.submit(ideaReport)).rejects.toThrow(
+            FEEDBACK_TRANSPORT_ERROR_MESSAGE
+        );
+        expect(track).not.toHaveBeenCalled();
     });
 });

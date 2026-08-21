@@ -43,6 +43,13 @@ export class FirebaseProvider implements AnalyticsProvider {
         }
     }
 
+    async trackAnonymous<E extends AnalyticsEventName>(
+        _event: E,
+        _properties: EventPayload<E>
+    ): Promise<void> {
+        throw new Error('Anonymous analytics is unavailable');
+    }
+
     async page(name: string, _properties?: Record<string, unknown>): Promise<void> {
         try {
             await FirebaseAnalytics.setCurrentScreen({

@@ -14,6 +14,7 @@ const provider: AnalyticsProvider = {
     init: vi.fn(),
     identify: vi.fn(),
     track,
+    trackAnonymous: vi.fn(),
     page: vi.fn(),
     reset: vi.fn(),
     setEnabled: vi.fn(),

@@ -5,11 +5,11 @@
  *
  *   - `bug` → the Sentry adapter (`submitSentryFeedback`); analytics is never
  *     touched, so bug diagnostics cannot leak into PostHog.
- *   - `idea` → the existing typed `AnalyticsProvider.track` abstraction with
- *     the `feedback_idea_submitted` event. Only source, message, currentRoute,
- *     and appVersion travel — no screenshot, logs, or device data. Tenant,
- *     platform, and other shared context continue to be stamped by the central
- *     provider wrapper.
+ *   - `idea` → the dedicated typed `AnalyticsProvider.trackAnonymous`
+ *     operation with the `feedback_idea_submitted` event. Only source, message,
+ *     currentRoute, and appVersion travel — no screenshot, logs, device data,
+ *     or signed-in analytics identity. Tenant, platform, and other shared
+ *     context continue to be stamped by the central provider wrapper.
  *
  * An unready provider or a non-PostHog provider is treated as a retryable
  * submission failure: the idea rejects with the friendly transport error and is
@@ -28,6 +28,11 @@ import type { FeedbackTransport } from './types';
 export interface FeedbackAnalyticsAdapter {
     /** Typed track call from the central analytics abstraction. */
     track<E extends AnalyticsEventName>(event: E, properties: EventPayload<E>): Promise<unknown>;
+    /** Typed anonymous operation that rejects when delivery is unavailable. */
+    trackAnonymous<E extends AnalyticsEventName>(
+        event: E,
+        properties: EventPayload<E>
+    ): Promise<unknown>;
     /** Whether the lazily-loaded provider finished initializing. */
     isReady: boolean;
     /** Active provider name (`'posthog'` is the only idea-capable provider). */
@@ -55,12 +60,16 @@ export const createFeedbackTransport = (
             throw new Error(FEEDBACK_TRANSPORT_ERROR_MESSAGE);
         }
 
-        await analytics.track(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, {
-            source: report.source,
-            message: report.message,
-            currentRoute: report.context.currentRoute,
-            appVersion: report.context.app?.displayVersion,
-        });
+        try {
+            await analytics.trackAnonymous(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, {
+                source: report.source,
+                message: report.message,
+                currentRoute: report.context.currentRoute,
+                appVersion: report.context.app?.displayVersion,
+            });
+        } catch {
+            throw new Error(FEEDBACK_TRANSPORT_ERROR_MESSAGE);
+        }
 
         // Ideas have no provider-side event ID; acceptance is success.
         return {};

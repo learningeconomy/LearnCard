@@ -87,6 +87,13 @@ function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
             if (shouldDropEvents()) return;
             await provider.track(event, { ...properties, ...getSharedEventContext() });
         },
+        trackAnonymous: async (event, properties) => {
+            if (shouldDropEvents()) return;
+            await provider.trackAnonymous(event, {
+                ...properties,
+                ...getSharedEventContext(),
+            });
+        },
         page: async (name, properties) => {
             if (shouldDropEvents()) return;
             await provider.page(name, { ...properties, ...getSharedEventContext() });
@@ -199,6 +206,13 @@ export function useAnalytics() {
         [provider]
     );
 
+    const trackAnonymous = useCallback(
+        async <E extends AnalyticsEventName>(event: E, properties: EventPayload<E>) => {
+            await provider.trackAnonymous(event, properties);
+        },
+        [provider]
+    );
+
     const page = useCallback(
         async (name: string, properties?: Record<string, unknown>) => {
             await provider.page(name, properties);
@@ -219,6 +233,7 @@ export function useAnalytics() {
 
     return {
         track,
+        trackAnonymous,
         identify,
         page,
         reset,

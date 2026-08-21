@@ -31,6 +31,15 @@ export interface AnalyticsProvider {
     track<E extends AnalyticsEventName>(event: E, properties: EventPayload<E>): Promise<void>;
 
     /**
+     * Track an event with a fresh, non-persisted identity and no person profile.
+     * Rejects when the active provider cannot guarantee anonymous delivery.
+     */
+    trackAnonymous<E extends AnalyticsEventName>(
+        event: E,
+        properties: EventPayload<E>
+    ): Promise<void>;
+
+    /**
      * Track a page/screen view.
      * @param name - Screen or page name
      * @param properties - Optional additional properties

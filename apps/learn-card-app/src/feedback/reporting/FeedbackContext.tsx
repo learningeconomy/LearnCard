@@ -193,11 +193,12 @@ export const FeedbackProvider: React.FC<{
     const defaultTransport = useMemo<FeedbackTransport>(() => {
         const adapter: FeedbackAnalyticsAdapter = {
             track: analytics.track,
+            trackAnonymous: analytics.trackAnonymous,
             isReady: analytics.isReady,
             providerName: analytics.providerName,
         };
         return createFeedbackTransport(adapter);
-    }, [analytics.track, analytics.isReady, analytics.providerName]);
+    }, [analytics.track, analytics.trackAnonymous, analytics.isReady, analytics.providerName]);
 
     const transportRef = useRef<FeedbackTransport>(defaultTransport);
     transportRef.current = depsRef.current.transport ?? defaultTransport;
