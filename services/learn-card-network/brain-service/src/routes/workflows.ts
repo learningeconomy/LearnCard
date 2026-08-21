@@ -16,7 +16,10 @@ import { t, openRoute, Context } from '@routes';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
-import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import {
+    getSigningAuthorityForUserByName,
+    getListingUsingSigningAuthority,
+} from '@accesslayer/signing-authority/relationships/read';
 import { storeCredential } from '@accesslayer/credential/create';
 import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
 
@@ -38,6 +41,7 @@ import { getContactMethodById, getProfileByContactMethod } from '@accesslayer/co
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 
 import { getBoostUri, isBoostViewableByClaimLink, isDraftBoost } from '@helpers/boost.helpers';
+import { getAppDidWeb } from '@helpers/did.helpers';
 import { getBoostOwnerProfile } from 'types/boost';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
@@ -341,6 +345,18 @@ async function handlePresentationForClaim(
         });
     }
 
+    // App-owned SAs are keyed by the *app's* DID (not the user's DID) in the LCA-API
+    // (see app-store.ts issuance flows), so when the claim link's SA belongs to an app
+    // listing we must override the owner DID or the LCA-API lookup will miss.
+    const listingUsingSa = await getListingUsingSigningAuthority(
+        claimLinkSA.endpoint,
+        claimLinkSA.name,
+        signingAuthorityForUser.relationship.did
+    );
+    const ownerDidOverride = listingUsingSa?.slug
+        ? getAppDidWeb(domain, listingUsingSa.slug)
+        : undefined;
+
     // Verify the presentation
     const learnCard = await getEmptyLearnCard();
     const verificationResult = await learnCard.invoke.verifyPresentation(verifiablePresentation, {
@@ -409,7 +425,8 @@ async function handlePresentationForClaim(
             boostCredential,
             signingAuthorityForUser,
             domain,
-            false
+            false,
+            ownerDidOverride
         )) as VC;
 
         // Mark the challenge as used
@@ -422,9 +439,12 @@ async function handlePresentationForClaim(
         };
     } catch (error) {
         console.error('Failed to issue credential via VC-API exchange:', error);
+        // Surface the underlying failure so callers can diagnose issues (e.g. a
+        // signing authority lookup miss) without digging through server logs
+        const detail = error instanceof Error ? error.message : String(error);
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to issue credential for exchange',
+            message: `Failed to issue credential for exchange: ${detail}`,
         });
     }
 }
