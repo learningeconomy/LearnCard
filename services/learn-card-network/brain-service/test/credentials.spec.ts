@@ -667,6 +667,122 @@ describe('Credentials', () => {
             }
         });
 
+        it('keeps an ambiguous downstream Mongo timeout pending without a legacy fallback', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            vi.mocked(Notifications.addNotificationToQueue).mockRestore();
+            const previousNodeEnv = process.env.NODE_ENV;
+            const previousIsOffline = process.env.IS_OFFLINE;
+            process.env.NODE_ENV = 'development';
+            process.env.IS_OFFLINE = 'true';
+            const learnCardSpy = vi
+                .spyOn(LearnCardHelpers, 'getDidWebLearnCard')
+                .mockResolvedValue({
+                    invoke: { getDidAuthVp: async () => 'test-did-auth-vp' },
+                } as any);
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(
+                Object.assign(new Error('Mongo write response timed out'), {
+                    name: 'MongoNetworkTimeoutError',
+                })
+            );
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userB.clients.fullAuth.credential.acceptCredential({ uri })
+                ).resolves.toBe(true);
+
+                expect(fetchSpy).toHaveBeenCalledTimes(1);
+                const state = await neogma.queryRunner.run(
+                    `
+                        MATCH (:Profile { profileId: 'usera' })
+                              -[prompt:CONNECTION_PROMPT]->
+                              (:Profile { profileId: 'userb' })
+                        RETURN prompt.status AS status,
+                               coalesce(prompt.notificationDelivered, false) AS delivered,
+                               coalesce(prompt.notificationDeliveryMayHaveSucceeded, false)
+                                   AS mayHaveSucceeded
+                    `
+                );
+                expect(state.records[0]?.toObject()).toEqual({
+                    status: 'PENDING',
+                    delivered: false,
+                    mayHaveSucceeded: true,
+                });
+            } finally {
+                consoleErrorSpy.mockRestore();
+                fetchSpy.mockRestore();
+                learnCardSpy.mockRestore();
+                if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+                else process.env.NODE_ENV = previousNodeEnv;
+                if (previousIsOffline === undefined) delete process.env.IS_OFFLINE;
+                else process.env.IS_OFFLINE = previousIsOffline;
+                vi.spyOn(Notifications, 'addNotificationToQueue').mockImplementation(
+                    addNotificationToQueueSpy
+                );
+            }
+        });
+
+        it('keeps an empty 2xx actionable acknowledgement uncertain without a legacy fallback', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            vi.mocked(Notifications.addNotificationToQueue).mockRestore();
+            const previousNodeEnv = process.env.NODE_ENV;
+            const previousIsOffline = process.env.IS_OFFLINE;
+            process.env.NODE_ENV = 'development';
+            process.env.IS_OFFLINE = 'true';
+            const learnCardSpy = vi
+                .spyOn(LearnCardHelpers, 'getDidWebLearnCard')
+                .mockResolvedValue({
+                    invoke: { getDidAuthVp: async () => 'test-did-auth-vp' },
+                } as any);
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+                ok: true,
+                status: 200,
+                text: async () => '',
+            } as Response);
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userB.clients.fullAuth.credential.acceptCredential({ uri })
+                ).resolves.toBe(true);
+
+                expect(fetchSpy).toHaveBeenCalledTimes(1);
+                const state = await neogma.queryRunner.run(
+                    `
+                        MATCH (:Profile { profileId: 'usera' })
+                              -[prompt:CONNECTION_PROMPT]->
+                              (:Profile { profileId: 'userb' })
+                        RETURN prompt.status AS status,
+                               coalesce(prompt.notificationDelivered, false) AS delivered,
+                               coalesce(prompt.notificationDeliveryMayHaveSucceeded, false)
+                                   AS mayHaveSucceeded
+                    `
+                );
+                expect(state.records[0]?.toObject()).toEqual({
+                    status: 'PENDING',
+                    delivered: false,
+                    mayHaveSucceeded: true,
+                });
+            } finally {
+                consoleErrorSpy.mockRestore();
+                fetchSpy.mockRestore();
+                learnCardSpy.mockRestore();
+                if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+                else process.env.NODE_ENV = previousNodeEnv;
+                if (previousIsOffline === undefined) delete process.env.IS_OFFLINE;
+                else process.env.IS_OFFLINE = previousIsOffline;
+                vi.spyOn(Notifications, 'addNotificationToQueue').mockImplementation(
+                    addNotificationToQueueSpy
+                );
+            }
+        });
+
         it('skips the undeliverable sender prompt for the same trigger and reopens it on a later claim', async () => {
             const firstUri = await userA.clients.fullAuth.credential.sendCredential({
                 profileId: 'userb',

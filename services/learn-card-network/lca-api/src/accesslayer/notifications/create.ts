@@ -20,6 +20,28 @@ const getActionableNotificationId = (notification: LCNNotification, promptId: st
     return `connection-prompt:${digest}`;
 };
 
+const isAmbiguousMongoWriteError = (error: unknown): boolean => {
+    if (typeof error !== 'object' || error === null) return false;
+
+    const { name, errorLabels } = error as { name?: unknown; errorLabels?: unknown };
+
+    if (
+        typeof name === 'string' &&
+        (name.startsWith('MongoNetwork') ||
+            name === 'MongoOperationTimeoutError' ||
+            name === 'MongoWriteConcernError')
+    ) {
+        return true;
+    }
+
+    return (
+        Array.isArray(errorLabels) &&
+        errorLabels.some(
+            label => label === 'RetryableWriteError' || label === 'UnknownTransactionCommitResult'
+        )
+    );
+};
+
 export const createNotification = async (
     notification: LCNNotification
 ): Promise<NotificationCreationResult | false> => {
@@ -67,6 +89,8 @@ export const createNotification = async (
         ) {
             return { created: false };
         }
+
+        if (isAmbiguousMongoWriteError(e)) throw e;
 
         console.error(e);
         return false;

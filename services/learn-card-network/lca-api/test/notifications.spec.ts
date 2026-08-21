@@ -103,6 +103,41 @@ describe('Notifications', () => {
             }
         });
 
+        it('does not definitively reject after an ambiguous Mongo write failure', async () => {
+            const notification = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+                undefined,
+                {
+                    metadata: {
+                        connectionPrompt: {
+                            promptId: '44444444-4444-4444-8444-444444444444',
+                            counterpartProfileId: 'userb',
+                        },
+                    },
+                }
+            );
+            const ambiguousWriteError = Object.assign(
+                new Error('connection timed out after sending the write'),
+                { name: 'MongoNetworkTimeoutError' }
+            );
+            const updateSpy = vi
+                .spyOn(Notifications, 'updateOne')
+                .mockRejectedValue(ambiguousWriteError);
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userA.clients.authorizedDidAuth.notifications.sendNotification(notification)
+                ).rejects.toThrow('connection timed out after sending the write');
+                await expect(Notifications.countDocuments({})).resolves.toBe(0);
+            } finally {
+                consoleErrorSpy.mockRestore();
+                updateSpy.mockRestore();
+            }
+        });
+
         it('accepts durable storage when push fails and retries without another insert or push', async () => {
             const notification = getTestNotification(
                 userA.learnCard.id.did(),

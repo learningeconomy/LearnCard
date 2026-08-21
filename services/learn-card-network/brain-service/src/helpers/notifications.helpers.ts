@@ -27,6 +27,17 @@ const createWebhookTransportError = (statusCode: number): Error => {
     });
 };
 
+const createUnrecognizedWebhookAcknowledgementError = (statusCode: number): Error => {
+    return Object.assign(
+        new Error(
+            `Notification webhook returned an unrecognized durable-storage acknowledgement with ${statusCode}`
+        ),
+        {
+            $metadata: { httpStatusCode: statusCode },
+        }
+    );
+};
+
 const LOCAL_WEBHOOK_HOSTNAMES = new Set(['localhost', '127.0.0.1', 'host.docker.internal']);
 
 const isNotificationWebhookResponseRecord = (
@@ -232,13 +243,20 @@ export async function sendNotification(
 
             const responseText = await response.text();
 
-            let responseBody: unknown = true;
+            let responseBody: unknown;
             if (responseText.trim().length > 0) {
                 try {
                     responseBody = JSON.parse(responseText);
                 } catch {
                     responseBody = responseText;
                 }
+            }
+
+            if (
+                notification.data?.metadata?.connectionPrompt &&
+                extractNotificationWebhookSuccess(responseBody) === null
+            ) {
+                throw createUnrecognizedWebhookAcknowledgementError(response.status);
             }
 
             const notificationDelivered = parseNotificationWebhookResponse(

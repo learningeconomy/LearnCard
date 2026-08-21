@@ -216,6 +216,58 @@ describe('notifications SQS worker', () => {
         }
     });
 
+    it('retries an actionable notification after an unrecognized 2xx acknowledgement', async () => {
+        const created = await createConnectionPromptsForClaim({
+            claimer: profileB,
+            sender: profileA,
+            triggerId: 'credential:worker-unknown-ack',
+        });
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ status: 'ok' }),
+        } as Response);
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        try {
+            await expect(
+                invokeWorker(
+                    record(
+                        'unknown-ack-id',
+                        notification('unknown-ack', {
+                            promptId: created.senderPrompt!.promptId,
+                            counterpartProfileId: profileB.profileId,
+                        })
+                    )
+                )
+            ).resolves.toEqual({
+                batchItemFailures: [{ itemIdentifier: 'unknown-ack-id' }],
+            });
+            await expect(getSenderDeliveryState()).resolves.toMatchObject({ delivered: false });
+        } finally {
+            consoleErrorSpy.mockRestore();
+            fetchSpy.mockRestore();
+        }
+    });
+
+    it('preserves compatible unrecognized 2xx handling for legacy queue records', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ status: 'ok' }),
+        } as Response);
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        try {
+            await expect(
+                invokeWorker(record('legacy-unknown-ack-id', notification('legacy-unknown-ack')))
+            ).resolves.toEqual({ batchItemFailures: [] });
+        } finally {
+            warnSpy.mockRestore();
+            fetchSpy.mockRestore();
+        }
+    });
+
     it('retries a graph acknowledgement failure and safely acknowledges the stored notification', async () => {
         const created = await createConnectionPromptsForClaim({
             claimer: profileB,
