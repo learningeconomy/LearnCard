@@ -83,6 +83,7 @@ import { AnalyticsEvents, useAnalytics } from '@analytics';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
+import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland.js';
 
 const DashboardPage: React.FC = () => {
     const history = useHistory();
@@ -563,6 +564,11 @@ const DashboardPage: React.FC = () => {
                             borderBottom: '1px solid white',
                         }}
                     />
+                )}
+                {!isMobile && (
+                    <div className="absolute right-[10px] top-[10px] z-20">
+                        <ProfileAlertsIsland />
+                    </div>
                 )}
                 <IonContent
                     fullscreen
