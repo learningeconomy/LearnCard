@@ -38,6 +38,7 @@ export const tenantApiConfigSchema = z
         xapi: urlOrPlaceholder().optional(),
         notificationsEndpoint: urlOrPlaceholder().optional(),
         aiService: urlOrPlaceholder().optional(),
+        aiAgentService: urlOrPlaceholder().optional(),
         corsProxyApiKey: z.string().optional(),
     })
     .passthrough();

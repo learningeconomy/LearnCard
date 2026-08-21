@@ -6,7 +6,8 @@
         "brainServiceApi": "https://staging.network.learncard.com/api",
         "cloudService": "https://staging.cloud.learncard.com/trpc",
         "lcaApi": "https://staging.api.learncard.app/trpc",
-        "xapi": "https://staging.network.learncard.com/xapi"
+        "xapi": "https://staging.network.learncard.com/xapi",
+        "aiAgentService": "https://agent-staging.learncard.ai"
     },
     "features": {
         "analytics": false,

@@ -1,5 +1,32 @@
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
+
 export const AGENT_URL_STORAGE_KEY = 'learnCardAiAgentDebugUrl';
 export const DEFAULT_AGENT_URL = 'http://localhost:4300';
+
+/**
+ * Resolve the AI Agent service URL.
+ *
+ * Precedence: debug override (localStorage) → build-time env
+ * (VITE_AI_AGENT_URL) → tenant config (networkStore) → local dev default.
+ */
+export const getInitialAgentUrl = (): string => {
+    try {
+        const debugOverride = localStorage.getItem(AGENT_URL_STORAGE_KEY);
+        if (debugOverride) return normalizeAgentUrl(debugOverride);
+
+        const envAgentUrl = import.meta.env.VITE_AI_AGENT_URL;
+        const configuredAgentUrl =
+            typeof envAgentUrl === 'string' &&
+            envAgentUrl.trim() &&
+            envAgentUrl.trim().toLowerCase() !== 'undefined'
+                ? envAgentUrl
+                : networkStore.get.aiAgentUrl();
+
+        return normalizeAgentUrl(configuredAgentUrl || DEFAULT_AGENT_URL);
+    } catch {
+        return DEFAULT_AGENT_URL;
+    }
+};
 
 export type LearnCardAssistantCardType =
     | 'message'
@@ -254,14 +281,6 @@ export const normalizeAgentUrl = (url: string): string => {
     if (!trimmedUrl) return DEFAULT_AGENT_URL;
 
     return /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `http://${trimmedUrl}`;
-};
-
-export const getInitialAgentUrl = (): string => {
-    try {
-        return localStorage.getItem(AGENT_URL_STORAGE_KEY) || DEFAULT_AGENT_URL;
-    } catch {
-        return DEFAULT_AGENT_URL;
-    }
 };
 
 const parseJson = async <T>(response: Response): Promise<T> => (await response.json()) as T;

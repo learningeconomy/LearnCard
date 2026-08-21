@@ -1,6 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import {
+    AGENT_URL_STORAGE_KEY,
+    DEFAULT_AGENT_URL,
     approveLearnCardAssistantMemory,
     archiveLearnCardAssistantMemory,
     createLearnCardAssistantAuth,
@@ -11,6 +15,7 @@ import {
     fetchLearnCardAssistantMemories,
     fetchLearnCardAssistantProfile,
     fetchLearnCardAssistantSchedules,
+    getInitialAgentUrl,
     markLearnCardAssistantCardRead,
     runLearnCardAssistantAgent,
     sendLearnCardAssistantCardFeedback,
@@ -316,5 +321,38 @@ describe('learnCardAssistant API DID Auth', () => {
             Authorization: 'Bearer vp.jwt',
             'X-AI-Agent-Debug-Token': 'debug-token',
         });
+    });
+});
+
+describe('getInitialAgentUrl', () => {
+    beforeEach(() => {
+        localStorage.clear();
+        networkStore.set.aiAgentUrl('');
+        vi.unstubAllEnvs();
+        vi.stubEnv('VITE_AI_AGENT_URL', '');
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
+    it('prefers the debug localStorage override', () => {
+        localStorage.setItem(AGENT_URL_STORAGE_KEY, 'https://override.example.com');
+
+        expect(getInitialAgentUrl()).toBe('https://override.example.com');
+    });
+
+    it('uses VITE_AI_AGENT_URL when set', () => {
+        vi.stubEnv('VITE_AI_AGENT_URL', 'https://env-agent.example.com');
+
+        expect(getInitialAgentUrl()).toBe('https://env-agent.example.com');
+    });
+
+    it('falls back to tenant config, then local dev default', () => {
+        networkStore.set.aiAgentUrl('https://tenant-agent.example.com');
+        expect(getInitialAgentUrl()).toBe('https://tenant-agent.example.com');
+
+        networkStore.set.aiAgentUrl('');
+        expect(getInitialAgentUrl()).toBe(DEFAULT_AGENT_URL);
     });
 });
