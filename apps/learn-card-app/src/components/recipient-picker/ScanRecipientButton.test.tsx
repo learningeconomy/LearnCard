@@ -5,12 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => {
     let isNative = true;
     let onResult:
-        | ((
-              value: string
-          ) =>
+        | ((value: string) =>
               | void
-              | { message: string; durationMs?: number }
-              | Promise<void | { message: string; durationMs?: number }>)
+              | { message: string; durationMs?: number; tone?: 'success' | 'error' }
+              | Promise<void | {
+                    message: string;
+                    durationMs?: number;
+                    tone?: 'success' | 'error';
+                }>)
         | undefined;
 
     return {
@@ -72,7 +74,7 @@ vi.mock('learn-card-base', () => ({
 vi.mock('../../paraglide/messages.js', () => ({
     'boostAFriend.recip.scanAria': () => 'Scan a profile QR code',
     'boostAFriend.recip.scanInvalid': () => 'Invalid profile QR',
-    'boostAFriend.recip.scanSelf': () => 'Own profile',
+    'boostAFriend.recip.scanSelf': () => "You can't add yourself as a recipient.",
     'boostAFriend.recip.scanDuplicate': () => 'Duplicate recipient',
     'boostAFriend.recip.scanPermission': () => 'Camera permission required',
     'boostAFriend.recip.scanFound': ({ profileName }: { profileName: string }) =>
@@ -109,7 +111,8 @@ describe('ScanRecipientButton', () => {
             expect.objectContaining({ mode: 'recipient' })
         );
 
-        let feedback: void | { message: string; durationMs?: number } = undefined;
+        let feedback: void | { message: string; durationMs?: number; tone?: 'success' | 'error' } =
+            undefined;
         await act(async () => {
             feedback = await mocks.getResultHandler()?.(profileQr('scanned-user'));
         });
@@ -131,12 +134,42 @@ describe('ScanRecipientButton', () => {
         );
         expect(mocks.mutate).toHaveBeenCalledWith({ profileId: 'scanned-user' });
         expect(mocks.impact).toHaveBeenCalledWith({ style: 'LIGHT' });
-        expect(feedback).toEqual({ message: 'Found @scanned-user', durationMs: 650 });
+        expect(feedback).toEqual({
+            message: 'Found @scanned-user',
+            tone: 'success',
+            durationMs: 650,
+        });
+    });
+
+    it('shows an error without adding anything when the user scans themselves', async () => {
+        const onRecipientScanned = vi.fn();
+        render(<ScanRecipientButton recipients={[]} onRecipientScanned={onRecipientScanned} />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Scan a profile QR code' }));
+        await waitFor(() => expect(mocks.openScanner).toHaveBeenCalledOnce());
+
+        let feedback: void | { message: string; durationMs?: number; tone?: 'success' | 'error' } =
+            undefined;
+        await act(async () => {
+            feedback = await mocks.getResultHandler()?.(profileQr('current-user'));
+        });
+
+        expect(mocks.presentToast).toHaveBeenCalledWith("You can't add yourself as a recipient.", {
+            type: 'error',
+            hasDismissButton: true,
+        });
+        expect(onRecipientScanned).not.toHaveBeenCalled();
+        expect(mocks.mutate).not.toHaveBeenCalled();
+        expect(mocks.impact).not.toHaveBeenCalled();
+        expect(feedback).toEqual({
+            message: "You can't add yourself as a recipient.",
+            tone: 'error',
+            durationMs: 1200,
+        });
     });
 
     it.each([
         ['a non-profile QR', 'https://example.com', [], 'Invalid profile QR'],
-        ['the current profile', profileQr('current-user'), [], 'Own profile'],
         [
             'an existing recipient',
             profileQr('existing-user'),

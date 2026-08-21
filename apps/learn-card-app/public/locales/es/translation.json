@@ -4014,7 +4014,7 @@
             "search": "Buscar personas...",
             "scanAria": "Escanear el código QR de un perfil",
             "scanInvalid": "Escanea el código QR de un perfil de LearnCard.",
-            "scanSelf": "No puedes añadir tu propio perfil como destinatario.",
+            "scanSelf": "No puedes añadirte como destinatario.",
             "scanDuplicate": "Esta persona ya es destinataria.",
             "scanPermission": "Permite el acceso a la cámara para escanear el código QR de un perfil.",
             "scanFound": "Perfil encontrado: {{profileName}}",

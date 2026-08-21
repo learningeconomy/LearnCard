@@ -89,8 +89,10 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
             const isCurrentProfile =
                 result.profileId === currentLCNUser?.profileId || result.did === currentProfileDid;
             if (isCurrentProfile) {
-                showError(m['boostAFriend.recip.scanSelf']());
-                return;
+                const message = m['boostAFriend.recip.scanSelf']();
+                showError(message);
+
+                return { message, tone: 'error', durationMs: 1200 };
             }
 
             const isDuplicate = recipients.some(
@@ -117,6 +119,7 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
                 message: m['boostAFriend.recip.scanFound']({
                     profileName: `@${result.profileId}`,
                 }),
+                tone: 'success',
                 durationMs: 650,
             };
         },
