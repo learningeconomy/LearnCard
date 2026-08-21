@@ -80,11 +80,14 @@ export const initSentryFromTenant = (): void => {
     // single event and don't bleed into unrelated events on the global scope.
     configureSentryTransport({
         // Errors: attach logger tags (scope, tenantId) + meta as extras, then capture.
+        // Returns Sentry's event ID so callers (e.g. GenericErrorBoundary) can
+        // attach the report to the originating event (LC-2086).
         captureException: (err, tags, extra) =>
             Sentry.withScope(scope => {
-                if (tags) Object.entries(tags).forEach(([k, v]) => scope.setTag(k, v));
-                if (extra) Object.entries(extra).forEach(([k, v]) => scope.setExtra(k, v));
-                Sentry.captureException(err);
+                if (tags) Object.entries(tags).forEach(([key, value]) => scope.setTag(key, value));
+                if (extra)
+                    Object.entries(extra).forEach(([key, value]) => scope.setExtra(key, value));
+                return Sentry.captureException(err);
             }),
         // Warnings / string errors: same tag/extra injection, level forwarded as-is.
         captureMessage: (msg, level, tags, extra) =>

@@ -3,6 +3,8 @@
  * Add new events here with their corresponding payload types.
  */
 
+import type { FeedbackSource } from '../feedback/reporting/types';
+
 // ── LC-1853 Profile-building analytics ──────────────────────────────────────
 
 /** How the user added an item to their profile. Used by `profile_item_added` only. */
@@ -60,6 +62,10 @@ export const AnalyticsEvents = {
     FEEDBACK_SENTIMENT_GIVEN: 'feedback_sentiment_given',
     FEEDBACK_FOLLOWUP_SUBMITTED: 'feedback_followup_submitted',
     FEEDBACK_FOLLOWUP_DISMISSED: 'feedback_followup_dismissed',
+
+    // LC-2086: explicit idea reports submitted from the feedback composer.
+    // Bugs route to Sentry; only ideas are tracked here.
+    FEEDBACK_IDEA_SUBMITTED: 'feedback_idea_submitted',
 
     // Advocacy asks earned by sustained positive sentiment.
     // NOTE: `store_review_requested` records that we *asked* the OS to show
@@ -350,6 +356,16 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.FEEDBACK_FOLLOWUP_DISMISSED]: {
         surface: FeedbackSurface;
         sentiment: FeedbackSentiment;
+    };
+
+    /** LC-2086: explicit idea report routed through the analytics provider. */
+    [AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED]: {
+        /** Entry point that produced the report. */
+        source: FeedbackSource;
+        /** User-composed message — treat as user-supplied free text downstream. */
+        message: string;
+        currentRoute: string;
+        appVersion?: string;
     };
 
     [AnalyticsEvents.STORE_REVIEW_REQUESTED]: {

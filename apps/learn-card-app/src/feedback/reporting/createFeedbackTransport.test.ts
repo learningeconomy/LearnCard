@@ -1,0 +1,173 @@
+/**
+ * Tests for the provider-independent feedback transport router (LC-2086 Task 6).
+ *
+ * `createFeedbackTransport` routes a `FeedbackReport` by kind:
+ *
+ *   - bugs go to the Sentry adapter and NEVER touch analytics,
+ *   - ideas go through the typed analytics adapter (`feedback_idea_submitted`)
+ *     carrying only source/message/currentRoute/appVersion — no screenshot,
+ *     logs, device data, or other bug diagnostics,
+ *   - ideas reject with the friendly transport error when analytics is not
+ *     ready or the active provider is not PostHog (never report success
+ *     through the noop provider).
+ */
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { AnalyticsEvents } from '../../analytics/events';
+import { createFeedbackTransport } from './createFeedbackTransport';
+import { FEEDBACK_TRANSPORT_ERROR_MESSAGE, submitSentryFeedback } from './sentryFeedbackTransport';
+import type { FeedbackReport } from './types';
+
+vi.mock('./sentryFeedbackTransport', () => ({
+    FEEDBACK_TRANSPORT_ERROR_MESSAGE: 'friendly transport error',
+    submitSentryFeedback: vi.fn().mockResolvedValue({ id: 'sentry-event-1' }),
+}));
+
+const ideaReport: FeedbackReport = {
+    kind: 'idea',
+    source: 'settings',
+    capturedAt: '2026-08-20T12:02:00.000Z',
+    message: 'Add a compact credential view',
+    // Even when diagnostic-shaped context exists on the draft, ideas never
+    // forward it — the payload assertion below proves the omission.
+    screenshot: {
+        dataUrl: 'data:image/png;base64,AAAA',
+        filename: 'feedback-screenshot.png',
+        contentType: 'image/png',
+    },
+    context: {
+        currentRoute: '/wallet',
+        recentRoutes: ['/wallet'],
+        tenantId: 'learncard',
+        app: {
+            platform: 'web',
+            displayVersion: '1.98.3',
+        },
+        logs: [
+            {
+                timestamp: '2026-08-20T12:01:59.000Z',
+                level: 'info',
+                message: 'irrelevant for ideas',
+            },
+        ],
+    },
+};
+
+const bugReport: FeedbackReport = {
+    kind: 'bug',
+    source: 'shake',
+    capturedAt: '2026-08-20T12:03:00.000Z',
+    message: 'Crash when opening the scanner',
+    context: {
+        currentRoute: '/scan',
+        recentRoutes: ['/wallet', '/scan'],
+    },
+};
+
+describe('createFeedbackTransport', () => {
+    let track: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        track = vi.fn().mockResolvedValue(undefined);
+    });
+
+    it('sends ideas through the typed analytics adapter without bug diagnostics', async () => {
+        const transport = createFeedbackTransport({
+            track,
+            isReady: true,
+            providerName: 'posthog',
+        });
+
+        await transport.submit(ideaReport);
+
+        expect(track).toHaveBeenCalledTimes(1);
+        expect(track).toHaveBeenCalledWith(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, {
+            source: 'settings',
+            message: 'Add a compact credential view',
+            currentRoute: '/wallet',
+            appVersion: '1.98.3',
+        });
+        expect(submitSentryFeedback).not.toHaveBeenCalled();
+    });
+
+    it('omits appVersion when the report has no app context', async () => {
+        const transport = createFeedbackTransport({
+            track,
+            isReady: true,
+            providerName: 'posthog',
+        });
+
+        const { app, ...contextWithoutApp } = ideaReport.context;
+        await transport.submit({ ...ideaReport, context: contextWithoutApp });
+
+        expect(track).toHaveBeenCalledWith(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, {
+            source: 'settings',
+            message: 'Add a compact credential view',
+            currentRoute: '/wallet',
+        });
+    });
+
+    it('resolves without an id once the provider accepts the event', async () => {
+        const transport = createFeedbackTransport({
+            track,
+            isReady: true,
+            providerName: 'posthog',
+        });
+
+        await expect(transport.submit(ideaReport)).resolves.toEqual({});
+    });
+
+    it('routes bugs to the Sentry adapter and never touches analytics', async () => {
+        const transport = createFeedbackTransport({
+            track,
+            isReady: true,
+            providerName: 'posthog',
+        });
+
+        await expect(transport.submit(bugReport)).resolves.toEqual({ id: 'sentry-event-1' });
+
+        expect(submitSentryFeedback).toHaveBeenCalledTimes(1);
+        expect(submitSentryFeedback).toHaveBeenCalledWith(bugReport);
+        expect(track).not.toHaveBeenCalled();
+    });
+
+    it('routes bugs to Sentry even when analytics is unavailable', async () => {
+        const transport = createFeedbackTransport({ track, isReady: false, providerName: 'noop' });
+
+        await expect(transport.submit(bugReport)).resolves.toEqual({ id: 'sentry-event-1' });
+        expect(track).not.toHaveBeenCalled();
+    });
+
+    it('rejects ideas with the friendly transport error when analytics is not ready', async () => {
+        const transport = createFeedbackTransport({
+            track,
+            isReady: false,
+            providerName: 'posthog',
+        });
+
+        await expect(transport.submit(ideaReport)).rejects.toThrow('friendly transport error');
+        expect(track).not.toHaveBeenCalled();
+    });
+
+    it('rejects ideas when the provider is not PostHog and never reports success through noop', async () => {
+        const transport = createFeedbackTransport({ track, isReady: true, providerName: 'noop' });
+
+        await expect(transport.submit(ideaReport)).rejects.toThrow(
+            FEEDBACK_TRANSPORT_ERROR_MESSAGE
+        );
+        expect(track).not.toHaveBeenCalled();
+    });
+
+    it('rejects ideas when the analytics track call itself fails', async () => {
+        track.mockRejectedValue(new Error('posthog offline'));
+        const transport = createFeedbackTransport({
+            track,
+            isReady: true,
+            providerName: 'posthog',
+        });
+
+        await expect(transport.submit(ideaReport)).rejects.toThrow('posthog offline');
+    });
+});
