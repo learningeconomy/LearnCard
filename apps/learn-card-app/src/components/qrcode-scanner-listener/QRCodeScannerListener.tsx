@@ -183,7 +183,7 @@ export const QRCodeScannerListener: React.FC = () => {
                 const feedback = await onResult(rawValue);
 
                 if (feedback && QRCodeScannerStore.get.showScanner()) {
-                    QRCodeScannerStore.set.feedbackMessage(feedback.message);
+                    QRCodeScannerStore.set.setFeedback(feedback);
 
                     const durationMs = feedback.durationMs ?? 650;
                     if (durationMs > 0) {

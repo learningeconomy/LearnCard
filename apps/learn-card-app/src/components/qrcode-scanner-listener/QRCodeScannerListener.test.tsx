@@ -5,14 +5,17 @@ import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 const mocks = vi.hoisted(() => {
     let showScanner = true;
     let onResult:
-        | ((
-              value: string
-          ) =>
+        | ((value: string) =>
               | void
-              | { message: string; durationMs?: number }
-              | Promise<void | { message: string; durationMs?: number }>)
+              | { message: string; durationMs?: number; tone?: 'success' | 'error' }
+              | Promise<void | {
+                    message: string;
+                    durationMs?: number;
+                    tone?: 'success' | 'error';
+                }>)
         | undefined;
     let feedbackMessage: string | undefined;
+    let feedbackTone: 'success' | 'error' = 'success';
 
     return {
         callbacks: [] as Array<(result: { barcode: { rawValue: string } }) => void>,
@@ -45,13 +48,16 @@ const mocks = vi.hoisted(() => {
         clearResultHandler: () => {
             onResult = undefined;
         },
-        setFeedbackMessage: vi.fn((message: string) => {
-            feedbackMessage = message;
+        setFeedback: vi.fn((feedback: { message: string; tone?: 'success' | 'error' }) => {
+            feedbackMessage = feedback.message;
+            feedbackTone = feedback.tone ?? 'success';
         }),
-        clearFeedbackMessage: () => {
+        clearFeedback: () => {
             feedbackMessage = undefined;
+            feedbackTone = 'success';
         },
         getFeedbackMessage: () => feedbackMessage,
+        getFeedbackTone: () => feedbackTone,
     };
 });
 
@@ -94,11 +100,11 @@ vi.mock('learn-card-base/stores/QRCodeScannerStore', () => ({
             closeScanner: () => {
                 mocks.setShowScanner(false);
                 mocks.clearResultHandler();
-                mocks.clearFeedbackMessage();
+                mocks.clearFeedback();
             },
             consumeResultHandler: mocks.consumeResultHandler,
             clearResultHandler: mocks.clearResultHandler,
-            feedbackMessage: mocks.setFeedbackMessage,
+            setFeedback: mocks.setFeedback,
         },
     },
 }));
@@ -125,7 +131,7 @@ describe('QRCodeScannerListener', () => {
         mocks.listenerRemovers.length = 0;
         mocks.setShowScanner(true);
         mocks.clearResultHandler();
-        mocks.clearFeedbackMessage();
+        mocks.clearFeedback();
     });
 
     it('creates a fresh owned listener for every scan session', async () => {
@@ -186,7 +192,11 @@ describe('QRCodeScannerListener', () => {
     });
 
     it('delivers a scoped result once without invoking global routing', async () => {
-        const onResult = vi.fn(async () => ({ message: 'Found @test', durationMs: 0 }));
+        const onResult = vi.fn(async () => ({
+            message: "You can't add yourself as a recipient.",
+            tone: 'error' as const,
+            durationMs: 0,
+        }));
         mocks.setResultHandler(onResult);
 
         render(<QRCodeScannerListener />);
@@ -201,7 +211,12 @@ describe('QRCodeScannerListener', () => {
         );
         expect(mocks.route).not.toHaveBeenCalled();
         expect(mocks.getResultHandler()).toBeUndefined();
-        expect(mocks.setFeedbackMessage).toHaveBeenCalledWith('Found @test');
+        expect(mocks.setFeedback).toHaveBeenCalledWith({
+            message: "You can't add yourself as a recipient.",
+            tone: 'error',
+            durationMs: 0,
+        });
+        expect(mocks.getFeedbackTone()).toBe('success');
         expect(mocks.getShowScanner()).toBe(false);
     });
 

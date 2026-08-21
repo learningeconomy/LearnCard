@@ -18,7 +18,7 @@ describe('QRCodeScannerStore', () => {
 
     it('clears the scoped handler when closing the scanner', () => {
         QRCodeScannerStore.set.openScanner({ onResult: vi.fn() });
-        QRCodeScannerStore.set.feedbackMessage('Found @someone');
+        QRCodeScannerStore.set.setFeedback({ message: 'Own profile', tone: 'error' });
 
         QRCodeScannerStore.set.closeScanner();
 
@@ -26,5 +26,6 @@ describe('QRCodeScannerStore', () => {
         expect(QRCodeScannerStore.get.onResult()).toBeUndefined();
         expect(QRCodeScannerStore.get.mode()).toBe('default');
         expect(QRCodeScannerStore.get.feedbackMessage()).toBeUndefined();
+        expect(QRCodeScannerStore.get.feedbackTone()).toBe('success');
     });
 });

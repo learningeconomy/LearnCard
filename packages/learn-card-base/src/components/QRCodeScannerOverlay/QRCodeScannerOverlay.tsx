@@ -1,6 +1,6 @@
 import React from 'react';
 import { IonIcon } from '@ionic/react';
-import { checkmarkCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline } from 'ionicons/icons';
 
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
 import { QRCodeScannerCloseButton } from './QRCodeScannerFooter';
@@ -23,6 +23,8 @@ export const QRCodeScannerOverlay: React.FC<QRCodeScannerOverlayProps> = ({
     closeLabel = 'Close scanner',
 }) => {
     const feedbackMessage = QRCodeScannerStore.useTracked.feedbackMessage();
+    const feedbackTone = QRCodeScannerStore.useTracked.feedbackTone();
+    const hasErrorFeedback = Boolean(feedbackMessage && feedbackTone === 'error');
 
     return (
         <div
@@ -77,8 +79,10 @@ export const QRCodeScannerOverlay: React.FC<QRCodeScannerOverlayProps> = ({
                 >
                     {feedbackMessage ? (
                         <IonIcon
-                            icon={checkmarkCircleOutline}
-                            className="text-lg text-emerald-400"
+                            icon={hasErrorFeedback ? alertCircleOutline : checkmarkCircleOutline}
+                            className={`text-lg ${
+                                hasErrorFeedback ? 'text-red-400' : 'text-emerald-400'
+                            }`}
                             aria-hidden="true"
                         />
                     ) : (
@@ -90,7 +94,7 @@ export const QRCodeScannerOverlay: React.FC<QRCodeScannerOverlayProps> = ({
                     <span>{feedbackMessage ?? searchingLabel}</span>
                 </div>
 
-                {helperLabel && (
+                {helperLabel && !hasErrorFeedback && (
                     <p className="mb-0 mt-2 text-xs leading-relaxed text-white/70">{helperLabel}</p>
                 )}
             </footer>
