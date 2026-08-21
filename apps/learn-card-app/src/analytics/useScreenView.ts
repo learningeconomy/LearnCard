@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
+import { recordFeedbackRoute } from '../feedback/reporting/routeHistory';
+
 import { useAnalytics } from './context';
 import { AnalyticsEvents } from './events';
 
@@ -36,6 +38,9 @@ export const useScreenView = (): void => {
         if (screenName === lastTrackedRef.current) return;
         lastTrackedRef.current = screenName;
 
+        // Feed the feedback route history the same privacy-safe screen name —
+        // already `:id`-collapsed, no query string or fragment.
+        recordFeedbackRoute(screenName);
         track(AnalyticsEvents.SCREEN_VIEW, { screen_name: screenName });
     }, [pathname, isReady, track]);
 };
