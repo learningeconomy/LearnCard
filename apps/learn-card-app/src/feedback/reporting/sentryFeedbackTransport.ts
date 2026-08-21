@@ -107,7 +107,10 @@ export const submitSentryFeedback = async (report: FeedbackReport): Promise<{ id
     const attachments = buildAttachments(report);
     const hint = attachments.length > 0 ? { attachments } : {};
 
-    const eventId = Sentry.withScope(scope => {
+    // Start from an empty scope so the feedback event cannot inherit the
+    // app's identified user, breadcrumbs, tags, extras, or contexts.
+    const feedbackScope = new Sentry.Scope();
+    const eventId = Sentry.withScope(feedbackScope, scope => {
         // Structured, privacy-safe context travels as scope extras — never as
         // tags — so it stays searchable per-event without polluting the tag space.
         if (context.app) scope.setExtra('app', context.app);

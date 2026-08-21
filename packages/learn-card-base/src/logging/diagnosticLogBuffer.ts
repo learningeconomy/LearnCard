@@ -68,9 +68,20 @@ const PII_SUBSTRINGS = [
     'accesstoken',
     'idtoken',
     'token',
+    'credential',
+    'boost',
+    'claim',
+    'subject',
+    'issuer',
+    'profile',
+    'account',
+    'identity',
+    'uri',
+    'url',
+    'qr',
 ];
 // 'did' is too short for safe substring matching (would match "additional", "edited"), so exact only.
-const PII_EXACT_LC = new Set(['did']);
+const PII_EXACT_LC = new Set(['did', 'id', 'user', 'vc', 'vp']);
 const BEARER_RE = /^bearer /i;
 
 const isPiiKey = (key: string): boolean => {
@@ -128,8 +139,9 @@ const sanitizeValue = (value: unknown, depth: number, seen: Set<object>): unknow
             return scrubString(value);
         case 'number':
         case 'boolean':
-        case 'bigint':
             return value;
+        case 'bigint':
+            return String(value);
         case 'function':
             return '[function]';
         case 'symbol':

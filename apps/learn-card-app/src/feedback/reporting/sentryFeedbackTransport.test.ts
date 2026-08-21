@@ -21,19 +21,31 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FEEDBACK_TRANSPORT_ERROR_MESSAGE, submitSentryFeedback } from './sentryFeedbackTransport';
 import type { FeedbackReport } from './types';
 
-const { scopeMock, withScopeMock, captureFeedbackMock, getClientMock } = vi.hoisted(() => {
-    const scopeMock = { setTag: vi.fn(), setExtra: vi.fn() };
-    return {
-        scopeMock,
-        withScopeMock: vi.fn((callback: (scope: typeof scopeMock) => unknown) =>
-            callback(scopeMock)
-        ),
-        captureFeedbackMock: vi.fn(),
-        getClientMock: vi.fn(),
-    };
-});
+const { scopeMock, ScopeMock, withScopeMock, captureFeedbackMock, getClientMock } = vi.hoisted(
+    () => {
+        const scopeMock = { setTag: vi.fn(), setExtra: vi.fn() };
+        return {
+            scopeMock,
+            ScopeMock: vi.fn(() => scopeMock),
+            withScopeMock: vi.fn(
+                (
+                    scopeOrCallback:
+                        | typeof scopeMock
+                        | ((activeScope: typeof scopeMock) => unknown),
+                    callback?: (activeScope: typeof scopeMock) => unknown
+                ) =>
+                    callback
+                        ? callback(scopeOrCallback as typeof scopeMock)
+                        : (scopeOrCallback as (activeScope: typeof scopeMock) => unknown)(scopeMock)
+            ),
+            captureFeedbackMock: vi.fn(),
+            getClientMock: vi.fn(),
+        };
+    }
+);
 
 vi.mock('@sentry/react', () => ({
+    Scope: ScopeMock,
     getClient: getClientMock,
     captureFeedback: captureFeedbackMock,
     withScope: withScopeMock,
@@ -175,6 +187,13 @@ describe('submitSentryFeedback', () => {
             'recentRoutes',
             bugReport.context.recentRoutes
         );
+    });
+
+    it('captures on a clean scope instead of inheriting user, breadcrumb, or tag data', async () => {
+        await submitSentryFeedback(bugReport);
+
+        expect(ScopeMock).toHaveBeenCalledTimes(1);
+        expect(withScopeMock).toHaveBeenCalledWith(scopeMock, expect.any(Function));
     });
 
     it('resolves with the Sentry event id', async () => {

@@ -88,7 +88,7 @@ describe('diagnosticLogBuffer sanitization', () => {
             data: {
                 accessToken: '[scrubbed]',
                 header: '[scrubbed]',
-                url: 'https://learncard.app/claim',
+                url: '[scrubbed]',
             },
         });
         // allowPii must be stripped entirely — the buffer never trusts the bypass flag
@@ -107,7 +107,7 @@ describe('diagnosticLogBuffer sanitization', () => {
         });
 
         expect(getDiagnosticLogs()[0].data).toEqual({
-            user: { email: '[scrubbed]', code: 404 },
+            user: '[scrubbed]',
             items: [{ accessToken: '[scrubbed]' }, { did: '[scrubbed]' }],
             safe: 'visible',
         });
@@ -203,6 +203,35 @@ describe('diagnosticLogBuffer sanitization', () => {
             count: 42,
             ratio: 0.5,
             nothing: null,
+        });
+    });
+
+    it('converts bigint values so the feedback log attachment is JSON-safe', () => {
+        recordDiagnosticLog({ level: 'info', message: 'counted', data: { count: 42n } });
+
+        const records = getDiagnosticLogs();
+        expect(records[0].data).toEqual({ count: '42' });
+        expect(() => JSON.stringify(records)).not.toThrow();
+    });
+
+    it('scrubs credential identifiers, URIs, and bodies from structured log data', () => {
+        recordDiagnosticLog({
+            level: 'error',
+            message: 'credential lookup failed',
+            data: {
+                uri: 'lc:credential:secret-value',
+                credentialId: 'urn:uuid:secret-id',
+                credential: {
+                    type: ['VerifiableCredential'],
+                    credentialSubject: { achievement: { name: 'Private badge' } },
+                },
+            },
+        });
+
+        expect(getDiagnosticLogs()[0].data).toEqual({
+            uri: '[scrubbed]',
+            credentialId: '[scrubbed]',
+            credential: '[scrubbed]',
         });
     });
 });
