@@ -1,5 +1,10 @@
 import type { AnalyticsProvider, PostHogConfig } from '../types';
-import type { AnalyticsEventName, EventPayload } from '../events';
+import {
+    AnalyticsEvents,
+    type AnalyticsEventName,
+    type EventPayload,
+    type FeedbackIdeaPayload,
+} from '../events';
 import { getSharedEventContext, shouldDropEvents } from '../sharedContext';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('posthog');
@@ -10,24 +15,40 @@ type CaptureLike = {
     $set_once?: Record<string, unknown>;
 } | null;
 
-/** Consumed by `before_send`; never leaves the SDK boundary. */
-const ANONYMOUS_CAPTURE_PROPERTY = '__learncard_anonymous_capture';
+interface PostHogProviderDependencies {
+    fetch?: typeof globalThis.fetch;
+    randomUUID?: () => string;
+}
 
-type AnonymousCaptureEnvelope = {
-    distinctId: string;
-    properties: Record<string, unknown>;
-};
+const DEFAULT_POSTHOG_HOST = 'https://us.i.posthog.com';
 
-const isAnonymousCaptureEnvelope = (value: unknown): value is AnonymousCaptureEnvelope => {
-    if (!value || typeof value !== 'object') return false;
+const getPostHogCaptureUrl = (apiHost?: string): string => {
+    let url: URL;
+    try {
+        url = new URL(apiHost || DEFAULT_POSTHOG_HOST);
+    } catch {
+        throw new Error('Invalid PostHog API host');
+    }
 
-    const envelope = value as Partial<AnonymousCaptureEnvelope>;
-    return (
-        typeof envelope.distinctId === 'string' &&
-        !!envelope.properties &&
-        typeof envelope.properties === 'object' &&
-        !Array.isArray(envelope.properties)
-    );
+    const isLocalHttp =
+        url.protocol === 'http:' &&
+        (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1');
+
+    if (
+        (url.protocol !== 'https:' && !isLocalHttp) ||
+        url.username.length > 0 ||
+        url.password.length > 0
+    ) {
+        throw new Error('Invalid PostHog API host');
+    }
+
+    url.search = '';
+    url.hash = '';
+
+    const basePath = url.pathname.replace(/\/+$/, '');
+    url.pathname = basePath.endsWith('/capture') ? `${basePath}/` : `${basePath}/capture/`;
+
+    return url.toString();
 };
 
 /**
@@ -92,19 +113,7 @@ export const applyPostHogHygiene = <T extends CaptureLike>(event: T): T | null =
     if (!event) return null;
     if (shouldDropEvents()) return null;
 
-    const anonymousCapture = event.properties?.[ANONYMOUS_CAPTURE_PROPERTY];
-    if (isAnonymousCaptureEnvelope(anonymousCapture)) {
-        const token = event.properties?.token;
-        event.properties = {
-            ...anonymousCapture.properties,
-            ...getSharedEventContext(),
-            ...(typeof token === 'string' ? { token } : {}),
-            distinct_id: anonymousCapture.distinctId,
-            $process_person_profile: false,
-        };
-    } else {
-        event.properties = { ...event.properties, ...getSharedEventContext() };
-    }
+    event.properties = { ...event.properties, ...getSharedEventContext() };
 
     scrubUrlBag(event.properties);
     scrubUrlBag(event.properties.$set as Record<string, unknown> | undefined);
@@ -126,8 +135,18 @@ export class PostHogProvider implements AnalyticsProvider {
 
     private config: PostHogConfig;
 
-    constructor(config: PostHogConfig) {
+    private fetchRequest: typeof globalThis.fetch | undefined;
+
+    private randomUUID: () => string;
+
+    constructor(config: PostHogConfig, dependencies: PostHogProviderDependencies = {}) {
         this.config = config;
+        this.fetchRequest =
+            dependencies.fetch ??
+            (typeof globalThis.fetch === 'function'
+                ? globalThis.fetch.bind(globalThis)
+                : undefined);
+        this.randomUUID = dependencies.randomUUID ?? (() => globalThis.crypto.randomUUID());
     }
 
     async init(): Promise<void> {
@@ -179,23 +198,39 @@ export class PostHogProvider implements AnalyticsProvider {
         }
     }
 
-    async trackAnonymous<E extends AnalyticsEventName>(
-        event: E,
-        properties: EventPayload<E>
-    ): Promise<void> {
-        if (!this.posthog) throw new Error('PostHog is unavailable');
+    async submitFeedbackIdea(properties: FeedbackIdeaPayload): Promise<void> {
+        if (!this.fetchRequest) throw new Error('PostHog ingestion is unavailable');
 
-        const distinctId = globalThis.crypto.randomUUID();
-        const captured = this.posthog.capture(event, {
-            distinct_id: distinctId,
-            $process_person_profile: false,
-            [ANONYMOUS_CAPTURE_PROPERTY]: {
-                distinctId,
-                properties: properties as Record<string, unknown>,
-            },
+        const { environment, app_version, tenant_id, platform } = getSharedEventContext();
+        const response = await this.fetchRequest(getPostHogCaptureUrl(this.config.apiHost), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'omit',
+            referrerPolicy: 'no-referrer',
+            keepalive: true,
+            body: JSON.stringify({
+                api_key: this.config.apiKey,
+                event: AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED,
+                properties: {
+                    source: properties.source,
+                    message: properties.message,
+                    currentRoute: properties.currentRoute,
+                    ...(typeof properties.appVersion === 'string'
+                        ? { appVersion: properties.appVersion }
+                        : {}),
+                    environment,
+                    ...(typeof app_version === 'string' ? { app_version } : {}),
+                    ...(typeof tenant_id === 'string' ? { tenant_id } : {}),
+                    platform,
+                    distinct_id: this.randomUUID(),
+                    $process_person_profile: false,
+                },
+            }),
         });
 
-        if (!captured) throw new Error('PostHog did not accept the event');
+        if (!response.ok) {
+            throw new Error(`PostHog rejected feedback idea (${response.status})`);
+        }
     }
 
     async page(name: string, properties?: Record<string, unknown>): Promise<void> {

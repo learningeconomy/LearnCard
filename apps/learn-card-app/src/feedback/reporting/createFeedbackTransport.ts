@@ -5,19 +5,16 @@
  *
  *   - `bug` → the Sentry adapter (`submitSentryFeedback`); analytics is never
  *     touched, so bug diagnostics cannot leak into PostHog.
- *   - `idea` → the dedicated typed `AnalyticsProvider.trackAnonymous`
- *     operation with the `feedback_idea_submitted` event. Only source, message,
- *     currentRoute, and appVersion travel — no screenshot, logs, device data,
- *     or signed-in analytics identity. Tenant, platform, and other shared
- *     context continue to be stamped by the central provider wrapper.
+ *   - `idea` → the dedicated typed `AnalyticsProvider.submitFeedbackIdea`
+ *     operation. Only source, message, currentRoute, and appVersion travel —
+ *     no screenshot, logs, device data, or signed-in analytics identity.
  *
  * An unready provider or a non-PostHog provider is treated as a retryable
  * submission failure: the idea rejects with the friendly transport error and is
  * never reported as success through the noop provider.
  */
 
-import { AnalyticsEvents } from '../../analytics/events';
-import type { AnalyticsEventName, EventPayload } from '../../analytics/events';
+import type { FeedbackIdeaPayload } from '../../analytics/events';
 import { FEEDBACK_TRANSPORT_ERROR_MESSAGE, submitSentryFeedback } from './sentryFeedbackTransport';
 import type { FeedbackTransport } from './types';
 
@@ -26,13 +23,8 @@ import type { FeedbackTransport } from './types';
  * `useAnalytics()` so the host can wire it without pulling in React context.
  */
 export interface FeedbackAnalyticsAdapter {
-    /** Typed track call from the central analytics abstraction. */
-    track<E extends AnalyticsEventName>(event: E, properties: EventPayload<E>): Promise<unknown>;
-    /** Typed anonymous operation that rejects when delivery is unavailable. */
-    trackAnonymous<E extends AnalyticsEventName>(
-        event: E,
-        properties: EventPayload<E>
-    ): Promise<unknown>;
+    /** Idea-specific operation that rejects when stateless delivery is unavailable. */
+    submitFeedbackIdea(properties: FeedbackIdeaPayload): Promise<unknown>;
     /** Whether the lazily-loaded provider finished initializing. */
     isReady: boolean;
     /** Active provider name (`'posthog'` is the only idea-capable provider). */
@@ -61,7 +53,7 @@ export const createFeedbackTransport = (
         }
 
         try {
-            await analytics.trackAnonymous(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, {
+            await analytics.submitFeedbackIdea({
                 source: report.source,
                 message: report.message,
                 currentRoute: report.context.currentRoute,

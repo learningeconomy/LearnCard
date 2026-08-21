@@ -1,4 +1,4 @@
-import type { AnalyticsEventName, EventPayload } from './events';
+import type { AnalyticsEventName, EventPayload, FeedbackIdeaPayload } from './events';
 
 /**
  * Interface that all analytics providers must implement.
@@ -30,14 +30,8 @@ export interface AnalyticsProvider {
      */
     track<E extends AnalyticsEventName>(event: E, properties: EventPayload<E>): Promise<void>;
 
-    /**
-     * Track an event with a fresh, non-persisted identity and no person profile.
-     * Rejects when the active provider cannot guarantee anonymous delivery.
-     */
-    trackAnonymous<E extends AnalyticsEventName>(
-        event: E,
-        properties: EventPayload<E>
-    ): Promise<void>;
+    /** Submit a feedback idea without using or mutating identified analytics state. */
+    submitFeedbackIdea(properties: FeedbackIdeaPayload): Promise<void>;
 
     /**
      * Track a page/screen view.

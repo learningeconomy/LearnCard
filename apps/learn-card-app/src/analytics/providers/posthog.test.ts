@@ -1,55 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { capture, identify, init, register, reset, sentEvents, sdkState } = vi.hoisted(() => {
-    type BeforeSend = (
-        event: { event: string; properties: Record<string, unknown> } | null
-    ) => { event: string; properties: Record<string, unknown> } | null;
-
-    const state = {
-        activeDistinctId: 'did:key:signed-in-wallet',
-        apiKey: '',
-        beforeSend: undefined as BeforeSend | undefined,
-    };
-    const events: Array<{ event: string; properties: Record<string, unknown> }> = [];
-
-    const captureMock = vi.fn((event: string, properties: Record<string, unknown>) => {
-        // Mirrors posthog-js 1.396.5 ordering: caller properties beat persisted
-        // identity, `$process_person_profile` is then overwritten by the SDK,
-        // and `before_send` gets the final opportunity to transform the event.
-        const captured = {
-            event,
-            properties: {
-                distinct_id: state.activeDistinctId,
-                $device_id: 'persisted-device-id',
-                $session_id: 'persisted-session-id',
-                email: 'signed-in@example.com',
-                ...properties,
-                $process_person_profile: true,
-                token: state.apiKey,
-            },
-        };
-        const processed = state.beforeSend?.(captured) ?? captured;
-
-        if (processed) events.push(processed);
-
-        return processed
-            ? { uuid: '0198d3f2-f0d3-7000-8000-000000000001', ...processed }
-            : undefined;
-    });
-
-    return {
-        capture: captureMock,
-        identify: vi.fn(),
-        init: vi.fn((_apiKey: string, config: { before_send?: BeforeSend }) => {
-            state.apiKey = _apiKey;
-            state.beforeSend = config.before_send;
-        }),
-        register: vi.fn(),
-        reset: vi.fn(),
-        sentEvents: events,
-        sdkState: state,
-    };
-});
+const { capture, identify, init, register, reset } = vi.hoisted(() => ({
+    // If the identified SDK were used, its final event could contain this
+    // top-level person mutation bag even after properties were rebuilt.
+    capture: vi.fn(() => ({
+        uuid: '0198d3f2-f0d3-7000-8000-000000000001',
+        event: 'feedback_idea_submitted',
+        properties: { distinct_id: 'did:key:signed-in-wallet' },
+        $set_once: { email: 'signed-in@example.com' },
+    })),
+    identify: vi.fn(),
+    init: vi.fn(),
+    register: vi.fn(),
+    reset: vi.fn(),
+}));
 
 vi.mock('posthog-js', () => ({
     default: {
@@ -69,6 +33,7 @@ vi.mock('../sharedContext', () => ({
         app_version: '2.0.0',
         tenant_id: 'learncard',
         platform: 'web',
+        forbiddenSharedExtra: 'must-not-leave',
     }),
     shouldDropEvents: () => false,
 }));
@@ -77,8 +42,10 @@ vi.mock('learn-card-base', () => ({
     getLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }));
 
-import { AnalyticsEvents } from '../events';
 import { PostHogProvider } from './posthog';
+
+const FIRST_UUID = '00000000-0000-4000-8000-000000000001';
+const SECOND_UUID = '00000000-0000-4000-8000-000000000002';
 
 const IDEA_PAYLOAD = {
     source: 'settings' as const,
@@ -87,66 +54,127 @@ const IDEA_PAYLOAD = {
     appVersion: '1.98.3',
 };
 
-describe('PostHogProvider.trackAnonymous', () => {
+const readRequestBody = (fetchRequest: ReturnType<typeof vi.fn>, call: number) =>
+    JSON.parse(fetchRequest.mock.calls[call]?.[1]?.body as string) as Record<string, unknown>;
+
+const createProvider = (
+    fetchRequest: ReturnType<typeof vi.fn>,
+    randomUUID: ReturnType<typeof vi.fn>
+) =>
+    new PostHogProvider(
+        {
+            apiKey: 'ph_test',
+            apiHost: 'https://eu.i.posthog.com///?ignored=yes#fragment',
+        },
+        {
+            fetch: fetchRequest,
+            randomUUID,
+        }
+    );
+
+describe('PostHogProvider.submitFeedbackIdea', () => {
+    let fetchRequest: ReturnType<typeof vi.fn>;
+    let randomUUID: ReturnType<typeof vi.fn>;
+
     beforeEach(() => {
         vi.clearAllMocks();
-        sentEvents.length = 0;
-        sdkState.activeDistinctId = 'did:key:signed-in-wallet';
-        sdkState.beforeSend = undefined;
+        fetchRequest = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+        randomUUID = vi.fn().mockReturnValueOnce(FIRST_UUID).mockReturnValueOnce(SECOND_UUID);
     });
 
-    it('captures each event with a fresh anonymous id and person processing disabled', async () => {
-        const provider = new PostHogProvider({ apiKey: 'ph_test' });
+    it('posts each idea statelessly with a fresh id and only allowlisted properties', async () => {
+        const provider = createProvider(fetchRequest, randomUUID);
         await provider.init();
         vi.clearAllMocks();
 
-        await provider.trackAnonymous(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, IDEA_PAYLOAD);
-        await provider.trackAnonymous(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, IDEA_PAYLOAD);
-
-        expect(sentEvents).toHaveLength(2);
-
-        const [first, second] = sentEvents;
-        expect(first?.event).toBe(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED);
-        expect(first?.properties).toEqual({
+        await provider.submitFeedbackIdea({
             ...IDEA_PAYLOAD,
-            distinct_id: expect.stringMatching(
-                /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-            ),
-            $process_person_profile: false,
-            token: 'ph_test',
-            environment: 'production',
-            app_version: '2.0.0',
-            tenant_id: 'learncard',
-            platform: 'web',
-        });
-        expect(second?.properties.distinct_id).not.toBe(first?.properties.distinct_id);
-        expect(first?.properties.distinct_id).not.toBe(sdkState.activeDistinctId);
-        expect(second?.properties.distinct_id).not.toBe(sdkState.activeDistinctId);
+            credential: { secret: true },
+            $set_once: { email: 'signed-in@example.com' },
+        } as typeof IDEA_PAYLOAD);
+        await provider.submitFeedbackIdea(IDEA_PAYLOAD);
 
+        expect(fetchRequest).toHaveBeenCalledTimes(2);
+        expect(fetchRequest).toHaveBeenNthCalledWith(1, 'https://eu.i.posthog.com/capture/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'omit',
+            referrerPolicy: 'no-referrer',
+            keepalive: true,
+            body: expect.any(String),
+        });
+
+        expect(readRequestBody(fetchRequest, 0)).toEqual({
+            api_key: 'ph_test',
+            event: 'feedback_idea_submitted',
+            properties: {
+                source: 'settings',
+                message: 'Add a compact credential view',
+                currentRoute: '/wallet',
+                appVersion: '1.98.3',
+                environment: 'production',
+                app_version: '2.0.0',
+                tenant_id: 'learncard',
+                platform: 'web',
+                distinct_id: FIRST_UUID,
+                $process_person_profile: false,
+            },
+        });
+        expect(readRequestBody(fetchRequest, 1)).toMatchObject({
+            properties: { distinct_id: SECOND_UUID },
+        });
+        expect(readRequestBody(fetchRequest, 0)).not.toHaveProperty('$set_once');
+        expect(readRequestBody(fetchRequest, 0)).not.toHaveProperty('properties.$set_once');
+        expect(readRequestBody(fetchRequest, 0)).not.toHaveProperty('properties.credential');
+        expect(readRequestBody(fetchRequest, 0)).not.toHaveProperty(
+            'properties.forbiddenSharedExtra'
+        );
+
+        expect(randomUUID).toHaveBeenCalledTimes(2);
+        expect(capture).not.toHaveBeenCalled();
         expect(identify).not.toHaveBeenCalled();
         expect(reset).not.toHaveBeenCalled();
         expect(register).not.toHaveBeenCalled();
-        expect(sdkState.activeDistinctId).toBe('did:key:signed-in-wallet');
     });
 
-    it('rejects when the PostHog SDK is unavailable', async () => {
-        const provider = new PostHogProvider({ apiKey: 'ph_test' });
+    it('omits optional app properties when unavailable', async () => {
+        const provider = createProvider(fetchRequest, randomUUID);
 
-        await expect(
-            provider.trackAnonymous(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, IDEA_PAYLOAD)
-        ).rejects.toThrow('PostHog is unavailable');
-    });
-
-    it('rejects with the capture error instead of claiming delivery', async () => {
-        const provider = new PostHogProvider({ apiKey: 'ph_test' });
-        await provider.init();
-        const captureError = new Error('capture failed');
-        capture.mockImplementationOnce(() => {
-            throw captureError;
+        await provider.submitFeedbackIdea({
+            source: 'settings',
+            message: 'Add a compact credential view',
+            currentRoute: '/wallet',
         });
 
-        await expect(
-            provider.trackAnonymous(AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED, IDEA_PAYLOAD)
-        ).rejects.toBe(captureError);
+        expect(readRequestBody(fetchRequest, 0)).not.toHaveProperty('properties.appVersion');
+    });
+
+    it('rejects non-2xx ingestion responses', async () => {
+        fetchRequest.mockResolvedValue({ ok: false, status: 503 });
+        const provider = createProvider(fetchRequest, randomUUID);
+
+        await expect(provider.submitFeedbackIdea(IDEA_PAYLOAD)).rejects.toThrow(
+            'PostHog rejected feedback idea (503)'
+        );
+    });
+
+    it('propagates network failures', async () => {
+        const networkError = new Error('network unavailable');
+        fetchRequest.mockRejectedValue(networkError);
+        const provider = createProvider(fetchRequest, randomUUID);
+
+        await expect(provider.submitFeedbackIdea(IDEA_PAYLOAD)).rejects.toBe(networkError);
+    });
+
+    it('rejects unsafe ingestion hosts before sending', async () => {
+        const provider = new PostHogProvider(
+            { apiKey: 'ph_test', apiHost: 'javascript:alert(1)' },
+            { fetch: fetchRequest, randomUUID }
+        );
+
+        await expect(provider.submitFeedbackIdea(IDEA_PAYLOAD)).rejects.toThrow(
+            'Invalid PostHog API host'
+        );
+        expect(fetchRequest).not.toHaveBeenCalled();
     });
 });

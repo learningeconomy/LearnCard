@@ -1279,3 +1279,7 @@ export interface AnalyticsEventPayloads {
 export type EventPayload<E extends AnalyticsEventName> = E extends keyof AnalyticsEventPayloads
     ? AnalyticsEventPayloads[E]
     : Record<string, unknown>;
+
+/** Runtime-allowlisted payload accepted by the stateless feedback idea operation. */
+export type FeedbackIdeaPayload =
+    AnalyticsEventPayloads[typeof AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED];

@@ -79,7 +79,7 @@ vi.mock('learn-card-base/stores/toastStore', () => ({
 vi.mock('@analytics', () => ({
     useAnalytics: () => ({
         track: vi.fn(async () => undefined),
-        trackAnonymous: vi.fn(async () => undefined),
+        submitFeedbackIdea: vi.fn(async () => undefined),
         isReady: true,
         providerName: 'posthog',
     }),

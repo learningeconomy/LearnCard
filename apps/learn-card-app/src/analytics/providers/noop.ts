@@ -1,5 +1,5 @@
 import type { AnalyticsProvider } from '../types';
-import type { AnalyticsEventName, EventPayload } from '../events';
+import type { AnalyticsEventName, EventPayload, FeedbackIdeaPayload } from '../events';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('noop');
 
@@ -32,10 +32,7 @@ export class NoopProvider implements AnalyticsProvider {
         }
     }
 
-    async trackAnonymous<E extends AnalyticsEventName>(
-        _event: E,
-        _properties: EventPayload<E>
-    ): Promise<void> {
+    async submitFeedbackIdea(_properties: FeedbackIdeaPayload): Promise<void> {
         throw new Error('Anonymous analytics is unavailable');
     }
 
