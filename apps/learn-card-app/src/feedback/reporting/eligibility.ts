@@ -14,6 +14,8 @@ import type { PreferencesType } from 'learn-card-base';
 export interface FeedbackReportingEligibilityInput {
     /** Whether a current LCN profile is authenticated. Missing/false fails closed. */
     hasAuthenticatedProfile?: boolean;
+    /** Stable active-profile identity used to invalidate captured feedback on switches. */
+    profileId?: string | null;
     /** Whether the preferences query is still loading. Fails closed when true. */
     isLoading?: boolean;
     /** Server-side privacy preferences; absent flags count as opted in. */
@@ -35,6 +37,8 @@ export interface FeedbackReportingEligibility {
     /** Whether ideas (PostHog) may be submitted. */
     idea: boolean;
     isLoading: boolean;
+    /** Stable identity for the active eligible profile, when available. */
+    profileId?: string;
 }
 
 const isAdultByDob = (
@@ -67,6 +71,7 @@ const isAdultByDob = (
  */
 export const getFeedbackReportingEligibility = ({
     hasAuthenticatedProfile,
+    profileId,
     isLoading = false,
     preferences,
     profileType,
@@ -74,19 +79,22 @@ export const getFeedbackReportingEligibility = ({
     country,
     now = new Date(),
 }: FeedbackReportingEligibilityInput): FeedbackReportingEligibility => {
-    if (!hasAuthenticatedProfile) return { bug: false, idea: false, isLoading };
+    const identity = profileId ? { profileId } : {};
 
-    if (isLoading) return { bug: false, idea: false, isLoading: true };
+    if (!hasAuthenticatedProfile) return { bug: false, idea: false, isLoading, ...identity };
+
+    if (isLoading) return { bug: false, idea: false, isLoading: true, ...identity };
 
     const passesSharedGate =
         profileType !== 'child' && preferences?.isMinor !== true && isAdultByDob(dob, country, now);
 
-    if (!passesSharedGate) return { bug: false, idea: false, isLoading: false };
+    if (!passesSharedGate) return { bug: false, idea: false, isLoading: false, ...identity };
 
     return {
         bug: preferences?.bugReportsEnabled !== false,
         idea: preferences?.analyticsEnabled !== false,
         isLoading: false,
+        ...identity,
     };
 };
 
@@ -105,6 +113,7 @@ export const useFeedbackReportingEligibility = (): FeedbackReportingEligibility 
         () =>
             getFeedbackReportingEligibility({
                 hasAuthenticatedProfile: Boolean(currentLCNUser),
+                profileId: currentLCNUser?.profileId,
                 isLoading,
                 preferences,
                 profileType,

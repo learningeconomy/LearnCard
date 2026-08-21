@@ -117,19 +117,15 @@ export const useFeedback = (): FeedbackController => {
 
 /** Wallet display version used when the app/plugin calls cannot resolve one. */
 const FALLBACK_VERSION = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'unknown';
+const ROUTE_WORD = /^[a-zA-Z][a-zA-Z-]*$/;
 
-/** Keep immediate micro-feedback limited to route and deployment metadata. */
-const getMinimalImmediateContext = ({
-    currentRoute,
-    recentRoutes,
-    tenantId,
-    app,
-}: FeedbackContextData): FeedbackContextData => ({
-    currentRoute,
-    recentRoutes,
-    ...(tenantId ? { tenantId } : {}),
-    ...(app ? { app } : {}),
-});
+/** Mirror the route-history normalization without loading analytics providers. */
+const normalizeMinimalRoute = (pathname: string): string => {
+    const segments = pathname.split('/').filter(Boolean);
+    if (segments.length === 0) return '/';
+
+    return `/${segments.map(segment => (ROUTE_WORD.test(segment) ? segment : ':id')).join('/')}`;
+};
 
 /**
  * Default context collector. The tenant id resolves offline-only: by capture
@@ -152,13 +148,35 @@ const defaultCollectContext = async ({
     );
 };
 
+/**
+ * Collect only metadata approved for immediate micro-feedback. This must stay
+ * independent from `collectFeedbackContext`, which reads native device/network
+ * details and diagnostic logs even for its otherwise-minimal idea profile.
+ */
+const defaultCollectMinimalContext = async (): Promise<FeedbackContextData> => {
+    let tenantId: string | undefined;
+    try {
+        ({ tenantId } = await resolveTenantConfig({ offlineOnly: true }));
+    } catch {
+        tenantId = undefined;
+    }
+
+    const recentRoutes = getRecentFeedbackRoutes();
+    return {
+        currentRoute: recentRoutes.at(-1) ?? normalizeMinimalRoute(window.location.pathname),
+        recentRoutes,
+        ...(tenantId ? { tenantId } : {}),
+        app: { platform: 'web', displayVersion: FALLBACK_VERSION },
+    };
+};
+
 export const FeedbackProvider: React.FC<{
     children: React.ReactNode;
     deps?: FeedbackProviderDeps;
 }> = ({ children, deps }) => {
     const eligibility = useFeedbackReportingEligibility();
     const isBusy = useFeedbackBusyState();
-    const { newModal, closeModal } = useModal();
+    const { newModal, closeModalById } = useModal();
     const analytics = useAnalytics();
 
     // Read dependencies and reactive values at call time through refs so the
@@ -192,31 +210,67 @@ export const FeedbackProvider: React.FC<{
 
     /** Whether the feedback composer is currently presented. */
     const isComposerOpenRef = useRef(false);
+    const composerModalIdRef = useRef<number | undefined>(undefined);
 
     /** Draft currently represented by the feedback prompt toast, if any. */
     const promptDraftRef = useRef<FeedbackDraft | undefined>(undefined);
+    const promptToastRef = useRef<React.ReactNode | undefined>(undefined);
 
     /** Invalidates asynchronous capture started for an earlier profile/privacy state. */
     const eligibilityGenerationRef = useRef(0);
-    const previousEligibilityRef = useRef(eligibility);
+    const previousEligibilityRef = useRef({
+        bug: eligibility.bug,
+        idea: eligibility.idea,
+        profileId: eligibility.profileId,
+    });
 
-    // A changed eligibility object represents either a privacy change or a
-    // switched profile. In both cases, feedback captured under the old state
-    // must not survive into the new one.
+    const closeFeedbackComposer = useCallback(() => {
+        const modalId = composerModalIdRef.current;
+        composerModalIdRef.current = undefined;
+        isComposerOpenRef.current = false;
+
+        if (modalId !== undefined) closeModalById(modalId);
+    }, [closeModalById]);
+
+    const dismissFeedbackPrompt = useCallback(() => {
+        const prompt = promptToastRef.current;
+        promptDraftRef.current = undefined;
+        promptToastRef.current = undefined;
+
+        if (prompt && toastStore.get.message() === prompt) {
+            toastStore.set.dismissToast();
+        }
+    }, []);
+
+    // Invalidate only for a destination eligibility transition or actual
+    // profile switch; equivalent query-object refreshes preserve valid UI.
     useEffect(() => {
-        if (previousEligibilityRef.current === eligibility) return;
+        const nextEligibility = {
+            bug: eligibility.bug,
+            idea: eligibility.idea,
+            profileId: eligibility.profileId,
+        };
+        const previousEligibility = previousEligibilityRef.current;
+        if (
+            previousEligibility.bug === nextEligibility.bug &&
+            previousEligibility.idea === nextEligibility.idea &&
+            previousEligibility.profileId === nextEligibility.profileId
+        ) {
+            return;
+        }
 
-        previousEligibilityRef.current = eligibility;
+        previousEligibilityRef.current = nextEligibility;
         eligibilityGenerationRef.current += 1;
         pendingRef.current = undefined;
-        promptDraftRef.current = undefined;
-        toastStore.set.dismissToast();
-
-        if (isComposerOpenRef.current) {
-            isComposerOpenRef.current = false;
-            closeModal();
-        }
-    }, [closeModal, eligibility]);
+        dismissFeedbackPrompt();
+        closeFeedbackComposer();
+    }, [
+        closeFeedbackComposer,
+        dismissFeedbackPrompt,
+        eligibility.bug,
+        eligibility.idea,
+        eligibility.profileId,
+    ]);
 
     const submitAndClose = useCallback(
         async (report: FeedbackReport, captureGeneration: number) => {
@@ -238,20 +292,21 @@ export const FeedbackProvider: React.FC<{
             }
 
             isComposerOpenRef.current = false;
-            closeModal();
+            closeFeedbackComposer();
             toastStore.set.presentToast(m['feedback.reporting.thanks']());
         },
-        [closeModal]
+        [closeFeedbackComposer]
     );
 
     /**
      * Surface-close hook for the composer modal. Invoked by the modal system
-     * itself (dimmer tap / close button) AND by `closeModal` via the modal
-     * options — it must never call `closeModal` again, or the modal beneath
-     * the composer would be popped too.
+     * itself (dimmer tap / close button) AND by `closeModalById` via the
+     * modal options — it must never close a modal itself, or the modal beneath
+     * the composer could be affected.
      */
     const handleComposerClosed = useCallback(() => {
         isComposerOpenRef.current = false;
+        composerModalIdRef.current = undefined;
     }, []);
 
     const openComposer = useCallback(
@@ -259,42 +314,48 @@ export const FeedbackProvider: React.FC<{
             const captureGeneration = eligibilityGenerationRef.current;
             isComposerOpenRef.current = true;
 
-            newModal(
+            const composer = (
                 <FeedbackComposer
                     draft={draft}
-                    onCancel={closeModal}
+                    onCancel={closeFeedbackComposer}
                     onSubmit={report => submitAndClose(report, captureGeneration)}
-                />,
+                />
+            );
+            composerModalIdRef.current = newModal(
+                composer,
                 { sectionClassName: '!max-w-[480px]', onClose: handleComposerClosed },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
             );
         },
-        [closeModal, handleComposerClosed, newModal, submitAndClose]
+        [closeFeedbackComposer, handleComposerClosed, newModal, submitAndClose]
     );
 
     const presentPromptToast = useCallback(
         (draft: FeedbackDraft) => {
             promptDraftRef.current = draft;
-            toastStore.set.presentToast(
+            let prompt: React.ReactNode;
+            prompt = (
                 <FeedbackPromptToast
                     onReport={() => {
-                        if (promptDraftRef.current !== draft || !eligibilityRef.current.bug) return;
+                        if (
+                            promptDraftRef.current !== draft ||
+                            promptToastRef.current !== prompt ||
+                            toastStore.get.message() !== prompt ||
+                            !eligibilityRef.current.bug
+                        ) {
+                            return;
+                        }
 
-                        promptDraftRef.current = undefined;
-                        toastStore.set.dismissToast();
+                        dismissFeedbackPrompt();
                         openComposer(draft);
                     }}
-                    onDismiss={() => {
-                        if (promptDraftRef.current === draft) {
-                            promptDraftRef.current = undefined;
-                        }
-                        toastStore.set.dismissToast();
-                    }}
-                />,
-                { autoDismiss: false }
+                    onDismiss={dismissFeedbackPrompt}
+                />
             );
+            promptToastRef.current = prompt;
+            toastStore.set.presentToast(prompt, { autoDismiss: false });
         },
-        [openComposer]
+        [dismissFeedbackPrompt, openComposer]
     );
 
     // Offer the pending draft when the app transitions busy → idle. Pending
@@ -373,11 +434,7 @@ export const FeedbackProvider: React.FC<{
                     throw new Error('submitImmediately requires a non-empty initialMessage');
                 }
 
-                const { collectContext } = {
-                    collectContext: defaultCollectContext,
-                    ...depsRef.current,
-                };
-                const context = await collectContext({ kind: 'idea' });
+                const context = await defaultCollectMinimalContext();
 
                 if (
                     captureGeneration !== eligibilityGenerationRef.current ||
@@ -390,7 +447,7 @@ export const FeedbackProvider: React.FC<{
                     kind: 'bug',
                     source,
                     capturedAt: new Date(now()).toISOString(),
-                    context: getMinimalImmediateContext(context),
+                    context,
                     message,
                 });
                 return;

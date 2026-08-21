@@ -11,6 +11,7 @@ export const useModal = ({
         newModal: _newModal,
         replaceModal,
         closeModal,
+        closeModalById,
         closeAllModals,
     } = useModalActionsContext();
 
@@ -19,14 +20,13 @@ export const useModal = ({
             component: ModalComponent,
             options?: ModalOptions,
             { desktop = _desktop, mobile = _mobile } = { desktop: _desktop, mobile: _mobile }
-        ) => {
-            _newModal(component, { desktop, mobile }, options);
+        ): number => {
+            return _newModal(component, { desktop, mobile }, options);
         },
         [_newModal, _desktop, _mobile]
     );
 
-    return { newModal, replaceModal, closeModal, closeAllModals };
+    return { newModal, replaceModal, closeModal, closeModalById, closeAllModals };
 };
-
 
 export default useModal;
