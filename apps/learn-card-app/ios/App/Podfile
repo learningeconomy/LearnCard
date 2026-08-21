@@ -34,7 +34,6 @@ def capacitor_pods
   pod 'CapacitorSplashScreen', :path => '../../../../node_modules/@capacitor/splash-screen'
   pod 'CapacitorStatusBar', :path => '../../../../node_modules/@capacitor/status-bar'
   pod 'CapawesomeCapacitorBadge', :path => '../../../../node_modules/@capawesome/capacitor-badge'
-  pod 'CapgoCapacitorShake', :path => '../../../../node_modules/@capgo/capacitor-shake'
   pod 'CapgoCapacitorUpdater', :path => '../../../../node_modules/@capgo/capacitor-updater'
   pod 'CapacitorNativeSettings', :path => '../../../../node_modules/capacitor-native-settings'
   pod 'CapacitorPluginSafeArea', :path => '../../../../node_modules/capacitor-plugin-safe-area'

@@ -2,12 +2,12 @@ import { useEffect, useRef } from 'react';
 
 import { App } from '@capacitor/app';
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
-import { CapacitorShake } from '@capgo/capacitor-shake';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { getLogger } from 'learn-card-base';
 
 import { ScreenshotObserver } from './native/ScreenshotObserver';
+import { SHAKE_OBSERVER_OPTIONS, ShakeObserver } from './native/ShakeObserver';
 import { isShakeInCooldown } from './triggerPolicy';
 import type { ReportProblemOptions } from './types';
 
@@ -22,9 +22,9 @@ export interface AutomaticFeedbackTriggersInput {
 }
 
 /**
- * Mount the automatic feedback triggers: the Capgo shake listener (iOS and
- * Android, gated by the LaunchDarkly `shakeToReportEnabled` flag — missing
- * means false) and the local iOS screenshot observer.
+ * Mount the automatic feedback triggers: the local start/stop shake observer
+ * (iOS and Android, gated by the LaunchDarkly `shakeToReportEnabled` flag —
+ * missing means false) and the local iOS screenshot observer.
  *
  * Registration rules:
  *
@@ -37,8 +37,10 @@ export interface AutomaticFeedbackTriggersInput {
  * - the ten-second shake cooldown (Task 2's `isShakeInCooldown`) is enforced
  *   before forwarding, complementing the coordinator's own cooldown so a
  *   mocked controller still observes the timing policy;
- * - every registered listener handle is removed on cleanup, including
- *   registrations that resolve after cleanup started.
+ * - backgrounding or cleanup stops native shake sensing and every registered
+ *   listener handle is removed, including registrations that resolve late;
+ * - screenshot observation has its own lifecycle and is not churned by shake
+ *   flag changes.
  *
  * Foreground starts fail-closed: shakes arriving before the initial app state
  * resolves are ignored.
@@ -58,16 +60,44 @@ export const useAutomaticFeedbackTriggers = ({
     useEffect(() => {
         if (!enabled) return;
         if (!Capacitor.isNativePlatform()) return;
+        if (Capacitor.getPlatform() !== 'ios') return;
+
+        let disposed = false;
+        let handle: PluginListenerHandle | undefined;
+
+        ScreenshotObserver.addListener('screenshotTaken', () => {
+            reportProblemRef.current({ source: 'screenshot' }).catch(error => {
+                log.warn('feedback.automatic.forward-failed', error);
+            });
+        })
+            .then(registeredHandle => {
+                if (disposed) {
+                    void registeredHandle.remove();
+                } else {
+                    handle = registeredHandle;
+                }
+            })
+            .catch(() => undefined);
+
+        return () => {
+            disposed = true;
+            if (handle) void handle.remove();
+        };
+    }, [enabled]);
+
+    useEffect(() => {
+        if (!enabled) return;
+        if (!Capacitor.isNativePlatform()) return;
 
         const platform = Capacitor.getPlatform();
         const shouldRegisterShake =
             shakeFlagEnabled && (platform === 'ios' || platform === 'android');
-        const shouldRegisterScreenshot = platform === 'ios';
-
-        if (!shouldRegisterShake && !shouldRegisterScreenshot) return;
+        if (!shouldRegisterShake) return;
 
         let disposed = false;
         const handles: PluginListenerHandle[] = [];
+        let receivedAppStateChange = false;
+        let sensingQueue = Promise.resolve();
 
         const track = (registration: Promise<PluginListenerHandle>): void => {
             registration
@@ -90,6 +120,23 @@ export const useAutomaticFeedbackTriggers = ({
         let isForeground = false;
         let lastShakeAt: number | undefined;
 
+        const setSensing = (shouldStart: boolean): void => {
+            sensingQueue = sensingQueue
+                .catch(() => undefined)
+                .then(async () => {
+                    if (shouldStart && disposed) return;
+
+                    if (shouldStart) {
+                        await ShakeObserver.start(SHAKE_OBSERVER_OPTIONS);
+                    } else {
+                        await ShakeObserver.stop();
+                    }
+                })
+                .catch(error => {
+                    log.warn('feedback.automatic.shake-sensing-failed', error);
+                });
+        };
+
         const handleShake = (): void => {
             if (!isForeground) return;
 
@@ -100,37 +147,31 @@ export const useAutomaticFeedbackTriggers = ({
             forward('shake');
         };
 
-        const register = async (): Promise<void> => {
-            try {
-                const { isActive } = await App.getState();
+        track(
+            App.addListener('appStateChange', state => {
+                receivedAppStateChange = true;
+                isForeground = state.isActive;
+                setSensing(state.isActive);
+            })
+        );
+        track(ShakeObserver.addListener('shake', handleShake));
+
+        App.getState()
+            .then(({ isActive }) => {
+                if (disposed || receivedAppStateChange) return;
+
                 isForeground = isActive;
-            } catch (error) {
-                // Fail closed: without a confirmed state, shakes stay ignored.
+                if (isActive) setSensing(true);
+            })
+            .catch(error => {
+                // Fail closed: without a confirmed state, sensing stays off.
                 log.warn('feedback.automatic.app-state-failed', error);
-            }
-
-            // The foreground ref is only consulted by shakes; register the
-            // app-state listener exactly when shakes are registered.
-            if (shouldRegisterShake) {
-                track(
-                    App.addListener('appStateChange', state => {
-                        isForeground = state.isActive;
-                    })
-                );
-                track(CapacitorShake.addListener('shake', handleShake));
-            }
-
-            if (shouldRegisterScreenshot) {
-                track(
-                    ScreenshotObserver.addListener('screenshotTaken', () => forward('screenshot'))
-                );
-            }
-        };
-
-        void register();
+            });
 
         return () => {
             disposed = true;
+            isForeground = false;
+            setSensing(false);
             handles.forEach(handle => {
                 void handle.remove();
             });

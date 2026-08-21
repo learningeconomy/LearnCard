@@ -92,10 +92,6 @@
 		"classpath": "io.capawesome.capacitorjs.plugins.badge.BadgePlugin"
 	},
 	{
-		"pkg": "@capgo/capacitor-shake",
-		"classpath": "ee.forgr.capacitor.shake.CapacitorShakePlugin"
-	},
-	{
 		"pkg": "@capgo/capacitor-updater",
 		"classpath": "ee.forgr.capacitor_updater.CapacitorUpdaterPlugin"
 	},

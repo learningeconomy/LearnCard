@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { beforeEach, afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
 
@@ -5,7 +7,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
  * Automatic listener tests (LC-2086 Task 10).
  *
  * `useAutomaticFeedbackTriggers` mounts the shake and iOS screenshot
- * observers. Capacitor platform/app state, the Capgo shake plugin, the local
+ * observers. Capacitor platform/app state, the local shake plugin, the local
  * `ScreenshotObserver` bridge, LaunchDarkly flags, the clock, and the central
  * logger are all stubbed so registration decisions, foreground gating, the
  * ten-second cooldown, and handle cleanup are observable in isolation.
@@ -26,6 +28,8 @@ const appHost = vi.hoisted(() => ({
 }));
 
 const shakeHost = vi.hoisted(() => ({
+    start: vi.fn(),
+    stop: vi.fn(),
     addListener: vi.fn(),
 }));
 
@@ -48,8 +52,11 @@ vi.mock('@capacitor/app', () => ({
     },
 }));
 
-vi.mock('@capgo/capacitor-shake', () => ({
-    CapacitorShake: {
+vi.mock('./native/ShakeObserver', () => ({
+    SHAKE_OBSERVER_OPTIONS: { threshold: 2.7, cooldownMs: 2_000 },
+    ShakeObserver: {
+        start: shakeHost.start,
+        stop: shakeHost.stop,
         addListener: shakeHost.addListener,
     },
 }));
@@ -99,6 +106,8 @@ describe('useAutomaticFeedbackTriggers', () => {
         capacitorState.platform = 'ios';
         flags.value = { shakeToReportEnabled: true };
         appHost.getState.mockResolvedValue({ isActive: true });
+        shakeHost.start.mockResolvedValue(undefined);
+        shakeHost.stop.mockResolvedValue(undefined);
         appHost.addListener.mockImplementation(async (_event: string, cb: (s: never) => void) => {
             appStateCallback = cb as typeof appStateCallback;
             return createHandle();
@@ -123,7 +132,11 @@ describe('useAutomaticFeedbackTriggers', () => {
     });
 
     const mount = (enabled = true) =>
-        renderHook(() => useAutomaticFeedbackTriggers({ enabled, reportProblem }));
+        renderHook(
+            ({ hookEnabled }) =>
+                useAutomaticFeedbackTriggers({ enabled: hookEnabled, reportProblem }),
+            { initialProps: { hookEnabled: enabled } }
+        );
 
     it('registers no listeners on web', async () => {
         capacitorState.isNative = false;
@@ -133,6 +146,8 @@ describe('useAutomaticFeedbackTriggers', () => {
         unmount();
 
         expect(appHost.addListener).not.toHaveBeenCalled();
+        expect(shakeHost.start).not.toHaveBeenCalled();
+        expect(shakeHost.stop).not.toHaveBeenCalled();
         expect(shakeHost.addListener).not.toHaveBeenCalled();
         expect(screenshotHost.addListener).not.toHaveBeenCalled();
     });
@@ -145,6 +160,7 @@ describe('useAutomaticFeedbackTriggers', () => {
         unmount();
 
         expect(shakeHost.addListener).not.toHaveBeenCalled();
+        expect(shakeHost.start).not.toHaveBeenCalled();
     });
 
     it('registers no shake listener when shakeToReportEnabled is false', async () => {
@@ -155,6 +171,7 @@ describe('useAutomaticFeedbackTriggers', () => {
         unmount();
 
         expect(shakeHost.addListener).not.toHaveBeenCalled();
+        expect(shakeHost.start).not.toHaveBeenCalled();
     });
 
     it('registers no listeners when bug eligibility is false', async () => {
@@ -163,8 +180,66 @@ describe('useAutomaticFeedbackTriggers', () => {
         unmount();
 
         expect(appHost.addListener).not.toHaveBeenCalled();
+        expect(shakeHost.start).not.toHaveBeenCalled();
+        expect(shakeHost.stop).not.toHaveBeenCalled();
         expect(shakeHost.addListener).not.toHaveBeenCalled();
         expect(screenshotHost.addListener).not.toHaveBeenCalled();
+    });
+
+    it('starts native sensing with conservative physical-tuning options', async () => {
+        const { unmount } = mount();
+        await flush();
+
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
+        expect(shakeHost.start).toHaveBeenCalledWith({ threshold: 2.7, cooldownMs: 2_000 });
+
+        unmount();
+    });
+
+    it('does not start native sensing while the initial app state is backgrounded', async () => {
+        appHost.getState.mockResolvedValue({ isActive: false });
+
+        const { unmount } = mount();
+        await flush();
+
+        expect(shakeHost.start).not.toHaveBeenCalled();
+
+        unmount();
+    });
+
+    it('stops native sensing when the shake flag turns off without disturbing screenshots', async () => {
+        const { rerender, unmount } = mount();
+        await flush();
+
+        const screenshotHandle = await screenshotHost.addListener.mock.results[0].value;
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
+
+        flags.value = { shakeToReportEnabled: false };
+        rerender({ hookEnabled: true });
+        await flush();
+
+        expect(shakeHost.stop).toHaveBeenCalledTimes(1);
+        expect(screenshotHost.addListener).toHaveBeenCalledTimes(1);
+        expect(screenshotHandle.remove).not.toHaveBeenCalled();
+
+        screenshotCallback!({ capturedAt: '2026-08-21T00:00:00.000Z' });
+        expect(reportProblem).toHaveBeenCalledWith({ source: 'screenshot' });
+
+        unmount();
+    });
+
+    it('stops native sensing when bug eligibility is lost', async () => {
+        const { rerender, unmount } = mount();
+        await flush();
+
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
+
+        rerender({ hookEnabled: false });
+        await flush();
+
+        expect(shakeHost.stop).toHaveBeenCalledTimes(1);
+
+        unmount();
     });
 
     it('calls reportProblem({ source: "shake" }) once inside ten seconds', async () => {
@@ -177,6 +252,7 @@ describe('useAutomaticFeedbackTriggers', () => {
         expect(appHost.getState).toHaveBeenCalledTimes(1);
         expect(appHost.addListener).toHaveBeenCalledWith('appStateChange', expect.any(Function));
         expect(shakeHost.addListener).toHaveBeenCalledWith('shake', expect.any(Function));
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
 
         shakeCallback!();
         expect(reportProblem).toHaveBeenCalledWith({ source: 'shake' });
@@ -202,12 +278,18 @@ describe('useAutomaticFeedbackTriggers', () => {
         act(() => {
             appStateCallback!({ isActive: false });
         });
+        await flush();
+        expect(shakeHost.stop).toHaveBeenCalledTimes(1);
+
         shakeCallback!();
         expect(reportProblem).not.toHaveBeenCalled();
 
         act(() => {
             appStateCallback!({ isActive: true });
         });
+        await flush();
+        expect(shakeHost.start).toHaveBeenCalledTimes(2);
+
         shakeCallback!();
         expect(reportProblem).toHaveBeenCalledWith({ source: 'shake' });
 
@@ -222,12 +304,16 @@ describe('useAutomaticFeedbackTriggers', () => {
         const { unmount } = mount();
         await flush();
 
+        expect(shakeHost.start).not.toHaveBeenCalled();
         shakeCallback!();
         expect(reportProblem).not.toHaveBeenCalled();
 
         act(() => {
             appStateCallback!({ isActive: true });
         });
+        await flush();
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
+
         shakeCallback!();
         expect(reportProblem).toHaveBeenCalledWith({ source: 'shake' });
 
@@ -258,6 +344,7 @@ describe('useAutomaticFeedbackTriggers', () => {
 
         expect(screenshotHost.addListener).not.toHaveBeenCalled();
         expect(shakeHost.addListener).toHaveBeenCalledWith('shake', expect.any(Function));
+        expect(shakeHost.start).toHaveBeenCalledWith({ threshold: 2.7, cooldownMs: 2_000 });
         expect(appHost.addListener).toHaveBeenCalledWith('appStateChange', expect.any(Function));
     });
 
@@ -275,6 +362,7 @@ describe('useAutomaticFeedbackTriggers', () => {
         unmount();
         await flush();
 
+        expect(shakeHost.stop).toHaveBeenCalledTimes(1);
         for (const handle of registered) {
             expect(handle.remove).toHaveBeenCalledTimes(1);
         }
@@ -310,11 +398,12 @@ describe('useAutomaticFeedbackTriggers', () => {
         expect(shakeHost.addListener).not.toHaveBeenCalled();
 
         flags.value = { shakeToReportEnabled: true };
-        rerender();
+        rerender({ hookEnabled: true });
         await flush();
 
         await waitFor(() => {
             expect(shakeHost.addListener).toHaveBeenCalledWith('shake', expect.any(Function));
+            expect(shakeHost.start).toHaveBeenCalledWith({ threshold: 2.7, cooldownMs: 2_000 });
         });
 
         unmount();
