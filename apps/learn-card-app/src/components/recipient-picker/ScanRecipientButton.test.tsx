@@ -201,4 +201,38 @@ describe('ScanRecipientButton', () => {
         });
         expect(mocks.mutate).not.toHaveBeenCalled();
     });
+
+    it('checks for duplicates against recipients added after the scanner opens', async () => {
+        const onRecipientScanned = vi.fn();
+        const { rerender } = render(
+            <ScanRecipientButton recipients={[]} onRecipientScanned={onRecipientScanned} />
+        );
+
+        fireEvent.click(screen.getByRole('button'));
+        await waitFor(() => expect(mocks.openScanner).toHaveBeenCalledOnce());
+
+        rerender(
+            <ScanRecipientButton
+                recipients={[
+                    {
+                        kind: 'profile',
+                        profileId: 'newly-added-user',
+                        displayName: 'Newly Added User',
+                    },
+                ]}
+                onRecipientScanned={onRecipientScanned}
+            />
+        );
+
+        await act(async () => {
+            await mocks.getResultHandler()?.(profileQr('newly-added-user'));
+        });
+
+        expect(onRecipientScanned).not.toHaveBeenCalled();
+        expect(mocks.presentToast).toHaveBeenCalledWith('Duplicate recipient', {
+            type: 'error',
+            hasDismissButton: true,
+        });
+        expect(mocks.mutate).not.toHaveBeenCalled();
+    });
 });

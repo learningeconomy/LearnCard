@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
@@ -44,10 +44,15 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
     const { currentLCNUser } = useGetCurrentLCNUser();
     const connectWith = useConnectWithMutation();
     const [pendingProfile, setPendingProfile] = useState<PendingScannedProfile>();
+    const recipientsRef = useRef(recipients);
     const { data: scannedProfile, isFetched: isProfileFetched } = useGetProfile(
         pendingProfile?.profileId,
         Boolean(pendingProfile)
     );
+
+    useEffect(() => {
+        recipientsRef.current = recipients;
+    }, [recipients]);
 
     useEffect(() => {
         if (!pendingProfile || !isProfileFetched) return;
@@ -95,7 +100,7 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
                 return { message, tone: 'error', durationMs: 1200 };
             }
 
-            const isDuplicate = recipients.some(
+            const isDuplicate = recipientsRef.current.some(
                 recipient =>
                     recipient.kind === 'profile' && recipient.profileId === result.profileId
             );
@@ -123,7 +128,7 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
                 durationMs: 650,
             };
         },
-        [connectWith, currentLCNUser, onRecipientScanned, recipients, showError]
+        [connectWith, currentLCNUser, onRecipientScanned, showError]
     );
 
     const handleOpenScanner = useCallback(async (): Promise<void> => {
