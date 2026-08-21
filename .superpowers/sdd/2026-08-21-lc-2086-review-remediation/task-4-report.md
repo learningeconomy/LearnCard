@@ -161,3 +161,41 @@ TDD evidence:
    request from being applied.
 
 No native source or registration file changed in this review round.
+
+## Review fix round 2: disposed callbacks and bounded retry convergence
+
+Two lifecycle gaps remained in the first arbiter:
+
+1. An `appStateChange` callback captured by a disposed effect could still write
+   `true` into the shared arbiter after cleanup requested `false`, restarting
+   sensing while the flag was disabled or the hook was unmounted.
+2. The arbiter treated a rejected native call as though the requested state had
+   been applied. With no later lifecycle event, a rejected foreground `start`
+   stayed stopped and a rejected unmount `stop` stayed started.
+
+The app-state listener now returns immediately when its effect is disposed.
+The arbiter separately tracks desired state and the last successfully applied
+state. It keeps one native operation in flight, retries an unchanged failed
+target up to three total attempts with a 100 ms delay, and re-reads the latest
+desired state after every completion. A new desired state cancels an obsolete
+retry timer and is applied next. Persistent failure exhaustion leaves no timer
+or unhandled rejection; a later explicit lifecycle request can try again.
+
+TDD command:
+
+`bunx vitest run apps/learn-card-app/src/feedback/reporting/useAutomaticFeedbackTriggers.test.tsx`
+
+TDD evidence:
+
+1. RED: 23 tests ran with 18 passes and 5 failures. The disposed callback made
+   a second `start`; rejected start/stop calls scheduled zero retry timers;
+   persistent start failure attempted only once; and the obsolete-retry case
+   likewise observed no timer.
+2. GREEN: after adding the disposed guard and successful-state/retry tracking,
+   all 23 tests pass.
+3. The new fake-timer cases verify first-attempt start recovery, first-attempt
+   unmount-stop recovery, three-attempt persistent-failure exhaustion with zero
+   timers remaining, and latest-desired-state precedence while a retry is
+   pending. `afterEach` always restores real timers.
+
+No native source or registration file changed in this review round.

@@ -25,39 +25,89 @@ interface ShakeSensingArbiter {
     request: (shouldStart: boolean) => void;
 }
 
+const SHAKE_SENSING_MAX_ATTEMPTS = 3;
+const SHAKE_SENSING_RETRY_DELAY_MS = 100;
+
 /** Serialize native sensing calls and converge to the latest requested state. */
 const createShakeSensingArbiter = (): ShakeSensingArbiter => {
     let desiredState = false;
-    let isDraining = false;
+    let appliedState = false;
+    let isApplying = false;
+    let failedState: boolean | undefined;
+    let failedAttempts = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
-    const drain = async (): Promise<void> => {
-        while (true) {
-            const stateBeingApplied = desiredState;
+    const resetFailures = (): void => {
+        failedState = undefined;
+        failedAttempts = 0;
+    };
 
+    const clearRetry = (): void => {
+        if (retryTimer === undefined) return;
+
+        clearTimeout(retryTimer);
+        retryTimer = undefined;
+    };
+
+    const applyDesiredState = (): void => {
+        if (isApplying || retryTimer !== undefined || desiredState === appliedState) return;
+
+        const stateBeingApplied = desiredState;
+        isApplying = true;
+
+        void (async () => {
+            let succeeded = false;
             try {
                 if (stateBeingApplied) {
                     await ShakeObserver.start(SHAKE_OBSERVER_OPTIONS);
                 } else {
                     await ShakeObserver.stop();
                 }
+
+                appliedState = stateBeingApplied;
+                resetFailures();
+                succeeded = true;
             } catch (error) {
                 log.warn('feedback.automatic.shake-sensing-failed', error);
+
+                if (failedState === stateBeingApplied) {
+                    failedAttempts += 1;
+                } else {
+                    failedState = stateBeingApplied;
+                    failedAttempts = 1;
+                }
+            } finally {
+                isApplying = false;
             }
 
-            if (stateBeingApplied === desiredState) {
-                isDraining = false;
+            if (stateBeingApplied !== desiredState) {
+                resetFailures();
+                applyDesiredState();
                 return;
             }
-        }
+
+            if (succeeded) {
+                applyDesiredState();
+                return;
+            }
+
+            if (failedAttempts < SHAKE_SENSING_MAX_ATTEMPTS) {
+                retryTimer = setTimeout(() => {
+                    retryTimer = undefined;
+                    applyDesiredState();
+                }, SHAKE_SENSING_RETRY_DELAY_MS);
+            }
+        })();
     };
 
     return {
         request: shouldStart => {
+            const stateChanged = desiredState !== shouldStart;
             desiredState = shouldStart;
-            if (isDraining) return;
 
-            isDraining = true;
-            void drain();
+            if (stateChanged) resetFailures();
+            clearRetry();
+            applyDesiredState();
         },
     };
 };
@@ -177,6 +227,8 @@ export const useAutomaticFeedbackTriggers = ({
 
         track(
             App.addListener('appStateChange', state => {
+                if (disposed) return;
+
                 receivedAppStateChange = true;
                 isForeground = state.isActive;
                 sensingArbiterRef.current?.request(state.isActive);

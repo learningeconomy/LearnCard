@@ -144,6 +144,7 @@ describe('useAutomaticFeedbackTriggers', () => {
     });
 
     afterEach(() => {
+        vi.useRealTimers();
         vi.restoreAllMocks();
     });
 
@@ -258,6 +259,39 @@ describe('useAutomaticFeedbackTriggers', () => {
         unmount();
     });
 
+    it('ignores an old app-state callback after its effect has been disposed', async () => {
+        let nativeSensing = false;
+        shakeHost.start.mockImplementation(async () => {
+            nativeSensing = true;
+        });
+        shakeHost.stop.mockImplementation(async () => {
+            nativeSensing = false;
+        });
+
+        const { rerender, unmount } = mount();
+        await flush();
+
+        const disposedAppStateCallback = appStateCallback!;
+        expect(nativeSensing).toBe(true);
+
+        flags.value = { shakeToReportEnabled: false };
+        rerender({ hookEnabled: true });
+        await flush();
+
+        expect(nativeSensing).toBe(false);
+        const startCallsAfterCleanup = shakeHost.start.mock.calls.length;
+
+        act(() => {
+            disposedAppStateCallback({ isActive: true });
+        });
+        await flush();
+
+        expect(shakeHost.start).toHaveBeenCalledTimes(startCallsAfterCleanup);
+        expect(nativeSensing).toBe(false);
+
+        unmount();
+    });
+
     it('converges to the latest started state across a deferred start and rapid effect reruns', async () => {
         const firstStart = createDeferred();
         const completedOperations: Array<'start' | 'stop'> = [];
@@ -330,35 +364,122 @@ describe('useAutomaticFeedbackTriggers', () => {
         expect(nativeSensing).toBe(false);
     });
 
-    it('handles rejected native start and stop operations and continues converging', async () => {
-        shakeHost.start.mockRejectedValueOnce(new Error('start failed'));
-        shakeHost.stop.mockRejectedValueOnce(new Error('stop failed'));
+    it('retries a rejected start and converges to started while still desired', async () => {
+        vi.useFakeTimers();
+        let nativeSensing = false;
+        shakeHost.start
+            .mockRejectedValueOnce(new Error('start failed'))
+            .mockImplementation(async () => {
+                nativeSensing = true;
+            });
 
         const { unmount } = mount();
+        await flush();
 
-        await waitFor(() => {
-            expect(loggerHost.warn).toHaveBeenCalledWith(
-                'feedback.automatic.shake-sensing-failed',
-                expect.objectContaining({ message: 'start failed' })
-            );
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
+        expect(nativeSensing).toBe(false);
+        expect(vi.getTimerCount()).toBe(1);
+
+        await act(async () => {
+            await vi.runAllTimersAsync();
         });
+
+        expect(shakeHost.start).toHaveBeenCalledTimes(2);
+        expect(nativeSensing).toBe(true);
+        expect(vi.getTimerCount()).toBe(0);
+
+        unmount();
+        await flush();
+    });
+
+    it('retries a rejected stop after unmount and converges to stopped', async () => {
+        vi.useFakeTimers();
+        let nativeSensing = false;
+        shakeHost.start.mockImplementation(async () => {
+            nativeSensing = true;
+        });
+        shakeHost.stop
+            .mockRejectedValueOnce(new Error('stop failed'))
+            .mockImplementation(async () => {
+                nativeSensing = false;
+            });
+
+        const { unmount } = mount();
+        await flush();
+        expect(nativeSensing).toBe(true);
+
+        unmount();
+        await flush();
+
+        expect(shakeHost.stop).toHaveBeenCalledTimes(1);
+        expect(nativeSensing).toBe(true);
+        expect(vi.getTimerCount()).toBe(1);
+
+        await act(async () => {
+            await vi.runAllTimersAsync();
+        });
+
+        expect(shakeHost.stop).toHaveBeenCalledTimes(2);
+        expect(nativeSensing).toBe(false);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('stops retrying after bounded persistent failures without leaving timers', async () => {
+        vi.useFakeTimers();
+        shakeHost.start.mockRejectedValue(new Error('persistent start failure'));
+
+        const { unmount } = mount();
+        await flush();
+
+        await act(async () => {
+            await vi.runAllTimersAsync();
+        });
+
+        expect(shakeHost.start).toHaveBeenCalledTimes(3);
+        expect(loggerHost.warn).toHaveBeenCalledTimes(3);
+        expect(vi.getTimerCount()).toBe(0);
+
+        unmount();
+        await flush();
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('cancels an obsolete retry and applies the latest desired state', async () => {
+        vi.useFakeTimers();
+        let nativeSensing = false;
+        shakeHost.start
+            .mockRejectedValueOnce(new Error('start failed'))
+            .mockImplementation(async () => {
+                nativeSensing = true;
+            });
+        shakeHost.stop.mockImplementation(async () => {
+            nativeSensing = false;
+        });
+
+        const { unmount } = mount();
+        await flush();
+        expect(vi.getTimerCount()).toBe(1);
 
         act(() => {
             appStateCallback!({ isActive: false });
         });
-        await waitFor(() => {
-            expect(loggerHost.warn).toHaveBeenCalledWith(
-                'feedback.automatic.shake-sensing-failed',
-                expect.objectContaining({ message: 'stop failed' })
-            );
+        await flush();
+        await act(async () => {
+            await vi.runAllTimersAsync();
         });
+
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
+        expect(shakeHost.stop).not.toHaveBeenCalled();
+        expect(nativeSensing).toBe(false);
+        expect(vi.getTimerCount()).toBe(0);
 
         act(() => {
             appStateCallback!({ isActive: true });
         });
-        await waitFor(() => {
-            expect(shakeHost.start).toHaveBeenCalledTimes(2);
-        });
+        await flush();
+
+        expect(shakeHost.start).toHaveBeenCalledTimes(2);
+        expect(nativeSensing).toBe(true);
 
         unmount();
         await flush();
