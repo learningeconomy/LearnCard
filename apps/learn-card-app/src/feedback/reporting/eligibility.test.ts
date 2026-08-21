@@ -11,10 +11,16 @@ import { getFeedbackReportingEligibility } from './eligibility';
  * code. The hook stubs are never exercised by this suite.
  */
 vi.mock('learn-card-base', async () => {
-    const { calculateAge } = await import('learn-card-base/helpers/dateHelpers');
+    const { calculateAge } = await import(
+        '../../../../../packages/learn-card-base/src/helpers/dateHelpers'
+    );
+    const { getMinorAgeThreshold } = await import(
+        '../../../../../packages/learn-card-base/src/constants/gdprAgeLimits'
+    );
 
     return {
         calculateAge,
+        getMinorAgeThreshold,
         switchedProfileStore: { use: { profileType: () => null } },
         useGetCurrentLCNUser: () => ({ currentLCNUser: null }),
         useGetPreferencesForDid: () => ({ data: undefined, isLoading: false }),
@@ -24,6 +30,22 @@ vi.mock('learn-card-base', async () => {
 const NOW = new Date('2026-08-20T12:00:00Z');
 
 describe('getFeedbackReportingEligibility', () => {
+    it.each([false, undefined])(
+        'fails closed without an authenticated profile (%s)',
+        hasAuthenticatedProfile => {
+            expect(
+                getFeedbackReportingEligibility({
+                    hasAuthenticatedProfile,
+                    isLoading: false,
+                    preferences: {},
+                    profileType: 'guardian',
+                    country: 'US',
+                    now: NOW,
+                })
+            ).toEqual({ bug: false, idea: false, isLoading: false });
+        }
+    );
+
     it.each([
         ['adult defaults', {}, 'guardian', undefined, { bug: true, idea: true }],
         [
@@ -46,6 +68,7 @@ describe('getFeedbackReportingEligibility', () => {
     ])('%s', (_label, preferences, profileType, dob, expected) => {
         expect(
             getFeedbackReportingEligibility({
+                hasAuthenticatedProfile: true,
                 isLoading: false,
                 preferences,
                 profileType,
@@ -59,6 +82,7 @@ describe('getFeedbackReportingEligibility', () => {
     it('fails closed while preferences are loading', () => {
         expect(
             getFeedbackReportingEligibility({
+                hasAuthenticatedProfile: true,
                 isLoading: true,
                 preferences: {},
                 profileType: 'guardian',
@@ -70,6 +94,7 @@ describe('getFeedbackReportingEligibility', () => {
     it('fails closed for an invalid DOB', () => {
         expect(
             getFeedbackReportingEligibility({
+                hasAuthenticatedProfile: true,
                 isLoading: false,
                 preferences: {},
                 profileType: 'guardian',
@@ -83,6 +108,7 @@ describe('getFeedbackReportingEligibility', () => {
     it('fails closed for a future DOB', () => {
         expect(
             getFeedbackReportingEligibility({
+                hasAuthenticatedProfile: true,
                 isLoading: false,
                 preferences: {},
                 profileType: 'guardian',
@@ -96,6 +122,7 @@ describe('getFeedbackReportingEligibility', () => {
     it('preserves default-enabled behavior when an adult profile has no DOB', () => {
         expect(
             getFeedbackReportingEligibility({
+                hasAuthenticatedProfile: true,
                 isLoading: false,
                 preferences: undefined,
                 profileType: 'guardian',
@@ -109,6 +136,7 @@ describe('getFeedbackReportingEligibility', () => {
     it('treats a user at exactly the minor-age threshold as an adult', () => {
         expect(
             getFeedbackReportingEligibility({
+                hasAuthenticatedProfile: true,
                 isLoading: false,
                 preferences: {},
                 profileType: 'guardian',
@@ -121,6 +149,7 @@ describe('getFeedbackReportingEligibility', () => {
 
     it('uses the country-specific GDPR threshold for EU users', () => {
         const input = {
+            hasAuthenticatedProfile: true,
             isLoading: false,
             preferences: {},
             profileType: 'guardian' as const,
@@ -144,6 +173,7 @@ describe('getFeedbackReportingEligibility', () => {
         // Even with both destinations opted in, a server minor gets nothing.
         expect(
             getFeedbackReportingEligibility({
+                hasAuthenticatedProfile: true,
                 isLoading: false,
                 preferences: { bugReportsEnabled: true, analyticsEnabled: true, isMinor: true },
                 profileType: 'guardian',

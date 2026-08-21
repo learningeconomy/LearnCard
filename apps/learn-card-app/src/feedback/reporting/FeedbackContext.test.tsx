@@ -177,6 +177,14 @@ const renderProvider = () => {
                 </FeedbackProvider>
             );
         },
+        rerenderWithEligibility(value: typeof eligibility.value) {
+            eligibility.value = value;
+            utils.rerender(
+                <FeedbackProvider deps={deps}>
+                    <Consumer />
+                </FeedbackProvider>
+            );
+        },
     };
 };
 
@@ -463,7 +471,14 @@ describe('FeedbackProvider reportProblem', () => {
         expect(modalHost.openModal).toHaveBeenCalledTimes(1);
     });
 
-    it('submits immediately for the micro-feedback follow-up without opening a composer', async () => {
+    it('submits minimal micro-feedback without capturing a screenshot or rich diagnostics', async () => {
+        collectContext.mockResolvedValueOnce({
+            ...CONTEXT,
+            app: { platform: 'ios', displayVersion: '1.2.3', nativeBuild: '456' },
+            device: { model: 'Private phone' },
+            network: { connected: true, label: 'wifi' },
+            logs: [{ timestamp: '2026-08-20T12:00:00Z', level: 'info', message: 'private' }],
+        });
         renderProvider();
 
         await act(async () => {
@@ -474,14 +489,20 @@ describe('FeedbackProvider reportProblem', () => {
             });
         });
 
-        expect(submit).toHaveBeenCalledTimes(1);
-        expect(submit).toHaveBeenCalledWith(
-            expect.objectContaining({
-                kind: 'bug',
-                source: 'micro-feedback',
-                message: 'broken button',
-            })
-        );
+        expect(captureScreenshot).not.toHaveBeenCalled();
+        expect(collectContext).toHaveBeenCalledWith({ kind: 'idea' });
+        expect(submit).toHaveBeenCalledWith({
+            kind: 'bug',
+            source: 'micro-feedback',
+            message: 'broken button',
+            capturedAt: new Date(clock.nowMs).toISOString(),
+            context: {
+                currentRoute: '/wallet',
+                recentRoutes: ['/home', '/wallet'],
+                tenantId: 'learncard',
+                app: { platform: 'ios', displayVersion: '1.2.3', nativeBuild: '456' },
+            },
+        });
         expect(modalHost.openModal).not.toHaveBeenCalled();
         expect(modalHost.presentToast).not.toHaveBeenCalled();
     });
@@ -515,6 +536,111 @@ describe('FeedbackProvider reportProblem', () => {
                 });
             })
         ).rejects.toThrow('boom');
+    });
+
+    it('drops an in-flight bug capture after eligibility is lost', async () => {
+        let resolveScreenshot: (screenshot: FeedbackScreenshot) => void;
+        captureScreenshot.mockImplementationOnce(
+            () =>
+                new Promise<FeedbackScreenshot>(resolve => {
+                    resolveScreenshot = resolve;
+                })
+        );
+        const { rerenderWithEligibility } = renderProvider();
+
+        let report: Promise<void> | undefined;
+        act(() => {
+            report = controller?.reportProblem({ source: 'settings' });
+        });
+
+        rerenderWithEligibility({ bug: false, idea: true, isLoading: false });
+
+        await act(async () => {
+            resolveScreenshot(SCREENSHOT);
+            await report;
+        });
+
+        expect(modalHost.openModal).not.toHaveBeenCalled();
+        expect(modalHost.presentToast).not.toHaveBeenCalled();
+        expect(modalHost.dismissToast).toHaveBeenCalledTimes(1);
+    });
+
+    it('clears a pending automatic draft when bug eligibility is lost', async () => {
+        busy.value = true;
+        const { rerenderWithBusy, rerenderWithEligibility } = renderProvider();
+
+        await act(async () => {
+            await controller?.reportProblem({ source: 'shake' });
+        });
+
+        rerenderWithEligibility({ bug: false, idea: true, isLoading: false });
+        rerenderWithBusy(false);
+
+        expect(modalHost.presentToast).not.toHaveBeenCalled();
+        expect(modalHost.dismissToast).toHaveBeenCalledTimes(1);
+    });
+
+    it('dismisses a visible prompt and prevents its stale action after bug eligibility is lost', async () => {
+        const { rerenderWithEligibility } = renderProvider();
+
+        await act(async () => {
+            await controller?.reportProblem({ source: 'screenshot' });
+        });
+        const [prompt] = toastCall();
+
+        rerenderWithEligibility({ bug: false, idea: true, isLoading: false });
+        act(() => {
+            prompt.props.onReport();
+        });
+
+        expect(modalHost.dismissToast).toHaveBeenCalledTimes(1);
+        expect(modalHost.openModal).not.toHaveBeenCalled();
+    });
+
+    it('closes an open bug composer when bug eligibility is lost', async () => {
+        const { rerenderWithEligibility } = renderProvider();
+
+        await act(async () => {
+            await controller?.reportProblem({ source: 'settings' });
+        });
+
+        rerenderWithEligibility({ bug: false, idea: true, isLoading: false });
+
+        expect(modalHost.closeModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not submit from a stale bug composer after eligibility is lost', async () => {
+        const { rerenderWithEligibility } = renderProvider();
+
+        await act(async () => {
+            await controller?.reportProblem({ source: 'settings' });
+        });
+        const [composer] = composerCall();
+
+        rerenderWithEligibility({ bug: false, idea: true, isLoading: false });
+        await act(async () => {
+            await composer.props.onSubmit({ ...composer.props.draft, message: 'It broke' });
+        });
+
+        expect(submit).not.toHaveBeenCalled();
+        expect(modalHost.closeModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not submit from a composer captured for a previous eligible profile', async () => {
+        const { rerenderWithEligibility } = renderProvider();
+
+        await act(async () => {
+            await controller?.reportProblem({ source: 'settings' });
+        });
+        const [composer] = composerCall();
+
+        rerenderWithEligibility({ bug: true, idea: true, isLoading: false });
+        await act(async () => {
+            await composer.props.onSubmit({ ...composer.props.draft, message: 'It broke' });
+        });
+
+        expect(submit).not.toHaveBeenCalled();
+        expect(modalHost.closeModal).toHaveBeenCalledTimes(1);
     });
 });
 
@@ -565,6 +691,18 @@ describe('FeedbackProvider shareIdea', () => {
         expect(submit).toHaveBeenCalledWith(
             expect.objectContaining({ kind: 'idea', message: 'Dark mode' })
         );
+        expect(modalHost.closeModal).toHaveBeenCalledTimes(1);
+    });
+
+    it('closes an open idea composer when idea eligibility is lost', async () => {
+        const { rerenderWithEligibility } = renderProvider();
+
+        await act(async () => {
+            await controller?.shareIdea({ initialMessage: 'Dark mode' });
+        });
+
+        rerenderWithEligibility({ bug: true, idea: false, isLoading: false });
+
         expect(modalHost.closeModal).toHaveBeenCalledTimes(1);
     });
 });

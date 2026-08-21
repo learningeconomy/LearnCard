@@ -2,16 +2,18 @@ import { useMemo } from 'react';
 
 import {
     calculateAge,
+    getMinorAgeThreshold,
     switchedProfileStore,
     useGetCurrentLCNUser,
     useGetPreferencesForDid,
 } from 'learn-card-base';
-import { getMinorAgeThreshold } from 'learn-card-base/constants/gdprAgeLimits';
 
 import type { PreferencesType } from 'learn-card-base';
 
 /** Inputs consumed by the pure reporting-eligibility gate. */
 export interface FeedbackReportingEligibilityInput {
+    /** Whether a current LCN profile is authenticated. Missing/false fails closed. */
+    hasAuthenticatedProfile?: boolean;
     /** Whether the preferences query is still loading. Fails closed when true. */
     isLoading?: boolean;
     /** Server-side privacy preferences; absent flags count as opted in. */
@@ -64,6 +66,7 @@ const isAdultByDob = (
  * - `idea` requires `preferences.analyticsEnabled !== false`.
  */
 export const getFeedbackReportingEligibility = ({
+    hasAuthenticatedProfile,
     isLoading = false,
     preferences,
     profileType,
@@ -71,6 +74,8 @@ export const getFeedbackReportingEligibility = ({
     country,
     now = new Date(),
 }: FeedbackReportingEligibilityInput): FeedbackReportingEligibility => {
+    if (!hasAuthenticatedProfile) return { bug: false, idea: false, isLoading };
+
     if (isLoading) return { bug: false, idea: false, isLoading: true };
 
     const passesSharedGate =
@@ -99,12 +104,13 @@ export const useFeedbackReportingEligibility = (): FeedbackReportingEligibility 
     return useMemo(
         () =>
             getFeedbackReportingEligibility({
+                hasAuthenticatedProfile: Boolean(currentLCNUser),
                 isLoading,
                 preferences,
                 profileType,
                 dob: currentLCNUser?.dob,
                 country: currentLCNUser?.country,
             }),
-        [isLoading, preferences, profileType, currentLCNUser?.dob, currentLCNUser?.country]
+        [currentLCNUser, isLoading, preferences, profileType]
     );
 };

@@ -29,9 +29,8 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 
-import { getLogger, useModal, ModalTypes } from 'learn-card-base';
+import { getLogger, useModal, ModalTypes, resolveTenantConfig } from 'learn-card-base';
 import { toastStore } from 'learn-card-base/stores/toastStore';
-import { resolveTenantConfig } from 'learn-card-base/config/resolveTenantConfig';
 import { useAnalytics } from '@analytics';
 import * as m from '../../paraglide/messages.js';
 
@@ -119,6 +118,19 @@ export const useFeedback = (): FeedbackController => {
 /** Wallet display version used when the app/plugin calls cannot resolve one. */
 const FALLBACK_VERSION = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'unknown';
 
+/** Keep immediate micro-feedback limited to route and deployment metadata. */
+const getMinimalImmediateContext = ({
+    currentRoute,
+    recentRoutes,
+    tenantId,
+    app,
+}: FeedbackContextData): FeedbackContextData => ({
+    currentRoute,
+    recentRoutes,
+    ...(tenantId ? { tenantId } : {}),
+    ...(app ? { app } : {}),
+});
+
 /**
  * Default context collector. The tenant id resolves offline-only: by capture
  * time the config is always bootstrapped (baked, cached, or defaults), so
@@ -181,8 +193,40 @@ export const FeedbackProvider: React.FC<{
     /** Whether the feedback composer is currently presented. */
     const isComposerOpenRef = useRef(false);
 
+    /** Draft currently represented by the feedback prompt toast, if any. */
+    const promptDraftRef = useRef<FeedbackDraft | undefined>(undefined);
+
+    /** Invalidates asynchronous capture started for an earlier profile/privacy state. */
+    const eligibilityGenerationRef = useRef(0);
+    const previousEligibilityRef = useRef(eligibility);
+
+    // A changed eligibility object represents either a privacy change or a
+    // switched profile. In both cases, feedback captured under the old state
+    // must not survive into the new one.
+    useEffect(() => {
+        if (previousEligibilityRef.current === eligibility) return;
+
+        previousEligibilityRef.current = eligibility;
+        eligibilityGenerationRef.current += 1;
+        pendingRef.current = undefined;
+        promptDraftRef.current = undefined;
+        toastStore.set.dismissToast();
+
+        if (isComposerOpenRef.current) {
+            isComposerOpenRef.current = false;
+            closeModal();
+        }
+    }, [closeModal, eligibility]);
+
     const submitAndClose = useCallback(
-        async (report: FeedbackReport) => {
+        async (report: FeedbackReport, captureGeneration: number) => {
+            if (
+                captureGeneration !== eligibilityGenerationRef.current ||
+                !eligibilityRef.current[report.kind]
+            ) {
+                return;
+            }
+
             try {
                 await transportRef.current.submit(report);
             } catch (error) {
@@ -212,10 +256,15 @@ export const FeedbackProvider: React.FC<{
 
     const openComposer = useCallback(
         (draft: FeedbackDraft) => {
+            const captureGeneration = eligibilityGenerationRef.current;
             isComposerOpenRef.current = true;
 
             newModal(
-                <FeedbackComposer draft={draft} onCancel={closeModal} onSubmit={submitAndClose} />,
+                <FeedbackComposer
+                    draft={draft}
+                    onCancel={closeModal}
+                    onSubmit={report => submitAndClose(report, captureGeneration)}
+                />,
                 { sectionClassName: '!max-w-[480px]', onClose: handleComposerClosed },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
             );
@@ -225,13 +274,20 @@ export const FeedbackProvider: React.FC<{
 
     const presentPromptToast = useCallback(
         (draft: FeedbackDraft) => {
+            promptDraftRef.current = draft;
             toastStore.set.presentToast(
                 <FeedbackPromptToast
                     onReport={() => {
+                        if (promptDraftRef.current !== draft || !eligibilityRef.current.bug) return;
+
+                        promptDraftRef.current = undefined;
                         toastStore.set.dismissToast();
                         openComposer(draft);
                     }}
                     onDismiss={() => {
+                        if (promptDraftRef.current === draft) {
+                            promptDraftRef.current = undefined;
+                        }
                         toastStore.set.dismissToast();
                     }}
                 />,
@@ -252,6 +308,7 @@ export const FeedbackProvider: React.FC<{
 
             if (
                 pending &&
+                eligibilityRef.current.bug &&
                 !isPendingFeedbackExpired(pending.capturedAt, depsRef.current.now?.() ?? Date.now())
             ) {
                 presentPromptToast(pending);
@@ -308,6 +365,37 @@ export const FeedbackProvider: React.FC<{
             // Privacy gate first: ineligible users never capture anything.
             if (!eligibilityRef.current.bug) return;
 
+            const captureGeneration = eligibilityGenerationRef.current;
+
+            if (source === 'micro-feedback' && options.submitImmediately === true) {
+                const message = options.initialMessage?.trim() ?? '';
+                if (!message) {
+                    throw new Error('submitImmediately requires a non-empty initialMessage');
+                }
+
+                const { collectContext } = {
+                    collectContext: defaultCollectContext,
+                    ...depsRef.current,
+                };
+                const context = await collectContext({ kind: 'idea' });
+
+                if (
+                    captureGeneration !== eligibilityGenerationRef.current ||
+                    !eligibilityRef.current.bug
+                ) {
+                    return;
+                }
+
+                await transportRef.current.submit({
+                    kind: 'bug',
+                    source,
+                    capturedAt: new Date(now()).toISOString(),
+                    context: getMinimalImmediateContext(context),
+                    message,
+                });
+                return;
+            }
+
             if (source === 'shake') {
                 const timestamp = now();
                 if (isShakeInCooldown(timestamp, lastShakeAtRef.current)) return;
@@ -315,6 +403,13 @@ export const FeedbackProvider: React.FC<{
             }
 
             const draft = await captureBugDraft(source, options);
+
+            if (
+                captureGeneration !== eligibilityGenerationRef.current ||
+                !eligibilityRef.current.bug
+            ) {
+                return;
+            }
 
             if (options.submitImmediately === true) {
                 // Micro-feedback follow-up compatibility path: submit the same
@@ -357,6 +452,8 @@ export const FeedbackProvider: React.FC<{
         async (options: ShareIdeaOptions = {}) => {
             if (!eligibilityRef.current.idea) return;
 
+            const captureGeneration = eligibilityGenerationRef.current;
+
             const { now, collectContext } = {
                 now: Date.now,
                 collectContext: defaultCollectContext,
@@ -364,6 +461,13 @@ export const FeedbackProvider: React.FC<{
             };
 
             const context = await collectContext({ kind: 'idea' });
+
+            if (
+                captureGeneration !== eligibilityGenerationRef.current ||
+                !eligibilityRef.current.idea
+            ) {
+                return;
+            }
 
             openComposer({
                 kind: 'idea',
