@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.98.4
+
+### Patch Changes
+
+-   [#1490](https://github.com/learningeconomy/LearnCard/pull/1490) [`e6bba21a77adcf50ab9672c196239555f60f38c0`](https://github.com/learningeconomy/LearnCard/commit/e6bba21a77adcf50ab9672c196239555f60f38c0) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2061] Design Change for passport discovery filter & mobile header behavior
+
 ## 1.98.3
 
 ### Patch Changes
