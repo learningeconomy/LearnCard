@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, afterEach, describe, expect, it, vi, type Mock } from 'vitest';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 
 /**
  * Automatic listener tests (LC-2086 Task 10).
@@ -143,7 +143,12 @@ describe('useAutomaticFeedbackTriggers', () => {
         appStateCallback = undefined;
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        cleanup();
+        await act(async () => {
+            if (vi.isFakeTimers()) await vi.runAllTimersAsync();
+            await Promise.resolve();
+        });
         vi.useRealTimers();
         vi.restoreAllMocks();
     });
@@ -422,6 +427,46 @@ describe('useAutomaticFeedbackTriggers', () => {
         expect(shakeHost.stop).toHaveBeenCalledTimes(2);
         expect(nativeSensing).toBe(false);
         expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('does not let an old unmount retry stop a newly mounted hook instance', async () => {
+        vi.useFakeTimers();
+        let nativeSensing = false;
+        shakeHost.start.mockImplementation(async () => {
+            nativeSensing = true;
+        });
+        shakeHost.stop
+            .mockRejectedValueOnce(new Error('old unmount stop failed'))
+            .mockImplementation(async () => {
+                nativeSensing = false;
+            });
+
+        const firstMount = mount();
+        await flush();
+        expect(nativeSensing).toBe(true);
+
+        firstMount.unmount();
+        await flush();
+        expect(shakeHost.stop).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(1);
+
+        const secondMount = mount();
+        await flush();
+        expect(nativeSensing).toBe(true);
+
+        await act(async () => {
+            await vi.runAllTimersAsync();
+        });
+
+        expect(shakeHost.stop).toHaveBeenCalledTimes(1);
+        expect(nativeSensing).toBe(true);
+        expect(vi.getTimerCount()).toBe(0);
+
+        secondMount.unmount();
+        await flush();
+
+        expect(shakeHost.stop).toHaveBeenCalledTimes(2);
+        expect(nativeSensing).toBe(false);
     });
 
     it('stops retrying after bounded persistent failures without leaving timers', async () => {

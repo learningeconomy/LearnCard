@@ -199,3 +199,38 @@ TDD evidence:
    pending. `afterEach` always restores real timers.
 
 No native source or registration file changed in this review round.
+
+## Review fix round 3: process-global arbitration across remounts
+
+The round-2 arbiter survived effect reruns but was still created once per React
+hook instance. `ShakeObserver` is process-global, so a failed stop from unmounted
+instance A could retain a retry timer after instance B mounted and started. When
+A's timer fired, its private arbiter stopped the shared sensor without knowing
+that B currently required it.
+
+The sensing arbiter now has module lifetime, matching the native plugin. All
+mounts and effect generations update the same desired/applied state, in-flight
+operation, and retry timer. A newer foreground request therefore cancels an
+older unmount retry before it can stop the sensor. The final active mount's
+cleanup still requests `false` and converges to a native stop.
+
+Tests reset this shared state through public behavior rather than a
+production-only reset API: `afterEach` unmounts any remaining hooks, drains fake
+timers and promise continuations, restores real timers, and only then restores
+mocks.
+
+TDD command:
+
+`bunx vitest run apps/learn-card-app/src/feedback/reporting/useAutomaticFeedbackTriggers.test.tsx`
+
+TDD evidence:
+
+1. RED: 24 tests ran with 23 passes and 1 failure. In the exact sequence A
+   start -> A unmount -> rejected A stop -> B mount/start -> advance timers,
+   the per-hook implementation issued a second stop (`expected 1, got 2`) and
+   left B's mocked process-global sensor stopped.
+2. GREEN: with the module-lifetime arbiter, all 24 tests pass. B's `true`
+   request cancels A's timer, advancing timers performs no stale stop, and B's
+   final unmount performs the second successful stop and leaves sensing false.
+
+No native source or registration file changed in this review round.

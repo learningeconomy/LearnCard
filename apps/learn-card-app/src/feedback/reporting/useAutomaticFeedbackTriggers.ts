@@ -112,6 +112,10 @@ const createShakeSensingArbiter = (): ShakeSensingArbiter => {
     };
 };
 
+// The native plugin is process-global, so arbitration must outlive individual
+// React mounts. A new mount can supersede a retry scheduled by an old mount.
+const shakeSensingArbiter = createShakeSensingArbiter();
+
 /**
  * Mount the automatic feedback triggers: the local start/stop shake observer
  * (iOS and Android, gated by the LaunchDarkly `shakeToReportEnabled` flag —
@@ -147,11 +151,6 @@ export const useAutomaticFeedbackTriggers = ({
     // churns on controller identity changes.
     const reportProblemRef = useRef(reportProblem);
     reportProblemRef.current = reportProblem;
-
-    const sensingArbiterRef = useRef<ShakeSensingArbiter | null>(null);
-    if (!sensingArbiterRef.current) {
-        sensingArbiterRef.current = createShakeSensingArbiter();
-    }
 
     useEffect(() => {
         if (!enabled) return;
@@ -231,7 +230,7 @@ export const useAutomaticFeedbackTriggers = ({
 
                 receivedAppStateChange = true;
                 isForeground = state.isActive;
-                sensingArbiterRef.current?.request(state.isActive);
+                shakeSensingArbiter.request(state.isActive);
             })
         );
         track(ShakeObserver.addListener('shake', handleShake));
@@ -241,7 +240,7 @@ export const useAutomaticFeedbackTriggers = ({
                 if (disposed || receivedAppStateChange) return;
 
                 isForeground = isActive;
-                if (isActive) sensingArbiterRef.current?.request(true);
+                if (isActive) shakeSensingArbiter.request(true);
             })
             .catch(error => {
                 // Fail closed: without a confirmed state, sensing stays off.
@@ -251,7 +250,7 @@ export const useAutomaticFeedbackTriggers = ({
         return () => {
             disposed = true;
             isForeground = false;
-            sensingArbiterRef.current?.request(false);
+            shakeSensingArbiter.request(false);
             handles.forEach(handle => {
                 void handle.remove();
             });
