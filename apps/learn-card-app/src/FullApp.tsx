@@ -32,6 +32,7 @@ import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgress
 import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGlobals';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
+import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
 
 // Install `window.__pathwaysDev` at the app-root level rather than
 // waiting for the /pathways shell to mount. The dev-panel inspector
@@ -208,6 +209,7 @@ const FullApp: React.FC = () => {
                                 <ModalsProvider>
                                     <IonApp>
                                         <div id="modal-mid-root"></div>
+                                        <ModalAccessibilityManager />
                                         <Toast />
                                         <SdkActivityIndicator />
                                         <NetworkListener />

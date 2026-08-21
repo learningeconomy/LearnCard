@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import React from 'react';
+import { readFileSync } from 'fs';
 import { render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 
@@ -25,6 +26,9 @@ vi.mock('@ionic/react', () => ({
 
 vi.mock('@ionic/react-router', () => ({
     IonReactRouter: ({ children }: { children: React.ReactNode }) => children,
+}));
+vi.mock('learn-card-base/components/modals/ModalAccessibilityManager', () => ({
+    default: () => <div data-testid="modal-accessibility-manager" />,
 }));
 
 vi.mock('history', () => ({ createBrowserHistory: vi.fn(() => ({})) }));
@@ -103,4 +107,16 @@ it('mounts one localized connection prompt coordinator in the app shell', () => 
         { copy: { title: (name: string) => string } }
     ];
     expect(copy.title('Alice')).toBe('Connect with Alice?');
+});
+
+it('mounts exactly one shared modal accessibility manager in the app shell', () => {
+    const fullAppSource = readFileSync(`${process.cwd()}/src/FullApp.tsx`, 'utf8');
+    const appRouterSource = readFileSync(`${process.cwd()}/src/AppRouter.tsx`, 'utf8');
+
+    expect([
+        ...fullAppSource.matchAll(/<ModalAccessibilityManager\s*\/>/g),
+        ...appRouterSource.matchAll(/<ModalAccessibilityManager\s*\/>/g),
+    ]).toHaveLength(1);
+    render(<FullApp />);
+    expect(screen.getAllByTestId('modal-accessibility-manager')).toHaveLength(1);
 });

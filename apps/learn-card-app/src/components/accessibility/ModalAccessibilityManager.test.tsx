@@ -6,7 +6,7 @@ import { Modals } from 'learn-card-base/components/modals/Modals';
 import { ModalsProvider, useModalsContext } from 'learn-card-base/components/modals/ModalsContext';
 import { useModal } from 'learn-card-base/components/modals/useModal';
 
-import ModalAccessibilityManager from './ModalAccessibilityManager';
+import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
 
 vi.mock('learn-card-base', async () => {
     const context = await import('learn-card-base/components/modals/ModalsContext');

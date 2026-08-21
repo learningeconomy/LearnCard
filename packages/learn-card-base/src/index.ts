@@ -45,6 +45,7 @@ export * from './components/launchpad-app-list/LaunchPadBecomeAnApp';
 export * from './components/wrappers/BoostGenericCardWrapper';
 export * from './components/modals/useModal';
 export * from './components/modals/ModalsContext';
+export * from './components/modals/ModalAccessibilityManager';
 export * from './components/modals/modals.helpers';
 export * from './components/modals/Modals';
 export * from './components/modals/CancelModal';

@@ -38,6 +38,7 @@ import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeSc
 import NetworkListener from './components/network-listener/NetworkListener';
 import UserProfileSetupListener from './components/user-profile/UserProfileSetupListener';
 import { QRCodeScannerStore } from 'learn-card-base';
+import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
@@ -121,6 +122,7 @@ const FullApp: React.FC = () => {
                                 <LocaleProfileSync />
                                 <ModalsProvider>
                                     <div id="modal-mid-root"></div>
+                                    <ModalAccessibilityManager />
                                     <Toast />
                                     <NetworkListener />
                                     <AppUrlListener />
