@@ -22,7 +22,8 @@ export interface AutomaticFeedbackTriggersInput {
 }
 
 interface ShakeSensingArbiter {
-    request: (shouldStart: boolean) => void;
+    request: (owner: symbol, shouldStart: boolean) => void;
+    release: (owner: symbol) => void;
 }
 
 const SHAKE_SENSING_MAX_ATTEMPTS = 3;
@@ -30,6 +31,7 @@ const SHAKE_SENSING_RETRY_DELAY_MS = 100;
 
 /** Serialize native sensing calls and converge to the latest requested state. */
 const createShakeSensingArbiter = (): ShakeSensingArbiter => {
+    const ownerStates = new Map<symbol, boolean>();
     let desiredState = false;
     let appliedState = false;
     let isApplying = false;
@@ -100,20 +102,32 @@ const createShakeSensingArbiter = (): ShakeSensingArbiter => {
         })();
     };
 
-    return {
-        request: shouldStart => {
-            const stateChanged = desiredState !== shouldStart;
-            desiredState = shouldStart;
+    const applyOwnerStates = (): void => {
+        const nextDesiredState = [...ownerStates.values()].some(Boolean);
+        const stateChanged = desiredState !== nextDesiredState;
+        desiredState = nextDesiredState;
 
-            if (stateChanged) resetFailures();
-            clearRetry();
-            applyDesiredState();
+        if (stateChanged) resetFailures();
+        clearRetry();
+        applyDesiredState();
+    };
+
+    return {
+        request: (owner, shouldStart) => {
+            ownerStates.set(owner, shouldStart);
+            applyOwnerStates();
+        },
+        release: owner => {
+            if (!ownerStates.delete(owner)) return;
+
+            applyOwnerStates();
         },
     };
 };
 
 // The native plugin is process-global, so arbitration must outlive individual
-// React mounts. A new mount can supersede a retry scheduled by an old mount.
+// React mounts and aggregate their desired states. One mount's cleanup cannot
+// stop sensing while another live owner still requires it.
 const shakeSensingArbiter = createShakeSensingArbiter();
 
 /**
@@ -132,7 +146,8 @@ const shakeSensingArbiter = createShakeSensingArbiter();
  * - the ten-second shake cooldown (Task 2's `isShakeInCooldown`) is enforced
  *   before forwarding, complementing the coordinator's own cooldown so a
  *   mocked controller still observes the timing policy;
- * - backgrounding or cleanup stops native shake sensing and every registered
+ * - backgrounding or cleanup releases this hook's sensing request; native
+ *   sensing stops when no remaining owner requires it, and every registered
  *   listener handle is removed, including registrations that resolve late;
  * - screenshot observation has its own lifecycle and is not churned by shake
  *   flag changes.
@@ -151,6 +166,12 @@ export const useAutomaticFeedbackTriggers = ({
     // churns on controller identity changes.
     const reportProblemRef = useRef(reportProblem);
     reportProblemRef.current = reportProblem;
+
+    const shakeSensingOwnerRef = useRef<symbol | null>(null);
+    if (shakeSensingOwnerRef.current === null) {
+        shakeSensingOwnerRef.current = Symbol('automatic-feedback-shake-sensing-owner');
+    }
+    const shakeSensingOwner = shakeSensingOwnerRef.current;
 
     useEffect(() => {
         if (!enabled) return;
@@ -230,7 +251,7 @@ export const useAutomaticFeedbackTriggers = ({
 
                 receivedAppStateChange = true;
                 isForeground = state.isActive;
-                shakeSensingArbiter.request(state.isActive);
+                shakeSensingArbiter.request(shakeSensingOwner, state.isActive);
             })
         );
         track(ShakeObserver.addListener('shake', handleShake));
@@ -240,7 +261,7 @@ export const useAutomaticFeedbackTriggers = ({
                 if (disposed || receivedAppStateChange) return;
 
                 isForeground = isActive;
-                if (isActive) shakeSensingArbiter.request(true);
+                if (isActive) shakeSensingArbiter.request(shakeSensingOwner, true);
             })
             .catch(error => {
                 // Fail closed: without a confirmed state, sensing stays off.
@@ -250,7 +271,7 @@ export const useAutomaticFeedbackTriggers = ({
         return () => {
             disposed = true;
             isForeground = false;
-            shakeSensingArbiter.request(false);
+            shakeSensingArbiter.release(shakeSensingOwner);
             handles.forEach(handle => {
                 void handle.remove();
             });

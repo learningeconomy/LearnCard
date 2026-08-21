@@ -469,6 +469,35 @@ describe('useAutomaticFeedbackTriggers', () => {
         expect(nativeSensing).toBe(false);
     });
 
+    it('keeps process-global sensing active until the final concurrent owner unmounts', async () => {
+        let nativeSensing = false;
+        shakeHost.start.mockImplementation(async () => {
+            nativeSensing = true;
+        });
+        shakeHost.stop.mockImplementation(async () => {
+            nativeSensing = false;
+        });
+
+        const firstMount = mount();
+        const secondMount = mount();
+        await flush();
+
+        expect(shakeHost.start).toHaveBeenCalledTimes(1);
+        expect(nativeSensing).toBe(true);
+
+        firstMount.unmount();
+        await flush();
+
+        expect(shakeHost.stop).not.toHaveBeenCalled();
+        expect(nativeSensing).toBe(true);
+
+        secondMount.unmount();
+        await flush();
+
+        expect(shakeHost.stop).toHaveBeenCalledTimes(1);
+        expect(nativeSensing).toBe(false);
+    });
+
     it('stops retrying after bounded persistent failures without leaving timers', async () => {
         vi.useFakeTimers();
         shakeHost.start.mockRejectedValue(new Error('persistent start failure'));
