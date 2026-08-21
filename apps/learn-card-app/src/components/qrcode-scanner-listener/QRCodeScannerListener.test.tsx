@@ -4,13 +4,31 @@ import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 const mocks = vi.hoisted(() => {
     let showScanner = true;
+    let onResult:
+        | ((value: string) =>
+              | void
+              | { message: string; durationMs?: number; tone?: 'success' | 'error' }
+              | Promise<void | {
+                    message: string;
+                    durationMs?: number;
+                    tone?: 'success' | 'error';
+                }>)
+        | undefined;
+    let feedbackMessage: string | undefined;
+    let feedbackTone: 'success' | 'error' = 'success';
 
     return {
         callbacks: [] as Array<(result: { barcode: { rawValue: string } }) => void>,
         listenerRemovers: [] as Mock[],
-        route: vi.fn(async () => ({ kind: 'routed', surface: 'lcw-https', path: '/' })),
-        startScan: vi.fn(async () => undefined),
-        stopScan: vi.fn(async () => undefined),
+        route: vi.fn(
+            async (_value: string): Promise<Record<string, unknown>> => ({
+                kind: 'routed',
+                surface: 'lcw-https',
+                path: '/',
+            })
+        ),
+        startScan: vi.fn(async (): Promise<void> => undefined),
+        stopScan: vi.fn(async (): Promise<void> => undefined),
         presentToast: vi.fn(),
         newModal: vi.fn(),
         closeModal: vi.fn(),
@@ -18,6 +36,34 @@ const mocks = vi.hoisted(() => {
         setShowScanner: (value: boolean) => {
             showScanner = value;
         },
+        setResultHandler: (handler?: typeof onResult) => {
+            onResult = handler;
+        },
+        getResultHandler: () => onResult,
+        consumeResultHandler: () => {
+            const handler = onResult;
+            onResult = undefined;
+            return handler;
+        },
+        clearResultHandler: () => {
+            onResult = undefined;
+        },
+        setFeedback: vi.fn((feedback: { message: string; tone?: 'success' | 'error' }) => {
+            feedbackMessage = feedback.message;
+            feedbackTone = feedback.tone ?? 'success';
+        }),
+        clearFeedback: () => {
+            feedbackMessage = undefined;
+            feedbackTone = 'success';
+        },
+        closeScanner: () => {
+            showScanner = false;
+            onResult = undefined;
+            feedbackMessage = undefined;
+            feedbackTone = 'success';
+        },
+        getFeedbackMessage: () => feedbackMessage,
+        getFeedbackTone: () => feedbackTone,
     };
 });
 
@@ -54,7 +100,14 @@ vi.mock('learn-card-base', () => ({
 vi.mock('learn-card-base/stores/QRCodeScannerStore', () => ({
     default: {
         useTracked: { showScanner: mocks.getShowScanner },
-        set: { showScanner: mocks.setShowScanner },
+        get: { showScanner: mocks.getShowScanner },
+        set: {
+            showScanner: mocks.setShowScanner,
+            closeScanner: mocks.closeScanner,
+            consumeResultHandler: mocks.consumeResultHandler,
+            clearResultHandler: mocks.clearResultHandler,
+            setFeedback: mocks.setFeedback,
+        },
     },
 }));
 vi.mock('../../pages/claimBoost/ClaimBoost', () => ({ default: () => null }));
@@ -79,6 +132,8 @@ describe('QRCodeScannerListener', () => {
         mocks.callbacks.length = 0;
         mocks.listenerRemovers.length = 0;
         mocks.setShowScanner(true);
+        mocks.clearResultHandler();
+        mocks.clearFeedback();
     });
 
     it('creates a fresh owned listener for every scan session', async () => {
@@ -136,6 +191,58 @@ describe('QRCodeScannerListener', () => {
         });
         expect(options).toEqual({ hideButton: true });
         expect(modalTypes).toEqual({ desktop: 'fullscreen', mobile: 'fullscreen' });
+    });
+
+    it('delivers a scoped result once without invoking global routing', async () => {
+        const onResult = vi.fn(async () => ({
+            message: "You can't add yourself as a recipient.",
+            tone: 'error' as const,
+            durationMs: 0,
+        }));
+        mocks.setResultHandler(onResult);
+
+        render(<QRCodeScannerListener />);
+        await waitFor(() => expect(mocks.callbacks).toHaveLength(1));
+
+        await act(async () => {
+            mocks.callbacks[0]({ barcode: { rawValue: 'https://learncard.app/connect?did=test' } });
+        });
+
+        await waitFor(() =>
+            expect(onResult).toHaveBeenCalledWith('https://learncard.app/connect?did=test')
+        );
+        expect(mocks.route).not.toHaveBeenCalled();
+        expect(mocks.getResultHandler()).toBeUndefined();
+        expect(mocks.setFeedback).toHaveBeenCalledWith({
+            message: "You can't add yourself as a recipient.",
+            tone: 'error',
+            durationMs: 0,
+        });
+        expect(mocks.getFeedbackTone()).toBe('success');
+        expect(mocks.getShowScanner()).toBe(false);
+    });
+
+    it('clears a scoped result when the scanner is cancelled', async () => {
+        const { rerender } = render(<QRCodeScannerListener />);
+        mocks.setResultHandler(vi.fn());
+
+        await waitFor(() => expect(mocks.startScan).toHaveBeenCalledOnce());
+        mocks.closeScanner();
+        rerender(<QRCodeScannerListener />);
+
+        await waitFor(() => expect(mocks.getResultHandler()).toBeUndefined());
+        expect(mocks.route).not.toHaveBeenCalled();
+    });
+
+    it('clears a scoped result when unmounted during an active scan', async () => {
+        const { unmount } = render(<QRCodeScannerListener />);
+        mocks.setResultHandler(vi.fn());
+
+        await waitFor(() => expect(mocks.startScan).toHaveBeenCalledOnce());
+        unmount();
+
+        expect(mocks.getShowScanner()).toBe(false);
+        expect(mocks.getResultHandler()).toBeUndefined();
     });
 
     it('keeps the active scan when the router function changes identity', async () => {

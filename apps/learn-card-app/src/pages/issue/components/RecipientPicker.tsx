@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Search, X, Mail, Loader2, Calendar } from 'lucide-react';
 import { useGetSearchProfiles, useGetConnections } from 'learn-card-base';
 import useDebounce from '../../../hooks/useDebounce';
 import { RecipientMode, Recipient, LinkOptions, isEmail } from './recipientTypes';
 import * as m from '../../../paraglide/messages.js';
+import ScanRecipientButton from '../../../components/recipient-picker/ScanRecipientButton';
 
 const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
@@ -97,6 +98,27 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
         onRecipientsChange(newRecipients);
     };
 
+    const handleScannedRecipient = useCallback(
+        (recipient: Extract<Recipient, { kind: 'profile' }>): void => {
+            const existingIndex = recipients.findIndex(
+                existing =>
+                    existing.kind === 'profile' && existing.profileId === recipient.profileId
+            );
+
+            if (existingIndex === -1) {
+                onRecipientsChange([...recipients, recipient]);
+                return;
+            }
+
+            onRecipientsChange(
+                recipients.map((existing, index) =>
+                    index === existingIndex ? recipient : existing
+                )
+            );
+        },
+        [onRecipientsChange, recipients]
+    );
+
     const showDropdown =
         isFocused && (query.length > 0 || (connectionsData && connectionsData.length > 0));
 
@@ -131,7 +153,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             profileId: profile.profileId,
                             displayName: profile.displayName || profile.profileId,
                             image: profile.image,
-                            did: profile.did,
+                            did: 'did' in profile ? profile.did : undefined,
                         })
                     }
                     className="w-full flex items-center gap-3 p-3 hover:bg-grayscale-10 transition-colors text-left border-b border-grayscale-100 last:border-0"
@@ -284,18 +306,23 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             spellCheck={false}
                             autoCapitalize="none"
                             autoCorrect="off"
-                            className={`w-full py-3 pl-10 pr-10 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white`}
+                            className="w-full py-3 pl-10 pr-20 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                         />
                         {query && (
                             <button
                                 type="button"
                                 onClick={() => setQuery('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
+                                className="absolute right-11 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
                                 aria-label={m['aiPathways.clearSearch']()}
                             >
                                 <X className="w-4 h-4" />
                             </button>
                         )}
+                        <ScanRecipientButton
+                            recipients={recipients}
+                            onRecipientScanned={handleScannedRecipient}
+                            className="right-2"
+                        />
 
                         {!inlineResults && showResults && (
                             <div className="absolute z-20 w-full mt-1 bg-white border border-grayscale-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
