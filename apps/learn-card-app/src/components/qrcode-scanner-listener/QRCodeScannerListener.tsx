@@ -252,7 +252,7 @@ export const QRCodeScannerListener: React.FC = () => {
 
         return () => {
             disposed = true;
-            if (!QRCodeScannerStore.get.showScanner()) {
+            if (QRCodeScannerStore.get.showScanner()) {
                 QRCodeScannerStore.set.closeScanner();
             }
             cleanupPromiseRef.current = previousCleanupPromise

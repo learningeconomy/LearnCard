@@ -56,6 +56,12 @@ const mocks = vi.hoisted(() => {
             feedbackMessage = undefined;
             feedbackTone = 'success';
         },
+        closeScanner: () => {
+            showScanner = false;
+            onResult = undefined;
+            feedbackMessage = undefined;
+            feedbackTone = 'success';
+        },
         getFeedbackMessage: () => feedbackMessage,
         getFeedbackTone: () => feedbackTone,
     };
@@ -97,11 +103,7 @@ vi.mock('learn-card-base/stores/QRCodeScannerStore', () => ({
         get: { showScanner: mocks.getShowScanner },
         set: {
             showScanner: mocks.setShowScanner,
-            closeScanner: () => {
-                mocks.setShowScanner(false);
-                mocks.clearResultHandler();
-                mocks.clearFeedback();
-            },
+            closeScanner: mocks.closeScanner,
             consumeResultHandler: mocks.consumeResultHandler,
             clearResultHandler: mocks.clearResultHandler,
             setFeedback: mocks.setFeedback,
@@ -225,11 +227,22 @@ describe('QRCodeScannerListener', () => {
         mocks.setResultHandler(vi.fn());
 
         await waitFor(() => expect(mocks.startScan).toHaveBeenCalledOnce());
-        mocks.setShowScanner(false);
+        mocks.closeScanner();
         rerender(<QRCodeScannerListener />);
 
         await waitFor(() => expect(mocks.getResultHandler()).toBeUndefined());
         expect(mocks.route).not.toHaveBeenCalled();
+    });
+
+    it('clears a scoped result when unmounted during an active scan', async () => {
+        const { unmount } = render(<QRCodeScannerListener />);
+        mocks.setResultHandler(vi.fn());
+
+        await waitFor(() => expect(mocks.startScan).toHaveBeenCalledOnce());
+        unmount();
+
+        expect(mocks.getShowScanner()).toBe(false);
+        expect(mocks.getResultHandler()).toBeUndefined();
     });
 
     it('keeps the active scan when the router function changes identity', async () => {
