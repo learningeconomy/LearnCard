@@ -19,7 +19,9 @@ import {
     ensureReactQueryTableExists,
     getLogger,
     InAppMessageHost,
+    ConnectionPromptCoordinator,
 } from 'learn-card-base';
+import * as m from './paraglide/messages.js';
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
@@ -30,6 +32,7 @@ import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgress
 import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGlobals';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
+import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
 
 // Install `window.__pathwaysDev` at the app-root level rather than
 // waiting for the /pathways shell to mount. The dev-panel inspector
@@ -206,6 +209,7 @@ const FullApp: React.FC = () => {
                                 <ModalsProvider>
                                     <IonApp>
                                         <div id="modal-mid-root"></div>
+                                        <ModalAccessibilityManager />
                                         <Toast />
                                         <SdkActivityIndicator />
                                         <NetworkListener />
@@ -214,6 +218,21 @@ const FullApp: React.FC = () => {
                                         <PresentVcModalListener />
                                         <CredentialSyncListener />
                                         <NotificationToastListener />
+                                        <ConnectionPromptCoordinator
+                                            copy={{
+                                                title: name =>
+                                                    m['connectionPrompts.title']().replace(
+                                                        '{name}',
+                                                        name
+                                                    ),
+                                                description: m['connectionPrompts.description'](),
+                                                connect: m['connectionPrompts.connect'](),
+                                                skipForNow: m['connectionPrompts.skipForNow'](),
+                                                connecting: m['connectionPrompts.connecting'](),
+                                                skipping: m['connectionPrompts.skipping'](),
+                                                error: m['connectionPrompts.error'](),
+                                            }}
+                                        />
                                         {/* Subscribes the pathway-progress reactor to
                                             the wallet event bus. Placed alongside the
                                             other app-level listeners so every claim

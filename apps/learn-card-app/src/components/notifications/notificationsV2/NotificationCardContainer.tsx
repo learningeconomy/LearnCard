@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import moment from 'moment';
+import { LCNConnectionPromptMetadataValidator } from '@learncard/types';
 import {
+    ConnectionPromptNotificationCard,
     useUpdateNotification,
     useAcceptConnectionRequestMutation,
     useMarkNotificationRead,
     useGetProfile,
     useGetCurrentLCNUser,
 } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { notificationCardStyles } from './types';
 import NotificationBoostCard from './NotificationBoostCard';
@@ -75,6 +78,10 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
 
     const { type, message, from, to, sent } = notification;
     const displayDate = moment(sent).format('MMMM Do, YYYY');
+    const messageBody = message && 'body' in message ? message.body ?? '' : '';
+    const parsedPrompt = LCNConnectionPromptMetadataValidator.safeParse(
+        notification.data?.metadata?.connectionPrompt
+    );
 
     const queryClient = useQueryClient();
     const { mutateAsync: acceptConnectionRequest, isPending: acceptConnectionLoading } =
@@ -234,6 +241,33 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                 onRead={async () => {
                     await handleMarkAsRead();
                     await refetchCurrentLCNUser();
+                }}
+            />
+        );
+    }
+    if (type === NOTIFICATION_TYPES.BOOST_ACCEPTED && parsedPrompt.success) {
+        return (
+            <ConnectionPromptNotificationCard
+                notificationId={notification._id!}
+                promptMetadata={parsedPrompt.data}
+                counterpart={
+                    typeof notification.from === 'string'
+                        ? { profileId: parsedPrompt.data.counterpartProfileId }
+                        : notification.from
+                }
+                title={messageBody}
+                issueDate={displayDate}
+                copy={{
+                    title: name => m['connectionPrompts.title']().replace('{name}', name),
+                    description: m['connectionPrompts.description'](),
+                    connect: m['connectionPrompts.connect'](),
+                    skipForNow: m['connectionPrompts.skipForNow'](),
+                    connecting: m['connectionPrompts.connecting'](),
+                    skipping: m['connectionPrompts.skipping'](),
+                    error: m['connectionPrompts.error'](),
+                    connected: m['connectionPrompts.connected'](),
+                    skipped: m['connectionPrompts.skipped'](),
+                    claimedType: m['connectionPrompts.claimedType'](),
                 }}
             />
         );
