@@ -12,9 +12,8 @@
 //     (the page/app session) and are dropped on disable or clear.
 //   - Capacity is hard-capped at MAX_DIAGNOSTIC_LOGS entries (oldest dropped).
 //
-// The buffer has no dependency on logger.ts (which imports this module), so
-// the PII key patterns below mirror logger.ts's patterns. Both files' tests
-// lock the behavior — keep them in sync when adding patterns.
+// The buffer has no dependency on logger.ts (which imports this module). Its
+// attachment policy is intentionally stricter than the normal logger path.
 // ---------------------------------------------------------------------------
 
 export type DiagnosticLogLevel = 'info' | 'warning' | 'error';
@@ -40,54 +39,15 @@ export interface DiagnosticLogInput {
 
 const MAX_DIAGNOSTIC_LOGS = 200;
 const MAX_STRING_LENGTH = 1_000;
-const MAX_DEPTH = 10;
+const MAX_DIAGNOSTIC_COUNT = 10_000;
 
 const SCRUBBED = '[scrubbed]';
 const SCRUBBED_EMAIL = '[scrubbed-email]';
 const SCRUBBED_DID = '[scrubbed-did]';
 const TRUNCATED = '[truncated]';
-const CIRCULAR = '[circular]';
 
 let _entries: DiagnosticLogEntry[] = [];
 let _collectionEnabled = true;
-
-// ---------------------------------------------------------------------------
-// PII key patterns (mirrors logger.ts)
-// ---------------------------------------------------------------------------
-
-// Keys are checked case-insensitively as substrings, catching common variants:
-//   email → userEmail, emailAddress   phone → phoneNumber, mobilePhone
-//   name  → firstName, lastName       token → accessToken, bearerToken, authToken
-const PII_SUBSTRINGS = [
-    'email',
-    'phone',
-    'name',
-    'seed',
-    'password',
-    'privatekey',
-    'accesstoken',
-    'idtoken',
-    'token',
-    'credential',
-    'boost',
-    'claim',
-    'subject',
-    'issuer',
-    'profile',
-    'account',
-    'identity',
-    'uri',
-    'url',
-    'qr',
-];
-// 'did' is too short for safe substring matching (would match "additional", "edited"), so exact only.
-const PII_EXACT_LC = new Set(['did', 'id', 'user', 'vc', 'vp']);
-const BEARER_RE = /^bearer /i;
-
-const isPiiKey = (key: string): boolean => {
-    const lc = key.toLowerCase();
-    return PII_EXACT_LC.has(lc) || PII_SUBSTRINGS.some(sub => lc.includes(sub));
-};
 
 // ---------------------------------------------------------------------------
 // String scrubbing
@@ -119,62 +79,67 @@ const scrubString = (value: string): string => {
 // ---------------------------------------------------------------------------
 
 /**
- * Recursively sanitizes an arbitrary value into a plain, JSON-safe,
- * clone-safe structure:
- *
- *   - PII-matching keys → '[scrubbed]' (regardless of any allowPii flag)
- *   - `allowPii` keys are removed entirely — the bypass is never honored here
- *   - Bearer-prefixed string values → '[scrubbed]'
- *   - Errors → `{ name, message }` with a scrubbed message
- *   - Circular references → '[circular]'
- *   - Nesting beyond MAX_DEPTH → '[truncated]' (never passes raw values through)
- *   - Strings → scrubString (emails, DIDs, bearer/JWT, URL queries, truncation)
+ * Feedback attachments are intentionally much stricter than normal logging.
+ * Any string can be an identifier, credential body, claim URL, or free-form
+ * user input, so structured data only retains a tiny, explicit allowlist of
+ * bounded operational metadata. Values are never recursively traversed.
  */
-const sanitizeValue = (value: unknown, depth: number, seen: Set<object>): unknown => {
-    if (depth > MAX_DEPTH) return TRUNCATED;
-    if (value === null || value === undefined) return value;
+const SAFE_BOOLEAN_KEYS = new Set(['enabled', 'connected', 'success', 'retryable']);
+const SAFE_COUNT_KEYS = new Set(['count', 'attempt', 'retryCount', 'itemCount', 'statusCode']);
+const SAFE_STATUS_VALUES = new Set([
+    'success',
+    'failure',
+    'pending',
+    'complete',
+    'incomplete',
+    'cancelled',
+    'canceled',
+    'timed_out',
+    'unavailable',
+    'offline',
+    'online',
+    'enabled',
+    'disabled',
+]);
 
-    switch (typeof value) {
-        case 'string':
-            return scrubString(value);
-        case 'number':
-        case 'boolean':
-            return value;
-        case 'bigint':
-            return String(value);
-        case 'function':
-            return '[function]';
-        case 'symbol':
-            return '[symbol]';
-        case 'object':
-            break;
-        default:
-            return String(value);
+type SafeDiagnosticData = Record<string, boolean | number | string>;
+
+const sanitizeDiagnosticData = (value: unknown): SafeDiagnosticData | undefined => {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined;
+
+    const safeData: SafeDiagnosticData = {};
+    for (const [key, candidate] of Object.entries(value as Record<string, unknown>)) {
+        if (SAFE_BOOLEAN_KEYS.has(key) && typeof candidate === 'boolean') {
+            safeData[key] = candidate;
+            continue;
+        }
+
+        if (
+            SAFE_COUNT_KEYS.has(key) &&
+            typeof candidate === 'number' &&
+            Number.isSafeInteger(candidate) &&
+            candidate >= 0 &&
+            candidate <= MAX_DIAGNOSTIC_COUNT
+        ) {
+            safeData[key] = candidate;
+            continue;
+        }
+
+        if (
+            key === 'status' &&
+            typeof candidate === 'string' &&
+            SAFE_STATUS_VALUES.has(candidate)
+        ) {
+            safeData.status = candidate;
+        }
     }
 
-    if (value instanceof Error) {
-        return { name: value.name, message: scrubString(value.message) };
-    }
+    return Object.keys(safeData).length > 0 ? safeData : undefined;
+};
 
-    if (Array.isArray(value)) {
-        if (seen.has(value)) return CIRCULAR;
-        seen.add(value);
-        return value.map(item => sanitizeValue(item, depth + 1, seen));
-    }
-
-    const obj = value as Record<string, unknown>;
-    if (seen.has(obj)) return CIRCULAR;
-    seen.add(obj);
-
-    return Object.fromEntries(
-        Object.entries(obj)
-            .filter(([key]) => key !== 'allowPii')
-            .map(([key, val]) => {
-                if (isPiiKey(key)) return [key, SCRUBBED];
-                if (typeof val === 'string' && BEARER_RE.test(val)) return [key, SCRUBBED];
-                return [key, sanitizeValue(val, depth + 1, seen)];
-            })
-    );
+const sanitizeScope = (scope: string): string => {
+    const scrubbed = scrubString(scope);
+    return /^[a-z][a-z0-9._-]{0,63}$/i.test(scrubbed) ? scrubbed : SCRUBBED;
 };
 
 // ---------------------------------------------------------------------------
@@ -211,8 +176,9 @@ export const recordDiagnosticLog = (input: DiagnosticLogInput): void => {
         level: input.level,
         message: scrubString(input.message),
     };
-    if (input.scope !== undefined) entry.scope = scrubString(input.scope);
-    if (input.data !== undefined) entry.data = sanitizeValue(input.data, 0, new Set());
+    if (input.scope !== undefined) entry.scope = sanitizeScope(input.scope);
+    const data = sanitizeDiagnosticData(input.data);
+    if (data !== undefined) entry.data = data;
 
     _entries.push(entry);
     if (_entries.length > MAX_DIAGNOSTIC_LOGS) {

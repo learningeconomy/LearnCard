@@ -23,6 +23,73 @@ const log = getLogger('feedback');
 export const SCREENSHOT_CAPTURE_TIMEOUT_MS = 2_000;
 
 const PNG_DATA_URL_PREFIX = 'data:image/png;base64,';
+const REDACTED_TEXT = 'Content hidden';
+const REDACTION_STYLE_ATTRIBUTE = 'data-feedback-redaction';
+
+const redactCloneForFeedback = (clonedDocument: Document): void => {
+    clonedDocument
+        .querySelectorAll('[data-feedback-exclude], script, style, link[rel~="stylesheet"]')
+        .forEach(element => element.remove());
+
+    clonedDocument
+        .querySelectorAll('img, svg, canvas, video, audio, iframe, object, embed, picture, source')
+        .forEach(element => element.remove());
+
+    clonedDocument.querySelectorAll('input, textarea, select').forEach(element => {
+        if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+            element.value = '';
+            element.defaultValue = '';
+            element.setAttribute('value', '');
+            element.setAttribute('placeholder', '');
+        }
+        element.textContent = '';
+    });
+
+    clonedDocument.querySelectorAll('*').forEach(element => {
+        element.removeAttribute('style');
+        for (const attribute of [...element.attributes]) {
+            if (
+                attribute.name.startsWith('data-') ||
+                [
+                    'alt',
+                    'aria-label',
+                    'aria-description',
+                    'href',
+                    'name',
+                    'poster',
+                    'src',
+                    'srcset',
+                    'title',
+                ].includes(attribute.name)
+            ) {
+                element.removeAttribute(attribute.name);
+            }
+        }
+    });
+
+    const textNodes = clonedDocument.createTreeWalker(clonedDocument.body, NodeFilter.SHOW_TEXT);
+    const nodesToRedact: Text[] = [];
+    while (textNodes.nextNode()) nodesToRedact.push(textNodes.currentNode as Text);
+    nodesToRedact.forEach(textNode => {
+        textNode.nodeValue = REDACTED_TEXT;
+    });
+
+    const style = clonedDocument.createElement('style');
+    style.setAttribute(REDACTION_STYLE_ATTRIBUTE, '');
+    style.textContent = `
+        *, *::before, *::after {
+            background-image: none !important;
+            mask-image: none !important;
+            -webkit-mask-image: none !important;
+            content: none !important;
+        }
+        img, svg, canvas, video, audio, iframe, object, embed, picture, source {
+            display: none !important;
+            visibility: hidden !important;
+        }
+    `;
+    clonedDocument.head.append(style);
+};
 
 export interface CaptureFeedbackScreenshotOptions {
     /** Deadline for the render; defaults to {@link SCREENSHOT_CAPTURE_TIMEOUT_MS}. */
@@ -52,6 +119,7 @@ export const captureFeedbackScreenshot = async ({
                 useCORS: true,
                 logging: false,
                 ignoreElements: element => element.hasAttribute('data-feedback-exclude'),
+                onclone: redactCloneForFeedback,
             }),
             new Promise<never>((_, reject) => {
                 deadline = setTimeout(

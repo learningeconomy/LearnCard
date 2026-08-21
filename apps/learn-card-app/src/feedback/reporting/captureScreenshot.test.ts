@@ -22,6 +22,7 @@ vi.mock('html2canvas', () => ({ default: html2canvasMock }));
 describe('captureFeedbackScreenshot', () => {
     beforeEach(() => {
         html2canvasMock.mockReset();
+        document.body.innerHTML = '';
     });
 
     afterEach(() => {
@@ -57,6 +58,7 @@ describe('captureFeedbackScreenshot', () => {
             useCORS: true,
             logging: false,
             ignoreElements: expect.any(Function),
+            onclone: expect.any(Function),
         });
 
         const { ignoreElements } = html2canvasMock.mock.calls[0][1];
@@ -64,6 +66,62 @@ describe('captureFeedbackScreenshot', () => {
         const excluded = document.createElement('div');
         excluded.setAttribute('data-feedback-exclude', '');
         expect(ignoreElements(excluded)).toBe(true);
+    });
+
+    it('globally redacts the cloned document before html2canvas renders it', async () => {
+        document.body.innerHTML = `
+            <main style="background-image: url('https://example.test/private-background.png'); mask-image: url('mask.png')">
+                <p>Alex Example has a private credential</p>
+                <input value="alex@example.com" placeholder="Type your secret" />
+                <textarea placeholder="Private notes">private notes</textarea>
+                <select><option value="private-selection">Private selection</option></select>
+                <img src="https://example.test/private-avatar.png" alt="Alex Example" />
+                <svg><text>QR: private-claim-code</text></svg>
+                <canvas data-secret="canvas-private"></canvas>
+                <video src="https://example.test/private-video.mp4"></video>
+                <iframe src="https://example.test/private-frame"></iframe>
+                <div data-feedback-exclude>excluded private content</div>
+            </main>
+        `;
+        const clone = document.implementation.createHTMLDocument('feedback clone');
+        clone.documentElement.innerHTML = document.documentElement.innerHTML;
+        html2canvasMock.mockImplementation((_element, options) => {
+            (options as { onclone?: (clonedDocument: Document) => void }).onclone?.(clone);
+            return Promise.resolve({ toDataURL: () => 'data:image/png;base64,AAAA' });
+        });
+
+        await captureFeedbackScreenshot();
+
+        const renderedHtml = clone.documentElement.innerHTML;
+        for (const sensitiveValue of [
+            'Alex Example',
+            'alex@example.com',
+            'private credential',
+            'private notes',
+            'private-selection',
+            'private-avatar.png',
+            'private-claim-code',
+            'canvas-private',
+            'private-video.mp4',
+            'private-frame',
+            'private-background.png',
+            'excluded private content',
+        ]) {
+            expect(renderedHtml).not.toContain(sensitiveValue);
+        }
+
+        expect(clone.querySelector('input')?.getAttribute('value')).toBe('');
+        expect(clone.querySelector('input')?.getAttribute('placeholder')).toBe('');
+        expect(clone.querySelector('textarea')?.value).toBe('');
+        expect(clone.querySelector('select')?.selectedIndex).toBe(-1);
+        expect(clone.querySelectorAll('img, svg, canvas, video, iframe')).toHaveLength(0);
+        expect(clone.head.querySelector('style[data-feedback-redaction]')?.textContent).toContain(
+            'content: none !important'
+        );
+
+        // Redaction only applies to html2canvas's clone, never the live app.
+        expect(document.body.textContent).toContain('Alex Example');
+        expect(document.querySelector('input')?.value).toBe('alex@example.com');
     });
 
     it('returns undefined when rendering rejects', async () => {
