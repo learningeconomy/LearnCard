@@ -174,7 +174,7 @@ describe('collectFeedbackContext', () => {
         }
     });
 
-    it('defaults to the sanitized diagnostic log buffer', async () => {
+    it('defaults to the privacy-scrubbed diagnostic log buffer', async () => {
         recordDiagnosticLog({ level: 'warning', scope: 'test', message: 'buffered entry' });
 
         const context = await collectFeedbackContext(
@@ -183,7 +183,7 @@ describe('collectFeedbackContext', () => {
         );
 
         expect(context.logs).toEqual([
-            expect.objectContaining({ level: 'warning', message: 'buffered entry' }),
+            expect.objectContaining({ level: 'warning', message: '[scrubbed]' }),
         ]);
     });
 
