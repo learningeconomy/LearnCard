@@ -94,6 +94,7 @@
         "@capacitor/splash-screen": "^8.0.1",
         "@capacitor/status-bar": "^8.0.2",
         "@capawesome/capacitor-badge": "8.0.2",
+        "@capgo/capacitor-shake": "8.0.37",
         "@capgo/capacitor-updater": "8.47.7",
         "@digitalcredentials/jsonld": "^9.0.0",
         "@emoji-mart/data": "^1.2.1",
@@ -2489,6 +2490,8 @@
     "@capacitor/synapse": ["@capacitor/synapse@1.0.4", "", {}, "sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw=="],
 
     "@capawesome/capacitor-badge": ["@capawesome/capacitor-badge@8.0.2", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-4ZnRyFvViaokupdrOi3OkoBurH+23hnxni+PYq5C1ObNLYbhty/WK8BzMtndCv0S47XjGBLjQ9DJsYj3JDVxGQ=="],
+
+    "@capgo/capacitor-shake": ["@capgo/capacitor-shake@8.0.37", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-vNLCbxuz7+kFjHXR13TrMj4RXQUaFR9MOGiqHYBbKxlmIAe7GC96sezk78s2Kxj/yzahmoIBU7INWceQSW5SZA=="],
 
     "@capgo/capacitor-updater": ["@capgo/capacitor-updater@8.47.7", "", { "peerDependencies": { "@capacitor/core": "^8.0.0" } }, "sha512-Gi9onxH1ysaS40jirR9q69oS1qRidw13oAFzc7rvION+Omc/OLNkC2tqgEw55oVQloIokJKevRNQl4vjcmTliA=="],
 

@@ -29,6 +29,14 @@ vi.mock('./useFeedbackBusyState', () => ({
     useFeedbackBusyState: () => busy.value,
 }));
 
+const automaticTriggers = vi.hoisted(() => ({ calls: [] as Array<Record<string, unknown>> }));
+
+vi.mock('./useAutomaticFeedbackTriggers', () => ({
+    useAutomaticFeedbackTriggers: (input: Record<string, unknown>) => {
+        automaticTriggers.calls.push(input);
+    },
+}));
+
 vi.mock('./eligibility', () => ({
     useFeedbackReportingEligibility: () => eligibility.value,
 }));
@@ -199,6 +207,23 @@ beforeEach(() => {
     collectContext.mockResolvedValue(CONTEXT);
     submit.mockResolvedValue({ id: 'feedback-1' });
     controller = undefined;
+});
+
+describe('FeedbackProvider automatic triggers wiring', () => {
+    it('mounts automatic triggers with bug eligibility and reportProblem', () => {
+        renderProvider();
+
+        expect(automaticTriggers.calls).toHaveLength(1);
+        expect(automaticTriggers.calls[0].enabled).toBe(true);
+        expect(automaticTriggers.calls[0].reportProblem).toBe(controller?.reportProblem);
+    });
+
+    it('reflects bug ineligibility in the automatic trigger input', () => {
+        eligibility.value = { bug: false, idea: true, isLoading: false };
+        renderProvider();
+
+        expect(automaticTriggers.calls.at(-1)?.enabled).toBe(false);
+    });
 });
 
 describe('FeedbackProvider reportProblem', () => {

@@ -11,6 +11,7 @@ install! 'cocoapods', :disable_input_output_paths => true, :deterministic_uuids 
 def capacitor_pods
   pod 'Capacitor', :path => '../../../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../../../node_modules/@capacitor/ios'
+  pod 'CapacitorCommunityInAppReview', :path => '../../../../node_modules/@capacitor-community/in-app-review'
   pod 'CapacitorCommunityMedia', :path => '../../../../node_modules/@capacitor-community/media'
   pod 'CapacitorCommunitySqlite', :path => '../../../../node_modules/@capacitor-community/sqlite'
   pod 'CapacitorFirebaseAnalytics', :path => '../../../../node_modules/@capacitor-firebase/analytics'
@@ -33,6 +34,7 @@ def capacitor_pods
   pod 'CapacitorSplashScreen', :path => '../../../../node_modules/@capacitor/splash-screen'
   pod 'CapacitorStatusBar', :path => '../../../../node_modules/@capacitor/status-bar'
   pod 'CapawesomeCapacitorBadge', :path => '../../../../node_modules/@capawesome/capacitor-badge'
+  pod 'CapgoCapacitorShake', :path => '../../../../node_modules/@capgo/capacitor-shake'
   pod 'CapgoCapacitorUpdater', :path => '../../../../node_modules/@capgo/capacitor-updater'
   pod 'CapacitorNativeSettings', :path => '../../../../node_modules/capacitor-native-settings'
   pod 'CapacitorPluginSafeArea', :path => '../../../../node_modules/capacitor-plugin-safe-area'

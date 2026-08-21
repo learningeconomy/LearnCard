@@ -47,6 +47,7 @@ import {
     isPendingFeedbackExpired,
     isShakeInCooldown,
 } from './triggerPolicy';
+import { useAutomaticFeedbackTriggers } from './useAutomaticFeedbackTriggers';
 import { useFeedbackBusyState } from './useFeedbackBusyState';
 import type {
     FeedbackContext as FeedbackContextData,
@@ -379,6 +380,14 @@ export const FeedbackProvider: React.FC<{
         () => ({ reportProblem, shareIdea }),
         [reportProblem, shareIdea]
     );
+
+    // Automatic entry points (shake, iOS screenshot) mount their native
+    // listeners here; registration is gated by bug eligibility and, for
+    // shakes, the LaunchDarkly `shakeToReportEnabled` flag.
+    useAutomaticFeedbackTriggers({
+        enabled: eligibility.bug,
+        reportProblem: controller.reportProblem,
+    });
 
     return (
         <FeedbackControllerContext.Provider value={controller}>

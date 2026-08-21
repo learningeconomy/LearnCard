@@ -71,6 +71,9 @@ project(':capacitor-status-bar').projectDir = new File('../../../node_modules/@c
 include ':capawesome-capacitor-badge'
 project(':capawesome-capacitor-badge').projectDir = new File('../../../node_modules/@capawesome/capacitor-badge/android')
 
+include ':capgo-capacitor-shake'
+project(':capgo-capacitor-shake').projectDir = new File('../../../node_modules/@capgo/capacitor-shake/android')
+
 include ':capgo-capacitor-updater'
 project(':capgo-capacitor-updater').projectDir = new File('../../../node_modules/@capgo/capacitor-updater/android')
 
