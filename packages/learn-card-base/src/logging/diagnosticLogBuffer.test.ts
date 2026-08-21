@@ -22,12 +22,16 @@ beforeEach(() => {
 describe('diagnosticLogBuffer capacity', () => {
     it('keeps only the newest 200 records', () => {
         for (let index = 0; index < 205; index += 1) {
-            recordDiagnosticLog({ level: 'info', message: `entry-${index}` });
+            recordDiagnosticLog({
+                level: 'info',
+                message: `entry-${index}`,
+                data: { count: index },
+            });
         }
         const records = getDiagnosticLogs();
         expect(records).toHaveLength(200);
-        expect(records[0].message).toBe('entry-5');
-        expect(records[199].message).toBe('entry-204');
+        expect(records[0].data).toEqual({ count: 5 });
+        expect(records[199].data).toEqual({ count: 204 });
     });
 
     it('records scope, level, and an ISO timestamp', () => {
@@ -36,6 +40,7 @@ describe('diagnosticLogBuffer capacity', () => {
         const entry = getDiagnosticLogs()[0];
         expect(entry.level).toBe('warning');
         expect(entry.scope).toBe('wallet');
+        expect(entry.message).toBe('[scrubbed]');
         expect(entry.timestamp).toMatch(
             /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/
         );
@@ -48,7 +53,7 @@ describe('diagnosticLogBuffer capacity', () => {
         expect(entry).toEqual({
             timestamp: entry.timestamp,
             level: 'error',
-            message: 'boom',
+            message: '[scrubbed]',
         });
         expect('scope' in entry).toBe(false);
         expect('data' in entry).toBe(false);
@@ -56,14 +61,18 @@ describe('diagnosticLogBuffer capacity', () => {
 
     it('drops oldest entries one at a time as new ones arrive', () => {
         for (let index = 0; index < 200; index += 1) {
-            recordDiagnosticLog({ level: 'info', message: `entry-${index}` });
+            recordDiagnosticLog({
+                level: 'info',
+                message: `entry-${index}`,
+                data: { count: index },
+            });
         }
-        recordDiagnosticLog({ level: 'info', message: 'entry-200' });
+        recordDiagnosticLog({ level: 'info', message: 'entry-200', data: { count: 200 } });
 
         const records = getDiagnosticLogs();
         expect(records).toHaveLength(200);
-        expect(records[0].message).toBe('entry-1');
-        expect(records[199].message).toBe('entry-200');
+        expect(records[0].data).toEqual({ count: 1 });
+        expect(records[199].data).toEqual({ count: 200 });
     });
 });
 
@@ -72,13 +81,27 @@ describe('diagnosticLogBuffer capacity', () => {
 // ---------------------------------------------------------------------------
 
 describe('diagnosticLogBuffer sanitization', () => {
+    it('retains only event-safe messages and removes credential paths and arbitrary prose', () => {
+        recordDiagnosticLog({
+            level: 'error',
+            message:
+                'claim failed at /claim/credential-secret and https://learncard.app/claim/secret?token=hidden',
+        });
+        recordDiagnosticLog({ level: 'warning', message: 'feedback.screenshot.capture_failed' });
+
+        expect(getDiagnosticLogs().map(entry => entry.message)).toEqual([
+            '[scrubbed]',
+            'feedback.screenshot.capture_failed',
+        ]);
+    });
+
     it('redacts sensitive shapes in event messages', () => {
         recordDiagnosticLog({
             level: 'error',
             message: 'failed for alice@example.com did:key:z6Secret',
         });
 
-        expect(getDiagnosticLogs()[0].message).toBe('failed for [scrubbed-email] [scrubbed-did]');
+        expect(getDiagnosticLogs()[0].message).toBe('[scrubbed]');
     });
 
     it('allows only bounded boolean, count, and status metadata', () => {
@@ -112,9 +135,7 @@ describe('diagnosticLogBuffer sanitization', () => {
                 'auth failed for bob@example.org with did:web:example.com header Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c retry',
         });
 
-        expect(getDiagnosticLogs()[0].message).toBe(
-            'auth failed for [scrubbed-email] with [scrubbed-did] header [scrubbed] retry'
-        );
+        expect(getDiagnosticLogs()[0].message).toBe('[scrubbed]');
     });
 
     it('omits data that contains no allowlisted metadata', () => {
@@ -127,25 +148,23 @@ describe('diagnosticLogBuffer sanitization', () => {
         expect('data' in getDiagnosticLogs()[0]).toBe(false);
     });
 
-    it('strips query strings and fragments from URLs in strings', () => {
+    it('omits arbitrary messages even when a URL has no query string', () => {
         recordDiagnosticLog({
             level: 'info',
             message: 'navigated to https://learncard.app/claim?token=secret#fragment ok',
             data: { deepLink: 'https://learncard.app/wallet?email=alice@example.com' },
         });
 
-        expect(getDiagnosticLogs()[0].message).toBe('navigated to https://learncard.app/claim ok');
+        expect(getDiagnosticLogs()[0].message).toBe('[scrubbed]');
         expect('data' in getDiagnosticLogs()[0]).toBe(false);
     });
 
-    it('truncates strings longer than 1000 characters', () => {
+    it('omits overlong arbitrary messages', () => {
         const long = 'x'.repeat(1500);
         recordDiagnosticLog({ level: 'info', message: long, data: { blob: long } });
 
         const entry = getDiagnosticLogs()[0];
-        expect(entry.message.startsWith('x'.repeat(1000))).toBe(true);
-        expect(entry.message.endsWith('[truncated]')).toBe(true);
-        expect(entry.message.length).toBeLessThanOrEqual(1000 + '[truncated]'.length);
+        expect(entry.message).toBe('[scrubbed]');
         expect('data' in entry).toBe(false);
     });
 
@@ -216,7 +235,7 @@ describe('diagnosticLogBuffer collection control', () => {
         recordDiagnosticLog({ level: 'info', message: 'recorded' });
 
         expect(getDiagnosticLogs()).toHaveLength(1);
-        expect(getDiagnosticLogs()[0].message).toBe('recorded');
+        expect(getDiagnosticLogs()[0].message).toBe('[scrubbed]');
     });
 
     it('clears all entries', () => {
@@ -248,7 +267,7 @@ describe('diagnosticLogBuffer copy-on-read', () => {
 
         const second = getDiagnosticLogs();
         expect(second).toHaveLength(1);
-        expect(second[0].message).toBe('original');
+        expect(second[0].message).toBe('[scrubbed]');
         expect(second[0].data).toEqual({ count: 1 });
     });
 });

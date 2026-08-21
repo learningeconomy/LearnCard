@@ -24,7 +24,7 @@ export interface DiagnosticLogEntry {
     level: DiagnosticLogLevel;
     /** Logger scope the entry originated from, when available. */
     scope?: string;
-    /** Sanitized message (emails, DIDs, bearer/JWT tokens, URL queries redacted). */
+    /** Approved static event name, or a neutral redaction marker. */
     message: string;
     /** Sanitized structured context, when provided. */
     data?: unknown;
@@ -38,13 +38,9 @@ export interface DiagnosticLogInput {
 }
 
 const MAX_DIAGNOSTIC_LOGS = 200;
-const MAX_STRING_LENGTH = 1_000;
 const MAX_DIAGNOSTIC_COUNT = 10_000;
 
 const SCRUBBED = '[scrubbed]';
-const SCRUBBED_EMAIL = '[scrubbed-email]';
-const SCRUBBED_DID = '[scrubbed-did]';
-const TRUNCATED = '[truncated]';
 
 let _entries: DiagnosticLogEntry[] = [];
 let _collectionEnabled = true;
@@ -53,26 +49,13 @@ let _collectionEnabled = true;
 // String scrubbing
 // ---------------------------------------------------------------------------
 
-// URLs first: stripping query strings and fragments removes any tokens,
-// claim codes, or emails embedded in them before other patterns can match.
-const URL_RE = /https?:\/\/\S+/g;
-const BEARER_STRING_RE = /\bbearer\s+\S+/gi;
-// JWTs are three base64url segments; standard JOSE headers start with eyJ.
-const JWT_RE = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g;
-const EMAIL_RE = /\S+@\S+\.\S+/g;
-const DID_RE = /\bdid:[a-z0-9]+:\S+/gi;
-const URL_QUERY_OR_HASH_RE = /[?#].*$/;
+// Messages originate throughout the application, so pattern-based redaction
+// is insufficient: relative claim paths and credential IDs have no reliable
+// PII shape. Preserve only explicitly approved static event names.
+const SAFE_EVENT_MESSAGES = new Set(['feedback.screenshot.capture_failed']);
 
-/** Redacts sensitive shapes embedded in strings and truncates overlong values. */
-const scrubString = (value: string): string => {
-    let out = value.replace(URL_RE, url => url.replace(URL_QUERY_OR_HASH_RE, ''));
-    out = out.replace(BEARER_STRING_RE, SCRUBBED);
-    out = out.replace(JWT_RE, SCRUBBED);
-    out = out.replace(EMAIL_RE, SCRUBBED_EMAIL);
-    out = out.replace(DID_RE, SCRUBBED_DID);
-    if (out.length > MAX_STRING_LENGTH) out = `${out.slice(0, MAX_STRING_LENGTH)}${TRUNCATED}`;
-    return out;
-};
+const sanitizeEventMessage = (message: string): string =>
+    SAFE_EVENT_MESSAGES.has(message) ? message : SCRUBBED;
 
 // ---------------------------------------------------------------------------
 // Value sanitization
@@ -138,8 +121,7 @@ const sanitizeDiagnosticData = (value: unknown): SafeDiagnosticData | undefined 
 };
 
 const sanitizeScope = (scope: string): string => {
-    const scrubbed = scrubString(scope);
-    return /^[a-z][a-z0-9._-]{0,63}$/i.test(scrubbed) ? scrubbed : SCRUBBED;
+    return /^[a-z][a-z0-9._-]{0,63}$/i.test(scope) ? scope : SCRUBBED;
 };
 
 // ---------------------------------------------------------------------------
@@ -174,7 +156,7 @@ export const recordDiagnosticLog = (input: DiagnosticLogInput): void => {
     const entry: DiagnosticLogEntry = {
         timestamp: new Date().toISOString(),
         level: input.level,
-        message: scrubString(input.message),
+        message: sanitizeEventMessage(input.message),
     };
     if (input.scope !== undefined) entry.scope = sanitizeScope(input.scope);
     const data = sanitizeDiagnosticData(input.data);

@@ -622,20 +622,19 @@ describe('rest-args contract', () => {
 // ---------------------------------------------------------------------------
 
 describe('diagnostic buffer integration', () => {
-    it('records sanitized info, warning, and error entries when bug reports are enabled', () => {
+    it('records default-private info entries when bug reports are enabled', () => {
         configureLoggerContext({ bugReportsEnabled: true });
         getLogger('feedback-test').info('opened', { email: 'alice@example.com', route: '/wallet' });
         expect(getDiagnosticLogs()).toEqual([
             expect.objectContaining({
                 level: 'info',
                 scope: 'feedback-test',
-                message: 'opened',
-                data: expect.objectContaining({ email: '[scrubbed]', route: '/wallet' }),
+                message: '[scrubbed]',
             }),
         ]);
     });
 
-    it('maps info, warn, and error to their buffer levels and stores sanitized errors', () => {
+    it('maps info, warn, and error to their buffer levels without retaining error bodies', () => {
         const transport = makeMockTransport();
         configureSentryTransport(transport);
         vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -648,18 +647,17 @@ describe('diagnostic buffer integration', () => {
 
         const entries = getDiagnosticLogs();
         expect(entries.map(entry => entry.level)).toEqual(['info', 'warning', 'error']);
-        expect(entries[0]).toMatchObject({ scope: 'feedback', message: 'step one' });
+        expect(entries[0]).toMatchObject({ scope: 'feedback', message: '[scrubbed]' });
         expect(entries[1].data).toMatchObject({ attempt: 2 });
-        expect(entries[2].data).toMatchObject({
-            error: { name: 'Error', message: 'boom for [scrubbed-email]' },
-        });
+        expect('data' in entries[2]).toBe(false);
     });
 
-    it('records leftover values in the entry data', () => {
+    it('omits leftover primitive values from the attachment data', () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         logger.error('failed to fetch boost', 'lc:boost:abc');
 
-        expect(getDiagnosticLogs()[0].data).toEqual({ value: 'lc:boost:abc' });
+        expect(getDiagnosticLogs()[0]).toMatchObject({ message: '[scrubbed]' });
+        expect('data' in getDiagnosticLogs()[0]).toBe(false);
     });
 
     it('clears and stops the diagnostic buffer when bug reports are disabled', () => {

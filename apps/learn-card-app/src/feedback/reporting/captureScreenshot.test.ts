@@ -124,6 +124,31 @@ describe('captureFeedbackScreenshot', () => {
         expect(document.querySelector('input')?.value).toBe('alex@example.com');
     });
 
+    it("clears form fields owned by html2canvas's iframe clone realm", async () => {
+        const cloneFrame = document.createElement('iframe');
+        document.body.append(cloneFrame);
+        const clone = cloneFrame.contentDocument!;
+        clone.body.innerHTML =
+            '<input value="iframe-private@example.com" placeholder="Iframe secret" /><textarea placeholder="Iframe notes">Iframe notes</textarea>';
+        const clonedInput = clone.querySelector('input')!;
+        expect(clonedInput instanceof HTMLInputElement).toBe(false);
+
+        html2canvasMock.mockImplementation((_element, options) => {
+            (options as { onclone?: (clonedDocument: Document) => void }).onclone?.(clone);
+            return Promise.resolve({ toDataURL: () => 'data:image/png;base64,AAAA' });
+        });
+
+        await captureFeedbackScreenshot();
+
+        expect(clonedInput.value).toBe('');
+        expect(clonedInput.getAttribute('value')).toBe('');
+        expect(clonedInput.getAttribute('placeholder')).toBe('');
+        expect(clone.querySelector('textarea')?.value).toBe('');
+        expect(clone.documentElement.innerHTML).not.toContain('iframe-private@example.com');
+        expect(clone.documentElement.innerHTML).not.toContain('Iframe secret');
+        expect(clone.documentElement.innerHTML).not.toContain('Iframe notes');
+    });
+
     it('returns undefined when rendering rejects', async () => {
         html2canvasMock.mockRejectedValue(new Error('unsupported CSS'));
 

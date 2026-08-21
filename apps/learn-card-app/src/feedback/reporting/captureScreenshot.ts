@@ -36,12 +36,15 @@ const redactCloneForFeedback = (clonedDocument: Document): void => {
         .forEach(element => element.remove());
 
     clonedDocument.querySelectorAll('input, textarea, select').forEach(element => {
-        if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-            element.value = '';
-            element.defaultValue = '';
+        const tagName = element.tagName.toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea') {
+            const field = element as HTMLInputElement | HTMLTextAreaElement;
+            field.value = '';
+            field.defaultValue = '';
             element.setAttribute('value', '');
             element.setAttribute('placeholder', '');
         }
+        if (tagName === 'select') (element as HTMLSelectElement).selectedIndex = -1;
         element.textContent = '';
     });
 
