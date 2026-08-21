@@ -40,7 +40,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     const skipPrompt = useSkipConnectionPromptMutation();
     const { dismissToast } = useToast();
     const { modals } = useModalsContext();
-    const { newModal, closeModalById } = useModal({
+    const { newModal, forceCloseModalById } = useModal({
         desktop: ModalTypes.Center,
         mobile: ModalTypes.Center,
     });
@@ -67,8 +67,8 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
         resolvedRef.current = true;
         actionInFlightRef.current = false;
 
-        if (ownedModalId !== null) closeModalById(ownedModalId);
-    }, [closeModalById, viewerKey]);
+        if (ownedModalId !== null) forceCloseModalById(ownedModalId);
+    }, [forceCloseModalById, viewerKey]);
 
     useEffect(() => {
         const ownedModalId = ownedModalIdRef.current;
@@ -120,7 +120,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
                 resolvedRef.current = true;
                 actionInFlightRef.current = false;
-                if (modalId !== null) closeModalById(modalId);
+                if (modalId !== null) forceCloseModalById(modalId);
             };
 
             const handleSkip = async (promptId: string): Promise<void> => {
@@ -138,7 +138,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
                 resolvedRef.current = true;
                 actionInFlightRef.current = false;
-                if (modalId !== null) closeModalById(modalId);
+                if (modalId !== null) forceCloseModalById(modalId);
             };
 
             const handleClose = (): boolean => {
@@ -171,10 +171,10 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
         return () => clearTimeout(timeout);
     }, [
-        closeModalById,
         connectPrompt,
         copy,
         dismissToast,
+        forceCloseModalById,
         modals.length,
         newModal,
         nextPrompt,

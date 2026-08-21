@@ -139,6 +139,7 @@ export type Modal = {
     options?: ModalOptions;
     open: boolean;
     id: number;
+    generation: number;
 };
 
 export type ModalProps = {

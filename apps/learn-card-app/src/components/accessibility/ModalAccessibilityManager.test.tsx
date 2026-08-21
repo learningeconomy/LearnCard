@@ -42,7 +42,7 @@ const deferred = <T,>() => {
 
 const ModalHarness: React.FC = () => {
     const { modals } = useModalsContext();
-    const { newModal, closeModalById, closeAllModals } = useModal();
+    const { newModal, replaceModal, forceCloseModalById, closeAllModals } = useModal();
     const ownedModalIdRef = useRef<number | null>(null);
     const openModals = modals.filter(modal => modal.open);
 
@@ -62,11 +62,14 @@ const ModalHarness: React.FC = () => {
             <button type="button" onClick={() => newModal(<h2>Replacement modal</h2>)}>
                 Open Replacement
             </button>
+            <button type="button" onClick={() => replaceModal(<h2>Replacement modal</h2>)}>
+                Replace Owned
+            </button>
             <button
                 type="button"
                 onClick={() => {
                     if (ownedModalIdRef.current !== null) {
-                        closeModalById(ownedModalIdRef.current);
+                        forceCloseModalById(ownedModalIdRef.current);
                     }
                 }}
             >
@@ -241,6 +244,28 @@ describe('ModalAccessibilityManager Escape lifecycle', () => {
         await advanceCloseAnimation();
 
         expect(screen.getByTestId('open-modal-ids')).toHaveTextContent('1');
+        expect(screen.getByRole('heading', { name: 'Replacement modal' })).toBeVisible();
+    });
+
+    it('does not close content that replaces the pending modal instance', async () => {
+        const request = deferred<boolean>();
+        state.onUserClose.mockReturnValue(request.promise);
+        renderModalHarness();
+        await clickHarnessButton('Open Owned');
+        await pressEscape();
+
+        await clickHarnessButton('Replace Owned');
+        expect(screen.getByTestId('open-modal-ids')).toHaveTextContent('0');
+        expect(screen.getByRole('heading', { name: 'Replacement modal' })).toBeVisible();
+
+        await act(async () => {
+            request.resolve(true);
+            await request.promise;
+        });
+        await advanceCloseAnimation();
+
+        expect(screen.getByTestId('open-modal-ids')).toHaveTextContent('0');
+        expect(screen.getByTestId('modal-count')).toHaveTextContent('1');
         expect(screen.getByRole('heading', { name: 'Replacement modal' })).toBeVisible();
     });
 });

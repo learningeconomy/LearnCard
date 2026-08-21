@@ -11,8 +11,10 @@ export const useModal = ({
         newModal: _newModal,
         replaceModal,
         closeModal,
+        forceCloseModal,
         requestCloseModal,
         closeModalById,
+        forceCloseModalById,
         closeAllModals,
     } = useModalActionsContext();
 
@@ -31,8 +33,10 @@ export const useModal = ({
         newModal,
         replaceModal,
         closeModal,
+        forceCloseModal,
         requestCloseModal,
         closeModalById,
+        forceCloseModalById,
         closeAllModals,
     };
 };

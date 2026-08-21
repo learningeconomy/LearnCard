@@ -17,8 +17,11 @@ export type ModalActionsContextValues = {
     /** Replaces the current modal */
     replaceModal: (component: ModalComponent, options?: ModalOptions, type?: ModalType) => void;
 
-    /** Closes the top modal without invoking its user-dismissal callback. */
+    /** Closes the top modal and invokes its legacy cleanup callback. */
     closeModal: () => void;
+
+    /** Administratively closes the top modal without invoking its cleanup callback. */
+    forceCloseModal: () => void;
 
     /**
      * Requests that the user dismiss the top modal. The modal remains open while its callback
@@ -26,8 +29,11 @@ export type ModalActionsContextValues = {
      */
     requestCloseModal: () => Promise<boolean>;
 
-    /** Closes a specific modal without invoking its user-dismissal callback. */
+    /** Closes a specific modal and invokes its legacy cleanup callback. */
     closeModalById: (modalId: number) => void;
+
+    /** Administratively closes a specific modal without invoking its cleanup callback. */
+    forceCloseModalById: (modalId: number) => void;
 
     /** Closes all modals */
     closeAllModals: () => void;
@@ -37,11 +43,20 @@ export const [useModalsContext, ModalsContextProvider] = createContext<ModalsCon
 export const [useModalActionsContext, ModalActionsContextProvider] =
     createContext<ModalActionsContextValues>();
 
+const getModalInstanceKey = (modal: Pick<Modal, 'id' | 'generation'>): string =>
+    `${modal.id}:${modal.generation}`;
+
+const clearPendingForModalId = (pendingInstances: Set<string>, modalId: number): void => {
+    for (const instanceKey of pendingInstances) {
+        if (instanceKey.startsWith(`${modalId}:`)) pendingInstances.delete(instanceKey);
+    }
+};
+
 export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [modals, setModals] = useFreezelessImmer<Modal[]>([]);
     const currentId = useRef(0);
     const modalsRef = useRef(modals);
-    const pendingUserCloseIdsRef = useRef(new Set<number>());
+    const pendingUserCloseInstancesRef = useRef(new Set<string>());
     modalsRef.current = modals;
 
     // Disable dimmer for all but top modal
@@ -62,7 +77,14 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             currentId.current += 1;
 
             setModals(oldModals => {
-                oldModals.push({ component, type, options, open: true, id: modalId });
+                oldModals.push({
+                    component,
+                    type,
+                    options,
+                    open: true,
+                    id: modalId,
+                    generation: 0,
+                });
             });
 
             return modalId;
@@ -76,8 +98,10 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const currentModal = oldModals[oldModals.length - 1];
 
                 if (currentModal) {
+                    pendingUserCloseInstancesRef.current.delete(getModalInstanceKey(currentModal));
                     currentModal.component = component;
                     currentModal.options = options;
+                    currentModal.generation += 1;
                     if (type) currentModal.type = type;
                 }
             });
@@ -85,44 +109,29 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         [setModals]
     );
 
-    const closeModal = useCallback(() => {
-        setModals(_modals => {
-            const index = _modals.findLastIndex(modal => modal.open);
-            if (index === -1) return;
-
-            const modalToClose = _modals[index];
-
-            const { id } = modalToClose;
-            modalToClose.open = false;
-            pendingUserCloseIdsRef.current.delete(id);
-
-            setTimeout(
-                () =>
-                    setModals(oldModals => {
-                        const modalIndex = oldModals.findIndex(modal => modal.id === id);
-
-                        if (modalIndex === -1) return;
-
-                        oldModals.splice(modalIndex, 1);
-                    }),
-                300
-            );
-        });
-    }, [setModals]);
-
-    const closeModalById = useCallback(
-        (modalId: number) => {
+    const closeModalInstance = useCallback(
+        (modalId: number, generation: number | undefined, invokeOnClose: boolean) => {
             setModals(_modals => {
-                const modalToClose = _modals.find(modal => modal.id === modalId && modal.open);
+                const modalToClose = _modals.find(
+                    modal =>
+                        modal.id === modalId &&
+                        modal.open &&
+                        (generation === undefined || modal.generation === generation)
+                );
                 if (!modalToClose) return;
 
+                const closingGeneration = modalToClose.generation;
                 modalToClose.open = false;
-                pendingUserCloseIdsRef.current.delete(modalId);
+                clearPendingForModalId(pendingUserCloseInstancesRef.current, modalId);
+                if (invokeOnClose) modalToClose.options?.onClose?.();
 
                 setTimeout(
                     () =>
                         setModals(oldModals => {
-                            const modalIndex = oldModals.findIndex(modal => modal.id === modalId);
+                            const modalIndex = oldModals.findIndex(
+                                modal =>
+                                    modal.id === modalId && modal.generation === closingGeneration
+                            );
                             if (modalIndex === -1) return;
 
                             oldModals.splice(modalIndex, 1);
@@ -134,14 +143,39 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         [setModals]
     );
 
+    const closeModal = useCallback(() => {
+        const modalToClose = modalsRef.current.findLast(modal => modal.open);
+        if (!modalToClose) return;
+
+        closeModalInstance(modalToClose.id, modalToClose.generation, true);
+    }, [closeModalInstance]);
+
+    const forceCloseModal = useCallback(() => {
+        const modalToClose = modalsRef.current.findLast(modal => modal.open);
+        if (!modalToClose) return;
+
+        closeModalInstance(modalToClose.id, modalToClose.generation, false);
+    }, [closeModalInstance]);
+
+    const closeModalById = useCallback(
+        (modalId: number) => closeModalInstance(modalId, undefined, true),
+        [closeModalInstance]
+    );
+
+    const forceCloseModalById = useCallback(
+        (modalId: number) => closeModalInstance(modalId, undefined, false),
+        [closeModalInstance]
+    );
+
     const requestCloseModal = useCallback(async (): Promise<boolean> => {
         const modalToClose = modalsRef.current.findLast(modal => modal.open);
         if (!modalToClose || modalToClose.options?.disableCloseHandlers) return false;
 
-        const { id, options } = modalToClose;
-        if (pendingUserCloseIdsRef.current.has(id)) return false;
+        const { id, generation, options } = modalToClose;
+        const instanceKey = getModalInstanceKey(modalToClose);
+        if (pendingUserCloseInstancesRef.current.has(instanceKey)) return false;
 
-        pendingUserCloseIdsRef.current.add(id);
+        pendingUserCloseInstancesRef.current.add(instanceKey);
 
         let shouldClose = true;
         try {
@@ -149,17 +183,20 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         } catch {
             shouldClose = false;
         } finally {
-            pendingUserCloseIdsRef.current.delete(id);
+            pendingUserCloseInstancesRef.current.delete(instanceKey);
         }
 
         if (!shouldClose) return false;
 
-        closeModalById(id);
+        const currentModal = modalsRef.current.find(modal => modal.id === id && modal.open);
+        if (!currentModal || currentModal.generation !== generation) return false;
+
+        closeModalInstance(id, generation, false);
         return true;
-    }, [closeModalById]);
+    }, [closeModalInstance]);
 
     const closeAllModals = useCallback(() => {
-        pendingUserCloseIdsRef.current.clear();
+        pendingUserCloseInstancesRef.current.clear();
         setModals(oldModals => oldModals.map(modal => ({ ...modal, open: false })));
         setTimeout(() => setModals([]), 300);
     }, [setModals]);
@@ -171,8 +208,10 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     newModal,
                     replaceModal,
                     closeModal,
+                    forceCloseModal,
                     requestCloseModal,
                     closeModalById,
+                    forceCloseModalById,
                     closeAllModals,
                 }}
             >
