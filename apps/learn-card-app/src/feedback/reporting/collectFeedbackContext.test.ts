@@ -14,7 +14,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { clearDiagnosticLogs, recordDiagnosticLog } from 'learn-card-base';
+import {
+    clearDiagnosticLogs,
+    recordDiagnosticLog,
+    setDiagnosticLogCollectionEnabled,
+} from 'learn-card-base';
 
 import { collectFeedbackContext } from './collectFeedbackContext';
 import type { VersionInfo } from '../../components/versionInfoModal/versionInfo.helpers';
@@ -67,10 +71,12 @@ beforeEach(() => {
     deps.getRoutes.mockImplementation(() => ['/wallet', '/credential/:id']);
     deps.getLogs.mockImplementation(() => []);
     clearDiagnosticLogs();
+    setDiagnosticLogCollectionEnabled(false);
 });
 
 afterEach(() => {
     clearDiagnosticLogs();
+    setDiagnosticLogCollectionEnabled(false);
 });
 
 describe('collectFeedbackContext', () => {
@@ -175,6 +181,7 @@ describe('collectFeedbackContext', () => {
     });
 
     it('defaults to the privacy-scrubbed diagnostic log buffer', async () => {
+        setDiagnosticLogCollectionEnabled(true);
         recordDiagnosticLog({ level: 'warning', scope: 'test', message: 'buffered entry' });
 
         const context = await collectFeedbackContext(
