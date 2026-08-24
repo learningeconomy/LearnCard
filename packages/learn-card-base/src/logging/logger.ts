@@ -222,7 +222,9 @@ export interface SentryTransport {
 // ---------------------------------------------------------------------------
 
 let _transport: SentryTransport | null = null; // null = dev mode, no Sentry forwarding
-let _bugReportsEnabled = true; // mirrors user's bugReportsEnabled preference; default true so existing users without stored prefs are unaffected
+// Keep remote reporting fail-closed until the authenticated-adult eligibility
+// gate explicitly configures this module.
+let _bugReportsEnabled = false;
 let _tenantId: string | undefined; // included as a Sentry tag on every captured event
 let _diagnosticIdentity: string | null | undefined;
 

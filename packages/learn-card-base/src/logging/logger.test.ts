@@ -158,6 +158,44 @@ describe('PII scrubbing', () => {
 // ---------------------------------------------------------------------------
 
 describe('privacy gate', () => {
+    it('drops diagnostics emitted before an authenticated adult first configures eligibility', async () => {
+        // Loading fresh modules models an app that has authenticated already but whose
+        // first useSentryIdentify effect has not configured the logger yet. If the
+        // defaults ever become permissive again, the first log below becomes an
+        // attachable diagnostic and a Sentry breadcrumb.
+        vi.resetModules();
+        const {
+            configureLoggerContext: configureIsolatedLoggerContext,
+            configureSentryTransport: configureIsolatedSentryTransport,
+            logger: isolatedLogger,
+        } = await import('./logger');
+        const { getDiagnosticLogs: getIsolatedDiagnosticLogs } = await import(
+            './diagnosticLogBuffer'
+        );
+        const sentryCalls: string[] = [];
+        configureIsolatedSentryTransport({
+            captureException: () => undefined,
+            captureMessage: () => {},
+            addBreadcrumb: () => sentryCalls.push('breadcrumb'),
+            withScope: () => {},
+        });
+        vi.spyOn(console, 'info').mockImplementation(() => {});
+
+        isolatedLogger.info('before eligibility configuration');
+
+        expect(getIsolatedDiagnosticLogs()).toEqual([]);
+        expect(sentryCalls).toEqual([]);
+
+        configureIsolatedLoggerContext({
+            bugReportsEnabled: true,
+            diagnosticIdentity: 'adult-a',
+        });
+        isolatedLogger.info('after eligibility configuration');
+
+        expect(getIsolatedDiagnosticLogs()).toHaveLength(1);
+        expect(sentryCalls).toEqual(['breadcrumb']);
+    });
+
     it('clears process-global diagnostics when the opaque reporting identity changes', () => {
         configureLoggerContext({
             bugReportsEnabled: true,

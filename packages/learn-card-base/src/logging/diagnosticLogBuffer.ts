@@ -43,7 +43,9 @@ const MAX_DIAGNOSTIC_COUNT = 10_000;
 const SCRUBBED = '[scrubbed]';
 
 let _entries: DiagnosticLogEntry[] = [];
-let _collectionEnabled = true;
+// Privacy-sensitive feedback diagnostics must never be collected until the
+// authenticated-adult eligibility gate explicitly enables them.
+let _collectionEnabled = false;
 
 // ---------------------------------------------------------------------------
 // String scrubbing
