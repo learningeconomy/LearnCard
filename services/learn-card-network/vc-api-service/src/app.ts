@@ -5,6 +5,7 @@ import { TypedRequest } from './types.helpers';
 import {
     IssueEndpoint,
     IssueEndpointValidator,
+    IssuePresentationEndpoint,
     IssuePresentationEndpointValidator,
     UpdateStatusEndpoint,
     VerifyCredentialEndpoint,
@@ -138,7 +139,7 @@ app.post('/credentials/derive', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.post('/presentations/issue', async (req: TypedRequest<IssueEndpoint>, res) => {
+app.post('/presentations/issue', async (req: TypedRequest<IssuePresentationEndpoint>, res) => {
     try {
         const validationResult = await IssuePresentationEndpointValidator.spa(req.body);
 
