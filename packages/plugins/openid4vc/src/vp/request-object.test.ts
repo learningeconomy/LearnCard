@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Tests for the signed Request Object verification layer (Slice 7.5).
  *
@@ -87,7 +88,7 @@ const baseClaims = (
 const mockFetch = (
     routes: Record<string, { status?: number; body: string | object }>
 ): typeof fetch =>
-    jest.fn(async (input: RequestInfo | URL): Promise<Response> => {
+    vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
         const url = String(input);
         const route = routes[url];
         if (!route) throw new Error(`mockFetch: unexpected URL ${url}`);
@@ -440,7 +441,7 @@ describe('verifyAndDecodeRequestObject — input validation', () => {
     });
 
     it('throws request_fetch_failed when request_uri is unreachable', async () => {
-        const fetchImpl = jest.fn(async () => {
+        const fetchImpl = vi.fn(async () => {
             throw new Error('ECONNRESET');
         }) as unknown as typeof fetch;
 
@@ -528,7 +529,7 @@ describe('verifyAndDecodeRequestObject — request_uri_method=post (§5.10)', ()
     it('POSTs wallet_nonce and accepts a request object that echoes it', async () => {
         const key = await makeVerifierKey();
         const jws = await signRequestObject(key, baseClaims(key, { wallet_nonce: 'wn-abc' }));
-        const fetchMock = jest.fn().mockResolvedValue(jwsResponse(jws));
+        const fetchMock = vi.fn().mockResolvedValue(jwsResponse(jws));
 
         const request = await verifyAndDecodeRequestObject({
             requestUri: 'https://verifier.test/req',
@@ -549,7 +550,7 @@ describe('verifyAndDecodeRequestObject — request_uri_method=post (§5.10)', ()
     it('rejects when the request object does not echo the sent wallet_nonce', async () => {
         const key = await makeVerifierKey();
         const jws = await signRequestObject(key, baseClaims(key, { wallet_nonce: 'different' }));
-        const fetchMock = jest.fn().mockResolvedValue(jwsResponse(jws));
+        const fetchMock = vi.fn().mockResolvedValue(jwsResponse(jws));
 
         await expect(
             verifyAndDecodeRequestObject({

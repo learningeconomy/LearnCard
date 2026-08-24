@@ -1,13 +1,13 @@
-import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react-swc';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'path';
+import { createVitestConfig, happyDomPreset } from '../../vitest.shared';
 
-export default defineConfig({
+export default createVitestConfig(happyDomPreset, {
     plugins: [react(), tsconfigPaths({ root: '../../' })],
     test: {
+        // DOMPurify's SVG sanitization and computed CSS serialization require jsdom semantics.
         environment: 'jsdom',
-        globals: true,
         setupFiles: ['./vitest.setup.ts'],
         include: ['src/**/*.test.{ts,tsx}'],
     },

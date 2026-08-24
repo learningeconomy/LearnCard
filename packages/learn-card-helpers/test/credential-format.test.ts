@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import { StoredCredentialEnvelopeValidator, isStoredCredentialEnvelope } from '@learncard/types';
 
@@ -110,7 +111,7 @@ const makeSdJwtSynthesisLearnCard = () =>
     ({
         invoke: {
             parseSdJwtVc,
-            verifySdJwtVc: jest.fn().mockResolvedValue({ checks: [], warnings: [], errors: [] }),
+            verifySdJwtVc: vi.fn().mockResolvedValue({ checks: [], warnings: [], errors: [] }),
         },
     } as never);
 
@@ -522,9 +523,9 @@ describe('StoredCredentialEnvelope', () => {
         it('matches the write-time SD-JWT wrapper projection for a real compact credential', async () => {
             const { compact, holderPublicJwk } = await issueRealSdJwtCompact();
             const learnCard = makeSdJwtSynthesisLearnCard();
-            jest.resetModules();
-            jest.doMock('@learncard/helpers', () => require('../src'));
-            const { synthesizeSdJwtVc } = require('../../plugins/openid4vc/src/vci/sd-jwt-vc');
+            vi.resetModules();
+            vi.doMock('@learncard/helpers', async () => import('../src'));
+            const { synthesizeSdJwtVc } = await import('../../plugins/openid4vc/src/vci/sd-jwt-vc');
 
             const wrapperA = await synthesizeSdJwtVc(compact, 'dc+sd-jwt', learnCard);
             const wrapperB = projectEnvelopeToDisplayVc({ format: 'dc+sd-jwt', data: compact });
@@ -547,7 +548,7 @@ describe('StoredCredentialEnvelope', () => {
                 synthesizeDidJwk(holderPublicJwk)
             );
             expect(wrapperA.vc.proof).toEqual(wrapperB?.proof);
-            jest.dontMock('@learncard/helpers');
+            vi.doUnmock('@learncard/helpers');
         });
 
         it('does not project a tampered disclosure into the credential subject', async () => {

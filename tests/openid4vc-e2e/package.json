@@ -3,9 +3,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "test": "vitest run",
-        "test:watch": "vitest",
-        "test:ci": "vitest run"
+        "test:openid4vc:e2e": "vitest run",
+        "test:openid4vc:e2e:watch": "vitest"
     },
     "dependencies": {
         "@learncard/openid4vc-plugin": "workspace:*",
@@ -15,6 +14,6 @@
     "devDependencies": {
         "@types/node": "^20.10.0",
         "typescript": "5.6.2",
-        "vitest": "^3.0.0"
+        "vitest": "4.1.10"
     }
 }
