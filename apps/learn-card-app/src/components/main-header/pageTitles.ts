@@ -5,7 +5,7 @@
  * the brand logo.
  */
 const PAGE_TITLES: ReadonlyArray<readonly [string, string]> = [
-    ['/dashboard', 'Dashboard'],
+    ['/dashboard', 'My Dashboard'],
     ['/passport', 'My Passport'],
     ['/wallet', 'My Passport'],
     ['/launchpad', 'My Apps'],
