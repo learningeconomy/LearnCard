@@ -166,6 +166,20 @@ describe('PostHogProvider.submitFeedbackIdea', () => {
         await expect(provider.submitFeedbackIdea(IDEA_PAYLOAD)).rejects.toBe(networkError);
     });
 
+    it('allows HTTP ingestion through the IPv6 loopback address', async () => {
+        const provider = new PostHogProvider(
+            { apiKey: 'ph_test', apiHost: 'http://[::1]:8000///?ignored=yes#fragment' },
+            { fetch: fetchRequest, randomUUID }
+        );
+
+        await provider.submitFeedbackIdea(IDEA_PAYLOAD);
+
+        expect(fetchRequest).toHaveBeenCalledWith(
+            'http://[::1]:8000/capture/',
+            expect.objectContaining({ method: 'POST' })
+        );
+    });
+
     it('rejects unsafe ingestion hosts before sending', async () => {
         const provider = new PostHogProvider(
             { apiKey: 'ph_test', apiHost: 'javascript:alert(1)' },

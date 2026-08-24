@@ -32,7 +32,7 @@ const getPostHogCaptureUrl = (apiHost?: string): string => {
 
     const isLocalHttp =
         url.protocol === 'http:' &&
-        (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1');
+        (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]');
 
     if (
         (url.protocol !== 'https:' && !isLocalHttp) ||
