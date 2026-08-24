@@ -33,6 +33,7 @@ const ClrCourseDetailPanel: React.FC<{
     competencies?: CompetencyDisplayModel[];
     issuerName?: string;
     issuerLogo?: string;
+    showCloseButton?: boolean;
 }> = ({
     course,
     boost,
@@ -41,6 +42,7 @@ const ClrCourseDetailPanel: React.FC<{
     competencies = [],
     issuerName,
     issuerLogo,
+    showCloseButton = true,
 }) => {
     const { closeModal } = useModal();
     const [competenciesOpen, setCompetenciesOpen] = useState(true);
@@ -75,7 +77,7 @@ const ClrCourseDetailPanel: React.FC<{
     const allowedGrades = primaryResult?.allowedValue?.value ?? [];
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto safe-area-top-margin">
+        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto mt-[var(--ion-safe-area-top,0px)]">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -107,12 +109,14 @@ const ClrCourseDetailPanel: React.FC<{
                             )}
                         </div>
                     </div>
-                    <button
-                        onClick={closeModal}
-                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px] mt-0.5"
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
+                    {showCloseButton && (
+                        <button
+                            onClick={closeModal}
+                            className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px] mt-0.5"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    )}
                 </div>
             </div>
 

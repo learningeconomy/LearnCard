@@ -5,6 +5,8 @@ import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { asyncWithLDProvider } from 'launchdarkly-react-client-sdk';
 import { ANONYMOUS_CONTEXT } from './constants/launchDarkly';
 import { TenantConfigProvider } from 'learn-card-base';
+import { LocaleProvider } from './i18n';
+import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
 
 import App from './App';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
@@ -12,14 +14,26 @@ import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
+import { installInsetSimulator } from 'learn-card-base/dev/simulateInsets';
 import * as Sentry from '@sentry/browser';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('index');
 
 (window as any).Buffer = Buffer;
 
+// Dev-only: simulate device safe-area insets via ?insets so band bugs are
+// visible on desktop. Must run before React renders (sets CSS vars on <html>).
+installInsetSimulator();
+
 (async () => {
     const tenantConfig = await bootstrapTenantConfig();
+
+    // Seed the locale-detection cache so LocaleProvider's sync initializer can
+    // fall through to the tenant default when there's no persisted choice and
+    // navigator.language isn't a supported locale. Must run BEFORE React mounts
+    // (resolveInitialLocale runs in the LocaleProvider useState initializer).
+    setTenantDefaultLocaleCache((tenantConfig as any)?.i18n?.defaultLanguage);
+    setTenantSupportedLanguagesCache((tenantConfig as any)?.i18n?.supportedLanguages);
 
     // notifyAppReady
     const capGoApp = await CapacitorUpdater.notifyAppReady();
@@ -44,9 +58,11 @@ const log = getLogger('index');
         const root = createRoot(container);
         root.render(
             <TenantConfigProvider config={tenantConfig}>
-                <LDProvider>
-                    <App />
-                </LDProvider>
+                <LocaleProvider>
+                    <LDProvider>
+                        <App />
+                    </LDProvider>
+                </LocaleProvider>
             </TenantConfigProvider>
         );
     }

@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 import { NetworkData } from './SkillsFrameworkNetworkSelector';
 import { insertParamsToFilestackUrl, useResolveBoost } from 'learn-card-base';
 import { getDefaultBadgeThumbForRole } from '../../helpers/troop.helpers';
@@ -45,7 +46,11 @@ const SkillsFrameworkNetworkSelectorItem: React.FC<SkillsFrameworkNetworkSelecto
             )}
             <div className="flex flex-col items-start flex-1">
                 <p className="text-grayscale-900 font-poppins text-[17px]">{network.name}</p>
-                <p className="text-grayscale-600 font-poppins text-[12px]">{network.type}</p>
+                <p className="text-grayscale-600 font-poppins text-[12px]">
+                    {network.type === 'Global Network'
+                        ? m['skillFrameworks.globalNetwork']()
+                        : m['skillFrameworks.nationalNetwork']()}
+                </p>
             </div>
             {isSelected ? (
                 <div className="w-[40px] h-[40px] rounded-full bg-emerald-700 flex items-center justify-center">

@@ -71,6 +71,7 @@ export * from './utils/pushUtilities';
 export * from './constants/redirects';
 export * from './constants/LCNWebhookEndpoints';
 export * from './constants/Networks';
+export * from './i18n';
 
 export * from './hooks/useWallet';
 export * from './hooks/useContract';
@@ -211,6 +212,7 @@ export {
     updateArtifactClaimedStatus,
 } from './stores/nanoStores/chatStore';
 
+export * from './helpers/aiErrors';
 export * from './helpers/credentialHelpers';
 export * from './helpers/credentialIngestion';
 export * from './helpers/credentials/queries';

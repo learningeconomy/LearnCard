@@ -18,13 +18,9 @@ const CaretListItem: React.FC<CaretListItemProps> = ({
     onClick,
     caretOverride,
 }) => {
-    return (
-        <div
-            role={onClick ? 'button' : undefined}
-            className="flex gap-[10px] items-center py-[12px] border-grayscale-200"
-            onClick={onClick}
-        >
-            {icon}
+    const content = (
+        <>
+            <span aria-hidden="true">{icon}</span>
             <div className="flex flex-col items-baseline">
                 <span
                     className={`text-grayscale-900 font-notoSans ${
@@ -34,25 +30,40 @@ const CaretListItem: React.FC<CaretListItemProps> = ({
                     {mainText}
                 </span>
                 {subText && (
-                    <span className="font-notoSans text-[14px] font-[500] text-grayscale-500">
+                    <span className="font-notoSans text-[14px] font-[500] text-grayscale-600">
                         {subText}
                     </span>
                 )}
             </div>
             <div className="flex ml-auto items-center">
                 {caretText && (
-                    <span className="font-poppins text-[14px] text-grayscale-500">{caretText}</span>
+                    <span className="font-poppins text-[14px] text-grayscale-600">{caretText}</span>
                 )}
                 {!caretOverride && (
-                    <SlimCaretRight
-                        className="text-grayscale-400 h-[20px] w-[20px]"
-                        color="currentColor"
-                    />
+                    <span aria-hidden="true">
+                        <SlimCaretRight
+                            className="text-grayscale-400 h-[20px] w-[20px]"
+                            color="currentColor"
+                        />
+                    </span>
                 )}
                 {caretOverride}
             </div>
-        </div>
+        </>
     );
+
+    const className =
+        'flex w-full gap-[10px] items-center py-[12px] border-grayscale-200 text-left';
+
+    if (onClick) {
+        return (
+            <button type="button" className={className} onClick={onClick}>
+                {content}
+            </button>
+        );
+    }
+
+    return <div className={className}>{content}</div>;
 };
 
 export default CaretListItem;

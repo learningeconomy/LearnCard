@@ -257,7 +257,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
                 <div
                     className="border-b border-grayscale-200 p-6"
-                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+                    style={{ paddingTop: 'max(1.5rem, var(--ion-safe-area-top, 0px))' }}
                 >
                     <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                         Age Restricted
@@ -305,7 +305,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 <div
                     className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                     style={{
-                        paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+                        paddingBottom: 'max(1.5rem, var(--ion-safe-area-bottom, 0px))',
                     }}
                 >
                     <button
@@ -354,7 +354,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
                     <div
                         className="border-b border-grayscale-200 p-6"
-                        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+                        style={{ paddingTop: 'max(1.5rem, var(--ion-safe-area-top, 0px))' }}
                     >
                         <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                             Date of Birth Required
@@ -412,7 +412,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     <div
                         className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                         style={{
-                            paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+                            paddingBottom: 'max(1.5rem, var(--ion-safe-area-bottom, 0px))',
                         }}
                     >
                         <button
@@ -744,7 +744,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             {/* Header */}
             <IonHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">
-                    <div className="flex items-center justify-normal ion-padding safe-area-top-margin">
+                    <div className="flex items-center justify-normal ion-padding mt-[var(--ion-safe-area-top,0px)]">
                         <div className="h-[65px] w-[65px] mr-3">
                             <img
                                 className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"

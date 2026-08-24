@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../../../paraglide/messages.js';
 import { BoostMediaOptionsEnum } from '../../../boost';
 import Camera from 'learn-card-base/svgs/Camera';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
@@ -32,7 +33,7 @@ const BoostMediaCMSFormPhotoItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 showCloseButton={false}
                 title={
                     <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                        Media Attachment
+                        {m['boostCMS.mediaAttachment']()}
                     </p>
                 }
             />
@@ -45,11 +46,7 @@ const BoostMediaCMSFormPhotoItem: React.FC<BoostMediaCMSFormItemProps> = ({
             className="flex bg-grayscale-100 rounded-[20px] relative min-h-[120px] max-h-[120px] w-full mb-4"
         >
             <div className="w-2/5 relative overflow-hidden rounded-[20px] shadow-3xl min-h-[120px] max-h-[120px]">
-                <img
-                    alt="media attachment"
-                    src={media.url || ''}
-                    className="h-full w-full object-cover"
-                />
+                <img alt="" src={media.url || ''} className="h-full w-full object-cover" />
                 <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent z-10"></div>
 
                 <Camera className="absolute left-2 bottom-2 h-[30px] w-[30px] text-white z-20" />

@@ -13,6 +13,7 @@ import VerifierStateBadgeAndText, {
 } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 import { BoostAchievementCredential } from '../../types';
 import { KnownDIDRegistryType } from '../../types';
+import { useT } from '../../i18n';
 
 type FlippedComponentProps = React.PropsWithChildren<{
     flipId?: string;
@@ -82,6 +83,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     unknownVerifierTitle,
     onVerifierClick,
 }) => {
+    const t = useT();
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
 
@@ -241,7 +243,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                     {!issuerDisplay.isMissing && (
                                         <span className="issued-by max-w-full break-words text-center line-clamp-2 text-[14px]">
                                             <span className="font-medium text-grayscale-900">
-                                                By
+                                                {t('credential.by')}
                                             </span>{' '}
                                             {issuerDisplay.isDidValue ? (
                                                 <span className="font-[600] font-poppins break-words">

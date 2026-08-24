@@ -40,7 +40,7 @@ export const AdminToolsOptionsContainerHeader: React.FC<{ option: AdminToolOptio
     }
 
     return (
-        <div className="ion-padding p-[20px] bg-white safe-area-top-margin rounded-b-[30px] shadow-bottom-1-5 flex items-center gap-[10px] z-20 relative">
+        <div className="ion-padding p-[20px] bg-white rounded-b-[30px] shadow-bottom-1-5 flex items-center gap-[10px] z-20 relative">
             {iconComponent}
             <div className="flex flex-col items-start justify-center">
                 <h5 className="text-[22px] font-[600] text-grayscale-900 font-poppins">

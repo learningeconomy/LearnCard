@@ -1,5 +1,34 @@
 # @learncard/network-brain-service
 
+## 3.16.14
+
+### Patch Changes
+
+-   [#1477](https://github.com/learningeconomy/LearnCard/pull/1477) [`148b5ea6a26e03c1e7522048881871016fc45f27`](https://github.com/learningeconomy/LearnCard/commit/148b5ea6a26e03c1e7522048881871016fc45f27) Thanks [@smurflo2](https://github.com/smurflo2)! - Warn before adding a duplicate credential, let learners skip or save another copy, make repeated credential acceptance return success instead of a 400 error, and prevent completed claim links from reopening on Back.
+
+-   [#1481](https://github.com/learningeconomy/LearnCard/pull/1481) [`e8f3934e12cc6fd8550db6539e637bf4aea75c87`](https://github.com/learningeconomy/LearnCard/commit/e8f3934e12cc6fd8550db6539e637bf4aea75c87) Thanks [@smurflo2](https://github.com/smurflo2)! - Remove stale LaunchDarkly gates and keep the shipped LearnCard and ScoutPass experiences as the permanent paths.
+
+## 3.16.13
+
+### Patch Changes
+
+-   [#1473](https://github.com/learningeconomy/LearnCard/pull/1473) [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump @trpc/server, fastify, @fastify/static (7 high Dependabot alerts)
+
+-   Updated dependencies [[`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417)]:
+    -   @learncard/helpers@1.3.12
+    -   @learncard/core@9.4.30
+    -   @learncard/crypto-plugin@1.1.30
+    -   @learncard/did-web-plugin@1.1.30
+    -   @learncard/didkey-plugin@1.1.30
+    -   @learncard/didkit-plugin@1.9.10
+    -   @learncard/didkit-plugin-node@0.2.28
+    -   @learncard/dynamic-loader-plugin@1.1.30
+    -   @learncard/encryption-plugin@1.1.30
+    -   @learncard/expiration-plugin@1.2.30
+    -   @learncard/learn-card-plugin@1.2.30
+    -   @learncard/vc-plugin@1.5.10
+    -   @learncard/vc-templates-plugin@1.1.30
+
 ## 3.16.12
 
 ### Patch Changes

@@ -83,7 +83,7 @@ const SkillsCategoryList: React.FC<{
                                 </div>
                                 <SkillsChipList skills={skills} category={category} />
                                 <button className="absolute top-[10px] right-[10px]">
-                                    <SlimCaretRight className="h-[30px] w-[30px] text-grayscale-300" />
+                                    <SlimCaretRight className="rtl-mirror h-[30px] w-[30px] text-grayscale-300" />
                                 </button>
                             </div>
                         );

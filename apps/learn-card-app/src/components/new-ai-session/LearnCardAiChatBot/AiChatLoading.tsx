@@ -2,7 +2,7 @@ import React from 'react';
 import * as m from '../../../paraglide/messages.js';
 import AiSessionLoader from '../AiSessionLoader';
 import LoadingAnimation from '../../../assets/images/purple-sparkles.gif';
-import { aiThinkingText, sessionWrapUpText } from '../newAiSession.helpers';
+import { getAiThinkingText, getSessionWrapUpText } from '../newAiSession.helpers';
 import { AiPassportAppContractUri } from '../../ai-passport-apps/aiPassport-apps.helpers';
 
 type AiChatLoadingProps = {
@@ -19,7 +19,11 @@ const AiChatLoading: React.FC<AiChatLoadingProps> = ({
                 alt={m['common.loading']()}
                 className="w-[240px] h-[240px]"
             />
-            <AiSessionLoader contractUri={contractUri} textOnly overrideText={aiThinkingText} />
+            <AiSessionLoader
+                contractUri={contractUri}
+                textOnly
+                overrideText={getAiThinkingText()}
+            />
         </div>
     );
 };

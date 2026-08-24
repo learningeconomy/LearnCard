@@ -1,5 +1,32 @@
 # @learncard/cli
 
+## 3.4.14
+
+### Patch Changes
+
+-   Updated dependencies [[`e8f3934e12cc6fd8550db6539e637bf4aea75c87`](https://github.com/learningeconomy/LearnCard/commit/e8f3934e12cc6fd8550db6539e637bf4aea75c87)]:
+    -   @learncard/render-method-plugin@4.0.3
+
+## 3.4.13
+
+### Patch Changes
+
+-   [#1453](https://github.com/learningeconomy/LearnCard/pull/1453) [`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Retire the legacy CHAPI example, MetaMask Snap projects, Discord bot, and Simple Signing service, client, and plugin.
+
+    Managed signing authority consumers now use `@learncard/lca-api-plugin`. Replace `getSimpleSigningPlugin(learnCard, endpoint)` with `getLCAPlugin(learnCard, endpoint)`. Historical implementations remain available through Git history.
+
+-   Updated dependencies [[`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575)]:
+    -   @learncard/lca-api-plugin@2.0.0
+    -   @learncard/core@9.4.30
+    -   @learncard/init@2.4.11
+    -   @learncard/render-method-plugin@4.0.2
+    -   @learncard/learn-cloud-plugin@2.3.36
+    -   @learncard/didkit-plugin@1.9.10
+    -   @learncard/ler-rs-plugin@0.1.21
+    -   @learncard/linked-claims-plugin@0.2.30
+    -   @learncard/open-badge-v2-plugin@1.1.31
+    -   @learncard/holder-continuity@0.2.13
+
 ## 3.4.12
 
 ### Patch Changes

@@ -61,7 +61,7 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
             type="button"
             onClick={onManage}
             aria-label={m['dashboard.dataTrust.manage']()}
-            className="group w-full text-left bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 hover:border-grayscale-300 transition-colors animate-fade-in-up"
+            className="group w-full text-left bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 hover:border-grayscale-300 transition-colors animate-fade-in-up focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
         >
             <div className="flex items-start gap-4">
                 <span
@@ -76,40 +76,40 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
                 </span>
 
                 <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                    <p className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                         {m['dashboard.dataTrust.label']()}
                     </p>
                     <h2 className="mt-0.5 text-lg font-semibold text-grayscale-900">
                         {m['dashboard.dataTrust.title']()}
                     </h2>
-                    <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">
-                        <span className="font-medium text-grayscale-900">{statusText}</span>{' '}
-                        {detailText}
-                    </p>
-
-                    {!isEmpty && (
-                        <div className="mt-3 flex items-center gap-2 flex-wrap">
-                            <div className="flex -space-x-2">
-                                {shownProof.map(item => (
-                                    <ProofAvatar key={item.uri} item={item} />
-                                ))}
-                                {overflow > 0 && (
-                                    <span className="w-8 h-8 rounded-full ring-2 ring-white bg-grayscale-100 text-grayscale-600 text-xs font-medium flex items-center justify-center">
-                                        +{overflow}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-grayscale-600 group-hover:text-grayscale-900 transition-colors">
-                        {m['dashboard.dataTrust.manage']()}
-                        <ChevronRight className="w-3.5 h-3.5" />
-                    </span>
                 </div>
-
-                <ChevronRight className="hidden desktop:block shrink-0 w-5 h-5 mt-1 text-grayscale-400 group-hover:text-grayscale-600 transition-colors" />
+                <ChevronRight className="hidden desktop:block shrink-0 w-5 h-5 mt-1 text-grayscale-400 group-hover:text-grayscale-600 transition-colors rtl:rotate-180" />
             </div>
+            <div className="flex flex-wrap">
+                <p className="min-w-0 flex-1 mt-1 text-sm text-grayscale-600 leading-relaxed">
+                    <span className="font-medium text-grayscale-900">{statusText}</span>{' '}
+                    {detailText}
+                </p>
+
+                {!isEmpty && (
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                        <div className="flex -space-x-2">
+                            {shownProof.map(item => (
+                                <ProofAvatar key={item.uri} item={item} />
+                            ))}
+                            {overflow > 0 && (
+                                <span className="w-8 h-8 rounded-full ring-2 ring-white bg-grayscale-100 text-grayscale-600 text-xs font-medium flex items-center justify-center">
+                                    +{overflow}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+            <span className="mt-3 flex w-fit ms-auto items-center gap-1 text-xs font-medium text-grayscale-600 group-hover:text-grayscale-900 transition-colors">
+                {m['dashboard.dataTrust.manage']()}
+                <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
+            </span>
         </button>
     );
 };

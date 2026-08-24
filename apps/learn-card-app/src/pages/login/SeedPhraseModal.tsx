@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
-import { IonInput } from '@ionic/react';
 import {
     useModal,
     useSQLiteStorage,
@@ -103,17 +102,25 @@ const SeedPhraseModal: React.FC = () => {
                     components={[
                         <button
                             key="0"
+                            type="button"
+                            aria-label={m['login.seedPhrase.title']()}
                             onClick={closeModal}
                             className={`text-${primaryColor} font-semibold underline`}
                         />,
                     ]}
                 />
             </p>
-            <IonInput
+            <label htmlFor="seed-phrase" className="sr-only">
+                {m['login.seedPhrase.placeholder']()}
+            </label>
+            <input
+                id="seed-phrase"
                 placeholder={m['login.seedPhrase.placeholder']()}
                 value={seed}
-                className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal text-[14px]"
-                onIonInput={e => setSeed(e?.detail?.value)}
+                aria-invalid={Boolean(errorMessage)}
+                aria-describedby={errorMessage ? 'seed-phrase-error' : undefined}
+                className="w-full bg-grayscale-100 text-grayscale-900 rounded-[15px] px-4 py-3 font-normal text-[14px] placeholder:text-grayscale-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent"
+                onChange={e => setSeed(e.target.value)}
                 type="password"
             />
             <section className="rounded-[10px] bg-orange-100 p-[10px] mt-[30px]">
@@ -129,15 +136,25 @@ const SeedPhraseModal: React.FC = () => {
                     <li>{m['login.seedPhrase.important.rule3']()}</li>
                 </ul>
             </section>
-            {errorMessage && <p className="text-red-500 text-sm mt-2 mb-[-10px]">{errorMessage}</p>}
+            {errorMessage && (
+                <p
+                    id="seed-phrase-error"
+                    role="alert"
+                    className="text-red-700 text-sm mt-2 mb-[-10px]"
+                >
+                    {errorMessage}
+                </p>
+            )}
             <div className="flex justify-center items-end relative mb-2">
                 <button
+                    type="button"
                     onClick={closeModal}
                     className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full max-w-[170px] h-full mt-[20px] mr-[10px] border-grayscale-200 border-solid border-[1px] shadow-[0px_3px_4px_0px_rgba(0,0,0,0.25)]"
                 >
                     {m['login.seedPhrase.back']()}
                 </button>
                 <button
+                    type="button"
                     disabled={seed === ''}
                     className={`bg-${primaryColor} text-white text-lg font-notoSans py-2 rounded-[20px] font-semibold w-full max-w-[350px] h-full shadow-[0px_3px_4px_0px_rgba(0,0,0,0.25)] disabled:opacity-50`}
                     onClick={handleLogin}

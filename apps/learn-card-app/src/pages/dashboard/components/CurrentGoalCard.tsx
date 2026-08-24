@@ -59,7 +59,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
     variant = 'default',
 }) => {
     const isHero = variant === 'hero';
-    const buttonClass = `mt-4 w-full py-3 px-4 rounded-[20px] font-medium text-sm hover:opacity-90 transition-opacity ${primaryButtonClass}`;
+    const buttonClass = `mt-4 w-full py-3 px-4 rounded-[20px] font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${primaryButtonClass}`;
     if (!goalSummary) {
         if (isHero) {
             return (
@@ -81,7 +81,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                         <button
                             type="button"
                             onClick={onContinue}
-                            className={`mt-5 inline-flex w-full desktop:w-auto justify-center py-3 px-6 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] ${primaryButtonClass}`}
+                            className={`mt-5 inline-flex w-full desktop:w-auto justify-center py-3 px-6 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${primaryButtonClass}`}
                         >
                             {pathwaysEnabled
                                 ? m['dashboard.currentGoal.startJourney']()
@@ -93,7 +93,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
         }
         return (
             <section className="bg-white rounded-[20px] p-5 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
-                <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                <p className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                     {m['dashboard.currentGoal.label']()}
                 </p>
                 <h2 className="mt-1 text-lg font-semibold text-grayscale-900">
@@ -148,7 +148,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                         <button
                             type="button"
                             onClick={onContinue}
-                            className={`mt-5 w-full py-3 px-4 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] ${primaryButtonClass}`}
+                            className={`mt-5 w-full py-3 px-4 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${primaryButtonClass}`}
                         >
                             {pathwaysEnabled
                                 ? nextNode
@@ -176,7 +176,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                             <button
                                 type="button"
                                 onClick={onReview}
-                                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/25 text-indigo-100 text-xs font-medium hover:bg-indigo-500/35 transition-colors"
+                                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/25 text-indigo-100 text-xs font-medium hover:bg-indigo-500/35 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-300" />
                                 {m['dashboard.currentGoal.dueToday']({ count: reviewsDueToday })}
@@ -240,7 +240,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                     <button
                         type="button"
                         onClick={onContinue}
-                        className={`mt-5 w-full py-3 px-4 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] ${primaryButtonClass}`}
+                        className={`mt-5 w-full py-3 px-4 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${primaryButtonClass}`}
                     >
                         {pathwaysEnabled
                             ? nextNode
@@ -257,7 +257,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
         const [primaryGoal, ...secondaryGoals] = goals;
         return (
             <section className="bg-white rounded-[20px] p-5 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
-                <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                <p className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                     {goals.length === 1 ? 'Current goal' : 'Current goals'}
                 </p>
                 <h2 className="mt-1 text-xl font-semibold text-grayscale-900 leading-tight">
@@ -291,7 +291,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
 
     return (
         <section className="bg-white rounded-[20px] p-5 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
-            <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+            <p className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                 Current goal
             </p>
             <div className="mt-1 flex items-start justify-between gap-3">
@@ -302,7 +302,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                     <button
                         type="button"
                         onClick={onReview}
-                        className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium hover:bg-emerald-100 transition-colors"
+                        className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium hover:bg-emerald-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                         {m['dashboard.currentGoal.dueToday']({ count: reviewsDueToday })}
@@ -324,7 +324,7 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                 <div className="mt-4 bg-grayscale-100 rounded-2xl p-4 flex items-start gap-3">
                     <span className="mt-1.5 w-2.5 h-2.5 rounded-full bg-grayscale-900 shrink-0" />
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                        <p className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
                             {m['dashboard.currentGoal.nextStep']()}
                         </p>
                         <p className="mt-1 text-sm text-grayscale-900 font-medium leading-relaxed">

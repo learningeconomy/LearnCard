@@ -6,6 +6,7 @@ import X from 'learn-card-base/svgs/X';
 
 import { TroopsCMSState, TroopsCMSViewModeEnum } from '../troopCMSState';
 import { useModal, ModalTypes } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 export const TroopsCMSColorPicker: React.FC<{
     title: string;
@@ -131,7 +132,7 @@ export const TroopsCMSColorPicker: React.FC<{
                         }
                         onChange={e => handleColorInputOnChange(e.target.value)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] p-4 font-medium tracking-widest text-base w-full"
-                        placeholder="Color Hex Code"
+                        placeholder={m['troops.colorHexPlaceholder']()}
                         type="text"
                         disabled={isDisabled}
                     />

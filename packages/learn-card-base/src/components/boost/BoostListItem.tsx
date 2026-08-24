@@ -223,7 +223,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
 
     return (
         <IonRow
-            className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2] ${
+            className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                 onClick ? 'cursor-pointer' : ''
             }`}
             onClick={onClick}
@@ -310,7 +310,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                 <span
                     className={`font-normal flex items-center w-full min-w-0 ${
                         compact
-                            ? 'text-grayscale-600 text-[11px] leading-tight mt-0.5'
+                            ? 'text-grayscale-600 text-xs leading-tight mt-0.5'
                             : 'text-grayscale-800'
                     }`}
                 >
