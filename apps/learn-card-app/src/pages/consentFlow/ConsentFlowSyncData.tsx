@@ -14,6 +14,7 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
 import { useRegistryState } from '../../hooks/useRegistryEntryState';
 import * as m from '../../paraglide/messages.js';
+import { getConsentFlowDidAuthRedirect } from './issueConsentFlowDidAuth';
 
 // Deprecated - ConsentFlow happens on LaunchPad now
 const ConsentFlowSyncData: React.FC = () => {
@@ -25,7 +26,7 @@ const ConsentFlowSyncData: React.FC = () => {
 
     const { newModal } = useModal();
 
-    const { uri, returnTo } = queryString.parse(location.search);
+    const { challenge, domain, uri, returnTo } = queryString.parse(location.search);
 
     const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
 
@@ -145,36 +146,18 @@ const ConsentFlowSyncData: React.FC = () => {
                         if (returnTo && !Array.isArray(returnTo)) {
                             if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
                                 const wallet = await initWallet();
+                                const ownerDid = contractDetails?.owner?.did;
 
-                                // add user's did to returnTo url
-                                const urlObj = new URL(returnTo);
-                                urlObj.searchParams.set('did', wallet.id.did());
-                                if (contractDetails?.owner?.did) {
-                                    const unsignedDelegateCredential = wallet.invoke.newCredential({
-                                        type: 'delegate',
-                                        subject: contractDetails.owner.did,
-                                        access: ['read', 'write'],
-                                    });
+                                if (!ownerDid) throw new Error('Invalid consent request');
 
-                                    const delegateCredential = await wallet.invoke.issueCredential(
-                                        unsignedDelegateCredential
-                                    );
-
-                                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                                        delegateCredential
-                                    );
-                                    const vp = (await wallet.invoke.issuePresentation(
-                                        unsignedDidAuthVp,
-                                        {
-                                            proofPurpose: 'authentication',
-                                            proofFormat: 'jwt',
-                                        }
-                                    )) as any as string;
-
-                                    urlObj.searchParams.set('vp', vp);
-                                }
-
-                                window.location.href = urlObj.toString();
+                                window.location.href = await getConsentFlowDidAuthRedirect({
+                                    challenge,
+                                    contractUri,
+                                    domain,
+                                    ownerDid,
+                                    returnTo,
+                                    wallet,
+                                });
                             } else history.push(returnTo);
                         } else history.push('/home');
                     }}

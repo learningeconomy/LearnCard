@@ -3,6 +3,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+    authMode: 'session' as 'legacy' | 'session' | undefined,
+    ensureMode: 'session' as 'legacy' | 'session',
     fetch: vi.fn(),
     showErrorModal: vi.fn(),
 }));
@@ -16,6 +18,36 @@ vi.mock('./ErrorModalStore', () => ({ showErrorModal: mocks.showErrorModal }));
 vi.mock('../NetworkStore', () => ({
     networkStore: { get: { aiServiceUrl: () => 'http://localhost:3001' } },
 }));
+vi.mock('../walletStore', () => ({
+    walletStore: {
+        get: { wallet: () => ({ id: { did: () => 'did:example:learner' } }) },
+    },
+}));
+vi.mock('../../helpers/aiPassportAuth', () => {
+    const getUrl = (path: string, did?: string) => {
+        const url = new URL(path, 'http://localhost:3001');
+
+        if (mocks.authMode === 'legacy' && did) url.searchParams.set('did', did);
+
+        return url;
+    };
+
+    return {
+        aiPassportFetch: (path: string, init: RequestInit = {}, did?: string) =>
+            mocks.fetch(getUrl(path, did), { ...init, credentials: 'include' }),
+        ensureAiPassportSession: async () => {
+            mocks.authMode = mocks.ensureMode;
+            return mocks.authMode;
+        },
+        getAiPassportAuthMode: () => mocks.authMode,
+        getAiPassportWebSocketProtocols: () =>
+            mocks.authMode === 'session'
+                ? ['ai-passport', 'ai-passport-session.test-token']
+                : undefined,
+        getAiPassportUrl: getUrl,
+        waitForAiPassportAuthMode: async () => mocks.authMode,
+    };
+});
 vi.mock('../../logging/logger', () => ({
     getLogger: () => ({
         debug: vi.fn(),
@@ -41,7 +73,7 @@ class FakeWebSocket {
     onclose: SocketHandler = null;
     onerror: SocketHandler = null;
 
-    constructor(readonly url: string) {
+    constructor(readonly url: string, readonly protocols?: string | string[]) {
         FakeWebSocket.instances.push(this);
     }
 
@@ -99,6 +131,7 @@ const {
     continuePlan,
     credentialContextReadiness,
     currentThreadId,
+    getActiveSessionStatus,
     disconnectWebSocket,
     isLoading,
     lastAiError,
@@ -134,6 +167,8 @@ describe('chat session startup', () => {
         FakeWebSocket.instances = [];
         mocks.showErrorModal.mockClear();
         mocks.fetch.mockClear();
+        mocks.authMode = 'session';
+        mocks.ensureMode = 'session';
         // getActiveLocale reads this key; clear it so cases that don't set a
         // language get the 'en' default rather than a previous test's value.
         localStorage.removeItem('i18n.language');
@@ -152,12 +187,13 @@ describe('chat session startup', () => {
         await start;
 
         expect(mocks.fetch).not.toHaveBeenCalled();
+        expect(new URL(socket.url).searchParams.has('did')).toBe(false);
+        expect(socket.protocols).toEqual(['ai-passport', 'ai-passport-session.test-token']);
         expect(socket.sent.map(payload => JSON.parse(payload))).toEqual([
             {
                 action: 'start_topic',
                 topic: 'Algebra',
                 introStreamMode: 'structured',
-                did: 'did:example:learner',
                 mode: 'ai-tutor',
                 // LC-1901: every outbound frame carries the UI locale so the AI
                 // replies in the user's language. Defaults to 'en'.
@@ -166,6 +202,62 @@ describe('chat session startup', () => {
         ]);
     });
 
+    it('uses the legacy DID query only for a legacy backend', async () => {
+        mocks.authMode = 'legacy';
+        mocks.ensureMode = 'legacy';
+
+        const start = startTopic('Legacy Algebra');
+        await Promise.resolve();
+        await Promise.resolve();
+        const socket = await openLatestSocket();
+
+        await start;
+
+        expect(new URL(socket.url).searchParams.get('did')).toBe('did:example:learner');
+        expect(socket.protocols).toBeUndefined();
+        expect(JSON.parse(socket.sent[0]!)).not.toHaveProperty('did');
+    });
+
+    it('actively negotiates before the cold active-session preflight', async () => {
+        mocks.authMode = undefined;
+        mocks.ensureMode = 'legacy';
+        mocks.fetch.mockResolvedValueOnce(Response.json({ isActive: false, activeThreadId: null }));
+
+        await expect(getActiveSessionStatus()).resolves.toEqual({
+            isActive: false,
+            activeThreadId: null,
+        });
+
+        const requestUrl = new URL(mocks.fetch.mock.calls[0]![0] as URL);
+
+        expect(requestUrl.pathname).toBe('/api/chat/active-session-status');
+        expect(requestUrl.searchParams.get('did')).toBe('did:example:learner');
+    });
+
+    it('renegotiates before reconnecting a legacy socket after backend rollout', async () => {
+        mocks.authMode = 'legacy';
+        mocks.ensureMode = 'legacy';
+
+        const start = startTopic('Long-running legacy session');
+        await Promise.resolve();
+        await Promise.resolve();
+        const legacySocket = await openLatestSocket();
+
+        await start;
+        expect(new URL(legacySocket.url).searchParams.get('did')).toBe('did:example:learner');
+
+        mocks.ensureMode = 'session';
+        legacySocket.close();
+        await Promise.resolve();
+        await vi.advanceTimersByTimeAsync(1000);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        const sessionSocket = FakeWebSocket.instances.at(-1);
+
+        expect(sessionSocket).not.toBe(legacySocket);
+        expect(new URL(sessionSocket!.url).searchParams.has('did')).toBe(false);
+    });
     // LC-1901: the locale rides on both the socket URL (read at connect time)
     // and every payload (read per message), so assert both actually track the
     // stored language rather than the 'en' default.

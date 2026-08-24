@@ -9,6 +9,7 @@ import GamePromptHeader from './GamePromptHeader';
 
 import { ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
+import { getConsentFlowDidAuthRedirect } from '../issueConsentFlowDidAuth';
 
 type GameAccessSuccessPromptProps = {
     user: LCNProfile;
@@ -32,7 +33,7 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
     const gameTitle = name ?? '...';
     const gameImage = image ?? '';
 
-    const { returnTo: urlReturnTo } = queryString.parse(location.search);
+    const { challenge, domain, returnTo: urlReturnTo } = queryString.parse(location.search);
 
     const returnTo = urlReturnTo || contractDetails?.redirectUrl; // prefer url param
 
@@ -40,34 +41,22 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
         closeModal();
         if (returnTo && !Array.isArray(returnTo)) {
             if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                // add user's did to returnTo url
-                const urlObj = new URL(returnTo);
-                urlObj.searchParams.set('did', user.did);
-                if (contractDetails?.owner?.did) {
-                    const wallet = await initWallet();
+                const ownerDid = contractDetails?.owner?.did;
 
-                    const unsignedDelegateCredential = wallet.invoke.newCredential({
-                        type: 'delegate',
-                        subject: contractDetails.owner.did,
-                        access: ['read', 'write'],
-                    });
-
-                    const delegateCredential = await wallet.invoke.issueCredential(
-                        unsignedDelegateCredential
-                    );
-
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
-                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
-                        proofPurpose: 'authentication',
-                        proofFormat: 'jwt',
-                    })) as any as string;
-
-                    urlObj.searchParams.set('vp', vp);
+                if (!ownerDid || !contractDetails?.uri) {
+                    throw new Error('Invalid consent request');
                 }
 
-                window.location.href = urlObj.toString();
+                const wallet = await initWallet();
+
+                window.location.href = await getConsentFlowDidAuthRedirect({
+                    challenge,
+                    contractUri: contractDetails.uri,
+                    domain,
+                    ownerDid,
+                    returnTo,
+                    wallet,
+                });
             } else history.push(returnTo);
         }
     };

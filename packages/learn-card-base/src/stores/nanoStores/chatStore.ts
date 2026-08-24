@@ -8,6 +8,7 @@ import { showToast } from './toastStore';
 import { showErrorModal } from './ErrorModalStore';
 
 import { networkStore } from '../NetworkStore';
+import { walletStore } from '../walletStore';
 import { addActiveLocaleToPayload, addActiveLocaleToUrl } from '../../i18n';
 import type {
     ChatMessage,
@@ -17,6 +18,14 @@ import type {
     ActiveSessionStatus,
 } from '../../types/ai-chat';
 import { parseAiErrorPayload, type AiClientError } from '../../helpers/aiErrors';
+import {
+    aiPassportFetch,
+    ensureAiPassportSession,
+    getAiPassportAuthMode,
+    getAiPassportWebSocketProtocols,
+    getAiPassportUrl,
+    waitForAiPassportAuthMode,
+} from '../../helpers/aiPassportAuth';
 
 export const messages = atom<ChatMessage[]>([]);
 export const streamingMessage = atom<ChatMessage | null>(null);
@@ -106,6 +115,22 @@ export const planSections = atom({
 });
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
+
+const ensureChatAiPassportAuth = async (did: string, refreshLegacy = false) => {
+    const mode = getAiPassportAuthMode(did);
+
+    if (mode && (!refreshLegacy || mode === 'session')) return mode;
+
+    const wallet = walletStore.get.wallet();
+
+    if (wallet) return ensureAiPassportSession(wallet);
+
+    const pendingMode = await waitForAiPassportAuthMode(did);
+
+    if (pendingMode) return pendingMode;
+
+    throw new Error('AI Passport authentication requires an initialized wallet');
+};
 
 /** @deprecated Use getBackendUrl() for dynamic tenant-aware URL */
 export const BACKEND_URL = 'https://api.learncloud.ai';
@@ -303,9 +328,10 @@ const stopPendingAiResponse = () => {
 export async function loadThreads() {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/threads?did=${did}`);
+        const response = await aiPassportFetch('/threads', {}, did);
         if (!response.ok) throw new Error('Failed to load threads');
 
         const threadList = await response.json();
@@ -320,10 +346,9 @@ export async function getActiveSessionStatus(): Promise<ActiveSessionStatus> {
     const { did } = auth.get();
 
     if (!did) return { isActive: false, activeThreadId: null };
+    await ensureChatAiPassportAuth(did);
 
-    const response = await fetch(
-        `${getBackendUrl()}/api/chat/active-session-status?did=${encodeURIComponent(did)}`
-    );
+    const response = await aiPassportFetch('/api/chat/active-session-status', {}, did);
 
     if (!response.ok) throw new Error('Failed to check active AI session');
 
@@ -334,9 +359,14 @@ export async function getActiveSessionStatus(): Promise<ActiveSessionStatus> {
 export async function loadThread(threadId: string) {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/messages?did=${did}&threadId=${threadId}`);
+        const response = await aiPassportFetch(
+            `/messages?threadId=${encodeURIComponent(threadId)}`,
+            {},
+            did
+        );
         if (!response.ok) throw new Error('Failed to load messages');
 
         const threadMessages: ChatMessage[] = await response.json();
@@ -367,8 +397,10 @@ export async function loadThread(threadId: string) {
         log.debug(`Thread ${threadId} session ended: ${hasSessionEnded}`);
 
         // Load thread credentials
-        const credsResponse = await fetch(
-            `${getBackendUrl()}/thread_credentials?did=${did}&threadId=${threadId}`
+        const credsResponse = await aiPassportFetch(
+            `/thread_credentials?threadId=${encodeURIComponent(threadId)}`,
+            {},
+            did
         );
         if (!credsResponse.ok) {
             log.error('Failed to load thread credentials');
@@ -400,11 +432,16 @@ export async function resumeThread(threadId: string): Promise<boolean> {
 export async function createThread() {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/threads?did=${did}`, {
-            method: 'POST',
-        });
+        const response = await aiPassportFetch(
+            '/threads',
+            {
+                method: 'POST',
+            },
+            did
+        );
 
         if (!response.ok) throw new Error('Failed to create thread');
 
@@ -425,11 +462,14 @@ export async function createThread() {
 export async function deleteThread(threadId: string) {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/threads?did=${did}&threadId=${threadId}`, {
-            method: 'DELETE',
-        });
+        const response = await aiPassportFetch(
+            `/threads?threadId=${encodeURIComponent(threadId)}`,
+            { method: 'DELETE' },
+            did
+        );
 
         if (!response.ok) throw new Error('Failed to delete thread');
 
@@ -452,12 +492,13 @@ export async function fetchLearningPathways(threadId: string): Promise<LearningP
         log.error('Authentication required to fetch learning pathways');
         return [];
     }
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(
-            `${getBackendUrl()}/learning-pathways?did=${encodeURIComponent(
-                did
-            )}&threadId=${encodeURIComponent(threadId)}`
+        const response = await aiPassportFetch(
+            `/learning-pathways?threadId=${encodeURIComponent(threadId)}`,
+            {},
+            did
         );
 
         if (response.ok) {
@@ -473,6 +514,32 @@ export async function fetchLearningPathways(threadId: string): Promise<LearningP
     }
 }
 
+const reconnectWebSocket = async (): Promise<void> => {
+    const { did } = auth.get();
+
+    if (!did) {
+        isTyping.set(false);
+        isLoading.set(false);
+        return;
+    }
+
+    try {
+        await ensureChatAiPassportAuth(did, true);
+        connectWebSocket();
+    } catch (error) {
+        log.error('WebSocket authentication refresh failed:', error);
+
+        if (shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            reconnectAttempts += 1;
+            setTimeout(() => void reconnectWebSocket(), 1000);
+            return;
+        }
+
+        isTyping.set(false);
+        isLoading.set(false);
+    }
+};
+
 export function connectWebSocket() {
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING))
         return ws;
@@ -482,10 +549,16 @@ export function connectWebSocket() {
 
     shouldReconnect = true;
 
-    const wsUrl = getBackendUrl().replace(/^http/, 'ws');
-    const threadIdQuery = currentThreadId.get() ? `&threadId=${currentThreadId.get()}` : '';
+    const wsUrl = getAiPassportUrl('/', did);
 
-    ws = new WebSocket(addActiveLocaleToUrl(`${wsUrl}?did=${did}${threadIdQuery}`));
+    wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+    if (currentThreadId.get()) wsUrl.searchParams.set('threadId', currentThreadId.get() ?? '');
+
+    const protocols = getAiPassportWebSocketProtocols(did);
+
+    ws = protocols
+        ? new WebSocket(addActiveLocaleToUrl(wsUrl.toString()), protocols)
+        : new WebSocket(addActiveLocaleToUrl(wsUrl.toString()));
     const socket = ws;
 
     ws.onmessage = event => {
@@ -1000,8 +1073,8 @@ export function connectWebSocket() {
         }
 
         if (shouldTryReconnect) {
-            reconnectAttempts++;
-            setTimeout(connectWebSocket, 1000);
+            reconnectAttempts += 1;
+            setTimeout(() => void reconnectWebSocket(), 1000);
         }
     };
 
@@ -1163,6 +1236,7 @@ export async function startTopicWithUri(topicUri: string) {
         showErrorModal('Authentication Required', 'Please sign in to start a topic with a URI.');
         return;
     }
+    await ensureChatAiPassportAuth(did, true);
 
     // Reset WebSocket and clear current thread to avoid restoring old session
     disconnectWebSocket();
@@ -1190,7 +1264,6 @@ export async function startTopicWithUri(topicUri: string) {
         action: 'start_topic_uri',
         topicUri,
         introStreamMode: 'structured',
-        did,
     };
 
     beginSessionStartWatchdog();
@@ -1235,7 +1308,7 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         showErrorModal('Authentication Required', 'Please sign in to start a learning pathway.');
         return;
     }
-
+    await ensureChatAiPassportAuth(did, true);
     // Reset WebSocket and clear current thread to avoid restoring old session
 
     disconnectWebSocket();
@@ -1264,7 +1337,6 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         topicUri,
         pathwayUri,
         introStreamMode: 'structured',
-        did,
     };
 
     beginSessionStartWatchdog();
@@ -1286,7 +1358,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
         return;
     }
 
-    // Reset WebSocket to avoid overlapping streams when starting a new topic
+    await ensureChatAiPassportAuth(did, true);
     disconnectWebSocket();
 
     // Ensure WebSocket is connected before sending message
@@ -1316,7 +1388,6 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
         action: 'start_topic',
         topic,
         introStreamMode: 'structured',
-        did, // Include DID for backend processing
         mode,
     };
 
@@ -1345,7 +1416,7 @@ export async function startInsightsSession(topic: string, initialText?: string) 
     }
 
     disconnectWebSocket();
-    currentThreadId.set(null);
+    await ensureChatAiPassportAuth(did, true);
 
     // Ensure WS connected
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -1400,6 +1471,7 @@ export async function finishSession(onSuccess?: () => void) {
     const { did } = auth.get();
     const threadId = currentThreadId.get();
     if (!did || !threadId) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
         isEndingSession.set(true);
@@ -1411,12 +1483,13 @@ export async function finishSession(onSuccess?: () => void) {
         ]);
         sessionEnded.set(true);
 
-        const res = await fetch(
-            addActiveLocaleToUrl(`${getBackendUrl()}/threads/finish?did=${did}`),
+        const res = await aiPassportFetch(
+            addActiveLocaleToUrl(`${getBackendUrl()}/threads/finish`),
             {
                 method: 'POST',
-                body: JSON.stringify({ threadId, did }),
-            }
+                body: JSON.stringify({ threadId }),
+            },
+            did
         );
 
         // In most cases the summary will come through the existing WebSocket
