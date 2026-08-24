@@ -1,8 +1,6 @@
 {
     "compilerOptions": {
-        "lib": [
-            "es2022"
-        ],
+        "lib": ["es2022"],
         "module": "esnext",
         "moduleResolution": "bundler",
         "resolveJsonModule": true,
@@ -32,11 +30,6 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true
     },
-    "exclude": [
-        "./dist/**/*",
-        "./node_modules/**/*"
-    ],
-    "include": [
-        "src"
-    ]
+    "exclude": ["./dist/**/*", "./node_modules/**/*"],
+    "include": ["src"]
 }

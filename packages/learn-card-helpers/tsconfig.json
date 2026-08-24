@@ -8,13 +8,8 @@
         "outDir": "dist",
         "strict": true,
         "esModuleInterop": true,
-        "lib": [
-            "es5"
-        ],
-        "types": [
-            "node",
-            "react"
-        ],
+        "lib": ["es5"],
+        "types": ["node", "react"],
         "noLib": false,
         "rootDir": "src",
         "skipLibCheck": true,
@@ -23,12 +18,6 @@
         "baseUrl": ".",
         "paths": {}
     },
-    "include": [
-        "src"
-    ],
-    "exclude": [
-        "node_modules",
-        "test",
-        "example"
-    ]
+    "include": ["src"],
+    "exclude": ["node_modules", "test", "example"]
 }

@@ -8,10 +8,7 @@
         "outDir": "dist",
         "strict": true,
         "esModuleInterop": true,
-        "lib": [
-            "ES2020",
-            "DOM"
-        ],
+        "lib": ["ES2020", "DOM"],
         "noLib": false,
         "rootDir": "src",
         "skipLibCheck": true,
@@ -20,12 +17,6 @@
         "baseUrl": ".",
         "paths": {}
     },
-    "include": [
-        "src"
-    ],
-    "exclude": [
-        "node_modules",
-        "test",
-        "dist"
-    ]
+    "include": ["src"],
+    "exclude": ["node_modules", "test", "dist"]
 }
