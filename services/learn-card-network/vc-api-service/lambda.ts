@@ -2,23 +2,12 @@ import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2, Context } from 'a
 import serverlessHttp from 'serverless-http';
 
 import app from './src/app';
-import { getLearnCard } from './src/learn-card';
 
 const _handler = serverlessHttp(app);
 
 export const handler = async (
-    event: APIGatewayProxyEventV2 & { source?: string },
+    event: APIGatewayProxyEventV2,
     context: Context
 ): Promise<APIGatewayProxyResultV2> => {
-    if (event.source === 'serverless-plugin-warmup') {
-        try {
-            await getLearnCard();
-        } catch (error) {
-            console.error('[warmup] LearnCard init failed: ', error);
-        }
-
-        return 'Warmed up!';
-    }
-
     return (await _handler(event, context)) as APIGatewayProxyResultV2;
 };

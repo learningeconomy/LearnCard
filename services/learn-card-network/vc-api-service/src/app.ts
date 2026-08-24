@@ -115,6 +115,10 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
             validatedBody.options
         );
 
+        verificationResult.checks = verificationResult.checks.filter(
+            check => check !== 'expiration'
+        );
+
         if (verificationResult.errors.length > 0) {
             console.error(
                 '[/credentials/verify] Verification error(s): ',
@@ -122,10 +126,6 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
             );
             return res.status(400).json(verificationResult);
         }
-
-        verificationResult.checks = verificationResult.checks.filter(
-            check => check !== 'expiration'
-        );
 
         return res.status(200).json(verificationResult);
     } catch (error) {
@@ -185,6 +185,10 @@ app.post('/presentations/verify', async (req: TypedRequest<VerifyPresentationEnd
         const verificationResult = await learnCard.invoke.verifyPresentation(
             validatedBody.verifiablePresentation,
             validatedBody.options
+        );
+
+        verificationResult.checks = verificationResult.checks.filter(
+            check => check !== 'expiration'
         );
 
         if (verificationResult.errors.length > 0) {
