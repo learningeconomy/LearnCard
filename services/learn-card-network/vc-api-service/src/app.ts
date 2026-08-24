@@ -153,9 +153,14 @@ app.post('/presentations/issue', async (req: TypedRequest<IssueEndpoint>, res) =
         const validatedBody = validationResult.data;
         const learnCard = await getLearnCard();
 
+        const presentationOptions = validatedBody.options ?? {};
+        const presentationSigningOptions = presentationOptions.type
+            ? presentationOptions
+            : { type: 'Ed25519Signature2020', ...presentationOptions };
+
         const issuedPresentation = await learnCard.invoke.issuePresentation(
             validatedBody.presentation,
-            validatedBody.options
+            presentationSigningOptions as Parameters<typeof learnCard.invoke.issuePresentation>[1]
         );
 
         return res.status(201).json(issuedPresentation);

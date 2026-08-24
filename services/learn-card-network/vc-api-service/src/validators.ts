@@ -29,6 +29,8 @@ export const IssuePresentationEndpointValidator = z.object({
     presentation: UnsignedVPValidator,
     options: z
         .object({
+            type: z.string().optional(),
+            cryptosuite: z.string().optional(),
             created: z.string().optional(),
             challenge: z.string().optional(),
             domain: z.string().optional(),
