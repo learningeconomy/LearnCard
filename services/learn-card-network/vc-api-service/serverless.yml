@@ -70,12 +70,6 @@ provider:
     region: ${opt:region, "us-east-1"}
     environment:
         SEED: ${env:SEED}
-    httpApi:
-        cors:
-            allowedOrigins: '*'
-            allowedHeaders: '*'
-            allowedMethods: '*'
-
 functions:
     api:
         handler: lambda.handler

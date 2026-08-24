@@ -11,7 +11,12 @@ export const handler = async (
     context: Context
 ): Promise<APIGatewayProxyResultV2> => {
     if (event.source === 'serverless-plugin-warmup') {
-        await getLearnCard();
+        try {
+            await getLearnCard();
+        } catch (error) {
+            console.error('[warmup] LearnCard init failed: ', error);
+        }
+
         return 'Warmed up!';
     }
 
