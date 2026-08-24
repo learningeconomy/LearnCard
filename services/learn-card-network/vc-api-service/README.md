@@ -10,6 +10,7 @@ It wraps the LearnCard SDK to expose the conformance endpoints the test suites c
 | ------ | ----------------------- | -------------------------------------------------------- |
 | `POST` | `/credentials/issue`    | Sign an unsigned VC                                      |
 | `POST` | `/credentials/verify`   | Verify a signed VC                                       |
+| `POST` | `/presentations/issue`  | Sign an unsigned VP                                      |
 | `POST` | `/presentations/verify` | Verify a signed VP                                       |
 | `GET`  | `/did`                  | The issuer DID (non-standard; used by the VC-API plugin) |
 

@@ -58,7 +58,12 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
         const baseContext = Array.isArray(context) ? context[0] : context;
         const isV1 = baseContext === 'https://www.w3.org/2018/credentials/v1';
 
-        if (credential && isV1 && !('issuanceDate' in credential)) {
+        if (
+            credential &&
+            typeof credential === 'object' &&
+            isV1 &&
+            !('issuanceDate' in credential)
+        ) {
             credential.issuanceDate = new Date().toISOString();
         }
 
@@ -76,9 +81,16 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
         const learnCard = await getLearnCard();
         const { credentialStatus: _credentialStatus, ...options } = validatedBody.options ?? {};
 
+        // Default the proof type when the caller doesn't specify one. A bare
+        // `cryptosuite` implies DataIntegrityProof (cryptosuite is a Data
+        // Integrity concept); otherwise fall back to Ed25519Signature2020,
+        // which the VC-API / Ed25519 suites expect.
         const signingOptions = options.type
             ? options
-            : { type: 'Ed25519Signature2020', ...options };
+            : {
+                  type: options.cryptosuite ? 'DataIntegrityProof' : 'Ed25519Signature2020',
+                  ...options,
+              };
 
         const issuedCredential = await learnCard.invoke.issueCredential(
             validatedBody.credential,
@@ -116,6 +128,8 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
             validatedBody.options
         );
 
+        // 'expiration' is a LearnCard-specific check, not one of the VC-API
+        // checks ('proof'); the suites reject responses that report it.
         verificationResult.checks = verificationResult.checks.filter(
             check => check !== 'expiration'
         );
@@ -157,7 +171,12 @@ app.post('/presentations/issue', async (req: TypedRequest<IssuePresentationEndpo
         const presentationOptions = validatedBody.options ?? {};
         const presentationSigningOptions = presentationOptions.type
             ? presentationOptions
-            : { type: 'Ed25519Signature2020', ...presentationOptions };
+            : {
+                  type: presentationOptions.cryptosuite
+                      ? 'DataIntegrityProof'
+                      : 'Ed25519Signature2020',
+                  ...presentationOptions,
+              };
 
         const issuedPresentation = await learnCard.invoke.issuePresentation(
             validatedBody.presentation,
@@ -193,6 +212,8 @@ app.post('/presentations/verify', async (req: TypedRequest<VerifyPresentationEnd
             validatedBody.options
         );
 
+        // 'expiration' is a LearnCard-specific check, not one of the VC-API
+        // checks ('proof'); the suites reject responses that report it.
         verificationResult.checks = verificationResult.checks.filter(
             check => check !== 'expiration'
         );
