@@ -1,5 +1,11 @@
 # learn-card-base
 
+## 0.4.4
+
+### Patch Changes
+
+-   [#1488](https://github.com/learningeconomy/LearnCard/pull/1488) [`19c8c6564d38d8aa92721704a40980cf209f42d3`](https://github.com/learningeconomy/LearnCard/commit/19c8c6564d38d8aa92721704a40980cf209f42d3) Thanks [@goblincore](https://github.com/goblincore)! - Restore live ScoutPass network search in the BoostCMS recipient picker.
+
 ## 0.4.3
 
 ### Patch Changes

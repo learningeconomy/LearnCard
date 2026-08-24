@@ -252,7 +252,7 @@
     },
     "apps/scouts": {
       "name": "scoutpass-app",
-      "version": "1.90.29",
+      "version": "1.90.30",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",
         "@capacitor-firebase/analytics": "8.2.0",
@@ -588,7 +588,7 @@
     },
     "packages/learn-card-base": {
       "name": "learn-card-base",
-      "version": "0.4.3",
+      "version": "0.4.4",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",
         "@capacitor/app": "^8.1.0",

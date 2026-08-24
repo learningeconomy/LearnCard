@@ -115,7 +115,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                     </p>
                 )}
                 {(roleSwitcher || roleFallback) && (
-                    <div className="shrink-0">
+                    <div className="shrink-0 mt-2">
                         {roleSwitcher ??
                             (roleFallback && (
                                 <span className="inline-flex px-2 py-0.5 rounded-full bg-grayscale-100 text-grayscale-700 text-xs font-medium">
