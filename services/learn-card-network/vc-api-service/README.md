@@ -65,7 +65,7 @@ Then deploy:
 ```bash
 eval "$(aws configure export-credentials --format env)"
 
-SEED=<same-seed-as-legacy-bridge> \
+SEED=<production-seed-from-infisical> \
 bunx nx serverless-deploy vc-api-service --stage=dev --region=us-east-1
 ```
 
@@ -82,8 +82,10 @@ Requirements / gotchas:
     syntax, and Bun isn't supported as a packager).
 -   The `serverless-deploy` script sets `COREPACK_ENABLE_PROJECT_SPEC=0` so a corepack
     `pnpm` shim isn't blocked by the repo's `packageManager: bun` field.
--   **Seed reuse is mandatory** — deploy with the same seed the legacy bridge used, or
-    `/did` won't match the DID in the test-suite manifests.
+-   **Seed stability is mandatory** — always deploy with the production seed stored in
+    Infisical (`/LearnCard/vc-api-service`). It is a fresh seed (the legacy bridge's
+    seed was not recovered); the live `/did` and the test-suite manifests both derive
+    from it, so changing it invalidates the manifests.
 -   The one-time `create-cert` requires the `network.learncard.com.` hosted zone to
     exist in the target AWS account (it does — brain-service uses it). Override target
     domain/zone via `SERVERLESS_DOMAIN_NAME` / `SERVERLESS_HOSTED_ZONE_NAMES`.

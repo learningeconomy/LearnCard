@@ -22,8 +22,7 @@ Updates the LearnCard implementation for the VC-API Issuer/Verifier suites.
 -   **Verifier `id`** populated (was previously empty).
 
 No tag changes — still `vc-api`. Verified against the live endpoint:
-VC-API Issuer 13/13 (Data Integrity); VC-API Verifier 17/18 (the one failure is a known
-DIDKit `ssi` limitation with non-DID/URL issuers, tracked internally).
+VC-API Issuer 13/13 (Data Integrity); VC-API Verifier 18/18.
 
 ---
 
@@ -47,6 +46,5 @@ Updates the LearnCard implementation for the w3c-org Data Integrity suites.
     `options: { type: "DataIntegrityProof", cryptosuite: "eddsa-rdfc-2022" }`.
 
 Verified against the live endpoint: Ed25519Signature2020 issuer/verifier as before;
-eddsa-rdfc-2022 issuer-format 14/16 (2 remaining are known DIDKit `ssi`-level items —
-data-loss detection + cryptosuiteString typing — tracked internally). eddsa
-verify/interop will get their first authoritative results from this suite's CI run.
+eddsa-rdfc-2022 issuer 16/16 and verifier 15/15 (including `previousProof` chain
+validation).

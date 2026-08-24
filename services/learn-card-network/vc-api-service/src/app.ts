@@ -24,9 +24,14 @@ app.get('/', async (_req: TypedRequest<{}>, res) => {
 });
 
 app.get('/did', async (_req: TypedRequest<{}>, res) => {
-    const learnCard = await getLearnCard();
+    try {
+        const learnCard = await getLearnCard();
 
-    res.status(200).send(learnCard.id.did());
+        return res.status(200).send(learnCard.id.did());
+    } catch (error) {
+        console.error('[/did] Caught error: ', error);
+        return res.status(500).json(`Server error: ${error}`);
+    }
 });
 
 app.get('/credentials', async (_req: TypedRequest<{}>, res) => {
@@ -70,10 +75,9 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
         const learnCard = await getLearnCard();
         const { credentialStatus: _credentialStatus, ...options } = validatedBody.options ?? {};
 
-        const signingOptions =
-            options.proofFormat === 'jwt' || options.type
-                ? options
-                : { type: 'Ed25519Signature2020', ...options };
+        const signingOptions = options.type
+            ? options
+            : { type: 'Ed25519Signature2020', ...options };
 
         const issuedCredential = await learnCard.invoke.issueCredential(
             validatedBody.credential,

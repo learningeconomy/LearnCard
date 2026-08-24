@@ -12,7 +12,10 @@ export const IssueEndpointValidator = z.object({
         .object({
             type: z.string().optional(),
             cryptosuite: z.string().optional(),
-            proofFormat: z.enum(['jwt', 'ld']).optional(),
+            // 'ldp' is the only proofFormat supported end-to-end: it is DIDKit's
+            // linked-data value. 'jwt' is rejected because the DIDKit plugin
+            // JSON-parses issued credentials, which breaks JWT (string) output.
+            proofFormat: z.enum(['ldp']).optional(),
             created: z.string().optional(),
             challenge: z.string().optional(),
             domain: z.string().optional(),

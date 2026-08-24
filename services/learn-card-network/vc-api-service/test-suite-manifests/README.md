@@ -30,11 +30,11 @@ test-suite repos. They are the source that [canivc.com](https://canivc.com) rend
 4. Wait for the suites to re-run; confirm parity on canivc.com.
 5. Retire `bridge.learncard.com` / deprecate `@learncard/create-http-bridge`.
 
-## Running the suites locally (to confirm remaining failures)
+## Running the suites locally
 
-The last two ambiguous failures (1 VC-API issuer, 1 VC-API verifier) can't be
-attributed from canivc's rendered matrix — its passing cells render invisibly. To
-get authoritative per-assertion results, run the suites against a reachable endpoint:
+All suites currently pass (see the service README's conformance results). To get
+authoritative per-assertion results — e.g. when debugging a regression — run the
+suites against a reachable endpoint:
 
 ```bash
 # 1. Bring up the service (or use the deployed staging URL)
@@ -54,8 +54,8 @@ git clone https://github.com/w3c-ccg/vc-test-suite-implementations
 cd vc-api-issuer-test-suite && npm i && npm test
 ```
 
-Mocha prints the exact failing assertion names + diffs — use those to fix the last
-two, then re-run before opening the manifest PRs.
+Mocha prints the exact failing assertion names + diffs — re-run until green before
+opening or updating the manifest PRs.
 
 ## Registered: EdDSA (`vc-di-eddsa`, `eddsa-rdfc-2022`)
 
@@ -65,16 +65,13 @@ The `eddsa-rdfc-2022` issuer/verifier entries are merged into `w3c.LearnCard.jso
 `options: { type: "DataIntegrityProof", cryptosuite: "eddsa-rdfc-2022" }`, which the
 suite forwards into the issue request (`issuer.settings.options`).
 
-Validation status (run against staging):
+Validation status (run against production, post-#1444):
 
--   **Issuer format: 14/16 pass.** Confirmed our endpoint emits `DataIntegrityProof` +
-    `eddsa-rdfc-2022`.
--   **2 known failures** (DIDKit `ssi`-level, in the ssi epic):
-    `DATA_LOSS_DETECTION_ERROR` (issuer accepts undefined JSON-LD terms) and
-    `cryptosuiteString` subtype typing.
--   **Verify + interop: not yet locally validated** — the suite's own `vc-generator`
-    crashes on Node 22 (`structuredClone` DataCloneError). canivc's own CI run will
-    produce the authoritative verify/interop results once this manifest is submitted.
+-   **Issuer: 16/16 pass.** Confirmed our endpoint emits `DataIntegrityProof` +
+    `eddsa-rdfc-2022`. The previous failures (`DATA_LOSS_DETECTION_ERROR` and
+    `cryptosuiteString` subtype typing) were fixed by the DIDKit/`ssi` interop
+    fix (#1444).
+-   **Verifier: 15/15 pass**, including `previousProof` chain validation.
 
 ## Tag expansion (follow-up)
 
