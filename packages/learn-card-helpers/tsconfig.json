@@ -11,6 +11,10 @@
         "lib": [
             "es5"
         ],
+        "types": [
+            "node",
+            "react"
+        ],
         "noLib": false,
         "rootDir": "src",
         "skipLibCheck": true,
