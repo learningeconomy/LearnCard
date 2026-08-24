@@ -40,7 +40,10 @@ const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugi
         const { getDidKitPlugin: getWasmPlugin } = await import('@learncard/didkit-plugin');
         const wasmBuffer = await readFile(resolveDidkitWasmPath());
         return getWasmPlugin(wasmBuffer, allowRemoteContexts);
-    })();
+    })().catch(error => {
+        didKitPluginPromises.delete(allowRemoteContexts);
+        throw error;
+    });
 
     didKitPluginPromises.set(allowRemoteContexts, promise);
 
