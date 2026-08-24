@@ -32,12 +32,16 @@ export const verifyVoidStatement = async (
 
     if (response.status !== 200) return false;
 
-    const statement = await response.json();
+    const statement = (await response.json()) as Statement;
+    const actorAccountName =
+        'account' in statement.actor ? statement.actor.account?.name ?? '' : '';
+    const authorityMembers =
+        statement.authority?.objectType === 'Group' ? statement.authority.member ?? [] : [];
 
     return (
-        (await areDidsEqual(targetDid, statement?.actor?.account?.name ?? '')) &&
-        (await some(statement?.authority?.member ?? [], async member =>
-            areDidsEqual(did, (member as any)?.account?.name ?? '')
+        (await areDidsEqual(targetDid, actorAccountName)) &&
+        (await some(authorityMembers, async member =>
+            areDidsEqual(did, member.account?.name ?? '')
         ))
     );
 };
