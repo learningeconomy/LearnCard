@@ -279,8 +279,13 @@ const PrivacySettingsModal: React.FC = () => {
     return (
         <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] w-full">
             <div className="flex items-center gap-3 mb-4">
-                <button onClick={() => closeModal()} className="p-1 -ml-1">
-                    <ChevronLeft className="w-6 h-6 text-grayscale-700" />
+                <button
+                    type="button"
+                    aria-label={m['common.back']()}
+                    onClick={() => closeModal()}
+                    className="p-1 -ml-1"
+                >
+                    <ChevronLeft aria-hidden="true" className="w-6 h-6 text-grayscale-700" />
                 </button>
                 <h1 className="text-xl font-semibold text-grayscale-900">
                     {m['settings.privacyTitle']()}
@@ -299,7 +304,7 @@ const PrivacySettingsModal: React.FC = () => {
                         <p className="text-[15px] font-medium text-grayscale-900">
                             {m['settings.privacy.profilePrivacy']()}
                         </p>
-                        <p className="text-sm text-grayscale-500 mt-0.5">
+                        <p className="text-sm text-grayscale-600 mt-0.5">
                             {m['settings.privacy.profilePrivacyDesc']({ brand: brandName })}
                         </p>
                     </div>
@@ -309,7 +314,7 @@ const PrivacySettingsModal: React.FC = () => {
                             <p className="text-[14px] font-medium text-grayscale-900">
                                 {m['settings.privacy.profileVisibility']()}
                             </p>
-                            <p className="text-sm text-grayscale-500">
+                            <p className="text-sm text-grayscale-600">
                                 {m['settings.privacy.profileVisibilityDesc']()}
                             </p>
                             <RadioGroup
@@ -330,7 +335,7 @@ const PrivacySettingsModal: React.FC = () => {
                                 <p className="text-[15px] font-medium text-grayscale-900">
                                     {m['settings.privacy.showEmail']()}
                                 </p>
-                                <p className="text-sm text-grayscale-500 mt-0.5">
+                                <p className="text-sm text-grayscale-600 mt-0.5">
                                     {m['settings.privacy.showEmailDesc']()}
                                 </p>
                             </div>
@@ -348,7 +353,7 @@ const PrivacySettingsModal: React.FC = () => {
                             <p className="text-[14px] font-medium text-grayscale-900">
                                 {m['settings.privacy.connectionRequests']()}
                             </p>
-                            <p className="text-sm text-grayscale-500">
+                            <p className="text-sm text-grayscale-600">
                                 {m['settings.privacy.connectionRequestsDesc']()}
                             </p>
                             <RadioGroup
@@ -371,7 +376,7 @@ const PrivacySettingsModal: React.FC = () => {
                             <p className="text-[15px] font-medium text-grayscale-900">
                                 {m['settings.aiFeatures']()}
                             </p>
-                            <p className="text-sm text-grayscale-500 mt-0.5">
+                            <p className="text-sm text-grayscale-600 mt-0.5">
                                 {m['settings.aiFeaturesDesc']()}
                             </p>
                         </div>
@@ -391,16 +396,18 @@ const PrivacySettingsModal: React.FC = () => {
                     </div>
                     {showAiConnectionStatus && (
                         <div
+                            role="status"
+                            aria-live="polite"
                             className={`px-5 pb-4 transition-opacity duration-300 ${
                                 isAiConnectionVisible ? 'opacity-100' : 'opacity-0'
                             }`}
                         >
                             {aiConnectionStatus === 'connecting' ? (
-                                <p className="text-xs text-grayscale-500 leading-relaxed">
+                                <p className="text-xs text-grayscale-600 leading-relaxed">
                                     {m['dataSharing.connecting']()}
                                 </p>
                             ) : aiConnectionStatus === 'disconnecting' ? (
-                                <p className="text-xs text-grayscale-500 leading-relaxed">
+                                <p className="text-xs text-grayscale-600 leading-relaxed">
                                     {m['dataSharing.disconnecting']()}
                                 </p>
                             ) : (
@@ -416,7 +423,7 @@ const PrivacySettingsModal: React.FC = () => {
                         </div>
                     )}
                     {showAiConsentWarning && (
-                        <div className="px-5 pb-4">
+                        <div className="px-5 pb-4" role="alert">
                             <div className="rounded-[16px] border border-red-100 bg-red-50 px-4 py-3">
                                 <p className="text-sm text-red-700 leading-relaxed">
                                     {m['dataSharing.aiConsentWarning']()}
@@ -444,7 +451,7 @@ const PrivacySettingsModal: React.FC = () => {
                             <p className="text-[15px] font-medium text-grayscale-900">
                                 {m['settings.analytics']()}
                             </p>
-                            <p className="text-sm text-grayscale-500 mt-0.5">
+                            <p className="text-sm text-grayscale-600 mt-0.5">
                                 {m['settings.analyticsDesc']({ brand: brandName })}
                             </p>
                         </div>
@@ -463,7 +470,7 @@ const PrivacySettingsModal: React.FC = () => {
                             <p className="text-[15px] font-medium text-grayscale-900">
                                 {m['settings.bugReports']()}
                             </p>
-                            <p className="text-sm text-grayscale-500 mt-0.5">
+                            <p className="text-sm text-grayscale-600 mt-0.5">
                                 {m['settings.bugReportsDesc']()}
                             </p>
                         </div>

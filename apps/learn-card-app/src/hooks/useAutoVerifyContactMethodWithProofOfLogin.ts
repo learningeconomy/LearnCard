@@ -4,10 +4,14 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
 import { useVerifyContactMethodWithProofOfLogin } from 'learn-card-base/react-query/mutations/firebase';
 import { auth } from '../firebase/firebase';
-import { useIsLoggedIn, useIsCurrentUserLCNUser, currentUserStore, firebaseAuthStore } from 'learn-card-base';
+import {
+    useIsLoggedIn,
+    useIsCurrentUserLCNUser,
+    currentUserStore,
+    firebaseAuthStore,
+} from 'learn-card-base';
 import { captureException } from '@sentry/react';
 import autoVerifyStore from '../stores/autoVerifyStore';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 // Verification cache settings
 const VERIFY_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
@@ -35,7 +39,6 @@ const markVerified = (uid: string | null | undefined, fingerprint: string): void
 };
 
 export const useAutoVerifyContactMethodWithProofOfLogin = () => {
-    const flags = useFlags();
     const { data: isLCNUser, isLoading } = useIsCurrentUserLCNUser();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = currentUserStore.get.currentUser();
@@ -54,7 +57,7 @@ export const useAutoVerifyContactMethodWithProofOfLogin = () => {
         if (inFlightRef.current) return;
 
         (async () => {
-            if (isLoading || !isLCNUser || !isLoggedIn || !flags?.enableAutoVerifyContactMethodWithProofOfLogin) return;
+            if (isLoading || !isLCNUser || !isLoggedIn) return;
             try {
                 inFlightRef.current = true;
 
@@ -105,7 +108,7 @@ export const useAutoVerifyContactMethodWithProofOfLogin = () => {
                 inFlightRef.current = false;
             }
         })();
-    }, [isLoggedIn, isLCNUser, isLoading, firebaseAuthUser, flags, currentUser]);
+    }, [isLoggedIn, isLCNUser, isLoading, firebaseAuthUser, currentUser]);
 };
 
 export default useAutoVerifyContactMethodWithProofOfLogin;

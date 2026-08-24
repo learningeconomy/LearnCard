@@ -6,10 +6,7 @@ import { ModalTypes, useGetCurrentLCNUser, useModal } from 'learn-card-base';
 import NewAiSessionContainer from './NewAiSessionContainer';
 import TopicNewSessionGate from './TopicNewSessionGate';
 import { NewAiSessionStepEnum } from './newAiSession.helpers';
-import {
-    ChatBotQA,
-    ChatBotQuestionsEnum,
-} from './NewAiSessionChatBot/newAiSessionChatbot.helpers';
+import { ChatBotQA, ChatBotQuestionsEnum } from './NewAiSessionChatBot/newAiSessionChatbot.helpers';
 import { AiPassportAppsEnum } from '../ai-passport-apps/aiPassport-apps.helpers';
 import { chatBotStore } from '../../stores/chatBotStore';
 
@@ -32,9 +29,11 @@ const seedRevisitWithTopic = (topicUri: string, topicTitle?: string) => {
         {
             id: 1,
             question: "Select a topic you'd like to continue.",
+            questionKey: 'aiSession.chat.resumeTopicQuestion',
             answer: topicUri,
             type: ChatBotQuestionsEnum.ResumeTopic,
             phraseToEmphasize: 'Select a topic',
+            emphasisKey: 'aiSession.chat.resumeTopicEmphasis',
             hidden: hasTitle,
         },
         {
@@ -42,11 +41,18 @@ const seedRevisitWithTopic = (topicUri: string, topicTitle?: string) => {
             question: hasTitle
                 ? `Choose a Learning Pathway for ${trimmed}!`
                 : 'Choose a Learning Pathway!',
+            questionKey: hasTitle
+                ? 'aiSession.chat.learningPathwayForTopicQuestion'
+                : 'aiSession.chat.learningPathwayQuestion',
             answer: null,
             type: ChatBotQuestionsEnum.LearningPathway,
-            phraseToEmphasize: hasTitle
-                ? `Learning Pathway for ${trimmed}!`
-                : 'Learning Pathway!',
+            phraseToEmphasize: hasTitle ? `Learning Pathway for ${trimmed}!` : 'Learning Pathway!',
+            emphasisKey: hasTitle
+                ? 'aiSession.chat.learningPathwayForTopicEmphasis'
+                : 'aiSession.chat.learningPathwayEmphasis',
+            // Interpolated into both the question and its bolded phrase, so the
+            // emphasis still matches a substring of the translated question.
+            questionParams: hasTitle ? { topic: trimmed } : undefined,
         },
     ];
 

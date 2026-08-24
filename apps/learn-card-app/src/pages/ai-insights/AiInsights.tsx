@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { IonContent, IonPage } from '@ionic/react';
@@ -30,9 +29,8 @@ import {
     useExistingAiInsightCredential,
     useGetCredentialsForSkills,
     aiInsightRefreshStore,
-    useToast,
-    ToastTypeEnum,
 } from 'learn-card-base';
+import { AiServiceError, type AiErrorCode } from 'learn-card-base/helpers/aiErrors';
 import { useLoadingLine } from '../../stores/loadingStore';
 import {
     aggregateCategorizedEntries,
@@ -47,11 +45,7 @@ import { useAllContractRequestsForProfile } from 'learn-card-base';
 import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
 import AiInsightsWidgets from './AiInsightsWidgets';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
-
-type Flags = {
-    hideAiPathways?: boolean;
-    showGenerateAiInsightsButton?: boolean;
-};
+import { getAiErrorCopy } from '../../helpers/aiError.helpers';
 
 type ContractRequestRecord = {
     contract?: { uri?: string };
@@ -62,7 +56,6 @@ const AiInsights: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
-    const { presentToast } = useToast();
     const location = useLocation();
     const globalSkillFrameworks = useGlobalSkillFrameworks();
     const globalSkillFrameworkIds = useMemo(
@@ -72,6 +65,7 @@ const AiInsights: React.FC = () => {
 
     const [selectedTab, setSelectedTab] = useState(AiInsightsTabsEnum.MyInsights);
     const autoGenerateAiInsightsAttemptedRef = useRef(false);
+    const [aiInsightErrorCode, setAiInsightErrorCode] = useState<AiErrorCode | null>(null);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -88,7 +82,6 @@ const AiInsights: React.FC = () => {
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiInsight);
     const { backgroundSecondaryColor } = colors;
-    const flags = useFlags<Flags>();
 
     const {
         data: allResolvedCreds,
@@ -145,16 +138,17 @@ const AiInsights: React.FC = () => {
         if (!canGenerateAiInsights) {
             return;
         }
+        setAiInsightErrorCode(null);
 
         createAiInsightCredential(undefined, {
-            onError: () => {
-                presentToast('Something went wrong. Please try again.', {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
+            onError: error => {
+                const code =
+                    error instanceof AiServiceError ? error.payload.code : 'ai_unknown_error';
+
+                setAiInsightErrorCode(code);
             },
         });
-    }, [canGenerateAiInsights, createAiInsightCredential, presentToast]);
+    }, [canGenerateAiInsights, createAiInsightCredential]);
     const canAutoGenerateAiInsights =
         selectedTab === AiInsightsTabsEnum.MyInsights &&
         isAiEnabled &&
@@ -164,6 +158,7 @@ const AiInsights: React.FC = () => {
         !consentedContractsLoading &&
         !existingAiInsightCredentialLoading &&
         !createAiInsightCredentialLoading &&
+        !aiInsightErrorCode &&
         !aiInsightCredentialToDisplay &&
         hasWalletCredentials &&
         !autoGenerateAiInsightsAttemptedRef.current;
@@ -252,28 +247,23 @@ const AiInsights: React.FC = () => {
             ];
         });
     }, [pendingRequests]);
+    const aiInsightErrorCopy = aiInsightErrorCode ? getAiErrorCopy(aiInsightErrorCode) : undefined;
 
     const myInsights = (
         <>
-            <div className="flex items-center justify-center w-full">
-                {flags?.showGenerateAiInsightsButton && (
-                    <button
-                        className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
-                        type="button"
-                        disabled={createAiInsightCredentialLoading || !canGenerateAiInsights}
-                        onClick={generateAiInsights}
-                    >
-                        {createAiInsightCredentialLoading
-                            ? m['aiInsights.generating']()
-                            : m['aiInsights.generateAiInsights']()}
-                    </button>
-                )}
-            </div>
-
             {contractRequest}
             <ShareInsightsCard />
 
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
+            {aiInsightErrorCopy && (
+                <div
+                    className="w-full rounded-[15px] border border-red-100 bg-red-50 p-4 text-start text-red-700"
+                    role="alert"
+                >
+                    <h2 className="font-semibold">{aiInsightErrorCopy.title}</h2>
+                    <p>{aiInsightErrorCopy.body}</p>
+                </div>
+            )}
             <AiInsightsLearningSnapshots
                 aiInsightCredential={aiInsightCredentialToDisplay}
                 isLoading={learningSnapshotsIsLoading}
@@ -294,9 +284,7 @@ const AiInsights: React.FC = () => {
             <AiInsightsWidgets />
 
             <AiInsightsPromptBoxContainer />
-            {!flags?.hideAiPathways && (
-                <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
-            )}
+            <AiFeatureLinks features={['ai-sessions', 'skills-hub', 'pathways']} />
         </>
     );
 

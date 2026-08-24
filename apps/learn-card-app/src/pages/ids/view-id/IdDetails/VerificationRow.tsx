@@ -48,6 +48,19 @@ const resolveKey = (map: Record<string, string>, raw?: string): string => {
     return key ? (m as unknown as Record<string, () => string>)[key]() : raw;
 };
 
+const statusTextClass = (status: VerificationStatusEnum): string => {
+    switch (status) {
+        case VerificationStatusEnum.Success:
+            return 'text-emerald-701';
+        case VerificationStatusEnum.Error:
+            return 'text-amber-800';
+        case VerificationStatusEnum.Failed:
+            return 'text-red-700';
+        default:
+            return 'text-grayscale-900';
+    }
+};
+
 const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
     const [showInfo, setShowInfo] = useState(false);
     const statusColor = getColorForVerificationStatus(verification.status);
@@ -84,8 +97,9 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
     return (
         <div className="verification-row flex flex-col gap-[5px] font-poppins border-b-[1px] border-grayscale-200 border-solid w-full py-[10px] last:border-0 last:pb-0">
             <span
-                className="font-[700] text-[14px] font-notoSans flex items-center gap-[3px] select-none"
-                style={{ color: statusColor }}
+                className={`font-[700] text-[14px] font-notoSans flex items-center gap-[3px] select-none ${statusTextClass(
+                    verification.status
+                )}`}
             >
                 {getIcon()}
                 {statusText}

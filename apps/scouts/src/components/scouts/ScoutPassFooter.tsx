@@ -1,3 +1,4 @@
+import * as m from '../../paraglide/messages.js';
 import React from 'react';
 import { ModalTypes, useModal } from 'learn-card-base';
 import { IonFooter } from '@ionic/react';
@@ -14,7 +15,7 @@ type ScoutPassFooterProps = {
 
 const ScoutPassFooter: React.FC<ScoutPassFooterProps> = ({
     hideShare = false,
-    buttonText = 'Share',
+    buttonText = m['common.share'](),
     icon,
     buttonAction,
 }) => {
@@ -43,7 +44,7 @@ const ScoutPassFooter: React.FC<ScoutPassFooterProps> = ({
                             onClick={closeModal}
                             className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     ) : (
                         <button

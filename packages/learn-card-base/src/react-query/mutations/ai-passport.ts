@@ -11,6 +11,7 @@ import {
     setAiInsightRefreshPending,
 } from '../../stores/aiInsightRefreshStore';
 import { getLogger } from '../../logging/logger';
+import { addActiveLocaleToUrl } from '../../i18n';
 const log = getLogger('ai-passport');
 
 const aiInsightCredentialQueryKey = ['useAiInsightCredential'];
@@ -112,11 +113,14 @@ export const usePreloadAssessment = () => {
 
     return useMutation({
         mutationFn: async ({ did, summaryCredential }: { did: string; summaryCredential: any }) => {
-            const res = await fetch(`${networkStore.get.aiServiceUrl()}/assessment?did=${did}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ summaryCredential }),
-            });
+            const res = await fetch(
+                addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/assessment?did=${did}`),
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ summaryCredential }),
+                }
+            );
 
             if (!res.ok) throw new Error('Failed to preload assessment');
             const assessment = await res.json();
@@ -143,7 +147,9 @@ export const useFinishAssessmentMutation = () => {
     return useMutation({
         mutationFn: async ({ did, assessmentQA, session, sessionUri }: FinishAssessmentPayload) => {
             const response = await fetch(
-                `${networkStore.get.aiServiceUrl()}/finish-assessment?did=${did}`,
+                addActiveLocaleToUrl(
+                    `${networkStore.get.aiServiceUrl()}/finish-assessment?did=${did}`
+                ),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -173,7 +179,12 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
         }) => {
             try {
                 const response = await fetch(
-                    `${networkStore.get.aiServiceUrl()}/credentials/parse-file?did=${did}`,
+                    // parse-file runs the uploaded document through the AI to draft
+                    // credential prose, so it needs the locale like the other
+                    // generative routes.
+                    addActiveLocaleToUrl(
+                        `${networkStore.get.aiServiceUrl()}/credentials/parse-file?did=${did}`
+                    ),
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

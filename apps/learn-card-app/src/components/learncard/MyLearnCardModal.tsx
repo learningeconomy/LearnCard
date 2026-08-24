@@ -627,13 +627,14 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 ...backgroundStyles,
             }}
         >
+            <h1 className="sr-only">{m['profile.menu.settings']()}</h1>
             {/* items-start (not items-center): when the profile content is taller
                 than the modal, align-items:center pushes the top above the scroll
                 origin where it can't be reached, clipping it. Top-align so it's
                 always scrollable from the top. */}
             <section
                 className="min-h-[calc(100%-85px)] px-[20px] pb-[20px] flex items-start justify-center"
-                style={{ paddingTop: 'calc(env(safe-area-inset-top) + 20px)' }}
+                style={{ paddingTop: '20px' }}
             >
                 <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
                     <div className="bg-white bg-opacity-70 backdrop-blur-[10px]">
@@ -652,10 +653,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         >
                             {!hideShare && (
                                 <button
+                                    type="button"
                                     onClick={handleQrCodeClick}
+                                    aria-label={m['share.shareProfile']()}
                                     className="bg-white rounded-full p-[10px] h-[50px] w-[50px] shadow-box-bottom"
                                 >
-                                    <QRCodeScanner className="text-grayscale-900" />
+                                    <QRCodeScanner
+                                        className="text-grayscale-900"
+                                        aria-hidden="true"
+                                    />
                                 </button>
                             )}
 
@@ -668,6 +674,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         </span>
                         {!isNetworkUser && !isNetworkUserLoading && (
                             <button
+                                type="button"
                                 onClick={() => {
                                     void handlePresentJoinNetworkModal();
                                 }}
@@ -703,6 +710,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
                         {!hideLogout && (
                             <button
+                                type="button"
                                 onClick={() => handleLogout({ overrideRedirectUrl: '/login' })}
                                 className="flex items-center justify-center gap-[5px] py-[10px] text-grayscale-900 font-notoSans text-[20px] disabled:opacity-60"
                                 disabled={isLoggingOut}

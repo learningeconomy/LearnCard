@@ -21,7 +21,7 @@ export const EndorsementRequestForm: React.FC<{
     );
 
     return (
-        <section className="h-full w-full flex items-start justify-center overflow-y-scroll pt-4">
+        <section className="relative h-full w-full flex items-start justify-center overflow-y-scroll pt-4">
             <section className="bg-white max-w-[800px] w-full rounded-[20px]">
                 <EndorsementRequestFormHeader credential={credential} categoryType={categoryType} />
                 <div className="w-full flex flex-col items-center justify-center px-4 pt-4 pb-[150px] bg-grayscale-100 h-full">

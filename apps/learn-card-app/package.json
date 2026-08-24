@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.98.1",
+    "version": "1.98.3",
     "private": true,
     "dependencies": {
         "@capacitor-community/in-app-review": "^8.0.0",
@@ -152,6 +152,7 @@
         "test-storybook:ci": "concurrently -k -s first -n \"SB,TEST\" -c \"magenta,blue\" \"http-server storybook-static --port 6099 --silent\" \"wait-on tcp:127.0.0.1:6099 && test-storybook --url http://127.0.0.1:6099\"",
         "test:e2e:mock": "playwright test --config=playwright.mock.config.ts",
         "test:e2e:mock:record": "PWHAR=update playwright test --config=playwright.mock-record.config.ts",
+        "test:a11y": "playwright test --config=playwright.a11y.config.ts tests/accessibility.spec.ts",
         "prepare-config": "bun scripts/prepare-native-config.ts",
         "generate-assets": "bun scripts/generate-tenant-assets.ts",
         "validate-configs": "bun scripts/validate-tenant-configs.ts",
@@ -199,6 +200,7 @@
         ]
     },
     "devDependencies": {
+        "@axe-core/playwright": "^4.12.1",
         "@capacitor/assets": "^3.0.5",
         "@capacitor/cli": "^8.3.1",
         "@capgo/cli": "^7.2.10",

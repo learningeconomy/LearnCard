@@ -12,6 +12,10 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetCurrentUserTroopIdsResolved } from 'learn-card-base';
 
+import LanguagePicker from './LanguagePicker';
+import * as m from '../../paraglide/messages.js';
+import { getScoutPassSideMenuLinkLabel } from './scoutPassSideMenuLabels';
+
 const SideMenuSecondaryLinks: React.FC<{
     activeTab: string;
     setActiveTab: React.Dispatch<React.SetStateAction<string>>;
@@ -34,7 +38,7 @@ const SideMenuSecondaryLinks: React.FC<{
     const sideMenuLinks = sidemenuLinks?.[branding];
 
     const secondaryLinks = sideMenuLinks?.map(link => {
-        if (link.name === 'Skills' && !isAdmin) {
+        if (link.path === '/skills' && !isAdmin) {
             // Only show skills if the user is an admin
             return null;
         }
@@ -50,7 +54,7 @@ const SideMenuSecondaryLinks: React.FC<{
                     link.path
                 )}`}
             >
-                <IconComponent /> {link.name}
+                <IconComponent /> {getScoutPassSideMenuLinkLabel(m, link)}
             </Link>
         );
 
@@ -75,6 +79,7 @@ const SideMenuSecondaryLinks: React.FC<{
             >
                 {secondaryLinks}
             </ul>
+            <LanguagePicker />
         </div>
     );
 };

@@ -20,6 +20,7 @@ import { obv3OneedtechFull } from './obv3/1edtech-full';
 import { obv3ProfessionalCert } from './obv3/professional-cert';
 import { obv3MicroCredential } from './obv3/micro-credential';
 import { obv3CourseCompletion } from './obv3/course-completion';
+import { obv3StandaloneFullCourse } from './obv3/standalone-full-course';
 import { obv3K12Diploma } from './obv3/k12-diploma';
 import { obv3EndorsementCredential } from './obv3/endorsement';
 
@@ -81,6 +82,7 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     obv3ProfessionalCert,
     obv3MicroCredential,
     obv3CourseCompletion,
+    obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
 
@@ -142,6 +144,7 @@ export {
     obv3ProfessionalCert,
     obv3MicroCredential,
     obv3CourseCompletion,
+    obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
     clrUniversityTranscript,

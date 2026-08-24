@@ -59,6 +59,7 @@ import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/hel
 
 import useTheme from '../../theme/hooks/useTheme';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
+import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 import * as m from '../../paraglide/messages.js';
 
 export type FromDashboardMetadata = {
@@ -264,6 +265,8 @@ const ClaimFromDashboard: React.FC = () => {
 
     const { presentToast } = useToast();
     const presentClaimSuccessToast = useClaimSuccessToast();
+    const { isCheckingDuplicate, requestDuplicateResolution, duplicateCredentialPrompt } =
+        useDuplicateCredentialGuard();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -282,7 +285,7 @@ const ClaimFromDashboard: React.FC = () => {
 
     const [presentNewDataSourceModal, dismissNewDataSourceModal] = useIonModal(NewDataSource, {
         handleCloseModal: () => {
-            history.push('/home');
+            history.replace('/home');
             dismissNewDataSourceModal();
         },
         entryId: credential?.id,
@@ -373,18 +376,33 @@ const ClaimFromDashboard: React.FC = () => {
         );
 
         if (entryForCredential) presentNewDataSourceModal();
-        else history?.push('/home');
+        else history.replace('/home');
     };
 
     const handleClaimCredential = async () => {
         try {
             if (!credential) return;
+            const duplicateResolution = await requestDuplicateResolution(credential);
+            if (duplicateResolution.action === 'cancel') return;
+            if (duplicateResolution.action === 'skip') {
+                history.replace('/home');
+                presentToast(m['claim.duplicate.skippedToast'](), {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
             beginClaimAttempt(credential);
             setClaimingCredential(true);
             // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
             capture();
 
-            await storeAndAddVCToWallet(credential, { title: name });
+            const storeResult = await storeAndAddVCToWallet(credential, {
+                title: name,
+                allowDuplicate: duplicateResolution.isDuplicate,
+            });
+            if (!storeResult.result) throw new Error('Credential was not added to LearnCard');
 
             const category = getDefaultCategoryForCredential(credential);
             const achievementType = getAchievementType(credential);
@@ -418,6 +436,18 @@ const ClaimFromDashboard: React.FC = () => {
 
             presentClaimSuccessToast();
         } catch (e) {
+            if (e instanceof Error && e.message.includes('exists')) {
+                completeClaimAttempt(credential, AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                setClaimingCredential(false);
+                log.warn('Credential already exists in wallet index', e);
+                handleAfterCredentialClaim();
+                presentToast(m['toasts.alreadyClaimed'](), {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
             completeClaimAttempt(
                 credential,
                 AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
@@ -425,26 +455,10 @@ const ClaimFromDashboard: React.FC = () => {
             );
             setClaimingCredential(false);
             log.error('Error claiming credential', e);
-            /**
-             * Sometimes, when claiming a credential, this error is thrown:
-             * TRPCClientError: Record with that ID already exists!
-             * Which means the user has this credential.
-             * So, it's more of a warning and we can warn them that it already exists, and proceed.
-             **/
-            if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast(m['toasts.alreadyClaimed'](), {
-                    type: ToastTypeEnum.Success,
-                    hasDismissButton: true,
-                });
-
-                // We are assuming it is a success since user already has this credential.
-                handleAfterCredentialClaim();
-            } else {
-                presentToast(m['toasts.claimOops'](), {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
-            }
+            presentToast(m['toasts.claimOops'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -452,9 +466,10 @@ const ClaimFromDashboard: React.FC = () => {
         return <ClaimFromDashboardLoggedOut metadata={metadata} />;
     }
 
-    const loadingText = claimingCredential
-        ? m['claim.claimingCredential']()
-        : m['claim.fetchingCredential']();
+    const loadingText =
+        isCheckingDuplicate || claimingCredential
+            ? m['claim.claimingCredential']()
+            : m['claim.fetchingCredential']();
 
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID =
@@ -475,10 +490,11 @@ const ClaimFromDashboard: React.FC = () => {
 
     return (
         <IonPage>
+            {duplicateCredentialPrompt}
             <IonLoading
                 mode="ios"
                 message={loadingText}
-                isOpen={loading || claimingCredential}
+                isOpen={loading || claimingCredential || isCheckingDuplicate}
                 cssClass="[--background:none]"
             />
             <IonContent fullscreen color="grayscale-100">
@@ -544,7 +560,7 @@ const ClaimFromDashboard: React.FC = () => {
                             <button
                                 onClick={handleClaimCredential}
                                 className={`flex items-center justify-center bg-${primaryColor} text-white py-2 mr-3 font-bold text-2xl tracking-wider rounded-[40px] shadow-2xl w-[200px] max-w-[320px] ml-2 normal font-poppins`}
-                                disabled={claimingCredential}
+                                disabled={claimingCredential || isCheckingDuplicate}
                             >
                                 {m['common.accept']()}
                             </button>
@@ -561,7 +577,7 @@ const ClaimFromDashboard: React.FC = () => {
                                     });
                                 }}
                                 className={`flex items-center justify-center bg-${primaryColor} text-white py-2 mr-3 font-bold text-2xl tracking-wider rounded-[40px] shadow-2xl w-[200px] max-w-[320px] ml-2 normal font-poppins`}
-                                disabled={claimingCredential}
+                                disabled={claimingCredential || isCheckingDuplicate}
                             >
                                 {m['common.accept']()}
                             </button>

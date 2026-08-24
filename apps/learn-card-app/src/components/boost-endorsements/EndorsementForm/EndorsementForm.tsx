@@ -132,7 +132,7 @@ export const EndorsementForm: React.FC<{
     const description = endorsement.description;
 
     return (
-        <section className="h-full w-full flex items-start justify-center overflow-y-scroll pt-4">
+        <section className="relative h-full w-full flex items-start justify-center overflow-y-scroll pt-4">
             <section className="bg-white max-w-[800px] w-full rounded-[20px]">
                 <EndorsementFormHeader
                     credential={credential}

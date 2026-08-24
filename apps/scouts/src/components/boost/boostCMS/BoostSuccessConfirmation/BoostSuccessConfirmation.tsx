@@ -11,6 +11,8 @@ import {
 } from '../../boost-options/boostOptions';
 import { BoostCategoryOptionsEnum, UserProfilePicture } from 'learn-card-base';
 import BoostCMSIDCard from '../../boost-id-card/BoostIDCard';
+import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
 
 export const BoostSuccessConfirmation: React.FC<{
     state: BoostCMSState;
@@ -50,21 +52,30 @@ export const BoostSuccessConfirmation: React.FC<{
                 </div>
 
                 <div className="w-full flex items-end justify-center mb-6">
-                    <h3 className="text-grayscale-800 text-4xl text-center">Sent!</h3>
+                    <h3 className="text-grayscale-800 text-4xl text-center">
+                        {m['boostCMS.sent']()}
+                    </h3>
                 </div>
                 <div className="w-full flex flex-col items-center justify-center mb-4">
                     <h3 className="text-grayscale-800 text-3xl text-center">
                         {state?.basicInfo?.name || defaultTitle}
                     </h3>
                     <h3 className="text-grayscale-800 text-base text-center mt-2">
-                        <span className="text-grayscale-800 font-semibold">
-                            {state?.basicInfo?.type}
-                        </span>{' '}
-                        issued to{' '}
-                        <span className="text-grayscale-800 font-semibold">
-                            {state?.issueTo?.length || 0}{' '}
-                            {state?.issueTo?.length === 1 ? 'person' : 'people'}
-                        </span>
+                        <TransP
+                            m={m['boostCMS.sentToCount']}
+                            values={{
+                                type: state?.basicInfo?.type ?? '',
+                                count: String(state?.issueTo?.length || 0),
+                                person:
+                                    (state?.issueTo?.length || 0) === 1
+                                        ? m['boostCMS.person']()
+                                        : m['boostCMS.people'](),
+                            }}
+                            components={[
+                                <span key="t" className="text-grayscale-800 font-semibold" />,
+                                <span key="c" className="text-grayscale-800 font-semibold" />,
+                            ]}
+                        />
                     </h3>
                     <section className="boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 p-[10px]">
                         {state?.issueTo?.map((recipient, index) => {
@@ -94,7 +105,7 @@ export const BoostSuccessConfirmation: React.FC<{
                         onClick={handlePreview}
                         className="flex items-center font-medium justify-center text-white rounded-full px-[64px] py-[12px] bg-grayscale-900 text-2xl w-full shadow-3xl max-w-[325px] mb-4"
                     >
-                        View Boost
+                        {m['boostCMS.viewBoost']()}
                     </button>
                     <button
                         onClick={() => {
@@ -110,7 +121,7 @@ export const BoostSuccessConfirmation: React.FC<{
                         }}
                         className="flex items-center font-medium justify-center text-white rounded-full px-[64px] py-[12px] bg-indigo-500 text-2xl w-full shadow-3xl max-w-[325px] mb-4"
                     >
-                        Return To Wallet
+                        {m['boostCMS.wallet']()}
                     </button>
                 </div>
             </div>
