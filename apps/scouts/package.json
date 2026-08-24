@@ -55,7 +55,7 @@
         "async": "^3.2.6",
         "buffer": "^6.0.3",
         "capacitor-native-settings": "^8.1.0",
-        "capacitor-plugin-safe-area": "^5.0.0",
+        "capacitor-plugin-safe-area": "5.0.0",
         "capacitor-standard-version": "^1.1.21",
         "cordova-res": "^0.15.4",
         "crypto-js": "^4.2.0",
