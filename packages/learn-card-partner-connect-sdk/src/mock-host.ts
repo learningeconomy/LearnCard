@@ -37,6 +37,19 @@ const DEFAULT_PUBLISH_ORIGIN = 'https://learncard.app';
 const MOCK_PREFIX = '[LearnCard SDK · MOCK]';
 const PUBLISH_DISMISS_TTL_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * SDK-supplied context that is deliberately not part of the public
+ * {@link MockHostOptions} surface.
+ */
+export interface MockHostContext {
+    /**
+     * Whether the publish origin was chosen deliberately (an explicit
+     * `mockOptions.publishOrigin`, or an active override) rather than
+     * inferred. Suppresses the "point me at a local LearnCard" HUD hint.
+     */
+    publishOriginPinned?: boolean;
+}
+
 interface ResolvedMockOptions {
     ui: boolean;
     log: boolean;
@@ -239,6 +252,8 @@ const buildConsentScopeToastSegments = (payload: unknown): ToastSegment[] => {
 export class MockHost {
     private readonly options: ResolvedMockOptions;
 
+    private readonly context: MockHostContext;
+
     /** In-memory counter fallback used when persistence is off/unavailable. */
     private readonly memoryCounters = new Map<string, StoredCounter>();
 
@@ -276,7 +291,8 @@ export class MockHost {
     private destroyed = false;
     private publishPromptShown = false;
 
-    constructor(options?: MockHostOptions) {
+    constructor(options?: MockHostOptions, context?: MockHostContext) {
+        this.context = { ...context };
         this.options = {
             ui: options?.ui ?? true,
             log: options?.log ?? true,
@@ -1349,6 +1365,21 @@ export class MockHost {
         return manifest.templates.length >= 1 || manifest.permissions.length >= 2;
     }
 
+    /**
+     * True when publish links would point at production LearnCard from a
+     * machine that is almost certainly running LearnCard locally — the one
+     * case where the developer probably wants the override.
+     */
+    private shouldHintLocalPublishOverride(): boolean {
+        if (this.context.publishOriginPinned) return false;
+        if (this.options.publishOrigin !== DEFAULT_PUBLISH_ORIGIN) return false;
+        if (typeof window === 'undefined') return false;
+
+        const hostname = window.location?.hostname;
+
+        return hostname === 'localhost' || hostname === '127.0.0.1';
+    }
+
     private getPublishUrl(manifest: CapturedAppManifest): string {
         return `${
             this.options.publishOrigin
@@ -1681,6 +1712,20 @@ export class MockHost {
             });
             copyButton.addEventListener('click', () => this.copyText(publishUrl));
             card.appendChild(copyButton);
+        }
+
+        if (this.shouldHintLocalPublishOverride()) {
+            const hint = document.createElement('div');
+            hint.className = 'lc-mock-hud-publish-hint';
+            hint.textContent = 'Local LearnCard? Add ?lc_publish_override=http://localhost:3000';
+            Object.assign(hint.style, {
+                marginTop: '10px',
+                fontSize: '11px',
+                lineHeight: '1.45',
+                opacity: '0.62',
+                wordBreak: 'break-word',
+            });
+            card.appendChild(hint);
         }
 
         body.appendChild(card);

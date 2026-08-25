@@ -423,7 +423,19 @@ const config = {
         <script>
             import { createPartnerConnect } from '@learncard/partner-connect';
 
-            const learnCard = createPartnerConnect();
+            // Set PUBLIC_LEARNCARD_ORIGIN in .env to point this demo at a local or
+            // staging LearnCard. Unset, the SDK resolves production on its own — and
+            // ?lc_publish_override= still works for one-off overrides.
+            const learnCardOrigin = import.meta.env.PUBLIC_LEARNCARD_ORIGIN;
+
+            const learnCard = createPartnerConnect(
+                learnCardOrigin
+                    ? {
+                          hostOrigin: learnCardOrigin,
+                          mockOptions: { publishOrigin: learnCardOrigin },
+                      }
+                    : {}
+            );
 
             const statusBox = document.getElementById('status-box');
             const statusText = document.getElementById('auth-status');

@@ -29,11 +29,7 @@ interface WindowOverrides {
  * actually reads.
  */
 function installLocation(overrides: WindowOverrides): void {
-    const {
-        search = '',
-        origin = 'https://partner-app.example.com',
-        ancestors = null,
-    } = overrides;
+    const { search = '', origin = 'https://partner-app.example.com', ancestors = null } = overrides;
 
     const ancestorOrigins: DOMStringList | undefined =
         ancestors === null
@@ -337,6 +333,235 @@ describe('incoming message validation', () => {
         expect(isValidOrigin(sdk, 'https://learncard.app')).toBe(false);
         expect(isValidOrigin(sdk, 'https://vetpass.app')).toBe(false);
         expect(isValidOrigin(sdk, 'https://evil.com')).toBe(false);
+
+        sdk.destroy();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Publish-origin resolution (lc_publish_override)
+// ---------------------------------------------------------------------------
+
+describe('publish-origin resolution hierarchy', () => {
+    const mocked = { mock: true as const, mockOptions: { ui: false, log: false } };
+
+    test('mockOptions.publishOrigin outranks lc_publish_override', () => {
+        installLocation({ search: '?lc_publish_override=https://staging.learncard.app' });
+
+        const sdk = new PartnerConnect({
+            mock: true,
+            mockOptions: { ui: false, log: false, publishOrigin: 'https://explicit.learncard.app' },
+        });
+
+        expect(sdk.getPublishOrigin()).toBe('https://explicit.learncard.app');
+
+        sdk.destroy();
+    });
+
+    test('lc_publish_override outranks lc_host_override', () => {
+        installLocation({
+            search: '?lc_host_override=https://alpha.vetpass.app&lc_publish_override=http://localhost:3000',
+        });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(sdk.getPublishOrigin()).toBe('http://localhost:3000');
+
+        sdk.destroy();
+    });
+
+    test('a stored lc_publish_override still outranks an lc_host_override param', () => {
+        window.sessionStorage.setItem('lc_publish_override', 'http://localhost:3000');
+        installLocation({ search: '?lc_host_override=https://alpha.vetpass.app' });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(sdk.getPublishOrigin()).toBe('http://localhost:3000');
+
+        sdk.destroy();
+    });
+
+    test('falls back to a concrete lc_host_override when no publish override exists', () => {
+        installLocation({ search: '?lc_host_override=https://alpha.vetpass.app' });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(sdk.getPublishOrigin()).toBe('https://alpha.vetpass.app');
+
+        sdk.destroy();
+    });
+
+    test('uses a stored lc_host_override when no query params are present', () => {
+        window.sessionStorage.setItem('lc_host_override', 'https://alpha.vetpass.app');
+        installLocation({ search: '' });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(sdk.getPublishOrigin()).toBe('https://alpha.vetpass.app');
+
+        sdk.destroy();
+    });
+
+    test('ignores a wildcard lc_host_override and infers from configured origins', () => {
+        installLocation({ search: '?lc_host_override=https://*.learncard.app' });
+
+        const sdk = new PartnerConnect({
+            ...mocked,
+            hostOrigin: 'https://staging.learncard.app',
+            disableDefaultTenants: true,
+        });
+
+        expect(sdk.getPublishOrigin()).toBe('https://staging.learncard.app');
+
+        sdk.destroy();
+    });
+
+    test('infers the first concrete configured origin, skipping wildcards', () => {
+        installLocation({ search: '' });
+
+        const sdk = new PartnerConnect({
+            ...mocked,
+            hostOrigin: ['https://*.learncard.app', 'https://staging.learncard.app'],
+            disableDefaultTenants: true,
+        });
+
+        expect(sdk.getPublishOrigin()).toBe('https://staging.learncard.app');
+
+        sdk.destroy();
+    });
+
+    test('falls back to the default publish origin when nothing else applies', () => {
+        installLocation({ search: '' });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(sdk.getPublishOrigin()).toBe('https://learncard.app');
+
+        sdk.destroy();
+    });
+
+    test('applies to non-mock instances too', () => {
+        installLocation({ search: '?lc_publish_override=http://localhost:3000' });
+
+        const sdk = new PartnerConnect({ mock: false });
+
+        expect(sdk.getPublishOrigin()).toBe('http://localhost:3000');
+
+        sdk.destroy();
+    });
+
+    test('normalizes a full URL down to its origin', () => {
+        installLocation({
+            search: `?lc_publish_override=${encodeURIComponent(
+                'http://localhost:3000/app-store/developer?foo=bar'
+            )}`,
+        });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(sdk.getPublishOrigin()).toBe('http://localhost:3000');
+
+        sdk.destroy();
+    });
+});
+
+describe('invalid lc_publish_override values', () => {
+    const mocked = { mock: true as const, mockOptions: { ui: false, log: false } };
+
+    test.each([['not-a-url'], ['ftp://example.com'], ['//learncard.app'], ['javascript:alert(1)']])(
+        'ignores %s with a warning and falls through',
+        value => {
+            installLocation({ search: `?lc_publish_override=${encodeURIComponent(value)}` });
+
+            const sdk = new PartnerConnect({
+                ...mocked,
+                hostOrigin: 'https://staging.learncard.app',
+                disableDefaultTenants: true,
+            });
+
+            expect(sdk.getPublishOrigin()).toBe('https://staging.learncard.app');
+            expect(consoleWarnSpy).toHaveBeenCalledWith(
+                expect.stringContaining('lc_publish_override is not a valid http(s) origin'),
+                value
+            );
+
+            sdk.destroy();
+        }
+    );
+
+    test('an invalid value still lets a concrete lc_host_override through', () => {
+        installLocation({
+            search: '?lc_publish_override=nope&lc_host_override=https://alpha.vetpass.app',
+        });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(sdk.getPublishOrigin()).toBe('https://alpha.vetpass.app');
+
+        sdk.destroy();
+    });
+
+    test('a corrupt stored value is ignored rather than thrown on', () => {
+        window.sessionStorage.setItem('lc_publish_override', 'not-a-url');
+        installLocation({ search: '' });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(sdk.getPublishOrigin()).toBe('https://learncard.app');
+
+        sdk.destroy();
+    });
+});
+
+describe('lc_publish_override sessionStorage persistence', () => {
+    const mocked = { mock: true as const, mockOptions: { ui: false, log: false } };
+
+    test('persists a valid override so later navigations keep it', () => {
+        installLocation({ search: '?lc_publish_override=http://localhost:3000' });
+
+        const first = new PartnerConnect(mocked);
+        expect(window.sessionStorage.getItem('lc_publish_override')).toBe('http://localhost:3000');
+        first.destroy();
+
+        // A later page load in the same tab, without the query parameter.
+        installLocation({ search: '' });
+
+        const second = new PartnerConnect(mocked);
+        expect(second.getPublishOrigin()).toBe('http://localhost:3000');
+        second.destroy();
+    });
+
+    test('persists the normalized origin, not the raw value', () => {
+        installLocation({
+            search: `?lc_publish_override=${encodeURIComponent('http://localhost:3000/submit')}`,
+        });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(window.sessionStorage.getItem('lc_publish_override')).toBe('http://localhost:3000');
+
+        sdk.destroy();
+    });
+
+    test('does not persist an invalid value', () => {
+        installLocation({ search: '?lc_publish_override=not-a-url' });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(window.sessionStorage.getItem('lc_publish_override')).toBeNull();
+
+        sdk.destroy();
+    });
+
+    test('is stored separately from lc_host_override', () => {
+        installLocation({
+            search: '?lc_host_override=https://alpha.vetpass.app&lc_publish_override=http://localhost:3000',
+        });
+
+        const sdk = new PartnerConnect(mocked);
+
+        expect(window.sessionStorage.getItem('lc_host_override')).toBe('https://alpha.vetpass.app');
+        expect(window.sessionStorage.getItem('lc_publish_override')).toBe('http://localhost:3000');
 
         sdk.destroy();
     });

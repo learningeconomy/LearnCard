@@ -29,6 +29,7 @@ import {
 } from '@learncard/partner-connect-core';
 import { PartnerConnectError } from './types';
 import { MockHost } from './mock-host';
+import type { MockHostContext } from './mock-host';
 import type {
     InlineCredentialTemplate,
     InlineTemplateCredentialInput,
@@ -252,6 +253,14 @@ export class PartnerConnect {
     private syncCompleteCallbacks: Set<(status: SyncStatus) => void> = new Set();
     private syncStatusPollId: ReturnType<typeof setInterval> | null = null;
     private mockHost: MockHost | null = null;
+    /** Internal, non-public context handed to every {@link MockHost} we build. */
+    private mockHostContext: MockHostContext = {};
+    /**
+     * Memoized override-derived publish origin. `undefined` means "not looked
+     * up yet"; `null` means "looked up, no usable override". Caching keeps the
+     * warning for an invalid value to a single log per instance.
+     */
+    private pinnedPublishOrigin: string | null | undefined;
     private embedded = false;
     private warnedNoHost = false;
     private hostProbeTimeout: number = DEFAULT_HOST_PROBE_TIMEOUT_MS;
@@ -287,17 +296,122 @@ export class PartnerConnect {
     }
 
     private resolveMockOptions(options?: PartnerConnectOptions): MockHostOptions | undefined {
-        if (!options?.mockOptions) {
-            const inferredPublishOrigin = this.inferPublishOrigin(options?.hostOrigin);
-            return inferredPublishOrigin ? { publishOrigin: inferredPublishOrigin } : undefined;
+        if (options?.mockOptions?.publishOrigin) {
+            this.mockHostContext = { publishOriginPinned: true };
+            return options.mockOptions;
         }
 
-        if (options.mockOptions.publishOrigin) return options.mockOptions;
+        const publishOrigin = this.resolvePublishOrigin(options?.hostOrigin);
 
-        return {
-            ...options.mockOptions,
-            publishOrigin: this.inferPublishOrigin(options.hostOrigin),
-        };
+        this.mockHostContext = { publishOriginPinned: this.readPinnedPublishOrigin() !== null };
+
+        return { ...(options?.mockOptions ?? {}), publishOrigin };
+    }
+
+    /**
+     * Resolve the LearnCard origin that App Store publish links point at:
+     * 1. `?lc_publish_override=` (query param, then this tab's stored value).
+     * 2. `?lc_host_override=` (query param, then stored) when it names one
+     *    concrete http(s) origin — testing against a host implies publishing
+     *    to it.
+     * 3. The first concrete configured `hostOrigin`.
+     * 4. `DEFAULT_PUBLISH_ORIGIN`.
+     *
+     * `mockOptions.publishOrigin` outranks all of these and is applied by
+     * {@link resolveMockOptions} before this runs.
+     */
+    private resolvePublishOrigin(hostOrigin?: string | string[]): string {
+        return this.readPinnedPublishOrigin() ?? this.inferPublishOrigin(hostOrigin);
+    }
+
+    private readPinnedPublishOrigin(): string | null {
+        if (this.pinnedPublishOrigin !== undefined) return this.pinnedPublishOrigin;
+
+        this.pinnedPublishOrigin = this.readPublishOverride() ?? this.readHostOverrideForPublish();
+
+        return this.pinnedPublishOrigin;
+    }
+
+    /**
+     * Unlike `lc_host_override`, this is not a security boundary — it only
+     * decides which LearnCard origin publish links target — so any parseable
+     * http(s) origin is accepted rather than being whitelist-checked.
+     */
+    private readPublishOverride(): string | null {
+        if (typeof window === 'undefined') return null;
+
+        try {
+            const param = new URLSearchParams(window.location.search).get('lc_publish_override');
+
+            if (param) {
+                const normalized = PartnerConnect.normalizePublishOrigin(param);
+
+                if (normalized) {
+                    this.persistPublishOverride(normalized);
+                    console.log('[LearnCard SDK] Using lc_publish_override:', normalized);
+                    return normalized;
+                }
+
+                console.warn(
+                    '[LearnCard SDK] lc_publish_override is not a valid http(s) origin; ignoring:',
+                    param
+                );
+            }
+
+            const stored = PartnerConnect.readSessionValue(
+                PartnerConnect.PUBLISH_SESSION_STORAGE_KEY
+            );
+
+            if (stored) return PartnerConnect.normalizePublishOrigin(stored);
+        } catch (error) {
+            console.error('[LearnCard SDK] Error reading lc_publish_override:', error);
+        }
+
+        return null;
+    }
+
+    private readHostOverrideForPublish(): string | null {
+        if (typeof window === 'undefined') return null;
+
+        try {
+            const candidates = [
+                new URLSearchParams(window.location.search).get('lc_host_override'),
+                PartnerConnect.readSessionValue(PartnerConnect.SESSION_STORAGE_KEY),
+            ];
+
+            for (const candidate of candidates) {
+                // Wildcard patterns name a family of hosts, not one publishable origin.
+                if (!candidate || candidate.includes('*')) continue;
+
+                const normalized = PartnerConnect.normalizePublishOrigin(candidate);
+                if (normalized) return normalized;
+            }
+        } catch {
+            // A malformed location must never break initialization.
+        }
+
+        return null;
+    }
+
+    private static normalizePublishOrigin(value: string): string | null {
+        try {
+            const url = new URL(value);
+
+            if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+
+            return url.origin;
+        } catch {
+            return null;
+        }
+    }
+
+    private static readSessionValue(key: string): string | null {
+        try {
+            return sessionStorage.getItem(key);
+        } catch {
+            // sessionStorage may be unavailable (e.g. sandboxed iframes)
+            return null;
+        }
     }
 
     private inferPublishOrigin(hostOrigin?: string | string[]): string {
@@ -331,7 +445,7 @@ export class PartnerConnect {
         const mockOptions = this.resolveMockOptions(options);
 
         if (mockSetting === true) {
-            this.mockHost = new MockHost(mockOptions);
+            this.mockHost = new MockHost(mockOptions, this.mockHostContext);
             return;
         }
 
@@ -346,7 +460,7 @@ export class PartnerConnect {
             // Standalone page: no host can answer. hostReachable stays false,
             // so un-mocked calls fail fast with LC_NOT_EMBEDDED.
             if (canAutoMock) {
-                this.mockHost = new MockHost(mockOptions);
+                this.mockHost = new MockHost(mockOptions, this.mockHostContext);
             }
             return;
         }
@@ -361,7 +475,7 @@ export class PartnerConnect {
                 // never postMessage into the 30s timeout. Mock where allowed,
                 // fail fast everywhere else.
                 if (canAutoMock) {
-                    this.mockHost = new MockHost(mockOptions);
+                    this.mockHost = new MockHost(mockOptions, this.mockHostContext);
                 }
                 return;
 
@@ -423,7 +537,7 @@ export class PartnerConnect {
                 this.activation = null;
                 if (this.isInitialized) {
                     this.hostReachable = false;
-                    this.mockHost = new MockHost(mockOptions);
+                    this.mockHost = new MockHost(mockOptions, this.mockHostContext);
                     console.warn(
                         '[LearnCard SDK] Embedded in a frame, but no LearnCard host answered ' +
                             `within ${this.hostProbeTimeout}ms — activating standalone mock mode. ` +
@@ -511,10 +625,16 @@ export class PartnerConnect {
         return this.activeHostOrigin || null;
     }
 
-    /** Returns the LearnCard origin used to build App Store publish URLs. */
+    /**
+     * Returns the LearnCard origin used to build App Store publish URLs.
+     *
+     * Point this at a local or staging LearnCard with
+     * `?lc_publish_override=<origin>`; see {@link resolvePublishOrigin} for
+     * the full precedence order.
+     */
     public getPublishOrigin(): string | null {
         if (this.mockHost) return this.mockHost.getPublishOrigin();
-        return this.inferPublishOrigin(this.hostOrigins);
+        return this.resolvePublishOrigin(this.hostOrigins);
     }
 
     /**
@@ -532,6 +652,9 @@ export class PartnerConnect {
      * continue to use the same active origin.
      */
     private static readonly SESSION_STORAGE_KEY = 'lc_host_override';
+
+    /** Persisted so the parameter only has to be typed once per tab. */
+    private static readonly PUBLISH_SESSION_STORAGE_KEY = 'lc_publish_override';
 
     /**
      * Read `window.location.ancestorOrigins[0]` without throwing if the
@@ -632,6 +755,14 @@ export class PartnerConnect {
     private persistOverride(origin: string): void {
         try {
             sessionStorage.setItem(PartnerConnect.SESSION_STORAGE_KEY, origin);
+        } catch {
+            // sessionStorage may be unavailable (e.g. sandboxed iframes)
+        }
+    }
+
+    private persistPublishOverride(origin: string): void {
+        try {
+            sessionStorage.setItem(PartnerConnect.PUBLISH_SESSION_STORAGE_KEY, origin);
         } catch {
             // sessionStorage may be unavailable (e.g. sandboxed iframes)
         }

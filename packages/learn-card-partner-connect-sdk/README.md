@@ -181,6 +181,94 @@ createPartnerConnect({
 });
 ```
 
+### Testing against a local or staging LearnCard
+
+By default, publish links point at production LearnCard (`https://learncard.app`).
+If you're running LearnCard yourself — a local checkout on `http://localhost:3000`,
+or a staging tenant — you want those links to open _your_ instance instead.
+
+There are three ways to do that, from most convenient to most explicit.
+
+#### 1. `?lc_publish_override=` (no code changes)
+
+Add the parameter to your app's URL:
+
+```text
+http://localhost:4321/?lc_publish_override=http://localhost:3000
+```
+
+`getPublishUrl()`, `getPublishOrigin()`, and the HUD's **Copy publish link** button
+all immediately target `http://localhost:3000`.
+
+The value is validated as a parseable `http:` / `https:` URL and reduced to its
+origin, so `http://localhost:3000/anything?x=1` is stored as `http://localhost:3000`.
+Anything that isn't a valid http(s) origin is **ignored with a console warning**,
+and the SDK falls through to the next source — a typo can't silently break your
+publish links.
+
+A valid value is saved to `sessionStorage` under `lc_publish_override`, so you only
+type it once per tab. Later navigations in that tab keep the override; opening a
+fresh tab drops it.
+
+> Unlike `lc_host_override`, this is **not** a security boundary — it only decides
+> which LearnCard origin publish links point at, and never affects which origins the
+> SDK will accept `postMessage` traffic from. That's why it isn't whitelist-checked.
+
+#### 2. `PUBLIC_LEARNCARD_ORIGIN` (per-developer, via `.env`)
+
+For a setting that should persist across tabs, drive it from your app's environment
+and pass it to both options at once:
+
+```typescript
+const learnCardOrigin = import.meta.env.PUBLIC_LEARNCARD_ORIGIN;
+
+const learnCard = createPartnerConnect({
+    ...(learnCardOrigin
+        ? { hostOrigin: learnCardOrigin, mockOptions: { publishOrigin: learnCardOrigin } }
+        : {}),
+});
+```
+
+```bash
+# .env
+PUBLIC_LEARNCARD_ORIGIN=http://localhost:3000
+```
+
+#### 3. `mockOptions.publishOrigin` (hard-coded)
+
+```typescript
+createPartnerConnect({ mockOptions: { publishOrigin: 'https://staging.learncard.app' } });
+```
+
+#### Resolution order
+
+The publish origin is resolved from the first source that yields a usable origin:
+
+| #   | Source                                                                |
+| --- | --------------------------------------------------------------------- |
+| 1   | `mockOptions.publishOrigin`                                           |
+| 2   | `?lc_publish_override=` query param, then its `sessionStorage` value  |
+| 3   | `?lc_host_override=` (param, then stored) if it's one concrete origin |
+| 4   | The first non-wildcard, non-native-app `hostOrigin` you configured    |
+| 5   | `https://learncard.app`                                               |
+
+Step 3 means that if you're already testing against a local host with
+`?lc_host_override=http://localhost:3000`, publish links follow it automatically —
+you don't need both parameters. Wildcard patterns like `https://*.learncard.app`
+are skipped here, since they name a family of hosts rather than one publishable origin.
+
+Inspect the result at any time:
+
+```typescript
+learnCard.getPublishOrigin(); // 'http://localhost:3000'
+learnCard.getPublishUrl(); // 'http://localhost:3000/app-store/developer/submit?manifest=…'
+```
+
+When mock mode is running on `localhost` and publish links would still go to
+production, the expanded manifest HUD shows a one-line reminder:
+`Local LearnCard? Add ?lc_publish_override=http://localhost:3000`. It disappears as
+soon as an override or an explicit `publishOrigin` is in effect.
+
 ### Dynamic Origin Configuration
 
 The SDK uses a hierarchical approach to determine the active host origin:

@@ -22,7 +22,7 @@ import {
 } from 'ionicons/icons';
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { useDeveloperPortal } from '../useDeveloperPortal';
-import { useModal, ModalTypes, useDeviceTypeByWidth } from 'learn-card-base';
+import { useModal, ModalTypes, useDeviceTypeByWidth, getLogger } from 'learn-card-base';
 import { useImageUpload } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';
@@ -57,6 +57,43 @@ interface ProvisionedPreview {
 
 const getPreviewDraftKey = (manifest: CapturedAppManifest): string =>
     `partner-preview:${manifest.appUrl}:${manifest.suggestedName ?? ''}`;
+
+const log = getLogger('submit-from-manifest');
+
+// Session keys. `SESSION_MANIFEST_SOURCE_KEY` records the exact `?manifest=` param the
+// session copy was built from, so a *newer* publish link is never mistaken for a reload
+// of the previous one (appUrl + suggestedName are identical across app versions).
+const SESSION_MANIFEST_KEY = 'lc-submit-manifest';
+const SESSION_MANIFEST_SOURCE_KEY = 'lc-submit-manifest-source';
+
+interface StoredProvision {
+    integrationId: string;
+    listingId?: string;
+}
+
+// Provisioning is remembered per captured appUrl (origin + pathname) — the only part of
+// the manifest that is stable as the app evolves. Keying by name/title would make every
+// retitled capture look like a brand new app and silently drop the change diff.
+const getProvisionKey = (appUrl: string): string => `partner-preview:${appUrl}`;
+
+const readStoredProvision = (appUrl: string): StoredProvision | null => {
+    try {
+        const raw = localStorage.getItem(getProvisionKey(appUrl));
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as StoredProvision;
+        return typeof parsed?.integrationId === 'string' ? parsed : null;
+    } catch {
+        return null;
+    }
+};
+
+const storeProvision = (appUrl: string, provision: StoredProvision): void => {
+    try {
+        localStorage.setItem(getProvisionKey(appUrl), JSON.stringify(provision));
+    } catch {
+        // Storage unavailable — the diff check falls back to the host-name lookup.
+    }
+};
 
 // Default app icon used across the developer portal (see PartnerDashboard fallback)
 const DEFAULT_APP_ICON_URL = 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
@@ -200,25 +237,73 @@ export const SubmitFromManifestPage: React.FC = () => {
     const createIntegration = useCreateIntegration();
 
     useEffect(() => {
-        if (!manifest || !integrations || diffApplied) return;
+        if (!manifest || diffApplied) return;
 
         const checkManifest = async () => {
+            const { appUrl } = manifest;
             try {
-                const host = new URL(manifest.appUrl).host;
-                const integrationId = integrations.find(i => i.name === host)?.id;
+                const host = new URL(appUrl).host;
+                const stored = readStoredProvision(appUrl);
+                // The host-name lookup only finds integrations this flow created; the
+                // stored record is what survives a title change or an integration the
+                // developer created (or renamed) elsewhere.
+                const integrationId =
+                    stored?.integrationId ?? integrations?.find(i => i.name === host)?.id;
+
+                log.debug('manifest.diff-check.start', {
+                    appUrl,
+                    host,
+                    hasStoredProvision: Boolean(stored),
+                    integrationId: integrationId ?? null,
+                    storedListingId: stored?.listingId ?? null,
+                });
+
                 if (!integrationId) return;
 
                 const wallet = await initWallet();
-                if (!wallet?.invoke?.submitAppManifest) return;
+                if (!wallet?.invoke?.submitAppManifest) {
+                    log.debug('manifest.diff-check.unsupported', { appUrl });
+                    return;
+                }
 
                 const result = await wallet.invoke.submitAppManifest(integrationId, manifest);
-                if (!result.noop && result.diff) {
-                    setManifestDiff(result.diff);
-                    setManifestVersion(result.version);
-                    setPreviewIntegrationId(integrationId);
+
+                log.debug('manifest.diff-check.result', {
+                    integrationId,
+                    version: result.version,
+                    noop: result.noop,
+                    hasDiff: Boolean(result.diff),
+                });
+
+                if (result.noop) return;
+
+                if (!result.diff) {
+                    // No active version to compare against yet, so there is nothing to
+                    // review — make this the baseline instead. Skipping it would leave
+                    // the integration permanently baseline-less, and every later capture
+                    // would keep coming back diff-less too.
+                    if (!wallet.invoke.applyManifestVersion) return;
+                    try {
+                        await wallet.invoke.applyManifestVersion(
+                            integrationId,
+                            result.version,
+                            stored?.listingId
+                        );
+                        log.debug('manifest.diff-check.baseline-applied', {
+                            integrationId,
+                            version: result.version,
+                        });
+                    } catch (e) {
+                        log.debug('manifest.diff-check.baseline-failed', e, { integrationId });
+                    }
+                    return;
                 }
+
+                setManifestDiff(result.diff);
+                setManifestVersion(result.version);
+                setPreviewIntegrationId(integrationId);
             } catch (e) {
-                // Silent fallback
+                log.debug('manifest.diff-check.failed', e, { appUrl });
             }
         };
 
@@ -255,27 +340,36 @@ export const SubmitFromManifestPage: React.FC = () => {
                 decoded.appUrl.startsWith('http://');
             setIsLocalhost(isLocal);
 
-            const sessionManifestStr = sessionStorage.getItem('lc-submit-manifest');
-            if (sessionManifestStr) {
-                try {
-                    const sessionManifest = JSON.parse(sessionManifestStr);
-                    const sameSuggestedName =
-                        sessionManifest.suggestedName === decoded.suggestedName ||
-                        (!sessionManifest.suggestedName && !decoded.suggestedName);
+            const applyDecodedManifest = () => {
+                setManifest(decoded);
+                sessionStorage.setItem(SESSION_MANIFEST_KEY, JSON.stringify(decoded));
+                sessionStorage.setItem(SESSION_MANIFEST_SOURCE_KEY, manifestParam);
+            };
 
-                    if (sessionManifest.appUrl === decoded.appUrl && sameSuggestedName) {
-                        setManifest(sessionManifest);
-                    } else {
-                        setManifest(decoded);
-                        sessionStorage.setItem('lc-submit-manifest', JSON.stringify(decoded));
-                    }
+            // The session copy carries capture that happened *inside* this page (preview
+            // postMessages, the consent designer), so it is only safe to restore for the
+            // exact same publish link. A different `manifest` param means the app changed
+            // and the decoded one is newer — restoring here would re-submit the old
+            // manifest, come back `noop`, and hide the change diff.
+            const sessionManifestStr = sessionStorage.getItem(SESSION_MANIFEST_KEY);
+            const isSameCapture =
+                sessionStorage.getItem(SESSION_MANIFEST_SOURCE_KEY) === manifestParam;
+
+            log.debug('manifest.decoded', {
+                appUrl: decoded.appUrl,
+                hasSessionManifest: Boolean(sessionManifestStr),
+                restoredFromSession: Boolean(sessionManifestStr) && isSameCapture,
+                hasStoredProvision: Boolean(readStoredProvision(decoded.appUrl)),
+            });
+
+            if (sessionManifestStr && isSameCapture) {
+                try {
+                    setManifest(JSON.parse(sessionManifestStr));
                 } catch {
-                    setManifest(decoded);
-                    sessionStorage.setItem('lc-submit-manifest', JSON.stringify(decoded));
+                    applyDecodedManifest();
                 }
             } else {
-                setManifest(decoded);
-                sessionStorage.setItem('lc-submit-manifest', JSON.stringify(decoded));
+                applyDecodedManifest();
             }
             const suggestedIcon = decoded.suggestedIconUrl;
             if (isAllowedIconUrl(suggestedIcon)) {
@@ -340,14 +434,21 @@ export const SubmitFromManifestPage: React.FC = () => {
             const previewKey = getPreviewDraftKey(manifest);
             const displayName = appName || manifest.suggestedName || 'Preview App';
 
+            const storedProvision = readStoredProvision(previewUrl);
+
             let integrationId =
-                previewIntegrationId || integrations?.find(i => i.name === host)?.id;
+                previewIntegrationId ||
+                storedProvision?.integrationId ||
+                integrations?.find(i => i.name === host)?.id;
             if (!integrationId) {
                 integrationId = await createIntegration.mutateAsync(host);
                 setPreviewIntegrationId(integrationId);
             }
 
-            if (previewListingId) return { integrationId, listingId: previewListingId };
+            if (previewListingId) {
+                storeProvision(previewUrl, { integrationId, listingId: previewListingId });
+                return { integrationId, listingId: previewListingId };
+            }
 
             const wallet = await initWallet();
             const existingListings = await wallet.invoke.getListingsForIntegration(integrationId, {
@@ -427,8 +528,16 @@ export const SubmitFromManifestPage: React.FC = () => {
                 setCurrentLaunchConfig(launchConfig);
             }
 
+            storeProvision(previewUrl, { integrationId, listingId });
+
             if (wallet?.invoke?.submitAppManifest && wallet?.invoke?.applyManifestVersion) {
                 const result = await wallet.invoke.submitAppManifest(integrationId, manifest);
+                log.debug('manifest.provision.submitted', {
+                    integrationId,
+                    listingId,
+                    version: result.version,
+                    noop: result.noop,
+                });
                 if (!result.noop) {
                     await wallet.invoke.applyManifestVersion(
                         integrationId,
@@ -542,7 +651,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                     ...prev,
                     consentRequests: nextRequests,
                 };
-                sessionStorage.setItem('lc-submit-manifest', JSON.stringify(next));
+                sessionStorage.setItem(SESSION_MANIFEST_KEY, JSON.stringify(next));
                 return next;
             });
 
@@ -569,7 +678,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                                 action: event.data.action,
                                 payload: event.data.payload,
                             });
-                            sessionStorage.setItem('lc-submit-manifest', JSON.stringify(next));
+                            sessionStorage.setItem(SESSION_MANIFEST_KEY, JSON.stringify(next));
 
                             // Highlight new items
                             const newItems = new Set<string>();
@@ -667,10 +776,17 @@ export const SubmitFromManifestPage: React.FC = () => {
             const host = appUrlObj.host;
 
             let integrationId =
-                previewIntegrationId || integrations?.find(i => i.name === host)?.id;
+                previewIntegrationId ||
+                readStoredProvision(manifest.appUrl)?.integrationId ||
+                integrations?.find(i => i.name === host)?.id;
             if (!integrationId) {
                 integrationId = await createIntegration.mutateAsync(host);
             }
+
+            storeProvision(manifest.appUrl, {
+                integrationId,
+                ...(previewListingId ? { listingId: previewListingId } : {}),
+            });
 
             history.push({
                 pathname: previewListingId
@@ -900,13 +1016,28 @@ export const SubmitFromManifestPage: React.FC = () => {
                                 try {
                                     const wallet = await initWallet();
                                     if (!wallet?.invoke?.applyManifestVersion) return;
+                                    // On a fresh page load nothing has been provisioned in
+                                    // state yet, so fall back to the listing recorded when
+                                    // this app was first provisioned.
+                                    const listingId =
+                                        previewListingId ||
+                                        readStoredProvision(manifest.appUrl)?.listingId;
                                     await wallet.invoke.applyManifestVersion(
                                         previewIntegrationId,
                                         manifestVersion,
-                                        previewListingId || undefined
+                                        listingId || undefined
                                     );
+                                    log.debug('manifest.diff.applied', {
+                                        integrationId: previewIntegrationId,
+                                        listingId: listingId ?? null,
+                                        version: manifestVersion,
+                                    });
                                     setDiffApplied(true);
                                 } catch (e) {
+                                    log.error('manifest.diff.apply-failed', e, {
+                                        integrationId: previewIntegrationId,
+                                        version: manifestVersion,
+                                    });
                                     setFormError('Failed to apply changes. Please try again.');
                                 } finally {
                                     setIsApplyingDiff(false);

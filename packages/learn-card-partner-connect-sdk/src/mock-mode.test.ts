@@ -28,6 +28,9 @@ beforeEach(() => {
     errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
         localStorage.clear();
+        // Tests that install a trusted `ancestorOrigins` persist an
+        // `lc_host_override`, which would otherwise leak into later cases.
+        sessionStorage.clear();
     } catch {
         // localStorage may be unavailable in some environments.
     }
@@ -1258,6 +1261,68 @@ describe('mock UI', () => {
         await next.requestIdentity();
         await flush();
         expect(document.body.textContent).toContain('LearnCard manifest');
+    });
+
+    const expandHud = async (
+        lc: ReturnType<typeof createPartnerConnect>,
+        namespace: string
+    ): Promise<void> => {
+        localStorage.setItem(`${namespace}:manifest-hud-collapsed:${namespace}`, 'false');
+        await lc.requestIdentity();
+        await flush();
+    };
+
+    const HUD_HINT = 'Local LearnCard? Add ?lc_publish_override=http://localhost:3000';
+
+    it('hints at lc_publish_override when publishing to production from localhost', async () => {
+        const namespace = 'hud-hint-shown';
+        const lc = createPartnerConnect({
+            mock: true,
+            mockOptions: { ui: true, namespace, appId: namespace },
+        });
+
+        await expandHud(lc, namespace);
+
+        expect(document.querySelector('.lc-mock-hud-publish-hint')?.textContent).toBe(HUD_HINT);
+
+        lc.destroy();
+    });
+
+    it('hides the hint when an explicit publishOrigin is set', async () => {
+        const namespace = 'hud-hint-explicit';
+        const lc = createPartnerConnect({
+            mock: true,
+            mockOptions: {
+                ui: true,
+                namespace,
+                appId: namespace,
+                publishOrigin: 'http://localhost:3000',
+            },
+        });
+
+        await expandHud(lc, namespace);
+
+        expect(document.querySelector('.lc-mock-hud')).not.toBeNull();
+        expect(document.querySelector('.lc-mock-hud-publish-hint')).toBeNull();
+
+        lc.destroy();
+    });
+
+    it('hides the hint when an lc_publish_override is already active', async () => {
+        const namespace = 'hud-hint-override';
+        sessionStorage.setItem('lc_publish_override', 'http://localhost:3000');
+
+        const lc = createPartnerConnect({
+            mock: true,
+            mockOptions: { ui: true, namespace, appId: namespace },
+        });
+
+        await expandHud(lc, namespace);
+
+        expect(lc.getPublishOrigin()).toBe('http://localhost:3000');
+        expect(document.querySelector('.lc-mock-hud-publish-hint')).toBeNull();
+
+        lc.destroy();
     });
 
     it('renders a positive-tone toast for requestConsent', async () => {

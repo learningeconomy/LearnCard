@@ -112,11 +112,18 @@ const config = {
             import { createPartnerConnect, previewCompiledTemplate } from '@learncard/partner-connect';
 
             const APP_ID = 'dev-cycle-tester';
+
+            // Set PUBLIC_LEARNCARD_ORIGIN in .env to point this demo at a local or
+            // staging LearnCard. Left unset, the SDK resolves https://learncard.app on
+            // its own, which keeps ?lc_publish_override= usable for one-off overrides.
+            const learnCardOrigin = import.meta.env.PUBLIC_LEARNCARD_ORIGIN;
+
             const learnCard = createPartnerConnect({
                 mock: 'auto',
+                ...(learnCardOrigin ? { hostOrigin: learnCardOrigin } : {}),
                 mockOptions: {
                     appId: APP_ID,
-                    publishOrigin: 'https://learncard.app'
+                    ...(learnCardOrigin ? { publishOrigin: learnCardOrigin } : {})
                 }
             });
 
