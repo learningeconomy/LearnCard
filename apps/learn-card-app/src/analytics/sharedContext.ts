@@ -15,6 +15,7 @@
 import { Capacitor } from '@capacitor/core';
 
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { environment } from '../config/environment';
 
 export type AnalyticsEnvironment = 'production' | 'staging' | 'preview' | 'development' | 'test';
 
@@ -42,23 +43,17 @@ const isAutomatedAgent = (): boolean => {
  */
 export const detectAnalyticsEnvironment = (): AnalyticsEnvironment => {
     if (isAutomatedAgent()) return 'test';
-    if (import.meta.env.MODE === 'test') return 'test';
+    if (environment.MODE === 'test') return 'test';
 
     if (Capacitor.isNativePlatform()) {
-        return import.meta.env.PROD ? 'production' : 'development';
+        return environment.PROD ? 'production' : 'development';
     }
 
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
-    let prodDomain: string | undefined;
-    let devDomain: string | undefined;
-    try {
-        const config = getResolvedTenantConfig();
-        prodDomain = config.domain;
-        devDomain = config.devDomain;
-    } catch {
-        // TenantConfig not resolved yet — fall through to heuristics.
-    }
+    const config = getResolvedTenantConfig();
+    const prodDomain = config.domain;
+    const devDomain = config.devDomain;
 
     if (prodDomain && (hostname === prodDomain || hostname === `www.${prodDomain}`)) {
         return 'production';
@@ -87,7 +82,7 @@ export const detectAnalyticsEnvironment = (): AnalyticsEnvironment => {
 
     // Unknown host: trust the build mode. Production builds served from
     // an unrecognized host (e.g. a new tenant CNAME) should still count.
-    return import.meta.env.PROD ? 'production' : 'development';
+    return environment.PROD ? 'production' : 'development';
 };
 
 /**
@@ -109,18 +104,12 @@ const getPlatform = (): SharedEventContext['platform'] => {
  * cached so late TenantConfig resolution self-heals.
  */
 export const getSharedEventContext = (): SharedEventContext => {
-    let tenantId: string | undefined;
-    try {
-        tenantId = getResolvedTenantConfig().tenantId;
-    } catch {
-        tenantId = undefined;
-    }
-
-    const version = import.meta.env.VITE_APP_VERSION;
+    const tenantId = getResolvedTenantConfig().tenantId;
+    const version = environment.VITE_APP_VERSION ?? __APP_VERSION__;
 
     return {
         environment: detectAnalyticsEnvironment(),
-        app_version: version && version.length > 0 ? version : undefined,
+        app_version: version.length > 0 ? version : undefined,
         tenant_id: tenantId,
         platform: getPlatform(),
     };

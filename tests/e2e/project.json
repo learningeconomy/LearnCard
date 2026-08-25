@@ -10,20 +10,25 @@
         "tests": ["{projectRoot}/tests/**/*"]
     },
     "targets": {
-        "test:e2e": {
-            "executor": "./tools/executors/workspace:run-command",
+        "test": {
+            "executor": "nx:run-script",
             "dependsOn": ["^build"],
             "options": {
-                "command": "bun run test:e2e",
-                "cwd": "{root}/tests/e2e"
+                "script": "test"
+            }
+        },
+        "test:e2e": {
+            "executor": "nx:run-script",
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "test:e2e"
             }
         },
         "test:run": {
-            "executor": "./tools/executors/workspace:run-command",
+            "executor": "nx:run-script",
             "dependsOn": ["^build"],
             "options": {
-                "command": "bun run test:run",
-                "cwd": "{root}/tests/e2e"
+                "script": "test:run"
             }
         },
         "build": {

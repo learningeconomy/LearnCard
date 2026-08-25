@@ -35,10 +35,9 @@
             }
         },
         "test:watch": {
-            "executor": "./tools/executors/workspace:run-command",
+            "executor": "nx:run-script",
             "options": {
-                "command": "bun run test:watch",
-                "cwd": "{root}/packages/react-learn-card"
+                "script": "test:watch"
             }
         }
     }

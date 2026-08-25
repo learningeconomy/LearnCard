@@ -30,15 +30,6 @@
                 "script": "docker-build"
             }
         },
-        "build:docker": {
-            "executor": "nx:run-script",
-            "inputs": ["source"],
-            "outputs": ["{projectRoot}/dist"],
-            "dependsOn": ["^build"],
-            "options": {
-                "script": "docker-build"
-            }
-        },
         "docker-start": {
             "executor": "nx:run-script",
             "inputs": ["source"],
@@ -58,7 +49,7 @@
             "executor": "nx:run-script",
             "inputs": ["source", "tests"],
             "options": {
-                "script": "test:e2e:mock"
+                "script": "test-mock"
             }
         }
     }

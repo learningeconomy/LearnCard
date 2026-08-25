@@ -66,8 +66,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
     // since "AI Session" / "AI Insights" reads as an actual title rather than a
     // loading state.
     const derivedTitle = isInsights
-        ? $messages.find(m => m.role === 'user')?.content ?? initialTopic
-        : currentThread?.title ?? initialTopic;
+        ? ($messages.find(m => m.role === 'user')?.content ?? initialTopic)
+        : (currentThread?.title ?? initialTopic);
     const isTitleLoading = !derivedTitle;
 
     /**

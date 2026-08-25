@@ -107,6 +107,7 @@ export * from './config/providerRegistry';
 export * from './config/tenantConfig';
 export * from './config/tenantDefaults';
 export * from './config/resolveTenantConfig';
+export * from './config/renderConfigurationError';
 export * from './config/TenantConfigProvider';
 export * from './config/brandingHelpers';
 export * from './storage/image-upload';
@@ -249,6 +250,7 @@ export * from './helpers/vimeo.helpers';
 export * from './helpers/video.helpers';
 export * from './helpers/lazyWithRetry';
 export * from './helpers/recaptcha.helpers';
+export * from './helpers/deferred';
 
 export * from './types/credentials';
 export * from './types/boostAndCredentialMetadata';

@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { LCNNotification } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -9,7 +10,7 @@ import { randomUUID } from 'crypto';
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
 
-const isTestEnvironment = (): boolean => String(process.env.NODE_ENV) === 'test';
+const isTestEnvironment = (): boolean => environment.NODE_ENV === 'test';
 
 type NotificationDeliveryOptions = {
     propagateDirectWebhookTransportErrors?: boolean;
@@ -57,7 +58,7 @@ const isLocalWebhookUrl = (value: string): boolean => {
 };
 
 const getLocalNotificationsWebhookUrl = (): string => {
-    const port = process.env.NOTIFICATIONS_SERVICE_PORT ?? '5100';
+    const port = environment.NOTIFICATIONS_SERVICE_PORT ?? '5100';
 
     return `http://localhost:${port}/api/notifications/send`;
 };
@@ -112,9 +113,9 @@ export const resolveNotificationWebhookUrl = (
 
     const profileWebhook =
         typeof notification.to !== 'string' ? notification.to.notificationsWebhook : undefined;
-    const envWebhook = process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
+    const envWebhook = environment.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
 
-    if (process.env.IS_OFFLINE) {
+    if (environment.IS_OFFLINE) {
         if (typeof envWebhook === 'string' && isLocalWebhookUrl(envWebhook)) {
             return envWebhook;
         }
@@ -133,11 +134,11 @@ export const resolveNotificationWebhookUrl = (
     return envWebhook;
 };
 
-const pollUrl = process.env.NOTIFICATIONS_QUEUE_POLL_URL;
+const pollUrl = environment.NOTIFICATIONS_QUEUE_POLL_URL;
 
 const sqs = new SQSClient({
     apiVersion: 'latest',
-    region: process.env.AWS_REGION,
+    region: environment.AWS_REGION,
     ...(pollUrl && { endpoint: pollUrl.split('/').slice(0, -1).join('/') }),
 });
 
@@ -145,7 +146,7 @@ export async function addNotificationToQueue(
     notification: LCNNotification,
     options: NotificationDeliveryOptions = {}
 ) {
-    if (process.env.IS_E2E_TEST) {
+    if (environment.IS_E2E_TEST) {
         /**
          * For end-to-end tests, store the last delivery in cache
          */
@@ -158,7 +159,7 @@ export async function addNotificationToQueue(
     }
 
     // In local development (offline or missing SQS URL), deliver directly via webhook
-    if (process.env.IS_OFFLINE || !process.env.NOTIFICATIONS_QUEUE_URL) {
+    if (environment.IS_OFFLINE || !environment.NOTIFICATIONS_QUEUE_URL) {
         console.log(
             'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
         );
@@ -167,7 +168,7 @@ export async function addNotificationToQueue(
     }
 
     const command = new SendMessageCommand({
-        QueueUrl: process.env.NOTIFICATIONS_QUEUE_URL,
+        QueueUrl: environment.NOTIFICATIONS_QUEUE_URL,
         MessageBody: JSON.stringify(notification),
     });
 
@@ -189,7 +190,7 @@ export async function sendNotification(
 
         if (typeof notification.to !== 'string') {
             notification.to.did = getDidWeb(
-                process.env.DOMAIN_NAME ?? 'network.learncard.com',
+                environment.DOMAIN_NAME ?? 'network.learncard.com',
                 notification.to.profileId ?? ''
             );
         }
@@ -199,7 +200,7 @@ export async function sendNotification(
             notification.from.profileId
         ) {
             notification.from.did = getDidWeb(
-                process.env.DOMAIN_NAME ?? 'network.learncard.com',
+                environment.DOMAIN_NAME ?? 'network.learncard.com',
                 notification.from.profileId
             );
         }

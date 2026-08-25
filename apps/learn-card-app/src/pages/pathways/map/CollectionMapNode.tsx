@@ -124,7 +124,7 @@ const deriveTitle = (members: PathwayNode[], kind: PolicyKind): string => {
     const types = new Set(
         members
             .map(m => m.credentialProjection?.achievementType)
-            .filter((t): t is string => Boolean(t)),
+            .filter((t): t is string => Boolean(t))
     );
 
     const verb = kind === 'assessment' ? 'Pass' : 'Earn';
@@ -252,8 +252,8 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
     const cardTint = allDone
         ? 'bg-emerald-50/70 border-emerald-100'
         : progress.completed > 0
-            ? 'bg-amber-50/60 border-amber-100'
-            : 'bg-white border-grayscale-200';
+          ? 'bg-amber-50/60 border-amber-100'
+          : 'bg-white border-grayscale-200';
 
     return (
         <motion.div
@@ -371,15 +371,14 @@ const CollectionMapNode: React.FC<{ data: CollectionMapNodeData }> = ({ data }) 
                                 Collection
                             </span>
 
-                            <span
-                                aria-hidden
-                                className="shrink-0 text-grayscale-300 text-[10px]"
-                            >
+                            <span aria-hidden className="shrink-0 text-grayscale-300 text-[10px]">
                                 ·
                             </span>
 
                             <span className="text-[10px] font-medium uppercase tracking-wide text-grayscale-500 truncate">
-                                {allDone ? 'Done' : `${progress.completed}/${progress.total} earned`}
+                                {allDone
+                                    ? 'Done'
+                                    : `${progress.completed}/${progress.total} earned`}
                             </span>
                         </div>
                     </div>

@@ -13,41 +13,22 @@ export type UseSentryIdentifyOptions = {
 };
 
 /**
- * Initialize Sentry from the resolved TenantConfig.
+ * Initialize Sentry from the already validated TenantConfig.
  *
  * Call this after bootstrapTenantConfig() has resolved.
- * Falls back to Vite-injected globals if TenantConfig is not yet available.
  */
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const initSentryFromTenant = (): void => {
-    let dsn: string | undefined;
-    let env: string | undefined;
-    let traceDomains: (string | RegExp)[] = ['localhost'];
-
-    try {
-        const config = getResolvedTenantConfig();
-        dsn = config.observability.sentryDsn;
-        env = config.observability.sentryEnv;
-
-        if (config.observability.sentryTraceDomains) {
-            traceDomains = [
-                'localhost',
-                ...config.observability.sentryTraceDomains.map(
-                    d => new RegExp(`^https://${escapeRegExp(d)}`)
-                ),
-            ];
-        }
-    } catch {
-        dsn = typeof SENTRY_DSN !== 'undefined' ? SENTRY_DSN : undefined;
-        env = typeof SENTRY_ENV !== 'undefined' ? SENTRY_ENV : undefined;
-        traceDomains = [
-            'localhost',
-            /^https:\/\/network\.learncard\.com\/trpc/,
-            /^https:\/\/api\.learncard\.app\/trpc/,
-            /^https:\/\/cloud\.learncard\.com\/trpc/,
-        ];
-    }
+    const config = getResolvedTenantConfig();
+    const dsn = config.observability.sentryDsn;
+    const env = config.observability.sentryEnv;
+    const traceDomains: (string | RegExp)[] = [
+        'localhost',
+        ...(config.observability.sentryTraceDomains ?? []).map(
+            domain => new RegExp(`^https://${escapeRegExp(domain)}`)
+        ),
+    ];
 
     if (!env || env === 'development' || !dsn) return;
 

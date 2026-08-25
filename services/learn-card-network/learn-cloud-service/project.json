@@ -62,6 +62,13 @@
                 "script": "test"
             }
         },
+        "typecheck": {
+            "executor": "nx:run-script",
+            "dependsOn": ["^build"],
+            "options": {
+                "script": "typecheck"
+            }
+        },
         "test:watch": {
             "executor": "./tools/executors/workspace:run-command",
             "options": {

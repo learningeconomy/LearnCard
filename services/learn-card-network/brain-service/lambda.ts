@@ -1,5 +1,3 @@
-import http from 'node:http';
-
 import serverlessHttp from 'serverless-http';
 import type {
     Context,
@@ -25,11 +23,13 @@ import {
     sentryBeforeSend,
     getTracesSampleRate,
 } from './src/helpers/sentry.helpers';
+import { environment } from './src/config/environment';
+import { toServerlessApplication } from './src/helpers/serverlessApplication';
 
 Sentry.AWSLambda.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV,
-    enabled: Boolean(process.env.SENTRY_DSN),
+    dsn: environment.SENTRY_DSN,
+    environment: environment.SENTRY_ENV,
+    enabled: Boolean(environment.SENTRY_DSN),
     tracesSampleRate: getTracesSampleRate(),
     beforeSend: sentryBeforeSend,
     integrations: [
@@ -43,11 +43,13 @@ startSkillEmbeddingBackfill().catch(err =>
     console.error('Skill embedding backfill startup error:', err)
 );
 
-export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
+export const swaggerUiHandler = serverlessHttp(toServerlessApplication(app), {
+    basePath: '/docs',
+});
 
-export const skillsViewerHandler = serverlessHttp(skillsViewerApp);
+export const skillsViewerHandler = serverlessHttp(toServerlessApplication(skillsViewerApp));
 
-export const statusListsHandler = serverlessHttp(statusListsApp);
+export const statusListsHandler = serverlessHttp(toServerlessApplication(statusListsApp));
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,

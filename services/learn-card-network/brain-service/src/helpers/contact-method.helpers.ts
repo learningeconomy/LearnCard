@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { v4 as uuid } from 'uuid';
 import cache from '@cache';
 import { ClaimTokenType } from '@learncard/types';
@@ -35,7 +36,9 @@ export const generateContactMethodVerificationToken = async (
     return token;
 };
 
-export const validateContactMethodVerificationToken = async (token: string): Promise<string | null> => {
+export const validateContactMethodVerificationToken = async (
+    token: string
+): Promise<string | null> => {
     const key = `${CONTACT_METHOD_VERIFICATION_PREFIX}${token}`;
     const contactMethodId = await cache.get(key);
 
@@ -106,13 +109,13 @@ export const markInboxClaimTokenAsUsed = async (token: string): Promise<boolean>
 };
 
 export const generateClaimUrl = (token: string): string => {
-    const domainName = process.env.CLIENT_APP_DOMAIN_NAME;
+    const domainName = environment.CLIENT_APP_DOMAIN_NAME;
     const domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost:${process.env.PORT || 3000}`
+        !domainName || environment.IS_OFFLINE
+            ? `localhost:${environment.PORT || 3000}`
             : domainName;
 
-    const protocol = process.env.IS_OFFLINE ? 'http' : 'https';
+    const protocol = environment.IS_OFFLINE ? 'http' : 'https';
 
     return `${protocol}://${domain}/interactions/inbox-claim/${token}?iuv=1`;
 };

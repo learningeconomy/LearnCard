@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { z } from 'zod';
 import axios from 'axios';
 import crypto from 'crypto';
@@ -21,13 +22,13 @@ import { getDidWebLearnCard, getEmptyLearnCard } from '@helpers/learnCard.helper
 import { isAuthorizedDID } from '@helpers/dids.helpers';
 
 const LOGIN_VERIFICATION_CODE_TEMPLATE_ALIAS =
-    process.env.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS || 'login-verification-code';
+    environment.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS || 'login-verification-code';
 
 export const ScoutsSSOUserLoginEndpoint: string =
     'https://sso.scout.org/auth/realms/wsb/protocol/openid-connect/token';
 
 export const scoutsSSOClientId: string = 'scoutpass';
-export const scoutsSSOClientSecret = process.env.SCOUTS_SSO_CLIENT_SECRET;
+export const scoutsSSOClientSecret = environment.SCOUTS_SSO_CLIENT_SECRET;
 
 export const ScoutsSSOResponseSchema = z
     .object({

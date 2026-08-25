@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
@@ -112,8 +113,8 @@ server.register(statusListsFastifyPlugin);
 
 (async () => {
     try {
-        console.log('Server starting on port ', process.env.PORT || 3000);
-        await server.listen({ host: '0.0.0.0', port: Number(process.env.PORT || 3000) });
+        console.log('Server starting on port ', environment.PORT || 3000);
+        await server.listen({ host: '0.0.0.0', port: Number(environment.PORT || 3000) });
 
         try {
             await maybeAutoSeedSkillFrameworks(neogma.queryRunner.run.bind(neogma.queryRunner), {
@@ -134,7 +135,7 @@ server.register(statusListsFastifyPlugin);
     }
 })();
 
-const pollUrl = process.env.NOTIFICATIONS_QUEUE_POLL_URL;
+const pollUrl = environment.NOTIFICATIONS_QUEUE_POLL_URL;
 
 if (pollUrl) {
     (async () => {
@@ -145,7 +146,7 @@ if (pollUrl) {
 
         const sqs = new SQSClient({
             apiVersion: 'latest',
-            region: process.env.AWS_REGION,
+            region: environment.AWS_REGION,
             endpoint: baseUrl,
         });
 
@@ -166,9 +167,8 @@ if (pollUrl) {
                         try {
                             const _notification = JSON.parse(message.Body ?? '');
 
-                            const notification = await LCNNotificationValidator.parseAsync(
-                                _notification
-                            );
+                            const notification =
+                                await LCNNotificationValidator.parseAsync(_notification);
 
                             await sendNotification(notification);
 

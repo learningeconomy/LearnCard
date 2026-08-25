@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createDeferred } from './deferred';
 
 import type { BespokeLearnCard } from '../types/learn-card';
 
@@ -81,7 +82,7 @@ describe('ensureCredentialIngestion', () => {
 
     it('keeps in-flight requests deduplicated beyond the success-cache window', async () => {
         const account = wallet('did:example:slow');
-        const pending = Promise.withResolvers<Response>();
+        const pending = createDeferred<Response>();
 
         aiPassportFetchMock.mockReturnValueOnce(pending.promise);
 

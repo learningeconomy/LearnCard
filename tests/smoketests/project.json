@@ -4,25 +4,28 @@
     "sourceRoot": "tests/smoketests",
     "projectType": "application",
     "targets": {
-        "smoke": {
-            "executor": "nx:run-commands",
+        "test": {
+            "executor": "nx:run-script",
             "options": {
-                "command": "bun run smoke",
-                "cwd": "tests/smoketests"
+                "script": "test"
+            }
+        },
+        "smoke": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "smoke"
             }
         },
         "smoke:api": {
-            "executor": "nx:run-commands",
+            "executor": "nx:run-script",
             "options": {
-                "command": "bun run smoke:api",
-                "cwd": "tests/smoketests"
+                "script": "smoke:api"
             }
         },
         "smoke:browser": {
-            "executor": "nx:run-commands",
+            "executor": "nx:run-script",
             "options": {
-                "command": "bun run smoke:browser",
-                "cwd": "tests/smoketests"
+                "script": "smoke:browser"
             }
         }
     }

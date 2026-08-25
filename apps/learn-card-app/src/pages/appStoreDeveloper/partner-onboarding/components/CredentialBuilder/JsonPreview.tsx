@@ -225,8 +225,8 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                                 testIssueState === 'success'
                                     ? 'bg-emerald-100 text-emerald-700'
                                     : testIssueState === 'error'
-                                    ? 'bg-red-100 text-red-700'
-                                    : 'bg-violet-100 text-violet-700 hover:bg-violet-200'
+                                      ? 'bg-red-100 text-red-700'
+                                      : 'bg-violet-100 text-violet-700 hover:bg-violet-200'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                             {testIssueState === 'loading' ? (

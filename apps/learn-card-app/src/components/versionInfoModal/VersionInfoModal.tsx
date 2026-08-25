@@ -225,6 +225,7 @@ const shorten = (value: string | undefined, head = 6, tail = 4): string => {
     return `${value.slice(0, head)}…${value.slice(-tail)}`;
 };
 
+
 interface CopyPayloadContext {
     appName: string;
     profileId?: string;

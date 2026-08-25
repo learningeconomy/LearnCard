@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { v4 as uuid } from 'uuid';
 import type {
@@ -93,14 +94,14 @@ export const decodeBitstring = (encodedList: string, expectedBits: number): Buff
 };
 
 const getConfiguredStatusListSize = (requestedSize?: number): number => {
-    const configuredSize = requestedSize ?? Number(process.env.BITSTRING_STATUS_LIST_SIZE);
+    const configuredSize = requestedSize ?? Number(environment.BITSTRING_STATUS_LIST_SIZE);
     const parsedSize =
         Number.isFinite(configuredSize) && configuredSize > 0
             ? configuredSize
             : DEFAULT_BITSTRING_STATUS_LIST_SIZE;
     const roundedSize = Math.ceil(parsedSize);
     const allowSmallTestLists =
-        process.env.NODE_ENV === 'test' && process.env.BITSTRING_STATUS_LIST_ALLOW_SMALL === 'true';
+        environment.NODE_ENV === 'test' && environment.BITSTRING_STATUS_LIST_ALLOW_SMALL;
 
     return allowSmallTestLists
         ? roundedSize
@@ -131,9 +132,9 @@ let statusListIssuerDid = '';
 const getStatusListIssuerDid = (): string => {
     if (!statusListIssuerDid) {
         const domain =
-            process.env.DOMAIN_NAME ||
-            (process.env.IS_OFFLINE
-                ? `localhost%3A${process.env.PORT || 3000}`
+            environment.DOMAIN_NAME ||
+            (environment.IS_OFFLINE
+                ? `localhost%3A${environment.PORT || 3000}`
                 : 'localhost%3A3000');
         statusListIssuerDid = `did:web:${domain}`;
     }
@@ -145,7 +146,7 @@ const signStatusListCredential = async (
     list: Pick<StatusListType, 'statusListCredential' | 'statusPurpose' | 'encodedList'>
 ): Promise<VC> => {
     const learnCard =
-        process.env.NODE_ENV === 'test' ? await getLearnCard() : await getDidWebLearnCard();
+        environment.NODE_ENV === 'test' ? await getLearnCard() : await getDidWebLearnCard();
     const unsigned = {
         ...buildUnsignedStatusListCredential(list),
         issuer: learnCard.id.did(),

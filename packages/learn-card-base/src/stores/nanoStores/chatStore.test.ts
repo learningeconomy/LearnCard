@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createDeferred } from '../../helpers/deferred';
 
 const mocks = vi.hoisted(() => ({
     authMode: 'session' as 'legacy' | 'session' | undefined,
@@ -135,7 +136,6 @@ if (!Promise.withResolvers) {
         return { promise, resolve, reject };
     };
 }
-
 // The store must capture the fake browser WebSocket during module initialization.
 const {
     connectWebSocket,

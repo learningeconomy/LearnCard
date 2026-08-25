@@ -11,9 +11,17 @@ import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
 import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+import { parseLearnCardAppEnvironment } from './src/config/buildEnvironment';
+
+// The polyfill package ships against a different esbuild type instance than Vite.
+const globalPolyfillPlugin = GlobalPolyfill({
+    process: true,
+    buffer: true,
+}) as unknown as EsbuildPlugin;
 
 /**
  * Fail the build/dev start if any file imports paraglide/messages.js twice
@@ -70,14 +78,14 @@ const packageVersion = (
  * VersionInfoModal so support / engineering can identify the exact commit
  * a binary or OTA bundle was built from.
  */
-const resolveBuildSha = (): string => {
-    const fromEnv =
-        process.env.GITHUB_SHA ??
-        process.env.HEROKU_SLUG_COMMIT ??
-        process.env.VERCEL_GIT_COMMIT_SHA ??
-        process.env.BUILD_SHA;
+const resolveBuildSha = (environment: ReturnType<typeof parseLearnCardAppEnvironment>): string => {
+    const fromEnvironment =
+        environment.GITHUB_SHA ??
+        environment.HEROKU_SLUG_COMMIT ??
+        environment.VERCEL_GIT_COMMIT_SHA ??
+        environment.BUILD_SHA;
 
-    if (fromEnv) return fromEnv.slice(0, 7);
+    if (fromEnvironment) return fromEnvironment.slice(0, 7);
 
     try {
         return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
@@ -131,14 +139,18 @@ const collectWorkspacePackages = (): string[] => {
 const workspacePackages = collectWorkspacePackages();
 
 export default defineConfig(async ({ mode, command }) => {
-    const env = loadEnv(mode, process.cwd(), '');
+    const loadedEnvironment = loadEnv(mode, __dirname, '');
+    const environment = parseLearnCardAppEnvironment(
+        { ...loadedEnvironment, ...process.env, MODE: mode },
+        `Vite ${command} (${mode})`
+    );
     const { default: tsconfigPaths } = await import('vite-tsconfig-paths');
 
     // VITE_DOCKER_SOURCE is an explicit opt-in source/debug mode, keyed off the flag
     // rather than `mode`. Production and self-host docker-builds both run `vite build`
     // in production mode and intentionally resolve the prebuilt workspace dist.
     // Emit a loud build-log notice so accidental source-mode production builds are obvious.
-    const useDockerSourceMode = process.env.VITE_DOCKER_SOURCE === 'true';
+    const useDockerSourceMode = environment.VITE_DOCKER_SOURCE;
     if (useDockerSourceMode) {
         console.warn(
             [
@@ -169,7 +181,7 @@ export default defineConfig(async ({ mode, command }) => {
                 outdir: './src/paraglide',
                 outputStructure: 'locale-modules',
             }),
-            ...(process.env.ANALYZE
+            ...(environment.ANALYZE
                 ? [
                       visualizer({
                           open: true,
@@ -209,42 +221,19 @@ export default defineConfig(async ({ mode, command }) => {
             esbuildOptions: {
                 target: 'esnext',
                 define: { global: 'globalThis' },
-                plugins: [GlobalPolyfill({ process: true, buffer: true }) as any],
+                plugins: [globalPolyfillPlugin],
             },
         },
         define: {
             __PACKAGE_VERSION__: JSON.stringify(packageVersion),
             __APP_VERSION__: JSON.stringify(packageVersion),
-            __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
+            __BUILD_SHA__: JSON.stringify(resolveBuildSha(environment)),
             __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
             __CAPGO_DEFAULT_CHANNEL__: JSON.stringify(
                 readDefaultChannel(path.join(__dirname, 'capacitor.config.ts')) ?? ''
             ),
-            IS_PRODUCTION: process.env.NODE_ENV === 'production',
-            // DEPRECATED — these are now in TenantConfig (config.json → auth.*)
-            // Kept as fallbacks for backward compat; will be removed in a future PR.
-            'process.env.REACT_APP_KEY_DERIVATION_PROVIDER': process.env
-                .REACT_APP_KEY_DERIVATION_PROVIDER
-                ? JSON.stringify(process.env.REACT_APP_KEY_DERIVATION_PROVIDER)
-                : 'undefined',
-            'process.env.REACT_APP_SSS_SERVER_URL': process.env.REACT_APP_SSS_SERVER_URL
-                ? JSON.stringify(process.env.REACT_APP_SSS_SERVER_URL)
-                : 'undefined',
-            // DEPRECATED — now in config.json → observability.sentryEnv / sentryDsn
-            SENTRY_ENV: process.env.SENTRY_ENV ? `"${process.env.SENTRY_ENV}"` : '"development"',
-            SENTRY_DSN: process.env.SENTRY_DSN
-                ? `"${process.env.SENTRY_DSN}"`
-                : '"https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704"',
-            // Not yet in TenantConfig — keep as-is
-            GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY
-                ? `"${process.env.GOOGLE_MAPS_API_KEY}"`
-                : 'undefined',
-            // DEPRECATED — now in config.json → branding.defaultTheme
-            APP_THEME: env.APP_THEME ? JSON.stringify(env.APP_THEME) : '"colorful"',
-            // Not yet in TenantConfig — keep as-is
-            CORS_PROXY_API_KEY: env.CORS_PROXY_API_KEY
-                ? JSON.stringify(env.CORS_PROXY_API_KEY)
-                : 'undefined',
+            __APP_BUILD_ENV__: JSON.stringify(environment),
+            IS_PRODUCTION: mode === 'production',
         },
         resolve: {
             // See useSourceConditions above: the `development` condition resolves @learncard/*
@@ -285,8 +274,8 @@ export default defineConfig(async ({ mode, command }) => {
             port: 3000,
             watch: {
                 // Enable polling for Docker volume mounts
-                usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
-                interval: parseInt(process.env.CHOKIDAR_INTERVAL || '1000', 10),
+                usePolling: environment.CHOKIDAR_USEPOLLING,
+                interval: environment.CHOKIDAR_INTERVAL,
             },
         },
     };
