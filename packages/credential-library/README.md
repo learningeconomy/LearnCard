@@ -91,6 +91,45 @@ const signed = await wallet.invoke.issueCredential(unsigned);
 -   **Fresh UUIDs** — regenerates all `urn:uuid:` ids (disable with `freshIds: false`)
 -   **Timestamps** — sets `validFrom`/`issuanceDate` to now (or a custom value)
 
+### Materializing an SD-JWT VC Fixture
+
+SD-JWT VC fixtures are synthetic templates. Query and narrow them through the
+same registry API, then materialize one with signing capability supplied by the
+caller:
+
+```typescript
+import {
+    getFixtures,
+    getFixture,
+    isSdJwtVcFixture,
+    materializeSdJwtVcFixture,
+} from '@learncard/credential-library';
+
+const sdJwtCourses = getFixtures({
+    kind: 'sd-jwt-vc',
+    profile: 'course',
+    features: ['selective-disclosure'],
+});
+const fixture = getFixture('sd-jwt-vc/course-completion');
+if (!isSdJwtVcFixture(fixture)) throw new Error('Expected SD-JWT VC fixture');
+
+const result = await materializeSdJwtVcFixture(fixture, {
+    issuerDid,
+    issuerKid,
+    issuerSigner,
+    holderPublicJwk,
+});
+
+await wallet.store.LearnCloud.uploadEncrypted(result.envelope);
+```
+
+The fixture contains no issuer private key and does not sign itself. Callers
+must provide the issuer DID, key ID, signing function, and an Ed25519 public
+holder key. The returned envelope is canonical `{ format: 'dc+sd-jwt', data:
+compact }`; `result.compact` contains the issuer-signed SD-JWT VC only and never
+stores a KB-JWT. A KB-JWT is created later, when a holder presents the
+credential to a verifier with an audience and nonce.
+
 ## Query API Reference
 
 | Function                           | Description                                                                   |
@@ -229,6 +268,11 @@ See the [Credential Viewer README](../../examples/credential-viewer/README.md) f
 -   `boost/with-skills` — Boost with skills, evidence, and alignment
 -   `boost/community-award` — Community leadership award boost
 -   `boost/delegate` — Organization delegate credential
+
+### SD-JWT VCs (1)
+
+-   `sd-jwt-vc/course-completion` — Synthetic, holder-bound course completion
+    credential with selective disclosure and Digital Credentials API metadata
 
 ### Invalid / Negative Tests (3)
 
