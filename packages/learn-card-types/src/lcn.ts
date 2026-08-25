@@ -113,6 +113,10 @@ export type LCNAuthedProfile = z.infer<typeof LCNAuthedProfileValidator>;
 
 export const LCNConnectionProfileValidator = LCNAuthedProfileValidator.extend({
     email: LCNProfileValidator.shape.email,
+    connectedAt: z.iso
+        .datetime()
+        .optional()
+        .describe('When the viewer and this profile became connected.'),
 });
 export type LCNConnectionProfile = z.infer<typeof LCNConnectionProfileValidator>;
 

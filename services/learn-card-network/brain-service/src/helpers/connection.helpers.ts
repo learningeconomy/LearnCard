@@ -21,7 +21,11 @@ export const getConnections = async (
     const _query = new QueryBuilder().match({
         related: [
             { model: Profile, where: { profileId: profile.profileId } },
-            { ...Profile.getRelationshipByAlias('connectedWith'), direction: 'none' },
+            {
+                ...Profile.getRelationshipByAlias('connectedWith'),
+                direction: 'none',
+                identifier: 'connected',
+            },
             { identifier: 'target', model: Profile },
         ],
     });
@@ -32,11 +36,21 @@ export const getConnections = async (
           )
         : _query;
 
-    const results = convertQueryResultToPropertiesObjectArray<{ target: FlatProfileType }>(
-        await query.return('DISTINCT target').orderBy('target.profileId').limit(limit).run()
+    const results = convertQueryResultToPropertiesObjectArray<{
+        target: FlatProfileType;
+        connectedAt?: string;
+    }>(
+        await query
+            .return('DISTINCT target, connected.createdAt AS connectedAt')
+            .orderBy('target.profileId')
+            .limit(limit)
+            .run()
     );
 
-    return results.map(result => inflateObject(result.target as any));
+    return results.map(result => ({
+        ...inflateObject(result.target as any),
+        ...(result.connectedAt && { connectedAt: result.connectedAt }),
+    }));
 };
 
 /**
@@ -53,18 +67,19 @@ export const ensureMutualConnectionWithSource = async (
     sourceKey: string
 ): Promise<void> => {
     if (aProfileId === bProfileId) return;
+    const connectedAt = new Date().toISOString();
 
     const cypher = `
         MATCH (a:Profile { profileId: $aId }), (b:Profile { profileId: $bId })
         MERGE (a)-[r:CONNECTED_WITH]->(b)
-        ON CREATE SET r.sources = [$key]
+        ON CREATE SET r.sources = [$key], r.createdAt = $connectedAt
         ON MATCH SET r.sources = CASE
             WHEN r.sources IS NULL THEN [$key]
             WHEN NOT $key IN r.sources THEN r.sources + $key
             ELSE r.sources
         END
         MERGE (b)-[r2:CONNECTED_WITH]->(a)
-        ON CREATE SET r2.sources = [$key]
+        ON CREATE SET r2.sources = [$key], r2.createdAt = $connectedAt
         ON MATCH SET r2.sources = CASE
             WHEN r2.sources IS NULL THEN [$key]
             WHEN NOT $key IN r2.sources THEN r2.sources + $key
@@ -72,7 +87,12 @@ export const ensureMutualConnectionWithSource = async (
         END
     `;
 
-    await neogma.queryRunner.run(cypher, { aId: aProfileId, bId: bProfileId, key: sourceKey });
+    await neogma.queryRunner.run(cypher, {
+        aId: aProfileId,
+        bId: bProfileId,
+        key: sourceKey,
+        connectedAt,
+    });
 };
 
 /**
@@ -83,6 +103,7 @@ export const ensureMutualConnectionsForRows = async (
     rows: Array<{ boostId: string; targetId: string }>
 ): Promise<void> => {
     if (rows.length === 0) return;
+    const connectedAt = new Date().toISOString();
 
     const cypher = `
         UNWIND $rows AS row
@@ -92,14 +113,14 @@ export const ensureMutualConnectionsForRows = async (
         WITH boostId, targetId, 'boost:' + boostId AS key, selfId
         MATCH (a:Profile { profileId: selfId }), (b:Profile { profileId: targetId })
         MERGE (a)-[r:CONNECTED_WITH]->(b)
-        ON CREATE SET r.sources = [key]
+        ON CREATE SET r.sources = [key], r.createdAt = $connectedAt
         ON MATCH SET r.sources = CASE
             WHEN r.sources IS NULL THEN [key]
             WHEN NOT key IN r.sources THEN r.sources + key
             ELSE r.sources
         END
         MERGE (b)-[r2:CONNECTED_WITH]->(a)
-        ON CREATE SET r2.sources = [key]
+        ON CREATE SET r2.sources = [key], r2.createdAt = $connectedAt
         ON MATCH SET r2.sources = CASE
             WHEN r2.sources IS NULL THEN [key]
             WHEN NOT key IN r2.sources THEN r2.sources + key
@@ -107,7 +128,7 @@ export const ensureMutualConnectionsForRows = async (
         END
     `;
 
-    await neogma.queryRunner.run(cypher, { selfId, rows });
+    await neogma.queryRunner.run(cypher, { selfId, rows, connectedAt });
 };
 
 /**
