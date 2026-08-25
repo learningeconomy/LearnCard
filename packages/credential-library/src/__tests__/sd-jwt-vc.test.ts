@@ -172,6 +172,21 @@ describe('materializeSdJwtVcFixture', () => {
         ).rejects.toThrow(/holder.*JWK|Ed25519/i);
     });
 
+    it('rejects a holder JWK containing private key material', async () => {
+        const issuer = await makeKeypair();
+        const holder = await makeKeypair();
+        const issuerDid = toDidJwk(issuer.publicJwk);
+
+        await expect(
+            materializeSdJwtVcFixture(fixture, {
+                issuerDid,
+                issuerKid: `${issuerDid}#0`,
+                issuerSigner: await makeMaterializerSigner(issuer.privateJwk),
+                holderPublicJwk: { ...holder.privateJwk },
+            })
+        ).rejects.toThrow('holder key must be public and must not include private key material');
+    });
+
     it.each([
         ['issuer DID', { issuerDid: '', issuerKid: 'did:example:issuer#0' }],
         ['issuer KID', { issuerDid: 'did:example:issuer', issuerKid: '' }],

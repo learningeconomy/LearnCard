@@ -37,6 +37,14 @@ const validateNonEmptyIssuerValue = (value: string, name: string): void => {
 
 const validateHolderPublicJwk = (holderPublicJwk: Record<string, unknown>): void => {
     if (
+        holderPublicJwk &&
+        typeof holderPublicJwk === 'object' &&
+        Object.prototype.hasOwnProperty.call(holderPublicJwk, 'd')
+    ) {
+        throw new Error('holder key must be public and must not include private key material');
+    }
+
+    if (
         !holderPublicJwk ||
         typeof holderPublicJwk !== 'object' ||
         holderPublicJwk.kty !== 'OKP' ||
