@@ -1,6 +1,6 @@
 {
     "name": "learn-card-app",
-    "version": "1.98.0",
+    "version": "1.98.3",
     "private": true,
     "dependencies": {
         "@capacitor-community/in-app-review": "^8.0.0",
@@ -152,6 +152,7 @@
         "test-storybook:ci": "concurrently -k -s first -n \"SB,TEST\" -c \"magenta,blue\" \"http-server storybook-static --port 6099 --silent\" \"wait-on tcp:127.0.0.1:6099 && test-storybook --url http://127.0.0.1:6099\"",
         "test:e2e:mock": "playwright test --config=playwright.mock.config.ts",
         "test:e2e:mock:record": "PWHAR=update playwright test --config=playwright.mock-record.config.ts",
+        "test:a11y": "playwright test --config=playwright.a11y.config.ts tests/accessibility.spec.ts",
         "prepare-config": "bun scripts/prepare-native-config.ts",
         "generate-assets": "bun scripts/generate-tenant-assets.ts",
         "validate-configs": "bun scripts/validate-tenant-configs.ts",
@@ -165,7 +166,7 @@
         "docker-start:tenant": "bun scripts/prepare-native-config.ts ${TENANT:-learncard} --stage ${STAGE:-local} ${LOCAL_AIP:+--local-aip} && vite --host",
         "serve": "vite",
         "build": "bun scripts/prepare-native-config.ts ${TENANT:-learncard} ${STAGE:+--stage $STAGE} && NODE_OPTIONS=\"--max-old-space-size=16608\" vite build",
-        "docker-build": "export VITE_DOCKER_SOURCE=true && bun scripts/prepare-native-config.ts learncard --stage local && NODE_OPTIONS=\"--max-old-space-size=16608\" vite build",
+        "docker-build": "bun scripts/prepare-native-config.ts learncard --stage local && NODE_OPTIONS=\"--max-old-space-size=6144\" vite build",
         "test:unit": "vitest run",
         "test:live-ctdl": "LEARNCARD_PATHWAYS_LIVE_TESTS=1 vitest run src/pages/pathways/import/fetchCtdlPathway.live.test.ts",
         "test-playwright": "playwright test",
@@ -199,6 +200,7 @@
         ]
     },
     "devDependencies": {
+        "@axe-core/playwright": "^4.12.1",
         "@capacitor/assets": "^3.0.5",
         "@capacitor/cli": "^8.3.1",
         "@capgo/cli": "^7.2.10",
@@ -236,11 +238,11 @@
         "postcss": "^8.5.10",
         "rollup-plugin-visualizer": "^6.0.5",
         "sass": "^1.84.0",
-        "sharp": "^0.34.5",
+        "sharp": "^0.35.0",
         "storybook": "8.6.18",
         "tailwindcss": "^3.4.17",
         "tsx": "^4.19.0",
-        "vite": "6.4.2",
+        "vite": "^6.4.3",
         "vite-plugin-svgr": "^3.3.0",
         "vite-tsconfig-paths": "4.2.3",
         "vitest": "^3.0.0",

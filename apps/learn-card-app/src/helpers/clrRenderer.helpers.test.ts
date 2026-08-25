@@ -4,8 +4,15 @@ import type { VC } from '@learncard/types';
 import { clrUniversityTranscript } from '../../../../packages/credential-library/src/fixtures/clr/university-transcript';
 import { clrNdStudentTranscript } from '../../../../packages/credential-library/src/fixtures/clr/nd-student-transcript';
 import { clrGreatPlainsFull } from '../../../../packages/credential-library/src/fixtures/clr/great-plains-full';
+import { obv3CourseCompletion } from '../../../../packages/credential-library/src/fixtures/obv3/course-completion';
+import { obv3StandaloneFullCourse } from '../../../../packages/credential-library/src/fixtures/obv3/standalone-full-course';
 
-import { normalizeClrTranscriptDisplayModel, selectClrTranscriptView } from './clrRenderer.helpers';
+import {
+    ClrTranscriptSurface,
+    isStandaloneCourseCredential,
+    normalizeClrTranscriptDisplayModel,
+    selectClrTranscriptView,
+} from './clrRenderer.helpers';
 import { getClrTranscriptKind } from '../components/clr-transcript/clrKind.helpers';
 
 describe('normalizeClrTranscriptDisplayModel', () => {
@@ -22,8 +29,27 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         ).toBeTruthy();
         expect(model.summary.gpa).toBeUndefined();
         expect(model.quality.level).toBe('rich');
-        expect(selectClrTranscriptView(model, { viewer: 'student', surface: 'full' })).toBe(
-            'StructuredTranscriptView'
+        expect(
+            selectClrTranscriptView(model, {
+                viewer: 'student',
+                surface: ClrTranscriptSurface.Full,
+            })
+        ).toBe('StructuredTranscriptView');
+    });
+
+    it('normalizes a CLR with its single credential subject encoded as an array', () => {
+        const credential = clrUniversityTranscript.credential as unknown as Record<string, unknown>;
+        const objectSubjectModel = normalizeClrTranscriptDisplayModel(credential);
+        const arraySubjectModel = normalizeClrTranscriptDisplayModel({
+            ...credential,
+            credentialSubject: [credential.credentialSubject],
+        });
+
+        expect(arraySubjectModel.courses).toHaveLength(objectSubjectModel.courses.length);
+        expect(arraySubjectModel.programs).toHaveLength(objectSubjectModel.programs.length);
+        expect(arraySubjectModel.associations).toHaveLength(objectSubjectModel.associations.length);
+        expect(arraySubjectModel.header.learnerIdentifiers.value).toEqual(
+            objectSubjectModel.header.learnerIdentifiers.value
         );
     });
 
@@ -40,9 +66,12 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         expect(
             model.warnings.some(warning => warning.code === 'LARGE_INLINE_EVIDENCE')
         ).toBeTruthy();
-        expect(selectClrTranscriptView(model, { viewer: 'student', surface: 'full' })).toBe(
-            'SparseAcademicRecordView'
-        );
+        expect(
+            selectClrTranscriptView(model, {
+                viewer: 'student',
+                surface: ClrTranscriptSurface.Full,
+            })
+        ).toBe('SparseAcademicRecordView');
     });
 
     it('stress-handles full great plains fixture and keeps no-guessing classification', () => {
@@ -59,6 +88,93 @@ describe('normalizeClrTranscriptDisplayModel', () => {
         expect(
             model.otherRecords.some(record => record.reason === 'unsupportedAchievementType')
         ).toBeTruthy();
+    });
+
+    it('normalizes an eligible standalone OBv3 Course as a single course record', () => {
+        const credential = obv3StandaloneFullCourse.credential as unknown as Record<
+            string,
+            unknown
+        >;
+        const model = normalizeClrTranscriptDisplayModel(credential);
+
+        expect(isStandaloneCourseCredential(credential)).toBe(true);
+        expect(model.courses).toHaveLength(1);
+        expect(model.courses[0]?.name?.value).toBe('Applied Data Ethics and Responsible AI');
+        expect(model.courses[0]?.humanCode?.value).toBe('DAI-318');
+        expect(model.courses[0]?.term?.value).toBe('Spring 2026');
+        expect(model.courses[0]?.creditsEarned?.value).toBe(4);
+        expect(model.courses[0]?.earnedAt?.value).toBe('2026-05-18T23:59:59Z');
+        expect(model.courses[0]?.results[0]?.value.value).toBe('A-');
+        expect(model.courses[0]?.results[2]?.value.value).toBe('Completed');
+        expect(model.header.issuerImage?.value).toBe(
+            'https://aster-ridge.example/brand/institute-mark.png'
+        );
+        expect(model.evidence).toHaveLength(2);
+        expect(
+            selectClrTranscriptView(model, {
+                viewer: 'student',
+                surface: ClrTranscriptSurface.Full,
+            })
+        ).toBe('StructuredTranscriptView');
+    });
+
+    it('does not select the course presentation from ambiguous standalone metadata', () => {
+        const keywordOnly = {
+            type: ['VerifiableCredential', 'AchievementCredential'],
+            name: 'Course Completion Credential',
+            issuer: { id: 'did:example:issuer', name: 'Example Institution' },
+            credentialSubject: {
+                achievement: { achievementType: 'Achievement', name: 'A Course About Ethics' },
+            },
+        };
+        const unnamedIssuer = {
+            ...keywordOnly,
+            credentialSubject: {
+                achievement: { achievementType: 'Course', name: 'Applied Ethics' },
+            },
+            issuer: { id: 'did:example:issuer' },
+        };
+
+        expect(isStandaloneCourseCredential(keywordOnly)).toBe(false);
+        expect(isStandaloneCourseCredential(unnamedIssuer)).toBe(false);
+    });
+
+    it('does not treat a Course credential with nested credentials as standalone', () => {
+        const credential = {
+            id: 'urn:test:course-wrapper',
+            type: ['VerifiableCredential', 'AchievementCredential'],
+            issuer: { id: 'did:example:issuer', name: 'Example Institution' },
+            evidence: [{ id: 'https://example.com/transcript.pdf' }],
+            credentialSubject: {
+                achievement: { achievementType: 'Course', name: 'Course wrapper' },
+                verifiableCredential: [
+                    {
+                        id: 'urn:test:nested-course',
+                        credentialSubject: {
+                            achievement: { achievementType: 'Course', name: 'Nested course' },
+                        },
+                    },
+                ],
+            },
+        };
+        const model = normalizeClrTranscriptDisplayModel(credential);
+
+        expect(isStandaloneCourseCredential(credential)).toBe(false);
+        expect(model.courses).toHaveLength(1);
+        expect(model.courses[0]?.name?.value).toBe('Nested course');
+        expect(model.evidence).toHaveLength(1);
+    });
+
+    it('keeps optional course fields optional when selecting the standalone presentation', () => {
+        const credential = obv3CourseCompletion.credential as unknown as Record<string, unknown>;
+        const model = normalizeClrTranscriptDisplayModel(credential);
+
+        expect(isStandaloneCourseCredential(credential)).toBe(true);
+        expect(model.courses).toHaveLength(1);
+        expect(model.courses[0]?.name?.value).toBe('Introduction to Machine Learning');
+        expect(model.courses[0]?.humanCode).toBeUndefined();
+        expect(model.courses[0]?.creditsEarned).toBeUndefined();
+        expect(model.courses[0]?.results).toEqual([]);
     });
 
     it('does not infer GPA from text without GradePointAverage resultDescription', () => {
@@ -95,12 +211,18 @@ describe('normalizeClrTranscriptDisplayModel', () => {
             clrUniversityTranscript.credential as unknown as Record<string, unknown>
         );
 
-        expect(selectClrTranscriptView(model, { viewer: 'admin', surface: 'full' })).toBe(
-            'VerifierInspectionView'
-        );
-        expect(selectClrTranscriptView(model, { viewer: 'registrar', surface: 'embed' })).toBe(
-            'VerifierInspectionView'
-        );
+        expect(
+            selectClrTranscriptView(model, {
+                viewer: 'admin',
+                surface: ClrTranscriptSurface.Full,
+            })
+        ).toBe('VerifierInspectionView');
+        expect(
+            selectClrTranscriptView(model, {
+                viewer: 'registrar',
+                surface: ClrTranscriptSurface.Embed,
+            })
+        ).toBe('VerifierInspectionView');
     });
 
     it('uses title heuristics when structured CLR signals are sparse', () => {

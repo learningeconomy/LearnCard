@@ -1,5 +1,28 @@
 # @learncard/network-brain-client
 
+## 2.5.51
+
+### Patch Changes
+
+-   Updated dependencies [[`148b5ea6a26e03c1e7522048881871016fc45f27`](https://github.com/learningeconomy/LearnCard/commit/148b5ea6a26e03c1e7522048881871016fc45f27), [`e8f3934e12cc6fd8550db6539e637bf4aea75c87`](https://github.com/learningeconomy/LearnCard/commit/e8f3934e12cc6fd8550db6539e637bf4aea75c87)]:
+    -   @learncard/network-brain-service@3.16.14
+
+## 2.5.50
+
+### Patch Changes
+
+-   [#1473](https://github.com/learningeconomy/LearnCard/pull/1473) [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump @trpc/server, fastify, @fastify/static (7 high Dependabot alerts)
+
+-   Updated dependencies [[`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417)]:
+    -   @learncard/network-brain-service@3.16.13
+
+## 2.5.49
+
+### Patch Changes
+
+-   Updated dependencies [[`36cc19241aa3bbe6c82a1664f967992d09176d4a`](https://github.com/learningeconomy/LearnCard/commit/36cc19241aa3bbe6c82a1664f967992d09176d4a), [`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4), [`540434989e3b0e15b9d3ca76388ca4de6730a56b`](https://github.com/learningeconomy/LearnCard/commit/540434989e3b0e15b9d3ca76388ca4de6730a56b)]:
+    -   @learncard/network-brain-service@3.16.12
+
 ## 2.5.48
 
 ### Patch Changes

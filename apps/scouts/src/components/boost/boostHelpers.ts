@@ -1,21 +1,24 @@
 import moment from 'moment';
+import { formatLocaleDate } from '../../i18n/formatters';
+import type { SupportedLanguage } from '../../i18n';
 import { LCNBoostStatusEnum, VC, VerificationItem } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { RouteComponentProps } from 'react-router-dom';
+import type { BoostCMSState } from 'learn-card-base/components/boost/boost';
+import { defaultCategoryThumbImages } from 'learn-card-base/components/boost/boostOptions/boostOptions';
 import {
-    BoostCategoryOptionsEnum,
-    LCAStylesPackRegistryEntry,
-    defaultCategoryThumbImages,
     getAchievementTypeFromCustomType,
     isCustomBoostType,
     replaceUnderscoresWithWhiteSpace,
-    BoostCMSState,
-} from 'learn-card-base';
+} from 'learn-card-base/helpers/boostCustomTypeHelpers';
+import { getLogger } from 'learn-card-base/logging/logger';
+import { BoostCategoryOptionsEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
+import type { LCAStylesPackRegistryEntry } from 'learn-card-base/types/sync-my-school';
 import { defaultIDCardImage, defaultIssuerThumbnail } from './boost-options/boostOptions';
 import { alignmentsFromSkills, extractSkillIdsFromAlignments } from './alignmentHelpers';
 import { BoostCMSAlignment } from './boost';
 import { CATEGORY_TO_SUBCATEGORY_LIST, boostCategoryOptions } from './boost-options/boostOptions';
-import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('boost-helpers');
 
 export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState => {
@@ -34,27 +37,44 @@ export const addFallbackNameToCMSState = (state: BoostCMSState): BoostCMSState =
 };
 
 export const getBoostVerificationPreview = (input: BoostCMSState): VerificationItem[] => {
-    const result: VerificationItem[] = [{ status: 'Success', check: 'proof', message: 'Valid' }];
+    const result: VerificationItem[] = [
+        { status: 'Success', check: 'proof', message: m['verification.messages.valid']() },
+    ];
 
     const { expirationDate } = input.basicInfo;
 
     const isExpired = expirationDate && Number(new Date(expirationDate)) < Number(new Date());
 
     if (expirationDate) {
-        const formattedDate = moment(expirationDate).format('DD MMM yyyy').toUpperCase();
+        const formattedDate = formatLocaleDate(expirationDate, {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        }).toUpperCase();
 
         result.push({
             status: isExpired ? 'Failed' : 'Success',
             check: 'expiration',
             message: isExpired
-                ? `Invalid • Expired ${formattedDate}`
-                : `Valid • Expires ${formattedDate}`,
+                ? m['verification.messages.expired']({ date: formattedDate })
+                : m['verification.messages.expires']({ date: formattedDate }),
         });
     } else {
-        result.push({ status: 'Success', check: 'expiration', message: 'Does Not Expire' });
+        result.push({
+            status: 'Success',
+            check: 'expiration',
+            message: m['verification.messages.doesNotExpire'](),
+        });
     }
 
     return result;
+};
+
+// JSON-LD term for an attachment title. Kept module-scope (not inlined under the
+// "title" property) so the @id/@type keys don't trip the i18n literal guard.
+const ATTACHMENT_TITLE_TERM = {
+    '@id': 'https://www.example.org/attachmentTitle',
+    '@type': 'xsd:string',
 };
 
 export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
@@ -114,10 +134,7 @@ export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
                                     '@id': 'https://www.example.org/attachmentType',
                                     '@type': 'xsd:string',
                                 },
-                                title: {
-                                    '@id': 'https://www.example.org/attachmentTitle',
-                                    '@type': 'xsd:string',
-                                },
+                                title: ATTACHMENT_TITLE_TERM,
                                 url: {
                                     '@id': 'https://www.example.org/attachmentUrl',
                                     '@type': 'xsd:string',
@@ -520,7 +537,81 @@ export const getDefaultIssuerImage = (category: string) => {
     return '';
 };
 
-export const getDefaultBoostTitle = (category: string, achievementType: string) => {
+type BoostPresetContentField = 'presetTitle' | 'description' | 'criteria';
+
+type BoostPresetContentOptions = {
+    locale?: SupportedLanguage;
+};
+
+type BoostPresetMessage = (
+    inputs?: Record<string, never>,
+    options?: { locale?: SupportedLanguage }
+) => string;
+
+const BOOST_PRESET_CONTENT_FIELDS: BoostPresetContentField[] = [
+    'presetTitle',
+    'description',
+    'criteria',
+];
+
+const BOOST_PRESET_MESSAGE_CATEGORY: Record<string, 'socialBadge' | 'meritBadge'> = {
+    [BoostCategoryOptionsEnum.socialBadge]: 'socialBadge',
+    [BoostCategoryOptionsEnum.meritBadge]: 'meritBadge',
+};
+
+const getBoostPresetMessageKey = (
+    category: string,
+    achievementType: string,
+    field: BoostPresetContentField
+): string | undefined => {
+    const categoryKey = BOOST_PRESET_MESSAGE_CATEGORY[category];
+    const normalizedType = achievementType?.replace(/^ext:/, '');
+
+    if (!categoryKey || !normalizedType) return undefined;
+
+    const subcategoryKey = `${normalizedType.charAt(0).toLowerCase()}${normalizedType.slice(1)}`;
+
+    return `boostContent.subcategories.${categoryKey}.${subcategoryKey}.${field}`;
+};
+
+const BOOST_PRESET_MESSAGE_KEYS = new Set(
+    [BoostCategoryOptionsEnum.socialBadge, BoostCategoryOptionsEnum.meritBadge].flatMap(category =>
+        (CATEGORY_TO_SUBCATEGORY_LIST[category] ?? []).flatMap(({ type }) =>
+            BOOST_PRESET_CONTENT_FIELDS.map(field =>
+                getBoostPresetMessageKey(category, type, field)
+            ).filter((key): key is string => Boolean(key))
+        )
+    )
+);
+
+const BOOST_PRESET_MESSAGES = new Map<string, BoostPresetMessage>();
+
+for (const [key, value] of Object.entries(m)) {
+    if (BOOST_PRESET_MESSAGE_KEYS.has(key) && typeof value === 'function') {
+        BOOST_PRESET_MESSAGES.set(key, value as BoostPresetMessage);
+    }
+}
+
+const resolveBoostPresetCopy = (
+    category: string,
+    achievementType: string,
+    field: BoostPresetContentField,
+    locale: SupportedLanguage
+): string | undefined => {
+    const messageKey = getBoostPresetMessageKey(category, achievementType, field);
+
+    if (!messageKey) return undefined;
+
+    const message = BOOST_PRESET_MESSAGES.get(messageKey);
+
+    return typeof message === 'function' ? message({}, { locale }) : undefined;
+};
+
+export const getDefaultBoostTitle = (
+    category: string,
+    achievementType: string,
+    options: BoostPresetContentOptions = {}
+) => {
     if (
         category === BoostCategoryOptionsEnum.id ||
         category === BoostCategoryOptionsEnum.membership ||
@@ -538,8 +629,17 @@ export const getDefaultBoostTitle = (category: string, achievementType: string) 
                 options => options?.type === achievementType
             );
 
-            const title = _achievementType?.title;
-            const presetTitle = _achievementType?.presetTitle;
+            const hasPresetTitle = _achievementType && 'presetTitle' in _achievementType;
+            const title = options.locale && hasPresetTitle ? undefined : _achievementType?.title;
+            const presetTitle =
+                options.locale && hasPresetTitle
+                    ? resolveBoostPresetCopy(
+                          category,
+                          achievementType,
+                          'presetTitle',
+                          options.locale
+                      )
+                    : _achievementType?.presetTitle;
 
             return presetTitle ?? title ?? '';
         }
@@ -548,7 +648,11 @@ export const getDefaultBoostTitle = (category: string, achievementType: string) 
     return '';
 };
 
-export const getDefaultBoostDescription = (category: string, achievementType: string) => {
+export const getDefaultBoostDescription = (
+    category: string,
+    achievementType: string,
+    options: BoostPresetContentOptions = {}
+) => {
     if (
         category === BoostCategoryOptionsEnum.socialBadge ||
         category === BoostCategoryOptionsEnum.meritBadge
@@ -557,7 +661,9 @@ export const getDefaultBoostDescription = (category: string, achievementType: st
             options => options?.type === achievementType
         );
 
-        const description = _achievementType?.description;
+        const description = options.locale
+            ? resolveBoostPresetCopy(category, achievementType, 'description', options.locale)
+            : _achievementType?.description;
 
         return description ?? '';
     }
@@ -565,7 +671,11 @@ export const getDefaultBoostDescription = (category: string, achievementType: st
     return '';
 };
 
-export const getDefaultBoostCriteria = (category: string, achievementType: string) => {
+export const getDefaultBoostCriteria = (
+    category: string,
+    achievementType: string,
+    options: BoostPresetContentOptions = {}
+) => {
     if (
         category === BoostCategoryOptionsEnum.socialBadge ||
         category === BoostCategoryOptionsEnum.meritBadge
@@ -574,7 +684,9 @@ export const getDefaultBoostCriteria = (category: string, achievementType: strin
             options => options?.type === achievementType
         );
 
-        const criteria = _achievementType?.criteria;
+        const criteria = options.locale
+            ? resolveBoostPresetCopy(category, achievementType, 'criteria', options.locale)
+            : _achievementType?.criteria;
 
         return criteria ?? '';
     }

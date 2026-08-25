@@ -77,7 +77,6 @@ jobs:
                   openid4vc-plugin
                   render-method-plugin
                   sd-jwt-vc-plugin
-                  simple-signing-plugin
                   vc-api-plugin
                   vc-plugin
                   vc-templates-plugin

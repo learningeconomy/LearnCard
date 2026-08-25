@@ -187,9 +187,7 @@ export const tenantFeatureConfigSchema = z
 
         /**
          * Dashboard home — makes `/dashboard` the post-login landing route and the
-         * first side-menu entry instead of the Passport (`/wallet`) home. Default
-         * off. Paired with the `enableDashboardHome` LaunchDarkly flag; both must
-         * be on. See `apps/learn-card-app/src/pages/dashboard/hooks/useDashboardAsHome.ts`.
+         * first side-menu entry instead of the Passport (`/wallet`) home.
          */
         dashboardHome: z.boolean().default(false),
 

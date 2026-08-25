@@ -17,16 +17,13 @@ interface AppDetailsStepProps {
 
 export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, errors }) => {
     const flags = useFlags();
-
-    // Filter category options based on pluginVisibility flag
-    const visibleCategoryOptions = useMemo(() => {
-        return CATEGORY_OPTIONS.filter(cat => {
-            if (cat.value === 'plugin' && !flags?.pluginVisibility) {
-                return false;
-            }
-            return true;
-        });
-    }, [flags?.pluginVisibility]);
+    const visibleCategoryOptions = useMemo(
+        () =>
+            CATEGORY_OPTIONS.filter(
+                category => category.value !== 'plugin' || flags?.pluginVisibility
+            ),
+        [flags?.pluginVisibility]
+    );
 
     const handleChange = (field: keyof AppStoreListingCreate, value: string) => {
         onChange({ [field]: value });

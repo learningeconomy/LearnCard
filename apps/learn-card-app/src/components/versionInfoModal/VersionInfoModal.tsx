@@ -902,7 +902,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 // Match the app-wide pattern (AppStoreDetailModal, ShareCredentialModal
                 // etc.): respect the iOS notch/dynamic-island inset when the modal is
                 // rendered as a fullscreen cancel sheet, fall back to 1.5rem elsewhere.
-                paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+                paddingTop: '1.5rem',
             }}
         >
             {/* ---- Hero ---------------------------------------------------------- */}

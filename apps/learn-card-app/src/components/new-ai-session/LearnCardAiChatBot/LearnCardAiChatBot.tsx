@@ -1,9 +1,13 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
+import {
+    addActiveLocaleToUrl,
+    useDeviceTypeByWidth,
+    useKeyboardHeight,
+    isPlatformIOS,
+} from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { getLogger } from 'learn-card-base';
-const log = getLogger('learn-card-ai-chat-bot');
 
 import {
     useAnalytics,
@@ -19,6 +23,7 @@ import CaretDown from '../../svgs/CaretDown';
 import AiChatLoading from './AiChatLoading';
 import AiSessionPlan from './AiSessionPlan';
 import AiSessionLoader from '../AiSessionLoader';
+import AiSessionErrorHandler from '../AiSessionErrorHandler';
 import { MessageWithQuestions, StreamingMessage } from './MessageWithQuestions';
 import ChatBotTypingIndicator from '../NewAiSessionChatBot/helpers/TypingIndicator';
 
@@ -41,7 +46,7 @@ import { auth } from 'learn-card-base/stores/nanoStores/authStore';
 
 import type { ChatMessage } from 'learn-card-base/types/ai-chat';
 
-import { sessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
+import { getSessionWrapUpText, AiSessionMode } from '../newAiSession.helpers';
 import {
     AiPassportAppContractUri,
     getAiPassportAppByContractUri,
@@ -49,6 +54,8 @@ import {
 import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 import { useStickToBottom } from '../../../hooks/useStickToBottom';
 import { preloadMarkdownRenderer } from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
+
+const log = getLogger('learn-card-ai-chat-bot');
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
@@ -212,7 +219,9 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                             form.append('threadId', threadId);
                             form.append('event', 'hidden');
                             navigator.sendBeacon(
-                                `${getBackendUrl()}/threads/visibility?did=${did}`,
+                                addActiveLocaleToUrl(
+                                    `${getBackendUrl()}/threads/visibility?did=${did}`
+                                ),
                                 form
                             );
                             log.debug('sent beacon after 5min hidden');
@@ -231,7 +240,10 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     form.append('did', did);
                     form.append('threadId', threadId);
                     form.append('event', 'visible');
-                    navigator.sendBeacon(`${getBackendUrl()}/threads/visibility?did=${did}`, form);
+                    navigator.sendBeacon(
+                        addActiveLocaleToUrl(`${getBackendUrl()}/threads/visibility?did=${did}`),
+                        form
+                    );
                     log.debug('sent beacon visible');
                 }
             }
@@ -358,6 +370,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         ) {
             return;
         }
+
         const response = aiResponseQueueRef.current[0];
         if (!response?.lifecycle.terminate()) {
             aiHandledErrorAtRef.current = aiError.at;
@@ -367,7 +380,8 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             flow_id: aiFlowIdRef.current,
             surface: 'ai_chat',
             message_index: response.messageIndex,
-            error_code: aiError.code,
+            error_code:
+                aiError.event === 'ai_error' ? aiError.rawCode ?? aiError.code : aiError.code,
             duration_ms: response.lifecycle.durationMs(),
         });
         if (streaming) {
@@ -390,13 +404,14 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     return (
         <AiFeatureGate>
             <div
-                className="flex flex-col h-full min-h-0 w-full bg-white"
+                className="relative flex flex-col h-full min-h-0 w-full bg-white"
                 style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
             >
+                <AiSessionErrorHandler />
                 {isEnding && showEndingLoader && (
                     <AiSessionLoader
                         contractUri={contractUri}
-                        overrideText={sessionWrapUpText}
+                        overrideText={getSessionWrapUpText()}
                         // !force user to wait
                         // showActionButton={true}
                         // actionButtonText="Back to AI Sessions"
@@ -476,7 +491,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                         </div>
                                     )}
 
-                                    {typing && !streaming && (
+                                    {typing && !streaming && !aiError && (
                                         <div
                                             role="status"
                                             aria-label="AI is responding"

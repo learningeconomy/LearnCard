@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router-dom';
 
 import * as m from '../../paraglide/messages.js';
@@ -20,12 +19,14 @@ import {
     useExistingAiInsightCredential,
     useAiFeatureGate,
     useGetCredentialsForSkills,
+    useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { SELF_ASSIGNED_SKILLS_BOOST_NAME } from 'learn-card-base/helpers/credentialHelpers';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
+import MainHeader from '../../components/main-header/MainHeader';
 import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
 import useOpenNotifications from '../../components/notifications/useOpenNotifications';
 import { summarizeConsent } from '../../components/data-sharing/consentSummary';
@@ -82,10 +83,10 @@ import { AnalyticsEvents, useAnalytics } from '@analytics';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
+import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
 
 const DashboardPage: React.FC = () => {
     const history = useHistory();
-    const flags = useFlags();
     const { track } = useAnalytics();
     const { getIconSet, getColorSet } = useTheme();
     const brandingConfig = useBrandingConfig();
@@ -115,6 +116,7 @@ const DashboardPage: React.FC = () => {
     });
 
     const onHeaderScroll = useHeaderScrollSync();
+    const { isMobile } = useDeviceTypeByWidth();
 
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
@@ -189,9 +191,8 @@ const DashboardPage: React.FC = () => {
 
     const { data: consentedContracts = [] } = useConsentedContracts();
 
-    const showAiInsights = Boolean(flags?.showAiInsights);
     const { isAiEnabled } = useAiFeatureGate();
-    const aiInsightsAllowed = showAiInsights && isAiEnabled;
+    const aiInsightsAllowed = isAiEnabled;
     const { data: existingAiInsightCredential } = useExistingAiInsightCredential({
         enabled: aiInsightsAllowed,
     });
@@ -391,7 +392,7 @@ const DashboardPage: React.FC = () => {
         hasSkillProfile,
         nextNodeTitle: goalSummary?.nextNode?.title,
         pathwaysEnabled,
-        showAiInsights: aiInsightsAllowed,
+        aiInsightsEnabled: aiInsightsAllowed,
     };
 
     const actionHandlers: ActionHandlers = {
@@ -411,6 +412,7 @@ const DashboardPage: React.FC = () => {
     const slotIcons: SlotIcons = {
         collect: sideMenuIcons.wallet,
         understand: sideMenuIcons[CredentialCategoryEnum.aiInsight],
+        skills: sideMenuIcons[CredentialCategoryEnum.skill],
         navigate: sideMenuIcons.pathways,
     };
 
@@ -551,6 +553,23 @@ const DashboardPage: React.FC = () => {
     return (
         <IonPage className="bg-grayscale-100">
             <ErrorBoundary fallback={<ErrorBoundaryFallback />}>
+                {isMobile && (
+                    <MainHeader
+                        customClassName=""
+                        style={{
+                            background:
+                                'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.8))',
+                            backdropFilter: 'blur(5px)',
+                            WebkitBackdropFilter: 'blur(5px)',
+                            borderBottom: '1px solid white',
+                        }}
+                    />
+                )}
+                {!isMobile && (
+                    <div className="absolute right-[10px] top-[10px] z-20">
+                        <ProfileAlertsIsland />
+                    </div>
+                )}
                 <IonContent
                     fullscreen
                     color="grayscale-100"

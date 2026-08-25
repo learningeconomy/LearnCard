@@ -1,5 +1,38 @@
 # @welibraryos/lca-api-service
 
+## 1.2.24
+
+### Patch Changes
+
+-   [#1453](https://github.com/learningeconomy/LearnCard/pull/1453) [`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Retire the legacy CHAPI example, MetaMask Snap projects, Discord bot, and Simple Signing service, client, and plugin.
+
+    Managed signing authority consumers now use `@learncard/lca-api-plugin`. Replace `getSimpleSigningPlugin(learnCard, endpoint)` with `getLCAPlugin(learnCard, endpoint)`. Historical implementations remain available through Git history.
+
+-   [#1473](https://github.com/learningeconomy/LearnCard/pull/1473) [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump @trpc/server, fastify, @fastify/static (7 high Dependabot alerts)
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.30
+    -   @learncard/init@2.4.11
+    -   @learncard/did-web-plugin@1.1.30
+    -   @learncard/didkit-plugin@1.9.10
+    -   @learncard/didkit-plugin-node@0.2.28
+
+## 1.2.23
+
+### Patch Changes
+
+-   [#1460](https://github.com/learningeconomy/LearnCard/pull/1460) [`36cc19241aa3bbe6c82a1664f967992d09176d4a`](https://github.com/learningeconomy/LearnCard/commit/36cc19241aa3bbe6c82a1664f967992d09176d4a) Thanks [@goblincore](https://github.com/goblincore)! - [LC-2073] fix(e2e): fix failing E2E tests, reduce LearnCard App Docker build memory, fix OOM error for e2e test runner
+
+-   [#1448](https://github.com/learningeconomy/LearnCard/pull/1448) [`540434989e3b0e15b9d3ca76388ca4de6730a56b`](https://github.com/learningeconomy/LearnCard/commit/540434989e3b0e15b9d3ca76388ca4de6730a56b) Thanks [@Custard7](https://github.com/Custard7)! - fix: OpenAPI base URL
+
+-   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4), [`6796b321354ca870e4dfa3606719f9882221bc1b`](https://github.com/learningeconomy/LearnCard/commit/6796b321354ca870e4dfa3606719f9882221bc1b)]:
+    -   @learncard/didkit-plugin@1.9.9
+    -   @learncard/didkit-plugin-node@0.2.27
+    -   @learncard/types@5.18.1
+    -   @learncard/init@2.4.10
+    -   @learncard/core@9.4.29
+    -   @learncard/did-web-plugin@1.1.29
+
 ## 1.2.22
 
 ### Patch Changes

@@ -10,13 +10,13 @@ Choose your preferred package manager:
 
 ```bash
 # Using npm
-npm install @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin
+npm install @learncard/init @learncard/claimable-boosts-plugin @learncard/lca-api-plugin
 
 # Using yarn
-yarn add @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin
+yarn add @learncard/init @learncard/claimable-boosts-plugin @learncard/lca-api-plugin
 
 # Using Bun
-bun add @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin
+bun add @learncard/init @learncard/claimable-boosts-plugin @learncard/lca-api-plugin
 ```
 
 ### Quickstart
@@ -36,7 +36,7 @@ This example shows the minimum setup to generate your first claimable boost link
 ```javascript
 import { initLearnCard } from '@learncard/init';
 import { getClaimableBoostsPlugin } from '@learncard/claimable-boosts-plugin';
-import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
+import { getLCAPlugin } from '@learncard/lca-api-plugin';
 
 // Ensure you have set the SECURE_SEED environment variable
 const seed = process.env.SECURE_SEED;
@@ -58,12 +58,12 @@ async function quickstartBoost() {
             allowRemoteContexts: true,
         });
 
-        const signingLearnCard = await learnCard.addPlugin(
-            await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc')
+        const lcaApiLearnCard = await learnCard.addPlugin(
+            await getLCAPlugin(learnCard, 'https://api.learncard.app/trpc')
         );
 
-        const claimableLearnCard = await signingLearnCard.addPlugin(
-            await getClaimableBoostsPlugin(signingLearnCard)
+        const claimableLearnCard = await lcaApiLearnCard.addPlugin(
+            await getClaimableBoostsPlugin(lcaApiLearnCard)
         );
         console.log('LearnCard initialized with plugins.');
 
@@ -161,7 +161,7 @@ This section provides a comprehensive walkthrough of creating and managing Claim
 ```javascript
 import { initLearnCard } from '@learncard/init';
 import { getClaimableBoostsPlugin } from '@learncard/claimable-boosts-plugin';
-import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
+import { getLCAPlugin } from '@learncard/lca-api-plugin';
 ```
 
 2. Initialize LearnCard: Instantiate LearnCard, enabling network features and adding necessary plugins. The seed should be kept secure and never exposed in client-side code or committed to repositories.
@@ -175,14 +175,14 @@ const learnCard = await initLearnCard({
     allowRemoteContexts: true, // Required for standard credential contexts
 });
 
-// Add signing capability
-const signingLearnCard = await learnCard.addPlugin(
-    await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc') // Use the LearnCard API endpoint
+// Add managed signing authority capability through the LCA API
+const lcaApiLearnCard = await learnCard.addPlugin(
+    await getLCAPlugin(learnCard, 'https://api.learncard.app/trpc')
 );
 
 // Add claimable boosts capability
-const claimableLearnCard = await signingLearnCard.addPlugin(
-    await getClaimableBoostsPlugin(signingLearnCard)
+const claimableLearnCard = await lcaApiLearnCard.addPlugin(
+    await getClaimableBoostsPlugin(lcaApiLearnCard)
 );
 ```
 
@@ -322,7 +322,7 @@ This script combines all steps, including basic error handling for profile creat
 ```javascript
 import { initLearnCard } from '@learncard/init';
 import { getClaimableBoostsPlugin } from '@learncard/claimable-boosts-plugin';
-import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
+import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import QRCode from 'qrcode'; // Make sure to install: npm install qrcode
 
 async function createClaimableBadgeFull() {
@@ -343,11 +343,11 @@ async function createClaimableBadgeFull() {
       network: true,
       allowRemoteContexts: true
     });
-    const signingLearnCard = await learnCard.addPlugin(
-      await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc')
+    const lcaApiLearnCard = await learnCard.addPlugin(
+      await getLCAPlugin(learnCard, 'https://api.learncard.app/trpc')
     );
-    const claimableLearnCard = await signingLearnCard.addPlugin(
-      await getClaimableBoostsPlugin(signingLearnCard)
+    const claimableLearnCard = await lcaApiLearnCard.addPlugin(
+      await getClaimableBoostsPlugin(lcaApiLearnCard)
     );
     console.log(`LearnCard Initialized. DID: ${claimableLearnCard.did}`);
 

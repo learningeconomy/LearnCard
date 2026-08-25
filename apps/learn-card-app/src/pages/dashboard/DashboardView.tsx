@@ -42,7 +42,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
 
     return (
         <div className="flex justify-center w-full font-poppins">
-            <div className="w-full max-w-[1200px] flex flex-col gap-5 px-4 pt-4 pb-[100px] desktop:px-8 desktop:pt-6 safe-area-top-margin">
+            <div className="w-full max-w-[1200px] flex flex-col gap-5 px-4 pt-4 pb-[100px] desktop:px-[120px] desktop:pt-6 safe-area-top-margin">
                 <GenericErrorBoundary>
                     <DashboardHeaderCard
                         brandName={brandName}
@@ -56,12 +56,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                         onNotificationsClick={header.onNotificationsClick}
                         unreadCount={header.unreadCount}
                         roleSwitcher={header.roleSwitcher}
-                        topRightAction={
+                        qrCodeAction={
                             <button
                                 type="button"
                                 onClick={header.onScanQrTopRight}
                                 aria-label={m['dashboard.header.scanQrAria']()}
-                                className="w-9 h-9 rounded-full bg-grayscale-100 hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800 active:scale-95"
+                                className="w-9 h-9 rounded-full bg-grayscale-100 hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <QRCodeScanner version="2" />
                             </button>

@@ -17,6 +17,7 @@ import {
     signInWithCustomToken,
 } from 'firebase/auth';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import * as m from '../paraglide/messages.js';
 
 import useFirebaseAnalytics from './useFirebaseAnalytics';
 import { useIonAlert } from '@ionic/react';
@@ -161,14 +162,14 @@ export const useFirebase = () => {
                     // Save the email locally so you don't need to ask the user for it again
                     // if they open the link on the same device.
                     window.localStorage.setItem('emailForSignIn', email);
-                    presentToast('A login link has been sent to your email.', {
+                    presentToast(m['login.linkSent'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
                 })
                 .catch(error => {
                     log.error('sendSignInLinkToEmail::error', error);
-                    presentToast('An error occurred, unable to send a login link!', {
+                    presentToast(m['login.linkSendError'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -187,14 +188,14 @@ export const useFirebase = () => {
             sendSignInLinkToEmail(auth(), email, actionCodeSettings)
                 .then(() => {
                     window.localStorage.setItem('emailForSignIn', email);
-                    presentToast('A login link has been sent to your email.', {
+                    presentToast(m['login.linkSent'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
                 })
                 .catch(error => {
                     log.error('sendSignInLinkToEmail::error', error);
-                    presentToast('An error occurred, unable to send a login link!', {
+                    presentToast(m['login.linkSendError'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -385,7 +386,7 @@ export const useFirebase = () => {
             log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 
             if (errorCode === 5111) {
-                presentToast('An error occured. Please refresh to fix.', {
+                presentToast(m['login.refreshToFix'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -505,9 +506,7 @@ export const useFirebase = () => {
 
                 if (errorCode === 'auth/popup-blocked') {
                     log.warn(`appleLogin popup blocked (${errorCode ?? 'unknown'})`, error);
-                    presentAlert(
-                        'Popups are blocked in your browser. Please enable Popups to login with this method.'
-                    );
+                    presentAlert(m['login.popupsBlocked']());
                 } else if (
                     errorCode === 'auth/cancelled-popup-request' ||
                     errorCode === 'auth/popup-closed-by-user'

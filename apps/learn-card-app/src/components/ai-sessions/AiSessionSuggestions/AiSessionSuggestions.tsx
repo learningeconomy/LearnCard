@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import AiSessionSuggestionsList from './AiSessionSuggestionsList';
 import NewAiSessionButton, {
     NewAiSessionButtonEnum,
@@ -19,11 +21,10 @@ export const AiSessionSuggestions: React.FC<{
                 {/* title */}
                 <div className="w-full flex items-center justify-center flex-col">
                     <h1 className="text-xl text-grayscale-900 font-semibold text-center">
-                        What would you like to learn today?
+                        {m['aiSession.chat.learnToday']()}
                     </h1>
                     <p className="text-grayscale-600 text-center font-notoSans mt-2">
-                        Explore something new, or continue learning from what you’ve already
-                        started.
+                        {m['aiSession.chat.learnTodaySubtitle']()}
                     </p>
                 </div>
 

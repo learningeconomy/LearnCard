@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
 import { IonRow, IonCol, IonPage } from '@ionic/react';
@@ -64,11 +65,10 @@ export const ScannerPermissionsPrompt: React.FC<{
                     <IonCol className="text-center">
                         <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                             <span className="font-bold text-grayscale-800">
-                                Enable camera permissions for:
+                                {m['scanner.camPermFor']()}
                             </span>
                             <br />
-                            New connection requests, New boosts (like achievements, credentials, and
-                            badges) via QR codes.
+                            {m['scanner.camPermDesc']()}
                         </p>
                         <br />
                     </IonCol>
@@ -82,7 +82,7 @@ export const ScannerPermissionsPrompt: React.FC<{
                             type="button"
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 text-xl w-full shadow-lg max-w-[320px]"
                         >
-                            Continue
+                            {m['common.continue']()}
                         </button>
 
                         <div className="w-full flex items-center justify-center m-4">
@@ -92,7 +92,7 @@ export const ScannerPermissionsPrompt: React.FC<{
                                 }}
                                 className="text-grayscale-900 text-center text-base w-full font-medium"
                             >
-                                Not Yet
+                                {m['notifications.notYet']()}
                             </button>
                         </div>
                     </IonCol>
@@ -100,11 +100,11 @@ export const ScannerPermissionsPrompt: React.FC<{
                 <IonRow className="flex items-center justify-center mt-4 w-full">
                     <IonCol className="flex items-center justify-center w-full">
                         <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
-                            Privacy Policy
+                            {m['login.privacyPolicy']()}
                         </button>
                         <span className="text-indigo-500 font-bold text-sm">&nbsp;•&nbsp;</span>
                         <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
-                            Terms of Service
+                            {m['login.termsOfService']()}
                         </button>
                     </IonCol>
                 </IonRow>

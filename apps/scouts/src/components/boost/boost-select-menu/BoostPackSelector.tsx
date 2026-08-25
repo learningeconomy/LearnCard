@@ -7,6 +7,9 @@ import { BoostPackOptionsModal } from './BoostPackOptionsModal';
 import { BadgePackOption, BadgePackOptionsEnum } from './badge-pack.helper';
 import { useGetCurrentUserTroopIdsResolved } from 'learn-card-base';
 import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
+import { getLocalizedBoostPackTypeTitle } from './boostPackCopy';
+import { useLocale } from '../../../i18n';
 
 interface BoostPackSelectorProps {
     boostPackType: BoostCategoryOptionsEnum;
@@ -49,6 +52,7 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
     showMoreOptionsCaret,
     hideNetworkBoostPacks,
 }) => {
+    const locale = useLocale();
     const { newModal, closeModal } = useModal();
     const { data: myTroopIdData, isLoading: troopIdDataLoading } =
         useGetCurrentUserTroopIdsResolved(hideNetworkBoostPacks);
@@ -67,7 +71,10 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
 
     const { boostPackTypeTitle, badgePackName, badgePackColor } = useMemo(() => {
         const baseData = {
-            boostPackTypeTitle: '',
+            boostPackTypeTitle: getLocalizedBoostPackTypeTitle(
+                boostPackSelected?.type,
+                boostPackType
+            ),
             badgePackName: 'ScoutPass',
             badgePackColor: '#248737', // Consider moving to constants
         };
@@ -76,7 +83,6 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
             case BadgePackOptionsEnum.network:
                 return {
                     ...baseData,
-                    boostPackTypeTitle: 'Network',
                     badgePackName: boostPackSelected.name,
                     badgePackColor: boostPackSelected.color,
                 };
@@ -84,7 +90,6 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
             case BadgePackOptionsEnum.troop:
                 return {
                     ...baseData,
-                    boostPackTypeTitle: 'Troop',
                     badgePackName: boostPackSelected.name,
                     badgePackColor: boostPackSelected.color,
                 };
@@ -93,16 +98,12 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
                 return boostPackType === BoostCategoryOptionsEnum.meritBadge
                     ? {
                           ...baseData,
-                          boostPackTypeTitle: 'Badge',
                           badgePackName: boostPackSelected?.name || baseData.badgePackName,
                           badgePackColor: boostPackSelected?.color || baseData.badgePackColor,
                       }
-                    : {
-                          ...baseData,
-                          boostPackTypeTitle: 'Boost',
-                      };
+                    : baseData;
         }
-    }, [boostPackType, boostPackSelected]);
+    }, [boostPackType, boostPackSelected, locale]);
 
     const handlePackSelection = () => {
         if (!showMoreOptionsCaret || troopIdDataLoading) return;
@@ -126,7 +127,7 @@ const BoostPackSelector: React.FC<BoostPackSelectorProps> = ({
             onClick={handlePackSelection}
             disabled={!showMoreOptionsCaret || troopIdDataLoading}
             className="w-full flex items-center justify-between rounded-full px-2 py-2 mt-6 shadow-soft-bottom"
-            aria-label={`Select ${boostPackTypeTitle} pack`}
+            aria-label={m['boost.selectTypePack']({ type: boostPackTypeTitle })}
         >
             <BoostPackListItem
                 loading={troopIdDataLoading}
@@ -164,14 +165,14 @@ const BoostPackListItem: React.FC<BoostPackListItemProps> = ({
                     name="crescent"
                     color="grayscale-900"
                     className="scale-[1]"
-                    aria-label="Loading packs"
+                    aria-label={m['boost.loadingPacks']()}
                 />
             ) : (
                 <WorldScoutIcon className="mr-2" fill={badgePackColor} aria-hidden="true" />
             )}
             <div className="flex flex-col items-start justify-center">
                 <h3 className="font-semibold text-grayscale-900 uppercase text-xs font-notoSans">
-                    {title} Pack
+                    {m['boost.titlePack']({ title })}
                 </h3>
                 <p className="text-[17px] font-normal font-notoSans line-clamp-1">{name}</p>
             </div>

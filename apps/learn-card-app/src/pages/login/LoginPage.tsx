@@ -52,6 +52,7 @@ import EUParentalConsentModalContent from '../../components/onboarding/onboardin
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
 import LoginWelcomePanel from './LoginWelcomePanel';
+import DesktopLoginBackground from './DesktopLoginBackground';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -431,30 +432,18 @@ export const LoginContent: React.FC = () => {
             ) : (
                 <>
                     <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                        <div
-                            className={`w-full p-3 rounded-[20px] border ${
-                                isNewUserSetup
-                                    ? 'bg-emerald-50 border-emerald-100'
-                                    : 'bg-white/20 border-white/10 backdrop-blur-sm'
-                            }`}
-                        >
-                            <p
-                                className={`text-sm font-medium ${
-                                    isNewUserSetup ? 'text-emerald-800' : 'text-white'
-                                }`}
-                            >
-                                {isNewUserSetup
-                                    ? m['login.prompt.newUser']()
-                                    : isReturningUser
-                                    ? m['login.prompt.returning']()
-                                    : m['login.prompt.default']()}
-                            </p>
-                        </div>
+                        <p className="w-full text-center text-sm font-medium text-white">
+                            {isNewUserSetup
+                                ? m['login.prompt.newUser']()
+                                : isReturningUser
+                                ? m['login.prompt.returning']()
+                                : m['login.prompt.default']()}
+                        </p>
                     </IonRow>
 
                     {showLinkedBanner && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
                                 <svg
                                     width="16"
                                     height="16"
@@ -488,7 +477,7 @@ export const LoginContent: React.FC = () => {
 
                     {installIntent?.listingId && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
                                 {installIntent.appIcon && (
                                     <img
                                         src={installIntent.appIcon}
@@ -514,7 +503,7 @@ export const LoginContent: React.FC = () => {
                     {((query.get('redirectTo') ?? '').includes('createFamily=true') ||
                         Boolean(query.get('underageFamily'))) && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
                                 <svg
                                     viewBox="0 0 24 24"
                                     fill="none"
@@ -590,15 +579,7 @@ export const LoginContent: React.FC = () => {
                                         log.warn('Failed to set Firebase persistence', e);
                                     }
                                 }}
-                                className={`
-                                    flex items-center gap-2.5 px-4 py-2 rounded-full
-                                    transition-all duration-200 select-none
-                                    ${
-                                        isPublicMode
-                                            ? 'bg-white/20 ring-1 ring-white/40'
-                                            : 'bg-white/10 hover:bg-white/15'
-                                    }
-                                `}
+                                className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <div
                                     className={`
@@ -622,7 +603,7 @@ export const LoginContent: React.FC = () => {
                                 <span
                                     className={`
                                     text-sm transition-colors duration-200
-                                    ${isPublicMode ? 'text-white font-medium' : 'text-white/60'}
+                                    ${isPublicMode ? 'text-white font-medium' : 'text-white'}
                                 `}
                                 >
                                     {m['login.sharedComputer']()}
@@ -635,7 +616,7 @@ export const LoginContent: React.FC = () => {
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
                             <button
                                 onClick={() => setShowQrLogin(true)}
-                                className="text-sm text-white/80 hover:text-white underline transition-colors"
+                                className="text-sm text-white hover:text-white underline transition-colors"
                             >
                                 {m['login.signInFromAnotherDevice']()}
                             </button>
@@ -657,7 +638,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     const { desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const loginBgColor =
-        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#058760';
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -710,16 +691,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                                     {alternateBgComponent ? (
                                         alternateBgComponent
                                     ) : desktopLoginBg ? (
-                                        <img
-                                            src={desktopLoginBg}
-                                            alt=""
-                                            aria-hidden="true"
-                                            className="w-full h-full object-cover"
-                                            onError={e => {
-                                                (e.target as HTMLImageElement).style.display =
-                                                    'none';
-                                            }}
-                                        />
+                                        <DesktopLoginBackground src={desktopLoginBg} />
                                     ) : (
                                         <LoginWelcomePanel />
                                     )}

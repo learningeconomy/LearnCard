@@ -72,7 +72,10 @@ type BoostEarnedCardProps = {
     className?: string;
     loading?: boolean;
     isInSkillsModal?: boolean;
+    /** Hides options on both the card and the credential preview. */
     hideOptionsMenu?: boolean;
+    /** Hides only the options trigger on the card. */
+    hideCardOptionsMenu?: boolean;
     textColor?: string;
     isClrChildCredential?: boolean;
     parentVerificationItems?: VerificationItem[];
@@ -100,6 +103,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     loading,
     isInSkillsModal,
     hideOptionsMenu = false,
+    hideCardOptionsMenu = false,
     textColor,
     isClrChildCredential = false,
     parentVerificationItems = [],
@@ -282,10 +286,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             lifecycleStatus,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
-            onDotsClick: () => {
-                if (hideOptionsMenu) return;
-                handleOptionsMenu();
-            },
+            onDotsClick: hideOptionsMenu ? undefined : handleOptionsMenu,
             subjectDID: idSubjectDID,
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
@@ -338,10 +339,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
-            onDotsClick: () => {
-                if (hideOptionsMenu) return;
-                handleOptionsMenu();
-            },
+            onDotsClick: hideOptionsMenu ? undefined : handleOptionsMenu,
             customThumbComponent: (
                 <CredentialBadgeNew
                     achievementType={achievementType}
@@ -427,7 +425,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     onCheckClick={onCheckMarkClick}
                     showChecked={showChecked}
                     checkStatus={initialCheckmarkState}
-                    optionsTriggerOnClick={hideOptionsMenu ? undefined : handleOptionsMenu}
+                    optionsTriggerOnClick={
+                        showSkeleton || hideOptionsMenu || hideCardOptionsMenu
+                            ? undefined
+                            : handleOptionsMenu
+                    }
                     className={`earned-small-card bg-white text-black z-[1000] mt-[15px] ${className}`}
                     customHeaderClass="boost-managed-card"
                     thumbImgSrc={badgeThumbnail}
@@ -595,7 +597,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     customHeaderClass="boost-managed-card"
                     thumbImgSrc={badgeThumbnail}
                     optionsTriggerOnClick={
-                        showSkeleton || hideOptionsMenu
+                        showSkeleton || hideOptionsMenu || hideCardOptionsMenu
                             ? undefined
                             : () => {
                                   handleOptionsMenu();
