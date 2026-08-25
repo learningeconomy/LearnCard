@@ -298,6 +298,84 @@ describe('Query API', () => {
         }
     });
 
+    it('rejects W3C fixtures inside the reserved SD-JWT ID prefix', () => {
+        const w3cFixture = ALL_FIXTURES.find(isCredentialFixture);
+        if (!w3cFixture) throw new Error('Expected at least one W3C fixture');
+
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...w3cFixture,
+                    id: 'sd-jwt-vc/not-an-sd-jwt-template',
+                } as LibraryFixture)
+            ).toThrow('reserved for SD-JWT VC fixtures');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects SD-JWT fixtures whose kind and spec disagree', () => {
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...sdJwtFixture,
+                    spec: 'vc-v2',
+                } as unknown as LibraryFixture)
+            ).toThrow('must use spec "sd-jwt-vc"');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects unrecognized fixture kinds at registration', () => {
+        const w3cFixture = ALL_FIXTURES.find(isCredentialFixture);
+        if (!w3cFixture) throw new Error('Expected at least one W3C fixture');
+
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...w3cFixture,
+                    kind: 'unknown-fixture-kind',
+                } as unknown as LibraryFixture)
+            ).toThrow('Unsupported fixture kind "unknown-fixture-kind"');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it.each([undefined, 'w3c-vc'] as const)(
+        'rejects W3C fixtures with kind %s and the SD-JWT spec',
+        kind => {
+            const w3cFixture = ALL_FIXTURES.find(isCredentialFixture);
+            if (!w3cFixture) throw new Error('Expected at least one W3C fixture');
+
+            resetRegistry();
+
+            try {
+                expect(() =>
+                    registerFixture({
+                        ...w3cFixture,
+                        kind,
+                        id: 'custom/not-an-sd-jwt-template',
+                        spec: 'sd-jwt-vc',
+                    } as unknown as LibraryFixture)
+                ).toThrow('W3C VC fixtures cannot use spec "sd-jwt-vc"');
+            } finally {
+                resetRegistry();
+                getAllFixtures();
+            }
+        }
+    );
+
     it('combined filters work together', () => {
         const results = getFixtures({
             spec: 'obv3',

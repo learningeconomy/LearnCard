@@ -561,7 +561,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 category: categoryOverride ?? 'Learning History',
                 format: 'dc+sd-jwt',
                 semanticType: materialized.vct,
-                rawWireForm: materialized.compact,
+                __v: 1,
             });
 
             return { uri, compact: materialized.compact };

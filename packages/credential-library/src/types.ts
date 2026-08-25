@@ -138,6 +138,9 @@ export interface CredentialFixture<T extends UnsignedVC | VC = UnsignedVC>
     /** Omitted for backwards compatibility; W3C VC is the default fixture kind */
     kind?: 'w3c-vc';
 
+    /** SD-JWT VC uses a separate template fixture variant */
+    spec: Exclude<CredentialSpec, 'sd-jwt-vc'>;
+
     /** The actual credential JSON */
     credential: T;
 
@@ -155,6 +158,7 @@ export interface SdJwtVcTemplate {
 export interface SdJwtVcFixture extends BaseCredentialFixture {
     kind: 'sd-jwt-vc';
     id: `sd-jwt-vc/${string}`;
+    spec: 'sd-jwt-vc';
     signed: false;
     template: SdJwtVcTemplate;
 }

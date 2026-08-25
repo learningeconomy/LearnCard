@@ -142,6 +142,10 @@ describe('materializeSdJwtVcFixture', () => {
         { crv: 'Ed25519', x: 'abc' },
         { kty: 'OKP', x: 'abc' },
         { kty: 'OKP', crv: 'Ed25519' },
+        { kty: 'OKP', crv: 'Ed25519', x: 'abc' },
+        { kty: 'OKP', crv: 'Ed25519', x: `${'A'.repeat(42)}+` },
+        { kty: 'OKP', crv: 'Ed25519', x: `${'A'.repeat(42)}B` },
+        { kty: 'OKP', crv: 'Ed25519', x: `${'A'.repeat(43)}=` },
     ])('rejects malformed holder public JWK %j', async holderPublicJwk => {
         const issuer = await makeKeypair();
         const issuerDid = toDidJwk(issuer.publicJwk);

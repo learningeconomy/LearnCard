@@ -19,6 +19,49 @@ const fixtures: LibraryFixture[] = [];
 
 const fixtureIndex = new Map<string, LibraryFixture>();
 
+const validateFixtureIdentity = (fixture: LibraryFixture): void => {
+    // Registration is a runtime boundary and may receive untyped fixture data.
+    const runtimeKind = (fixture as { kind?: unknown }).kind;
+    const runtimeSpec = fixture.spec as string;
+
+    if (runtimeKind !== undefined && runtimeKind !== 'w3c-vc' && runtimeKind !== 'sd-jwt-vc') {
+        throw new Error(`Unsupported fixture kind "${String(runtimeKind)}".`);
+    }
+
+    if (isSdJwtVcFixture(fixture)) {
+        if (runtimeSpec !== 'sd-jwt-vc') {
+            throw new Error('SD-JWT VC fixtures must use spec "sd-jwt-vc".');
+        }
+
+        if (!fixture.id.startsWith('sd-jwt-vc/')) {
+            throw new Error('SD-JWT VC fixture IDs must start with "sd-jwt-vc/".');
+        }
+
+        return;
+    }
+
+    if (runtimeSpec === 'sd-jwt-vc') {
+        throw new Error('W3C VC fixtures cannot use spec "sd-jwt-vc".');
+    }
+
+    if (fixture.id.startsWith('sd-jwt-vc/')) {
+        throw new Error('The "sd-jwt-vc/" ID prefix is reserved for SD-JWT VC fixtures.');
+    }
+};
+
+const addFixture = (fixture: LibraryFixture): void => {
+    validateFixtureIdentity(fixture);
+
+    if (fixtureIndex.has(fixture.id)) {
+        throw new Error(
+            `Duplicate fixture ID: "${fixture.id}". Each fixture must have a unique id.`
+        );
+    }
+
+    fixtures.push(fixture);
+    fixtureIndex.set(fixture.id, fixture);
+};
+
 // ---------------------------------------------------------------------------
 // Lazy initialization — populate the registry on first query so consumers
 // don't need to rely on import side effects (keeps `sideEffects: false`
@@ -35,8 +78,7 @@ const ensureInitialized = (): void => {
 
     for (const fixture of ALL_FIXTURES) {
         if (!fixtureIndex.has(fixture.id)) {
-            fixtures.push(fixture);
-            fixtureIndex.set(fixture.id, fixture);
+            addFixture(fixture);
         }
     }
 };
@@ -46,18 +88,7 @@ const ensureInitialized = (): void => {
 // ---------------------------------------------------------------------------
 
 export const registerFixture = (fixture: LibraryFixture): void => {
-    if (isSdJwtVcFixture(fixture) && !fixture.id.startsWith('sd-jwt-vc/')) {
-        throw new Error('SD-JWT VC fixture IDs must start with "sd-jwt-vc/".');
-    }
-
-    if (fixtureIndex.has(fixture.id)) {
-        throw new Error(
-            `Duplicate fixture ID: "${fixture.id}". Each fixture must have a unique id.`
-        );
-    }
-
-    fixtures.push(fixture);
-    fixtureIndex.set(fixture.id, fixture);
+    addFixture(fixture);
 };
 
 export const registerFixtures = (batch: LibraryFixture[]): void => {

@@ -39,6 +39,8 @@ const DEFAULT_CREDENTIAL = {
 const toggleFeature = (arr: CredentialFeature[], item: CredentialFeature): CredentialFeature[] =>
     arr.includes(item) ? arr.filter(f => f !== item) : [...arr, item];
 
+const W3C_FIXTURE_SPECS = CREDENTIAL_SPECS.filter(spec => spec !== 'sd-jwt-vc');
+
 type TestResult = { status: 'idle' | 'testing' | 'pass' | 'fail'; message: string };
 
 export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSaved }) => {
@@ -405,7 +407,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                     onChange={e => setSpec(e.target.value as CredentialSpec)}
                                     className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                                 >
-                                    {CREDENTIAL_SPECS.map(s => (
+                                    {W3C_FIXTURE_SPECS.map(s => (
                                         <option key={s} value={s}>{SPEC_LABELS[s] ?? s}</option>
                                     ))}
                                 </select>

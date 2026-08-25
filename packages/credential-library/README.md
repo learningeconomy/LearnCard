@@ -140,8 +140,8 @@ credential to a verifier with an audience and nonce.
 | `getFixtures(filter)`              | Returns fixtures matching the filter                                          |
 | `getValidFixtures(filter?)`        | Shorthand for `getFixtures({ ...filter, validity: 'valid' })`                 |
 | `getInvalidFixtures(filter?)`      | Shorthand for `getFixtures({ ...filter, validity: ['invalid', 'tampered'] })` |
-| `getUnsignedFixtures(filter?)`     | Returns only unsigned fixtures                                                |
-| `getSignedFixtures(filter?)`       | Returns only signed fixtures                                                  |
+| `getUnsignedFixtures(filter?)`     | Returns only unsigned W3C VC fixtures                                         |
+| `getSignedFixtures(filter?)`       | Returns only signed W3C VC fixtures                                           |
 | `getStats()`                       | Returns counts grouped by spec, profile, validity, and signed status          |
 | `prepareFixture(fixture, options)` | Clones a fixture and patches DIDs, UUIDs, and timestamps                      |
 | `prepareFixtureById(id, options)`  | Combines `getFixture` + `prepareFixture`                                      |
@@ -152,6 +152,7 @@ All filter fields are optional. Array fields accept a single value or an array.
 
 | Field         | Type                                       | Behavior                            |
 | ------------- | ------------------------------------------ | ----------------------------------- |
+| `kind`        | `FixtureKind \| FixtureKind[]`             | Match `w3c-vc` or `sd-jwt-vc`       |
 | `spec`        | `CredentialSpec \| CredentialSpec[]`       | Match any of the given specs        |
 | `profile`     | `CredentialProfile \| CredentialProfile[]` | Match any of the given profiles     |
 | `features`    | `CredentialFeature[]`                      | Must have **all** of these features |
@@ -203,16 +204,26 @@ The `examples/credential-viewer` app has a **New Fixture** button that provides 
 -   Test Issue button (requires wallet connection)
 -   Saves the `.ts` file and updates the index automatically
 
+The form creates W3C VC fixtures only. Add SD-JWT VC template fixtures manually so
+their `kind`, reserved ID/spec pairing, and materialization template remain explicit.
+
 See the [Credential Viewer README](../../examples/credential-viewer/README.md) for details.
 
 ## Fixture Metadata
 
+`kind` identifies the fixture's runtime shape: W3C VC fixtures use
+`kind: 'w3c-vc'` (or omit it for backwards compatibility) and contain a
+`credential` object, while `kind: 'sd-jwt-vc'` fixtures contain a materializable
+`template`. SD-JWT VC templates also use `spec: 'sd-jwt-vc'` and reserve the
+`sd-jwt-vc/` ID prefix.
+
 | Field         | Type                  | Description                                                                                                                                                                                  |
 | ------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`          | `string`              | Unique identifier, e.g. `obv3/minimal-badge`                                                                                                                                                 |
+| `kind`        | `FixtureKind?`        | Runtime shape: `w3c-vc` (default when omitted) or `sd-jwt-vc`                                                                                                                                |
 | `name`        | `string`              | Human-readable name                                                                                                                                                                          |
 | `description` | `string`              | What this fixture tests/demonstrates                                                                                                                                                         |
-| `spec`        | `CredentialSpec`      | `vc-v1`, `vc-v2`, `obv3`, `clr-v2`, `europass`, `custom`                                                                                                                                     |
+| `spec`        | `CredentialSpec`      | `vc-v1`, `vc-v2`, `obv3`, `clr-v2`, `europass`, `sd-jwt-vc`, `custom`                                                                                                                        |
 | `profile`     | `CredentialProfile`   | `badge`, `diploma`, `certificate`, `id`, `membership`, `license`, `micro-credential`, `course`, `degree`, `boost`, `boost-id`, `delegate`, `endorsement`, `learner-record`, `generic`        |
 | `features`    | `CredentialFeature[]` | Features exercised: `evidence`, `alignment`, `endorsement`, `expiration`, `status`, `multiple-subjects`, `image`, `results`, `skills`, `display`, `associations`, `nested-credentials`, etc. |
 | `source`      | `FixtureSource`       | `spec-example`, `plugfest`, `real-world`, `synthetic`                                                                                                                                        |

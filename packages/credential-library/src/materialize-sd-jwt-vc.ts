@@ -35,6 +35,28 @@ const validateNonEmptyIssuerValue = (value: string, name: string): void => {
     }
 };
 
+const isCanonicalEd25519PublicKey = (value: string): boolean => {
+    if (!/^[A-Za-z0-9_-]+$/.test(value)) return false;
+
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    let buffered = 0;
+    let bufferedBits = 0;
+    let decodedBytes = 0;
+
+    for (const character of value) {
+        buffered = (buffered << 6) | alphabet.indexOf(character);
+        bufferedBits += 6;
+
+        while (bufferedBits >= 8) {
+            bufferedBits -= 8;
+            decodedBytes += 1;
+            buffered &= (1 << bufferedBits) - 1;
+        }
+    }
+
+    return decodedBytes === 32 && buffered === 0;
+};
+
 const validateHolderPublicJwk = (holderPublicJwk: Record<string, unknown>): void => {
     if (
         holderPublicJwk &&
@@ -50,9 +72,11 @@ const validateHolderPublicJwk = (holderPublicJwk: Record<string, unknown>): void
         holderPublicJwk.kty !== 'OKP' ||
         holderPublicJwk.crv !== 'Ed25519' ||
         typeof holderPublicJwk.x !== 'string' ||
-        holderPublicJwk.x.trim().length === 0
+        !isCanonicalEd25519PublicKey(holderPublicJwk.x)
     ) {
-        throw new Error('holderPublicJwk must be an Ed25519 OKP public JWK with a non-empty x');
+        throw new Error(
+            'holderPublicJwk must be an Ed25519 OKP public JWK with a canonical 32-byte x'
+        );
     }
 };
 
