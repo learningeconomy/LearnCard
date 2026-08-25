@@ -4,7 +4,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 
 import { initLearnCard } from '@learncard/init';
 
-import { getAllFixtures, getFixture, prepareFixture } from '../index';
+import { getAllFixtures, getFixture, isCredentialFixture, prepareFixture } from '../index';
 
 import type { CredentialFixture } from '../types';
 
@@ -31,7 +31,10 @@ beforeAll(async () => {
 
 describe('Credential issuance', () => {
     const validFixtures = (): CredentialFixture[] =>
-        getAllFixtures().filter(f => f.validity === 'valid');
+        getAllFixtures().filter(
+            (fixture): fixture is CredentialFixture =>
+                fixture.validity === 'valid' && isCredentialFixture(fixture)
+        );
 
     describe('issueCredential succeeds for all valid fixtures', () => {
         it.each(validFixtures().map(f => [f.id, f] as const))(

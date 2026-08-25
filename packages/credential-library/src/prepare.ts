@@ -1,6 +1,6 @@
 import type { UnsignedVC } from '@learncard/types';
 
-import type { CredentialFixture } from './types';
+import { isSdJwtVcFixture, type LibraryFixture } from './types';
 import { getFixture } from './registry';
 
 // ---------------------------------------------------------------------------
@@ -138,7 +138,14 @@ const patchSubject = (subject: unknown, subjectDid: string): unknown => {
  * await wallet.store.LearnCloud.uploadEncrypted(signed);
  * ```
  */
-export const prepareFixture = (fixture: CredentialFixture, options: PrepareOptions): UnsignedVC => {
+export const prepareFixture = (fixture: LibraryFixture, options: PrepareOptions): UnsignedVC => {
+    if (isSdJwtVcFixture(fixture)) {
+        throw new Error(
+            `Fixture "${fixture.id}" is an SD-JWT VC template. ` +
+                'Use materializeSdJwtVcFixture() instead of prepareFixture().'
+        );
+    }
+
     const { issuerDid, subjectDid, validFrom, validUntil, freshIds = true } = options;
 
     // Deep clone

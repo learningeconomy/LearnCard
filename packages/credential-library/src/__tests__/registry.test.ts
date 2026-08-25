@@ -10,6 +10,8 @@ import {
     getValidFixtures,
     getInvalidFixtures,
     getStats,
+    isCredentialFixture,
+    isSdJwtVcFixture,
     resetRegistry,
     registerFixtures,
     prepareFixture,
@@ -18,13 +20,32 @@ import {
 
 import { ALL_FIXTURES } from '../fixtures';
 
-import type { CredentialFixture } from '../types';
+import type { CredentialFixture, LibraryFixture, SdJwtVcFixture } from '../types';
+
+const sdJwtFixture: SdJwtVcFixture = {
+    kind: 'sd-jwt-vc',
+    id: 'sd-jwt-vc/test-course',
+    name: 'Test Course',
+    description: 'Registry-only SD-JWT VC fixture',
+    spec: 'sd-jwt-vc',
+    profile: 'course',
+    features: ['selective-disclosure', 'holder-binding'],
+    source: 'synthetic',
+    signed: false,
+    validity: 'valid',
+    template: {
+        format: 'dc+sd-jwt',
+        vct: 'https://example.com/vct/test-course',
+        claims: { course_name: 'Test Course' },
+        selectivelyDisclosable: ['course_name'],
+    },
+};
 
 // ---------------------------------------------------------------------------
 // Ensure fixtures are loaded
 // ---------------------------------------------------------------------------
 
-let fixtures: readonly CredentialFixture[];
+let fixtures: readonly LibraryFixture[];
 
 beforeAll(() => {
     fixtures = getAllFixtures();
@@ -56,7 +77,11 @@ describe('Registry integrity', () => {
             expect(f.source).toBeTruthy();
             expect(typeof f.signed).toBe('boolean');
             expect(f.validity).toBeTruthy();
-            expect(f.credential).toBeTruthy();
+            if (isCredentialFixture(f)) {
+                expect(f.credential).toBeTruthy();
+            } else {
+                expect(f.template).toBeTruthy();
+            }
         }
     });
 });
@@ -67,7 +92,11 @@ describe('Registry integrity', () => {
 
 describe('Fixture validation', () => {
     describe('Valid fixtures pass their declared validator', () => {
-        const validFixtures = () => getAllFixtures().filter(f => f.validity === 'valid');
+        const validFixtures = () =>
+            getAllFixtures().filter(
+                (fixture): fixture is CredentialFixture =>
+                    fixture.validity === 'valid' && isCredentialFixture(fixture)
+            );
 
         it.each(validFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             if (!fixture.validator) return;
@@ -79,7 +108,11 @@ describe('Fixture validation', () => {
     });
 
     describe('Valid fixtures also pass base UnsignedVC validator', () => {
-        const validFixtures = () => getAllFixtures().filter(f => f.validity === 'valid');
+        const validFixtures = () =>
+            getAllFixtures().filter(
+                (fixture): fixture is CredentialFixture =>
+                    fixture.validity === 'valid' && isCredentialFixture(fixture)
+            );
 
         it.each(validFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             const result = UnsignedVCValidator.safeParse(fixture.credential);
@@ -90,7 +123,11 @@ describe('Fixture validation', () => {
 
     describe('Invalid fixtures fail their declared validator', () => {
         const invalidFixtures = () =>
-            getAllFixtures().filter(f => f.validity === 'invalid' || f.validity === 'tampered');
+            getAllFixtures().filter(
+                (fixture): fixture is CredentialFixture =>
+                    (fixture.validity === 'invalid' || fixture.validity === 'tampered') &&
+                    isCredentialFixture(fixture)
+            );
 
         it.each(invalidFixtures().map(f => [f.id, f] as const))('%s', (_id, fixture) => {
             if (!fixture.validator) return;
@@ -193,6 +230,15 @@ describe('Query API', () => {
 
         expect(unsigned.length).toBeGreaterThan(0);
         expect(unsigned.every(f => f.signed === false)).toBe(true);
+    });
+
+    it('narrows SD-JWT fixtures and keeps W3C helpers narrow', () => {
+        expect(isSdJwtVcFixture(sdJwtFixture)).toBe(true);
+        expect(isCredentialFixture(getFixture('vc-v2/basic'))).toBe(true);
+        expect(getUnsignedFixtures().every(isCredentialFixture)).toBe(true);
+        expect(() =>
+            prepareFixture(sdJwtFixture, { issuerDid: 'did:key:z6MkTestIssuer123' })
+        ).toThrow('materializeSdJwtVcFixture');
     });
 
     it('combined filters work together', () => {

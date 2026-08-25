@@ -1,15 +1,22 @@
 import type { UnsignedVC, VC } from '@learncard/types';
 
-import type { CredentialFixture, FixtureFilter } from './types';
+import {
+    isCredentialFixture,
+    type CredentialFixture,
+    type FixtureFilter,
+    type FixtureKind,
+    type LibraryFixture,
+    type SdJwtVcFixture,
+} from './types';
 import { ALL_FIXTURES } from './fixtures';
 
 // ---------------------------------------------------------------------------
 // Internal store — fixtures register themselves here via `registerFixture`
 // ---------------------------------------------------------------------------
 
-const fixtures: CredentialFixture[] = [];
+const fixtures: LibraryFixture[] = [];
 
-const fixtureIndex = new Map<string, CredentialFixture>();
+const fixtureIndex = new Map<string, LibraryFixture>();
 
 // ---------------------------------------------------------------------------
 // Lazy initialization — populate the registry on first query so consumers
@@ -37,16 +44,18 @@ const ensureInitialized = (): void => {
 // Registration
 // ---------------------------------------------------------------------------
 
-export const registerFixture = <T extends UnsignedVC | VC>(fixture: CredentialFixture<T>): void => {
+export const registerFixture = (fixture: LibraryFixture): void => {
     if (fixtureIndex.has(fixture.id)) {
-        throw new Error(`Duplicate fixture ID: "${fixture.id}". Each fixture must have a unique id.`);
+        throw new Error(
+            `Duplicate fixture ID: "${fixture.id}". Each fixture must have a unique id.`
+        );
     }
 
-    fixtures.push(fixture as CredentialFixture);
-    fixtureIndex.set(fixture.id, fixture as CredentialFixture);
+    fixtures.push(fixture);
+    fixtureIndex.set(fixture.id, fixture);
 };
 
-export const registerFixtures = (batch: CredentialFixture[]): void => {
+export const registerFixtures = (batch: LibraryFixture[]): void => {
     for (const fixture of batch) {
         registerFixture(fixture);
     }
@@ -68,7 +77,15 @@ export const resetRegistry = (): void => {
 
 const toArray = <T>(value: T | T[]): T[] => (Array.isArray(value) ? value : [value]);
 
-const matchesFilter = (fixture: CredentialFixture, filter: FixtureFilter): boolean => {
+const fixtureKind = (fixture: LibraryFixture): FixtureKind => fixture.kind ?? 'w3c-vc';
+
+const matchesFilter = (fixture: LibraryFixture, filter: FixtureFilter): boolean => {
+    if (filter.kind !== undefined) {
+        const kinds = toArray(filter.kind);
+
+        if (!kinds.includes(fixtureKind(fixture))) return false;
+    }
+
     if (filter.spec !== undefined) {
         const specs = toArray(filter.spec);
 
@@ -122,13 +139,15 @@ const matchesFilter = (fixture: CredentialFixture, filter: FixtureFilter): boole
 // Public query API
 // ---------------------------------------------------------------------------
 
-export const getAllFixtures = (): readonly CredentialFixture[] => {
+export const getAllFixtures = (): readonly LibraryFixture[] => {
     ensureInitialized();
 
     return fixtures;
 };
 
-export const getFixture = (id: string): CredentialFixture => {
+export function getFixture(id: `sd-jwt-vc/${string}`): SdJwtVcFixture;
+export function getFixture(id: string): CredentialFixture;
+export function getFixture(id: string): LibraryFixture {
     ensureInitialized();
 
     const fixture = fixtureIndex.get(id);
@@ -140,32 +159,34 @@ export const getFixture = (id: string): CredentialFixture => {
     }
 
     return fixture;
-};
+}
 
-export const findFixture = (id: string): CredentialFixture | undefined => {
+export function findFixture(id: `sd-jwt-vc/${string}`): SdJwtVcFixture | undefined;
+export function findFixture(id: string): CredentialFixture | undefined;
+export function findFixture(id: string): LibraryFixture | undefined {
     ensureInitialized();
 
     return fixtureIndex.get(id);
-};
+}
 
-export const getFixtures = (filter: FixtureFilter): CredentialFixture[] => {
+export const getFixtures = (filter: FixtureFilter): LibraryFixture[] => {
     ensureInitialized();
 
     return fixtures.filter(f => matchesFilter(f, filter));
 };
 
-export const getUnsignedFixtures = (
-    filter?: FixtureFilter
-): CredentialFixture<UnsignedVC>[] =>
-    getFixtures({ ...filter, signed: false }) as CredentialFixture<UnsignedVC>[];
+export const getUnsignedFixtures = (filter?: FixtureFilter): CredentialFixture<UnsignedVC>[] =>
+    getFixtures({ ...filter, signed: false }).filter(
+        isCredentialFixture
+    ) as CredentialFixture<UnsignedVC>[];
 
 export const getSignedFixtures = (filter?: FixtureFilter): CredentialFixture<VC>[] =>
-    getFixtures({ ...filter, signed: true }) as CredentialFixture<VC>[];
+    getFixtures({ ...filter, signed: true }).filter(isCredentialFixture) as CredentialFixture<VC>[];
 
-export const getValidFixtures = (filter?: FixtureFilter): CredentialFixture[] =>
+export const getValidFixtures = (filter?: FixtureFilter): LibraryFixture[] =>
     getFixtures({ ...filter, validity: 'valid' });
 
-export const getInvalidFixtures = (filter?: FixtureFilter): CredentialFixture[] =>
+export const getInvalidFixtures = (filter?: FixtureFilter): LibraryFixture[] =>
     getFixtures({ ...filter, validity: ['invalid', 'tampered'] });
 
 // ---------------------------------------------------------------------------

@@ -3,9 +3,14 @@ export type {
     CredentialSpec,
     CredentialProfile,
     CredentialFeature,
+    FixtureKind,
     FixtureSource,
     FixtureValidity,
+    BaseCredentialFixture,
     CredentialFixture,
+    SdJwtVcTemplate,
+    SdJwtVcFixture,
+    LibraryFixture,
     FixtureFilter,
     InvalidCredential,
 } from './types';
@@ -14,8 +19,11 @@ export {
     CREDENTIAL_SPECS,
     CREDENTIAL_PROFILES,
     CREDENTIAL_FEATURES,
+    FIXTURE_KINDS,
     FIXTURE_SOURCES,
     FIXTURE_VALIDITIES,
+    isCredentialFixture,
+    isSdJwtVcFixture,
 } from './types';
 
 // Registry (query API + mutation)
