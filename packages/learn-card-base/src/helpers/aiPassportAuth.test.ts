@@ -119,6 +119,8 @@ describe('ensureAiPassportSession', () => {
                 getAiPassportLaunchUrl('https://legacy-app.example.test/chats?topic=test', did)
             ).searchParams.get('did')
         ).toBe(did);
+        await expect(getAiPassportWebSocketProtocols(did)).resolves.toBeUndefined();
+        expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
     it('renegotiates a legacy tab after the backend upgrades without requiring reload', async () => {
@@ -145,7 +147,8 @@ describe('ensureAiPassportSession', () => {
                 Response.json({ authenticated: true, did, token: 'rollout-token' })
             )
             .mockResolvedValueOnce(Response.json([]))
-            .mockResolvedValueOnce(Response.json({ status: 'queued' }));
+            .mockResolvedValueOnce(Response.json({ status: 'queued' }))
+            .mockResolvedValueOnce(Response.json({ ticket: 't'.repeat(43) }));
 
         networkStore.set.aiServiceUrl('https://rollout.example.test');
         globalThis.fetch = fetchMock as typeof fetch;
@@ -175,13 +178,102 @@ describe('ensureAiPassportSession', () => {
         expect(issuePresentation).toHaveBeenCalledOnce();
         expect(legacyRequest.searchParams.get('did')).toBe(did);
         expect(retriedRequest.searchParams.has('did')).toBe(false);
-        expect(getAiPassportWebSocketProtocols(did)).toEqual([
+        await expect(getAiPassportWebSocketProtocols(did)).resolves.toEqual([
             'ai-passport',
-            'ai-passport-session.rollout-token',
+            `ai-passport-ticket.${'t'.repeat(43)}`,
         ]);
         expect(retriedHeaders.get('Authorization')).toBe('Bearer rollout-token');
         expect(visibilityOptions.keepalive).toBe(true);
         expect(visibilityHeaders.get('Authorization')).toBe('Bearer rollout-token');
+    });
+
+    it('mints a fresh one-time ticket without exposing the durable bearer', async () => {
+        const did = 'did:key:websocket-ticket';
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(
+                Response.json({
+                    audience: 'https://ticket.example.test',
+                    binding: 'ticket-binding',
+                    challenge: 'ticket-challenge',
+                })
+            )
+            .mockResolvedValueOnce(
+                Response.json({ authenticated: true, did, token: 'durable-session-token' })
+            )
+            .mockResolvedValueOnce(Response.json({ ticket: 'a'.repeat(43) }))
+            .mockResolvedValueOnce(Response.json({ ticket: 'b'.repeat(43) }));
+
+        networkStore.set.aiServiceUrl('https://ticket.example.test');
+        globalThis.fetch = fetchMock as typeof fetch;
+
+        await ensureAiPassportSession(
+            wallet(
+                did,
+                vi.fn(async () => 'ticket.jwt')
+            )
+        );
+
+        const first = await getAiPassportWebSocketProtocols(did);
+        const second = await getAiPassportWebSocketProtocols(did);
+        const firstTicketRequest = new URL(fetchMock.mock.calls[3]![0] as URL);
+        const firstTicketHeaders = new Headers(fetchMock.mock.calls[3]![1]?.headers);
+
+        expect(first).toEqual(['ai-passport', `ai-passport-ticket.${'a'.repeat(43)}`]);
+        expect(second).toEqual(['ai-passport', `ai-passport-ticket.${'b'.repeat(43)}`]);
+        expect(first).not.toEqual(second);
+        expect(firstTicketRequest.pathname).toBe('/auth/websocket-ticket');
+        expect(firstTicketRequest.search).toBe('');
+        expect(firstTicketHeaders.get('Authorization')).toBe('Bearer durable-session-token');
+        expect(first?.join(',')).not.toContain('durable-session-token');
+        expect(second?.join(',')).not.toContain('durable-session-token');
+    });
+
+    it('rejects cross-origin authenticated requests before sending credentials', async () => {
+        const did = 'did:key:origin-bound';
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(
+                Response.json({
+                    audience: 'https://origin.example.test',
+                    binding: 'origin-binding',
+                    challenge: 'origin-challenge',
+                })
+            )
+            .mockResolvedValueOnce(
+                Response.json({ authenticated: true, did, token: 'origin-session-token' })
+            )
+            .mockResolvedValueOnce(Response.json({ ok: true }));
+
+        networkStore.set.aiServiceUrl('https://origin.example.test/api/');
+        globalThis.fetch = fetchMock as typeof fetch;
+
+        await ensureAiPassportSession(
+            wallet(
+                did,
+                vi.fn(async () => 'origin.jwt')
+            )
+        );
+        fetchMock.mockClear();
+
+        await expect(
+            aiPassportFetch('https://attacker.example.test/steal', {}, did)
+        ).rejects.toThrow(
+            'AI Passport authenticated requests must use the configured service origin'
+        );
+        expect(fetchMock).not.toHaveBeenCalled();
+
+        await expect(
+            aiPassportFetch('https://origin.example.test/threads', {}, did)
+        ).resolves.toBeInstanceOf(Response);
+        expect(new URL(fetchMock.mock.calls[0]![0] as URL).origin).toBe(
+            'https://origin.example.test'
+        );
+        expect(new Headers(fetchMock.mock.calls[0]![1]?.headers).get('Authorization')).toBe(
+            'Bearer origin-session-token'
+        );
     });
 
     it('does not downgrade on backend or network failures', async () => {

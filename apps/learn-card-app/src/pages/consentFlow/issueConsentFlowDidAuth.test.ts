@@ -100,7 +100,7 @@ describe('getConsentFlowDidAuthRedirect', () => {
         );
     });
 
-    it('refuses partially supplied or malformed DID Auth parameters', async () => {
+    it('refuses incomplete, empty, duplicated, or malformed DID Auth parameters', async () => {
         const wallet = {} as BespokeLearnCard;
         const input = {
             contractUri: 'lc:contract:ai-passport',
@@ -113,7 +113,24 @@ describe('getConsentFlowDidAuthRedirect', () => {
             getConsentFlowDidAuthRedirect({ ...input, challenge: 'challenge' })
         ).rejects.toThrow('Incomplete DID Auth request');
         await expect(
-            getConsentFlowDidAuthRedirect({ ...input, challenge: '', domain: 'domain' })
+            getConsentFlowDidAuthRedirect({ ...input, domain: 'https://api.example.test' })
+        ).rejects.toThrow('Incomplete DID Auth request');
+        await expect(
+            getConsentFlowDidAuthRedirect({ ...input, challenge: '', domain: '' })
+        ).rejects.toThrow('Invalid DID Auth request');
+        await expect(
+            getConsentFlowDidAuthRedirect({
+                ...input,
+                challenge: ['challenge', 'duplicate'],
+                domain: 'https://api.example.test',
+            })
+        ).rejects.toThrow('Invalid DID Auth request');
+        await expect(
+            getConsentFlowDidAuthRedirect({
+                ...input,
+                challenge: 'challenge',
+                domain: ['https://api.example.test'],
+            })
         ).rejects.toThrow('Invalid DID Auth request');
     });
 });

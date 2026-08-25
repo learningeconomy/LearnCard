@@ -17,6 +17,12 @@ type SessionResponse = {
     token?: string;
 };
 
+type WebSocketTicketResponse = {
+    ticket: string;
+};
+
+const WEBSOCKET_TICKET_PATTERN = /^[A-Za-z0-9_-]{32,128}$/;
+
 const authRequests = new Map<string, Promise<AiPassportAuthMode>>();
 const authModes = new Map<string, AiPassportAuthMode>();
 const authTokens = new Map<string, string>();
@@ -48,11 +54,28 @@ export const getAiPassportLaunchUrl = (url: string, did?: string): string => {
     return launchUrl.toString();
 };
 
+const getAiPassportFetchUrl = (path: string, did?: string): URL => {
+    const backendUrl = new URL(networkStore.get.aiServiceUrl());
+    const url = new URL(path, backendUrl);
+
+    if (url.origin !== backendUrl.origin) {
+        throw new Error(
+            'AI Passport authenticated requests must use the configured service origin'
+        );
+    }
+
+    if (did && getAiPassportAuthMode(did) === 'legacy') url.searchParams.set('did', did);
+
+    return url;
+};
+
 export const aiPassportFetch = async (
     path: string,
     init: RequestInit = {},
     did?: string
 ): Promise<Response> => {
+    getAiPassportFetchUrl(path);
+
     if (did && !getAiPassportAuthMode(did)) await authRequests.get(getAuthKey(did));
 
     const initialMode = did ? getAiPassportAuthMode(did) : undefined;
@@ -62,7 +85,7 @@ export const aiPassportFetch = async (
 
         if (token) headers.set('Authorization', `Bearer ${token}`);
 
-        return fetch(getAiPassportUrl(path, did), {
+        return fetch(getAiPassportFetchUrl(path, did), {
             ...init,
             headers,
             credentials: 'include',
@@ -83,10 +106,24 @@ export const aiPassportFetch = async (
     return request();
 };
 
-export const getAiPassportWebSocketProtocols = (did: string): string[] | undefined => {
-    const token = authTokens.get(getAuthKey(did));
+export const getAiPassportWebSocketProtocols = async (
+    did: string
+): Promise<string[] | undefined> => {
+    if (getAiPassportAuthMode(did) !== 'session') return;
 
-    return token ? ['ai-passport', `ai-passport-session.${token}`] : undefined;
+    const response = await aiPassportFetch('/auth/websocket-ticket', { method: 'POST' }, did);
+
+    if (!response.ok) {
+        throw new Error(`AI Passport WebSocket ticket request failed (${response.status})`);
+    }
+
+    const { ticket } = (await response.json()) as WebSocketTicketResponse;
+
+    if (typeof ticket !== 'string' || !WEBSOCKET_TICKET_PATTERN.test(ticket)) {
+        throw new Error('AI Passport WebSocket ticket response is invalid');
+    }
+
+    return ['ai-passport', `ai-passport-ticket.${ticket}`];
 };
 
 const isLegacyChallengeResponse = async (response: Response): Promise<boolean> => {

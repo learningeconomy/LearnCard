@@ -1,6 +1,6 @@
 import React from 'react';
 import queryString from 'query-string';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import GamePromptHeader from './GamePromptHeader';
 
@@ -21,6 +21,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
     returnToPrevStep,
 }) => {
     const history = useHistory();
+    const location = useLocation();
     const brandingConfig = useBrandingConfig();
     const { challenge, domain, returnTo: urlReturnTo } = queryString.parse(location.search);
 
