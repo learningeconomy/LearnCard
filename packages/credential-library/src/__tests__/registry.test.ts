@@ -13,6 +13,7 @@ import {
     isCredentialFixture,
     isSdJwtVcFixture,
     resetRegistry,
+    registerFixture,
     registerFixtures,
     prepareFixture,
     prepareFixtureById,
@@ -239,6 +240,43 @@ describe('Query API', () => {
         expect(() =>
             prepareFixture(sdJwtFixture, { issuerDid: 'did:key:z6MkTestIssuer123' })
         ).toThrow('materializeSdJwtVcFixture');
+    });
+
+    it('stores SD-JWT fixtures separately from W3C fixtures', () => {
+        resetRegistry();
+
+        try {
+            registerFixtures([...ALL_FIXTURES, sdJwtFixture]);
+
+            expect(getFixtures({ kind: 'sd-jwt-vc' })).toEqual([sdJwtFixture]);
+            const w3cFixtures = getFixtures({ kind: 'w3c-vc' });
+            expect(w3cFixtures).toHaveLength(ALL_FIXTURES.length);
+            expect(w3cFixtures.every(isCredentialFixture)).toBe(true);
+            expect(getFixture('sd-jwt-vc/test-course').template).toEqual(sdJwtFixture.template);
+            expect(getUnsignedFixtures().every(isCredentialFixture)).toBe(true);
+            expect(getUnsignedFixtures().some(fixture => fixture.id === sdJwtFixture.id)).toBe(
+                false
+            );
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
+    });
+
+    it('rejects SD-JWT fixtures outside the required ID prefix', () => {
+        resetRegistry();
+
+        try {
+            expect(() =>
+                registerFixture({
+                    ...sdJwtFixture,
+                    id: 'custom/course',
+                } as unknown as LibraryFixture)
+            ).toThrow('must start with "sd-jwt-vc/"');
+        } finally {
+            resetRegistry();
+            getAllFixtures();
+        }
     });
 
     it('combined filters work together', () => {

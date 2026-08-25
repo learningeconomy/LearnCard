@@ -154,6 +154,7 @@ export interface SdJwtVcTemplate {
 
 export interface SdJwtVcFixture extends BaseCredentialFixture {
     kind: 'sd-jwt-vc';
+    id: `sd-jwt-vc/${string}`;
     signed: false;
     template: SdJwtVcTemplate;
 }

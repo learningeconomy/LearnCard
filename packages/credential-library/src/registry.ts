@@ -2,6 +2,7 @@ import type { UnsignedVC, VC } from '@learncard/types';
 
 import {
     isCredentialFixture,
+    isSdJwtVcFixture,
     type CredentialFixture,
     type FixtureFilter,
     type FixtureKind,
@@ -45,6 +46,10 @@ const ensureInitialized = (): void => {
 // ---------------------------------------------------------------------------
 
 export const registerFixture = (fixture: LibraryFixture): void => {
+    if (isSdJwtVcFixture(fixture) && !fixture.id.startsWith('sd-jwt-vc/')) {
+        throw new Error('SD-JWT VC fixture IDs must start with "sd-jwt-vc/".');
+    }
+
     if (fixtureIndex.has(fixture.id)) {
         throw new Error(
             `Duplicate fixture ID: "${fixture.id}". Each fixture must have a unique id.`
