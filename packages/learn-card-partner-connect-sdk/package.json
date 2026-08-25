@@ -42,6 +42,7 @@
     "license": "MIT",
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "dependencies": {
+        "@learncard/partner-connect-core": "workspace:*",
         "@learncard/types": "workspace:*"
     },
     "devDependencies": {

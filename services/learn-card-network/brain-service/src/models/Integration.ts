@@ -8,6 +8,7 @@ import { FlatIntegrationType } from 'types/integration';
 export type IntegrationRelationships = {
     createdBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     publishesListing: ModelRelatedNodesI<any, any>;
+    hasManifestVersion: ModelRelatedNodesI<any, any>;
 };
 
 export type IntegrationInstance = NeogmaInstance<FlatIntegrationType, IntegrationRelationships>;

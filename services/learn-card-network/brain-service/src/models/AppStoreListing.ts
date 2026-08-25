@@ -6,6 +6,7 @@ import { Integration, IntegrationInstance } from './Integration';
 import { Profile, ProfileInstance } from './Profile';
 import { Boost, BoostInstance } from './Boost';
 import { Credential, CredentialInstance } from './Credential';
+import { ConsentFlowContract, ConsentFlowInstance } from './ConsentFlowContract';
 import { SigningAuthority, SigningAuthorityInstance } from './SigningAuthority';
 import {
     FlatAppStoreListingType,
@@ -73,6 +74,13 @@ export type AppStoreListingRelationships = {
         { name: string; did: string; isPrimary?: boolean },
         { name: string; did: string; isPrimary?: boolean }
     >;
+    hasConsentContract: ModelRelatedNodesI<
+        typeof ConsentFlowContract,
+        ConsentFlowInstance,
+        { scopeHash: string; createdAt: string },
+        { scopeHash: string; createdAt: string }
+    >;
+    usesManifestVersion: ModelRelatedNodesI<any, any>;
 };
 
 export type AppStoreListingInstance = NeogmaInstance<
@@ -201,6 +209,21 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
                     isPrimary: {
                         property: 'isPrimary',
                         schema: { type: 'boolean', required: false },
+                    },
+                },
+            },
+            hasConsentContract: {
+                model: ConsentFlowContract,
+                direction: 'out',
+                name: 'HAS_CONSENT_CONTRACT',
+                properties: {
+                    scopeHash: {
+                        property: 'scopeHash',
+                        schema: { type: 'string', required: true },
+                    },
+                    createdAt: {
+                        property: 'createdAt',
+                        schema: { type: 'string', required: true },
                     },
                 },
             },

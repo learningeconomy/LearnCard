@@ -1,0 +1,57 @@
+{
+    "name": "@learncard/partner-connect-core",
+    "version": "0.1.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "description": "Zero-dependency inline credential template compiler and validator for LearnCard Partner Connect",
+    "main": "dist/partner-connect-core.js",
+    "module": "dist/partner-connect-core.esm.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "node": {
+                "import": "./dist/partner-connect-core.mjs",
+                "require": "./dist/partner-connect-core.js"
+            },
+            "import": "./dist/partner-connect-core.esm.js",
+            "require": "./dist/partner-connect-core.js",
+            "default": "./dist/partner-connect-core.js"
+        }
+    },
+    "sideEffects": false,
+    "scripts": {
+        "build": "rollup -c",
+        "dev": "rollup -c -w",
+        "typecheck": "tsc --noEmit",
+        "test": "jest -c jest.config.js",
+        "test:watch": "jest -c jest.config.js --watch"
+    },
+    "keywords": [
+        "learncard",
+        "partner",
+        "connect",
+        "credentials",
+        "template",
+        "openbadges"
+    ],
+    "license": "MIT",
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "dependencies": {},
+    "devDependencies": {
+        "@rollup/plugin-commonjs": "^22.0.2",
+        "@rollup/plugin-node-resolve": "^13.3.0",
+        "@types/node": "^18.19.64",
+        "rollup": "^2.80.0",
+        "rollup-plugin-dts": "^4.2.2",
+        "rollup-plugin-esbuild": "^4.9.1",
+        "typescript": "^5.4.5"
+    },
+    "files": [
+        "dist/**",
+        "src"
+    ]
+}

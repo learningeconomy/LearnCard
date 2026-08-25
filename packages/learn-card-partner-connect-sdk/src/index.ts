@@ -18,11 +18,27 @@
  * ```
  */
 
+import {
+    compileInlineTemplate,
+    decodeManifestFromUrl,
+    encodeManifestForUrl,
+    normalizeConsentRequest,
+    renderCompiledTemplate,
+    validateInlineTemplate,
+    validateTemplateData,
+} from '@learncard/partner-connect-core';
 import { PartnerConnectError } from './types';
 import { MockHost } from './mock-host';
+import type { MockHostContext } from './mock-host';
 import type {
+    InlineCredentialTemplate,
+    InlineTemplateCredentialInput,
+    InlineTemplateValidationError,
     PartnerConnectOptions,
+    CapturedAppManifest,
+    MockHostOptions,
     IdentityResponse,
+    SendCredentialInput,
     SendCredentialResponse,
     TemplateCredentialInput,
     TemplateCredentialResponse,
@@ -30,6 +46,7 @@ import type {
     CredentialSearchResponse,
     CredentialSpecificResponse,
     ConsentResponse,
+    ConsentRequest,
     RequestConsentOptions,
     TemplateIssueResponse,
     CheckCredentialInput,
@@ -51,15 +68,19 @@ import type {
     AppEvent,
     AppEventResponse,
     LearnCardError,
+    PreviewCompiledTemplateResult,
     PostMessageRequest,
     PostMessageResponse,
     PendingRequest,
 } from './types';
 
+const DEFAULT_PUBLISH_ORIGIN = 'https://learncard.app';
+
 // Re-export the class as a value plus all type exports.
 // `MockHost` is an internal implementation detail (constructed via
 // `createPartnerConnect({ mock, mockOptions })`); only its options type is public.
 export { PartnerConnectError } from './types';
+export { decodeManifestFromUrl };
 export type * from './types';
 
 /** Maximum time to poll for sync completion before giving up (10 minutes) */
@@ -67,6 +88,74 @@ const SYNC_STATUS_POLL_MAX_DURATION_MS = 10 * 60 * 1000;
 
 /** Default wait for the host presence probe (see `hostProbeTimeout`). */
 const DEFAULT_HOST_PROBE_TIMEOUT_MS = 1500;
+
+const joinInlineTemplateErrors = (errors: InlineTemplateValidationError[]): string =>
+    errors.map(error => `${error.path}: ${error.message}`).join('\n');
+
+const parseCompiledTemplateObject = (credentialTemplateJson: string): Record<string, unknown> => {
+    return JSON.parse(
+        credentialTemplateJson.replace(/:(\s*)(\{\{\w+\}\})(?=\s*[,}\]])/g, ':$1"$2"')
+    ) as Record<string, unknown>;
+};
+
+/**
+ * Compile and optionally render an inline credential template entirely offline.
+ *
+ * `compiled` contains the canonical OBv3 credential object with `{{variables}}`
+ * preserved. If `templateData` is provided and valid, `rendered` contains the
+ * same object with those variables substituted.
+ */
+export const previewCompiledTemplate = (
+    template: InlineCredentialTemplate,
+    templateData?: Record<string, unknown>
+): PreviewCompiledTemplateResult => {
+    const templateErrors = validateInlineTemplate(template);
+
+    if (templateErrors.length > 0) {
+        return { valid: false, errors: templateErrors };
+    }
+
+    const compiledTemplate = compileInlineTemplate(template);
+    const compiled = parseCompiledTemplateObject(compiledTemplate.credentialTemplateJson);
+
+    if (templateData === undefined) {
+        return { valid: true, errors: [], compiled };
+    }
+
+    const dataErrors = validateTemplateData(compiledTemplate.variableManifest, templateData);
+
+    if (dataErrors.length > 0) {
+        return { valid: false, errors: dataErrors, compiled };
+    }
+
+    return {
+        valid: true,
+        errors: [],
+        compiled,
+        rendered: renderCompiledTemplate(compiledTemplate.credentialTemplateJson, templateData),
+    };
+};
+
+const isTemplateAliasInput = (input: unknown): input is TemplateCredentialInput =>
+    Boolean(
+        input &&
+            typeof input === 'object' &&
+            'templateAlias' in input &&
+            typeof (input as TemplateCredentialInput).templateAlias === 'string'
+    );
+
+const isInlineTemplateInput = (input: unknown): input is InlineTemplateCredentialInput =>
+    Boolean(
+        input &&
+            typeof input === 'object' &&
+            'alias' in input &&
+            typeof (input as InlineTemplateCredentialInput).alias === 'string' &&
+            'template' in input
+    );
+
+const isConsentRequestInput = (input: unknown): input is ConsentRequest => {
+    return Boolean(input && typeof input === 'object' && !Array.isArray(input));
+};
 
 /**
  * Whether a hostname is a local development host. `mock: 'auto'` only ever
@@ -164,6 +253,14 @@ export class PartnerConnect {
     private syncCompleteCallbacks: Set<(status: SyncStatus) => void> = new Set();
     private syncStatusPollId: ReturnType<typeof setInterval> | null = null;
     private mockHost: MockHost | null = null;
+    /** Internal, non-public context handed to every {@link MockHost} we build. */
+    private mockHostContext: MockHostContext = {};
+    /**
+     * Memoized override-derived publish origin. `undefined` means "not looked
+     * up yet"; `null` means "looked up, no usable override". Caching keeps the
+     * warning for an invalid value to a single log per instance.
+     */
+    private pinnedPublishOrigin: string | null | undefined;
     private embedded = false;
     private warnedNoHost = false;
     private hostProbeTimeout: number = DEFAULT_HOST_PROBE_TIMEOUT_MS;
@@ -198,6 +295,146 @@ export class PartnerConnect {
         this.configureMockActivation(options);
     }
 
+    private resolveMockOptions(options?: PartnerConnectOptions): MockHostOptions | undefined {
+        if (options?.mockOptions?.publishOrigin) {
+            this.mockHostContext = { publishOriginPinned: true };
+            return options.mockOptions;
+        }
+
+        const publishOrigin = this.resolvePublishOrigin(options?.hostOrigin);
+
+        this.mockHostContext = { publishOriginPinned: this.readPinnedPublishOrigin() !== null };
+
+        return { ...(options?.mockOptions ?? {}), publishOrigin };
+    }
+
+    /**
+     * Resolve the LearnCard origin that App Store publish links point at:
+     * 1. `?lc_publish_override=` (query param, then this tab's stored value).
+     * 2. `?lc_host_override=` (query param, then stored) when it names one
+     *    concrete http(s) origin — testing against a host implies publishing
+     *    to it.
+     * 3. The first concrete configured `hostOrigin`.
+     * 4. `DEFAULT_PUBLISH_ORIGIN`.
+     *
+     * `mockOptions.publishOrigin` outranks all of these and is applied by
+     * {@link resolveMockOptions} before this runs.
+     */
+    private resolvePublishOrigin(hostOrigin?: string | string[]): string {
+        return this.readPinnedPublishOrigin() ?? this.inferPublishOrigin(hostOrigin);
+    }
+
+    private readPinnedPublishOrigin(): string | null {
+        if (this.pinnedPublishOrigin !== undefined) return this.pinnedPublishOrigin;
+
+        this.pinnedPublishOrigin = this.readPublishOverride() ?? this.readHostOverrideForPublish();
+
+        return this.pinnedPublishOrigin;
+    }
+
+    /**
+     * Unlike `lc_host_override`, this is not a security boundary — it only
+     * decides which LearnCard origin publish links target — so any parseable
+     * http(s) origin is accepted rather than being whitelist-checked.
+     */
+    private readPublishOverride(): string | null {
+        if (typeof window === 'undefined') return null;
+
+        try {
+            const param = new URLSearchParams(window.location.search).get('lc_publish_override');
+
+            if (param) {
+                const normalized = PartnerConnect.normalizePublishOrigin(param);
+
+                if (normalized) {
+                    this.persistPublishOverride(normalized);
+                    console.log('[LearnCard SDK] Using lc_publish_override:', normalized);
+                    return normalized;
+                }
+
+                console.warn(
+                    '[LearnCard SDK] lc_publish_override is not a valid http(s) origin; ignoring:',
+                    param
+                );
+            }
+
+            const stored = PartnerConnect.readSessionValue(
+                PartnerConnect.PUBLISH_SESSION_STORAGE_KEY
+            );
+
+            if (stored) return PartnerConnect.normalizePublishOrigin(stored);
+        } catch (error) {
+            console.error('[LearnCard SDK] Error reading lc_publish_override:', error);
+        }
+
+        return null;
+    }
+
+    private readHostOverrideForPublish(): string | null {
+        if (typeof window === 'undefined') return null;
+
+        try {
+            const candidates = [
+                new URLSearchParams(window.location.search).get('lc_host_override'),
+                PartnerConnect.readSessionValue(PartnerConnect.SESSION_STORAGE_KEY),
+            ];
+
+            for (const candidate of candidates) {
+                // Wildcard patterns name a family of hosts, not one publishable origin.
+                if (!candidate || candidate.includes('*')) continue;
+
+                const normalized = PartnerConnect.normalizePublishOrigin(candidate);
+                if (normalized) return normalized;
+            }
+        } catch {
+            // A malformed location must never break initialization.
+        }
+
+        return null;
+    }
+
+    private static normalizePublishOrigin(value: string): string | null {
+        try {
+            const url = new URL(value);
+
+            if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+
+            return url.origin;
+        } catch {
+            return null;
+        }
+    }
+
+    private static readSessionValue(key: string): string | null {
+        try {
+            return sessionStorage.getItem(key);
+        } catch {
+            // sessionStorage may be unavailable (e.g. sandboxed iframes)
+            return null;
+        }
+    }
+
+    private inferPublishOrigin(hostOrigin?: string | string[]): string {
+        const configuredOrigins = Array.isArray(hostOrigin)
+            ? hostOrigin
+            : hostOrigin
+            ? [hostOrigin]
+            : [];
+
+        for (const origin of configuredOrigins) {
+            if (origin.includes('*')) continue;
+            if (this.isOriginNativeApp(origin)) continue;
+
+            try {
+                return new URL(origin).origin;
+            } catch {
+                // Ignore malformed configured origins and continue.
+            }
+        }
+
+        return DEFAULT_PUBLISH_ORIGIN;
+    }
+
     /**
      * Decide whether this instance talks to a real host, simulates one, or
      * fails fast — the resolution of the `mock` option against the runtime
@@ -205,9 +442,10 @@ export class PartnerConnect {
      */
     private configureMockActivation(options?: PartnerConnectOptions): void {
         const mockSetting = options?.mock ?? 'auto';
+        const mockOptions = this.resolveMockOptions(options);
 
         if (mockSetting === true) {
-            this.mockHost = new MockHost(options?.mockOptions);
+            this.mockHost = new MockHost(mockOptions, this.mockHostContext);
             return;
         }
 
@@ -222,7 +460,7 @@ export class PartnerConnect {
             // Standalone page: no host can answer. hostReachable stays false,
             // so un-mocked calls fail fast with LC_NOT_EMBEDDED.
             if (canAutoMock) {
-                this.mockHost = new MockHost(options?.mockOptions);
+                this.mockHost = new MockHost(mockOptions, this.mockHostContext);
             }
             return;
         }
@@ -237,7 +475,7 @@ export class PartnerConnect {
                 // never postMessage into the 30s timeout. Mock where allowed,
                 // fail fast everywhere else.
                 if (canAutoMock) {
-                    this.mockHost = new MockHost(options?.mockOptions);
+                    this.mockHost = new MockHost(mockOptions, this.mockHostContext);
                 }
                 return;
 
@@ -247,7 +485,7 @@ export class PartnerConnect {
                     // unrelated wrapper. Ask: if the host answers a cheap
                     // side-effect-free probe, stay real; otherwise mock.
                     this.hostReachable = true;
-                    this.activation = this.probeHost(options);
+                    this.activation = this.probeHost(mockOptions);
                 } else {
                     // Mocking is off the table here anyway — preserve the
                     // long-standing assumption that an unverifiable parent
@@ -290,7 +528,7 @@ export class PartnerConnect {
      * listening and the mock takes over. Requests issued while the probe is
      * in flight queue behind the decision instead of racing it.
      */
-    private probeHost(options?: PartnerConnectOptions): Promise<void> {
+    private probeHost(mockOptions?: MockHostOptions): Promise<void> {
         return this.postToHost('GET_SYNC_STATUS', undefined, this.hostProbeTimeout)
             .then(() => {
                 this.activation = null;
@@ -299,7 +537,7 @@ export class PartnerConnect {
                 this.activation = null;
                 if (this.isInitialized) {
                     this.hostReachable = false;
-                    this.mockHost = new MockHost(options?.mockOptions);
+                    this.mockHost = new MockHost(mockOptions, this.mockHostContext);
                     console.warn(
                         '[LearnCard SDK] Embedded in a frame, but no LearnCard host answered ' +
                             `within ${this.hostProbeTimeout}ms — activating standalone mock mode. ` +
@@ -334,6 +572,72 @@ export class PartnerConnect {
     }
 
     /**
+     * Read the app manifest captured by standalone mock mode.
+     *
+     * Returns `undefined` when this instance is talking to a real host, or when
+     * mock mode has not captured anything yet.
+     *
+     * @example
+     * ```typescript
+     * const manifest = learnCard.getCapturedManifest();
+     * if (manifest) {
+     *   console.log(manifest.permissions, manifest.templates);
+     * }
+     * ```
+     */
+    public getCapturedManifest(): CapturedAppManifest | undefined {
+        return this.mockHost?.getCapturedManifest();
+    }
+
+    /**
+     * Build the LearnCard App Store submission URL for the current captured manifest.
+     *
+     * Returns `undefined` unless mock mode is active and the SDK has captured at
+     * least one manifest interaction. The publish prompt still uses a higher
+     * threshold (at least 1 inline template or at least 2 distinct permissions)
+     * before it auto-nudges the developer.
+     *
+     * @example
+     * ```typescript
+     * const publishUrl = learnCard.getPublishUrl();
+     * if (publishUrl) {
+     *   window.open(publishUrl, '_blank', 'noopener');
+     * }
+     * ```
+     */
+    public getPublishUrl(): string | undefined {
+        const manifest = this.mockHost?.getCapturedManifest();
+        const publishOrigin = this.mockHost?.getPublishOrigin();
+
+        if (!manifest || !publishOrigin) return undefined;
+
+        return `${publishOrigin}/app-store/developer/submit?manifest=${encodeManifestForUrl(
+            manifest
+        )}`;
+    }
+
+    /**
+     * Returns the currently active real-host origin, or `null` while standalone
+     * mock mode is active.
+     */
+    public getActiveHostOrigin(): string | null {
+        if (this.mockHost) return null;
+        return this.activeHostOrigin || null;
+    }
+
+    /**
+     * Returns the LearnCard origin used to build App Store publish URLs.
+     *
+     * Point this at a local or staging LearnCard with
+     * `?lc_publish_override=<origin>`; see {@link resolvePublishOrigin} for
+     * the full precedence order.
+     */
+    public getPublishOrigin(): string | null {
+        if (this.mockHost) return this.mockHost.getPublishOrigin();
+        return this.resolvePublishOrigin(this.hostOrigins);
+    }
+
+    /**
      * Configure the active host origin using the following hierarchy:
      * 1. `window.location.ancestorOrigins[0]` (when supported) — the browser's
      *    view of who our parent frame is. Cannot be forged by a malicious
@@ -348,6 +652,9 @@ export class PartnerConnect {
      * continue to use the same active origin.
      */
     private static readonly SESSION_STORAGE_KEY = 'lc_host_override';
+
+    /** Persisted so the parameter only has to be typed once per tab. */
+    private static readonly PUBLISH_SESSION_STORAGE_KEY = 'lc_publish_override';
 
     /**
      * Read `window.location.ancestorOrigins[0]` without throwing if the
@@ -448,6 +755,14 @@ export class PartnerConnect {
     private persistOverride(origin: string): void {
         try {
             sessionStorage.setItem(PartnerConnect.SESSION_STORAGE_KEY, origin);
+        } catch {
+            // sessionStorage may be unavailable (e.g. sandboxed iframes)
+        }
+    }
+
+    private persistPublishOverride(origin: string): void {
+        try {
+            sessionStorage.setItem(PartnerConnect.PUBLISH_SESSION_STORAGE_KEY, origin);
         } catch {
             // sessionStorage may be unavailable (e.g. sandboxed iframes)
         }
@@ -753,11 +1068,69 @@ export class PartnerConnect {
     }
 
     /**
+     * Validate an inline credential template entirely offline.
+     *
+     * This performs the same local checks that {@link sendCredential} runs for
+     * inline templates before posting any message to LearnCard.
+     *
+     * @param template - Inline credential template to validate
+     * @param templateData - Optional runtime variable values to validate against the compiled manifest
+     * @returns Validation status plus path-based errors suitable for UI display
+     *
+     * @example
+     * ```typescript
+     * const result = learnCard.validateCredentialTemplate(
+     *   {
+     *     name: 'Completed {{courseName}}',
+     *     description: 'Awarded for finishing {{courseName}}.',
+     *     achievementType: 'Course',
+     *     criteria: { narrative: 'Finished all modules' }
+     *   },
+     *   { courseName: 'Intro to Baking' }
+     * );
+     *
+     * if (!result.valid) {
+     *   console.error(result.errors.map(error => `${error.path}: ${error.message}`).join('\n'));
+     * }
+     * ```
+     */
+    public validateCredentialTemplate(
+        template: InlineCredentialTemplate,
+        templateData?: Record<string, unknown>
+    ): { valid: boolean; errors: InlineTemplateValidationError[] } {
+        const templateErrors = validateInlineTemplate(template);
+
+        if (templateErrors.length > 0) {
+            return { valid: false, errors: templateErrors };
+        }
+
+        const compiled = compileInlineTemplate(template);
+        const dataErrors = validateTemplateData(compiled.variableManifest, templateData);
+
+        if (dataErrors.length > 0) {
+            return { valid: false, errors: dataErrors };
+        }
+
+        return { valid: true, errors: [] };
+    }
+
+    /**
+     * Compile and optionally render an inline credential template entirely offline.
+     */
+    public previewCompiledTemplate(
+        template: InlineCredentialTemplate,
+        templateData?: Record<string, unknown>
+    ): PreviewCompiledTemplateResult {
+        return previewCompiledTemplate(template, templateData);
+    }
+
+    /**
      * Send a credential to the user's LearnCard wallet
      *
      * Supports two modes:
      * 1. **Raw credential**: Pass a full verifiable credential object
      * 2. **Template-based**: Pass `{ templateAlias, templateData }` to issue from a pre-configured boost template
+     * 3. **Inline template**: Pass `{ alias, template, templateData }` to issue from a zero-config inline template
      *
      * @param input - Either a verifiable credential or a template-based input
      * @returns Promise resolving to credential response
@@ -780,17 +1153,59 @@ export class PartnerConnect {
      * });
      * console.log('Credential URI:', response.credentialUri);
      * ```
+     *
+     * @example Inline template (zero-config)
+     * ```typescript
+     * await learnCard.sendCredential({
+     *   alias: 'course-complete',
+     *   template: {
+     *     name: 'Completed {{courseName}}',
+     *     description: 'Awarded for finishing {{courseName}}.',
+     *     achievementType: 'Course',
+     *     criteria: { narrative: 'Finished all modules' }
+     *   },
+     *   templateData: { courseName: 'Intro to Baking' }
+     * });
+     * ```
      */
     public sendCredential(
-        input: unknown | TemplateCredentialInput
+        input: SendCredentialInput
     ): Promise<SendCredentialResponse | TemplateCredentialResponse> {
-        if (
-            input &&
-            typeof input === 'object' &&
-            'templateAlias' in input &&
-            typeof (input as TemplateCredentialInput).templateAlias === 'string'
-        ) {
-            const templateInput = input as TemplateCredentialInput;
+        if (isInlineTemplateInput(input)) {
+            const templateErrors = validateInlineTemplate(input.template);
+
+            if (templateErrors.length > 0) {
+                return Promise.reject(
+                    new PartnerConnectError(
+                        'TEMPLATE_INVALID',
+                        joinInlineTemplateErrors(templateErrors)
+                    )
+                );
+            }
+
+            const compiled = compileInlineTemplate(input.template);
+            const dataErrors = validateTemplateData(compiled.variableManifest, input.templateData);
+
+            if (dataErrors.length > 0) {
+                return Promise.reject(
+                    new PartnerConnectError(
+                        'TEMPLATE_DATA_INVALID',
+                        joinInlineTemplateErrors(dataErrors)
+                    )
+                );
+            }
+
+            return this.sendAppEvent<TemplateCredentialResponse>({
+                type: 'send-credential',
+                alias: input.alias,
+                template: input.template,
+                templateData: input.templateData,
+                preventDuplicateClaim: input.preventDuplicateClaim,
+            });
+        }
+
+        if (isTemplateAliasInput(input)) {
+            const templateInput = input;
 
             return this.sendAppEvent<TemplateCredentialResponse>({
                 type: 'send-credential',
@@ -955,9 +1370,12 @@ export class PartnerConnect {
     }
 
     /**
-     * Request user consent for permissions
+     * Request user consent for permissions.
      *
-     * @param contractUri - URI of the consent contract (optional for App Store apps with configured contracts)
+     * Pass either a pre-created consent contract URI, or a declarative consent
+     * request and let LearnCard resolve or create the backing contract.
+     *
+     * @param requestOrContractUri - Consent scope request or explicit contract URI
      * @param options - Additional options including redirect behavior
      * @returns Promise resolving to consent response
      *
@@ -965,29 +1383,49 @@ export class PartnerConnect {
      * ```typescript
      * // With explicit contract URI (for external/non-app store integrations)
      * const response = await learnCard.requestConsent('lc:network:network.learncard.com/trpc:contract:abc123');
-     * if (response.granted) {
-     *   console.log('User granted consent');
-     * }
      *
-     * // Without contract URI (uses app's configured contract from integration)
-     * // This works for App Store apps that have configured a contract in their integration
-     * const response = await learnCard.requestConsent();
-     * if (response.granted) {
-     *   console.log('User granted consent using listing contract');
-     * }
-     *
-     * // With redirect - redirects to contract's redirectUrl with VP in URL params
-     * const response = await learnCard.requestConsent(undefined, { redirect: true });
+     * // Declarative scopes (LearnCard upserts the contract automatically)
+     * const { granted } = await learnCard.requestConsent({
+     *   read: { credentialCategories: ['Achievement', 'Skill'], personalFields: ['name'] },
+     *   write: { credentialCategories: ['Achievement'] },
+     *   reason: 'Personalize your training plan',
+     * });
      * ```
      */
     public requestConsent(
+        request: ConsentRequest,
+        options?: RequestConsentOptions
+    ): Promise<ConsentResponse>;
+    public requestConsent(
         contractUri?: string,
+        options?: RequestConsentOptions
+    ): Promise<ConsentResponse>;
+    public requestConsent(
+        requestOrContractUri?: string | ConsentRequest,
         options: RequestConsentOptions = {}
     ): Promise<ConsentResponse> {
         const { redirect = false } = options;
 
+        if (isConsentRequestInput(requestOrContractUri)) {
+            try {
+                normalizeConsentRequest(requestOrContractUri);
+            } catch (error) {
+                return Promise.reject(
+                    new PartnerConnectError(
+                        'CONSENT_SCOPES_INVALID',
+                        error instanceof Error ? error.message : 'Invalid consent scopes'
+                    )
+                );
+            }
+
+            return this.sendMessage<ConsentResponse>('REQUEST_CONSENT', {
+                scopes: requestOrContractUri,
+                redirect,
+            });
+        }
+
         return this.sendMessage<ConsentResponse>('REQUEST_CONSENT', {
-            contractUri,
+            contractUri: requestOrContractUri,
             redirect,
         });
     }

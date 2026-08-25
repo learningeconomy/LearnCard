@@ -2,10 +2,18 @@ import { TRPCError } from '@trpc/server';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import {
+    AppManifestDiffValidator,
+    AppManifestValidator,
+    AppManifestVersionValidator,
     AppEventValidator,
     LCNNotificationTypeEnumValidator,
     SendNotificationEventValidator,
 } from '@learncard/types';
+import type {
+    ConsentRequest,
+    InlineCredentialTemplate,
+    NormalizedConsentScopes,
+} from '@learncard/partner-connect-core';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 import type { ProfileType } from 'types/profile';
@@ -18,18 +26,28 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { PerfTracker } from '@helpers/perf';
+import {
+    buildConsentFlowContractFromScopes,
+    buildScopedConsentContractName,
+    computeConsentScopeHash,
+    normalizeConsentScopes,
+} from '@helpers/consent-scopes.helpers';
+import { diffManifests, hashManifest } from '@helpers/app-manifest.helpers';
 import cache from '@cache';
 import {
     getBoostForListingCached,
+    getConsentContractForListingByScopeHashCached,
     readAppStoreListingByIdCached,
     getIntegrationForListingCached,
     getOwnerProfileForIntegrationCached,
     getPrimarySigningAuthorityForListingCached,
     getPrimarySigningAuthorityForIntegrationCached,
+    invalidateBoostForListingCache,
+    invalidateConsentContractForListingByScopeHashCache,
 } from '@cache/app-store.caches';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
-import { resolveUri } from '@helpers/uri.helpers';
+import { constructUri, resolveUri } from '@helpers/uri.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import {
@@ -59,6 +77,7 @@ import {
     associateListingWithSubmitter,
     installAppForProfile,
     associateBoostWithListing,
+    associateConsentContractWithListing,
 } from '@accesslayer/app-store-listing/relationships/create';
 import {
     uninstallAppForProfile,
@@ -105,8 +124,29 @@ import {
     appendTemplateEvidenceToCredential,
 } from '@helpers/boost.helpers';
 import { createBoostForListing } from '@accesslayer/boost/create';
+import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
+import { createAppManifestVersion } from '@accesslayer/app-manifest-version/create';
+import {
+    getActiveManifestVersionForIntegration,
+    getLatestManifestVersionForIntegration,
+    getManifestVersionForIntegration,
+    getManifestVersionsForIntegration,
+} from '@accesslayer/app-manifest-version/read';
+import {
+    associateListingWithManifestVersion,
+    markManifestVersionsSuperseded,
+    updateAppManifestVersion,
+} from '@accesslayer/app-manifest-version/update';
 import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import {
+    computeInlineTemplateHash,
+    ensureManagedSigningAuthorityForListing,
+    getInlineTemplateVersion,
+    readInlineTemplateBoostMeta,
+    upsertInlineTemplateBoostForListing,
+    validateInlineTemplateDataOrThrow,
+} from '@helpers/inline-template.helpers';
 import {
     renderBoostTemplate,
     parseRenderedTemplate,
@@ -126,6 +166,7 @@ import {
     getContractTermsForProfile,
     getContractDetailsByUri,
 } from '@accesslayer/consentflowcontract/relationships/read';
+import { setCreatorForContract } from '@accesslayer/consentflowcontract/relationships/create';
 import { getBoostPermissions, getBoostRecipients } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
@@ -177,8 +218,14 @@ const isAllowedImageUrl = (url: string): boolean => {
 const isValidIframeUrl = (url: string): boolean => {
     try {
         const parsed = new URL(url);
-        // Only allow https URLs for iframes
-        if (parsed.protocol !== 'https:') return false;
+        // Only allow https URLs for iframes (except for local preview of draft listings)
+        if (parsed.protocol !== 'https:') {
+            const isLocalhost =
+                parsed.hostname === 'localhost' ||
+                parsed.hostname === '127.0.0.1' ||
+                parsed.hostname === '[::1]';
+            if (!isLocalhost) return false;
+        }
         // Block javascript:, data:, and vbscript: schemes (already handled by URL parsing, but be explicit)
         const lowerUrl = url.toLowerCase();
         if (
@@ -290,7 +337,14 @@ const iframeUrlRefinement = (
             if (config.iframeUrl && !isValidIframeUrl(config.iframeUrl)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    message: 'Iframe URL must be a valid HTTPS URL',
+                    message: 'Iframe URL must be a valid HTTPS URL (or localhost for testing)',
+                    path: ['launch_config_json'],
+                });
+            }
+            if (config.url && !isValidIframeUrl(config.url)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'URL must be a valid HTTPS URL (or localhost for testing)',
                     path: ['launch_config_json'],
                 });
             }
@@ -478,6 +532,44 @@ const PaginatedAppCredentialsValidator = z.object({
     totalCount: z.number(),
 });
 
+const AppManifestVersionSummaryValidator = AppManifestVersionValidator.omit({ manifest: true });
+
+const PaginatedAppManifestVersionsValidator = z.object({
+    hasMore: z.boolean(),
+    cursor: z.string().optional(),
+    records: z.array(AppManifestVersionSummaryValidator),
+});
+
+const SubmitAppManifestResponseValidator = z.object({
+    version: z.number().int().min(1),
+    manifestHash: z.string(),
+    diff: AppManifestDiffValidator.nullable(),
+    noop: z.boolean(),
+});
+
+const ApplyManifestVersionResponseValidator = z.object({
+    applied: z.literal(true),
+    version: z.number().int().min(1),
+    reconciled: z.object({
+        templatesUpserted: z.number().int().min(0),
+        templatesSkipped: z.number().int().min(0),
+        contractsUpserted: z.number().int().min(0),
+        contractsSkipped: z.number().int().min(0),
+        signingAuthorityEnsured: z.boolean(),
+    }),
+});
+
+const toManifestVersionSummary = (
+    manifestVersion: z.infer<typeof AppManifestVersionValidator>
+): z.infer<typeof AppManifestVersionSummaryValidator> => ({
+    id: manifestVersion.id,
+    version: manifestVersion.version,
+    manifestHash: manifestVersion.manifestHash,
+    status: manifestVersion.status,
+    createdAt: manifestVersion.createdAt,
+    activatedAt: manifestVersion.activatedAt,
+});
+
 // Helper to verify integration ownership
 const verifyIntegrationOwnership = async (integrationId: string, profileId: string) => {
     const associated = await isIntegrationAssociatedWithProfile(integrationId, profileId);
@@ -556,12 +648,18 @@ export const handleSendCredentialEvent = async (
 ): Promise<Record<string, unknown>> => {
     const perf = perfTracker ?? new PerfTracker('handleSendCredentialEvent');
 
-    const templateAlias = event.templateAlias as string | undefined;
+    const templateAlias =
+        (event.templateAlias as string | undefined) ?? (event.alias as string | undefined);
+    const inlineTemplate = event.template as
+        | import('@learncard/partner-connect-core').InlineCredentialTemplate
+        | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
     const preventDuplicateClaim = Boolean(event.preventDuplicateClaim);
+    const isInlineTemplateEvent = Boolean(inlineTemplate);
+    let templateVersion: number | undefined = undefined;
 
     if (!templateAlias) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias or alias required' });
     }
 
     // LC-1644 Phase 1b: Fire the four input-only lookups in parallel. All depend only on
@@ -570,17 +668,16 @@ export const handleSendCredentialEvent = async (
     // parallel batching + 30s LRU cache on the first three below compounds to ~50-150ms
     // saved on warm lambda invocations. targetProfile is keyed by the requester's
     // profileId (varies per user) so it's not cached.
-    const [boostResult, listing, integration, targetProfile] = await Promise.all([
-        getBoostForListingCached(listingId, templateAlias, ctx.domain),
+    const [cachedBoostResult, listing, integration, targetProfile] = await Promise.all([
+        isInlineTemplateEvent
+            ? Promise.resolve(null)
+            : getBoostForListingCached(listingId, templateAlias, ctx.domain),
         readAppStoreListingByIdCached(listingId),
         getIntegrationForListingCached(listingId),
         getProfilesByProfileIds([profile.profileId]),
     ]);
     perf.mark('parallelReads');
 
-    if (!boostResult) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
-    }
     if (!listing) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
     }
@@ -592,7 +689,30 @@ export const handleSendCredentialEvent = async (
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
     }
 
+    const boostResult = isInlineTemplateEvent
+        ? await upsertInlineTemplateBoostForListing({
+              listing,
+              integration,
+              templateAlias,
+              template: inlineTemplate!,
+              domain: ctx.domain,
+          })
+        : cachedBoostResult;
+
+    if (!boostResult) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+    }
+
+    if (isInlineTemplateEvent) {
+        const inlineBoostResult = boostResult as Awaited<
+            ReturnType<typeof upsertInlineTemplateBoostForListing>
+        >;
+        validateInlineTemplateDataOrThrow(inlineBoostResult.manifest, templateData);
+        templateVersion = inlineBoostResult.templateVersion;
+    }
+
     const { boost, boostUri } = boostResult;
+    templateVersion ??= getInlineTemplateVersion(boost);
 
     // NOTE: This is best-effort duplicate prevention, not a guarantee.
     // There is a race condition window between checking and creating the credential
@@ -616,6 +736,7 @@ export const handleSendCredentialEvent = async (
                 receivedDate: existingCredential.receivedDate ?? existingCredential.sentDate,
                 status: existingCredential.status,
                 boostUri,
+                ...(templateVersion !== undefined ? { templateVersion } : {}),
                 // credential not included — frontend skips modal when alreadyClaimed=true
             };
         }
@@ -650,16 +771,18 @@ export const handleSendCredentialEvent = async (
         listingSa || integrationSa
             ? undefined
             : await getPrimarySigningAuthorityForUser(integrationOwner);
-    const sa = listingSa ?? integrationSa ?? ownerSa;
+    const sa =
+        listingSa ??
+        integrationSa ??
+        ownerSa ??
+        (await ensureManagedSigningAuthorityForListing(
+            listing,
+            integration,
+            integrationOwner,
+            ctx.domain
+        ));
 
     perf.mark('saResolve');
-
-    if (!sa) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'No signing authority configured for this app',
-        });
-    }
 
     // Build unsigned credential from boost template
     let unsignedVc: UnsignedVC;
@@ -834,11 +957,143 @@ export const handleSendCredentialEvent = async (
     return {
         credentialUri,
         boostUri,
+        ...(templateVersion !== undefined ? { templateVersion } : {}),
         // LC-1644: pre-resolved (enriched) credential so the frontend modal
         // can render the proper title + issuer info without shimmer or
         // background re-fetch. See enrichment block above for details.
         credential: responseCredential,
     };
+};
+
+const normalizeConsentRequestOrThrow = (scopes: ConsentRequest): NormalizedConsentScopes => {
+    try {
+        return normalizeConsentScopes(scopes);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Invalid consent scopes';
+
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `CONSENT_SCOPES_INVALID: ${message}`,
+        });
+    }
+};
+
+const handleUpsertConsentContractEvent = async (
+    ctx: { domain: string },
+    listing: AppStoreListingType,
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<{ contractUri: string; created: boolean }> => {
+    const rawScopes = event.scopes as ConsentRequest;
+    const normalizedScopes = normalizeConsentRequestOrThrow(rawScopes);
+    return upsertConsentContractForListingScopes({
+        ctx,
+        listing,
+        listingId,
+        normalizedScopes,
+        reason:
+            typeof rawScopes.reason === 'string' && rawScopes.reason.trim().length > 0
+                ? rawScopes.reason
+                : undefined,
+    });
+};
+
+const upsertConsentContractForListingScopes = async ({
+    ctx,
+    listing,
+    listingId,
+    normalizedScopes,
+    reason,
+}: {
+    ctx: { domain: string };
+    listing: AppStoreListingType;
+    listingId: string;
+    normalizedScopes: NormalizedConsentScopes;
+    reason?: string;
+}): Promise<{ contractUri: string; created: boolean; scopeHash: string }> => {
+    const scopeHash = computeConsentScopeHash(normalizedScopes);
+    const existingContract = await getConsentContractForListingByScopeHashCached(
+        listingId,
+        scopeHash
+    );
+
+    if (existingContract) {
+        return {
+            contractUri: constructUri('contract', existingContract.id, ctx.domain),
+            created: false,
+            scopeHash,
+        };
+    }
+
+    const integration = await getIntegrationForListingCached(listingId);
+
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+
+    const ownerProfile = await getOwnerProfileForIntegrationCached(integration.id);
+
+    if (!ownerProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+    }
+
+    const createdContract = await createConsentFlowContract({
+        contract: buildConsentFlowContractFromScopes(normalizedScopes),
+        name: buildScopedConsentContractName(listing.display_name),
+        description: listing.tagline,
+        reasonForAccessing: reason,
+    });
+
+    await setCreatorForContract(createdContract, ownerProfile);
+    await associateConsentContractWithListing(listingId, createdContract.id, scopeHash);
+    invalidateConsentContractForListingByScopeHashCache(listingId, scopeHash);
+
+    return {
+        contractUri: constructUri('contract', createdContract.id, ctx.domain),
+        created: true,
+        scopeHash,
+    };
+};
+
+const resolveManifestApplyListing = async ({
+    integrationId,
+    listingId,
+    profileId,
+}: {
+    integrationId: string;
+    listingId: string | undefined;
+    profileId: string;
+}): Promise<AppStoreListingType> => {
+    if (listingId) {
+        const { listing, integration } = await verifyListingOwnership(listingId, profileId);
+
+        if (integration.id !== integrationId) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Listing does not belong to the provided Integration',
+            });
+        }
+
+        return listing;
+    }
+
+    const listings = await getListingsForIntegration(integrationId, { limit: 2 });
+
+    if (listings.length === 0) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No App Store Listing found for this Integration',
+        });
+    }
+
+    if (listings.length > 1) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'listingId is required when an Integration has multiple listings',
+        });
+    }
+
+    return listings[0]!;
 };
 
 const handleCheckCredentialEvent = async (
@@ -1822,6 +2077,336 @@ export const appStoreRouter = t.router({
             return countListingsForIntegration(input.integrationId);
         }),
 
+    submitAppManifest: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/integration/{integrationId}/manifest/submit',
+                tags: ['App Store'],
+                summary: 'Submit App Manifest',
+                description:
+                    'Create a versioned app manifest draft for an integration, idempotently by manifest hash.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                integrationId: z.string(),
+                manifest: AppManifestValidator,
+            })
+        )
+        .output(SubmitAppManifestResponseValidator)
+        .mutation(async ({ input, ctx }) => {
+            await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
+
+            const latestManifestVersion = await getLatestManifestVersionForIntegration(
+                input.integrationId
+            );
+            const activeManifestVersion = await getActiveManifestVersionForIntegration(
+                input.integrationId
+            );
+            const manifestHash = hashManifest(input.manifest);
+
+            if (latestManifestVersion?.manifestHash === manifestHash) {
+                return {
+                    version: latestManifestVersion.version,
+                    manifestHash,
+                    diff: null,
+                    noop: true,
+                };
+            }
+
+            const createdManifestVersion = await createAppManifestVersion({
+                integrationId: input.integrationId,
+                version: (latestManifestVersion?.version ?? 0) + 1,
+                manifestHash,
+                manifest: input.manifest,
+                status: 'draft',
+            });
+
+            return {
+                version: createdManifestVersion.version,
+                manifestHash,
+                diff: activeManifestVersion
+                    ? diffManifests(activeManifestVersion.manifest, input.manifest)
+                    : null,
+                noop: false,
+            };
+        }),
+
+    getManifestVersions: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/integration/{integrationId}/manifest/versions',
+                tags: ['App Store'],
+                summary: 'Get App Manifest Versions',
+                description: 'List paginated app manifest versions for an integration.',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(
+            z.object({
+                integrationId: z.string(),
+                limit: z.number().int().min(1).max(100).optional(),
+                cursor: z.string().optional(),
+            })
+        )
+        .output(PaginatedAppManifestVersionsValidator)
+        .query(async ({ input, ctx }) => {
+            await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
+
+            const limit = input.limit ?? 25;
+            const versions = await getManifestVersionsForIntegration(input.integrationId, {
+                limit: limit + 1,
+                cursor: input.cursor,
+            });
+
+            const hasMore = versions.length > limit;
+            const records = (hasMore ? versions.slice(0, limit) : versions).map(
+                toManifestVersionSummary
+            );
+
+            return {
+                hasMore,
+                cursor: hasMore ? String(records[records.length - 1]?.version) : undefined,
+                records,
+            };
+        }),
+
+    getManifestVersion: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/integration/{integrationId}/manifest/{version}',
+                tags: ['App Store'],
+                summary: 'Get App Manifest Version',
+                description: 'Get a full app manifest version for an integration.',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(
+            z.object({
+                integrationId: z.string(),
+                version: z.number().int().min(1),
+            })
+        )
+        .output(AppManifestVersionValidator)
+        .query(async ({ input, ctx }) => {
+            await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
+
+            const manifestVersion = await getManifestVersionForIntegration(
+                input.integrationId,
+                input.version
+            );
+
+            if (!manifestVersion) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'App manifest version not found',
+                });
+            }
+
+            return manifestVersion;
+        }),
+
+    getManifestDiff: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/app-store/integration/{integrationId}/manifest/diff/{toVersion}',
+                tags: ['App Store'],
+                summary: 'Get App Manifest Diff',
+                description: 'Diff one app manifest version against another for an integration.',
+            },
+            requiredScope: 'app-store:read',
+        })
+        .input(
+            z.object({
+                integrationId: z.string(),
+                fromVersion: z.number().int().min(1).optional(),
+                toVersion: z.number().int().min(1),
+            })
+        )
+        .output(AppManifestDiffValidator)
+        .query(async ({ input, ctx }) => {
+            await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
+
+            const toManifestVersion = await getManifestVersionForIntegration(
+                input.integrationId,
+                input.toVersion
+            );
+
+            if (!toManifestVersion) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Target app manifest version not found',
+                });
+            }
+
+            const fromManifestVersion = input.fromVersion
+                ? await getManifestVersionForIntegration(input.integrationId, input.fromVersion)
+                : await getActiveManifestVersionForIntegration(input.integrationId);
+
+            if (!fromManifestVersion) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Source app manifest version not found',
+                });
+            }
+
+            return diffManifests(fromManifestVersion.manifest, toManifestVersion.manifest);
+        }),
+
+    applyManifestVersion: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/integration/{integrationId}/manifest/{version}/apply',
+                tags: ['App Store'],
+                summary: 'Apply App Manifest Version',
+                description:
+                    'Mark an app manifest version active and idempotently reconcile derived listing entities.',
+            },
+            requiredScope: 'app-store:write',
+        })
+        .input(
+            z.object({
+                integrationId: z.string(),
+                version: z.number().int().min(1),
+                listingId: z.string().optional(),
+            })
+        )
+        .output(ApplyManifestVersionResponseValidator)
+        .mutation(async ({ input, ctx }) => {
+            const integration = await verifyIntegrationOwnership(
+                input.integrationId,
+                ctx.user.profile.profileId
+            );
+            const manifestVersion = await getManifestVersionForIntegration(
+                input.integrationId,
+                input.version
+            );
+
+            if (!manifestVersion) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'App manifest version not found',
+                });
+            }
+
+            const listing = await resolveManifestApplyListing({
+                integrationId: input.integrationId,
+                listingId: input.listingId,
+                profileId: ctx.user.profile.profileId,
+            });
+            const integrationOwner = await getOwnerProfileForIntegration(input.integrationId);
+
+            if (!integrationOwner) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+            }
+
+            let templatesUpserted = 0;
+            let templatesSkipped = 0;
+            let contractsUpserted = 0;
+            let contractsSkipped = 0;
+
+            for (const templateRecord of manifestVersion.manifest.templates) {
+                const inlineTemplate = templateRecord.template as InlineCredentialTemplate;
+                const existingBoost = await getBoostForListingByTemplateAlias(
+                    listing.listing_id,
+                    templateRecord.alias,
+                    ctx.domain
+                );
+                const desiredTemplateHash = computeInlineTemplateHash(inlineTemplate).contentHash;
+
+                const existingBoostMeta = existingBoost
+                    ? await readInlineTemplateBoostMeta(existingBoost.boost)
+                    : undefined;
+
+                if (
+                    existingBoostMeta?.inlineTemplateHash === desiredTemplateHash &&
+                    existingBoostMeta.inlineTemplateVersion === templateRecord.version
+                ) {
+                    templatesSkipped += 1;
+                    continue;
+                }
+
+                await upsertInlineTemplateBoostForListing({
+                    listing,
+                    integration,
+                    templateAlias: templateRecord.alias,
+                    template: inlineTemplate,
+                    domain: ctx.domain,
+                    desiredVersion: templateRecord.version,
+                });
+
+                templatesUpserted += 1;
+
+                invalidateBoostForListingCache(
+                    listing.listing_id,
+                    templateRecord.alias,
+                    ctx.domain
+                );
+            }
+
+            for (const consentRecord of manifestVersion.manifest.consentRequests) {
+                const upsertedConsent = await upsertConsentContractForListingScopes({
+                    ctx,
+                    listing,
+                    listingId: listing.listing_id,
+                    normalizedScopes: consentRecord.scopes,
+                    reason: consentRecord.reason,
+                });
+
+                if (upsertedConsent.created) {
+                    contractsUpserted += 1;
+                } else {
+                    contractsSkipped += 1;
+                }
+
+                invalidateConsentContractForListingByScopeHashCache(
+                    listing.listing_id,
+                    upsertedConsent.scopeHash
+                );
+            }
+
+            await markManifestVersionsSuperseded(input.integrationId, manifestVersion.id);
+
+            if (manifestVersion.status !== 'active' || !manifestVersion.activatedAt) {
+                await updateAppManifestVersion(manifestVersion.id, {
+                    status: 'active',
+                    activatedAt: manifestVersion.activatedAt ?? new Date().toISOString(),
+                });
+            }
+
+            await associateListingWithManifestVersion(listing.listing_id, manifestVersion.id);
+
+            await ensureManagedSigningAuthorityForListing(
+                listing,
+                integration,
+                integrationOwner,
+                ctx.domain
+            );
+
+            return {
+                applied: true,
+                version: manifestVersion.version,
+                reconciled: {
+                    templatesUpserted,
+                    templatesSkipped,
+                    contractsUpserted,
+                    contractsSkipped,
+                    signingAuthorityEnsured: true,
+                },
+            };
+        }),
+
     updateListing: profileRoute
         .meta({
             openapi: {
@@ -2006,6 +2591,31 @@ export const appStoreRouter = t.router({
                     code: 'BAD_REQUEST',
                     message: `Cannot submit listing with status "${listing.app_listing_status}" for review. Only DRAFT listings can be submitted.`,
                 });
+            }
+
+            // Prevent submitting localhost URLs for review
+            if (listing.launch_type === 'EMBEDDED_IFRAME' && listing.launch_config_json) {
+                try {
+                    const config = JSON.parse(listing.launch_config_json);
+                    const urlToCheck = config.url || config.iframeUrl;
+                    if (urlToCheck) {
+                        const parsed = new URL(urlToCheck);
+                        const isLocalhost =
+                            parsed.hostname === 'localhost' ||
+                            parsed.hostname === '127.0.0.1' ||
+                            parsed.hostname === '[::1]';
+                        if (isLocalhost || parsed.protocol !== 'https:') {
+                            throw new TRPCError({
+                                code: 'BAD_REQUEST',
+                                message:
+                                    'Cannot submit an app for review with a localhost or non-HTTPS URL. Please update the launch configuration with your production URL.',
+                            });
+                        }
+                    }
+                } catch (e) {
+                    if (e instanceof TRPCError) throw e;
+                    // Ignore JSON parse errors here, they should be caught by validation
+                }
             }
 
             const submittedAt = new Date().toISOString();
@@ -2819,6 +3429,10 @@ export const appStoreRouter = t.router({
                     event,
                     listing
                 );
+            }
+
+            if (eventType === 'upsert-consent-contract') {
+                return handleUpsertConsentContractEvent(ctx, listing, resolvedListingId, event);
             }
 
             if (eventType === 'send-ai-session-credential') {
