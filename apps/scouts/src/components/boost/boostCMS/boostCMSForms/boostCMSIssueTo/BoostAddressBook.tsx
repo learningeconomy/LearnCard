@@ -32,6 +32,7 @@ import {
     BoostUserTypeEnum,
     useModal,
     ModalTypes,
+    useGetSearchProfiles,
 } from 'learn-card-base';
 
 import Plus from 'learn-card-base/svgs/Plus';
@@ -97,10 +98,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     _issueTo,
     _setIssueTo,
 
-    search,
+    search: searchProp,
     setSearch,
-    searchResults,
-    isLoading,
+    searchResults: searchResultsProp,
+    isLoading: isLoadingProp,
 
     recipients,
     recipientsLoading,
@@ -113,13 +114,30 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     hideBoostShareableCode = false,
 }) => {
     const { initWallet } = useWallet();
+    const contextCredential = boostSearchStore.use.contextCredential();
+    const searchBoostUri = boostSearchStore.use.boostUri();
+    const role = boostSearchStore.use.role();
+    const isTroopLeader = role === ScoutsRoleEnum.leader;
+    const isNetworkAdmin = role === ScoutsRoleEnum.national;
+    const isFullView = viewMode === BoostAddressBookViewMode.full;
 
     const [connections, setConnections] = useState<BoostCMSIssueTo[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [issueMode, setIssueMode] = useState<BoostUserTypeEnum>(BoostUserTypeEnum.someone);
     const [localIssueTo, setLocalIssueTo] = useState<BoostCMSIssueTo[]>(
-        ((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) || []
+        _issueTo ?? ((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) ?? []
     );
+    const [modalSearch, setModalSearch] = useState(searchProp ?? '');
+    const { data: modalSearchResults, isLoading: modalSearchLoading } = useGetSearchProfiles(
+        modalSearch,
+        {
+            enabled: isFullView && !isTroopLeader && !isNetworkAdmin && modalSearch.length > 0,
+        }
+    );
+
+    const search = isFullView ? modalSearch : searchProp;
+    const searchResults = isFullView ? modalSearchResults : searchResultsProp;
+    const isLoading = isFullView ? modalSearchLoading : isLoadingProp;
 
     // --- Limit Search Scope for Troop Leaders / Admins ---
     //   (should really refactor since so much of this code is from BoostSearch)
@@ -127,12 +145,6 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     const parentBoost = parentBoosts?.records?.[0]; // just default to the first one, guess we're just assuming there's only one
     const parentBoostUri = parentBoost?.uri;
     const { data: resolvedCredential } = useResolveBoost(parentBoostUri);
-
-    const contextCredential = boostSearchStore.use.contextCredential();
-    const searchBoostUri = boostSearchStore.use.boostUri();
-    const role = boostSearchStore.use.role();
-    const isTroopLeader = role === ScoutsRoleEnum.leader;
-    const isNetworkAdmin = role === ScoutsRoleEnum.national;
 
     const { scoutRecipients: rawScouts, isLoading: scoutsLoading } = useTroopMembers(
         contextCredential as any,
@@ -158,12 +170,12 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     // --- End Limit Search Scope ---
 
     useEffect(() => {
-        if ((state as any)?.[collectionPropName]?.length > 0) {
-            setLocalIssueTo(((state as any)?.[collectionPropName] as BoostCMSIssueTo[]) || []);
-        } else {
-            return;
-        }
-    }, [state]);
+        if (viewMode !== BoostAddressBookViewMode.list) return;
+
+        const stateIssueTo = (state as any)?.[collectionPropName] as BoostCMSIssueTo[] | undefined;
+
+        if (stateIssueTo) setLocalIssueTo(stateIssueTo);
+    }, [state, collectionPropName, viewMode]);
 
     const { newModal: newContactOptionsModal, closeModal: closeContactOptionsModal } = useModal({
         mobile: ModalTypes.Cancel,
@@ -253,9 +265,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         setState(prevState => {
             return {
                 ...prevState,
-                [collectionPropName]: [...(_issueTo || [])],
+                [collectionPropName]: [...localIssueTo],
             };
         });
+        _setIssueTo?.([...localIssueTo]);
         handleCloseModal?.(true);
         setSearch?.('');
     };
@@ -264,7 +277,14 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         loadConnections();
     }, [isTroopLeader, rawScouts]);
 
-    const handleSearch = async (profileId: string) => setSearch?.(profileId);
+    const handleSearch = (profileId: string) => {
+        if (isFullView) {
+            setModalSearch(profileId);
+            return;
+        }
+
+        setSearch?.(profileId);
+    };
 
     let contactCount =
         (search?.length ?? 0) > 0 && (searchResults?.length ?? 0) > 0
@@ -384,8 +404,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={connectionsToShow}
                             mode={mode}
-                            _issueTo={_issueTo || []}
-                            _setIssueTo={_setIssueTo as any}
+                            _issueTo={localIssueTo}
+                            _setIssueTo={setLocalIssueTo}
                             collectionPropName={collectionPropName}
                         />
                     )}
@@ -410,8 +430,8 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             setState={setState}
                             contacts={(searchResults || []) as any}
                             mode={mode}
-                            _issueTo={_issueTo || []}
-                            _setIssueTo={_setIssueTo as any}
+                            _issueTo={localIssueTo}
+                            _setIssueTo={setLocalIssueTo}
                             collectionPropName={collectionPropName}
                         />
                     )}

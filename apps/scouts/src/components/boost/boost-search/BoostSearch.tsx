@@ -90,7 +90,11 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
     const rawNetworkMembers = networkMembersData?.pages?.flatMap(page => page.records) ?? [];
     const networkMembers = rawNetworkMembers.map(networkMember => networkMember.to);
 
-    const { data: searchResults, isLoading: searchLoading } = useGetSearchProfiles(search ?? '');
+    const { data: searchResults, isLoading: searchLoading } = useGetSearchProfiles(search ?? '', {
+        enabled:
+            search.length > 0 &&
+            (ignoreBoostSearchRestriction || (!isTroopLeader && !isNetworkAdmin)),
+    });
     const loadConnections = async () => {
         if (!ignoreBoostSearchRestriction) {
             if (isTroopLeader) {
