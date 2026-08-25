@@ -7,7 +7,10 @@ import {
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, SigningAuthority, Credential, Boost, ClaimHook, ContactMethod } from '@models';
 import cache from '@cache';
-import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
+import { testVc, sendBoost, sendCredential, testVp, testUnsignedBoost } from './helpers/send';
+import { neogma } from '@instance';
+import { ensureMutualConnectionWithSource } from '@helpers/connection.helpers';
+import { getIdFromUri } from '@helpers/uri.helpers';
 
 // Mock verifyAuthToken for authToken integration tests
 const mockVerifyAuthToken = vi.fn();
@@ -266,8 +269,7 @@ describe('Profiles', () => {
                 expect(mockVerifyAuthToken).toHaveBeenCalledWith('fake-valid-jwt');
 
                 // Verify contact method was created and linked
-                const methods =
-                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const methods = await userA.clients.fullAuth.contactMethods.getMyContactMethods();
                 const cm = methods?.find(m => m.value === 'alice@test.com');
                 expect(cm).toBeDefined();
                 expect(cm?.type).toBe('email');
@@ -294,8 +296,7 @@ describe('Profiles', () => {
                 expect(didWeb).toEqual('did:web:localhost%3A3000:users:usera');
 
                 // No contact method should be created
-                const methods =
-                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const methods = await userA.clients.fullAuth.contactMethods.getMyContactMethods();
                 expect(methods?.length ?? 0).toBe(0);
             });
 
@@ -325,8 +326,7 @@ describe('Profiles', () => {
 
                 // emailVerified is false, but the check is `!== false` so this should still pass
                 // Let's verify the actual behavior matches the route logic
-                const methods =
-                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const methods = await userA.clients.fullAuth.contactMethods.getMyContactMethods();
                 // emailVerified === false → the condition `claims.emailVerified !== false` is false → skip
                 expect(methods?.length ?? 0).toBe(0);
             });
@@ -346,8 +346,7 @@ describe('Profiles', () => {
                 });
 
                 // Verify CM was created
-                const methodsA =
-                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const methodsA = await userA.clients.fullAuth.contactMethods.getMyContactMethods();
                 const cmA = methodsA?.find(m => m.value === 'shared@test.com');
                 expect(cmA).toBeDefined();
                 expect(cmA?.isVerified).toBe(true);
@@ -2038,6 +2037,129 @@ describe('Profiles', () => {
                 did: userBAfterUpdate?.did,
             });
             expect(updatedConnections[0]?.isPrivate).toBeUndefined();
+        });
+    });
+
+    describe('contactRelationship', () => {
+        beforeEach(async () => {
+            await Credential.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+        });
+
+        afterAll(async () => {
+            await Credential.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        const connectAAndB = async () => {
+            await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
+            await userB.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'usera' });
+        };
+
+        it('requires full auth and an existing connection', async () => {
+            await expect(
+                noAuthClient.profile.contactRelationship({ profileId: 'userb', limit: 10 })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            await expect(
+                userA.clients.fullAuth.profile.contactRelationship({
+                    profileId: 'userb',
+                    limit: 10,
+                })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        });
+
+        it('records a connection date and preserves it when sources are merged', async () => {
+            await connectAAndB();
+
+            const initial = await userA.clients.fullAuth.profile.contactRelationship({
+                profileId: 'userb',
+                limit: 10,
+            });
+
+            expect(initial.connectedAt).toBeDefined();
+            expect(Number.isNaN(new Date(initial.connectedAt!).getTime())).toBeFalsy();
+
+            await ensureMutualConnectionWithSource('usera', 'userb', 'boost:test-source');
+
+            const updated = await userA.clients.fullAuth.profile.contactRelationship({
+                profileId: 'userb',
+                limit: 10,
+            });
+
+            expect(updated.connectedAt).toEqual(initial.connectedAt);
+        });
+
+        it('returns no inferred date for a legacy connection', async () => {
+            await connectAAndB();
+            await neogma.queryRunner.run(
+                `MATCH (:Profile {profileId: 'usera'})-[r:CONNECTED_WITH]-(:Profile {profileId: 'userb'})
+                 REMOVE r.connectedAt`
+            );
+
+            const relationship = await userA.clients.fullAuth.profile.contactRelationship({
+                profileId: 'userb',
+                limit: 10,
+            });
+
+            expect(relationship.connectedAt).toBeUndefined();
+        });
+
+        it('counts and paginates accepted non-revoked credentials in both directions', async () => {
+            await connectAAndB();
+
+            const sentUri = await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+            const receivedUri = await sendCredential(
+                { profileId: 'userb', user: userB },
+                { profileId: 'usera', user: userA }
+            );
+
+            await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            const revokedUri = await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+            const revokedId = getIdFromUri(revokedUri);
+            await neogma.queryRunner.run(
+                `MATCH (:Profile {profileId: $profileId})-[sent:CREDENTIAL_SENT]->(:Credential {id: $credentialId})
+                 SET sent.status = 'revoked'`,
+                { profileId: 'usera', credentialId: revokedId }
+            );
+
+            const firstPage = await userA.clients.fullAuth.profile.contactRelationship({
+                profileId: 'userb',
+                limit: 1,
+            });
+            const secondPage = await userA.clients.fullAuth.profile.contactRelationship({
+                profileId: 'userb',
+                limit: 1,
+                cursor: firstPage.cursor,
+            });
+
+            expect(firstPage.sentCount).toEqual(1);
+            expect(firstPage.receivedCount).toEqual(1);
+            expect(firstPage.hasMore).toBeTruthy();
+            expect(firstPage.cursor).toBeDefined();
+            expect(secondPage.hasMore).toBeFalsy();
+
+            const records = [...firstPage.records, ...secondPage.records];
+            expect(records).toHaveLength(2);
+            expect(new Set(records.map(record => record.uri))).toEqual(
+                new Set([sentUri, receivedUri])
+            );
+            expect(new Set(records.map(record => record.direction))).toEqual(
+                new Set(['sent', 'received'])
+            );
         });
     });
 

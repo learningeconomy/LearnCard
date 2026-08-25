@@ -206,6 +206,19 @@ export const SentCredentialInfoValidator = z.object({
 });
 export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
+export const ContactRelationshipCredentialValidator = SentCredentialInfoValidator.extend({
+    direction: z.enum(['sent', 'received']),
+});
+export type ContactRelationshipCredential = z.infer<typeof ContactRelationshipCredentialValidator>;
+
+export const ContactRelationshipValidator = PaginationResponseValidator.extend({
+    connectedAt: z.iso.datetime().optional(),
+    sentCount: z.number().int().nonnegative(),
+    receivedCount: z.number().int().nonnegative(),
+    records: ContactRelationshipCredentialValidator.array(),
+});
+export type ContactRelationship = z.infer<typeof ContactRelationshipValidator>;
+
 export const BoostPermissionsValidator = z.object({
     role: z.string(),
     canView: z.boolean().default(true),

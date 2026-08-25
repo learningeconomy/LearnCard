@@ -1,18 +1,19 @@
-const mockGetClient = jest.fn();
+import { vi } from 'vitest';
+const mockGetClient = vi.fn();
 
 const mockClient = {
     user: {
-        getDids: { query: jest.fn().mockResolvedValue([]) },
+        getDids: { query: vi.fn().mockResolvedValue([]) },
     },
     utilities: {
-        getDid: { query: jest.fn().mockResolvedValue('did:key:z6MkLearnCloud') },
+        getDid: { query: vi.fn().mockResolvedValue('did:key:z6MkLearnCloud') },
     },
     storage: {
-        batchResolve: { query: jest.fn() },
+        batchResolve: { query: vi.fn() },
     },
 };
 
-jest.mock('@learncard/learn-cloud-client', () => ({
+vi.mock('@learncard/learn-cloud-client', () => ({
     getClient: (...args: unknown[]) => mockGetClient(...args),
 }));
 
@@ -37,15 +38,15 @@ const makeLearnCard = () => ({
         did: () => 'did:key:z6MkHolder',
     },
     invoke: {
-        getDidAuthVp: jest.fn().mockResolvedValue('did-auth-jwt'),
-        decryptDagJwe: jest.fn(async value => value),
+        getDidAuthVp: vi.fn().mockResolvedValue('did-auth-jwt'),
+        decryptDagJwe: vi.fn(async value => value),
     },
-    debug: jest.fn(),
+    debug: vi.fn(),
 });
 
 describe('LearnCloud Plugin', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         mockGetClient.mockResolvedValue(mockClient);
     });
 

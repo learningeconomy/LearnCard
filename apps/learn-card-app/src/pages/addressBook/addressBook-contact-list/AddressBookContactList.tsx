@@ -37,6 +37,7 @@ type AddressBookContactListProps = {
     refetch: () => void;
     refetchBlockedContacts?: () => void;
     refetchRequestContacts?: () => void;
+    detailsMode?: 'actions' | 'relationship';
 };
 
 export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
@@ -61,6 +62,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
     refetch,
     refetchBlockedContacts,
     refetchRequestContacts,
+    detailsMode = 'actions',
 }) => {
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
@@ -96,6 +98,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                             refetchBlockedContacts={refetchBlockedContacts}
                             refetchRequestContacts={refetchRequestContacts}
                             showArrow={showArrow}
+                            detailsMode={detailsMode}
                         />
                     );
                 })}
@@ -128,6 +131,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
                                 refetchBlockedContacts={refetchBlockedContacts}
                                 refetchRequestContacts={refetchRequestContacts}
                                 showArrow={showArrow}
+                                detailsMode={detailsMode}
                             />
                         ))}
                     </>

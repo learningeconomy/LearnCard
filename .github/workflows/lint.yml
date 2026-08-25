@@ -90,6 +90,18 @@ jobs:
                     bash "$contract"
                   done
 
+    NoJest:
+        name: Reject active Jest usage
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Check test-runner contract
+              run: node scripts/check-no-jest.mjs
+
     I18nKeys:
         runs-on: ubuntu-latest
         steps:

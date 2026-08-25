@@ -46,7 +46,7 @@ export const getLearnCardHeaderBrandingColors = (path: string = '/') => {
         path === '/home' ||
         path === '/passport' ||
         path === '/' ||
-        path === '/dashboard' ||
+        path === '/passport' ||
         path === '/wallet' ||
         path === '/notifications' ||
         path === '/lc-preview' ||

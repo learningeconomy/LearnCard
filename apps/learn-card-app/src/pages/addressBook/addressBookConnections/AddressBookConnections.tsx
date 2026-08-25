@@ -259,7 +259,7 @@ const AddressBookConnections: React.FC<{
                     handleRemoveConnection={handleRemoveConnection}
                     showBlockButton
                     handleBlockUser={handleBlockUser}
-                    contacts={data ?? []}
+                    contacts={(data ?? []) as LCNProfile[]}
                     pages={paginatedData?.pages}
                     showUnblockButton={false}
                     search=""
@@ -268,6 +268,7 @@ const AddressBookConnections: React.FC<{
                     hasNextPage={hasNextPage}
                     fetchNextPage={fetchNextPage}
                     isFetching={isFetching}
+                    detailsMode="relationship"
                 />
             )}
             {!isLoading && (!contactsExist || error) && (

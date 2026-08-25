@@ -8,6 +8,7 @@ import {
     VC,
     VP,
     SentCredentialInfo,
+    ContactRelationship,
     JWE,
     Boost,
     BoostQuery,
@@ -190,6 +191,10 @@ export type LearnCardNetworkPluginMethods = {
     getPaginatedConnections: (
         options?: PaginationOptionsType
     ) => Promise<PaginatedVisibleLCNProfiles>;
+    getContactRelationship: (
+        profileId: string,
+        options?: PaginationOptionsType
+    ) => Promise<ContactRelationship>;
     /** @deprecated Use getPaginatedPendingConnections */
     getPendingConnections: () => Promise<LCNVisibleProfile[]>;
     getPaginatedPendingConnections: (

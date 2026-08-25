@@ -25,6 +25,7 @@ import {
     LCNProfileConnectionStatusEnum,
     AppStoreListing,
     SentCredentialInfo,
+    ContactRelationship,
     VC,
     PaginationOptionsType,
     PaginatedLCNProfiles,
@@ -605,6 +606,31 @@ export const useGetPaginatedConnections = (
         },
         initialPageParam: initialOptions.cursor,
         getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage.cursor : undefined),
+    });
+};
+
+/** Query: Get accepted credentials exchanged with a connected profile. */
+export const useGetContactRelationship = (
+    profileId: string | undefined,
+    initialOptions: PaginationOptionsType = { limit: 10 }
+) => {
+    const { initWallet } = useWallet();
+    const switchedDid = switchedProfileStore.use.switchedDid();
+
+    return useInfiniteQuery<ContactRelationship>({
+        queryKey: ['contactRelationship', switchedDid ?? '', profileId ?? '', initialOptions],
+        queryFn: async ({ pageParam }) => {
+            if (!profileId) throw new Error('Contact profile required.');
+
+            const wallet = await initWallet();
+            return wallet.invoke.getContactRelationship(profileId, {
+                ...initialOptions,
+                cursor: pageParam as string | undefined,
+            });
+        },
+        initialPageParam: initialOptions.cursor,
+        getNextPageParam: lastPage => (lastPage.hasMore ? lastPage.cursor : undefined),
+        enabled: Boolean(profileId),
     });
 };
 

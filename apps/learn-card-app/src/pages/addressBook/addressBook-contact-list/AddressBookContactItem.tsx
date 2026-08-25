@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
@@ -14,6 +15,7 @@ import BoostIcon from '../../../assets/images/Learncard-new-boost-icon.png';
 import SlimCaretRight from 'apps/learn-card-app/src/components/svgs/SlimCaretRight';
 import MobileNavCircleIcon from 'apps/learn-card-app/src/components/svgs/MobileNavCircleIcon';
 import AddressBookContactDetailsView from './AddressBookContactDetailsView';
+import AddressBookContactRelationshipView from './AddressBookContactRelationshipView';
 
 import { LCNProfileConnectionStatusEnum, LCNProfile } from '@learncard/types';
 
@@ -61,6 +63,7 @@ type AddressBookContactItemProps = {
     refetch: () => void;
     refetchBlockedContacts?: () => void;
     refetchRequestContacts?: () => void;
+    detailsMode?: 'actions' | 'relationship';
 };
 
 export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
@@ -81,11 +84,15 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     refetch,
     refetchBlockedContacts,
     refetchRequestContacts,
+    detailsMode = 'actions',
 }) => {
     const queryClient = useQueryClient();
     const history = useHistory();
     const { gate } = useLCNGatedAction();
     const { newModal } = useModal({ desktop: ModalTypes.Cancel });
+    const contactTriggerRef = useRef<HTMLButtonElement>(null);
+    const prefersReducedMotion = useReducedMotion();
+    const avatarLayoutId = `address-book-avatar-${contact.profileId}`;
 
     const { presentToast } = useToast();
     const [presentAlert, dismissAlert] = useIonAlert();
@@ -490,12 +497,21 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
 
     const userDetails = (
         <>
-            <UserProfilePicture
-                customContainerClass="flex justify-center items-center min-w-[48px] min-h-[48px] w-[48px] h-[48px] max-w-[48px] max-h-[48px] rounded-full overflow-hidden text-white font-medium text-4xl mr-3"
-                customImageClass="flex justify-center items-center min-w-[48px] min-h-[48px] w-[48px] h-[48px] max-w-[48px] max-h-[48px] rounded-full overflow-hidden object-cover"
-                customSize={164}
-                user={contact}
-            />
+            <motion.div
+                className="me-3 shrink-0"
+                layoutId={
+                    detailsMode === 'relationship' && !prefersReducedMotion
+                        ? avatarLayoutId
+                        : undefined
+                }
+            >
+                <UserProfilePicture
+                    customContainerClass="flex justify-center items-center min-w-[48px] min-h-[48px] w-[48px] h-[48px] max-w-[48px] max-h-[48px] rounded-full overflow-hidden text-white font-medium text-4xl"
+                    customImageClass="flex justify-center items-center min-w-[48px] min-h-[48px] w-[48px] h-[48px] max-w-[48px] max-h-[48px] rounded-full overflow-hidden object-cover"
+                    customSize={164}
+                    user={contact}
+                />
+            </motion.div>
             <div className="flex items-start justify-center flex-col">
                 {contact?.displayName && (
                     <p className="text-grayscale-900 font-semibold text-[17px] font-notoSans line-clamp-2 leading-[24px]">
@@ -618,42 +634,83 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     const shouldHideButton = !showDeleteButton && showBlockButton && !showRequestButton;
     const shouldUsePortal = !showDeleteButton && showBlockButton;
 
+    const restoreContactFocus = (): void => {
+        requestAnimationFrame(() => contactTriggerRef.current?.focus());
+    };
+
+    const openContactDetails = (e: React.MouseEvent): void => {
+        e.stopPropagation();
+
+        if (detailsMode === 'relationship') {
+            newModal(
+                <AddressBookContactRelationshipView
+                    contact={contact}
+                    handleRemoveConnection={handleRemoveConnection}
+                    handleBlockUser={handleBlockUser}
+                    avatarLayoutId={avatarLayoutId}
+                    onClose={restoreContactFocus}
+                />,
+                {
+                    hideButton: true,
+                    className: 'address-book-contact-relationship-modal no-min-height',
+                    sectionClassName: '!max-w-[520px] !p-0 !overflow-hidden',
+                    onClose: restoreContactFocus,
+                },
+                { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
+            );
+            return;
+        }
+
+        newModal(
+            <AddressBookContactDetailsView
+                showCloseButton
+                contact={contact}
+                showBoostButton={showBoostButton}
+                showRequestButton={showRequestButton}
+                handleConnectionRequest={handleConnectionRequest}
+                handleAcceptConnectionRequest={handleAcceptConnectionRequest}
+                showDeleteButton={showDeleteButton}
+                handleRemoveConnection={handleRemoveConnection}
+                showAcceptButton={showAcceptButton}
+                showCancelButton={showCancelButton}
+                handleCancelConnectionRequest={handleCancelConnectionRequest}
+                showBlockButton={showBlockButton}
+                handleBlockUser={handleBlockUser}
+                showUnblockButton={showUnblockButton}
+                handleUnblockUser={handleUnblockUser}
+                history={history}
+            />,
+            {
+                sectionClassName: '!max-w-[400px]',
+                hideButton: shouldHideButton,
+                usePortal: shouldUsePortal,
+                portalClassName: '!max-w-[400px]',
+            }
+        );
+    };
+
     const contactItemDetails = (
         <>
-            <div
-                className="flex items-center justify-start w-[80%] py-2"
-                onClick={e => {
-                    e.stopPropagation();
-                    newModal(
-                        <AddressBookContactDetailsView
-                            showCloseButton
-                            contact={contact}
-                            showBoostButton={showBoostButton}
-                            showRequestButton={showRequestButton}
-                            handleConnectionRequest={handleConnectionRequest}
-                            handleAcceptConnectionRequest={handleAcceptConnectionRequest}
-                            showDeleteButton={showDeleteButton}
-                            handleRemoveConnection={handleRemoveConnection}
-                            showAcceptButton={showAcceptButton}
-                            showCancelButton={showCancelButton}
-                            handleCancelConnectionRequest={handleCancelConnectionRequest}
-                            showBlockButton={showBlockButton}
-                            handleBlockUser={handleBlockUser}
-                            showUnblockButton={showUnblockButton}
-                            handleUnblockUser={handleUnblockUser}
-                            history={history}
-                        />,
-                        {
-                            sectionClassName: '!max-w-[400px]',
-                            hideButton: shouldHideButton,
-                            usePortal: shouldUsePortal,
-                            portalClassName: '!max-w-[400px]',
-                        }
-                    );
-                }}
-            >
-                {userDetails}
-            </div>
+            {detailsMode === 'relationship' ? (
+                <button
+                    ref={contactTriggerRef}
+                    type="button"
+                    className="flex w-[80%] items-center justify-start py-2 text-start"
+                    onClick={openContactDetails}
+                    aria-label={m['contacts.relationship.openProfile']({
+                        name: contact.displayName,
+                    })}
+                >
+                    {userDetails}
+                </button>
+            ) : (
+                <div
+                    className="flex items-center justify-start w-[80%] py-2"
+                    onClick={openContactDetails}
+                >
+                    {userDetails}
+                </div>
+            )}
             {showBoostButton && !showArrow && (
                 <div className="flex item-center justify-end w-[20%]">
                     <button
@@ -694,30 +751,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 <div className="flex item-center justify-end w-[20%]">
                     <div
                         className="flex items-center justify-start py-2"
-                        onClick={e => {
-                            e.stopPropagation();
-                            newModal(
-                                <AddressBookContactDetailsView
-                                    showCloseButton
-                                    contact={contact}
-                                    showBoostButton={showBoostButton}
-                                    showRequestButton={showRequestButton}
-                                    handleConnectionRequest={handleConnectionRequest}
-                                    handleAcceptConnectionRequest={handleAcceptConnectionRequest}
-                                    showDeleteButton={showDeleteButton}
-                                    handleRemoveConnection={handleRemoveConnection}
-                                    showAcceptButton={showAcceptButton}
-                                    showCancelButton={showCancelButton}
-                                    handleCancelConnectionRequest={handleCancelConnectionRequest}
-                                    showBlockButton={showBlockButton}
-                                    handleBlockUser={handleBlockUser}
-                                    showUnblockButton={showUnblockButton}
-                                    handleUnblockUser={handleUnblockUser}
-                                    history={history}
-                                />,
-                                { sectionClassName: '!max-w-[400px]' }
-                            );
-                        }}
+                        onClick={openContactDetails}
                     >
                         <SlimCaretRight className="text-grayscale-400 w-[24px] h-auto" />
                     </div>

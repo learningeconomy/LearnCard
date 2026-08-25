@@ -14,7 +14,8 @@
         "dev": "node ./scripts/build.mjs --watch",
         "test": "vitest run",
         "test:watch": "vitest",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "test:coverage": "vitest run --coverage"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
@@ -35,7 +36,7 @@
         "jsdom": "^24.0.0",
         "shx": "^0.3.4",
         "typescript": "^5.0.0",
-        "vitest": "^3.2.6"
+        "vitest": "4.1.10"
     },
     "dependencies": {
         "@learncard/types": "workspace:*",

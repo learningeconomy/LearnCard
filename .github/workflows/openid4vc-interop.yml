@@ -60,7 +60,7 @@ jobs:
               run: bunx nx build openid4vc-plugin
 
             - name: Run in-process OID4VC e2e suite
-              run: bun run --filter @workspace/openid4vc-e2e-tests test
+              run: bun run --filter @workspace/openid4vc-e2e-tests test:openid4vc:e2e
 
             - name: Run cross-vendor interop suite (docker compose)
               run: bun run --filter @workspace/openid4vc-interop-e2e-tests test:interop:e2e

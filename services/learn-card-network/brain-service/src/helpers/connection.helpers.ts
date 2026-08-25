@@ -1,6 +1,8 @@
 import { Op, QueryBuilder, Where } from 'neogma';
 import { neogma } from '@instance';
 import {
+    ContactRelationship,
+    ContactRelationshipCredential,
     LCNProfileConnectionStatusEnum,
     LCNNotificationTypeEnumValidator,
     LCNNotificationTypeEnum,
@@ -11,6 +13,7 @@ import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helper
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
+import { constructUri } from '@helpers/uri.helpers';
 import { FlatProfileType, ProfileType } from 'types/profile';
 import { inflateObject } from './objects.helpers';
 
@@ -54,17 +57,19 @@ export const ensureMutualConnectionWithSource = async (
 ): Promise<void> => {
     if (aProfileId === bProfileId) return;
 
+    const connectedAt = new Date().toISOString();
+
     const cypher = `
         MATCH (a:Profile { profileId: $aId }), (b:Profile { profileId: $bId })
         MERGE (a)-[r:CONNECTED_WITH]->(b)
-        ON CREATE SET r.sources = [$key]
+        ON CREATE SET r.sources = [$key], r.connectedAt = $connectedAt
         ON MATCH SET r.sources = CASE
             WHEN r.sources IS NULL THEN [$key]
             WHEN NOT $key IN r.sources THEN r.sources + $key
             ELSE r.sources
         END
         MERGE (b)-[r2:CONNECTED_WITH]->(a)
-        ON CREATE SET r2.sources = [$key]
+        ON CREATE SET r2.sources = [$key], r2.connectedAt = $connectedAt
         ON MATCH SET r2.sources = CASE
             WHEN r2.sources IS NULL THEN [$key]
             WHEN NOT $key IN r2.sources THEN r2.sources + $key
@@ -72,7 +77,12 @@ export const ensureMutualConnectionWithSource = async (
         END
     `;
 
-    await neogma.queryRunner.run(cypher, { aId: aProfileId, bId: bProfileId, key: sourceKey });
+    await neogma.queryRunner.run(cypher, {
+        aId: aProfileId,
+        bId: bProfileId,
+        key: sourceKey,
+        connectedAt,
+    });
 };
 
 /**
@@ -84,6 +94,8 @@ export const ensureMutualConnectionsForRows = async (
 ): Promise<void> => {
     if (rows.length === 0) return;
 
+    const connectedAt = new Date().toISOString();
+
     const cypher = `
         UNWIND $rows AS row
         WITH row, $selfId AS selfId
@@ -92,14 +104,14 @@ export const ensureMutualConnectionsForRows = async (
         WITH boostId, targetId, 'boost:' + boostId AS key, selfId
         MATCH (a:Profile { profileId: selfId }), (b:Profile { profileId: targetId })
         MERGE (a)-[r:CONNECTED_WITH]->(b)
-        ON CREATE SET r.sources = [key]
+        ON CREATE SET r.sources = [key], r.connectedAt = $connectedAt
         ON MATCH SET r.sources = CASE
             WHEN r.sources IS NULL THEN [key]
             WHEN NOT key IN r.sources THEN r.sources + key
             ELSE r.sources
         END
         MERGE (b)-[r2:CONNECTED_WITH]->(a)
-        ON CREATE SET r2.sources = [key]
+        ON CREATE SET r2.sources = [key], r2.connectedAt = $connectedAt
         ON MATCH SET r2.sources = CASE
             WHEN r2.sources IS NULL THEN [key]
             WHEN NOT key IN r2.sources THEN r2.sources + key
@@ -107,7 +119,179 @@ export const ensureMutualConnectionsForRows = async (
         END
     `;
 
-    await neogma.queryRunner.run(cypher, { selfId, rows });
+    await neogma.queryRunner.run(cypher, { selfId, rows, connectedAt });
+};
+
+type ContactRelationshipCursor = {
+    received: string;
+    credentialId: string;
+    direction: ContactRelationshipCredential['direction'];
+};
+
+const encodeContactRelationshipCursor = (cursor: ContactRelationshipCursor): string =>
+    Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64url');
+
+const decodeContactRelationshipCursor = (
+    cursor?: string
+): ContactRelationshipCursor | undefined => {
+    if (!cursor) return undefined;
+
+    try {
+        const parsed = JSON.parse(
+            Buffer.from(cursor, 'base64url').toString('utf8')
+        ) as Partial<ContactRelationshipCursor>;
+
+        if (
+            typeof parsed.received !== 'string' ||
+            typeof parsed.credentialId !== 'string' ||
+            (parsed.direction !== 'sent' && parsed.direction !== 'received')
+        ) {
+            return undefined;
+        }
+
+        return parsed as ContactRelationshipCursor;
+    } catch {
+        return undefined;
+    }
+};
+
+const toNumber = (value: unknown): number => {
+    if (
+        value &&
+        typeof value === 'object' &&
+        'toNumber' in value &&
+        typeof (value as { toNumber: () => number }).toNumber === 'function'
+    ) {
+        return (value as { toNumber: () => number }).toNumber();
+    }
+
+    return Number(value ?? 0);
+};
+
+/** Returns accepted, non-revoked credentials exchanged with a connection. */
+export const getContactRelationship = async (
+    domain: string,
+    profile: ProfileType,
+    targetProfileId: string,
+    { limit, cursor }: { limit: number; cursor?: string }
+): Promise<ContactRelationship> => {
+    const safeLimit = Math.max(1, Math.min(100, Math.trunc(limit)));
+    const decodedCursor = decodeContactRelationshipCursor(cursor);
+
+    if (cursor && !decodedCursor) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid relationship cursor' });
+    }
+
+    const [connectionResult, countResult, credentialsResult] = await Promise.all([
+        neogma.queryRunner.run(
+            `MATCH (self:Profile {profileId: $selfId}), (target:Profile {profileId: $targetId})
+             OPTIONAL MATCH (self)-[direct:CONNECTED_WITH]->(target)
+             OPTIONAL MATCH (target)-[reverse:CONNECTED_WITH]->(self)
+             RETURN coalesce(direct.connectedAt, reverse.connectedAt) AS connectedAt`,
+            { selfId: profile.profileId, targetId: targetProfileId }
+        ),
+        neogma.queryRunner.run(
+            `MATCH (self:Profile {profileId: $selfId}), (target:Profile {profileId: $targetId})
+             CALL {
+                 WITH self, target
+                 OPTIONAL MATCH (self)-[sent:CREDENTIAL_SENT]->(credential:Credential)-[received:CREDENTIAL_RECEIVED]->(target)
+                 WHERE sent.to = $targetId
+                   AND coalesce(sent.status, received.status, '') <> 'revoked'
+                 RETURN count(DISTINCT credential) AS sentCount
+             }
+             CALL {
+                 WITH self, target
+                 OPTIONAL MATCH (target)-[sent:CREDENTIAL_SENT]->(credential:Credential)-[received:CREDENTIAL_RECEIVED]->(self)
+                 WHERE sent.to = $selfId
+                   AND coalesce(sent.status, received.status, '') <> 'revoked'
+                 RETURN count(DISTINCT credential) AS receivedCount
+             }
+             RETURN sentCount, receivedCount`,
+            { selfId: profile.profileId, targetId: targetProfileId }
+        ),
+        neogma.queryRunner.run(
+            `MATCH (self:Profile {profileId: $selfId}), (target:Profile {profileId: $targetId})
+             CALL {
+                 WITH self, target
+                 MATCH (self)-[sent:CREDENTIAL_SENT]->(credential:Credential)-[received:CREDENTIAL_RECEIVED]->(target)
+                 WHERE sent.to = $targetId
+                   AND coalesce(sent.status, received.status, '') <> 'revoked'
+                 RETURN credential.id AS credentialId, sent.to AS recipientId,
+                        self.profileId AS senderId, sent.date AS sentDate,
+                        received.date AS receivedDate,
+                        coalesce(received.metadata, sent.metadata) AS metadata,
+                        'sent' AS direction
+                 UNION ALL
+                 WITH self, target
+                 MATCH (target)-[sent:CREDENTIAL_SENT]->(credential:Credential)-[received:CREDENTIAL_RECEIVED]->(self)
+                 WHERE sent.to = $selfId
+                   AND coalesce(sent.status, received.status, '') <> 'revoked'
+                 RETURN credential.id AS credentialId, sent.to AS recipientId,
+                        target.profileId AS senderId, sent.date AS sentDate,
+                        received.date AS receivedDate,
+                        coalesce(received.metadata, sent.metadata) AS metadata,
+                        'received' AS direction
+             }
+             WITH credentialId, recipientId, senderId, sentDate, receivedDate, metadata, direction
+             WHERE $cursorReceived IS NULL
+                OR receivedDate < $cursorReceived
+                OR (receivedDate = $cursorReceived AND credentialId < $cursorCredentialId)
+                OR (receivedDate = $cursorReceived AND credentialId = $cursorCredentialId AND direction < $cursorDirection)
+             RETURN credentialId, recipientId, senderId, sentDate, receivedDate, metadata, direction
+             ORDER BY receivedDate DESC, credentialId DESC, direction DESC
+             LIMIT $queryLimit`,
+            {
+                selfId: profile.profileId,
+                targetId: targetProfileId,
+                cursorReceived: decodedCursor?.received ?? null,
+                cursorCredentialId: decodedCursor?.credentialId ?? '',
+                cursorDirection: decodedCursor?.direction ?? '',
+                queryLimit: safeLimit + 1,
+            }
+        ),
+    ]);
+
+    const connectedAt = connectionResult.records[0]?.get('connectedAt') as string | null;
+    const sentCount = toNumber(countResult.records[0]?.get('sentCount'));
+    const receivedCount = toNumber(countResult.records[0]?.get('receivedCount'));
+
+    const credentials = credentialsResult.records.map(record => {
+        const metadata = record.get('metadata') as Record<string, unknown> | null;
+
+        return {
+            uri: constructUri('credential', record.get('credentialId') as string, domain),
+            to: record.get('recipientId') as string,
+            from: record.get('senderId') as string,
+            sent: record.get('sentDate') as string,
+            received: record.get('receivedDate') as string,
+            ...(metadata && { metadata: inflateObject(metadata) }),
+            direction: record.get('direction') as ContactRelationshipCredential['direction'],
+        } satisfies ContactRelationshipCredential;
+    });
+
+    const hasMore = credentials.length > safeLimit;
+    const records = credentials.slice(0, safeLimit);
+    const lastRecord = records.at(-1);
+    const credentialId = credentialsResult.records[Math.min(records.length, safeLimit) - 1]?.get(
+        'credentialId'
+    ) as string | undefined;
+
+    return {
+        ...(connectedAt && { connectedAt }),
+        sentCount,
+        receivedCount,
+        records,
+        hasMore,
+        ...(hasMore && lastRecord && credentialId
+            ? {
+                  cursor: encodeContactRelationshipCursor({
+                      received: lastRecord.received!,
+                      credentialId,
+                      direction: lastRecord.direction,
+                  }),
+              }
+            : {}),
+    };
 };
 
 /**

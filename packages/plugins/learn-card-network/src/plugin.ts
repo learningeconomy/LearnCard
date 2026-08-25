@@ -802,6 +802,16 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.profile.paginatedConnections.query(options);
             },
+            getContactRelationship: async (_learnCard, profileId, options) => {
+                await ensureUser();
+
+                return client.profile.contactRelationship.query({
+                    profileId,
+                    limit: options?.limit ?? 10,
+                    cursor: options?.cursor,
+                    sort: options?.sort,
+                });
+            },
             getPendingConnections: async _learnCard => {
                 console.warn(
                     'The getPendingConnections method is deprecated! Please use getPaginatedPendingConnections instead!'

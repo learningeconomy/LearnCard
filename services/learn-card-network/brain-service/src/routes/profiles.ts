@@ -12,6 +12,7 @@ import {
     PaginatedLCNProfilesAndManagersValidator,
     PaginationOptionsValidator,
     LCNNotificationTypeEnumValidator,
+    ContactRelationshipValidator,
 } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
@@ -29,6 +30,8 @@ import {
     unblockProfile,
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
+    areProfilesConnected,
+    getContactRelationship,
 } from '@helpers/connection.helpers';
 import {
     getDidWeb,
@@ -994,6 +997,50 @@ export const profilesRouter = t.router({
                 records: sanitizedRecords,
                 ...(newCursor && { cursor: newCursor }),
             };
+        }),
+
+    contactRelationship: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/{profileId}/relationship',
+                tags: ['Profiles'],
+                summary: 'View relationship with a connection',
+                description:
+                    'Returns connection timing and accepted credentials exchanged with a connection.',
+            },
+            requiredScope: 'connections:read',
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                profileId: z.string(),
+                limit: z.number().int().positive().max(100).default(10),
+            })
+        )
+        .output(ContactRelationshipValidator)
+        .query(async ({ ctx, input }) => {
+            const resolvedProfileId = await getProfileIdFromString(input.profileId, ctx.domain);
+            if (!resolvedProfileId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            const targetProfile = await getProfileByProfileId(resolvedProfileId);
+            if (!targetProfile) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
+            }
+
+            if (!(await areProfilesConnected(ctx.user.profile, targetProfile))) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Relationship history is only available for connections.',
+                });
+            }
+
+            return getContactRelationship(ctx.domain, ctx.user.profile, resolvedProfileId, {
+                limit: input.limit,
+                cursor: input.cursor,
+            });
         }),
 
     pendingConnections: profileRoute

@@ -39,8 +39,8 @@ export type ProfileRelationships = {
     connectedWith: ModelRelatedNodesI<
         typeof Profile,
         ProfileInstance,
-        { sources?: string[] },
-        { sources?: string[] }
+        { sources?: string[]; connectedAt?: string },
+        { sources?: string[]; connectedAt?: string }
     >;
     blocked: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     managedBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
@@ -127,6 +127,10 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                     sources: {
                         property: 'sources',
                         schema: { type: 'array', items: { type: 'string' }, required: false },
+                    },
+                    connectedAt: {
+                        property: 'connectedAt',
+                        schema: { type: 'string', required: false },
                     },
                 },
             },
