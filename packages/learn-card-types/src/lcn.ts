@@ -2226,6 +2226,110 @@ export const ConsentRequestValidator = z.object({
 
 export type ConsentRequest = z.infer<typeof ConsentRequestValidator>;
 
+export const NormalizedConsentScopesValidator = z.object({
+    read: z.object({
+        credentialCategories: z.array(ConsentRequestWalletCategoryValidator).default([]),
+        personalFields: z.array(ConsentRequestPersonalFieldValidator).default([]),
+    }),
+    write: z.object({
+        credentialCategories: z.array(ConsentRequestWalletCategoryValidator).default([]),
+    }),
+});
+
+export type NormalizedConsentScopes = z.infer<typeof NormalizedConsentScopesValidator>;
+
+export const CapturedTemplateRecordValidator = z
+    .object({
+        alias: z.string(),
+        template: InlineCredentialTemplateValidator,
+        version: z.number().int().min(1),
+        lastUsedAt: z.string(),
+    })
+    .passthrough();
+
+export type CapturedTemplateRecord = z.infer<typeof CapturedTemplateRecordValidator>;
+
+export const CapturedConsentRecordValidator = z
+    .object({
+        scopes: NormalizedConsentScopesValidator,
+        reason: z.string().optional(),
+        lastUsedAt: z.string(),
+    })
+    .passthrough();
+
+export type CapturedConsentRecord = z.infer<typeof CapturedConsentRecordValidator>;
+
+export const AppManifestValidator = z
+    .object({
+        manifestVersion: z.literal(1),
+        appUrl: z.string(),
+        suggestedName: z.string().optional(),
+        suggestedIconUrl: z.string().optional(),
+        permissions: z.array(z.string()).default([]),
+        templates: z.array(CapturedTemplateRecordValidator).default([]),
+        consentRequests: z.array(CapturedConsentRecordValidator).default([]),
+        featuresLaunched: z.array(z.string()).default([]),
+        counterKeys: z.array(z.string()).default([]),
+        usedLearnerContext: z.boolean(),
+        usedNotifications: z.boolean(),
+        firstCapturedAt: z.string(),
+        lastUpdatedAt: z.string(),
+    })
+    .passthrough();
+
+export type AppManifest = z.infer<typeof AppManifestValidator>;
+
+export const AppManifestVersionStatusValidator = z.enum(['draft', 'active', 'superseded']);
+export type AppManifestVersionStatus = z.infer<typeof AppManifestVersionStatusValidator>;
+
+export const AppManifestVersionValidator = z.object({
+    id: z.string(),
+    version: z.number().int().min(1),
+    manifestHash: z.string(),
+    manifest: AppManifestValidator,
+    status: AppManifestVersionStatusValidator,
+    createdAt: z.string(),
+    activatedAt: z.string().optional(),
+});
+
+export type AppManifestVersion = z.infer<typeof AppManifestVersionValidator>;
+
+const AppManifestStringDiffValidator = z.object({
+    added: z.array(z.string()),
+    removed: z.array(z.string()),
+    changed: z.array(z.string()),
+});
+
+export const AppManifestTemplateRefValidator = z.object({
+    alias: z.string(),
+    version: z.number().int().min(1),
+});
+
+export type AppManifestTemplateRef = z.infer<typeof AppManifestTemplateRefValidator>;
+
+export const AppManifestTemplateChangeValidator = z.object({
+    alias: z.string(),
+    fromVersion: z.number().int().min(1),
+    toVersion: z.number().int().min(1),
+});
+
+export type AppManifestTemplateChange = z.infer<typeof AppManifestTemplateChangeValidator>;
+
+export const AppManifestDiffValidator = z.object({
+    permissions: AppManifestStringDiffValidator,
+    templates: z.object({
+        added: z.array(AppManifestTemplateRefValidator),
+        removed: z.array(AppManifestTemplateRefValidator),
+        changed: z.array(AppManifestTemplateChangeValidator),
+    }),
+    consentScopes: AppManifestStringDiffValidator,
+    featurePaths: AppManifestStringDiffValidator,
+    counterKeys: AppManifestStringDiffValidator,
+    requiresReview: z.boolean(),
+});
+
+export type AppManifestDiff = z.infer<typeof AppManifestDiffValidator>;
+
 export const UpsertConsentContractEventValidator = z.object({
     type: z.literal('upsert-consent-contract'),
     scopes: ConsentRequestValidator,

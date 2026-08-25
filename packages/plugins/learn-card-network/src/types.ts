@@ -96,6 +96,9 @@ import {
     AppStoreListing,
     AppStoreListingCreateType,
     AppStoreListingUpdateType,
+    AppManifest,
+    AppManifestVersion,
+    AppManifestDiff,
     AppListingStatus,
     PromotionLevel,
     PaginatedAppStoreListings,
@@ -790,6 +793,51 @@ export type LearnCardNetworkPluginMethods = {
         options?: Partial<PaginationOptionsType>
     ) => Promise<PaginatedAppStoreListings>;
     countListingsForIntegration: (integrationId: string) => Promise<number>;
+
+    submitAppManifest: (
+        integrationId: string,
+        manifest: AppManifest
+    ) => Promise<{
+        version: number;
+        manifestHash: string;
+        diff: AppManifestDiff | null;
+        noop: boolean;
+    }>;
+    getManifestVersions: (
+        integrationId: string,
+        options?: { limit?: number; cursor?: string }
+    ) => Promise<{
+        hasMore: boolean;
+        cursor?: string;
+        records: Pick<
+            AppManifestVersion,
+            'id' | 'version' | 'manifestHash' | 'status' | 'createdAt' | 'activatedAt'
+        >[];
+    }>;
+    getManifestVersion: (
+        integrationId: string,
+        version: number
+    ) => Promise<AppManifestVersion | undefined>;
+    getManifestDiff: (
+        integrationId: string,
+        toVersion: number,
+        fromVersion?: number
+    ) => Promise<AppManifestDiff>;
+    applyManifestVersion: (
+        integrationId: string,
+        version: number,
+        listingId?: string
+    ) => Promise<{
+        applied: true;
+        version: number;
+        reconciled: {
+            templatesUpserted: number;
+            templatesSkipped: number;
+            contractsUpserted: number;
+            contractsSkipped: number;
+            signingAuthorityEnsured: boolean;
+        };
+    }>;
 
     browseAppStore: (options?: {
         limit?: number;

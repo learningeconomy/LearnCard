@@ -116,6 +116,9 @@ const PERSONAL_FIELD_LABELS: Record<string, string> = {
     'avatar': 'Profile photo',
 };
 
+import { ManifestDiffPanel } from '../dashboards/components/ManifestDiffPanel';
+import { AppManifestDiff } from '@learncard/types';
+
 export const SubmitFromManifestPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
@@ -138,6 +141,10 @@ export const SubmitFromManifestPage: React.FC = () => {
     const [productionUrl, setProductionUrl] = useState('');
     const [isLocalhost, setIsLocalhost] = useState(false);
     const [uploadedIconUrl, setUploadedIconUrl] = useState<string | undefined>(undefined);
+    const [manifestDiff, setManifestDiff] = useState<AppManifestDiff | null>(null);
+    const [manifestVersion, setManifestVersion] = useState<number | null>(null);
+    const [isApplyingDiff, setIsApplyingDiff] = useState(false);
+    const [diffApplied, setDiffApplied] = useState(false);
     const [displayIconUrl, setDisplayIconUrl] = useState<string | undefined>(undefined);
     const [isIconImported, setIsIconImported] = useState(false);
     const [recentlyCaptured, setRecentlyCaptured] = useState<Set<string>>(new Set());
@@ -191,6 +198,32 @@ export const SubmitFromManifestPage: React.FC = () => {
     });
     const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
     const createIntegration = useCreateIntegration();
+
+    useEffect(() => {
+        if (!manifest || !integrations || diffApplied) return;
+
+        const checkManifest = async () => {
+            try {
+                const host = new URL(manifest.appUrl).host;
+                const integrationId = integrations.find(i => i.name === host)?.id;
+                if (!integrationId) return;
+
+                const wallet = await initWallet();
+                if (!wallet?.invoke?.submitAppManifest) return;
+
+                const result = await wallet.invoke.submitAppManifest(integrationId, manifest);
+                if (!result.noop && result.diff) {
+                    setManifestDiff(result.diff);
+                    setManifestVersion(result.version);
+                    setPreviewIntegrationId(integrationId);
+                }
+            } catch (e) {
+                // Silent fallback
+            }
+        };
+
+        checkManifest();
+    }, [manifest, integrations, diffApplied]);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -346,6 +379,8 @@ export const SubmitFromManifestPage: React.FC = () => {
                 }
             });
 
+            let listingId = existingDraft?.listing_id;
+
             if (existingDraft) {
                 const existingConfig = JSON.parse(
                     existingDraft.launch_config_json
@@ -363,38 +398,47 @@ export const SubmitFromManifestPage: React.FC = () => {
                 setPreviewListingId(existingDraft.listing_id);
                 setCurrentLaunchConfig(restoredConfig);
                 if (restoredConfig.contractUri) setContractUri(restoredConfig.contractUri);
+            } else {
+                const launchConfig: PreviewLaunchConfig = {
+                    ...(currentLaunchConfig ?? {
+                        url: previewUrl,
+                        permissions: manifest.permissions,
+                    }),
+                    devPreviewKey: previewKey,
+                };
+                listingId = await createListing.mutateAsync({
+                    integrationId,
+                    listing: {
+                        display_name: displayName,
+                        tagline: tagline || `${displayName} preview`,
+                        full_description:
+                            tagline ||
+                            `${displayName} — draft listing created from a LearnCard app preview.`,
+                        icon_url: isAllowedIconUrl(uploadedIconUrl)
+                            ? uploadedIconUrl
+                            : DEFAULT_APP_ICON_URL,
+                        launch_type: 'EMBEDDED_IFRAME',
+                        launch_config_json: JSON.stringify(launchConfig),
+                    },
+                });
 
-                return { integrationId, listingId: existingDraft.listing_id };
+                setPreviewIntegrationId(integrationId);
+                setPreviewListingId(listingId);
+                setCurrentLaunchConfig(launchConfig);
             }
 
-            const launchConfig: PreviewLaunchConfig = {
-                ...(currentLaunchConfig ?? {
-                    url: previewUrl,
-                    permissions: manifest.permissions,
-                }),
-                devPreviewKey: previewKey,
-            };
-            const listingId = await createListing.mutateAsync({
-                integrationId,
-                listing: {
-                    display_name: displayName,
-                    tagline: tagline || `${displayName} preview`,
-                    full_description:
-                        tagline ||
-                        `${displayName} — draft listing created from a LearnCard app preview.`,
-                    icon_url: isAllowedIconUrl(uploadedIconUrl)
-                        ? uploadedIconUrl
-                        : DEFAULT_APP_ICON_URL,
-                    launch_type: 'EMBEDDED_IFRAME',
-                    launch_config_json: JSON.stringify(launchConfig),
-                },
-            });
+            if (wallet?.invoke?.submitAppManifest && wallet?.invoke?.applyManifestVersion) {
+                const result = await wallet.invoke.submitAppManifest(integrationId, manifest);
+                if (!result.noop) {
+                    await wallet.invoke.applyManifestVersion(
+                        integrationId,
+                        result.version,
+                        listingId
+                    );
+                }
+            }
 
-            setPreviewIntegrationId(integrationId);
-            setPreviewListingId(listingId);
-            setCurrentLaunchConfig(launchConfig);
-
-            return { integrationId, listingId };
+            return { integrationId, listingId: listingId! };
         };
 
         const pendingProvision = provision().finally(() => {
@@ -835,6 +879,55 @@ export const SubmitFromManifestPage: React.FC = () => {
                         className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
                     />
                     <p className="text-sm text-red-700">{formError}</p>
+                </div>
+            )}
+
+            {manifestDiff && manifestVersion && !diffApplied && (
+                <div className="mb-6 bg-white rounded-2xl border border-grayscale-300 p-6 shadow-sm">
+                    <div className="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 className="text-base font-semibold text-grayscale-900 mb-1">
+                                Your app changed
+                            </h3>
+                            <p className="text-sm text-grayscale-600">
+                                We detected new capabilities in your app's code.
+                            </p>
+                        </div>
+                        <button
+                            onClick={async () => {
+                                if (!previewIntegrationId || !manifestVersion) return;
+                                setIsApplyingDiff(true);
+                                try {
+                                    const wallet = await initWallet();
+                                    if (!wallet?.invoke?.applyManifestVersion) return;
+                                    await wallet.invoke.applyManifestVersion(
+                                        previewIntegrationId,
+                                        manifestVersion,
+                                        previewListingId || undefined
+                                    );
+                                    setDiffApplied(true);
+                                } catch (e) {
+                                    setFormError('Failed to apply changes. Please try again.');
+                                } finally {
+                                    setIsApplyingDiff(false);
+                                }
+                            }}
+                            disabled={isApplyingDiff}
+                            className="py-2 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {isApplyingDiff ? (
+                                <>
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Applying...
+                                </>
+                            ) : (
+                                'Apply changes'
+                            )}
+                        </button>
+                    </div>
+                    <div className="bg-grayscale-50 rounded-xl p-4 border border-grayscale-200">
+                        <ManifestDiffPanel diff={manifestDiff} />
+                    </div>
                 </div>
             )}
 

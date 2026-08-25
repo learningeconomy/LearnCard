@@ -80,6 +80,7 @@ export type AppStoreListingRelationships = {
         { scopeHash: string; createdAt: string },
         { scopeHash: string; createdAt: string }
     >;
+    usesManifestVersion: ModelRelatedNodesI<any, any>;
 };
 
 export type AppStoreListingInstance = NeogmaInstance<

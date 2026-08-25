@@ -29,6 +29,7 @@ import type {
     InlineCredentialTemplate,
     MockHostOptions,
 } from './types';
+import { PartnerConnectError } from './types';
 
 const DEFAULT_DID = 'did:web:mock.learncard.app:user';
 const DEFAULT_NAMESPACE = 'lc-mock';
@@ -54,6 +55,8 @@ interface StoredCounter {
 type StoredManifestMap = Record<string, CapturedAppManifest>;
 
 type StoredPublishDismissedAtMap = Record<string, string>;
+
+type StoredHudCollapsedMap = Record<string, string>;
 
 type MockStatus = 'pending' | 'claimed' | 'revoked';
 
@@ -243,6 +246,8 @@ export class MockHost {
 
     private readonly memoryPublishDismissedAt: StoredPublishDismissedAtMap = {};
 
+    private readonly memoryHudCollapsed: StoredHudCollapsedMap = {};
+
     private initialDocumentTitle: string | null | undefined;
     private appFingerprint: string | undefined;
 
@@ -262,6 +267,8 @@ export class MockHost {
 
     private styleEl: HTMLStyleElement | null = null;
     private stackEl: HTMLElement | null = null;
+    private hudEl: HTMLElement | null = null;
+    private hudBodyEl: HTMLElement | null = null;
     private readonly activeToasts = new Map<string, ActiveToast>();
     /** Pending exit-animation timers, tracked so `destroy()` can cancel them. */
     private readonly exitTimers = new Set<ReturnType<typeof setTimeout>>();
@@ -308,10 +315,12 @@ export class MockHost {
      */
     public handle(action: string, payload?: unknown): Promise<unknown> {
         if (this.destroyed) {
-            return Promise.reject({
-                code: 'SDK_DESTROYED',
-                message: 'Mock host was destroyed before the request completed',
-            });
+            return Promise.reject(
+                new PartnerConnectError(
+                    'SDK_DESTROYED',
+                    'Mock host was destroyed before the request completed'
+                )
+            );
         }
 
         this.log(action, payload);
@@ -358,11 +367,12 @@ export class MockHost {
                             normalizeConsentRequest(scopes as ConsentRequest);
                         }
                     } catch (error) {
-                        return Promise.reject({
-                            code: 'CONSENT_SCOPES_INVALID',
-                            message:
-                                error instanceof Error ? error.message : 'Invalid consent scopes',
-                        });
+                        return Promise.reject(
+                            new PartnerConnectError(
+                                'CONSENT_SCOPES_INVALID',
+                                error instanceof Error ? error.message : 'Invalid consent scopes'
+                            )
+                        );
                     }
 
                     this.showConsentBanner(redirect);
@@ -549,6 +559,7 @@ export class MockHost {
         for (const key of Object.keys(this.memoryPublishDismissedAt)) {
             delete this.memoryPublishDismissedAt[key];
         }
+        for (const key of Object.keys(this.memoryHudCollapsed)) delete this.memoryHudCollapsed[key];
         this.credentials.length = 0;
     }
 
@@ -578,12 +589,14 @@ export class MockHost {
                         const templateErrors = validateInlineTemplate(template);
 
                         if (templateErrors.length > 0) {
-                            return Promise.reject({
-                                code: 'TEMPLATE_INVALID',
-                                message: templateErrors
-                                    .map(error => `${error.path}: ${error.message}`)
-                                    .join('\n'),
-                            });
+                            return Promise.reject(
+                                new PartnerConnectError(
+                                    'TEMPLATE_INVALID',
+                                    templateErrors
+                                        .map(error => `${error.path}: ${error.message}`)
+                                        .join('\n')
+                                )
+                            );
                         }
 
                         const compiled = compileInlineTemplate(template);
@@ -597,12 +610,14 @@ export class MockHost {
                         );
 
                         if (dataErrors.length > 0) {
-                            return Promise.reject({
-                                code: 'TEMPLATE_DATA_INVALID',
-                                message: dataErrors
-                                    .map(error => `${error.path}: ${error.message}`)
-                                    .join('\n'),
-                            });
+                            return Promise.reject(
+                                new PartnerConnectError(
+                                    'TEMPLATE_DATA_INVALID',
+                                    dataErrors
+                                        .map(error => `${error.path}: ${error.message}`)
+                                        .join('\n')
+                                )
+                            );
                         }
 
                         const canonicalTemplate = canonicalJsonString(template);
@@ -1019,6 +1034,7 @@ export class MockHost {
         next.lastUpdatedAt = now;
 
         this.saveManifest(next);
+        this.updateManifestHud(next);
         this.maybeShowPublishPrompt(next);
     }
 
@@ -1046,7 +1062,7 @@ export class MockHost {
 
     private readAppOrigin(): string {
         if (typeof window === 'undefined' || !window.location?.origin) return '';
-        return window.location.origin;
+        return `${window.location.origin}${window.location.pathname || ''}`;
     }
 
     private readSuggestedName(): string | undefined {
@@ -1116,6 +1132,10 @@ export class MockHost {
 
     private publishDismissedStorageKey(): string {
         return `${this.options.namespace}:publish-dismissed-at:${this.getAppFingerprint()}`;
+    }
+
+    private hudCollapsedStorageKey(): string {
+        return `${this.options.namespace}:manifest-hud-collapsed:${this.getAppFingerprint()}`;
     }
 
     private loadManifestMap(): StoredManifestMap {
@@ -1231,6 +1251,39 @@ export class MockHost {
         this.memoryPublishDismissedAt[this.getAppFingerprint()] = value;
     }
 
+    private loadHudCollapsed(): boolean {
+        if (this.options.persist && typeof localStorage !== 'undefined') {
+            try {
+                const raw = localStorage.getItem(this.hudCollapsedStorageKey());
+                if (raw === 'true') return true;
+                if (raw === 'false') return false;
+            } catch {
+                // Ignore and fall back to memory.
+            }
+        }
+
+        const raw = this.memoryHudCollapsed[this.getAppFingerprint()];
+        if (raw === 'true') return true;
+        if (raw === 'false') return false;
+        return true;
+    }
+
+    private saveHudCollapsed(value: boolean): void {
+        const serialized = value ? 'true' : 'false';
+
+        if (this.options.persist && typeof localStorage !== 'undefined') {
+            try {
+                localStorage.setItem(this.hudCollapsedStorageKey(), serialized);
+                this.memoryHudCollapsed[this.getAppFingerprint()] = serialized;
+                return;
+            } catch {
+                // Ignore and fall back to memory.
+            }
+        }
+
+        this.memoryHudCollapsed[this.getAppFingerprint()] = serialized;
+    }
+
     private addPermission(manifest: CapturedAppManifest, permission: string): void {
         this.addUnique(manifest.permissions, permission);
     }
@@ -1332,6 +1385,305 @@ export class MockHost {
                 ' permission(s) captured.',
             ],
         });
+    }
+
+    private readCapabilityCount(manifest: CapturedAppManifest): number {
+        return (
+            manifest.permissions.length +
+            manifest.templates.length +
+            manifest.consentRequests.length +
+            manifest.featuresLaunched.length +
+            manifest.counterKeys.length +
+            (manifest.usedLearnerContext ? 1 : 0) +
+            (manifest.usedNotifications ? 1 : 0)
+        );
+    }
+
+    private formatConsentSummary(manifest: CapturedAppManifest): string {
+        if (manifest.consentRequests.length === 0) return 'None yet';
+
+        const readCategories = new Set<string>();
+        const personalFields = new Set<string>();
+        const writeCategories = new Set<string>();
+
+        for (const request of manifest.consentRequests) {
+            request.scopes.read.credentialCategories.forEach(category =>
+                readCategories.add(category)
+            );
+            request.scopes.read.personalFields.forEach(field => personalFields.add(field));
+            request.scopes.write.credentialCategories.forEach(category =>
+                writeCategories.add(category)
+            );
+        }
+
+        const parts: string[] = [];
+        if (readCategories.size > 0)
+            parts.push(`read ${readCategories.size} credential categories`);
+        if (personalFields.size > 0) parts.push(`read ${personalFields.size} personal fields`);
+        if (writeCategories.size > 0)
+            parts.push(`write ${writeCategories.size} credential categories`);
+
+        return parts.join(' • ') || `${manifest.consentRequests.length} request(s)`;
+    }
+
+    private copyText(text: string): void {
+        if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(text).catch(() => undefined);
+            return;
+        }
+
+        if (!hasDocument() || !document.body) return;
+
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.setAttribute('readonly', 'true');
+        Object.assign(input.style, {
+            position: 'fixed',
+            opacity: '0',
+            pointerEvents: 'none',
+        });
+        document.body.appendChild(input);
+        input.select();
+
+        try {
+            document.execCommand('copy');
+        } catch {
+            // Ignore copy failures in sandboxed/older environments.
+        }
+
+        input.remove();
+    }
+
+    private warnIfFingerprintCollides(): void {
+        const manifest = this.loadManifest();
+        const currentAppUrl = this.readAppOrigin();
+
+        if (!manifest || !currentAppUrl || manifest.appUrl === currentAppUrl) return;
+
+        console.warn(
+            `${MOCK_PREFIX} Existing manifest state for fingerprint "${this.getAppFingerprint()}" ` +
+                `belongs to ${manifest.appUrl}, but this page is ${currentAppUrl}. ` +
+                'Two apps may be sharing mock state. Pass mockOptions.appId to isolate them.'
+        );
+    }
+
+    private updateManifestHud(manifest?: CapturedAppManifest): void {
+        if (!this.options.ui || !hasDocument() || !document.body) return;
+
+        const currentManifest = manifest ?? this.loadManifest();
+        if (!currentManifest) {
+            if (this.hudEl) this.hudEl.style.display = 'none';
+            return;
+        }
+
+        if (!this.hudEl || !document.body.contains(this.hudEl)) {
+            const hud = document.createElement('div');
+            hud.className = 'lc-mock-hud';
+            Object.assign(hud.style, {
+                position: 'fixed',
+                left: '20px',
+                bottom: '20px',
+                zIndex: '2147483647',
+                width: 'min(340px, calc(100vw - 40px))',
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            });
+
+            const body = document.createElement('div');
+            hud.appendChild(body);
+            document.body.appendChild(hud);
+            this.domNodes.add(hud);
+            this.hudEl = hud;
+            this.hudBodyEl = body;
+        }
+
+        this.hudEl.style.display = 'block';
+
+        const body = this.hudBodyEl;
+        if (!body) return;
+
+        const collapsed = this.loadHudCollapsed();
+        const capabilityCount = this.readCapabilityCount(currentManifest);
+        const publishUrl = this.getPublishUrl(currentManifest);
+
+        body.innerHTML = '';
+
+        if (collapsed) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = `LC · ${capabilityCount} capabilities`;
+            Object.assign(button.style, {
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '999px',
+                background: '#18224E',
+                color: '#FFFFFF',
+                boxShadow: '0 10px 30px rgba(24,34,78,0.22)',
+                fontSize: '12px',
+                lineHeight: '1',
+                padding: '10px 12px',
+                cursor: 'pointer',
+                fontWeight: '600',
+            });
+            button.addEventListener('click', () => {
+                this.saveHudCollapsed(false);
+                this.updateManifestHud(currentManifest);
+            });
+            body.appendChild(button);
+            return;
+        }
+
+        const card = document.createElement('div');
+        Object.assign(card.style, {
+            background: '#18224E',
+            color: '#FFFFFF',
+            borderRadius: '16px',
+            boxShadow: '0 10px 30px rgba(24,34,78,0.22)',
+            padding: '12px',
+            border: '1px solid rgba(255,255,255,0.1)',
+        });
+
+        const header = document.createElement('div');
+        Object.assign(header.style, {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            marginBottom: '10px',
+        });
+
+        const title = document.createElement('div');
+        title.textContent = 'LearnCard manifest';
+        Object.assign(title.style, {
+            fontSize: '12px',
+            fontWeight: '700',
+            letterSpacing: '0.02em',
+            textTransform: 'uppercase',
+            opacity: '0.82',
+        });
+
+        const collapseButton = document.createElement('button');
+        collapseButton.type = 'button';
+        collapseButton.textContent = 'Collapse';
+        Object.assign(collapseButton.style, {
+            border: '0',
+            background: 'rgba(255,255,255,0.08)',
+            color: '#FFFFFF',
+            borderRadius: '999px',
+            padding: '6px 8px',
+            fontSize: '11px',
+            cursor: 'pointer',
+        });
+        collapseButton.addEventListener('click', () => {
+            this.saveHudCollapsed(true);
+            this.updateManifestHud(currentManifest);
+        });
+
+        header.append(title, collapseButton);
+        card.appendChild(header);
+
+        const appName = document.createElement('div');
+        appName.textContent = currentManifest.suggestedName || 'Untitled app';
+        Object.assign(appName.style, {
+            fontSize: '14px',
+            fontWeight: '700',
+            marginBottom: '8px',
+        });
+        card.appendChild(appName);
+
+        const sections: Array<{ label: string; value: string }> = [
+            {
+                label: 'Permissions',
+                value:
+                    currentManifest.permissions.length > 0
+                        ? currentManifest.permissions
+                              .map(permission => `✓ ${permission}`)
+                              .join(', ')
+                        : 'None yet',
+            },
+            {
+                label: 'Templates',
+                value:
+                    currentManifest.templates.length > 0
+                        ? currentManifest.templates
+                              .map(template => `${template.alias} · v${template.version}`)
+                              .join(', ')
+                        : 'None yet',
+            },
+            { label: 'Consent', value: this.formatConsentSummary(currentManifest) },
+            {
+                label: 'Features',
+                value:
+                    currentManifest.featuresLaunched.length > 0
+                        ? currentManifest.featuresLaunched.join(', ')
+                        : 'None yet',
+            },
+            {
+                label: 'Counters',
+                value:
+                    currentManifest.counterKeys.length > 0
+                        ? currentManifest.counterKeys.join(', ')
+                        : 'None yet',
+            },
+        ];
+
+        if (currentManifest.usedLearnerContext || currentManifest.usedNotifications) {
+            sections.push({
+                label: 'Flags',
+                value: [
+                    currentManifest.usedLearnerContext ? 'learner_context' : null,
+                    currentManifest.usedNotifications ? 'notifications' : null,
+                ]
+                    .filter(Boolean)
+                    .join(', '),
+            });
+        }
+
+        for (const section of sections) {
+            const row = document.createElement('div');
+            Object.assign(row.style, {
+                marginTop: '8px',
+                fontSize: '12px',
+                lineHeight: '1.45',
+            });
+
+            const label = document.createElement('div');
+            label.textContent = section.label;
+            Object.assign(label.style, {
+                opacity: '0.72',
+                fontWeight: '600',
+                marginBottom: '2px',
+            });
+
+            const value = document.createElement('div');
+            value.textContent = section.value;
+            Object.assign(value.style, {
+                color: '#EFF0F5',
+                wordBreak: 'break-word',
+            });
+
+            row.append(label, value);
+            card.appendChild(row);
+        }
+
+        if (publishUrl) {
+            const copyButton = document.createElement('button');
+            copyButton.type = 'button';
+            copyButton.textContent = 'Copy publish link';
+            Object.assign(copyButton.style, {
+                marginTop: '12px',
+                border: '1px solid rgba(255,255,255,0.14)',
+                background: 'rgba(255,255,255,0.08)',
+                color: '#FFFFFF',
+                borderRadius: '999px',
+                padding: '8px 10px',
+                fontSize: '11px',
+                fontWeight: '600',
+                cursor: 'pointer',
+            });
+            copyButton.addEventListener('click', () => this.copyText(publishUrl));
+            card.appendChild(copyButton);
+        }
+
+        body.appendChild(card);
     }
 
     private nextUri(prefix: string): string {
@@ -1463,6 +1815,9 @@ export class MockHost {
     }
 
     private announce(): void {
+        this.warnIfFingerprintCollides();
+        this.updateManifestHud();
+
         if (!this.options.log) return;
         // eslint-disable-next-line no-console
         console.log(

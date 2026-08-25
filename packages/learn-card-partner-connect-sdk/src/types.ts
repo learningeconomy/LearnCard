@@ -12,6 +12,7 @@ import type {
     CapturedAppManifest,
     ConsentRequest,
     InlineCredentialTemplate,
+    InlineTemplateValidationError,
 } from '@learncard/partner-connect-core';
 
 // Re-export AppEvent types from shared types package
@@ -30,6 +31,13 @@ export type {
     VariableManifest,
     WalletCategory,
 } from '@learncard/partner-connect-core';
+
+export interface PreviewCompiledTemplateResult {
+    valid: boolean;
+    errors: InlineTemplateValidationError[];
+    compiled?: Record<string, unknown>;
+    rendered?: Record<string, unknown>;
+}
 
 /**
  * Configuration options for initializing the SDK
@@ -306,6 +314,8 @@ export interface MockCredentialSeed {
 export interface CapturedManifestReadable {
     getCapturedManifest(): CapturedAppManifest | undefined;
     getPublishUrl(): string | undefined;
+    getActiveHostOrigin(): string | null;
+    getPublishOrigin(): string | null;
 }
 
 /**

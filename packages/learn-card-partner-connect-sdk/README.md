@@ -109,6 +109,11 @@ While mock mode is active, the SDK silently captures an app manifest in local st
 -   permissions inferred from SDK calls
 -   launched feature paths, counter keys, learner-context usage, notifications
 
+When `mockOptions.ui !== false`, mock mode also shows a small **Live Manifest HUD** in the
+bottom-left corner. It starts collapsed as a pill (`LC · N capabilities`) and expands into a
+dark summary card with the app name, permissions, templates, consent summary, feature paths,
+counter keys, and a **Copy publish link** button when available.
+
 Once the manifest becomes publishable (at least **1 inline template** or **2 distinct permissions**), mock mode shows a persistent, dismissible **Publish to LearnCard** card. The link opens:
 
 ```text
@@ -121,6 +126,9 @@ You can also read the same data yourself:
 const manifest = learnCard.getCapturedManifest();
 const publishUrl = learnCard.getPublishUrl();
 ```
+
+`getPublishUrl()` is **always available once any manifest has been captured**. The publishability
+threshold above is now used only for the automatic prompt/nudge.
 
 Configure the nudge with `mockOptions`:
 
@@ -156,6 +164,22 @@ createPartnerConnect({
 ```
 
 That fingerprint scopes both the captured manifest and the publish-nudge dismissal.
+
+If mock mode warns that two apps may be sharing state, set `mockOptions.appId` immediately.
+The warning fires when the same fingerprint already has stored manifest data from a different
+captured `appUrl`.
+
+You can also override the LearnCard origin used for generated publish links:
+
+```typescript
+createPartnerConnect({
+    mock: true,
+    mockOptions: {
+        appId: 'student-quest-dev',
+        publishOrigin: 'https://staging.learncard.app',
+    },
+});
+```
 
 ### Dynamic Origin Configuration
 
@@ -337,6 +361,13 @@ if (learnCard.isMocked()) {
 }
 ```
 
+Inspect the resolved origins directly:
+
+```typescript
+learnCard.getActiveHostOrigin(); // real host origin, or null while mocking
+learnCard.getPublishOrigin(); // LearnCard origin used for publish URLs
+```
+
 ### Coherent state: reads reflect writes
 
 The mock keeps a small session store so it behaves like a real host, not a set of
@@ -425,6 +456,35 @@ const identity = await learnCard.requestIdentity();
 
 ---
 
+### `getActiveHostOrigin()` / `getPublishOrigin()`
+
+Inspect which LearnCard origin the SDK is using.
+
+```typescript
+const hostOrigin = learnCard.getActiveHostOrigin();
+const publishOrigin = learnCard.getPublishOrigin();
+```
+
+-   `getActiveHostOrigin()` returns the active real-host origin, or `null` while mock mode is active.
+-   `getPublishOrigin()` returns the LearnCard origin used to build App Store publish URLs.
+
+---
+
+### `getCapturedManifest()` / `getPublishUrl()`
+
+Read the manifest captured by mock mode and generate an App Store publish URL.
+
+```typescript
+const manifest = learnCard.getCapturedManifest();
+const publishUrl = learnCard.getPublishUrl();
+```
+
+-   `getCapturedManifest()` returns `undefined` when you're not in mock mode or nothing has been captured yet.
+-   `getPublishUrl()` returns `undefined` until the first manifest exists, then always returns a URL.
+-   The auto-shown publish prompt still waits for at least 1 inline template or 2 distinct permissions.
+
+---
+
 ### `sendCredential(credential)`
 
 Send a verifiable credential to the user's LearnCard wallet.
@@ -499,6 +559,53 @@ if (!validation.valid) {
     console.error(validation.errors);
 }
 ```
+
+If you want a full offline preview of the compiled OBv3 object, use `previewCompiledTemplate`:
+
+```typescript
+const preview = learnCard.previewCompiledTemplate(
+    {
+        name: 'Completed {{courseName}}',
+        description: 'Awarded for finishing {{courseName}}.',
+        credits: { earned: '{{earnedCredits}}' },
+    },
+    { courseName: 'Intro to Baking', earnedCredits: 3 }
+);
+
+console.log(preview.compiled); // OBv3 object with {{variables}} intact
+console.log(preview.rendered); // same object with templateData substituted
+```
+
+You can also import it directly, along with `decodeManifestFromUrl`, from the SDK package:
+
+```typescript
+import { previewCompiledTemplate, decodeManifestFromUrl } from '@learncard/partner-connect';
+```
+
+---
+
+### `previewCompiledTemplate(template, templateData?)`
+
+Compile and optionally render an inline credential template entirely offline.
+
+```typescript
+import { previewCompiledTemplate } from '@learncard/partner-connect';
+
+const preview = previewCompiledTemplate(
+    {
+        name: 'Completed {{courseName}}',
+        description: 'Awarded for finishing {{courseName}}.',
+    },
+    { courseName: 'Intro to Baking' }
+);
+
+if (preview.valid) {
+    console.log(preview.compiled);
+    console.log(preview.rendered);
+}
+```
+
+Returns `{ valid, errors, compiled?, rendered? }`.
 
 ---
 

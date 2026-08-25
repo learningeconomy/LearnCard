@@ -266,7 +266,7 @@ export interface CapturedConsentRecord {
  */
 export interface CapturedAppManifest {
     manifestVersion: 1;
-    /** Origin the app ran on while the manifest was captured. */
+    /** Origin + pathname the app ran on while the manifest was captured. */
     appUrl: string;
     /** Best-effort app name (document.title). */
     suggestedName?: string;

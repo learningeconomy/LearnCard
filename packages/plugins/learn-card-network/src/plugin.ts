@@ -2460,6 +2460,39 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.countListingsForIntegration.query({ integrationId });
             },
 
+            submitAppManifest: async (_learnCard, integrationId, manifest) => {
+                await ensureUser();
+                return client.appStore.submitAppManifest.mutate({ integrationId, manifest });
+            },
+
+            getManifestVersions: async (_learnCard, integrationId, options) => {
+                await ensureUser();
+                return client.appStore.getManifestVersions.query({ integrationId, ...options });
+            },
+
+            getManifestVersion: async (_learnCard, integrationId, version) => {
+                await ensureUser();
+                return client.appStore.getManifestVersion.query({ integrationId, version });
+            },
+
+            getManifestDiff: async (_learnCard, integrationId, toVersion, fromVersion) => {
+                await ensureUser();
+                return client.appStore.getManifestDiff.query({
+                    integrationId,
+                    toVersion,
+                    fromVersion,
+                });
+            },
+
+            applyManifestVersion: async (_learnCard, integrationId, version, listingId) => {
+                await ensureUser();
+                return client.appStore.applyManifestVersion.mutate({
+                    integrationId,
+                    version,
+                    listingId,
+                });
+            },
+
             browseAppStore: async (_learnCard, options) => {
                 return client.appStore.browseListedApps.query(options);
             },

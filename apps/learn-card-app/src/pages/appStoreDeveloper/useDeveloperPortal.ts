@@ -354,6 +354,76 @@ export const useDeveloperPortal = () => {
         });
     };
 
+    // ========== Manifest Hooks ==========
+
+    const useManifestVersions = (integrationId: string | null) => {
+        return useQuery({
+            queryKey: ['developer', 'manifest-versions', integrationId],
+            queryFn: async () => {
+                if (!integrationId) return null;
+                const wallet = await initWallet();
+                return wallet.invoke.getManifestVersions(integrationId, { limit: 100 });
+            },
+            enabled: !!integrationId,
+        });
+    };
+
+    const useManifestVersion = (integrationId: string | null, version: number | null) => {
+        return useQuery({
+            queryKey: ['developer', 'manifest-version', integrationId, version],
+            queryFn: async () => {
+                if (!integrationId || version === null) return null;
+                const wallet = await initWallet();
+                return wallet.invoke.getManifestVersion(integrationId, version);
+            },
+            enabled: !!integrationId && version !== null,
+        });
+    };
+
+    const useManifestDiff = (
+        integrationId: string | null,
+        toVersion: number | null,
+        fromVersion?: number
+    ) => {
+        return useQuery({
+            queryKey: ['developer', 'manifest-diff', integrationId, toVersion, fromVersion],
+            queryFn: async () => {
+                if (!integrationId || toVersion === null) return null;
+                const wallet = await initWallet();
+                return wallet.invoke.getManifestDiff(integrationId, toVersion, fromVersion);
+            },
+            enabled: !!integrationId && toVersion !== null,
+        });
+    };
+
+    const useApplyManifestVersion = () => {
+        return useMutation({
+            mutationFn: async ({
+                integrationId,
+                version,
+                listingId,
+            }: {
+                integrationId: string;
+                version: number;
+                listingId?: string;
+            }) => {
+                const wallet = await initWallet();
+                return wallet.invoke.applyManifestVersion(integrationId, version, listingId);
+            },
+            onSuccess: (_, { integrationId }) => {
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'manifest-versions', integrationId],
+                });
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'manifest-version', integrationId],
+                });
+                queryClient.invalidateQueries({
+                    queryKey: ['developer', 'listings', integrationId],
+                });
+            },
+        });
+    };
+
     // ========== Admin Hooks ==========
 
     // Query for checking if user is admin
@@ -499,6 +569,12 @@ export const useDeveloperPortal = () => {
         useDeleteListing,
         useSubmitForReview,
         useUnsubmitForReview,
+
+        // Manifest hooks
+        useManifestVersions,
+        useManifestVersion,
+        useManifestDiff,
+        useApplyManifestVersion,
 
         // Admin hooks
         useIsAdmin,

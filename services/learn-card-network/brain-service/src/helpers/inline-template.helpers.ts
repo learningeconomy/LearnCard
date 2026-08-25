@@ -35,7 +35,8 @@ import {
     invalidateListingSigningAuthorityCache,
 } from '@cache/app-store.caches';
 import { deleteDidDocForProfile } from '@cache/did-docs';
-import type { BoostInstance } from '@models';
+import { neogma } from '@instance';
+import { Boost, type BoostInstance } from '@models';
 import type { AppStoreListingType } from 'types/app-store-listing';
 import type { IntegrationType } from 'types/integration';
 import type { ProfileType, SigningAuthorityForUserType } from 'types/profile';
@@ -73,6 +74,54 @@ const getBoostMeta = (boost: BoostInstance): InlineTemplateBoostMeta => {
     return (inflated.meta as InlineTemplateBoostMeta | undefined) ?? {};
 };
 
+export const readInlineTemplateBoostMeta = async (
+    boostOrId: BoostInstance | string
+): Promise<InlineTemplateBoostMeta> => {
+    const boostId = typeof boostOrId === 'string' ? boostOrId : boostOrId.id;
+    const inMemoryMeta = typeof boostOrId === 'string' ? undefined : getBoostMeta(boostOrId);
+
+    if (
+        inMemoryMeta?.inlineTemplateHash ||
+        typeof inMemoryMeta?.inlineTemplateVersion === 'number' ||
+        inMemoryMeta?.templateAlias
+    ) {
+        return inMemoryMeta;
+    }
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (boost:Boost {id: $boostId})
+         RETURN boost.\`meta.integrationId\` AS integrationId,
+                boost.\`meta.templateAlias\` AS templateAlias,
+                boost.\`meta.inlineTemplateHash\` AS inlineTemplateHash,
+                boost.\`meta.inlineTemplateVersion\` AS inlineTemplateVersion,
+                boost.\`meta.inlineVariableManifest\` AS inlineVariableManifest,
+                boost.\`meta.source\` AS source,
+                boost.\`meta.supersededAt\` AS supersededAt,
+                boost.\`meta.supersededBy\` AS supersededBy`,
+        { boostId }
+    );
+
+    const record = result.records[0];
+
+    if (!record) {
+        return {};
+    }
+
+    const rawVersion = record.get('inlineTemplateVersion') as { toNumber?: () => number } | number;
+
+    return {
+        integrationId: record.get('integrationId') ?? undefined,
+        templateAlias: record.get('templateAlias') ?? undefined,
+        inlineTemplateHash: record.get('inlineTemplateHash') ?? undefined,
+        inlineTemplateVersion:
+            typeof rawVersion === 'number' ? rawVersion : rawVersion?.toNumber?.(),
+        inlineVariableManifest: record.get('inlineVariableManifest') ?? undefined,
+        source: record.get('source') ?? undefined,
+        supersededAt: record.get('supersededAt') ?? undefined,
+        supersededBy: record.get('supersededBy') ?? undefined,
+    };
+};
+
 const joinTemplateErrors = (errors: Array<{ message: string }>): string => {
     return errors.map(error => error.message).join('; ');
 };
@@ -80,6 +129,22 @@ const joinTemplateErrors = (errors: Array<{ message: string }>): string => {
 export const getInlineTemplateVersion = (boost: BoostInstance): number | undefined => {
     const version = getBoostMeta(boost).inlineTemplateVersion;
     return typeof version === 'number' && Number.isFinite(version) ? version : undefined;
+};
+
+export const getInlineTemplateHashForBoost = (boost: BoostInstance): string | undefined => {
+    const inlineTemplateHash = getBoostMeta(boost).inlineTemplateHash;
+    return typeof inlineTemplateHash === 'string' ? inlineTemplateHash : undefined;
+};
+
+export const isInlineTemplateBoostVersionMatch = (
+    boost: BoostInstance,
+    templateHash: string,
+    templateVersion: number
+): boolean => {
+    return (
+        getInlineTemplateHashForBoost(boost) === templateHash &&
+        getInlineTemplateVersion(boost) === templateVersion
+    );
 };
 
 export const computeInlineTemplateHash = (
@@ -136,6 +201,35 @@ export const validateInlineTemplateDataOrThrow = (
         code: 'BAD_REQUEST',
         message: `TEMPLATE_DATA_INVALID: ${joinTemplateErrors(errors)}`,
     });
+};
+
+const ensureListingSigningAuthorityRelationship = async (
+    listing: AppStoreListingType,
+    signingAuthority: SigningAuthorityForUserType
+): Promise<void> => {
+    const listingSigningAuthority = await getPrimarySigningAuthorityForListing(listing);
+
+    if (
+        listingSigningAuthority &&
+        listingSigningAuthority.signingAuthority.endpoint ===
+            signingAuthority.signingAuthority.endpoint &&
+        listingSigningAuthority.relationship.name === signingAuthority.relationship.name &&
+        listingSigningAuthority.relationship.did === signingAuthority.relationship.did
+    ) {
+        return;
+    }
+
+    await associateListingWithSigningAuthority(
+        listing.listing_id,
+        signingAuthority.signingAuthority.endpoint,
+        {
+            name: signingAuthority.relationship.name,
+            did: signingAuthority.relationship.did,
+            isPrimary: true,
+        }
+    );
+
+    invalidateListingSigningAuthorityCache(listing.listing_id);
 };
 
 const buildManagedSigningAuthorityName = (listing: AppStoreListingType): string => {
@@ -214,11 +308,13 @@ export const ensureManagedSigningAuthorityForListing = async (
 
     const existingIntegrationSa = await getPrimarySigningAuthorityForIntegration(integration.id);
     if (existingIntegrationSa) {
+        await ensureListingSigningAuthorityRelationship(listing, existingIntegrationSa);
         return existingIntegrationSa;
     }
 
     const existingOwnerSa = await getPrimarySigningAuthorityForUser(integrationOwner);
     if (existingOwnerSa) {
+        await ensureListingSigningAuthorityRelationship(listing, existingOwnerSa);
         return existingOwnerSa;
     }
 
@@ -254,18 +350,57 @@ export const ensureManagedSigningAuthorityForListing = async (
     } as SigningAuthorityForUserType;
 };
 
+const getReusableInlineTemplateBoost = async ({
+    integrationId,
+    templateAlias,
+    contentHash,
+    templateVersion,
+}: {
+    integrationId: string;
+    templateAlias: string;
+    contentHash: string;
+    templateVersion: number;
+}): Promise<BoostInstance | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (boost:Boost)
+         WHERE boost.\`meta.integrationId\` = $integrationId
+           AND boost.\`meta.templateAlias\` = $templateAlias
+           AND boost.\`meta.inlineTemplateHash\` = $contentHash
+           AND boost.\`meta.inlineTemplateVersion\` = $templateVersion
+         RETURN boost.id AS id
+         ORDER BY boost.id DESC
+         LIMIT 1`,
+        {
+            integrationId,
+            templateAlias,
+            contentHash,
+            templateVersion,
+        }
+    );
+
+    const id = result.records[0]?.get('id');
+
+    if (typeof id !== 'string') {
+        return null;
+    }
+
+    return Boost.findOne({ where: { id } });
+};
+
 export const upsertInlineTemplateBoostForListing = async ({
     listing,
     integration,
     templateAlias,
     template,
     domain,
+    desiredVersion,
 }: {
     listing: AppStoreListingType;
     integration: IntegrationType;
     templateAlias: string;
     template: InlineCredentialTemplate;
     domain: string;
+    desiredVersion?: number;
 }): Promise<UpsertInlineTemplateBoostResult> => {
     validateInlineTemplateOrThrow(template);
 
@@ -278,17 +413,51 @@ export const upsertInlineTemplateBoostForListing = async ({
     );
 
     if (existing) {
-        const existingMeta = getBoostMeta(existing.boost);
-        const existingVersion = getInlineTemplateVersion(existing.boost) ?? 1;
+        const existingMeta = await readInlineTemplateBoostMeta(existing.boost);
+        const existingVersion =
+            typeof existingMeta.inlineTemplateVersion === 'number'
+                ? existingMeta.inlineTemplateVersion
+                : 1;
+        const targetVersion = desiredVersion ?? existingVersion;
 
-        if (existingMeta.inlineTemplateHash === contentHash) {
+        if (existingMeta.inlineTemplateHash === contentHash && existingVersion === targetVersion) {
             return {
                 boost: existing.boost,
                 boostUri: existing.boostUri,
-                templateVersion: existingVersion,
+                templateVersion: targetVersion,
                 manifest: variableManifest,
             };
         }
+
+        const reusableBoost = await getReusableInlineTemplateBoost({
+            integrationId: integration.id,
+            templateAlias,
+            contentHash,
+            templateVersion: targetVersion,
+        });
+
+        if (reusableBoost) {
+            const reusableBoostUri = getBoostUri(reusableBoost.id, domain);
+
+            await updateBoost(existing.boost, {
+                meta: {
+                    supersededAt: new Date().toISOString(),
+                    supersededBy: reusableBoostUri,
+                },
+            });
+            await removeBoostFromListing(listing.listing_id, templateAlias);
+            await associateBoostWithListing(listing.listing_id, reusableBoostUri, templateAlias);
+            invalidateBoostForListingCache(listing.listing_id, templateAlias, domain);
+
+            return {
+                boost: reusableBoost,
+                boostUri: reusableBoostUri,
+                templateVersion: targetVersion,
+                manifest: variableManifest,
+            };
+        }
+
+        const nextVersion = desiredVersion ?? existingVersion + 1;
 
         const newBoost = await createBoostForListing(
             parseInlineTemplateJson(credentialTemplateJson) as UnsignedVC,
@@ -300,7 +469,7 @@ export const upsertInlineTemplateBoostForListing = async ({
                     integrationId: integration.id,
                     templateAlias,
                     inlineTemplateHash: contentHash,
-                    inlineTemplateVersion: existingVersion + 1,
+                    inlineTemplateVersion: nextVersion,
                     inlineVariableManifest: JSON.stringify(variableManifest),
                     inlineWalletSkills: walletSkills ? JSON.stringify(walletSkills) : undefined,
                     source: INLINE_TEMPLATE_SOURCE,
@@ -323,7 +492,30 @@ export const upsertInlineTemplateBoostForListing = async ({
         return {
             boost: newBoost,
             boostUri: newBoostUri,
-            templateVersion: existingVersion + 1,
+            templateVersion: nextVersion,
+            manifest: variableManifest,
+        };
+    }
+
+    const initialVersion = desiredVersion ?? 1;
+
+    const reusableBoost = await getReusableInlineTemplateBoost({
+        integrationId: integration.id,
+        templateAlias,
+        contentHash,
+        templateVersion: initialVersion,
+    });
+
+    if (reusableBoost) {
+        const reusableBoostUri = getBoostUri(reusableBoost.id, domain);
+
+        await associateBoostWithListing(listing.listing_id, reusableBoostUri, templateAlias);
+        invalidateBoostForListingCache(listing.listing_id, templateAlias, domain);
+
+        return {
+            boost: reusableBoost,
+            boostUri: reusableBoostUri,
+            templateVersion: initialVersion,
             manifest: variableManifest,
         };
     }
@@ -338,7 +530,7 @@ export const upsertInlineTemplateBoostForListing = async ({
                 integrationId: integration.id,
                 templateAlias,
                 inlineTemplateHash: contentHash,
-                inlineTemplateVersion: 1,
+                inlineTemplateVersion: initialVersion,
                 inlineVariableManifest: JSON.stringify(variableManifest),
                 inlineWalletSkills: walletSkills ? JSON.stringify(walletSkills) : undefined,
                 source: INLINE_TEMPLATE_SOURCE,
@@ -354,7 +546,7 @@ export const upsertInlineTemplateBoostForListing = async ({
     return {
         boost,
         boostUri,
-        templateVersion: 1,
+        templateVersion: initialVersion,
         manifest: variableManifest,
     };
 };

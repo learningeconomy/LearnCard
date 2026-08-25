@@ -1,0 +1,349 @@
+---
+const config = {
+    optionalBoostUri: import.meta.env.BOOST_URI || undefined,
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>LC Partner Demo: Dev Cycle</title>
+        <meta
+            name="description"
+            content="LearnCard Partner Connect demo for dev cycle"
+        />
+        <link rel="stylesheet" href="/src/styles/global.css" />
+    </head>
+
+    <body>
+        <div id="app-container" class="card bg-white p-8 rounded-2xl shadow-2xl space-y-6 max-w-5xl mx-auto my-8">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-extrabold text-gray-800">Dev Cycle Tester</h1>
+                <a href="/" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm">← Back to Demo</a>
+            </div>
+
+            <div class="space-y-5">
+                <div class="bg-slate-50 rounded-xl p-4 space-y-4 border border-slate-200">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-lg font-semibold text-slate-700">1. Evolution Stepper</p>
+                            <p class="text-sm text-gray-600">Select a version to simulate app evolution.</p>
+                        </div>
+                        <button id="reset-capture-btn" class="bg-red-100 hover:bg-red-200 text-red-700 font-bold py-2 px-4 rounded-xl transition duration-200 text-sm">
+                            Reset Capture
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button id="btn-v1" class="version-btn border-2 border-slate-300 rounded-xl p-4 text-left hover:border-indigo-500 transition-colors bg-white">
+                            <h3 class="font-bold text-lg text-slate-800">v1 — Baseline</h3>
+                            <p class="text-xs text-slate-500 mt-1">Identity + 1 inline template (course-complete)</p>
+                        </button>
+                        <button id="btn-v2" class="version-btn border-2 border-slate-300 rounded-xl p-4 text-left hover:border-indigo-500 transition-colors bg-white">
+                            <h3 class="font-bold text-lg text-slate-800">v2 — Additive growth</h3>
+                            <p class="text-xs text-slate-500 mt-1">+ quiz-master template, read consent, counter</p>
+                        </button>
+                        <button id="btn-v3" class="version-btn border-2 border-slate-300 rounded-xl p-4 text-left hover:border-indigo-500 transition-colors bg-white">
+                            <h3 class="font-bold text-lg text-slate-800">v3 — Expanded access</h3>
+                            <p class="text-xs text-slate-500 mt-1">+ write consent (triggers review)</p>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-500 italic">Note: Switching down (v3→v1) won't shrink the captured manifest (capture is additive). Use Reset Capture to clear.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <div class="bg-indigo-50 rounded-xl p-4 space-y-3 border border-indigo-200 flex flex-col">
+                        <div class="flex justify-between items-center">
+                            <p class="text-lg font-semibold text-indigo-700">2. Live Cycle Panel</p>
+                            <div class="flex gap-2" id="stats-container">
+                                <!-- Stats chips -->
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 bg-white rounded-lg border border-indigo-200 overflow-hidden flex flex-col">
+                            <pre id="manifest-json" class="p-3 text-xs text-gray-700 overflow-auto flex-1 max-h-96 whitespace-pre-wrap"></pre>
+                        </div>
+
+                        <div class="flex gap-2 mt-2">
+                            <a id="publish-link-btn" href="#" target="_blank" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 text-center text-sm opacity-50 pointer-events-none">
+                                Open publish link →
+                            </a>
+                            <button id="copy-link-btn" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold py-3 px-4 rounded-xl transition duration-200 text-sm opacity-50 pointer-events-none">
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50 rounded-xl p-4 space-y-3 border border-emerald-200 flex flex-col">
+                        <p class="text-lg font-semibold text-emerald-700">3. Template Preview</p>
+                        <div id="template-previews" class="space-y-3 flex-1 overflow-auto max-h-[28rem]">
+                            <p class="text-sm text-gray-500 italic">Select a version to preview templates.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 rounded-xl p-4 space-y-3 border border-amber-200">
+                    <p class="text-lg font-semibold text-amber-700">4. Cycle Checklist</p>
+                    <div class="space-y-2 text-sm text-gray-700">
+                        <label class="flex items-start gap-3 p-2 hover:bg-amber-100/50 rounded-lg cursor-pointer transition-colors">
+                            <input type="checkbox" class="mt-1 rounded text-amber-600 focus:ring-amber-500 checklist-cb" id="cb-1" />
+                            <span><strong>1.</strong> Select v1 → Open publish link → complete provisioning in LearnCard</span>
+                        </label>
+                        <label class="flex items-start gap-3 p-2 hover:bg-amber-100/50 rounded-lg cursor-pointer transition-colors">
+                            <input type="checkbox" class="mt-1 rounded text-amber-600 focus:ring-amber-500 checklist-cb" id="cb-2" />
+                            <span><strong>2.</strong> Return here → select v2 → open publish link again → expect "Your app changed" card with additive diff → Apply changes</span>
+                        </label>
+                        <label class="flex items-start gap-3 p-2 hover:bg-amber-100/50 rounded-lg cursor-pointer transition-colors">
+                            <input type="checkbox" class="mt-1 rounded text-amber-600 focus:ring-amber-500 checklist-cb" id="cb-3" />
+                            <span><strong>3.</strong> Select v3 → open link → expect diff flagged as needing review</span>
+                        </label>
+                        <label class="flex items-start gap-3 p-2 hover:bg-amber-100/50 rounded-lg cursor-pointer transition-colors">
+                            <input type="checkbox" class="mt-1 rounded text-amber-600 focus:ring-amber-500 checklist-cb" id="cb-4" />
+                            <span><strong>4.</strong> In LearnCard, open the integration's App Home → verify Built shows new version, "Apply & Ship" appears.</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            import { createPartnerConnect, previewCompiledTemplate } from '@learncard/partner-connect';
+
+            const APP_ID = 'dev-cycle-tester';
+            const learnCard = createPartnerConnect({
+                mock: 'auto',
+                mockOptions: {
+                    appId: APP_ID,
+                    publishOrigin: 'https://learncard.app'
+                }
+            });
+
+            // Elements
+            const btnV1 = document.getElementById('btn-v1');
+            const btnV2 = document.getElementById('btn-v2');
+            const btnV3 = document.getElementById('btn-v3');
+            const resetBtn = document.getElementById('reset-capture-btn');
+            const manifestJson = document.getElementById('manifest-json');
+            const publishLinkBtn = document.getElementById('publish-link-btn');
+            const copyLinkBtn = document.getElementById('copy-link-btn');
+            const statsContainer = document.getElementById('stats-container');
+            const templatePreviews = document.getElementById('template-previews');
+            const checkboxes = document.querySelectorAll('.checklist-cb');
+
+            // State
+            let currentVersion = localStorage.getItem('dev-cycle:app-version') || 'v1';
+
+            // Templates
+            const templates = {
+                'course-complete': {
+                    template: {
+                        name: 'Completed {{courseName}}',
+                        achievementType: 'Course',
+                        description: 'Awarded for finishing {{courseName}}.',
+                    },
+                    templateData: { courseName: 'Intro to Testing' }
+                },
+                'quiz-master': {
+                    template: {
+                        name: 'Quiz Master: {{quizName}}',
+                        achievementType: 'Assessment',
+                        description: 'Perfect score on {{quizName}}.',
+                    },
+                    templateData: { quizName: 'SDK Basics' }
+                }
+            };
+
+            // Restore checkboxes
+            checkboxes.forEach(cb => {
+                cb.checked = localStorage.getItem(`dev-cycle:cb:${cb.id}`) === 'true';
+                cb.addEventListener('change', (e) => {
+                    localStorage.setItem(`dev-cycle:cb:${cb.id}`, e.target.checked);
+                });
+            });
+
+            function updateUI() {
+                [btnV1, btnV2, btnV3].forEach(btn => {
+                    btn.classList.remove('border-indigo-500', 'bg-indigo-50');
+                    btn.classList.add('border-slate-300', 'bg-white');
+                });
+
+                const activeBtn = document.getElementById(`btn-${currentVersion}`);
+                if (activeBtn) {
+                    activeBtn.classList.remove('border-slate-300', 'bg-white');
+                    activeBtn.classList.add('border-indigo-500', 'bg-indigo-50');
+                }
+
+                refreshManifestPanel();
+                renderTemplatePreviews();
+            }
+
+            function refreshManifestPanel() {
+                const manifest = learnCard.getCapturedManifest();
+                const publishUrl = learnCard.getPublishUrl();
+
+                if (manifest) {
+                    manifestJson.textContent = JSON.stringify(manifest, null, 2);
+                    
+                    // Stats
+                    const perms = manifest.permissions?.length || 0;
+                    const tmpls = manifest.credentialTemplates ? Object.keys(manifest.credentialTemplates).length : 0;
+                    const scopes = manifest.consentScopes ? 
+                        ((manifest.consentScopes.read?.credentialCategories?.length || 0) + 
+                         (manifest.consentScopes.read?.personalFields?.length || 0) +
+                         (manifest.consentScopes.write?.credentialCategories?.length || 0)) : 0;
+
+                    statsContainer.innerHTML = `
+                        <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded">Perms: ${perms}</span>
+                        <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded">Tmpls: ${tmpls}</span>
+                        <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded">Scopes: ${scopes}</span>
+                    `;
+                } else {
+                    manifestJson.textContent = 'No manifest captured yet.';
+                    statsContainer.innerHTML = '';
+                }
+
+                if (publishUrl) {
+                    publishLinkBtn.href = publishUrl;
+                    publishLinkBtn.classList.remove('opacity-50', 'pointer-events-none');
+                    copyLinkBtn.classList.remove('opacity-50', 'pointer-events-none');
+                    copyLinkBtn.onclick = () => {
+                        navigator.clipboard.writeText(publishUrl);
+                        const originalText = copyLinkBtn.textContent;
+                        copyLinkBtn.textContent = 'Copied!';
+                        setTimeout(() => copyLinkBtn.textContent = originalText, 2000);
+                    };
+                } else {
+                    publishLinkBtn.removeAttribute('href');
+                    publishLinkBtn.classList.add('opacity-50', 'pointer-events-none');
+                    copyLinkBtn.classList.add('opacity-50', 'pointer-events-none');
+                    copyLinkBtn.onclick = null;
+                }
+            }
+
+            function renderTemplatePreviews() {
+                const activeTemplates = currentVersion === 'v1' ? ['course-complete'] : ['course-complete', 'quiz-master'];
+                
+                templatePreviews.innerHTML = activeTemplates.map(alias => {
+                    const { template, templateData } = templates[alias];
+                    const preview = previewCompiledTemplate(template, templateData);
+                    
+                    const badge = preview.valid 
+                        ? '<span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">Valid</span>'
+                        : '<span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded">Invalid</span>';
+                        
+                    const errorsHtml = !preview.valid && preview.errors 
+                        ? `<div class="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded border border-red-100">${preview.errors.map(e => `• ${e.path}: ${e.message}`).join('<br>')}</div>`
+                        : '';
+
+                    return `
+                        <details class="bg-white border border-emerald-200 rounded-lg overflow-hidden group">
+                            <summary class="p-3 cursor-pointer bg-emerald-50 hover:bg-emerald-100 flex justify-between items-center font-medium text-sm text-emerald-900 select-none">
+                                <span>Alias: <code class="bg-white px-1.5 py-0.5 rounded border border-emerald-200 text-emerald-700">${alias}</code></span>
+                                ${badge}
+                            </summary>
+                            <div class="p-3 border-t border-emerald-100">
+                                ${errorsHtml}
+                                <div class="mt-2">
+                                    <p class="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Compiled OBv3</p>
+                                    <pre class="text-xs text-gray-700 bg-gray-50 p-2 rounded border border-gray-200 overflow-auto max-h-48">${JSON.stringify(preview.compiled, null, 2)}</pre>
+                                </div>
+                            </div>
+                        </details>
+                    `;
+                }).join('');
+            }
+
+            async function runV1() {
+                try {
+                    await learnCard.requestIdentity();
+                } catch (e) {}
+                
+                try {
+                    await learnCard.sendCredential({
+                        alias: 'course-complete',
+                        template: templates['course-complete'].template,
+                        templateData: templates['course-complete'].templateData
+                    });
+                } catch (e) {}
+            }
+
+            async function runV2() {
+                await runV1();
+                
+                try {
+                    await learnCard.sendCredential({
+                        alias: 'quiz-master',
+                        template: templates['quiz-master'].template,
+                        templateData: templates['quiz-master'].templateData
+                    });
+                } catch (e) {}
+                
+                try {
+                    await learnCard.requestConsent({
+                        read: { personalFields: ['name'] },
+                        reason: 'Personalize your experience'
+                    });
+                } catch (e) {}
+                
+                try {
+                    await learnCard.incrementCounter('lessons-completed', 1);
+                } catch (e) {}
+            }
+
+            async function runV3() {
+                await runV2();
+                
+                try {
+                    await learnCard.requestConsent({
+                        read: { personalFields: ['name'] },
+                        write: { credentialCategories: ['Achievement'] },
+                        reason: 'Personalize your experience and save achievements'
+                    });
+                } catch (e) {}
+            }
+
+            async function setVersion(v) {
+                currentVersion = v;
+                localStorage.setItem('dev-cycle:app-version', v);
+                updateUI();
+                
+                if (v === 'v1') await runV1();
+                else if (v === 'v2') await runV2();
+                else if (v === 'v3') await runV3();
+                
+                refreshManifestPanel();
+            }
+
+            btnV1.addEventListener('click', () => setVersion('v1'));
+            btnV2.addEventListener('click', () => setVersion('v2'));
+            btnV3.addEventListener('click', () => setVersion('v3'));
+
+            resetBtn.addEventListener('click', () => {
+                const namespace = 'lc-mock';
+                
+                try {
+                    const manifestsStr = localStorage.getItem(`${namespace}:manifests`);
+                    if (manifestsStr) {
+                        const manifests = JSON.parse(manifestsStr);
+                        delete manifests[APP_ID];
+                        localStorage.setItem(`${namespace}:manifests`, JSON.stringify(manifests));
+                    }
+                    
+                    localStorage.removeItem(`${namespace}:publish-dismissed-at:${APP_ID}`);
+                } catch (e) {
+                    console.error('Error clearing capture', e);
+                }
+                
+                window.location.reload();
+            });
+
+            // Initial run
+            setVersion(currentVersion);
+            
+            // Poll for manifest updates (in case of async changes)
+            setInterval(refreshManifestPanel, 1000);
+        </script>
+    </body>
+</html>

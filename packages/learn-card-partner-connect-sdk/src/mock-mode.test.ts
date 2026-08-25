@@ -4,8 +4,14 @@
  * `window.top` (i.e. not embedded), so 'auto' mock mode is active by default.
  */
 
-import { PartnerConnect, createPartnerConnect, isEmbedded } from './index';
-import { decodeManifestFromUrl } from '@learncard/partner-connect-core';
+import {
+    PartnerConnect,
+    PartnerConnectError,
+    createPartnerConnect,
+    decodeManifestFromUrl,
+    isEmbedded,
+    previewCompiledTemplate,
+} from './index';
 import type { CapturedAppManifest, ConsentRequest } from './types';
 
 const flush = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
@@ -29,7 +35,9 @@ beforeEach(() => {
 
 afterEach(() => {
     jest.restoreAllMocks();
-    document.querySelectorAll('.lc-mock-toast, .lc-mock-stack').forEach(node => node.remove());
+    document
+        .querySelectorAll('.lc-mock-toast, .lc-mock-stack, .lc-mock-hud')
+        .forEach(node => node.remove());
 });
 
 describe('isEmbedded', () => {
@@ -80,6 +88,19 @@ describe('mock mode activation', () => {
 
     it('can be forced on', () => {
         expect(createPartnerConnect({ mock: true }).isMocked()).toBe(true);
+    });
+
+    it('reports active host and publish origins across mock and real modes', () => {
+        const mocked = createPartnerConnect({ mock: true, mockOptions: { ui: false } });
+        expect(mocked.getActiveHostOrigin()).toBeNull();
+        expect(mocked.getPublishOrigin()).toBe('https://learncard.app');
+
+        const real = createPartnerConnect({
+            mock: false,
+            hostOrigin: 'https://staging.learncard.app',
+        });
+        expect(real.getActiveHostOrigin()).toBe('https://staging.learncard.app');
+        expect(real.getPublishOrigin()).toBe('https://staging.learncard.app');
     });
 
     it('does NOT auto-mock on non-local standalone hosts (deploy previews, production)', async () => {
@@ -306,6 +327,59 @@ describe('mock responses', () => {
 
         expect(invalid.valid).toBe(false);
         expect(invalid.errors).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ path: 'templateData.courseName' }),
+                expect.objectContaining({ path: 'templateData.wrongKey' }),
+            ])
+        );
+    });
+
+    it('previews compiled templates offline via the instance method', () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: false } });
+
+        const preview = lc.previewCompiledTemplate(
+            {
+                name: 'Completed {{courseName}}',
+                description: 'Awarded for finishing {{courseName}}.',
+                credits: { earned: '{{earnedCredits}}' },
+            },
+            { courseName: 'Intro to Baking', earnedCredits: 3 }
+        );
+
+        expect(preview).toMatchObject({ valid: true, errors: [] });
+        expect(preview.compiled).toMatchObject({
+            name: 'Completed {{courseName}}',
+            credentialSubject: expect.objectContaining({
+                achievement: expect.objectContaining({ name: 'Completed {{courseName}}' }),
+                creditsEarned: '{{earnedCredits}}',
+            }),
+        });
+        expect(preview.rendered).toMatchObject({
+            name: 'Completed Intro to Baking',
+            credentialSubject: expect.objectContaining({
+                achievement: expect.objectContaining({ name: 'Completed Intro to Baking' }),
+                creditsEarned: 3,
+            }),
+        });
+    });
+
+    it('previews compiled templates offline via the standalone export and returns data errors', () => {
+        const invalidTemplate = previewCompiledTemplate({ description: 'Missing name' } as never);
+        expect(invalidTemplate.valid).toBe(false);
+        expect(invalidTemplate.compiled).toBeUndefined();
+
+        const invalidData = previewCompiledTemplate(
+            {
+                name: 'Completed {{courseName}}',
+                description: 'Awarded for finishing {{courseName}}.',
+            },
+            { wrongKey: 'Intro to Baking' }
+        );
+
+        expect(invalidData.valid).toBe(false);
+        expect(invalidData.compiled).toBeDefined();
+        expect(invalidData.rendered).toBeUndefined();
+        expect(invalidData.errors).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({ path: 'templateData.courseName' }),
                 expect.objectContaining({ path: 'templateData.wrongKey' }),
@@ -661,6 +735,31 @@ describe('mock coherence (reads reflect this session writes)', () => {
         ).rejects.toMatchObject({ code: 'TEMPLATE_DATA_INVALID' });
     });
 
+    it('mock rejections use PartnerConnectError instances', async () => {
+        const lc = createPartnerConnect({ mock: true, mockOptions: { ui: false } });
+
+        await expect(
+            lc.sendAppEvent({
+                type: 'send-credential',
+                alias: 'course-complete',
+                template: { name: 'Completed {{courseName}}' },
+                templateData: { wrongKey: 'Intro to Baking' },
+            } as never)
+        ).rejects.toBeInstanceOf(PartnerConnectError);
+
+        try {
+            await lc.sendAppEvent({
+                type: 'send-credential',
+                alias: 'course-complete',
+                template: { name: 'Completed {{courseName}}' },
+                templateData: { wrongKey: 'Intro to Baking' },
+            } as never);
+        } catch (error) {
+            expect(error).toBeInstanceOf(PartnerConnectError);
+            expect(error).toMatchObject({ code: 'TEMPLATE_DATA_INVALID' });
+        }
+    });
+
     it('initiateTemplateIssue populates recipients and issuance status', async () => {
         const lc = createPartnerConnect({ mockOptions: { ui: false } });
         await lc.initiateTemplateIssue('boost-xyz', ['alice', 'bob']);
@@ -733,7 +832,7 @@ describe('captured app manifest + publish URL', () => {
 
             const manifest = lc.getCapturedManifest();
             expect(manifest).toBeDefined();
-            expect(manifest?.appUrl).toBe(window.location.origin);
+            expect(manifest?.appUrl).toBe(`${window.location.origin}${window.location.pathname}`);
             expect(manifest?.suggestedName).toBe('Mock Partner App');
             expect(manifest?.suggestedIconUrl).toBe(
                 new URL('/favicon.ico', window.location.href).toString()
@@ -799,7 +898,7 @@ describe('captured app manifest + publish URL', () => {
         ]);
     });
 
-    it('builds publish URLs only once the manifest is publishable', async () => {
+    it('builds publish URLs as soon as any manifest has been captured', async () => {
         const lc = createPartnerConnect({
             mock: true,
             hostOrigin: ['capacitor://localhost', 'https://staging.learncard.app'],
@@ -809,7 +908,9 @@ describe('captured app manifest + publish URL', () => {
         expect(lc.getPublishUrl()).toBeUndefined();
 
         await lc.requestIdentity();
-        expect(lc.getPublishUrl()).toBeUndefined();
+        expect(lc.getPublishUrl()).toContain(
+            'https://staging.learncard.app/app-store/developer/submit?manifest='
+        );
 
         await lc.launchFeature('/wallet');
         const publishUrl = lc.getPublishUrl();
@@ -947,6 +1048,53 @@ describe('captured app manifest + publish URL', () => {
         expect(readManifestMap(namespace)['ignored-title']).toBeUndefined();
     });
 
+    it('warns when the same fingerprint is reused across different page paths', () => {
+        const namespace = 'manifest-fingerprint-warning';
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const originalLocation = Object.getOwnPropertyDescriptor(window, 'location');
+
+        document.title = 'Shared App';
+        localStorage.setItem(
+            `${namespace}:manifests`,
+            JSON.stringify({
+                'shared-app': {
+                    manifestVersion: 1,
+                    appUrl: 'http://localhost/other-path',
+                    suggestedName: 'Shared App',
+                    permissions: ['request_identity'],
+                    templates: [],
+                    consentRequests: [],
+                    featuresLaunched: [],
+                    counterKeys: [],
+                    usedLearnerContext: false,
+                    usedNotifications: false,
+                    firstCapturedAt: '2026-01-01T00:00:00.000Z',
+                    lastUpdatedAt: '2026-01-01T00:00:00.000Z',
+                },
+            })
+        );
+
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: {
+                origin: 'http://localhost',
+                pathname: '/current-path',
+                hostname: 'localhost',
+                search: '',
+                href: 'http://localhost/current-path',
+            },
+        });
+
+        try {
+            createPartnerConnect({ mock: true, mockOptions: { ui: false, namespace } });
+            expect(warnSpy).toHaveBeenCalledWith(
+                expect.stringContaining('Two apps may be sharing mock state')
+            );
+        } finally {
+            if (originalLocation) Object.defineProperty(window, 'location', originalLocation);
+        }
+    });
+
     it('migrates the legacy single-manifest key into the fingerprinted map and removes it', () => {
         const namespace = 'manifest-legacy-migration';
         const legacyManifest: CapturedAppManifest = {
@@ -1075,6 +1223,41 @@ describe('mock UI', () => {
         await lc.sendCredential({ templateAlias: 'badge' });
         await flush();
         expect(toastCount()).toBe(1);
+    });
+
+    it('does not inject the manifest HUD when ui is disabled', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: false, namespace: 'hud-hidden' } });
+        await lc.requestIdentity();
+        await flush();
+        expect(document.querySelector('.lc-mock-hud')).toBeNull();
+    });
+
+    it('shows a collapsible manifest HUD and persists its expanded state', async () => {
+        const namespace = 'hud-persisted-state';
+        document.title = 'HUD Persisted State';
+        const lc = createPartnerConnect({ mock: true, mockOptions: { ui: true, namespace } });
+
+        await lc.requestIdentity();
+        await flush();
+
+        const collapsedButton = Array.from(document.querySelectorAll('button')).find(button =>
+            (button.textContent ?? '').includes('LC ·')
+        ) as HTMLButtonElement | undefined;
+        expect(collapsedButton).toBeDefined();
+
+        collapsedButton?.click();
+        await flush();
+        expect(document.body.textContent).toContain('LearnCard manifest');
+        expect(
+            localStorage.getItem(`${namespace}:manifest-hud-collapsed:hud-persisted-state`)
+        ).toBe('false');
+
+        lc.destroy();
+
+        const next = createPartnerConnect({ mock: true, mockOptions: { ui: true, namespace } });
+        await next.requestIdentity();
+        await flush();
+        expect(document.body.textContent).toContain('LearnCard manifest');
     });
 
     it('renders a positive-tone toast for requestConsent', async () => {

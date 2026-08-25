@@ -10,6 +10,7 @@ import { Skill } from './Skill';
 import { Tag } from './Tag';
 import { AppStoreListing } from './AppStoreListing';
 import { Integration } from './Integration';
+import { AppManifestVersion } from './AppManifestVersion';
 import { CredentialActivity } from './CredentialActivity';
 import { StatusList } from './StatusList';
 import { ContactMethod } from './ContactMethod';
@@ -77,6 +78,19 @@ Integration.addRelationships({
         direction: 'out',
         name: 'PUBLISHES_LISTING',
     },
+    hasManifestVersion: {
+        model: AppManifestVersion,
+        direction: 'out',
+        name: 'HAS_MANIFEST_VERSION',
+    },
+});
+
+AppStoreListing.addRelationships({
+    usesManifestVersion: {
+        model: AppManifestVersion,
+        direction: 'out',
+        name: 'USES_MANIFEST_VERSION',
+    },
 });
 
 Profile.addRelationships({
@@ -136,6 +150,10 @@ const indexQueries = [
     'CREATE INDEX claim_hook_updated_idx IF NOT EXISTS FOR (c:ClaimHook) ON (c.updatedAt)',
     'CREATE INDEX integration_id_idx IF NOT EXISTS FOR (i:Integration) ON (i.id)',
     'CREATE INDEX integration_publishablekey_idx IF NOT EXISTS FOR (i:Integration) ON (i.publishableKey)',
+    'CREATE INDEX app_manifest_version_id_idx IF NOT EXISTS FOR (m:AppManifestVersion) ON (m.id)',
+    'CREATE INDEX app_manifest_version_version_idx IF NOT EXISTS FOR (m:AppManifestVersion) ON (m.version)',
+    'CREATE INDEX app_manifest_version_hash_idx IF NOT EXISTS FOR (m:AppManifestVersion) ON (m.manifestHash)',
+    'CREATE INDEX app_manifest_version_status_idx IF NOT EXISTS FOR (m:AppManifestVersion) ON (m.status)',
     'CREATE INDEX skill_framework_id_idx IF NOT EXISTS FOR (f:SkillFramework) ON (f.id)',
     'CREATE TEXT INDEX skill_framework_name_text_idx IF NOT EXISTS FOR (f:SkillFramework) ON (f.name)',
     'CREATE INDEX skill_id_idx IF NOT EXISTS FOR (s:Skill) ON (s.id)',
@@ -231,6 +249,7 @@ export * from './SkillFramework';
 export * from './Skill';
 export * from './Tag';
 export * from './Integration';
+export * from './AppManifestVersion';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
 export * from './StatusList';

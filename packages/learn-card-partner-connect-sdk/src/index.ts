@@ -20,8 +20,10 @@
 
 import {
     compileInlineTemplate,
+    decodeManifestFromUrl,
     encodeManifestForUrl,
     normalizeConsentRequest,
+    renderCompiledTemplate,
     validateInlineTemplate,
     validateTemplateData,
 } from '@learncard/partner-connect-core';
@@ -65,6 +67,7 @@ import type {
     AppEvent,
     AppEventResponse,
     LearnCardError,
+    PreviewCompiledTemplateResult,
     PostMessageRequest,
     PostMessageResponse,
     PendingRequest,
@@ -76,6 +79,7 @@ const DEFAULT_PUBLISH_ORIGIN = 'https://learncard.app';
 // `MockHost` is an internal implementation detail (constructed via
 // `createPartnerConnect({ mock, mockOptions })`); only its options type is public.
 export { PartnerConnectError } from './types';
+export { decodeManifestFromUrl };
 export type * from './types';
 
 /** Maximum time to poll for sync completion before giving up (10 minutes) */
@@ -86,6 +90,50 @@ const DEFAULT_HOST_PROBE_TIMEOUT_MS = 1500;
 
 const joinInlineTemplateErrors = (errors: InlineTemplateValidationError[]): string =>
     errors.map(error => `${error.path}: ${error.message}`).join('\n');
+
+const parseCompiledTemplateObject = (credentialTemplateJson: string): Record<string, unknown> => {
+    return JSON.parse(
+        credentialTemplateJson.replace(/:(\s*)(\{\{\w+\}\})(?=\s*[,}\]])/g, ':$1"$2"')
+    ) as Record<string, unknown>;
+};
+
+/**
+ * Compile and optionally render an inline credential template entirely offline.
+ *
+ * `compiled` contains the canonical OBv3 credential object with `{{variables}}`
+ * preserved. If `templateData` is provided and valid, `rendered` contains the
+ * same object with those variables substituted.
+ */
+export const previewCompiledTemplate = (
+    template: InlineCredentialTemplate,
+    templateData?: Record<string, unknown>
+): PreviewCompiledTemplateResult => {
+    const templateErrors = validateInlineTemplate(template);
+
+    if (templateErrors.length > 0) {
+        return { valid: false, errors: templateErrors };
+    }
+
+    const compiledTemplate = compileInlineTemplate(template);
+    const compiled = parseCompiledTemplateObject(compiledTemplate.credentialTemplateJson);
+
+    if (templateData === undefined) {
+        return { valid: true, errors: [], compiled };
+    }
+
+    const dataErrors = validateTemplateData(compiledTemplate.variableManifest, templateData);
+
+    if (dataErrors.length > 0) {
+        return { valid: false, errors: dataErrors, compiled };
+    }
+
+    return {
+        valid: true,
+        errors: [],
+        compiled,
+        rendered: renderCompiledTemplate(compiledTemplate.credentialTemplateJson, templateData),
+    };
+};
 
 const isTemplateAliasInput = (input: unknown): input is TemplateCredentialInput =>
     Boolean(
@@ -430,8 +478,10 @@ export class PartnerConnect {
     /**
      * Build the LearnCard App Store submission URL for the current captured manifest.
      *
-     * Returns `undefined` unless mock mode is active and the captured manifest is
-     * publishable (at least 1 inline template or at least 2 distinct permissions).
+     * Returns `undefined` unless mock mode is active and the SDK has captured at
+     * least one manifest interaction. The publish prompt still uses a higher
+     * threshold (at least 1 inline template or at least 2 distinct permissions)
+     * before it auto-nudges the developer.
      *
      * @example
      * ```typescript
@@ -446,11 +496,25 @@ export class PartnerConnect {
         const publishOrigin = this.mockHost?.getPublishOrigin();
 
         if (!manifest || !publishOrigin) return undefined;
-        if (manifest.templates.length < 1 && manifest.permissions.length < 2) return undefined;
 
         return `${publishOrigin}/app-store/developer/submit?manifest=${encodeManifestForUrl(
             manifest
         )}`;
+    }
+
+    /**
+     * Returns the currently active real-host origin, or `null` while standalone
+     * mock mode is active.
+     */
+    public getActiveHostOrigin(): string | null {
+        if (this.mockHost) return null;
+        return this.activeHostOrigin || null;
+    }
+
+    /** Returns the LearnCard origin used to build App Store publish URLs. */
+    public getPublishOrigin(): string | null {
+        if (this.mockHost) return this.mockHost.getPublishOrigin();
+        return this.inferPublishOrigin(this.hostOrigins);
     }
 
     /**
@@ -917,6 +981,16 @@ export class PartnerConnect {
         }
 
         return { valid: true, errors: [] };
+    }
+
+    /**
+     * Compile and optionally render an inline credential template entirely offline.
+     */
+    public previewCompiledTemplate(
+        template: InlineCredentialTemplate,
+        templateData?: Record<string, unknown>
+    ): PreviewCompiledTemplateResult {
+        return previewCompiledTemplate(template, templateData);
     }
 
     /**
