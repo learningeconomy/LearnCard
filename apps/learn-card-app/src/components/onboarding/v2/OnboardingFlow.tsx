@@ -862,9 +862,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 <div className="w-full flex justify-center">
                                     <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-6 pt-8 flex flex-col items-center gap-3 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
                                         <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/15 via-emerald-50/5 to-transparent pointer-events-none" />
-                                        <div className="absolute top-4 left-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700/50">
-                                            {brandName}
-                                        </div>
                                         <div className="relative">
                                             <div className="relative flex justify-center items-center h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 transition-transform duration-300 group-hover:scale-105">
                                                 {photo ? (
