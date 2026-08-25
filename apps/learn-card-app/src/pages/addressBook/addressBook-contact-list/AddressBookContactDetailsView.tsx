@@ -5,7 +5,6 @@ import {
     alertCircleOutline,
     banOutline,
     calendarClearOutline,
-    closeOutline,
     copyOutline,
     documentTextOutline,
     ellipsisHorizontal,
@@ -40,6 +39,7 @@ import {
     useContactCredentialHistory,
 } from './useContactCredentialHistory';
 import { ThreeDotVertical } from '@learncard/react';
+import X from 'learn-card-base/svgs/X';
 
 type ContactWithRelationship = LCNProfile & {
     connectedAt?: string;
@@ -387,14 +387,14 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
             <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-5 pt-3">
                 <div className="mx-auto w-full max-w-md">
                     {showCloseButton && (
-                        <div className="mb-3 flex justify-end">
+                        <div className="mb-3 flex justify-end md:hidden">
                             <button
                                 type="button"
                                 onClick={closeModal}
-                                className="flex h-10 w-10 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-sm transition-colors hover:bg-grayscale-100"
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-100"
                                 aria-label="Close contact details"
                             >
-                                <IonIcon icon={closeOutline} className="text-xl" />
+                                <X className="h-5 w-5" />
                             </button>
                         </div>
                     )}
