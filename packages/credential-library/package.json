@@ -28,12 +28,15 @@
         "@learncard/init": "workspace:*",
         "@types/node": "^17.0.38",
         "esbuild": "^0.27.1",
+        "jose": "^5.9.6",
         "shx": "^0.3.4",
         "typescript": "5.6.2",
         "vitest": "^3.2.6"
     },
     "dependencies": {
+        "@learncard/sd-jwt-vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
+        "@sd-jwt/sd-jwt-vc": "^0.19.0",
         "zod": "4.1.13"
     },
     "types": "./dist/index.d.ts",

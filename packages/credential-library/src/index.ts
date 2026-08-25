@@ -49,5 +49,14 @@ export { prepareFixture, prepareFixtureById } from './prepare';
 
 export type { PrepareOptions } from './prepare';
 
+// SD-JWT VC materialization
+export { materializeSdJwtVcFixture } from './materialize-sd-jwt-vc';
+
+export type {
+    SdJwtVcSigner,
+    MaterializeSdJwtVcOptions,
+    MaterializedSdJwtVcFixture,
+} from './materialize-sd-jwt-vc';
+
 // Fixtures — importing this module registers all fixtures in the registry
 export * from './fixtures';
