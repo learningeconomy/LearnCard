@@ -10,6 +10,7 @@ import {
 } from 'learn-card-base';
 
 const log = getLogger('contact-credential-history');
+const MAX_PREVIEW_CREDENTIALS = 10;
 
 export type ContactCredentialDirection = 'received' | 'sent';
 
@@ -53,7 +54,7 @@ const resolveCredential = async (
     }
 };
 
-/** Loads the credentials exchanged directly between the current user and one contact. */
+/** Loads counts and the ten newest credentials exchanged with one contact. */
 export const useContactCredentialHistory = (profileId: string | undefined, enabled = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
@@ -69,10 +70,18 @@ export const useContactCredentialHistory = (profileId: string | undefined, enabl
                 wallet.invoke.getReceivedCredentials(profileId),
             ]);
 
-            const resolved = await Promise.all([
-                ...sent.map(info => resolveCredential(wallet, info, 'sent')),
-                ...received.map(info => resolveCredential(wallet, info, 'received')),
-            ]);
+            const newestCredentialInfo = [
+                ...sent.map(info => ({ info, direction: 'sent' as const })),
+                ...received.map(info => ({ info, direction: 'received' as const })),
+            ]
+                .sort((a, b) => Date.parse(b.info.sent) - Date.parse(a.info.sent))
+                .slice(0, MAX_PREVIEW_CREDENTIALS);
+
+            const resolved = await Promise.all(
+                newestCredentialInfo.map(({ info, direction }) =>
+                    resolveCredential(wallet, info, direction)
+                )
+            );
 
             const items = resolved
                 .filter((item): item is ContactCredentialHistoryItem => Boolean(item))
@@ -80,8 +89,8 @@ export const useContactCredentialHistory = (profileId: string | undefined, enabl
 
             return {
                 items,
-                receivedCount: items.filter(item => item.direction === 'received').length,
-                sentCount: items.filter(item => item.direction === 'sent').length,
+                receivedCount: received.length,
+                sentCount: sent.length,
             };
         },
         enabled: enabled && Boolean(profileId),
