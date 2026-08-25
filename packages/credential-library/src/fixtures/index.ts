@@ -1,4 +1,4 @@
-import type { CredentialFixture } from '../types';
+import type { LibraryFixture } from '../types';
 
 // VC v1
 import { vcV1Basic } from './vc-v1/basic';
@@ -57,11 +57,14 @@ import { clrGreatPlainsFull } from './clr/great-plains-full';
 import { clrWestbridgeFull } from './clr/westbridge-full';
 import { clrCompetencyAligned } from './clr/competency-aligned';
 
+// SD-JWT VC
+import { sdJwtVcCourseCompletion } from './sd-jwt-vc/course-completion';
+
 // ---------------------------------------------------------------------------
 // All fixtures — collected for auto-registration
 // ---------------------------------------------------------------------------
 
-export const ALL_FIXTURES: CredentialFixture[] = [
+export const ALL_FIXTURES: LibraryFixture[] = [
     // VC v1
     vcV1Basic,
     vcV1WithStatus,
@@ -116,6 +119,9 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+
+    // SD-JWT VC
+    sdJwtVcCourseCompletion,
 ];
 
 // Re-export individual fixtures for direct import
@@ -159,4 +165,5 @@ export {
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    sdJwtVcCourseCompletion,
 };

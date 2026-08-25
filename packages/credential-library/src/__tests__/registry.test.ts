@@ -152,6 +152,21 @@ describe('Query API', () => {
         expect(fixture.spec).toBe('vc-v2');
     });
 
+    it('registers the production Course Completion SD-JWT VC fixture', () => {
+        const fixture = getFixture('sd-jwt-vc/course-completion');
+
+        expect(isSdJwtVcFixture(fixture)).toBe(true);
+        if (!isSdJwtVcFixture(fixture)) throw new Error('Expected SD-JWT VC fixture');
+
+        expect(fixture.template.format).toBe('dc+sd-jwt');
+        expect(fixture.template.vct).toBe(
+            'https://credentials.learncard.com/vct/course-completion'
+        );
+        expect(getFixtures({ spec: 'sd-jwt-vc' }).map(item => item.id)).toContain(fixture.id);
+        expect(getFixtures({ kind: 'sd-jwt-vc' }).map(item => item.id)).toContain(fixture.id);
+        expect(getUnsignedFixtures().map(item => item.id)).not.toContain(fixture.id);
+    });
+
     it('getFixture throws for unknown ID', () => {
         expect(() => getFixture('nonexistent/fixture')).toThrow('not found');
     });
@@ -248,9 +263,13 @@ describe('Query API', () => {
         try {
             registerFixtures([...ALL_FIXTURES, sdJwtFixture]);
 
-            expect(getFixtures({ kind: 'sd-jwt-vc' })).toEqual([sdJwtFixture]);
+            const sdJwtFixtures = getFixtures({ kind: 'sd-jwt-vc' });
+            expect(sdJwtFixtures).toContainEqual(sdJwtFixture);
+            expect(sdJwtFixtures.map(fixture => fixture.id)).toContain(
+                'sd-jwt-vc/course-completion'
+            );
             const w3cFixtures = getFixtures({ kind: 'w3c-vc' });
-            expect(w3cFixtures).toHaveLength(ALL_FIXTURES.length);
+            expect(w3cFixtures).toHaveLength(ALL_FIXTURES.filter(isCredentialFixture).length);
             expect(w3cFixtures.every(isCredentialFixture)).toBe(true);
             expect(getFixture('sd-jwt-vc/test-course').template).toEqual(sdJwtFixture.template);
             expect(getUnsignedFixtures().every(isCredentialFixture)).toBe(true);

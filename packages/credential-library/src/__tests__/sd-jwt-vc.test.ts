@@ -7,33 +7,17 @@ import {
     verifySdJwtVc,
 } from '@learncard/sd-jwt-vc-plugin';
 
-import { materializeSdJwtVcFixture, type SdJwtVcFixture } from '../index';
+import {
+    getFixture,
+    isSdJwtVcFixture,
+    materializeSdJwtVcFixture,
+    type SdJwtVcFixture,
+} from '../index';
 
 const ISSUED_AT = 1_787_616_000;
 
-const fixture: SdJwtVcFixture = {
-    kind: 'sd-jwt-vc',
-    id: 'sd-jwt-vc/test-course-completion',
-    name: 'Test Course Completion',
-    description: 'A holder-bound SD-JWT VC fixture for materialization tests.',
-    spec: 'sd-jwt-vc',
-    profile: 'course',
-    features: ['skills', 'selective-disclosure', 'holder-binding'],
-    source: 'synthetic',
-    signed: false,
-    validity: 'valid',
-    template: {
-        format: 'dc+sd-jwt',
-        vct: 'https://credentials.learncard.com/vct/test-course-completion',
-        claims: {
-            learner_name: 'Ada Lovelace',
-            course_name: 'Cryptographic Credentials',
-            completion_date: '2026-08-25',
-            skills: ['cryptography', 'verifiable credentials'],
-        },
-        selectivelyDisclosable: ['learner_name', 'course_name', 'completion_date', 'skills'],
-    },
-};
+const fixture = getFixture('sd-jwt-vc/course-completion');
+if (!isSdJwtVcFixture(fixture)) throw new Error('Expected SD-JWT VC fixture');
 
 const makeKeypair = async (): Promise<{
     privateJwk: JWK;
