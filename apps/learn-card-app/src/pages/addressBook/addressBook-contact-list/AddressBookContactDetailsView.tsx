@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import { IonIcon, IonSpinner, useIonAlert } from '@ionic/react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import type { Swiper as SwiperInstance } from 'swiper';
 import {
     alertCircleOutline,
     banOutline,
@@ -16,14 +18,19 @@ import moment from 'moment';
 import type { LCNProfile, VC } from '@learncard/types';
 import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import {
+    boostCategoryMetadata,
+    BoostCategoryOptionsEnum,
+    CredentialCategoryEnum,
+    getBoostMetadata,
+    getDefaultCategoryForCredential,
     getImageFromImage,
+    getImageUrlFromCredential,
     ModalTypes,
     ToastTypeEnum,
     useModal,
     useToast,
     VCModal,
 } from 'learn-card-base';
-import BadgeThumbnailImg from 'learn-card-base/components/CredentialBadge/BadgeThumbnailImg';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 import { CalendarIcon } from 'learn-card-base/svgs/CalendarIcon';
@@ -32,6 +39,8 @@ import BoostOutline3 from 'learn-card-base/svgs/BoostOutline3';
 
 import BoostTemplateSelector from '../../../components/boost/boost-template/BoostTemplateSelector';
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
+import SlimCaretLeft from '../../../components/svgs/SlimCaretLeft';
+import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import * as m from '../../../paraglide/messages.js';
 import ContactProfileCard from './ContactProfileCard';
 import {
@@ -40,6 +49,8 @@ import {
 } from './useContactCredentialHistory';
 import { ThreeDotVertical } from '@learncard/react';
 import X from 'learn-card-base/svgs/X';
+
+import 'swiper/css';
 
 type ContactWithRelationship = LCNProfile & {
     connectedAt?: string;
@@ -93,34 +104,53 @@ const CredentialPreview: React.FC<{
     item: ContactCredentialHistoryItem;
     onClick: (credential: VC) => void;
 }> = ({ item, onClick }) => {
-    const { title } = getInfoFromCredential(item.credential, 'MMM D, YYYY', {
+    const [imageError, setImageError] = useState(false);
+    const { title, createdAt } = getInfoFromCredential(item.credential, 'MMM D, YYYY', {
         uppercaseDate: false,
     });
-    const subject = Array.isArray(item.credential.credentialSubject)
-        ? item.credential.credentialSubject[0]
-        : item.credential.credentialSubject;
-    const image = subject?.achievement?.image;
-    const thumbnail = image ? getImageFromImage(image) : '';
+    const category = getDefaultCategoryForCredential(item.credential);
+    const categoryInfo =
+        getBoostMetadata(category as CredentialCategoryEnum) ??
+        boostCategoryMetadata[BoostCategoryOptionsEnum.achievement];
+    const CategoryIcon = categoryInfo.SolidIconComponent ?? categoryInfo.IconComponent;
+    const CategoryBadge = categoryInfo.IconWithShape ?? CategoryIcon;
+    const imageUrl = getImageUrlFromCredential(item.credential);
+    const thumbnail = imageUrl ? getImageFromImage(imageUrl) : '';
+
+    useEffect(() => {
+        setImageError(false);
+    }, [thumbnail]);
+
+    const directionLabel = item.direction === 'received' ? 'They sent' : 'You sent';
 
     return (
         <button
             type="button"
             onClick={() => onClick(item.credential)}
-            className="w-[132px] shrink-0 overflow-hidden rounded-2xl border border-grayscale-200 bg-white text-left shadow-sm transition-opacity hover:opacity-90"
-            aria-label={`View ${title || 'credential'}`}
+            className="flex p-2 w-full items-center gap-2 rounded-2xl border border-grayscale-200 border-solid bg-white text-left transition-opacity hover:opacity-90"
+            aria-label={`View ${title || 'credential'}. ${directionLabel}.`}
         >
-            <div className="flex h-[94px] items-center justify-center bg-grayscale-900 p-4">
-                <div className="h-[58px] w-[58px] overflow-hidden rounded-full border-2 border-white/80 bg-white">
-                    <BadgeThumbnailImg src={thumbnail} className="h-full w-full object-cover" />
-                </div>
+            <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-grayscale-100">
+                {thumbnail && !imageError ? (
+                    <img
+                        src={thumbnail}
+                        alt=""
+                        className="h-full w-full object-cover"
+                        onError={() => setImageError(true)}
+                    />
+                ) : (
+                    <CategoryBadge className="h-12 w-12" />
+                )}
             </div>
-            <div className="min-h-[64px] p-3 font-poppins">
-                <p className="line-clamp-2 text-xs font-semibold leading-4 text-grayscale-900">
+
+            <div className="min-w-0 flex-1 pr-2 font-poppins">
+                <p className="truncate text-sm font-semibold text-grayscale-900">
                     {title || 'Credential'}
                 </p>
-                <p className="mt-1 text-[10px] font-medium text-grayscale-500">
-                    {item.direction === 'received' ? 'They sent' : 'You sent'}
-                </p>
+                <div className="mt-1 flex min-w-0 items-center gap-1 text-grayscale-600">
+                    <CategoryIcon className="h-5 w-5 shrink-0" />
+                    <time className="truncate text-sm font-semibold">{createdAt}</time>
+                </div>
             </div>
         </button>
     );
@@ -149,7 +179,10 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     const [presentAlert, dismissAlert] = useIonAlert();
     const { gate } = useLCNGatedAction();
     const overflowRef = useRef<HTMLDivElement>(null);
+    const credentialSwiperRef = useRef<SwiperInstance | null>(null);
     const [showOverflow, setShowOverflow] = useState(false);
+    const [credentialAtBeginning, setCredentialAtBeginning] = useState(true);
+    const [credentialAtEnd, setCredentialAtEnd] = useState(false);
     const [loadingAction, setLoadingAction] = useState<'boost' | 'send' | 'block' | null>(null);
 
     const connectionStatus = contact?.connectionStatus;
@@ -255,6 +288,22 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
         );
     };
 
+    const updateCredentialNavigation = (swiper: SwiperInstance): void => {
+        setCredentialAtBeginning(swiper.isBeginning);
+        setCredentialAtEnd(swiper.isEnd);
+    };
+
+    const handleCredentialSwiperInit = (swiper: SwiperInstance): void => {
+        credentialSwiperRef.current = swiper;
+
+        requestAnimationFrame(() => {
+            if (swiper.destroyed) return;
+
+            swiper.update();
+            updateCredentialNavigation(swiper);
+        });
+    };
+
     const relationshipLabel = contact.connectedAt
         ? `Connected since ${moment(contact.connectedAt).format('MMM D, YYYY')}`
         : 'Connected';
@@ -340,6 +389,8 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     const connectionAction = renderConnectionAction();
     const showOverflowMenu =
         showDeleteButton || showBlockButton || showUnblockButton || contact.did;
+    const credentialPreviewItems = credentialHistory?.items.slice(0, 10) ?? [];
+    const showCredentialNavigation = credentialPreviewItems.length > 1;
 
     const footer = (
         <footer className="shrink-0 border-t border-grayscale-200 bg-white px-6 py-4">
@@ -553,14 +604,59 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                             )}
 
                             {!isLoading && !isError && Boolean(credentialHistory?.items.length) && (
-                                <div className="-mx-6 flex snap-x gap-3 overflow-x-auto px-6 pb-2">
-                                    {credentialHistory?.items.map(item => (
-                                        <CredentialPreview
-                                            key={`${item.direction}-${item.uri}`}
-                                            item={item}
-                                            onClick={openCredential}
-                                        />
-                                    ))}
+                                <div className="relative">
+                                    <Swiper
+                                        className="[&_.swiper-wrapper]:items-stretch"
+                                        slidesPerView="auto"
+                                        spaceBetween={12}
+                                        grabCursor
+                                        slidesPerGroupAuto
+                                        onSwiper={handleCredentialSwiperInit}
+                                        onResize={updateCredentialNavigation}
+                                        onSlideChange={updateCredentialNavigation}
+                                    >
+                                        {credentialPreviewItems.map(item => (
+                                            <SwiperSlide
+                                                key={`${item.direction}-${item.uri}`}
+                                                className="!h-auto"
+                                                style={{
+                                                    width: 'min(300px, calc(100vw - 96px))',
+                                                }}
+                                            >
+                                                <CredentialPreview
+                                                    item={item}
+                                                    onClick={openCredential}
+                                                />
+                                            </SwiperSlide>
+                                        ))}
+                                    </Swiper>
+
+                                    {showCredentialNavigation && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    credentialSwiperRef.current?.slidePrev()
+                                                }
+                                                disabled={credentialAtBeginning}
+                                                className="absolute -left-4 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-30 md:flex"
+                                                aria-label="View previous credentials"
+                                            >
+                                                <SlimCaretLeft className="h-5 w-5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    credentialSwiperRef.current?.slideNext()
+                                                }
+                                                disabled={credentialAtEnd}
+                                                className="absolute -right-4 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-30 md:flex"
+                                                aria-label="View more credentials"
+                                            >
+                                                <SlimCaretRight className="h-5 w-5" />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </section>
