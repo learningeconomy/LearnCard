@@ -9,10 +9,10 @@
         "preview": "astro preview"
     },
     "dependencies": {
-        "@astrojs/netlify": "^7.0.13",
+        "@astrojs/netlify": "^8.1.2",
         "@learncard/init": "workspace:*",
         "@learncard/partner-connect": "workspace:*",
-        "astro": "^6.4.8"
+        "astro": "^7.1.0"
     },
     "devDependencies": {
         "@astrojs/tailwind": "^6.0.2",
