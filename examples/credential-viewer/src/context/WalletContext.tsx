@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { initLearnCard } from '@learncard/init';
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
+import { createEd25519KbSigner } from '@learncard/sd-jwt-vc-plugin';
+import { materializeSdJwtVcFixture, type SdJwtVcFixture } from '@learncard/credential-library';
 
 import type { VC } from '@learncard/types';
 
@@ -86,6 +88,11 @@ interface WalletContextValue {
         unsigned: Record<string, unknown>,
         categoryOverride?: string
     ) => Promise<{ uri: string; signed: VC }>;
+
+    materializeAndStoreSdJwt: (
+        fixture: SdJwtVcFixture,
+        categoryOverride?: string
+    ) => Promise<{ uri: string; compact: string }>;
 
     send: (input: {
         recipient: string;
@@ -519,6 +526,49 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         []
     );
 
+    const materializeAndStoreSdJwt = useCallback(
+        async (
+            fixture: SdJwtVcFixture,
+            categoryOverride?: string
+        ): Promise<{ uri: string; compact: string }> => {
+            const lc = walletRef.current;
+
+            if (!lc) throw new Error('Wallet not connected');
+
+            const keypair = lc.id.keypair('ed25519');
+            const holderPublicJwk = Object.fromEntries(
+                Object.entries(keypair).filter(([key]) => key !== 'd')
+            );
+            const issuerDid = lc.id.did();
+            const issuerKid = await lc.invoke.didToVerificationMethod(issuerDid);
+            const issuerSigner = await createEd25519KbSigner({ privateJwk: keypair });
+            const materialized = await materializeSdJwtVcFixture(fixture, {
+                issuerDid,
+                issuerKid,
+                issuerSigner: async signingInput => issuerSigner(signingInput),
+                holderPublicJwk,
+            });
+
+            const uri = (await lc.store.LearnCloud?.uploadEncrypted?.(materialized.envelope)) ?? '';
+
+            if (!uri) throw new Error('Failed to upload SD-JWT VC to LearnCloud');
+
+            const id = `urn:uuid:${crypto.randomUUID()}`;
+
+            await lc.index.LearnCloud?.add?.({
+                id,
+                uri,
+                category: categoryOverride ?? 'Learning History',
+                format: 'dc+sd-jwt',
+                semanticType: materialized.vct,
+                rawWireForm: materialized.compact,
+            });
+
+            return { uri, compact: materialized.compact };
+        },
+        []
+    );
+
     const send = useCallback(
         async (input: {
             recipient: string;
@@ -571,6 +621,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         createProfile: handleCreateProfile,
         ensureSigningAuthority: doEnsureSigningAuthority,
         issueAndStore,
+        materializeAndStoreSdJwt,
         send,
     };
 

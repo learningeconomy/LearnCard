@@ -12,6 +12,7 @@
         "@learncard/credential-library": "workspace:*",
         "@learncard/init": "workspace:*",
         "@learncard/lca-api-plugin": "workspace:*",
+        "@learncard/sd-jwt-vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "react": "^18.3.1",
         "react-dom": "^18.3.1"
