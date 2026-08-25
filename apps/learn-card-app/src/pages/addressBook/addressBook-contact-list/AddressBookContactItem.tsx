@@ -85,7 +85,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     const queryClient = useQueryClient();
     const history = useHistory();
     const { gate } = useLCNGatedAction();
-    const { newModal } = useModal({ desktop: ModalTypes.Cancel });
+    const { newModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.FullScreen,
+    });
 
     const { presentToast } = useToast();
     const [presentAlert, dismissAlert] = useIonAlert();
@@ -615,8 +618,11 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         </>
     );
 
-    const shouldHideButton = !showDeleteButton && showBlockButton && !showRequestButton;
-    const shouldUsePortal = !showDeleteButton && showBlockButton;
+    const contactModalOptions = {
+        addShadow: true,
+        sectionClassName:
+            '!flex !h-full !max-h-full !max-w-[480px] !flex-col !overflow-hidden md:!h-[75vh] md:!max-h-[75vh]',
+    };
 
     const contactItemDetails = (
         <>
@@ -643,12 +649,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             handleUnblockUser={handleUnblockUser}
                             history={history}
                         />,
-                        {
-                            sectionClassName: '!max-w-[400px]',
-                            hideButton: shouldHideButton,
-                            usePortal: shouldUsePortal,
-                            portalClassName: '!max-w-[400px]',
-                        }
+                        contactModalOptions
                     );
                 }}
             >
@@ -715,7 +716,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                     handleUnblockUser={handleUnblockUser}
                                     history={history}
                                 />,
-                                { sectionClassName: '!max-w-[400px]' }
+                                contactModalOptions
                             );
                         }}
                     >
