@@ -7,7 +7,7 @@ authors = [
 ]
 readme = "README.md"
 keywords = ["OpenAPI", "OpenAPI-Generator", "LearnCloud Network API"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 dependencies = [
   "urllib3 (>=2.7.0,<3.0.0)",
