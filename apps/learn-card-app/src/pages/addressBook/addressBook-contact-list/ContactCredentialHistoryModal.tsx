@@ -88,8 +88,8 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
                 </button>
             </header>
 
-            <div className="shrink-0 border-b border-grayscale-100 bg-white px-5 py-3">
-                <div className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="shrink-0 bg-white px-3 pt-[10px]">
+                <div className="flex items-center justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {tabs.map(tab => {
                         const isActive = tab.id === activeTab;
 
@@ -98,10 +98,10 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`shrink-0 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors ${
+                                className={`z-10 shrink-0 py-[5px] pl-[15px] pr-4 text-grayscale-600 subpixel-antialiased ${
                                     isActive
-                                        ? 'border-primary bg-white text-primary'
-                                        : 'border-transparent bg-white text-grayscale-600 hover:text-grayscale-900'
+                                        ? 'rounded-[10px] border-[1px] border-solid border-[rgba(99,102,241,0.4)] font-semibold text-indigo-600'
+                                        : ''
                                 }`}
                                 aria-pressed={isActive}
                             >
