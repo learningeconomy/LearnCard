@@ -9,6 +9,7 @@ import {
     QRCodeScannerStore,
     type QRCodeScannerResultFeedback,
     ToastTypeEnum,
+    getLogger,
     useConnectWithMutation,
     useGetCurrentLCNUser,
     useGetProfile,
@@ -26,9 +27,16 @@ interface PendingScannedProfile {
 
 interface ScanRecipientButtonProps {
     recipients: Recipient[];
-    onRecipientScanned: (recipient: Extract<Recipient, { kind: 'profile' }>) => void;
+    onRecipientsChange: (recipients: Recipient[]) => void;
     className?: string;
 }
+
+const log = getLogger('scan-recipient');
+
+export const canScanRecipients = (): boolean => Capacitor.isNativePlatform();
+
+const getDidWebHost = (did?: string): string | undefined =>
+    did?.startsWith('did:web:') ? did.split(':')[2]?.toLowerCase() : undefined;
 
 /**
  * Opens the native QR scanner in one-shot recipient capture mode. The recipient
@@ -37,7 +45,7 @@ interface ScanRecipientButtonProps {
  */
 export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
     recipients,
-    onRecipientScanned,
+    onRecipientsChange,
     className = '',
 }) => {
     const { presentToast } = useToast();
@@ -45,6 +53,7 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
     const connectWith = useConnectWithMutation();
     const [pendingProfile, setPendingProfile] = useState<PendingScannedProfile>();
     const recipientsRef = useRef(recipients);
+    const onRecipientsChangeRef = useRef(onRecipientsChange);
     const { data: scannedProfile, isFetched: isProfileFetched } = useGetProfile(
         pendingProfile?.profileId,
         Boolean(pendingProfile)
@@ -52,23 +61,27 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
 
     useEffect(() => {
         recipientsRef.current = recipients;
-    }, [recipients]);
+        onRecipientsChangeRef.current = onRecipientsChange;
+    }, [onRecipientsChange, recipients]);
 
-    useEffect(() => {
-        if (!pendingProfile || !isProfileFetched) return;
+    const updateScannedRecipient = useCallback(
+        (recipient: Extract<Recipient, { kind: 'profile' }>): void => {
+            const existingIndex = recipientsRef.current.findIndex(
+                existing =>
+                    existing.kind === 'profile' && existing.profileId === recipient.profileId
+            );
+            const nextRecipients =
+                existingIndex === -1
+                    ? [...recipientsRef.current, recipient]
+                    : recipientsRef.current.map((existing, index) =>
+                          index === existingIndex ? recipient : existing
+                      );
 
-        if (scannedProfile) {
-            onRecipientScanned({
-                kind: 'profile',
-                profileId: scannedProfile.profileId,
-                displayName: scannedProfile.displayName || scannedProfile.profileId,
-                image: scannedProfile.image,
-                did: 'did' in scannedProfile ? scannedProfile.did : pendingProfile.did,
-            });
-        }
-
-        setPendingProfile(undefined);
-    }, [isProfileFetched, onRecipientScanned, pendingProfile, scannedProfile]);
+            recipientsRef.current = nextRecipients;
+            onRecipientsChangeRef.current(nextRecipients);
+        },
+        []
+    );
 
     const showError = useCallback(
         (message: string): void => {
@@ -80,21 +93,55 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
         [presentToast]
     );
 
+    useEffect(() => {
+        if (!pendingProfile || !isProfileFetched) return;
+
+        if (scannedProfile) {
+            updateScannedRecipient({
+                kind: 'profile',
+                profileId: scannedProfile.profileId,
+                displayName: scannedProfile.displayName || scannedProfile.profileId,
+                image: scannedProfile.image,
+                did: 'did' in scannedProfile ? scannedProfile.did : pendingProfile.did,
+            });
+        } else {
+            const nextRecipients = recipientsRef.current.filter(
+                recipient =>
+                    recipient.kind !== 'profile' || recipient.profileId !== pendingProfile.profileId
+            );
+
+            recipientsRef.current = nextRecipients;
+            onRecipientsChangeRef.current(nextRecipients);
+            showError(m['scanner.recipientInvalid']());
+        }
+
+        setPendingProfile(undefined);
+    }, [isProfileFetched, pendingProfile, scannedProfile, showError, updateScannedRecipient]);
+
     const handleScanResult = useCallback(
         async (rawValue: string): Promise<void | QRCodeScannerResultFeedback> => {
             const result = parseClaimInput(rawValue);
 
             if (result.kind !== 'connection-request') {
-                showError(m['boostAFriend.recip.scanInvalid']());
-                return;
+                const message = m['scanner.recipientInvalid']();
+                showError(message);
+                return { message, tone: 'error', durationMs: 1200 };
             }
 
             const currentProfileDid =
                 currentLCNUser && 'did' in currentLCNUser ? currentLCNUser.did : undefined;
+            const scannedHost = getDidWebHost(result.did);
+            const currentHost = getDidWebHost(currentProfileDid);
+            if (scannedHost && currentHost && scannedHost !== currentHost) {
+                const message = m['scanner.recipientInvalid']();
+                showError(message);
+                return { message, tone: 'error', durationMs: 1200 };
+            }
+
             const isCurrentProfile =
                 result.profileId === currentLCNUser?.profileId || result.did === currentProfileDid;
             if (isCurrentProfile) {
-                const message = m['boostAFriend.recip.scanSelf']();
+                const message = m['scanner.recipientSelf']();
                 showError(message);
 
                 return { message, tone: 'error', durationMs: 1200 };
@@ -105,11 +152,12 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
                     recipient.kind === 'profile' && recipient.profileId === result.profileId
             );
             if (isDuplicate) {
-                showError(m['boostAFriend.recip.scanDuplicate']());
-                return;
+                const message = m['scanner.recipientDuplicate']();
+                showError(message);
+                return { message, tone: 'error', durationMs: 1200 };
             }
 
-            onRecipientScanned({
+            updateScannedRecipient({
                 kind: 'profile',
                 profileId: result.profileId,
                 displayName: result.profileId,
@@ -118,17 +166,20 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
             setPendingProfile({ profileId: result.profileId, did: result.did });
 
             void Haptics.impact({ style: ImpactStyle.Light }).catch(() => undefined);
-            connectWith.mutate({ profileId: result.profileId });
+            connectWith.mutate(
+                { profileId: result.profileId },
+                { onError: error => log.warn('scan::connect-failed', error) }
+            );
 
             return {
-                message: m['boostAFriend.recip.scanFound']({
+                message: m['scanner.recipientFound']({
                     profileName: `@${result.profileId}`,
                 }),
                 tone: 'success',
                 durationMs: 650,
             };
         },
-        [connectWith, currentLCNUser, onRecipientScanned, showError]
+        [connectWith, currentLCNUser, showError, updateScannedRecipient]
     );
 
     const handleOpenScanner = useCallback(async (): Promise<void> => {
@@ -144,7 +195,7 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
             }
 
             if (permissions.camera === 'denied') {
-                showError(m['boostAFriend.recip.scanPermission']());
+                showError(m['scanner.recipientPermission']());
                 return;
             }
 
@@ -157,20 +208,20 @@ export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
                 return;
             }
 
-            showError(m['boostAFriend.recip.scanPermission']());
+            showError(m['scanner.recipientPermission']());
         } catch {
             showError(m['scanner.failed']());
         }
     }, [handleScanResult, showError]);
 
-    if (!Capacitor.isNativePlatform()) return null;
+    if (!canScanRecipients()) return null;
 
     return (
         <button
             type="button"
             onClick={() => void handleOpenScanner()}
-            className={`absolute top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full text-grayscale-500 hover:bg-grayscale-100 hover:text-grayscale-900 transition-colors ${className}`}
-            aria-label={m['boostAFriend.recip.scanAria']()}
+            className={`absolute top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full text-grayscale-500 hover:bg-grayscale-100 hover:text-grayscale-900 transition-colors ${className}`}
+            aria-label={m['scanner.recipientAria']()}
         >
             <IonIcon icon={qrCodeOutline} className="text-xl" />
         </button>
