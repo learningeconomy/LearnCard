@@ -12,6 +12,7 @@ const mockClient = {
     },
     customStorage: {
         count: { query: jest.fn().mockResolvedValue(0) },
+        create: { mutate: jest.fn() },
     },
 };
 
@@ -42,6 +43,8 @@ const makeLearnCard = (did = 'did:key:z6MkHolder') => ({
     invoke: {
         getDidAuthVp: jest.fn().mockResolvedValue('did-auth-jwt'),
         decryptDagJwe: jest.fn(async value => value),
+        createDagJwe: jest.fn(async () => ({ ciphertext: 'encrypted' })),
+        hash: jest.fn(async value => `hash:${value}`),
     },
     debug: jest.fn(),
 });
@@ -83,6 +86,52 @@ describe('LearnCloud Plugin', () => {
         expect(mockClient.customStorage.count.query).toHaveBeenCalledWith({
             includeAssociatedDids: false,
         });
+    });
+
+    it('refreshes the LearnCloud recipient DID after the active wallet changes', async () => {
+        const firstClient = {
+            ...mockClient,
+            utilities: {
+                getDid: { query: jest.fn().mockResolvedValue('did:key:z6MkFirstLearnCloud') },
+            },
+            customStorage: {
+                ...mockClient.customStorage,
+                create: { mutate: jest.fn().mockResolvedValue('first-record') },
+            },
+        };
+        const secondClient = {
+            ...mockClient,
+            utilities: {
+                getDid: { query: jest.fn().mockResolvedValue('did:key:z6MkSecondLearnCloud') },
+            },
+            customStorage: {
+                ...mockClient.customStorage,
+                create: { mutate: jest.fn().mockResolvedValue('second-record') },
+            },
+        };
+        mockGetClient.mockResolvedValueOnce(firstClient).mockResolvedValueOnce(secondClient);
+
+        const firstLearnCard = makeLearnCard('did:key:z6MkFirstHolder');
+        const secondLearnCard = makeLearnCard('did:key:z6MkSecondHolder');
+        const plugin = await getLearnCloudPlugin(
+            firstLearnCard as never,
+            'https://cloud.example',
+            [],
+            [],
+            false
+        );
+
+        await plugin.methods.learnCloudCreate(firstLearnCard as never, { id: 'first' });
+        await plugin.methods.learnCloudCreate(secondLearnCard as never, { id: 'second' });
+
+        expect(firstClient.utilities.getDid.query).toHaveBeenCalledTimes(1);
+        expect(secondClient.utilities.getDid.query).toHaveBeenCalledTimes(1);
+        expect(firstLearnCard.invoke.createDagJwe).toHaveBeenLastCalledWith(expect.anything(), [
+            'did:key:z6MkFirstLearnCloud',
+        ]);
+        expect(secondLearnCard.invoke.createDagJwe).toHaveBeenLastCalledWith(expect.anything(), [
+            'did:key:z6MkSecondLearnCloud',
+        ]);
     });
 
     it('projects envelope-backed credentials in learnCloudBatchResolve', async () => {
