@@ -120,6 +120,7 @@ export const createAgentServiceRuntime = (
         (config.triggerEnabled
             ? createTriggerAgentAutonomyScheduleProvider({
                   environment: config.triggerEnvironment ?? config.nodeEnv,
+                  allowedOwnerDids: config.autonomyDevDids,
               })
             : undefined);
     const assistantSchedulesRuntime = assistantScheduleProvider

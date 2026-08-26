@@ -24,6 +24,7 @@ export interface TriggerScheduleClient {
 
 export interface CreateTriggerAgentAutonomyScheduleProviderOptions {
     environment: string;
+    allowedOwnerDids: readonly string[];
     client?: TriggerScheduleClient;
 }
 
@@ -34,13 +35,23 @@ export const getTriggerScheduleDeduplicationKey = (
 
 export const createTriggerAgentAutonomyScheduleProvider = ({
     environment,
+    allowedOwnerDids,
     client = schedules,
 }: CreateTriggerAgentAutonomyScheduleProviderOptions): AgentAutonomyScheduleProvider => {
     const environmentKey = environment.trim();
     if (!environmentKey) throw new Error('A Trigger.dev environment key is required.');
+    const allowedOwnerDidSet = new Set(
+        allowedOwnerDids.map(ownerDid => ownerDid.trim()).filter(Boolean)
+    );
 
     return {
         upsert: async schedule => {
+            if (!allowedOwnerDidSet.has(schedule.ownerDid)) {
+                throw new Error(
+                    'The schedule owner DID is not allowlisted for autonomous execution.'
+                );
+            }
+
             const triggerSchedule = await client.create({
                 task: TRIGGER_AUTONOMOUS_SCHEDULE_TASK_ID,
                 cron: schedule.cron,

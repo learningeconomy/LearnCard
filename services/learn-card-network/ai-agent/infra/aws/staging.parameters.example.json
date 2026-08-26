@@ -72,6 +72,15 @@
         "ParameterKey": "SentryDsnSecretArn",
         "ParameterValue": "arn:aws:secretsmanager:us-east-1:123456789012:secret:learncard/ai-agent/staging/sentry-dsn-replace"
     },
+    { "ParameterKey": "EnableTriggerSchedules", "ParameterValue": "true" },
+    {
+        "ParameterKey": "TriggerSecretKeySecretArn",
+        "ParameterValue": "arn:aws:secretsmanager:us-east-1:123456789012:secret:learncard/ai-agent/staging/trigger-secret-key-replace"
+    },
+    {
+        "ParameterKey": "AutonomyAllowedDids",
+        "ParameterValue": "did:key:replace-with-dedicated-staging-test-profile"
+    },
     { "ParameterKey": "MongoDbName", "ParameterValue": "learn-card-ai-agent-staging" },
     { "ParameterKey": "AlertEmail", "ParameterValue": "operator@example.com" },
     { "ParameterKey": "Cpu", "ParameterValue": "1024" },

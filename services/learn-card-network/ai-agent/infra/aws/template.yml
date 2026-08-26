@@ -101,6 +101,20 @@ Parameters:
         Type: String
         Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-sentry
         NoEcho: true
+    EnableTriggerSchedules:
+        Type: String
+        Default: 'false'
+        AllowedValues: ['true', 'false']
+        Description: Enable Trigger.dev schedule synchronization only in staging.
+    TriggerSecretKeySecretArn:
+        Type: String
+        Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-trigger
+        NoEcho: true
+    AutonomyAllowedDids:
+        Type: String
+        Default: ''
+        NoEcho: true
+        Description: Comma-separated staging test DIDs allowed to run autonomous schedules.
     MongoDbName:
         Type: String
         Default: learn-card-ai-agent
@@ -219,10 +233,25 @@ Rules:
                       - !Ref BraveSearchApiKeySecretArn
                       - arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-brave
               AssertDescription: BraveSearchApiKeySecretArn is required when Brave is enabled.
+    TriggerSchedulesRestrictedToStaging:
+        RuleCondition: !And
+            - !Equals [!Ref CreateService, 'true']
+            - !Equals [!Ref EnableTriggerSchedules, 'true']
+        Assertions:
+            - Assert: !Equals [!Ref Environment, staging]
+              AssertDescription: Trigger.dev schedules can only be enabled in staging.
+            - Assert: !Not
+                  - !Equals
+                    - !Ref TriggerSecretKeySecretArn
+                    - arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-trigger
+              AssertDescription: TriggerSecretKeySecretArn is required when Trigger.dev schedules are enabled.
+            - Assert: !Not [!Equals [!Ref AutonomyAllowedDids, '']]
+              AssertDescription: AutonomyAllowedDids must include at least one staging test DID.
 
 Conditions:
     ShouldCreateService: !Equals [!Ref CreateService, 'true']
     UseBrave: !Equals [!Ref WebSearchProvider, brave]
+    UseTriggerSchedules: !Equals [!Ref EnableTriggerSchedules, 'true']
     HasAlertEmail: !And
         - !Condition ShouldCreateService
         - !Not [!Equals [!Ref AlertEmail, '']]
@@ -303,6 +332,11 @@ Resources:
                                 - !If [
                                       UseBrave,
                                       !Ref BraveSearchApiKeySecretArn,
+                                      !Ref 'AWS::NoValue',
+                                  ]
+                                - !If [
+                                      UseTriggerSchedules,
+                                      !Ref TriggerSecretKeySecretArn,
                                       !Ref 'AWS::NoValue',
                                   ]
 
@@ -473,7 +507,11 @@ Resources:
                       - Name: AI_AGENT_AUTONOMY_DEV_ENABLED
                         Value: 'false'
                       - Name: AI_AGENT_TRIGGER_ENABLED
-                        Value: 'false'
+                        Value: !Ref EnableTriggerSchedules
+                      - Name: AI_AGENT_TRIGGER_ENVIRONMENT
+                        Value: !Ref Environment
+                      - Name: AI_AGENT_AUTONOMY_DEV_DIDS
+                        Value: !Ref AutonomyAllowedDids
                       - Name: AI_AGENT_TRUST_PROXY_HOPS
                         Value: '1'
                       - Name: SENTRY_ENV
@@ -493,6 +531,11 @@ Resources:
                         - UseBrave
                         - Name: BRAVE_SEARCH_API_KEY
                           ValueFrom: !Ref BraveSearchApiKeySecretArn
+                        - !Ref 'AWS::NoValue'
+                      - !If
+                        - UseTriggerSchedules
+                        - Name: TRIGGER_SECRET_KEY
+                          ValueFrom: !Ref TriggerSecretKeySecretArn
                         - !Ref 'AWS::NoValue'
             Tags:
                 - Key: Project

@@ -181,15 +181,15 @@ Observed commands and results:
     agent run, trace plus one `noop` retro result persisted, and `nextRunAt` advanced one day.
     Schedule/provider and Mongo smoke artifacts were deleted afterward.
 
-## Trigger.dev development integration and production evaluation
+## Trigger.dev development integration, staging test path, and production evaluation
 
-The spike now includes a development-only Trigger.dev v4 path alongside the local poller.
-Authenticated schedule CRUD synchronizes imperative schedules using project-scoped,
-environment-prefixed deduplication keys. A thin scheduled dispatch task creates a globally
-idempotent occurrence and enqueues the full-agent execution task with per-owner concurrency 1.
-The execution task retains the Mongo occurrence and renewable lease fences, re-checks schedule
-existence/enabled state, and records `trigger` provenance. Configuration rejects this integration
-outside `NODE_ENV=development`; it is not a production enablement.
+The spike includes a Trigger.dev v4 path alongside the local poller. Authenticated schedule CRUD
+synchronizes imperative schedules using project-scoped, environment-prefixed deduplication keys. A
+thin scheduled dispatch task creates a globally idempotent occurrence and enqueues the full-agent
+execution task with per-owner concurrency 1. The execution task retains the Mongo occurrence and
+renewable lease fences, re-checks schedule existence/enabled state, and records `trigger`
+provenance. Configuration permits only local `dev` and the `staging` deployment, requires an exact
+test-DID allowlist, and rejects production enablement.
 
 Live development verification selected Node plus `medium-1x` for the execution task. The first Bun
 worker could not load `@learncard/didkit-plugin-node`; the default 0.5 GB Node worker then exhausted

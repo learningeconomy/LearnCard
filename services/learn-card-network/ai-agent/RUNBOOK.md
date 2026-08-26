@@ -53,6 +53,7 @@ Create one AWS Secrets Manager secret for each environment variable below. Store
 -   `AI_AGENT_WALLET_SEED`
 -   `AI_AGENT_MONGO_URI`
 -   `SENTRY_DSN`
+-   staging only: the Trigger.dev **STAGING** project secret used as `TRIGGER_SECRET_KEY`
 
 Do not put secret values in parameter files, CloudFormation, shell history, GitHub variables, or logs. CloudFormation receives only secret ARNs.
 
@@ -237,12 +238,41 @@ Environment variables:
 -   `AI_AGENT_ECR_REPOSITORY_URL` from the stack's `EcrRepositoryUrl` output
 -   `AI_AGENT_CLOUDFORMATION_STACK`
 -   `AI_AGENT_BASE_URL`, the final public HTTPS origin
+-   staging only: `AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN`, the ARN of the AWS secret containing
+    the Trigger.dev STAGING project secret
 
 Environment secrets:
 
 -   `AI_AGENT_SMOKE_SEED` for staging only
+-   `AI_AGENT_AUTONOMY_ALLOWED_DIDS` for staging only, containing comma-separated dedicated test
+    profile DIDs
+-   `TRIGGER_ACCESS_TOKEN` for staging only, containing a Trigger.dev personal access token
+    beginning with `tr_pat_`; this deploys task code and is not the runtime project secret
 
 Grant the workflow `id-token: write` and use GitHub OIDC; do not create long-lived AWS access keys. Scope the role trust policy to `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-staging` and `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-production`. Restrict its policy to the two AI Agent ECR repositories, CloudFormation stacks, and resource types the template manages. Require a non-self production approval and protected-branch deployment.
+
+### 9. Configure the Trigger.dev staging environment
+
+In Trigger.dev project `proj_lyfepdqcmztsyzcqmcvx`, configure the **Staging** environment with the
+same runtime values used by the staging ECS task:
+
+-   `NODE_ENV=production`, `SENTRY_ENV=staging`, `AI_AGENT_TRIGGER_ENABLED=true`,
+    `AI_AGENT_TRIGGER_ENVIRONMENT=staging`, `AI_AGENT_AUTONOMY_DEV_ENABLED=false`, and
+    `AI_AGENT_SELF_IMPROVEMENT_ENABLED=true`
+-   `AI_AGENT_AUTONOMY_DEV_DIDS` with the same test DIDs as the GitHub environment secret
+-   `OPENAI_API_KEY`, `AI_AGENT_WALLET_SEED`, `AI_AGENT_MONGO_URI`, `SENTRY_DSN`, and
+    `BRAVE_SEARCH_API_KEY` when Brave is enabled
+-   `AI_AGENT_AUTH_DOMAIN`, `AI_AGENT_CLOUD_URL`, `AI_AGENT_NETWORK_URL`,
+    `AI_AGENT_CONSENT_FLOW_CONTRACT_URI`, and `AI_AGENT_CONSENT_FLOW_APP_URL`
+-   `AI_AGENT_MODEL`, `AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION`,
+    `AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION`, `AI_AGENT_MONGO_DB_NAME`,
+    `AI_AGENT_ENCRYPTION_KEY_ID`, and the same run/budget/web-search settings as ECS
+
+Trigger.dev injects its own staging `TRIGGER_SECRET_KEY` into task runs. Do not add the personal
+access token to the task environment. The deployment workflow uses that PAT only for
+`trigger deploy --env staging`, then enables ECS schedule synchronization with the AWS-stored
+staging project secret. CloudFormation rejects Trigger enablement outside the staging stack and
+rejects an empty test-DID allowlist.
 
 ## Staging test-account setup
 
@@ -260,8 +290,21 @@ It explicitly tells the agent not to write user data. A missing grant, unavailab
 
 ## Deploy
 
--   Every merge to `main` that changes the AI Agent, shared packages, lockfile, or container base deploys staging through `.github/workflows/deploy-ai-agent.yml`.
--   Production is a manual workflow dispatch targeting `production` and should require GitHub environment approval.
+-   Every merge to `main` that changes the AI Agent, shared packages, lockfile, or container base
+    deploys Trigger.dev staging tasks and ECS staging through
+    `.github/workflows/deploy-ai-agent.yml`.
+-   Before that workflow exists on the default branch, dispatch the already-registered
+    `.github/workflows/deploy.yml` from the feature ref:
+
+    ```bash
+    gh workflow run deploy.yml \
+      --ref ai-agent-foundation \
+      -f target-environment=staging \
+      -f deploy-ai-agent=true
+    ```
+
+-   Production is a manual workflow dispatch targeting `production`, keeps Trigger schedules
+    disabled, and should require GitHub environment approval.
 -   Images receive an immutable `sha-<git-sha>` tag. Workflow retries reuse the existing image rather than overwriting it.
 -   The workflow rejects ARM64 images with critical or high ECR findings, updates the CloudFormation image tag and deployment ID, waits for the ECS rolling deployment with circuit-breaker rollback, checks readiness, and runs the authenticated smoke test in staging.
 

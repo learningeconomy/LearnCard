@@ -170,18 +170,37 @@ export const assertAutonomyDevConfig = (config: ServiceConfig): void => {
     }
 };
 
+export const assertTriggerOwnerAllowed = (config: ServiceConfig, ownerDid: string): void => {
+    if (config.autonomyDevDids.includes(ownerDid)) return;
+
+    throw new Error('The schedule owner DID is not allowlisted for autonomous execution.');
+};
+
 export const assertTriggerConfig = (config: ServiceConfig): void => {
     if (!config.triggerEnabled) {
         throw new Error('AI_AGENT_TRIGGER_ENABLED=true is required for Trigger.dev schedules.');
     }
-    if (config.nodeEnv !== 'development') {
-        throw new Error('Trigger.dev autonomous execution is restricted to development.');
+
+    const triggerEnvironment = config.triggerEnvironment?.trim().toLowerCase();
+    const isDevelopment = config.nodeEnv === 'development' && triggerEnvironment === 'dev';
+    const isStaging =
+        config.nodeEnv === 'production' &&
+        config.sentryEnvironment === 'staging' &&
+        triggerEnvironment === 'staging';
+
+    if (!isDevelopment && !isStaging) {
+        throw new Error(
+            'Trigger.dev autonomous execution is restricted to development or the staging deployment.'
+        );
     }
     if (!config.triggerSecretKey) {
         throw new Error('TRIGGER_SECRET_KEY must be set for Trigger.dev schedules.');
     }
-    if (!config.triggerEnvironment?.trim()) {
+    if (!triggerEnvironment) {
         throw new Error('AI_AGENT_TRIGGER_ENVIRONMENT must identify the Trigger.dev environment.');
+    }
+    if (config.autonomyDevDids.length === 0) {
+        throw new Error('AI_AGENT_AUTONOMY_DEV_DIDS must include at least one test DID.');
     }
 
     assertAutonomousExecutionConfig(config);

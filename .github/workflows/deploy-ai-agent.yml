@@ -19,9 +19,15 @@ on:
                 options:
                     - staging
                     - production
+    workflow_call:
+        inputs:
+            target-environment:
+                description: Target environment
+                required: true
+                type: string
 
 concurrency:
-    group: deploy-ai-agent-${{ github.event_name == 'workflow_dispatch' && inputs.target-environment || 'staging' }}
+    group: deploy-ai-agent-${{ inputs.target-environment || 'staging' }}
     cancel-in-progress: false
 
 permissions:
@@ -32,10 +38,10 @@ jobs:
     deploy:
         name: Deploy AI Agent
         runs-on: ubuntu-latest
-        environment: learn-card-ai-agent-${{ github.event_name == 'workflow_dispatch' && inputs.target-environment || 'staging' }}
+        environment: learn-card-ai-agent-${{ inputs.target-environment || 'staging' }}
         env:
             CI: true
-            TARGET_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.target-environment || 'staging' }}
+            TARGET_ENVIRONMENT: ${{ inputs.target-environment || 'staging' }}
             AWS_DEFAULT_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
         steps:
             - name: Checkout repository
@@ -58,12 +64,26 @@ jobs:
                   CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
                   BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
                   AWS_ROLE_ARN: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
+                  TRIGGER_SECRET_KEY_SECRET_ARN: ${{ vars.AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN }}
+                  AUTONOMY_ALLOWED_DIDS: ${{ secrets.AI_AGENT_AUTONOMY_ALLOWED_DIDS }}
+                  TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
               run: |
                   test -n "$ECR_REPOSITORY_URL" || { echo "::error::AI_AGENT_ECR_REPOSITORY_URL is missing"; exit 1; }
                   test -n "$CLOUDFORMATION_STACK" || { echo "::error::AI_AGENT_CLOUDFORMATION_STACK is missing"; exit 1; }
                   test -n "$BASE_URL" || { echo "::error::AI_AGENT_BASE_URL is missing"; exit 1; }
                   test -n "$AWS_ROLE_ARN" || { echo "::error::AI_AGENT_AWS_ROLE_ARN is missing"; exit 1; }
 
+                  if [ "$TARGET_ENVIRONMENT" = 'staging' ]; then
+                    test -n "$TRIGGER_SECRET_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN is missing"; exit 1; }
+                    test -n "$AUTONOMY_ALLOWED_DIDS" || { echo "::error::AI_AGENT_AUTONOMY_ALLOWED_DIDS is missing"; exit 1; }
+                    test -n "$TRIGGER_ACCESS_TOKEN" || { echo "::error::TRIGGER_ACCESS_TOKEN is missing"; exit 1; }
+                  fi
+            - name: Deploy Trigger.dev staging tasks
+              if: env.TARGET_ENVIRONMENT == 'staging'
+              working-directory: services/learn-card-network/ai-agent
+              env:
+                  TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
+              run: bunx trigger deploy --env staging --skip-update-check
             - name: Configure AWS credentials
               uses: aws-actions/configure-aws-credentials@v5
               with:
@@ -173,7 +193,19 @@ jobs:
             - name: Deploy ECS/Fargate service
               env:
                   CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
+                  TRIGGER_SECRET_KEY_SECRET_ARN: ${{ vars.AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN }}
+                  AUTONOMY_ALLOWED_DIDS: ${{ secrets.AI_AGENT_AUTONOMY_ALLOWED_DIDS }}
               run: |
+                  TRIGGER_PARAMETERS=(EnableTriggerSchedules=false)
+
+                  if [ "$TARGET_ENVIRONMENT" = 'staging' ]; then
+                    TRIGGER_PARAMETERS=(
+                      EnableTriggerSchedules=true
+                      TriggerSecretKeySecretArn="$TRIGGER_SECRET_KEY_SECRET_ARN"
+                      AutonomyAllowedDids="$AUTONOMY_ALLOWED_DIDS"
+                    )
+                  fi
+
                   aws cloudformation deploy \
                     --stack-name "$CLOUDFORMATION_STACK" \
                     --template-file services/learn-card-network/ai-agent/infra/aws/template.yml \
@@ -182,6 +214,7 @@ jobs:
                       CreateService=true \
                       ImageTag=sha-${{ github.sha }} \
                       DeploymentId=${{ github.run_id }}-${{ github.run_attempt }} \
+                      "${TRIGGER_PARAMETERS[@]}" \
                     --tags \
                       Project=learncard \
                       Service=learncard-ai-agent \

@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
     assertAutonomyDevConfig,
-    assertTriggerConfig,
     assertSecurityConfig,
+    assertTriggerConfig,
+    assertTriggerOwnerAllowed,
     type ServiceConfig,
 } from '../../src/config';
 
@@ -148,7 +149,7 @@ describe('production service configuration gate', () => {
     });
 });
 
-describe('Trigger.dev development configuration gate', () => {
+describe('Trigger.dev environment configuration gate', () => {
     const triggerConfig: ServiceConfig = {
         ...validConfig,
         autonomyDevEnabled: false,
@@ -157,20 +158,54 @@ describe('Trigger.dev development configuration gate', () => {
         triggerSecretKey: 'tr_dev_test',
     };
 
-    it('accepts explicit development-only Trigger.dev configuration', () => {
+    const stagingTriggerConfig: ServiceConfig = {
+        ...triggerConfig,
+        nodeEnv: 'production',
+        sentryEnvironment: 'staging',
+        triggerEnvironment: 'staging',
+        authDomain: 'https://agent-staging.learncard.app',
+        cloudUrl: 'https://cloud.learncard.com/trpc',
+        networkUrl: 'https://network.learncard.com/trpc',
+        consentFlowContractUri: 'lc:network:example:contract:test',
+        debugEnabled: false,
+        inputTokenCostUsdPerMillion: 1,
+        outputTokenCostUsdPerMillion: 2,
+        sentryDsn: 'https://public@example.ingest.sentry.io/1',
+        webSearchProvider: 'none',
+    };
+
+    it('accepts explicit development and staging Trigger.dev configurations', () => {
         expect(() => assertTriggerConfig(triggerConfig)).not.toThrow();
         expect(() => assertSecurityConfig(triggerConfig)).not.toThrow();
+        expect(() => assertTriggerConfig(stagingTriggerConfig)).not.toThrow();
+        expect(() => assertSecurityConfig(stagingTriggerConfig)).not.toThrow();
     });
 
-    it('rejects production, missing credentials, and concurrent local polling', () => {
-        expect(() => assertTriggerConfig({ ...triggerConfig, nodeEnv: 'production' })).toThrow(
-            'restricted to development'
-        );
+    it('rejects production, missing credentials, missing allowlists, and local polling', () => {
+        expect(() =>
+            assertTriggerConfig({
+                ...stagingTriggerConfig,
+                sentryEnvironment: 'production',
+                triggerEnvironment: 'production',
+            })
+        ).toThrow('restricted to development or the staging deployment');
         expect(() =>
             assertTriggerConfig({ ...triggerConfig, triggerSecretKey: undefined })
         ).toThrow('TRIGGER_SECRET_KEY');
+        expect(() => assertTriggerConfig({ ...triggerConfig, autonomyDevDids: [] })).toThrow(
+            'AI_AGENT_AUTONOMY_DEV_DIDS'
+        );
         expect(() => assertSecurityConfig({ ...triggerConfig, autonomyDevEnabled: true })).toThrow(
             'cannot both be true'
+        );
+    });
+
+    it('allows only explicitly configured schedule owners', () => {
+        expect(() =>
+            assertTriggerOwnerAllowed(stagingTriggerConfig, 'did:key:fixture')
+        ).not.toThrow();
+        expect(() => assertTriggerOwnerAllowed(stagingTriggerConfig, 'did:key:other')).toThrow(
+            'not allowlisted'
         );
     });
 });

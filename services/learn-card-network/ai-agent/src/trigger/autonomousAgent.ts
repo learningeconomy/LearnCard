@@ -6,7 +6,12 @@ import {
 } from '../autonomy/runs';
 import { createAutonomousScheduler, type AutonomyCycleResult } from '../autonomy/scheduler';
 import { TRIGGER_AUTONOMOUS_SCHEDULE_TASK_ID } from '../autonomy/triggerScheduleProvider';
-import { assertTriggerConfig, getConfig } from '../config';
+import {
+    assertTriggerConfig,
+    assertTriggerOwnerAllowed,
+    getConfig,
+    type ServiceConfig,
+} from '../config';
 import {
     flushObservability,
     getOwnerTelemetryId,
@@ -53,6 +58,15 @@ export const requireNonFailedAutonomyResult = (
 
     return result;
 };
+const assertTriggerOwner = (config: ServiceConfig, ownerDid: string): void => {
+    try {
+        assertTriggerOwnerAllowed(config, ownerDid);
+    } catch (error) {
+        throw new AbortTaskRunError(
+            error instanceof Error ? error.message : 'The schedule owner is not allowed.'
+        );
+    }
+};
 
 export const autonomousAgentExecution = task({
     id: TRIGGER_AUTONOMOUS_EXECUTION_TASK_ID,
@@ -63,6 +77,7 @@ export const autonomousAgentExecution = task({
     run: async (payload: TriggerAutonomousAgentExecutionPayload, { signal }) => {
         const parsed = parseExecutionPayload(payload);
         const config = getConfig();
+        assertTriggerOwner(config, parsed.ownerDid);
         initializeObservability(config);
         assertTriggerConfig(config);
         const runtime = createAgentServiceRuntime({ config });
@@ -170,6 +185,7 @@ export const autonomousScheduleDispatch = schedules.task({
 
         const ownerDid = payload.externalId.trim();
         if (!ownerDid) throw new AbortTaskRunError('The autonomous schedule owner DID is empty.');
+        assertTriggerOwner(getConfig(), ownerDid);
         const ownerId = getOwnerTelemetryId(ownerDid);
 
         const scheduledFor = payload.timestamp.toISOString();

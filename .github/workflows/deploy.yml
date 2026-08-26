@@ -38,6 +38,11 @@ on:
                 required: false
                 default: false
                 type: boolean
+            deploy-ai-agent:
+                description: 'Deploy AI Agent (ECS + Trigger.dev)'
+                required: false
+                default: false
+                type: boolean
             publish-npm:
                 description: 'Publish Registry Packages'
                 required: false
@@ -1465,3 +1470,17 @@ jobs:
                   title: 'chore(release): version packages'
               env:
                   GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+    deploy-ai-agent:
+        name: Deploy AI Agent
+        if: >-
+            github.event_name == 'workflow_dispatch' &&
+            inputs.deploy-ai-agent &&
+            (inputs.target-environment == 'staging' || inputs.target-environment == 'production')
+        permissions:
+            contents: read
+            id-token: write
+        uses: ./.github/workflows/deploy-ai-agent.yml
+        with:
+            target-environment: ${{ inputs.target-environment }}
+        secrets: inherit
