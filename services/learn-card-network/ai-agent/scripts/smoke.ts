@@ -17,6 +17,23 @@ interface AgentRunResponse {
     }>;
 }
 
+interface ScheduleResponse {
+    schedule?: {
+        id?: string;
+        nextRunAt?: string;
+    };
+    error?: string;
+}
+
+interface AssistantFeedResponse {
+    items?: Array<{
+        origin?: string;
+        title?: string;
+        sourceRunId?: string;
+        createdAt?: string;
+    }>;
+}
+
 const baseUrl = process.env.AI_AGENT_SMOKE_BASE_URL?.trim().replace(/\/+$/, '');
 const seed = process.env.AI_AGENT_SMOKE_SEED?.trim();
 
@@ -41,26 +58,37 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
     return payload;
 };
 
+const delay = (milliseconds: number): Promise<void> => {
+    const { promise, resolve } = Promise.withResolvers<void>();
+
+    setTimeout(resolve, milliseconds);
+
+    return promise;
+};
 const wallet = await initLearnCard({ seed });
 const did = wallet.id.did();
-const challenge = await request<ChallengeResponse>('/api/auth/challenge', { method: 'POST' });
+const createAuthorization = async (): Promise<string> => {
+    const challenge = await request<ChallengeResponse>('/api/auth/challenge', { method: 'POST' });
 
-if (!challenge.ok || !challenge.challenge || !challenge.domain) {
-    throw new Error(challenge.error ?? 'AI Agent did not return a valid DID Auth challenge.');
-}
+    if (!challenge.ok || !challenge.challenge || !challenge.domain) {
+        throw new Error(challenge.error ?? 'AI Agent did not return a valid DID Auth challenge.');
+    }
 
-const vpJwt = await wallet.invoke.getDidAuthVp({
-    proofFormat: 'jwt',
-    challenge: challenge.challenge,
-    domain: challenge.domain,
-});
+    const vpJwt = await wallet.invoke.getDidAuthVp({
+        proofFormat: 'jwt',
+        challenge: challenge.challenge,
+        domain: challenge.domain,
+    });
 
-if (typeof vpJwt !== 'string') throw new Error('Could not create the smoke-test DID Auth VP.');
+    if (typeof vpJwt !== 'string') throw new Error('Could not create the smoke-test DID Auth VP.');
+
+    return `Bearer ${vpJwt}`;
+};
 
 const result = await request<AgentRunResponse>('/api/agent/run', {
     method: 'POST',
     headers: {
-        Authorization: `Bearer ${vpJwt}`,
+        Authorization: await createAuthorization(),
         'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -96,10 +124,82 @@ if (missingTools.length > 0) {
     );
 }
 
+const scheduleName = `Scheduled deployment smoke ${Date.now()}`;
+const scheduledAt = new Date(Date.now() + 180_000);
+
+scheduledAt.setUTCSeconds(0, 0);
+
+const scheduleTime = `${String(scheduledAt.getUTCHours()).padStart(2, '0')}:${String(
+    scheduledAt.getUTCMinutes()
+).padStart(2, '0')}`;
+const scheduleCreatedAfter = new Date().toISOString();
+const scheduleResult = await request<ScheduleResponse>(
+    `/api/users/${encodeURIComponent(did)}/assistant-schedules`,
+    {
+        method: 'POST',
+        headers: {
+            Authorization: await createAuthorization(),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: scheduleName,
+            prompt: 'Reply with exactly: Scheduled smoke completed. Do not call any tools.',
+            enabled: true,
+            timeOfDay: scheduleTime,
+            daysOfWeek: [scheduledAt.getUTCDay()],
+            timezone: 'UTC',
+        }),
+    }
+);
+const scheduleId = scheduleResult.schedule?.id;
+
+if (!scheduleId || !scheduleResult.schedule?.nextRunAt) {
+    throw new Error(scheduleResult.error ?? 'Could not create the scheduled smoke task.');
+}
+
+let scheduledRunId: string | undefined;
+
+try {
+    const deadline = scheduledAt.getTime() + 180_000;
+
+    while (Date.now() < deadline) {
+        const feed = await request<AssistantFeedResponse>(
+            `/api/users/${encodeURIComponent(did)}/assistant-feed?limit=50`,
+            { headers: { Authorization: await createAuthorization() } }
+        );
+        const scheduledCard = feed.items?.find(
+            item =>
+                item.origin === 'autonomous' &&
+                item.title === scheduleName &&
+                Boolean(item.createdAt && item.createdAt >= scheduleCreatedAfter)
+        );
+
+        if (scheduledCard) {
+            scheduledRunId = scheduledCard.sourceRunId;
+            break;
+        }
+
+        await delay(10_000);
+    }
+
+    if (!scheduledRunId) throw new Error('Scheduled smoke task did not produce an Assistant card.');
+} finally {
+    await request<{ ok?: boolean }>(
+        `/api/users/${encodeURIComponent(did)}/assistant-schedules/${encodeURIComponent(
+            scheduleId
+        )}`,
+        {
+            method: 'DELETE',
+            headers: { Authorization: await createAuthorization() },
+        }
+    );
+}
+
 console.log(
     JSON.stringify({
         ok: true,
         runId: result.runId,
         toolNames: [...new Set(toolRuns.map(toolRun => toolRun.name).filter(Boolean))],
+        scheduledRunId,
     })
 );
