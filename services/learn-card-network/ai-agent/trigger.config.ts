@@ -12,6 +12,7 @@ export default defineConfig({
         },
     },
     build: {
+        conditions: ['development'],
         external: ['@learncard/didkit-plugin-node'],
     },
     dirs: ['./src/trigger'],
