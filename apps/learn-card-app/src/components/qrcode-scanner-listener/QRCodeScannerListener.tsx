@@ -21,7 +21,9 @@ import { useClaimInputRouter } from '../../hooks/useClaimInputRouter';
 const log = getLogger('qr-scanner');
 
 // Native v8 still emits the one-result event used by the app, although the
-// package declaration only exposes the newer batched event overload.
+// package declaration only exposes the newer batched event overload. Keep this
+// compatibility shim visible while the native event differs from the documented
+// batched API: https://github.com/capawesome-team/capacitor-mlkit/tree/main/packages/barcode-scanning#addlistenerbarcodesscanned-
 const nativeBarcodeScanner = BarcodeScanner as typeof BarcodeScanner & {
     addListener(
         eventName: 'barcodeScanned',
@@ -209,7 +211,7 @@ export const QRCodeScannerListener: React.FC = () => {
                 const registeredListener = await nativeBarcodeScanner.addListener(
                     'barcodeScanned',
                     result => {
-                        const rawValue = result.barcode.rawValue;
+                        const rawValue = result?.barcode?.rawValue;
                         if (rawValue) void handleBarcodeScanned(rawValue);
                     }
                 );
