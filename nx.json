@@ -28,5 +28,6 @@
             "outputs": ["{projectRoot}/coverage"]
         }
     },
-    "defaultBase": "main"
+    "defaultBase": "main",
+    "analytics": true
 }
