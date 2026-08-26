@@ -1,0 +1,183 @@
+diff --git a/apps/learn-card-app/public/locales/ar/translation.json b/apps/learn-card-app/public/locales/ar/translation.json
+index 7564d230b..b31ee9053 100644
+--- a/apps/learn-card-app/public/locales/ar/translation.json
++++ b/apps/learn-card-app/public/locales/ar/translation.json
+@@ -1524,7 +1524,25 @@
+         "removeContactError": "حدث خطأ، تعذّر إزالة جهة الاتصال",
+         "blockUserError": "حدث خطأ، تعذّر حظر المستخدم",
+         "contactsCount": "{{count}} جهات اتصال",
+-        "noConnectionsYet": "لا توجد اتصالات بعد"
++        "noConnectionsYet": "لا توجد اتصالات بعد",
++        "invite": {
++            "heading": "ادعُ صديقًا إلى {{brand}}",
++            "bodyLine1": "شارك رابط الدعوة الخاص بك.",
++            "bodyLine2": "عند انضمامه، سيتم ربطكما تلقائيًا.",
++            "cta": "ادعُ صديقًا",
++            "short": "دعوة",
++            "or": "أو",
++            "nearby": "لشخص قريب منك",
++            "showQr": "إظهار رمز QR",
++            "qrHeading": "ادعُ صديقًا",
++            "qrBody": "اطلب من صديقك مسح هذا الرمز.",
++            "linkCopied": "تم نسخ رابط الدعوة إلى الحافظة",
++            "linkFailed": "تعذّر إنشاء رابط الدعوة. يرجى المحاولة مرة أخرى.",
++            "invitedYou": "{{name}} دعاك إلى {{brand}}",
++            "notFoundTitle": "عذرًا!",
++            "notFoundBody": "تعذّر العثور على المستخدم",
++            "loadError": "تعذّر تحميل جهات الاتصال. يرجى المحاولة مرة أخرى."
++        }
+     },
+     "consentFlow": {
+         "title": "الموافقة",
+diff --git a/apps/learn-card-app/public/locales/en/translation.json b/apps/learn-card-app/public/locales/en/translation.json
+index 0222edbc4..c2e8ba127 100644
+--- a/apps/learn-card-app/public/locales/en/translation.json
++++ b/apps/learn-card-app/public/locales/en/translation.json
+@@ -1524,7 +1524,25 @@
+         "removeContactError": "An error occurred, unable to remove contact",
+         "blockUserError": "An error occurred, unable to block user",
+         "contactsCount": "{{count}} Contacts",
+-        "noConnectionsYet": "No connections yet"
++        "noConnectionsYet": "No connections yet",
++        "invite": {
++            "heading": "Bring a friend to {{brand}}",
++            "bodyLine1": "Share your personal invite link.",
++            "bodyLine2": "When they join, you'll automatically be connected.",
++            "cta": "Invite a Friend",
++            "short": "Invite",
++            "or": "or",
++            "nearby": "For someone nearby",
++            "showQr": "Show QR Code",
++            "qrHeading": "Invite a friend",
++            "qrBody": "Have your friend scan this code.",
++            "linkCopied": "Invite link copied to clipboard",
++            "linkFailed": "Unable to create an invite link. Please try again.",
++            "invitedYou": "{{name}} invited you to {{brand}}",
++            "notFoundTitle": "Eeek!",
++            "notFoundBody": "Unable to find user",
++            "loadError": "We couldn't load your contacts. Please try again."
++        }
+     },
+     "consentFlow": {
+         "acceptAndSync": "Accept & Sync",
+diff --git a/apps/learn-card-app/public/locales/es/translation.json b/apps/learn-card-app/public/locales/es/translation.json
+index e6d53f13a..df9d68d16 100644
+--- a/apps/learn-card-app/public/locales/es/translation.json
++++ b/apps/learn-card-app/public/locales/es/translation.json
+@@ -1524,7 +1524,25 @@
+         "removeContactError": "Ocurrió un error, no se pudo eliminar el contacto",
+         "blockUserError": "Ocurrió un error, no se pudo bloquear al usuario",
+         "contactsCount": "{{count}} contactos",
+-        "noConnectionsYet": "Aún no hay conexiones"
++        "noConnectionsYet": "Aún no hay conexiones",
++        "invite": {
++            "heading": "Invita a un amigo a {{brand}}",
++            "bodyLine1": "Comparte tu enlace de invitación personal.",
++            "bodyLine2": "Cuando se una, se conectarán automáticamente.",
++            "cta": "Invitar a un amigo",
++            "short": "Invitar",
++            "or": "o",
++            "nearby": "Para alguien cercano",
++            "showQr": "Mostrar código QR",
++            "qrHeading": "Invita a un amigo",
++            "qrBody": "Pide a tu amigo que escanee este código.",
++            "linkCopied": "Enlace de invitación copiado al portapapeles",
++            "linkFailed": "No se pudo crear el enlace de invitación. Inténtalo de nuevo.",
++            "invitedYou": "{{name}} te invitó a {{brand}}",
++            "notFoundTitle": "¡Vaya!",
++            "notFoundBody": "No se pudo encontrar al usuario",
++            "loadError": "No pudimos cargar tus contactos. Inténtalo de nuevo."
++        }
+     },
+     "consentFlow": {
+         "title": "Consentimiento",
+diff --git a/apps/learn-card-app/public/locales/fr/translation.json b/apps/learn-card-app/public/locales/fr/translation.json
+index 71f95f682..09d7126ed 100644
+--- a/apps/learn-card-app/public/locales/fr/translation.json
++++ b/apps/learn-card-app/public/locales/fr/translation.json
+@@ -1524,7 +1524,25 @@
+         "removeContactError": "Une erreur s'est produite, impossible de supprimer le contact",
+         "blockUserError": "Une erreur s'est produite, impossible de bloquer l'utilisateur",
+         "contactsCount": "{{count}} contacts",
+-        "noConnectionsYet": "Aucune connexion pour le moment"
++        "noConnectionsYet": "Aucune connexion pour le moment",
++        "invite": {
++            "heading": "Invitez un ami sur {{brand}}",
++            "bodyLine1": "Partagez votre lien d'invitation personnel.",
++            "bodyLine2": "Dès qu'il rejoint, vous serez automatiquement connectés.",
++            "cta": "Inviter un ami",
++            "short": "Inviter",
++            "or": "ou",
++            "nearby": "Pour quelqu'un à proximité",
++            "showQr": "Afficher le code QR",
++            "qrHeading": "Inviter un ami",
++            "qrBody": "Demandez à votre ami de scanner ce code.",
++            "linkCopied": "Lien d'invitation copié dans le presse-papiers",
++            "linkFailed": "Impossible de créer le lien d'invitation. Veuillez réessayer.",
++            "invitedYou": "{{name}} vous a invité sur {{brand}}",
++            "notFoundTitle": "Oups !",
++            "notFoundBody": "Utilisateur introuvable",
++            "loadError": "Impossible de charger vos contacts. Veuillez réessayer."
++        }
+     },
+     "consentFlow": {
+         "title": "Consentement",
+diff --git a/apps/learn-card-app/src/analytics/events.ts b/apps/learn-card-app/src/analytics/events.ts
+index b250474ba..352474b91 100644
+--- a/apps/learn-card-app/src/analytics/events.ts
++++ b/apps/learn-card-app/src/analytics/events.ts
+@@ -46,6 +46,9 @@ export interface ProfileSnapshot {
+ /** Where a micro-feedback prompt was rendered. */
+ export type FeedbackSurface = 'issue_success' | 'claim_interaction' | 'claim_oidc';
+ 
++/** Where the LC-2089 contacts invite was surfaced. */
++export type InviteSurface = 'empty_state' | 'header';
++
+ /** 3-point sentiment scale used by the SentimentStrip. */
+ export type FeedbackSentiment = 'negative' | 'neutral' | 'positive';
+ 
+@@ -80,6 +83,14 @@ export const AnalyticsEvents = {
+     GENERATE_SHARE_LINK: 'generate_share_link',
+     GENERATE_CLAIM_LINK: 'generate_claim_link',
+ 
++    // LC-2089 contacts invite. `surface` separates the zero-contact empty
++    // state (an activation moment) from the always-present header button
++    // (deliberate re-invite). `method` records which share mechanism the
++    // platform actually offered — `clipboard` on desktop is expected, not a
++    // failure.
++    CONTACT_INVITE_SHARED: 'contact_invite_shared',
++    CONTACT_INVITE_QR_SHOWN: 'contact_invite_qr_shown',
++
+     // Boost Sending
+     SELF_BOOST: 'self_boost',
+     SEND_BOOST: 'send_boost',
+@@ -404,6 +415,17 @@ export interface AnalyticsEventPayloads {
+         method: 'Claim Link' | string;
+     };
+ 
++    [AnalyticsEvents.CONTACT_INVITE_SHARED]: {
++        surface: InviteSurface;
++        method: 'native' | 'web_share' | 'clipboard';
++        /** False when the user opened a share sheet and dismissed it. */
++        shared: boolean;
++    };
++
++    [AnalyticsEvents.CONTACT_INVITE_QR_SHOWN]: {
++        surface: InviteSurface;
++    };
++
+     [AnalyticsEvents.BOOST_CMS_DATA_ENTRY]: {
+         timestamp: number;
+         action: 'data_entry';
+diff --git a/apps/learn-card-app/src/analytics/index.ts b/apps/learn-card-app/src/analytics/index.ts
+index 8a62997a4..3f5c110df 100644
+--- a/apps/learn-card-app/src/analytics/index.ts
++++ b/apps/learn-card-app/src/analytics/index.ts
+@@ -11,6 +11,7 @@ export type {
+     ClaimEntryPoint,
+     FeedbackSurface,
+     FeedbackSentiment,
++    InviteSurface,
+ } from './events';
+ 
+ export {

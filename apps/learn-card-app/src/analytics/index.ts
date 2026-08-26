@@ -11,6 +11,7 @@ export type {
     ClaimEntryPoint,
     FeedbackSurface,
     FeedbackSentiment,
+    InviteSurface,
 } from './events';
 
 export {

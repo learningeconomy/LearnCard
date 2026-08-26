@@ -46,6 +46,9 @@ export interface ProfileSnapshot {
 /** Where a micro-feedback prompt was rendered. */
 export type FeedbackSurface = 'issue_success' | 'claim_interaction' | 'claim_oidc';
 
+/** Where the LC-2089 contacts invite was surfaced. */
+export type InviteSurface = 'empty_state' | 'header';
+
 /** 3-point sentiment scale used by the SentimentStrip. */
 export type FeedbackSentiment = 'negative' | 'neutral' | 'positive';
 
@@ -79,6 +82,14 @@ export const AnalyticsEvents = {
     // Sharing & Link Generation
     GENERATE_SHARE_LINK: 'generate_share_link',
     GENERATE_CLAIM_LINK: 'generate_claim_link',
+
+    // LC-2089 contacts invite. `surface` separates the zero-contact empty
+    // state (an activation moment) from the always-present header button
+    // (deliberate re-invite). `method` records which share mechanism the
+    // platform actually offered — `clipboard` on desktop is expected, not a
+    // failure.
+    CONTACT_INVITE_SHARED: 'contact_invite_shared',
+    CONTACT_INVITE_QR_SHOWN: 'contact_invite_qr_shown',
 
     // Boost Sending
     SELF_BOOST: 'self_boost',
@@ -402,6 +413,17 @@ export interface AnalyticsEventPayloads {
         category?: string;
         boostType?: string;
         method: 'Claim Link' | string;
+    };
+
+    [AnalyticsEvents.CONTACT_INVITE_SHARED]: {
+        surface: InviteSurface;
+        method: 'native' | 'web_share' | 'clipboard';
+        /** False when the user opened a share sheet and dismissed it. */
+        shared: boolean;
+    };
+
+    [AnalyticsEvents.CONTACT_INVITE_QR_SHOWN]: {
+        surface: InviteSurface;
     };
 
     [AnalyticsEvents.BOOST_CMS_DATA_ENTRY]: {
