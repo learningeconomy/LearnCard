@@ -5,8 +5,19 @@ import {
     createPrivateKey,
     createPublicKey,
     KeyObject,
-    type JsonWebKey as CryptoJsonWebKey,
 } from 'crypto';
+
+type CryptoJsonWebKey = {
+    [key: string]: unknown;
+    kty?: string;
+    crv?: string;
+    alg?: string;
+    d?: string;
+    x?: string;
+    y?: string;
+    n?: string;
+    e?: string;
+};
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname } from 'path';
 
@@ -91,7 +102,7 @@ export class LocalKeyManagementService implements KeyManagementService {
                 tenantId: stored.tenantId,
                 algorithm: stored.algorithm,
                 version: stored.version,
-                privateKeyJwk: stored.privateKey.export({ format: 'jwk' }),
+                privateKeyJwk: { ...stored.privateKey.export({ format: 'jwk' }) },
             };
         }
 
