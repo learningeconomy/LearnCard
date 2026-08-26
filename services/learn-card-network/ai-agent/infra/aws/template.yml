@@ -109,6 +109,7 @@ Parameters:
     TriggerSecretKeySecretArn:
         Type: String
         Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-trigger
+        Description: ARN of the dedicated staging Trigger.dev project's production secret key.
         NoEcho: true
     AutonomyAllowedDids:
         Type: String

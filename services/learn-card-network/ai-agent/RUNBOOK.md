@@ -53,7 +53,8 @@ Create one AWS Secrets Manager secret for each environment variable below. Store
 -   `AI_AGENT_WALLET_SEED`
 -   `AI_AGENT_MONGO_URI`
 -   `SENTRY_DSN`
--   staging only: the Trigger.dev **STAGING** project secret used as `TRIGGER_SECRET_KEY`
+-   staging only: the dedicated staging Trigger.dev project's **PROD** secret used as
+    `TRIGGER_SECRET_KEY`
 
 Do not put secret values in parameter files, CloudFormation, shell history, GitHub variables, or logs. CloudFormation receives only secret ARNs.
 
@@ -238,8 +239,9 @@ Environment variables:
 -   `AI_AGENT_ECR_REPOSITORY_URL` from the stack's `EcrRepositoryUrl` output
 -   `AI_AGENT_CLOUDFORMATION_STACK`
 -   `AI_AGENT_BASE_URL`, the final public HTTPS origin
+-   staging only: `AI_AGENT_TRIGGER_PROJECT_REF`, the dedicated staging Trigger.dev project ref
 -   staging only: `AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN`, the ARN of the AWS secret containing
-    the Trigger.dev STAGING project secret
+    that project's PROD secret
 
 Environment secrets:
 
@@ -251,10 +253,15 @@ Environment secrets:
 
 Grant the workflow `id-token: write` and use GitHub OIDC; do not create long-lived AWS access keys. Scope the role trust policy to `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-staging` and `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-production`. Restrict its policy to the two AI Agent ECR repositories, CloudFormation stacks, and resource types the template manages. Require a non-self production approval and protected-branch deployment.
 
-### 9. Configure the Trigger.dev staging environment
+### 9. Configure the dedicated Trigger.dev staging project
 
-In Trigger.dev project `proj_lyfepdqcmztsyzcqmcvx`, configure the **Staging** environment with the
-same runtime values used by the staging ECS task:
+The Learning Economy Trigger.dev plan does not expose a STAGING environment. Use a separate project
+whose PROD environment is dedicated exclusively to LearnCard staging. Set its `proj_...` reference
+as `AI_AGENT_TRIGGER_PROJECT_REF`; `trigger.config.ts` keeps the original LearnCard project as the
+local-development default.
+
+Configure that dedicated project's **Prod** environment with the same runtime values used by the
+staging ECS task:
 
 -   `NODE_ENV=production`, `SENTRY_ENV=staging`, `AI_AGENT_TRIGGER_ENABLED=true`,
     `AI_AGENT_TRIGGER_ENVIRONMENT=staging`, `AI_AGENT_AUTONOMY_DEV_ENABLED=false`, and
@@ -268,10 +275,10 @@ same runtime values used by the staging ECS task:
     `AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION`, `AI_AGENT_MONGO_DB_NAME`,
     `AI_AGENT_ENCRYPTION_KEY_ID`, and the same run/budget/web-search settings as ECS
 
-Trigger.dev injects its own staging `TRIGGER_SECRET_KEY` into task runs. Do not add the personal
-access token to the task environment. The deployment workflow uses that PAT only for
-`trigger deploy --env staging`, then enables ECS schedule synchronization with the AWS-stored
-staging project secret. CloudFormation rejects Trigger enablement outside the staging stack and
+Trigger.dev injects that project's PROD `TRIGGER_SECRET_KEY` into task runs. Do not add the
+personal access token to the task environment. The deployment workflow uses that PAT only for
+`trigger deploy --env prod`, then enables ECS schedule synchronization with the AWS-stored
+dedicated-project secret. CloudFormation rejects Trigger enablement outside the staging stack and
 rejects an empty test-DID allowlist.
 
 ## Staging test-account setup

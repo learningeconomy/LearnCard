@@ -1,7 +1,7 @@
 import { defineConfig } from '@trigger.dev/sdk';
 
 export default defineConfig({
-    project: 'proj_lyfepdqcmztsyzcqmcvx',
+    project: process.env.AI_AGENT_TRIGGER_PROJECT_REF ?? 'proj_lyfepdqcmztsyzcqmcvx',
     runtime: 'node',
     logLevel: 'log',
     maxDuration: 3600,
