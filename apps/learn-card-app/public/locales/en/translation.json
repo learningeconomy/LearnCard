@@ -1524,7 +1524,25 @@
         "removeContactError": "An error occurred, unable to remove contact",
         "blockUserError": "An error occurred, unable to block user",
         "contactsCount": "{{count}} Contacts",
-        "noConnectionsYet": "No connections yet"
+        "noConnectionsYet": "No connections yet",
+        "invite": {
+            "heading": "Bring a friend to {{brand}}",
+            "bodyLine1": "Share your personal invite link.",
+            "bodyLine2": "When they join, you'll automatically be connected.",
+            "cta": "Invite a Friend",
+            "short": "Invite",
+            "or": "or",
+            "nearby": "For someone nearby",
+            "showQr": "Show QR Code",
+            "qrHeading": "Invite a friend",
+            "qrBody": "Have your friend scan this code.",
+            "linkCopied": "Invite link copied to clipboard",
+            "linkFailed": "Unable to create an invite link. Please try again.",
+            "invitedYou": "{{name}} invited you to {{brand}}",
+            "notFoundTitle": "Eeek!",
+            "notFoundBody": "Unable to find user",
+            "loadError": "We couldn't load your contacts. Please try again."
+        }
     },
     "consentFlow": {
         "acceptAndSync": "Accept & Sync",

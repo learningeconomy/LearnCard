@@ -1524,7 +1524,25 @@
         "removeContactError": "Ocurrió un error, no se pudo eliminar el contacto",
         "blockUserError": "Ocurrió un error, no se pudo bloquear al usuario",
         "contactsCount": "{{count}} contactos",
-        "noConnectionsYet": "Aún no hay conexiones"
+        "noConnectionsYet": "Aún no hay conexiones",
+        "invite": {
+            "heading": "Invita a un amigo a {{brand}}",
+            "bodyLine1": "Comparte tu enlace de invitación personal.",
+            "bodyLine2": "Cuando se una, se conectarán automáticamente.",
+            "cta": "Invitar a un amigo",
+            "short": "Invitar",
+            "or": "o",
+            "nearby": "Para alguien cercano",
+            "showQr": "Mostrar código QR",
+            "qrHeading": "Invita a un amigo",
+            "qrBody": "Pide a tu amigo que escanee este código.",
+            "linkCopied": "Enlace de invitación copiado al portapapeles",
+            "linkFailed": "No se pudo crear el enlace de invitación. Inténtalo de nuevo.",
+            "invitedYou": "{{name}} te invitó a {{brand}}",
+            "notFoundTitle": "¡Vaya!",
+            "notFoundBody": "No se pudo encontrar al usuario",
+            "loadError": "No pudimos cargar tus contactos. Inténtalo de nuevo."
+        }
     },
     "consentFlow": {
         "title": "Consentimiento",
