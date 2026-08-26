@@ -622,8 +622,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         addShadow: true,
         customCloseButton: true,
         customCloseButtonClass: 'absolute right-4 top-4 z-10 hidden md:flex',
-        sectionClassName:
-            '!relative !flex !h-full !max-h-full !max-w-[480px] !flex-col !overflow-hidden !h-[750px] !max-h-[750px]',
+        sectionClassName: isMobile =>
+            `${!isMobile && '!relative !flex !h-full'} !max-w-[480px] !flex-col !overflow-hidden ${
+                !isMobile ? '!h-[750px]' : '!h-full'
+            }`,
     };
 
     const contactItemDetails = (
