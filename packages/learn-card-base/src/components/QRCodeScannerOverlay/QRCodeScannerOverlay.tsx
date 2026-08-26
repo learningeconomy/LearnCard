@@ -39,7 +39,7 @@ export const QRCodeScannerOverlay: React.FC<QRCodeScannerOverlayProps> = ({
             <header className="relative z-20 min-h-[116px] px-16 pb-3 pt-4 text-center">
                 <QRCodeScannerCloseButton
                     ariaLabel={closeLabel}
-                    className="absolute left-4 top-4"
+                    className="absolute start-4 top-4"
                 />
 
                 <h1 className="m-0 text-xl font-semibold leading-tight text-white">{title}</h1>
