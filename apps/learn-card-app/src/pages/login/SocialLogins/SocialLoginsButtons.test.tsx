@@ -61,6 +61,8 @@ vi.mock('../../../theme/hooks/useTheme', () => ({
 }));
 
 vi.mock('../../../paraglide/messages.js', () => ({
+    'login.email.button': () => 'Sign in with Email',
+    'login.phone.button': () => 'Sign in with SMS',
     'login.social.or': () => 'or',
     'login.social.provider.apple': () => 'Apple',
     'login.social.provider.google': () => 'Google',

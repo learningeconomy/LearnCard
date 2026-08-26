@@ -114,6 +114,7 @@ export const getLCAPlugin = async (
 
         return {
             name: 'LearnCard App',
+            isOffline: false,
             displayName: 'LearnCard App Plugin',
             description: 'Adds bespoke logic to the LearnCard App.',
             methods: {
@@ -199,11 +200,14 @@ export const getLCAPlugin = async (
                     client = await getNewClient(url, _learnCard);
                     learnCard = _learnCard;
                 },
-                generateBoostInfo: async (_learnCard, description) => {
+                generateBoostInfo: async (_learnCard, description, locale) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    const result = await client.ai.generateBoostInfo.query({ description });
+                    const result = await client.ai.generateBoostInfo.query({
+                        description,
+                        locale,
+                    });
 
                     return {
                         title: result.title,
@@ -548,6 +552,7 @@ export const getLCAPlugin = async (
         );
         return {
             name: 'LearnCard App',
+            isOffline: true,
             displayName: 'LearnCard App Plugin (Offline)',
             description: 'Adds bespoke logic to the LearnCard App. (Unable to connect to LCA API)',
             methods: {

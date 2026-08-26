@@ -1,4 +1,5 @@
 import path from 'path';
+import { readFileSync } from 'fs';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
@@ -8,6 +9,40 @@ import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
+
+import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
+import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+
+/**
+ * Fail the build/dev start if any file imports paraglide/messages.js twice
+ * (declares `m` twice → runtime SyntaxError). See scripts/check-i18n-imports.mjs.
+ */
+const i18nImportGuard = () => ({
+    name: 'i18n-duplicate-import-guard',
+    buildStart() {
+        const offenders = findDuplicateMessageImports();
+        if (offenders.length) {
+            const detail = offenders
+                .map(o => `  ${o.file}\n${o.lines.map(l => `      ${l}`).join('\n')}`)
+                .join('\n');
+            this.error(
+                `Duplicate paraglide/messages.js import(s) — causes "Identifier 'm' has ` +
+                    `already been declared" at runtime:\n${detail}\n  Fix: keep ONE import per file.`
+            );
+        }
+    },
+});
+
+// App version read directly from this app's package.json.
+// Deliberately NOT `process.env.npm_package_version` — that reflects the package.json
+// of the directory the build was invoked from, so CI builds run from the monorepo root
+// would bake in the root package's version instead of the app's.
+const packageVersion = (
+    JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8')) as {
+        version: string;
+    }
+).version;
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), [
@@ -29,12 +64,24 @@ export default defineConfig(({ mode }) => {
     return {
         cacheDir,
         plugins: [
+            i18nImportGuard(),
             react(),
             svgr(),
             basicSsl(),
             tsconfigPaths({ projects: [path.resolve(__dirname, 'tsconfig.json')] }),
+            paraglideVitePlugin({
+                project: './project.inlang',
+                outdir: './src/paraglide',
+                outputStructure: 'locale-modules',
+            }),
         ],
-        build: { target: 'esnext', outDir: path.join(__dirname, 'build') },
+        build: {
+            target: 'esnext',
+            outDir: path.join(__dirname, 'build'),
+            // Turn "missing Paraglide message" rollup warnings into hard build
+            // failures so a bad m['…'] key can't white-screen a route at runtime.
+            rollupOptions: { onwarn: paraglideMissingKeyOnWarn },
+        },
         optimizeDeps: {
             // disabled: false,
             include: ['buffer', 'process', 'react-router', 'react-router-dom', 'crypto-browserify'],
@@ -54,8 +101,8 @@ export default defineConfig(({ mode }) => {
                 ? JSON.stringify(env.LEARN_CLOUD_XAPI_URL)
                 : 'undefined',
             API_URL: env.API_URL ? JSON.stringify(env.API_URL) : 'undefined',
-            __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
-            __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+            __PACKAGE_VERSION__: JSON.stringify(packageVersion),
+            __APP_VERSION__: JSON.stringify(packageVersion),
             'process.version': '"1.0.0"',
             IS_PRODUCTION: env.NODE_ENV === 'production',
             SENTRY_ENV: env.SENTRY_ENV ? JSON.stringify(env.SENTRY_ENV) : '"scouts-development"',

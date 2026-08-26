@@ -197,7 +197,6 @@ jobs:
                   # Optional overrides — set in GitHub environment "preview" to customize
                   BRAIN_SEED: ${{ vars.BRAIN_SEED || '' }}
                   CLOUD_SEED: ${{ vars.CLOUD_SEED || '' }}
-                  SIGNING_SEED: ${{ vars.SIGNING_SEED || '' }}
                   API_SEED: ${{ vars.API_SEED || '' }}
               with:
                   host: ${{ steps.ec2.outputs.ip }}
@@ -205,7 +204,7 @@ jobs:
                   key: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
                   script_stop: true
                   command_timeout: 25m
-                  envs: PR_NUMBER,BRANCH,BASE_DOMAIN,DOZZLE_USERNAME,DOZZLE_PASSWORD,BRAIN_SEED,CLOUD_SEED,SIGNING_SEED,API_SEED
+                  envs: PR_NUMBER,BRANCH,BASE_DOMAIN,DOZZLE_USERNAME,DOZZLE_PASSWORD,BRAIN_SEED,CLOUD_SEED,API_SEED
                   script: |
                       cd ~/preview-workspace/LearnCard
 

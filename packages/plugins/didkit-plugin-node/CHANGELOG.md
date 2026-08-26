@@ -1,5 +1,24 @@
 # @learncard/didkit-plugin-node
 
+## 0.2.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.30
+    -   @learncard/didkit-plugin@1.9.10
+
+## 0.2.27
+
+### Patch Changes
+
+-   [#1444](https://github.com/learningeconomy/LearnCard/pull/1444) [`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-1958] Fix W3C EdDSA Data Integrity interoperability and ship rebuilt native and WASM DIDKit artifacts.
+
+-   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4), [`6796b321354ca870e4dfa3606719f9882221bc1b`](https://github.com/learningeconomy/LearnCard/commit/6796b321354ca870e4dfa3606719f9882221bc1b)]:
+    -   @learncard/didkit-plugin@1.9.9
+    -   @learncard/types@5.18.1
+    -   @learncard/core@9.4.29
+
 ## 0.2.26
 
 ### Patch Changes

@@ -3,16 +3,18 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { VC, VP, VerificationItem } from '@learncard/types';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
-import { IonContent, IonPage, IonLoading } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { Gift, Check, AlertCircle, Home, HelpCircle } from 'lucide-react';
 import { getVCDisplayCardVariant } from '@learncard/react';
 
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { getClaimInteractionDuplicateLookup } from './claimRequest.helpers';
 const log = getLogger('exchange-accept-credentials');
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../components/accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../components/accessibility/AccessibleCredentialCard';
 import BoostDetailsSideMenu from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideBar';
 
@@ -42,23 +44,36 @@ import { v4 as uuidv4 } from 'uuid';
 import {
     getAchievementType,
     getDefaultCategoryForCredential,
+    getCredentialName,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import { publishWalletEvent } from '../pathways/events/walletEventBus';
 
+import type { DuplicateCredentialLookup } from '../../components/credentials/duplicate-credential/findDuplicateCredential';
+import type { DuplicateCredentialResolution } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
+
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 
 interface ExchangeAcceptCredentialsProps {
     verifiablePresentation: VP; // Contains the verifiablePresentation from the server
     onAccept: (body: any, credentialClaimCount: number) => void; // Callback to continue the exchange
+    requestDuplicateResolution: (
+        credential: VC,
+        lookup?: DuplicateCredentialLookup
+    ) => Promise<DuplicateCredentialResolution>;
+    isCheckingDuplicate: boolean;
+    sourceBoostUri?: string;
     strategy?: VCAPIRequestStrategy;
 }
 
 const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     verifiablePresentation,
     onAccept,
+    requestDuplicateResolution,
+    isCheckingDuplicate,
+    sourceBoostUri,
     strategy,
 }) => {
     const [claiming, setClaiming] = useState(false);
@@ -229,6 +244,38 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             });
             return;
         }
+        const credentialsToStore: {
+            credential: VC;
+            duplicateResolution: DuplicateCredentialResolution;
+        }[] = [];
+
+        // Resolve every selected credential before writing any of them so cancelling a later
+        // duplicate prompt cannot leave a partially stored batch.
+        for (const credential of selectedCredentials) {
+            // Duplicate prompts must be handled one at a time.
+            // eslint-disable-next-line no-await-in-loop
+            const duplicateResolution = await requestDuplicateResolution(
+                credential,
+                getClaimInteractionDuplicateLookup(sourceBoostUri)
+            );
+            if (duplicateResolution.action === 'cancel') return;
+            if (duplicateResolution.action === 'save') {
+                credentialsToStore.push({ credential, duplicateResolution });
+            }
+        }
+
+        if (credentialsToStore.length === 0) {
+            setIsClaimed(true);
+            presentToast(m['claim.duplicate.skippedToast'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+            // This count is a completion signal for the VC-API exchange, not the number stored.
+            // Skipping every duplicate still completes the exchange instead of reopening DID Auth.
+            onAccept({}, selectedCredentials.length);
+            return;
+        }
+
         beginClaimAttempt();
         setClaiming(true);
         // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
@@ -245,7 +292,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             // acceptance calls `storeAndAddVCToWallet` directly, so
             // we do the publish inline here.
             const storeResults = await Promise.all(
-                selectedCredentials.map((credential, i) => {
+                credentialsToStore.map(({ credential, duplicateResolution }, i) => {
                     const name = credential.name || 'Credential';
                     const category = getDefaultCategoryForCredential(credential);
                     const achievementType = getAchievementType(credential);
@@ -272,7 +319,16 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         msSinceSessionStart: now - sessionStart,
                     });
 
-                    return storeAndAddVCToWallet(credential, { title: name }, 'LearnCloud', true);
+                    return storeAndAddVCToWallet(
+                        credential,
+                        {
+                            title: name,
+                            allowDuplicate: duplicateResolution.isDuplicate,
+                            boostUri: sourceBoostUri,
+                        },
+                        'LearnCloud',
+                        true
+                    );
                 })
             );
 
@@ -282,7 +338,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             // bus listener must never break the core claim flow —
             // the reactor's dedup-by-eventId tolerates a future
             // replay sweep that catches anything we drop here.
-            selectedCredentials.forEach((credential, index) => {
+            credentialsToStore.forEach(({ credential }, index) => {
                 const credentialUri = storeResults[index]?.credentialUri;
 
                 if (!credentialUri) return;
@@ -304,11 +360,13 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             setIsClaimed(true);
             completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
 
-            presentToast(m['claim.accept.success']({ count: selectedCredentials.length }), {
+            presentToast(m['claim.accept.success']({ count: credentialsToStore.length }), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
 
+            // The exchange uses this as a completion signal; storage reporting uses
+            // credentialsToStore.length above.
             onAccept({}, selectedCredentials.length);
         } catch (e) {
             completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, getClaimErrorCode(e));
@@ -363,21 +421,23 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         const name = credential.name || 'Credential';
 
         return (
-            <VCDisplayCardWrapper2
-                useCurrentUserName
-                credential={credential}
-                overrideCardTitle={name}
-                customFooterComponent={<div />}
-                checkProof={false}
-                hideNavButtons
-                hideFrontFaceDetails={false}
-                // Disable the click-to-flip: the back face is superseded by the
-                // Details overlay. Passing a no-op setter (and omitting
-                // isFrontOverride) keeps the card fixed on its front face, the
-                // same way the read-only detail views (BoostPreview/ClaimBoost)
-                // suppress the flip.
-                setIsFrontOverride={() => {}}
-            />
+            <AccessibleCredentialCard label={name}>
+                <VCDisplayCardWrapper2
+                    useCurrentUserName
+                    credential={credential}
+                    overrideCardTitle={name}
+                    customFooterComponent={<div />}
+                    checkProof={false}
+                    hideNavButtons
+                    hideFrontFaceDetails={false}
+                    // Disable the click-to-flip: the back face is superseded by the
+                    // Details overlay. Passing a no-op setter (and omitting
+                    // isFrontOverride) keeps the card fixed on its front face, the
+                    // same way the read-only detail views (BoostPreview/ClaimBoost)
+                    // suppress the flip.
+                    setIsFrontOverride={() => {}}
+                />
+            </AccessibleCredentialCard>
         );
     };
 
@@ -456,7 +516,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                           })}
                                 </p>
 
-                                <p className="text-sm text-grayscale-500">
+                                <p className="text-sm text-grayscale-600">
                                     {selectedCredentials.length === 0
                                         ? m['claim.accept.selectOne']()
                                         : m['claim.accept.willAdd']()}
@@ -466,6 +526,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
                         {/* Select all / Deselect all toggle */}
                         <button
+                            type="button"
                             onClick={() => {
                                 if (selectedCredentials.length === credentials.length) {
                                     setSelectedIndices(new Set());
@@ -501,7 +562,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                     {m['claim.accept.noneTitle']()}
                                 </h1>
 
-                                <p className="text-grayscale-500 text-sm">
+                                <p className="text-grayscale-600 text-sm">
                                     {m['claim.accept.noneSub']()}
                                 </p>
                             </div>
@@ -543,6 +604,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                 {/* Action buttons */}
                                 <div className="space-y-3">
                                     <button
+                                        type="button"
                                         onClick={() => history.push('/')}
                                         className="w-full py-3 px-4 bg-grayscale-900 text-white font-medium text-sm rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                     >
@@ -551,6 +613,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                     </button>
 
                                     <button
+                                        type="button"
                                         onClick={() =>
                                             window.open('mailto:support@learncard.com', '_blank')
                                         }
@@ -570,9 +633,27 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
     const claimBtnText = isClaimed
         ? m['claim.accept.claimed']()
-        : claiming
+        : isCheckingDuplicate || claiming
         ? m['common.loading']()
         : m['common.accept']();
+
+    const claimLoadingOverlay = (claiming || isCheckingDuplicate) && (
+        <div
+            role="status"
+            aria-live="polite"
+            className="fixed inset-0 z-[10001] flex items-center justify-center bg-grayscale-900/40 p-6"
+        >
+            <div className="flex items-center gap-3 rounded-[20px] bg-white px-5 py-4 shadow-2xl">
+                <span
+                    aria-hidden
+                    className="h-5 w-5 animate-spin rounded-full border-2 border-grayscale-300 border-t-grayscale-900"
+                />
+                <span className="font-poppins text-sm font-medium text-grayscale-900">
+                    {m['claim.accept.claiming']()}
+                </span>
+            </div>
+        </div>
+    );
 
     // Single-credential claim — full credential view, matching ClaimBoost:
     // themed background, edge-to-edge scroll area (no phantom padding / inset
@@ -582,7 +663,10 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
         return (
             <IonPage>
-                <IonLoading isOpen={claiming} message={m['claim.accept.claiming']()} />
+                <h1 className="sr-only">
+                    {getCredentialName(credential) || m['claim.modal.credentialFallback']()}
+                </h1>
+                {claimLoadingOverlay}
                 <BoostFooterLayout
                     contentOwnsScroll
                     footerProps={{
@@ -595,7 +679,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                             : undefined,
                         handleClaim,
                         claimBtnText,
-                        disableClaimButton: claiming || isClaimed,
+                        disableClaimButton: claiming || isCheckingDuplicate || isClaimed,
                         useFullCloseButton: !isMobile,
                     }}
                 >
@@ -637,7 +721,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     // Multiple-credential claim — grid selection view (unchanged).
     return (
         <IonPage>
-            <IonLoading isOpen={claiming} message={'Claiming Credential(s)...'} />
+            {claimLoadingOverlay}
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{
@@ -647,7 +731,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     },
                     handleClaim,
                     claimBtnText,
-                    disableClaimButton: claiming || isClaimed,
+                    disableClaimButton: claiming || isCheckingDuplicate || isClaimed,
                     useFullCloseButton: false,
                 }}
             >

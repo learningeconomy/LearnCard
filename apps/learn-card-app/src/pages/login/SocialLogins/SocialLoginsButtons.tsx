@@ -44,7 +44,7 @@ export const SocialLoginsButtons: React.FC<{
     const { colors, theme } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
     const loginBgColor =
-        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#058760';
     const socialLogins = useSocialLogins(branding);
     const socialLoginInFlightRef = useRef(false);
     const [activeSocialLogin, setActiveSocialLogin] = useState<SocialLoginTypes | null>(null);
@@ -130,6 +130,11 @@ export const SocialLoginsButtons: React.FC<{
                         })}
                         <button
                             type="button"
+                            aria-label={
+                                activeLoginType === LoginTypesEnum.phone
+                                    ? m['login.email.button']()
+                                    : m['login.phone.button']()
+                            }
                             className={`flex items-center justify-center border-solid border-[1px] border-white/30 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
                             onClick={e => {
                                 e.stopPropagation();
@@ -140,7 +145,7 @@ export const SocialLoginsButtons: React.FC<{
                         </button>
                     </div>
                     {showSocialLogins && (
-                        <p className="border-b-[1px] border-solid border-[#EFF0F5] leading-[0.1em] w-full text-center my-[40px]">
+                        <p className="border-b-[1px] border-solid border-white leading-[0.1em] w-full text-center my-[40px]">
                             <span
                                 className="py-0 px-[10px] text-white"
                                 style={{ backgroundColor: loginBgColor }}

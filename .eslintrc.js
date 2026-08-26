@@ -1,3 +1,52 @@
+const jsxA11yRecommendedRules = Object.fromEntries(
+    Object.entries(require('eslint-plugin-jsx-a11y').configs.recommended.rules).map(
+        ([ruleName, ruleConfig]) => {
+            if (Array.isArray(ruleConfig)) {
+                const [severity, ...options] = ruleConfig;
+                const isDisabled = severity === 0 || severity === 'off';
+                return [ruleName, [isDisabled ? 'off' : 'warn', ...options]];
+            }
+
+            const isDisabled = ruleConfig === 0 || ruleConfig === 'off';
+            return [ruleName, isDisabled ? 'off' : 'warn'];
+        }
+    )
+);
+
+const JSX_A11Y_ZERO_VIOLATION_RULES = [
+    'jsx-a11y/anchor-ambiguous-text',
+    'jsx-a11y/anchor-has-content',
+    'jsx-a11y/anchor-is-valid',
+    'jsx-a11y/aria-activedescendant-has-tabindex',
+    'jsx-a11y/aria-props',
+    'jsx-a11y/aria-proptypes',
+    'jsx-a11y/aria-role',
+    'jsx-a11y/aria-unsupported-elements',
+    'jsx-a11y/autocomplete-valid',
+    'jsx-a11y/heading-has-content',
+    'jsx-a11y/html-has-lang',
+    'jsx-a11y/iframe-has-title',
+    'jsx-a11y/media-has-caption',
+    'jsx-a11y/mouse-events-have-key-events',
+    'jsx-a11y/no-access-key',
+    'jsx-a11y/no-distracting-elements',
+    'jsx-a11y/no-interactive-element-to-noninteractive-role',
+    'jsx-a11y/no-noninteractive-tabindex',
+    'jsx-a11y/role-has-required-aria-props',
+    'jsx-a11y/role-supports-aria-props',
+    'jsx-a11y/scope',
+    'jsx-a11y/tabindex-no-positive',
+];
+
+const jsxA11yZeroViolationRules = Object.fromEntries(
+    JSX_A11Y_ZERO_VIOLATION_RULES.map(ruleName => {
+        const ruleConfig = jsxA11yRecommendedRules[ruleName];
+
+        // Keep the recommended preset's options while promoting only severity.
+        return [ruleName, Array.isArray(ruleConfig) ? ['error', ...ruleConfig.slice(1)] : 'error'];
+    })
+);
+
 module.exports = {
     root: true,
     parser: '@typescript-eslint/parser',
@@ -64,6 +113,27 @@ module.exports = {
         '@typescript-eslint/no-unused-vars': 'off',
     },
     overrides: [
+        {
+            // Keep the accessibility rollout isolated to the LearnCard app. Existing
+            // violations start as warnings so work outside the core flows can move to
+            // follow-up PRs; rules with a clean baseline are promoted to errors below.
+            files: ['apps/learn-card-app/src/**/*.{ts,tsx}'],
+            extends: ['plugin:jsx-a11y/recommended'],
+            plugins: ['jsx-a11y'],
+            parserOptions: {
+                project: './apps/learn-card-app/tsconfig.json',
+            },
+            rules: {
+                ...jsxA11yRecommendedRules,
+                ...jsxA11yZeroViolationRules,
+                // The recommended preset leaves this rule off, but it is valuable
+                // for the app's icon-only controls during this rollout.
+                'jsx-a11y/control-has-associated-label': [
+                    'warn',
+                    ...jsxA11yRecommendedRules['jsx-a11y/control-has-associated-label'].slice(1),
+                ],
+            },
+        },
         {
             // Warn on direct console.* usage in app source — use logger from learn-card-base instead
             files: ['apps/learn-card-app/src/**/*.{ts,tsx}', 'apps/scouts/src/**/*.{ts,tsx}'],

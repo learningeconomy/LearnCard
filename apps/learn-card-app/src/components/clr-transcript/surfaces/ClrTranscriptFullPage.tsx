@@ -21,6 +21,7 @@ import type {
 import { selectClrTranscriptView } from '../../../helpers/clrRenderer.helpers';
 
 import type { VC } from '@learncard/types';
+import { getClrIssuerLogo } from '../clrKind.helpers';
 
 const ClrTranscriptFullPage: React.FC<{
     model: ClrTranscriptDisplayModel;
@@ -32,7 +33,7 @@ const ClrTranscriptFullPage: React.FC<{
     const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
 
     const selectedView = selectClrTranscriptView(model, options);
-    const issuerLogo = model.header.image?.value;
+    const issuerLogo = getClrIssuerLogo(model);
 
     const handleSelectProgram = (program: ProgramDisplayModel) => {
         newModal(
@@ -63,7 +64,7 @@ const ClrTranscriptFullPage: React.FC<{
     };
 
     return (
-        <div className="flex flex-col w-full min-h-full">
+        <div className="flex flex-col w-full min-h-full pt-[var(--ion-safe-area-top,0px)]">
             <div className="py-0 sm:pb-10 px-0 sm:px-4 flex justify-center sm:rounded-xl">
                 <div className="max-w-[800px] w-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] rounded-xl sm:rounded-xl p-2 sm:p-10 space-y-4">
                     {/* Warnings — admin only */}

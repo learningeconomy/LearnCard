@@ -92,8 +92,8 @@ export const SigningAuthorityValidator = z.object({
     _id: z.string().optional(),
     ownerDid: z.string(),
     name: z.string(),
-    did: z.string().optional(),
-    endpoint: z.string().optional(),
+    did: z.string(),
+    endpoint: z.string(),
 });
 
 /** @group LCA API Plugin */
@@ -293,7 +293,10 @@ export type LCAPluginMethods = {
         authorization: SigningAuthorityAuthorization
     ) => Promise<boolean>;
     resetLCAClient: () => Promise<void>;
-    generateBoostInfo: (description: string) => Promise<{
+    generateBoostInfo: (
+        description: string,
+        locale?: string
+    ) => Promise<{
         title: string;
         description: string;
         category: string;
@@ -396,4 +399,7 @@ export type LCAPlugin = Plugin<
     LCAPluginMethods,
     'id',
     LCAPluginDependentMethods
->;
+> & {
+    /** Whether the plugin fell back because its initial LCA API setup failed. */
+    isOffline: boolean;
+};

@@ -3,6 +3,10 @@
     "branding": {
         "name": "ScoutPass"
     },
+    "i18n": {
+        "defaultLanguage": "en",
+        "supportedLanguages": ["en", "es", "fr", "ar"]
+    },
     "apis": {
         "brainService": "https://scoutnetwork.org/trpc",
         "brainServiceApi": "https://scoutnetwork.org/api",

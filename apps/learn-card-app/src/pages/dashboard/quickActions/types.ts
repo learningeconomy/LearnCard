@@ -14,7 +14,7 @@ export type DashboardState = {
     hasSkillProfile: boolean;
     nextNodeTitle?: string;
     pathwaysEnabled: boolean;
-    showAiInsights: boolean;
+    aiInsightsEnabled: boolean;
 };
 
 export type ActionHandlers = {
@@ -34,6 +34,7 @@ export type ActionHandlers = {
 export type SlotIcons = {
     collect: QuickActionIcon;
     understand: QuickActionIcon;
+    skills: QuickActionIcon;
     navigate: QuickActionIcon;
 };
 

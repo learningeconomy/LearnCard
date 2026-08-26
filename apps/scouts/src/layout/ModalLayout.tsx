@@ -3,10 +3,11 @@ import React from 'react';
 import { useScreenWidth } from 'learn-card-base';
 
 import { IonContent, IonRow, IonCol } from '@ionic/react';
+import * as m from '../paraglide/messages.js';
 
 const ModalLayoutActionButton: React.FC<{ handleOnClick: () => void; buttonText?: string }> = ({
     handleOnClick,
-    buttonText = 'Close',
+    buttonText = m['common.close'](),
 }) => {
     return (
         <IonRow className="flex w-full items-center justify-center">

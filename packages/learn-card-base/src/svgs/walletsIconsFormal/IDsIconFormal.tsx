@@ -2,8 +2,12 @@ import React from 'react';
 
 import type { IconPalette } from '../types';
 
-export const IDsIconFormal: React.FC<{ className?: string; palette?: Partial<IconPalette> }> = ({ className = '', palette }) => {
+export const IDsIconFormal: React.FC<{ className?: string; palette?: Partial<IconPalette> }> = ({
+    className = '',
+    palette,
+}) => {
     const fillColor = palette?.primary ?? '#1E40AF';
+    const secondaryColor = palette?.secondary ?? 'white';
     return (
         <svg
             width="51"
@@ -19,19 +23,19 @@ export const IDsIconFormal: React.FC<{ className?: string; palette?: Partial<Ico
             />
             <path
                 d="M38.8862 17.8306L39.1377 17.855C39.7075 17.9714 40.1362 18.4764 40.1362 19.0806C40.1362 19.6848 39.7075 20.1898 39.1377 20.3062L38.8862 20.3306H31.6133C30.9229 20.3306 30.3633 19.7709 30.3633 19.0806C30.3633 18.3902 30.9229 17.8306 31.6133 17.8306H38.8862Z"
-                fill="white"
+                fill={secondaryColor}
             />
             <path
                 d="M38.8862 25.0002L39.1377 25.0247C39.7075 25.1411 40.1362 25.646 40.1362 26.2502C40.1362 26.8545 39.7075 27.3594 39.1377 27.4758L38.8862 27.5002H31.6133C30.9229 27.5002 30.3633 26.9406 30.3633 26.2502C30.3633 25.5599 30.9229 25.0002 31.6133 25.0002H38.8862Z"
-                fill="white"
+                fill={secondaryColor}
             />
             <path
                 d="M38.8862 32.1687L39.1377 32.1931C39.7075 32.3095 40.1362 32.8145 40.1362 33.4187C40.1362 34.0229 39.7075 34.5279 39.1377 34.6443L38.8862 34.6687H31.6133C30.9229 34.6687 30.3633 34.1091 30.3633 33.4187C30.3633 32.7283 30.9229 32.1687 31.6133 32.1687H38.8862Z"
-                fill="white"
+                fill={secondaryColor}
             />
             <path
                 d="M21.9349 28.0085C24.0473 26.8736 25.4948 24.553 25.4948 21.8747C25.4948 18.078 22.5859 15 18.9977 15C15.4095 15 12.5007 18.078 12.5007 21.8747C12.5007 24.5539 13.949 26.875 16.0623 28.0095C13.2908 29.0027 11.1356 31.362 10.3486 34.3093C9.93908 35.8431 10.8437 37.1026 12.3432 37.2541C13.675 37.3886 15.7569 37.5 19 37.5C22.2431 37.5 24.325 37.3886 25.6568 37.2541C27.1563 37.1026 28.0609 35.8431 27.6514 34.3093C26.8641 31.361 24.7078 29.0011 21.9349 28.0085Z"
-                fill="white"
+                fill={secondaryColor}
             />
         </svg>
     );

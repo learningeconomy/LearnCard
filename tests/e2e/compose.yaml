@@ -19,8 +19,6 @@ services:
                 condition: service_started
             elasticmq:
                 condition: service_started
-            signing:
-                condition: service_started
 
         networks:
             - learn-card
@@ -107,48 +105,6 @@ services:
 
             SERVER_URL: http://cloud:4100
             JWT_SIGNING_KEY: test
-
-    signing:
-        image: learncard-monorepo-local
-        build:
-            context: ../../
-            dockerfile: Dockerfile.monorepo
-
-        expose:
-            - 4200
-        ports:
-            - '4200:4200'
-
-        command:
-            ['sh', '-c', 'cd services/learn-card-network/simple-signing-service && bun run dev']
-
-        depends_on:
-            - mongodb
-            - redis3
-
-        networks:
-            - learn-card
-
-        extra_hosts:
-            - 'localhost:host-gateway'
-
-        volumes:
-            - ../../services/learn-card-network/simple-signing-service/src:/app/services/learn-card-network/simple-signing-service/src
-
-        environment:
-            PORT: 4200
-
-            IS_OFFLINE: true
-            SKIP_DIDKIT_NAPI: '1'
-
-            SEED: c
-            AUTHORIZED_DIDS: did:web:localhost%3A4000
-
-            MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
-            MONGO_DB_NAME: ${MONGO_DB_NAME:-simple-signing}
-
-            REDIS_HOST: redis3
-            REDIS_PORT: 6379
 
     lca-api:
         image: lca-api-service

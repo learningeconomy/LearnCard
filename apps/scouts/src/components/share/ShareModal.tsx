@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
 import { Share } from '@capacitor/share';
@@ -56,12 +57,12 @@ const ShareModal: React.FC<{
             await Clipboard.write({
                 string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
             });
-            presentToast('Profile link copied to clipboard', {
+            presentToast(m['share.profileLinkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Profile link to clipboard', {
+            presentToast(m['share.profileLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -73,12 +74,12 @@ const ShareModal: React.FC<{
             await Clipboard.write({
                 string: inviteLink,
             });
-            presentToast('Invite link copied to clipboard', {
+            presentToast(m['share.inviteLinkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Invite link to clipboard', {
+            presentToast(m['share.inviteLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -90,7 +91,7 @@ const ShareModal: React.FC<{
 
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['share.addContact'](),
                 text: '',
                 url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
                 dialogTitle: '',
@@ -103,7 +104,7 @@ const ShareModal: React.FC<{
     return (
         <section className="text-grayscale-900 pt-[36px] pb-[16px]">
             <div className="flex w-full items-center justify-start text-left mb-4 px-4">
-                <p className="text-grayscale-900 m-0 text-xl font-bold">Share</p>
+                <p className="text-grayscale-900 m-0 text-xl font-bold">{m['common.share']()}</p>
             </div>
 
             <div className="w-full flex items-center justify-center px-4">
@@ -111,21 +112,21 @@ const ShareModal: React.FC<{
                     onClick={handleShare}
                     className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-medium"
                 >
-                    <User className="ml-[5px] h-[30px] w-[30px] mr-2" /> Share Profile
+                    <User className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['share.shareProfile']()}
                 </button>
             </div>
 
             <div className="flex items-center justify-center w-full mt-3">
                 <div className="flex items-center justify-center w-full px-5">
                     <h2 className="divider-with-text">
-                        <span>or</span>
+                        <span>{m['share.or']()}</span>
                     </h2>
                 </div>
             </div>
 
             <div className="w-full flex items-center justify-center mt-1 px-4">
                 <h1 className="text-grayscale-900 text-[20px]  w-full text-left">
-                    Send invite link to connect
+                    {m['share.sendInvLink']()}
                 </h1>
             </div>
 
@@ -140,7 +141,7 @@ const ShareModal: React.FC<{
                                     className="scale-[1] mr-1"
                                 />{' '}
                                 <p className="flex items-center justify-center text-left text-grayscale-500 font-medium text-sm line-clamp-1 ml-2">
-                                    Generating Link...
+                                    {m['share.genLink']()}
                                 </p>
                             </>
                         ) : (
@@ -160,7 +161,7 @@ const ShareModal: React.FC<{
 
             <div className="w-full flex items-center justify-center mb-4 px-4 mt-4">
                 <h1 className="text-grayscale-600 tracking-wide w-full text-left text-sm font-normal">
-                    Link expires in 1 hour
+                    {m['share.linkExpires']({ time: '1 hour' })}
                 </h1>
             </div>
         </section>

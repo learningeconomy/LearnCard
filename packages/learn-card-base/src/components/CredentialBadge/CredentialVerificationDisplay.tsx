@@ -164,7 +164,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         if (verifierState === VERIFIER_STATES.unknownVerifier) {
             return (
                 <div
-                    className={`text-orange-500 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${badgeClassName}`}
+                    className={`text-orange-800 flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${badgeClassName}`}
                 >
                     <UnknownCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />
                     <span className="whitespace-nowrap uppercase tracking-wide">

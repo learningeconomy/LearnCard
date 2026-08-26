@@ -11,6 +11,7 @@ import type {
 
 import PassportIcon from 'learn-card-base/svgs/PassportIcon';
 import AiInsightsTwoTonedIcon from 'learn-card-base/svgs/SideNav/AiInsightsTwoTonedIcon';
+import SkillsTwoTonedIcon from 'learn-card-base/svgs/SideNav/SkillsTwoTonedIcon';
 import CompassTwoTonedIcon from 'learn-card-base/svgs/SideNav/CompassTwoTonedIcon';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
@@ -86,11 +87,12 @@ const makeAction = (
     slot: SlotName,
     id: string,
     label: string,
-    caption: string
+    caption: string,
+    Icon: QuickActionIcon = SLOT_ICON[slot]
 ): ResolvedAction => ({
     id,
     slot,
-    Icon: SLOT_ICON[slot],
+    Icon,
     label,
     caption,
     onClick: noop,
@@ -260,7 +262,7 @@ export const brandNewUser: DashboardViewModel = {
     reviewsDueToday: 0,
     onContinueGoal: baseHandlers.onContinueGoal,
     onReviewGoal: baseHandlers.onReviewGoal,
-    primaryButtonClass: 'bg-indigo-500 text-white',
+    primaryButtonClass: 'bg-indigo-600 text-white',
     slots: {
         collect: makeAction(
             'collect',
@@ -272,7 +274,8 @@ export const brandNewUser: DashboardViewModel = {
             'understand',
             'understand-new',
             'Create Skill Profile',
-            'Tell us about your skills'
+            'Tell us about your skills',
+            SkillsTwoTonedIcon
         ),
         navigate: makeAction('navigate', 'navigate-new', 'Set a Goal', 'Get a personal path'),
     },
@@ -330,7 +333,7 @@ export const activeLearner: DashboardViewModel = {
     reviewsDueToday: 3,
     onContinueGoal: baseHandlers.onContinueGoal,
     onReviewGoal: baseHandlers.onReviewGoal,
-    primaryButtonClass: 'bg-indigo-500 text-white',
+    primaryButtonClass: 'bg-indigo-600 text-white',
     slots: {
         collect: makeAction('collect', 'connect-active', 'See Passport', '12 credentials'),
         understand: makeAction(

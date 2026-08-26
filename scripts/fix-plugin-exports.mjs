@@ -7,9 +7,9 @@
 // any build or CI step. Safe to delete once all packages are migrated.
 //
 // One-shot migration: align all mixedEntrypoint-style plugins with the
-// claimable-boosts/ethereum/render-method/simple-signing pattern so Node ESM
-// consumers (e.g. @learncard/init's published ESM bundle) can find named
-// exports on @learncard/* plugins.
+// claimable-boosts/ethereum/render-method pattern so Node ESM consumers
+// (e.g. @learncard/init's published ESM bundle) can find named exports on
+// @learncard/* plugins.
 //
 // For each plugin:
 //   - package.json: add `"type": "module"`, set main → ./dist/index.cjs, add `exports` map
@@ -23,10 +23,9 @@ import path from 'node:path';
 const PLUGINS_DIR = path.resolve('packages/plugins');
 const SKIP = new Set([
     'claimable-boosts', // already fixed
-    'ethereum',         // already fixed
-    'render-method',    // already fixed
-    'simple-signing-plugin', // already fixed
-    'didkit-plugin-node',    // different build (N-API, tsc-compiled, no mixedEntrypoint)
+    'ethereum', // already fixed
+    'render-method', // already fixed
+    'didkit-plugin-node', // different build (N-API, tsc-compiled, no mixedEntrypoint)
 ]);
 
 const entries = fs.readdirSync(PLUGINS_DIR);
@@ -80,11 +79,40 @@ for (const name of entries) {
     // Re-add in correct order: keep our injected ones (already there). Now strip
     // the OLD main/module that appeared later in iteration. Easier: rebuild.
     const finalPkg = {};
-    const ordered = ['name','version','description','type','main','module','exports','files','scripts','author','license','homepage','repository','bugs','devDependencies','peerDependencies','types','dependencies','sideEffects'];
+    const ordered = [
+        'name',
+        'version',
+        'description',
+        'type',
+        'main',
+        'module',
+        'exports',
+        'files',
+        'scripts',
+        'author',
+        'license',
+        'homepage',
+        'repository',
+        'bugs',
+        'devDependencies',
+        'peerDependencies',
+        'types',
+        'dependencies',
+        'sideEffects',
+    ];
     for (const k of ordered) {
-        if (k === 'type') { finalPkg.type = 'module'; continue; }
-        if (k === 'main') { finalPkg.main = './dist/index.cjs'; continue; }
-        if (k === 'module') { finalPkg.module = esmFile; continue; }
+        if (k === 'type') {
+            finalPkg.type = 'module';
+            continue;
+        }
+        if (k === 'main') {
+            finalPkg.main = './dist/index.cjs';
+            continue;
+        }
+        if (k === 'module') {
+            finalPkg.module = esmFile;
+            continue;
+        }
         if (k === 'exports') {
             finalPkg.exports = {
                 '.': {
@@ -129,10 +157,7 @@ for (const name of entries) {
     // Patch package.json scripts.build: change `cp ./scripts/mixedEntypoint.js ./dist/index.js`
     // to `cp ./scripts/mixedEntypoint.js ./dist/index.cjs`
     if (finalPkg.scripts && typeof finalPkg.scripts.build === 'string') {
-        const newBuild = finalPkg.scripts.build.replace(
-            './dist/index.js',
-            './dist/index.cjs',
-        );
+        const newBuild = finalPkg.scripts.build.replace('./dist/index.js', './dist/index.cjs');
         if (newBuild !== finalPkg.scripts.build) {
             finalPkg.scripts.build = newBuild;
             fs.writeFileSync(pkgPath, JSON.stringify(finalPkg, null, 4) + '\n');

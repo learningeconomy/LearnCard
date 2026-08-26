@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { IonSpinner } from '@ionic/react';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 import Search from 'learn-card-base/svgs/Search';
@@ -27,6 +27,9 @@ export const PassportActivityFeed: React.FC = () => {
     const [filterOpen, setFilterOpen] = useState(false);
     const [selected, setSelected] = useState<ActivityFeedItemVM | null>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
+    const filterButtonRef = useRef<HTMLButtonElement>(null);
+    const filterPopoverRef = useRef<HTMLDivElement>(null);
+    const filterPopoverId = useId();
 
     const { data, isPending, isError, isFetching, hasNextPage, fetchNextPage } =
         usePassportActivities();
@@ -35,6 +38,44 @@ export const PassportActivityFeed: React.FC = () => {
     useEffect(() => {
         if (onScreen && hasNextPage) fetchNextPage();
     }, [onScreen, hasNextPage, fetchNextPage]);
+
+    useEffect(() => {
+        if (!filterOpen) return;
+
+        const focusFrame = requestAnimationFrame(() => {
+            filterPopoverRef.current
+                ?.querySelector<HTMLButtonElement>('button:not([disabled])')
+                ?.focus();
+        });
+
+        const closeAndRestoreFocus = () => {
+            setFilterOpen(false);
+            requestAnimationFrame(() => filterButtonRef.current?.focus());
+        };
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeAndRestoreFocus();
+            }
+        };
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target as Node;
+            if (
+                !filterPopoverRef.current?.contains(target) &&
+                !filterButtonRef.current?.contains(target)
+            ) {
+                setFilterOpen(false);
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('pointerdown', handlePointerDown);
+        return () => {
+            cancelAnimationFrame(focusFrame);
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('pointerdown', handlePointerDown);
+        };
+    }, [filterOpen]);
 
     const groups = useMemo(() => {
         // Dedupe by id: grouped/paged results can surface the same activity more
@@ -75,9 +116,9 @@ export const PassportActivityFeed: React.FC = () => {
             {/* Eyebrow heading — cased to match the month group labels below,
                 which uppercase in JS (not CSS) so locales with special casing
                 rules are handled by Intl rather than `text-transform`. */}
-            <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500 mb-[10px]">
+            <h2 className="font-poppins text-[13px] tracking-[1px] text-grayscale-800 mb-[10px]">
                 {m['passport.activity.heading']().toLocaleUpperCase(getLocale())}
-            </h3>
+            </h2>
             <div className="bg-white rounded-[20px] border border-grayscale-200 shadow-sm px-[16px] pt-[16px] pb-[8px]">
                 <div className="flex items-center gap-2 mb-4 relative">
                     <div className="relative flex-1">
@@ -88,34 +129,40 @@ export const PassportActivityFeed: React.FC = () => {
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             placeholder={m['passport.activity.searchPlaceholder']()}
-                            className="w-full rounded-[12px] bg-grayscale-100 py-[10px] pl-11 pr-4 font-poppins text-[14px] text-grayscale-800 placeholder:text-grayscale-500 focus:outline-none"
+                            className="w-full rounded-[12px] bg-grayscale-100 py-[10px] pl-11 pr-4 font-poppins text-[14px] text-grayscale-800 placeholder:text-grayscale-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                         />
                     </div>
                     <button
+                        ref={filterButtonRef}
                         type="button"
                         onClick={() => setFilterOpen(o => !o)}
-                        className="flex items-center gap-2 rounded-[12px] bg-[#EEEEFB] px-4 py-[10px] font-poppins text-[14px] font-medium uppercase tracking-[0.5px]"
+                        aria-expanded={filterOpen}
+                        aria-controls={filterPopoverId}
+                        aria-haspopup="dialog"
+                        className="flex items-center gap-2 rounded-[12px] bg-[#EEEEFB] px-4 py-[10px] font-poppins text-[14px] font-medium uppercase tracking-[0.5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         <span className="text-grayscale-700">
                             {m['passport.activity.filter']()}
                         </span>
                         {activeFilterCount > 0 && (
-                            <span className="text-indigo-500">{activeFilterCount}</span>
+                            <span className="text-indigo-500 text-[13px]">{activeFilterCount}</span>
                         )}
-                        <SortButton className="h-[18px] w-[18px] text-indigo-500" />
+                        <SortButton className="h-[24px] w-[24px] text-indigo-500" />
                     </button>
-                    {/* TODO(LC-1919 polish): close popover on outside-click / Escape. */}
                     {filterOpen && (
-                        <div className="absolute right-0 top-[110%] z-10">
+                        <div ref={filterPopoverRef} className="absolute right-0 top-[110%] z-10">
                             <ActivityFilterPopover
+                                id={filterPopoverId}
                                 selected={filter}
                                 onApply={id => {
                                     setFilter(id);
                                     setFilterOpen(false);
+                                    requestAnimationFrame(() => filterButtonRef.current?.focus());
                                 }}
                                 onReset={() => {
                                     setFilter('all');
                                     setFilterOpen(false);
+                                    requestAnimationFrame(() => filterButtonRef.current?.focus());
                                 }}
                             />
                         </div>
@@ -134,12 +181,16 @@ export const PassportActivityFeed: React.FC = () => {
                     )}
                     {waiting && (
                         <div className="flex-1 flex items-center justify-center">
-                            <IonSpinner name="lines" />
+                            <IonSpinner
+                                name="lines"
+                                role="status"
+                                aria-label={m['common.loading']()}
+                            />
                         </div>
                     )}
                     {isEmpty && (
                         <div className="flex-1 flex items-center justify-center">
-                            <p className="font-poppins text-[14px] text-grayscale-500 text-center">
+                            <p className="font-poppins text-[14px] text-grayscale-600 text-center">
                                 {m['passport.activity.empty']()}
                             </p>
                         </div>
@@ -147,7 +198,7 @@ export const PassportActivityFeed: React.FC = () => {
                     {!waiting &&
                         groups.map(group => (
                             <div key={group.label} className="mb-2">
-                                <p className="font-poppins text-[12px] tracking-[1px] text-grayscale-400 py-2">
+                                <p className="font-poppins text-[12px] tracking-[1px] text-grayscale-600 py-2">
                                     {group.label}
                                 </p>
                                 <ol className="flex flex-col">
@@ -164,7 +215,11 @@ export const PassportActivityFeed: React.FC = () => {
                     <div role="presentation" ref={sentinelRef} />
                     {isFetching && !waiting && (
                         <div className="flex justify-center py-4">
-                            <IonSpinner name="lines" />
+                            <IonSpinner
+                                name="lines"
+                                role="status"
+                                aria-label={m['common.loading']()}
+                            />
                         </div>
                     )}
                 </div>
