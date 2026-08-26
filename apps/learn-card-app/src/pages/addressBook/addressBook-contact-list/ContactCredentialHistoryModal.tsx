@@ -6,6 +6,7 @@ import type { LCNProfile } from '@learncard/types';
 import X from 'learn-card-base/svgs/X';
 import { CredentialGeneralIcon } from 'learn-card-base/svgs/CredentialGeneralIcon';
 
+import * as m from '../../../paraglide/messages.js';
 import ContactCredentialCard from './ContactCredentialCard';
 import {
     type ContactCredentialDirection,
@@ -55,12 +56,12 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
     const tabs: Array<{ id: HistoryTab; label: string; count: number }> = [
         {
             id: 'received',
-            label: 'Shared with me',
+            label: m['contacts.credentialHistory.sharedWithMe'](),
             count: data?.receivedCount ?? 0,
         },
         {
             id: 'sent',
-            label: `Shared with ${contactName}`,
+            label: m['contacts.credentialHistory.sharedWithContact']({ name: contactName }),
             count: data?.sentCount ?? 0,
         },
     ];
@@ -68,20 +69,24 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
     const activeItems = itemsByDirection[activeTab];
     const emptyMessage =
         activeTab === 'received'
-            ? `${contactName} has not shared any credentials with you yet.`
-            : `You have not shared any credentials with ${contactName} yet.`;
+            ? m['contacts.credentialHistory.receivedEmpty']({ name: contactName })
+            : m['contacts.credentialHistory.sentEmpty']({ name: contactName });
 
     return (
         <section className="flex h-full w-full flex-col bg-white font-poppins">
             <header className="flex shrink-0 items-center justify-between gap-4 border-b border-grayscale-200 px-5 py-4">
                 <div className="min-w-0">
-                    <h2 className="text-xl font-semibold text-grayscale-900">Shared credentials</h2>
-                    <p className="mt-1 truncate text-sm text-grayscale-600">With {contactName}</p>
+                    <h2 className="text-xl font-semibold text-grayscale-900">
+                        {m['contacts.credentialHistory.title']()}
+                    </h2>
+                    <p className="mt-1 truncate text-sm text-grayscale-600">
+                        {m['contacts.credentialHistory.withContact']({ name: contactName })}
+                    </p>
                 </div>
                 <button
                     type="button"
                     onClick={onClose}
-                    aria-label="Close shared credentials"
+                    aria-label={m['contacts.credentialHistory.close']()}
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <X className="h-5 w-5" />
@@ -116,7 +121,7 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
                 {isLoading && (
                     <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 text-sm text-grayscale-600">
                         <IonSpinner className="h-6 w-6" />
-                        Loading shared credentials...
+                        {m['contacts.credentialHistory.loading']()}
                     </div>
                 )}
 
@@ -127,7 +132,7 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
                             className="mt-0.5 shrink-0 text-lg text-red-400"
                         />
                         <span className="text-sm leading-relaxed text-red-700">
-                            We could not load shared credentials. Please try again.
+                            {m['contacts.credentialHistory.loadError']()}
                         </span>
                     </div>
                 )}
@@ -135,7 +140,9 @@ const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps
                 {!isLoading && !isError && activeItems.length === 0 && (
                     <div className="flex min-h-[280px] flex-col items-center justify-center rounded-[20px] border border-grayscale-200 bg-grayscale-10 px-6 text-center">
                         <CredentialGeneralIcon className="mb-3 h-9 w-9 text-grayscale-400" />
-                        <p className="text-sm font-medium text-grayscale-900">Nothing shared yet</p>
+                        <p className="text-sm font-medium text-grayscale-900">
+                            {m['contacts.credentialHistory.nothingShared']()}
+                        </p>
                         <p className="mt-1 max-w-sm text-xs leading-relaxed text-grayscale-500">
                             {emptyMessage}
                         </p>

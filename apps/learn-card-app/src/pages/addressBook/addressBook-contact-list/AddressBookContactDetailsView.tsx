@@ -125,14 +125,21 @@ const CredentialPreview: React.FC<{
         setImageError(false);
     }, [thumbnail]);
 
-    const directionLabel = item.direction === 'received' ? 'They sent' : 'You sent';
+    const directionLabel =
+        item.direction === 'received'
+            ? m['contacts.credentialHistory.theySent']()
+            : m['contacts.credentialHistory.youSent']();
+    const credentialTitle = title || m['contacts.credentialHistory.credentialFallback']();
 
     return (
         <button
             type="button"
             onClick={onClick}
             className="flex p-2 w-full items-center gap-2 rounded-2xl border border-grayscale-200 border-solid bg-white text-left transition-opacity hover:opacity-90"
-            aria-label={`View ${title || 'credential'}. ${directionLabel}.`}
+            aria-label={m['contacts.credentialHistory.viewCredential']({
+                title: credentialTitle,
+                direction: directionLabel,
+            })}
         >
             <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-grayscale-100">
                 {thumbnail && !imageError ? (
@@ -149,7 +156,7 @@ const CredentialPreview: React.FC<{
 
             <div className="min-w-0 flex-1 pr-2 font-poppins">
                 <p className="truncate text-sm font-semibold text-grayscale-900">
-                    {title || 'Credential'}
+                    {credentialTitle}
                 </p>
                 <div className="mt-1 flex min-w-0 items-center gap-1 text-grayscale-600">
                     <CategoryIcon className="h-5 w-5 shrink-0" />
@@ -564,12 +571,14 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         >
                                             {(credentialHistory?.receivedCount ?? 0) +
                                                 (credentialHistory?.sentCount ?? 0)}{' '}
-                                            Credentials exchanged
+                                            {m['contacts.credentialHistory.credentialsExchanged']()}
                                         </h3>
                                         {!isLoading && !isError && credentialHistory && (
                                             <p className="mt-1 text-sm  font-semibold text-grayscale-500">
-                                                They sent {credentialHistory.receivedCount}, you
-                                                sent {credentialHistory.sentCount}
+                                                {m['contacts.credentialHistory.exchangeSummary']({
+                                                    receivedCount: credentialHistory.receivedCount,
+                                                    sentCount: credentialHistory.sentCount,
+                                                })}
                                             </p>
                                         )}
                                     </div>
@@ -580,14 +589,14 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                     onClick={openCredentialHistory}
                                     className="shrink-0 rounded-sm text-sm font-semibold text-indigo-600 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 >
-                                    View All
+                                    {m['common.viewAll']()}
                                 </button>
                             </div>
 
                             {isLoading && (
                                 <div className="flex min-h-[150px] items-center justify-center gap-2 rounded-2xl border border-grayscale-200 bg-white text-sm text-grayscale-600">
                                     <IonSpinner className="h-5 w-5" />
-                                    Loading credentials...
+                                    {m['contacts.credentialHistory.loadingPreview']()}
                                 </div>
                             )}
 
@@ -598,7 +607,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         className="mt-0.5 shrink-0 text-lg text-red-400"
                                     />
                                     <span className="text-sm leading-relaxed text-red-700">
-                                        We could not load exchanged credentials. Please try again.
+                                        {m['contacts.credentialHistory.loadPreviewError']()}
                                     </span>
                                 </div>
                             )}
@@ -610,10 +619,10 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         className="mb-3 text-3xl text-grayscale-400"
                                     />
                                     <p className="text-sm font-medium text-grayscale-900">
-                                        Nothing exchanged yet
+                                        {m['contacts.credentialHistory.nothingExchanged']()}
                                     </p>
                                     <p className="mt-1 text-xs leading-relaxed text-grayscale-500">
-                                        Send a credential to start building your shared history.
+                                        {m['contacts.credentialHistory.sendToStart']()}
                                     </p>
                                 </div>
                             )}
@@ -652,7 +661,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                                 }
                                                 disabled={credentialAtBeginning}
                                                 className="absolute -left-4 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-30 md:flex"
-                                                aria-label="View previous credentials"
+                                                aria-label={m[
+                                                    'contacts.credentialHistory.previous'
+                                                ]()}
                                             >
                                                 <SlimCaretLeft className="h-5 w-5" />
                                             </button>
@@ -663,7 +674,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                                 }
                                                 disabled={credentialAtEnd}
                                                 className="absolute -right-4 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-30 md:flex"
-                                                aria-label="View more credentials"
+                                                aria-label={m['contacts.credentialHistory.more']()}
                                             >
                                                 <SlimCaretRight className="h-5 w-5" />
                                             </button>
@@ -682,7 +693,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                     id="credential-connection-heading"
                                     className="text-sm font-semibold text-grayscale-600"
                                 >
-                                    Credentials exchanged
+                                    {m['contacts.credentialHistory.credentialsExchanged']()}
                                 </h3>
                             </div>
 
@@ -692,11 +703,12 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                     className="mb-3 text-3xl text-grayscale-400"
                                 />
                                 <p className="text-sm font-medium text-grayscale-900">
-                                    Connect to exchange credentials
+                                    {m['contacts.credentialHistory.connectTitle']()}
                                 </p>
                                 <p className="mt-1 text-xs leading-relaxed text-grayscale-500">
-                                    Connect with {contact.displayName || contact.profileId} to start
-                                    building your shared history.
+                                    {m['contacts.credentialHistory.connectDescription']({
+                                        name: contact.displayName || contact.profileId,
+                                    })}
                                 </p>
                             </div>
                         </section>
