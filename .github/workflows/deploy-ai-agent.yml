@@ -85,6 +85,7 @@ jobs:
               working-directory: services/learn-card-network/ai-agent
               env:
                   AI_AGENT_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+                  AI_AGENT_AUTONOMY_ALLOWED_DIDS: ${{ secrets.AI_AGENT_AUTONOMY_ALLOWED_DIDS }}
                   TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
               run: bunx trigger deploy --env prod --skip-update-check
             - name: Configure AWS credentials
