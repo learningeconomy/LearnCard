@@ -10,6 +10,7 @@ import {
     copyOutline,
     documentTextOutline,
     ellipsisHorizontal,
+    personAddOutline,
     ribbonOutline,
     trashOutline,
 } from 'ionicons/icons';
@@ -20,16 +21,18 @@ import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import {
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
+    categoryMetadata,
     CredentialCategoryEnum,
     getBoostMetadata,
     getDefaultCategoryForCredential,
     getImageFromImage,
     getImageUrlFromCredential,
+    isBoostCredential,
     ModalTypes,
     ToastTypeEnum,
+    unwrapBoostCredential,
     useModal,
     useToast,
-    VCModal,
 } from 'learn-card-base';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
@@ -38,11 +41,14 @@ import { CredentialGeneralIcon } from 'learn-card-base/svgs/CredentialGeneralIco
 import BoostOutline3 from 'learn-card-base/svgs/BoostOutline3';
 
 import BoostTemplateSelector from '../../../components/boost/boost-template/BoostTemplateSelector';
+import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
+import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
 import SlimCaretLeft from '../../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import * as m from '../../../paraglide/messages.js';
 import ContactProfileCard from './ContactProfileCard';
+import ContactCredentialHistoryModal from './ContactCredentialHistoryModal';
 import {
     type ContactCredentialHistoryItem,
     useContactCredentialHistory,
@@ -102,10 +108,11 @@ const SECONDARY_BUTTON_CLASSES =
 
 const CredentialPreview: React.FC<{
     item: ContactCredentialHistoryItem;
-    onClick: (credential: VC) => void;
+    onClick: () => void;
 }> = ({ item, onClick }) => {
     const [imageError, setImageError] = useState(false);
-    const { title, createdAt } = getInfoFromCredential(item.credential, 'MMM D, YYYY', {
+    const credential = unwrapBoostCredential(item.credential) as VC;
+    const { title, createdAt } = getInfoFromCredential(credential, 'MMM D, YYYY', {
         uppercaseDate: false,
     });
     const category = getDefaultCategoryForCredential(item.credential);
@@ -114,7 +121,7 @@ const CredentialPreview: React.FC<{
         boostCategoryMetadata[BoostCategoryOptionsEnum.achievement];
     const CategoryIcon = categoryInfo.SolidIconComponent ?? categoryInfo.IconComponent;
     const CategoryBadge = categoryInfo.IconWithShape ?? CategoryIcon;
-    const imageUrl = getImageUrlFromCredential(item.credential);
+    const imageUrl = getImageUrlFromCredential(credential);
     const thumbnail = imageUrl ? getImageFromImage(imageUrl) : '';
 
     useEffect(() => {
@@ -126,7 +133,7 @@ const CredentialPreview: React.FC<{
     return (
         <button
             type="button"
-            onClick={() => onClick(item.credential)}
+            onClick={onClick}
             className="flex p-2 w-full items-center gap-2 rounded-2xl border border-grayscale-200 border-solid bg-white text-left transition-opacity hover:opacity-90"
             aria-label={`View ${title || 'credential'}. ${directionLabel}.`}
         >
@@ -153,6 +160,46 @@ const CredentialPreview: React.FC<{
                 </div>
             </div>
         </button>
+    );
+};
+
+const ContactCredentialPreview: React.FC<{ item: ContactCredentialHistoryItem }> = ({ item }) => {
+    const credential = unwrapBoostCredential(item.credential) as VC & { boostId?: string };
+    const category = getDefaultCategoryForCredential(item.credential) as CredentialCategoryEnum;
+    const resolvedCategory = categoryMetadata[category]
+        ? category
+        : CredentialCategoryEnum.achievement;
+    const renderPreviewTrigger = (openPreview: () => void): React.ReactNode => (
+        <CredentialPreview item={item} onClick={openPreview} />
+    );
+
+    if (item.direction === 'sent' && isBoostCredential(item.credential) && credential.boostId) {
+        return (
+            <BoostManagedCard
+                boost={{
+                    uri: credential.boostId,
+                    name: credential.credentialSubject?.achievement?.name,
+                    category: resolvedCategory,
+                    status: 'LIVE',
+                }}
+                boostVC={credential}
+                categoryType={resolvedCategory}
+                defaultImg={categoryMetadata[resolvedCategory]?.defaultImageSrc ?? ''}
+                renderPreviewTrigger={renderPreviewTrigger}
+            />
+        );
+    }
+
+    return (
+        <BoostEarnedCard
+            credential={item.credential}
+            record={{ uri: item.uri }}
+            categoryType={resolvedCategory}
+            defaultImg={categoryMetadata[resolvedCategory]?.defaultImageSrc}
+            hideOptionsMenu
+            hideCardOptionsMenu
+            renderPreviewTrigger={renderPreviewTrigger}
+        />
     );
 };
 
@@ -192,7 +239,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
         data: credentialHistory,
         isLoading,
         isError,
-    } = useContactCredentialHistory(contact?.profileId, isConnected);
+    } = useContactCredentialHistory(contact?.profileId, { enabled: isConnected });
 
     useEffect(() => {
         if (!showOverflow) return undefined;
@@ -279,11 +326,13 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
         }
     };
 
-    const openCredential = (credential: VC): void => {
-        closeModal();
+    const openCredentialHistory = (): void => {
         newModal(
-            <VCModal vc={credential} onDismiss={closeModal} />,
-            { hideButton: true },
+            <ContactCredentialHistoryModal contact={contact} onClose={closeModal} />,
+            {
+                hideButton: true,
+                sectionClassName: '!max-w-[760px] !overflow-hidden',
+            },
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
     };
@@ -562,8 +611,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 </div>
 
                                 <button
-                                    className="text-sm font-semibold text-primary text-indigo-600"
                                     type="button"
+                                    onClick={openCredentialHistory}
+                                    className="shrink-0 rounded-sm text-sm font-semibold text-indigo-600 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 >
                                     View All
                                 </button>
@@ -623,10 +673,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                                     width: 'min(300px, calc(100vw - 96px))',
                                                 }}
                                             >
-                                                <CredentialPreview
-                                                    item={item}
-                                                    onClick={openCredential}
-                                                />
+                                                <ContactCredentialPreview item={item} />
                                             </SwiperSlide>
                                         ))}
                                     </Swiper>
@@ -659,6 +706,34 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                     )}
                                 </div>
                             )}
+                        </section>
+                    )}
+
+                    {!isConnected && (
+                        <section className="mt-6" aria-labelledby="credential-connection-heading">
+                            <div className="mb-4 flex items-start gap-2">
+                                <CredentialGeneralIcon className="text-grayscale-600" />
+                                <h3
+                                    id="credential-connection-heading"
+                                    className="text-sm font-semibold text-grayscale-600"
+                                >
+                                    Credentials exchanged
+                                </h3>
+                            </div>
+
+                            <div className="flex min-h-[150px] flex-col items-center justify-center rounded-2xl border border-grayscale-200 bg-white px-6 text-center">
+                                <IonIcon
+                                    icon={personAddOutline}
+                                    className="mb-3 text-3xl text-grayscale-400"
+                                />
+                                <p className="text-sm font-medium text-grayscale-900">
+                                    Connect to exchange credentials
+                                </p>
+                                <p className="mt-1 text-xs leading-relaxed text-grayscale-500">
+                                    Connect with {contact.displayName || contact.profileId} to start
+                                    building your shared history.
+                                </p>
+                            </div>
                         </section>
                     )}
                 </div>
