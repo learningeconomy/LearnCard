@@ -108,6 +108,46 @@ describe('ensureAiPassportSession', () => {
         expect(requestHeaders.has('Authorization')).toBe(false);
     });
 
+    it('evicts a stale bearer when 401 re-authentication succeeds with cookies only', async () => {
+        const did = 'did:key:cookie-reauth';
+        const issuePresentation = vi.fn(async () => 'cookie-reauth.jwt');
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(
+                Response.json({
+                    audience: 'https://cookie-reauth.example.test',
+                    binding: 'initial-binding',
+                    challenge: 'initial-challenge',
+                })
+            )
+            .mockResolvedValueOnce(
+                Response.json({ authenticated: true, did, token: 'stale-token' })
+            )
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(
+                Response.json({
+                    audience: 'https://cookie-reauth.example.test',
+                    binding: 'replacement-binding',
+                    challenge: 'replacement-challenge',
+                })
+            )
+            .mockResolvedValueOnce(Response.json({ authenticated: true, did }))
+            .mockResolvedValueOnce(Response.json({ ok: true }));
+
+        networkStore.set.aiServiceUrl('https://cookie-reauth.example.test');
+        globalThis.fetch = fetchMock as typeof fetch;
+
+        await ensureAiPassportSession(wallet(did, issuePresentation));
+        await expect(aiPassportFetch('/threads', {}, did)).resolves.toBeInstanceOf(Response);
+
+        expect(new Headers(fetchMock.mock.calls[3]![1]?.headers).get('Authorization')).toBe(
+            'Bearer stale-token'
+        );
+        expect(new Headers(fetchMock.mock.calls[7]![1]?.headers).has('Authorization')).toBe(false);
+    });
+
     it('reuses an existing subject-matched backend session without signing', async () => {
         const did = 'did:key:existing';
         const issuePresentation = vi.fn();
