@@ -6,7 +6,7 @@ import GamePromptHeader from './GamePromptHeader';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
-import { useWallet } from 'learn-card-base';
+import { ToastTypeEnum, useToast, useWallet } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import * as m from '../../../paraglide/messages.js';
 import { getConsentFlowDidAuthRedirect } from '../issueConsentFlowDidAuth';
@@ -31,6 +31,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
     );
 
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const returnTo = urlReturnTo || contractDetails?.redirectUrl; // prefer url param
 
@@ -39,25 +40,35 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
     const gameImage = image ?? '';
 
     const handleBackToGameRdirect = async () => {
-        if (returnTo && !Array.isArray(returnTo)) {
-            if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                const ownerDid = contractDetails?.owner?.did;
+        try {
+            if (returnTo && !Array.isArray(returnTo)) {
+                if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
+                    const ownerDid = contractDetails?.owner?.did;
 
-                if (!ownerDid || !contractDetails?.uri || consentedContract?.status !== 'live') {
-                    throw new Error('Invalid consent request');
-                }
+                    if (
+                        !ownerDid ||
+                        !contractDetails?.uri ||
+                        consentedContract?.status !== 'live'
+                    ) {
+                        throw new Error('Invalid consent request');
+                    }
 
-                const wallet = await initWallet();
+                    const wallet = await initWallet();
 
-                window.location.href = await getConsentFlowDidAuthRedirect({
-                    challenge,
-                    contractUri: contractDetails.uri,
-                    domain,
-                    ownerDid,
-                    returnTo,
-                    wallet,
-                });
-            } else history.push(returnTo);
+                    window.location.href = await getConsentFlowDidAuthRedirect({
+                        challenge,
+                        contractUri: contractDetails.uri,
+                        domain,
+                        ownerDid,
+                        returnTo,
+                        wallet,
+                    });
+                } else history.push(returnTo);
+            }
+        } catch {
+            presentToast('Unable to complete sign in. Please try again.', {
+                type: ToastTypeEnum.Error,
+            });
         }
     };
 

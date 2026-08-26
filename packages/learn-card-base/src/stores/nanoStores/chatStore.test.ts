@@ -139,6 +139,7 @@ if (!Promise.withResolvers) {
 // The store must capture the fake browser WebSocket during module initialization.
 const {
     connectWebSocket,
+    closeInsightsSession,
     continuePlan,
     credentialContextReadiness,
     currentThreadId,
@@ -1104,6 +1105,19 @@ describe('chat session startup', () => {
 
         reconnectedSocket?.receive({ done: true, threadId: 'thread-insights' });
         expect(isTyping.get()).toBe(false);
+    });
+
+    it('does not reconnect a deliberately disconnected socket to close Insights', async () => {
+        currentThreadId.set('thread-insights');
+        await connectWebSocket();
+        const socket = await openLatestSocket();
+
+        disconnectWebSocket();
+        await closeInsightsSession();
+        await vi.advanceTimersByTimeAsync(1_000);
+
+        expect(FakeWebSocket.instances).toHaveLength(1);
+        expect(socket.sent).not.toContainEqual(expect.stringContaining('close_insights_session'));
     });
 
     it('accepts a continuation error carrying the startup request ID', async () => {

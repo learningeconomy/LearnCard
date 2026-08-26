@@ -8,7 +8,15 @@ import ConsentFlowSyncCard from './ConsentFlowSyncCard';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 
-import { ModalTypes, ProfilePicture, useContract, useModal, useWallet } from 'learn-card-base';
+import {
+    ModalTypes,
+    ProfilePicture,
+    ToastTypeEnum,
+    useContract,
+    useModal,
+    useToast,
+    useWallet,
+} from 'learn-card-base';
 import { oauth2ReducerArgStore } from '../sync-my-school/ExternalAuthServiceProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
@@ -20,6 +28,7 @@ import { getConsentFlowDidAuthRedirect } from './issueConsentFlowDidAuth';
 const ConsentFlowSyncData: React.FC = () => {
     const currentUser = useCurrentUser();
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const location = useLocation();
     const history = useHistory();
@@ -143,23 +152,32 @@ const ConsentFlowSyncData: React.FC = () => {
                     className="w-full bg-white flex items-center justify-center px-[20px] py-[15px] rounded-[24px] shadow-bottom font-montserrat text-center text-xl font-normal max-w-[350px] mt-[10px]"
                     type="button"
                     onClick={async () => {
-                        if (returnTo && !Array.isArray(returnTo)) {
-                            if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                                const wallet = await initWallet();
-                                const ownerDid = contractDetails?.owner?.did;
+                        try {
+                            if (returnTo && !Array.isArray(returnTo)) {
+                                if (
+                                    returnTo.startsWith('http://') ||
+                                    returnTo.startsWith('https://')
+                                ) {
+                                    const wallet = await initWallet();
+                                    const ownerDid = contractDetails?.owner?.did;
 
-                                if (!ownerDid) throw new Error('Invalid consent request');
+                                    if (!ownerDid) throw new Error('Invalid consent request');
 
-                                window.location.href = await getConsentFlowDidAuthRedirect({
-                                    challenge,
-                                    contractUri,
-                                    domain,
-                                    ownerDid,
-                                    returnTo,
-                                    wallet,
-                                });
-                            } else history.push(returnTo);
-                        } else history.push('/home');
+                                    window.location.href = await getConsentFlowDidAuthRedirect({
+                                        challenge,
+                                        contractUri,
+                                        domain,
+                                        ownerDid,
+                                        returnTo,
+                                        wallet,
+                                    });
+                                } else history.push(returnTo);
+                            } else history.push('/home');
+                        } catch {
+                            presentToast('Unable to complete sign in. Please try again.', {
+                                type: ToastTypeEnum.Error,
+                            });
+                        }
                     }}
                 >
                     {m['common.close']()}

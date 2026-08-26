@@ -1669,12 +1669,9 @@ export async function closeInsightsSession(threadId?: string) {
 
     if (!activeThreadId) return;
 
-    const socket = await connectWebSocket();
+    const socket = ws;
 
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        onReady(() => void closeInsightsSession(activeThreadId));
-        return;
-    }
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
     socket.send(
         JSON.stringify(

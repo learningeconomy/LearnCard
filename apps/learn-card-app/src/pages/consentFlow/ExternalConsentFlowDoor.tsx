@@ -23,6 +23,8 @@ import {
     useContract,
     redirectStore,
     ModalTypes,
+    ToastTypeEnum,
+    useToast,
     useModal,
 } from 'learn-card-base';
 import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
@@ -64,6 +66,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const firebaseAuth = auth();
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
     const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
     const { track } = useAnalytics();
@@ -179,6 +182,9 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                     (error as { code?: string })?.code ??
                     (error instanceof Error && error.name !== 'Error' ? error.name : 'unknown'),
             });
+            presentToast('Unable to complete sign in. Please try again.', {
+                type: ToastTypeEnum.Error,
+            });
         });
     }, [
         userClickedContinue,
@@ -191,6 +197,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         recipientToken,
         challenge,
         domain,
+        presentToast,
+        track,
         history,
     ]);
 

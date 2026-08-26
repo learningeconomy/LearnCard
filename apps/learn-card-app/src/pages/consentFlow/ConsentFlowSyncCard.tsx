@@ -17,6 +17,8 @@ import {
     useCurrentUser,
     useModal,
     ModalTypes,
+    ToastTypeEnum,
+    useToast,
     useWallet,
     useSyncConsentFlow,
 } from 'learn-card-base';
@@ -71,6 +73,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
     const { newModal, closeModal, closeAllModals } = useModal();
 
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const [loading, setLoading] = useState(false);
 
@@ -243,6 +246,10 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                         });
                                     } else history.push(returnTo);
                                 } else history.push(`/launchpad?uri=${contractDetails.uri}`);
+                            } catch {
+                                presentToast('Unable to complete sign in. Please try again.', {
+                                    type: ToastTypeEnum.Error,
+                                });
                             } finally {
                                 setLoading(false);
                             }
