@@ -2,16 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { IonIcon, IonSpinner } from '@ionic/react';
 import { alertCircleOutline } from 'ionicons/icons';
 
-import type { LCNProfile, VC } from '@learncard/types';
-import {
-    categoryMetadata,
-    CredentialCategoryEnum,
-    getDefaultCategoryForCredential,
-} from 'learn-card-base';
+import type { LCNProfile } from '@learncard/types';
 import X from 'learn-card-base/svgs/X';
 import { CredentialGeneralIcon } from 'learn-card-base/svgs/CredentialGeneralIcon';
 
-import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
+import ContactCredentialCard from './ContactCredentialCard';
 import {
     type ContactCredentialDirection,
     type ContactCredentialHistoryItem,
@@ -25,32 +20,17 @@ type ContactCredentialHistoryModalProps = {
 
 type HistoryTab = Extract<ContactCredentialDirection, 'received' | 'sent'>;
 
-const getCredentialCategory = (credential: VC): CredentialCategoryEnum => {
-    const category = getDefaultCategoryForCredential(credential) as CredentialCategoryEnum;
-
-    return categoryMetadata[category] ? category : CredentialCategoryEnum.achievement;
-};
-
 const CredentialGrid: React.FC<{
     items: ContactCredentialHistoryItem[];
 }> = ({ items }) => (
     <div className="flex flex-wrap justify-center gap-3 sm:justify-start">
-        {items.map(item => {
-            const category = getCredentialCategory(item.credential);
-
-            return (
-                <BoostEarnedCard
-                    key={`${item.direction}-${item.uri}`}
-                    credential={item.credential}
-                    record={{ uri: item.uri }}
-                    categoryType={category}
-                    defaultImg={categoryMetadata[category]?.defaultImageSrc}
-                    useWrapper={false}
-                    hideOptionsMenu
-                    hideCardOptionsMenu
-                />
-            );
-        })}
+        {items.map(item => (
+            <ContactCredentialCard
+                key={`${item.direction}-${item.uri}`}
+                item={item}
+                useWrapper={false}
+            />
+        ))}
     </div>
 );
 

@@ -21,13 +21,11 @@ import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import {
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
-    categoryMetadata,
     CredentialCategoryEnum,
     getBoostMetadata,
     getDefaultCategoryForCredential,
     getImageFromImage,
     getImageUrlFromCredential,
-    isBoostCredential,
     ModalTypes,
     ToastTypeEnum,
     unwrapBoostCredential,
@@ -41,12 +39,11 @@ import { CredentialGeneralIcon } from 'learn-card-base/svgs/CredentialGeneralIco
 import BoostOutline3 from 'learn-card-base/svgs/BoostOutline3';
 
 import BoostTemplateSelector from '../../../components/boost/boost-template/BoostTemplateSelector';
-import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
-import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
 import SlimCaretLeft from '../../../components/svgs/SlimCaretLeft';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import * as m from '../../../paraglide/messages.js';
+import ContactCredentialCard from './ContactCredentialCard';
 import ContactProfileCard from './ContactProfileCard';
 import ContactCredentialHistoryModal from './ContactCredentialHistoryModal';
 import {
@@ -164,43 +161,11 @@ const CredentialPreview: React.FC<{
 };
 
 const ContactCredentialPreview: React.FC<{ item: ContactCredentialHistoryItem }> = ({ item }) => {
-    const credential = unwrapBoostCredential(item.credential) as VC & { boostId?: string };
-    const category = getDefaultCategoryForCredential(item.credential) as CredentialCategoryEnum;
-    const resolvedCategory = categoryMetadata[category]
-        ? category
-        : CredentialCategoryEnum.achievement;
     const renderPreviewTrigger = (openPreview: () => void): React.ReactNode => (
         <CredentialPreview item={item} onClick={openPreview} />
     );
 
-    if (item.direction === 'sent' && isBoostCredential(item.credential) && credential.boostId) {
-        return (
-            <BoostManagedCard
-                boost={{
-                    uri: credential.boostId,
-                    name: credential.credentialSubject?.achievement?.name,
-                    category: resolvedCategory,
-                    status: 'LIVE',
-                }}
-                boostVC={credential}
-                categoryType={resolvedCategory}
-                defaultImg={categoryMetadata[resolvedCategory]?.defaultImageSrc ?? ''}
-                renderPreviewTrigger={renderPreviewTrigger}
-            />
-        );
-    }
-
-    return (
-        <BoostEarnedCard
-            credential={item.credential}
-            record={{ uri: item.uri }}
-            categoryType={resolvedCategory}
-            defaultImg={categoryMetadata[resolvedCategory]?.defaultImageSrc}
-            hideOptionsMenu
-            hideCardOptionsMenu
-            renderPreviewTrigger={renderPreviewTrigger}
-        />
-    );
+    return <ContactCredentialCard item={item} renderPreviewTrigger={renderPreviewTrigger} />;
 };
 
 export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsViewProps> = ({
