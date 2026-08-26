@@ -288,6 +288,23 @@ The automated smoke test:
 
 It explicitly tells the agent not to write user data. A missing grant, unavailable memory store, disabled Brave provider, or model failure fails deployment verification.
 
+### Scheduled-job staging smoke
+
+1. Confirm the staging profile DID is present in both `AI_AGENT_AUTONOMY_ALLOWED_DIDS` in the
+   GitHub environment and `AI_AGENT_AUTONOMY_DEV_DIDS` in Trigger.dev Staging.
+2. Deploy the exact branch commit with the `Deploy` workflow command below.
+3. Sign in to the staging LearnCard App as that profile, open Assistant schedules, and create one
+   enabled schedule two or three minutes ahead in the profile's IANA timezone.
+4. In Trigger.dev Staging, confirm `learncard-autonomous-schedule-dispatch` completes and its
+   `learncard-autonomous-agent-execution` child completes for the same schedule.
+5. Confirm the Assistant feed receives the autonomous card and its stored run has `trigger`
+   provenance, `succeeded` status, and an advanced `nextRunAt`.
+6. Delete the schedule and confirm its Trigger.dev imperative schedule is removed.
+
+Any non-allowlisted DID must fail schedule creation before Trigger.dev creates a schedule. Keep
+prompts read-only during this staging gate because autonomous tools can perform irreversible
+effects.
+
 ## Deploy
 
 -   Every merge to `main` that changes the AI Agent, shared packages, lockfile, or container base
