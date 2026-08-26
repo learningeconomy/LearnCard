@@ -1,70 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
-import { Capacitor } from '@capacitor/core';
-import { Share } from '@capacitor/share';
-import { Clipboard } from '@capacitor/clipboard';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useToast, ToastTypeEnum } from 'learn-card-base';
 
 import { IonCol, IonRow, IonPage } from '@ionic/react';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
-import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
+
+import { useInviteLink } from '../../../hooks/useInviteLink';
+import { shareOrCopy } from '../../../helpers/shareHelpers';
 
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;
 }> = ({ handleCloseModal }) => {
-    const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
     const { presentToast } = useToast();
 
-    const [walletDid, setWalletDid] = useState<string>('');
+    const { data: invite } = useInviteLink({ enabled: true });
 
-    useEffect(() => {
-        const getWalletDid = async () => {
-            const wallet = await initWallet();
-            setWalletDid(wallet?.id?.did());
-        };
+    const handleShare = async () => {
+        if (!invite?.url) return;
 
-        if (!walletDid) {
-            getWalletDid();
-        }
-    }, [walletDid]);
+        const result = await shareOrCopy({
+            url: invite.url,
+            title: m['contacts.addContactDesc'](),
+        });
 
-    const copyToClipBoard = async () => {
-        const wallet = await initWallet();
-
-        try {
-            await Clipboard.write({
-                string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
-            });
-            presentToast(m['contacts.linkCopied'](), {
+        if (result.method === 'clipboard') {
+            presentToast(m['contacts.invite.linkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
-        } catch (err) {
-            presentToast(m['contacts.linkCopyFailed'](), {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
-        }
-    };
-
-    const handleShare = async () => {
-        const wallet = await initWallet();
-
-        if (Capacitor.isNativePlatform()) {
-            await Share.share({
-                title: m['contacts.addContactDesc'](),
-                text: '',
-                url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
-                dialogTitle: '',
-            });
-        } else {
-            copyToClipBoard();
         }
     };
 
@@ -97,7 +66,7 @@ const AddressBookQRCode: React.FC<{
                     <div className="max-w-[90%] w-full h-auto relative user-qr-code-modal-qr-wrap">
                         <QRCodeSVG
                             className="h-full w-full"
-                            value={`https://pass.scout.org/connect?connect=true&did=${walletDid}`}
+                            value={invite?.url ?? ''}
                             data-testid="qrcode-card"
                             bgColor="transparent"
                         />
