@@ -13,6 +13,7 @@ import {
     useGetCurrentLCNUser,
     useGetUnreadUserNotifications,
     useToast,
+    useWallet,
     walletStore,
     WalletSyncState,
 } from 'learn-card-base';
@@ -34,6 +35,7 @@ import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
 import { ColorSetEnum } from '../../theme/colors/index';
 import {
+    createLearnCardAssistantAuth,
     fetchLearnCardAssistantProfile,
     getInitialAgentUrl,
     normalizeAgentUrl,
@@ -84,12 +86,20 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
     const { newModal } = useModal();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { initWallet } = useWallet();
     const currentDid = currentLCNUser?.did;
     const normalizedAgentUrl = React.useMemo(() => normalizeAgentUrl(getInitialAgentUrl()), []);
+    const assistantAuth = React.useMemo(
+        () =>
+            currentDid
+                ? createLearnCardAssistantAuth(normalizedAgentUrl, currentDid, initWallet)
+                : undefined,
+        [currentDid, initWallet, normalizedAgentUrl]
+    );
     const { data: assistantProfile } = useQuery({
         queryKey: ['learncard-assistant-profile', currentDid, normalizedAgentUrl],
-        queryFn: () => fetchLearnCardAssistantProfile(normalizedAgentUrl, currentDid!),
-        enabled: learnCardAssistantEnabled && Boolean(currentDid),
+        queryFn: () => fetchLearnCardAssistantProfile(normalizedAgentUrl, assistantAuth!),
+        enabled: learnCardAssistantEnabled && Boolean(assistantAuth),
         staleTime: 60_000,
     });
     const assistantLabel = assistantProfile?.name ?? 'My Assistant';
