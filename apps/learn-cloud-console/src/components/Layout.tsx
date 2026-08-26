@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { DashboardSession } from '../api';
+import { Crown } from 'lucide-react';
+import eduosHorizontal from '../assets/eduos-horizontal-black.png';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -11,48 +13,67 @@ interface LayoutProps {
 }
 
 export function Layout({ children, session, onLogin, onLogout, busy }: LayoutProps) {
+    const [collapsed, setCollapsed] = useState(false);
+
+    const handleToggle = () => {
+        setCollapsed(prev => !prev);
+    };
+
     return (
-        <div className="flex min-h-screen w-full bg-background">
-            <Sidebar />
-            <div className="flex flex-col flex-1 w-full">
-                <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                    <div className="flex flex-1 items-center gap-4">
-                        <h1 className="font-display text-lg font-semibold tracking-tight">
-                            LearnCloud Console
-                        </h1>
-                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground">
-                            dev auth smoke test
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        {session ? (
-                            <div className="flex items-center gap-4">
-                                <div className="flex flex-col items-end text-sm">
-                                    <span className="font-medium">{session.profileId}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {session.tenantId}
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={onLogout}
-                                    disabled={busy}
-                                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
-                                >
-                                    Sign out
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={onLogin}
-                                disabled={busy}
-                                className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3"
-                            >
-                                Sign in (dev)
-                            </button>
+        <div className="min-h-screen flex w-full overflow-x-hidden bg-background">
+            <Sidebar collapsed={collapsed} onToggle={handleToggle} />
+            <div className="flex-1 flex flex-col min-w-0">
+                <header className="h-14 flex items-center border-b border-border px-2 sm:px-4 bg-card gap-1.5 sm:gap-2 md:gap-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {collapsed && (
+                            <>
+                                <a href="#">
+                                    <img
+                                        src={eduosHorizontal}
+                                        alt="Education OS"
+                                        className="object-contain object-left cursor-pointer h-5 sm:h-6"
+                                    />
+                                </a>
+                                <span className="inline-flex items-center justify-center rounded-full border px-1.5 py-0 text-[10px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-primary/30 text-primary h-5 shrink-0">
+                                    DEMO
+                                </span>
+                            </>
                         )}
                     </div>
+
+                    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                        <div className="hidden sm:block text-right">
+                            <div className="text-sm font-medium text-foreground leading-tight">
+                                {session ? session.profileId : 'Owner'}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground leading-tight">
+                                {session ? session.tenantId : 'Full Access'}
+                            </div>
+                        </div>
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald/10 text-emerald flex items-center justify-center">
+                            <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </div>
+                    </div>
+
+                    {session ? (
+                        <button
+                            onClick={onLogout}
+                            disabled={busy}
+                            className="h-8 px-3 rounded-lg border border-border bg-background text-xs sm:text-sm text-muted-foreground hover:border-primary/30 transition-all shrink-0 disabled:pointer-events-none disabled:opacity-50"
+                        >
+                            Sign out
+                        </button>
+                    ) : (
+                        <button
+                            onClick={onLogin}
+                            disabled={busy}
+                            className="h-8 px-3 rounded-lg border border-border bg-background text-xs sm:text-sm text-muted-foreground hover:border-primary/30 transition-all shrink-0 disabled:pointer-events-none disabled:opacity-50"
+                        >
+                            Sign in (dev)
+                        </button>
+                    )}
                 </header>
-                <main className="flex-1 p-6 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
+                <main className="flex-1 bg-background p-3 sm:p-4 md:p-6 overflow-x-hidden max-w-full">
                     {children}
                 </main>
             </div>
