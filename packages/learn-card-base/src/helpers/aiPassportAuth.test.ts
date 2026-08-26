@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 import type { BespokeLearnCard } from '../types/learn-card';
 import { networkStore } from '../stores/NetworkStore';
+import { walletStore } from '../stores/walletStore';
 import {
     aiPassportFetch,
+    clearAiPassportAuth,
     ensureAiPassportSession,
     getAiPassportAuthMode,
     getAiPassportLaunchUrl,
@@ -21,6 +23,7 @@ const wallet = (did: string, issuePresentation: Mock) =>
 
 afterEach(() => {
     globalThis.fetch = originalFetch;
+    walletStore.set.wallet(null);
 });
 
 describe('ensureAiPassportSession', () => {
@@ -274,6 +277,94 @@ describe('ensureAiPassportSession', () => {
         expect(new Headers(fetchMock.mock.calls[0]![1]?.headers).get('Authorization')).toBe(
             'Bearer origin-session-token'
         );
+    });
+
+    it('negotiates a session before sending when a caller skips the auth preflight', async () => {
+        const did = 'did:key:no-preflight';
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(
+                Response.json({
+                    audience: 'https://preflight.example.test',
+                    binding: 'preflight-binding',
+                    challenge: 'preflight-challenge',
+                })
+            )
+            .mockResolvedValueOnce(
+                Response.json({ authenticated: true, did, token: 'preflight-token' })
+            )
+            .mockResolvedValueOnce(Response.json([]));
+
+        networkStore.set.aiServiceUrl('https://preflight.example.test');
+        globalThis.fetch = fetchMock as typeof fetch;
+        walletStore.set.wallet(
+            wallet(
+                did,
+                vi.fn(async () => 'preflight.jwt')
+            )
+        );
+
+        const response = await aiPassportFetch('/threads', {}, did);
+
+        expect(response.status).toBe(200);
+        expect(getAiPassportAuthMode(did)).toBe('session');
+        expect(new Headers(fetchMock.mock.calls[3]![1]?.headers).get('Authorization')).toBe(
+            'Bearer preflight-token'
+        );
+    });
+
+    it('rejects authenticated fetches when no wallet can establish a session', async () => {
+        const did = 'did:key:no-wallet';
+        const fetchMock = vi.fn();
+
+        networkStore.set.aiServiceUrl('https://no-wallet.example.test');
+        globalThis.fetch = fetchMock as typeof fetch;
+        walletStore.set.wallet(null);
+
+        await expect(aiPassportFetch('/threads', {}, did)).rejects.toThrow(
+            'AI Passport authentication requires an initialized wallet'
+        );
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('drops negotiated modes and durable bearers on clearAiPassportAuth', async () => {
+        const did = 'did:key:cleared';
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(
+                Response.json({
+                    audience: 'https://cleared.example.test',
+                    binding: 'cleared-binding',
+                    challenge: 'cleared-challenge',
+                })
+            )
+            .mockResolvedValueOnce(
+                Response.json({ authenticated: true, did, token: 'cleared-token' })
+            );
+
+        networkStore.set.aiServiceUrl('https://cleared.example.test');
+        globalThis.fetch = fetchMock as typeof fetch;
+
+        await ensureAiPassportSession(
+            wallet(
+                did,
+                vi.fn(async () => 'cleared.jwt')
+            )
+        );
+
+        expect(getAiPassportAuthMode(did)).toBe('session');
+
+        clearAiPassportAuth();
+        fetchMock.mockClear();
+        walletStore.set.wallet(null);
+
+        expect(getAiPassportAuthMode(did)).toBeUndefined();
+        await expect(aiPassportFetch('/threads', {}, did)).rejects.toThrow(
+            'AI Passport authentication requires an initialized wallet'
+        );
+        expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it('does not downgrade on backend or network failures', async () => {

@@ -2,6 +2,7 @@ import type { UnsignedVP } from '@learncard/types';
 
 import type { BespokeLearnCard } from '../types/learn-card';
 import { networkStore } from '../stores/NetworkStore';
+import { walletStore } from '../stores/walletStore';
 
 export type AiPassportAuthMode = 'legacy' | 'session';
 
@@ -29,6 +30,18 @@ const authTokens = new Map<string, string>();
 const authWallets = new Map<string, BespokeLearnCard>();
 
 const getAuthKey = (did: string): string => `${networkStore.get.aiServiceUrl()}|${did}`;
+
+/**
+ * Drop all negotiated AI Passport auth state (modes, durable bearer tokens,
+ * cached wallets, and in-flight negotiations). Call on logout so a durable
+ * session bearer never outlives the account that minted it.
+ */
+export const clearAiPassportAuth = (): void => {
+    authRequests.clear();
+    authModes.clear();
+    authTokens.clear();
+    authWallets.clear();
+};
 
 export const getAiPassportAuthMode = (did: string): AiPassportAuthMode | undefined =>
     authModes.get(getAuthKey(did));
@@ -76,7 +89,20 @@ export const aiPassportFetch = async (
 ): Promise<Response> => {
     getAiPassportFetchUrl(path);
 
-    if (did && !getAiPassportAuthMode(did)) await authRequests.get(getAuthKey(did));
+    if (did && !getAiPassportAuthMode(did)) {
+        const pending = authRequests.get(getAuthKey(did));
+
+        if (pending) await pending;
+        else {
+            const wallet = authWallets.get(getAuthKey(did)) ?? walletStore.get.wallet();
+
+            if (!wallet) {
+                throw new Error('AI Passport authentication requires an initialized wallet');
+            }
+
+            await ensureAiPassportSession(wallet);
+        }
+    }
 
     const initialMode = did ? getAiPassportAuthMode(did) : undefined;
     const request = () => {
@@ -126,6 +152,14 @@ export const getAiPassportWebSocketProtocols = async (
     return ['ai-passport', `ai-passport-ticket.${ticket}`];
 };
 
+/**
+ * Detects a pre-challenge (legacy) AI Passport backend so the client can fall
+ * back to DID-in-query transport. SECURITY CONTRACT with the hardened backend
+ * (WeLibraryOS/AI-Passport#65): `POST /auth/challenge` only ever returns 200,
+ * 403, or 405 — never `401 {error:"Authentication required"}`. If the backend
+ * ever emits that exact 401 shape from the challenge route, every client
+ * silently downgrades to the legacy transport.
+ */
 const isLegacyChallengeResponse = async (response: Response): Promise<boolean> => {
     if (response.status === 404 || response.status === 405) return true;
     if (response.status !== 401) return false;

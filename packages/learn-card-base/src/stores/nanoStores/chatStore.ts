@@ -1321,6 +1321,14 @@ export async function startTopicWithUri(topicUri: string) {
 const waitForSocketConnection = (): Promise<void> => {
     if (ws?.readyState === WebSocket.OPEN) return Promise.resolve();
 
+    // A deliberate disconnect can cancel an in-flight connect (createWebSocket
+    // returns null on generation mismatch). With no socket, no pending connect,
+    // and no scheduled reconnect, nothing will ever fire onReady — fail fast
+    // instead of stalling for the full timeout.
+    if (!ws && !socketConnection && reconnectTimer === undefined) {
+        return Promise.reject(new Error('WebSocket connection cancelled'));
+    }
+
     const { promise, reject, resolve } = Promise.withResolvers<void>();
     let unsubscribe = () => {};
     const timeout = window.setTimeout(() => {
