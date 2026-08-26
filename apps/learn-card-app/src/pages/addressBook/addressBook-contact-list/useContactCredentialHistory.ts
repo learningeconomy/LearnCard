@@ -1,16 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 
 import type { SentCredentialInfo, VC } from '@learncard/types';
-import {
-    getLogger,
-    isBoostCredential,
-    switchedProfileStore,
-    unwrapBoostCredential,
-    useWallet,
-} from 'learn-card-base';
+import { getLogger, switchedProfileStore, useWallet } from 'learn-card-base';
 
 const log = getLogger('contact-credential-history');
 const MAX_PREVIEW_CREDENTIALS = 10;
+
+type UseContactCredentialHistoryOptions = {
+    enabled?: boolean;
+    limit?: number | null;
+};
 
 export type ContactCredentialDirection = 'received' | 'sent';
 
@@ -36,14 +35,8 @@ const resolveCredential = async (
         const storedCredential = (await wallet.read.get(info.uri)) as VC | undefined;
         if (!storedCredential) return null;
 
-        const credential = (
-            isBoostCredential(storedCredential)
-                ? unwrapBoostCredential(storedCredential)
-                : storedCredential
-        ) as VC;
-
         return {
-            credential,
+            credential: storedCredential,
             direction,
             sentAt: info.sent,
             uri: info.uri,
@@ -54,13 +47,16 @@ const resolveCredential = async (
     }
 };
 
-/** Loads counts and the ten newest credentials exchanged with one contact. */
-export const useContactCredentialHistory = (profileId: string | undefined, enabled = true) => {
+/** Loads credential-exchange counts and either a limited preview or the complete history. */
+export const useContactCredentialHistory = (
+    profileId: string | undefined,
+    { enabled = true, limit = MAX_PREVIEW_CREDENTIALS }: UseContactCredentialHistoryOptions = {}
+) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery<ContactCredentialHistory>({
-        queryKey: ['contactCredentialHistory', switchedDid ?? '', profileId ?? ''],
+        queryKey: ['contactCredentialHistory', switchedDid ?? '', profileId ?? '', limit ?? 'all'],
         queryFn: async () => {
             if (!profileId) return { items: [], receivedCount: 0, sentCount: 0 };
 
@@ -73,12 +69,13 @@ export const useContactCredentialHistory = (profileId: string | undefined, enabl
             const newestCredentialInfo = [
                 ...sent.map(info => ({ info, direction: 'sent' as const })),
                 ...received.map(info => ({ info, direction: 'received' as const })),
-            ]
-                .sort((a, b) => Date.parse(b.info.sent) - Date.parse(a.info.sent))
-                .slice(0, MAX_PREVIEW_CREDENTIALS);
+            ].sort((a, b) => Date.parse(b.info.sent) - Date.parse(a.info.sent));
+
+            const credentialInfoToResolve =
+                limit === null ? newestCredentialInfo : newestCredentialInfo.slice(0, limit);
 
             const resolved = await Promise.all(
-                newestCredentialInfo.map(({ info, direction }) =>
+                credentialInfoToResolve.map(({ info, direction }) =>
                     resolveCredential(wallet, info, direction)
                 )
             );
