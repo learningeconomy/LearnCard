@@ -65,8 +65,12 @@ const delay = (milliseconds: number): Promise<void> => {
 
     return promise;
 };
+
 const wallet = await initLearnCard({ seed });
 const did = wallet.id.did();
+
+console.log(JSON.stringify({ phase: 'identity', did }));
+
 const createAuthorization = async (): Promise<string> => {
     const challenge = await request<ChallengeResponse>('/api/auth/challenge', { method: 'POST' });
 
