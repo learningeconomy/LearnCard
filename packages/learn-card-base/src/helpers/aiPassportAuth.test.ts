@@ -79,6 +79,35 @@ describe('ensureAiPassportSession', () => {
         );
     });
 
+    it('accepts a subject-matched cookie-only session without requiring a bearer', async () => {
+        const did = 'did:key:cookie-only';
+        const issuePresentation = vi.fn(async () => 'cookie-only.jwt');
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(new Response(null, { status: 401 }))
+            .mockResolvedValueOnce(
+                Response.json({
+                    audience: 'https://cookie-only.example.test',
+                    binding: 'cookie-binding',
+                    challenge: 'cookie-challenge',
+                })
+            )
+            .mockResolvedValueOnce(Response.json({ authenticated: true, did }))
+            .mockResolvedValueOnce(Response.json({ ok: true }));
+
+        networkStore.set.aiServiceUrl('https://cookie-only.example.test');
+        globalThis.fetch = fetchMock as typeof fetch;
+
+        await expect(ensureAiPassportSession(wallet(did, issuePresentation))).resolves.toBe(
+            'session'
+        );
+        await expect(aiPassportFetch('/threads', {}, did)).resolves.toBeInstanceOf(Response);
+
+        const requestHeaders = new Headers(fetchMock.mock.calls[3]![1]?.headers);
+
+        expect(requestHeaders.has('Authorization')).toBe(false);
+    });
+
     it('reuses an existing subject-matched backend session without signing', async () => {
         const did = 'did:key:existing';
         const issuePresentation = vi.fn();

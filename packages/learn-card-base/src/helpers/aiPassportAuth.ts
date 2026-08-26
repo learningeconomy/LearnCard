@@ -248,12 +248,13 @@ export const ensureAiPassportSession = async (
 
         const session = (await sessionResponse.json()) as SessionResponse;
 
-        if (!session.authenticated || session.did !== did || typeof session.token !== 'string') {
+        if (!session.authenticated || session.did !== did) {
             throw new Error('AI Passport session identity mismatch');
         }
 
         authModes.set(key, 'session');
-        authTokens.set(key, session.token);
+        authTokens.delete(key);
+        if (typeof session.token === 'string') authTokens.set(key, session.token);
 
         return 'session';
     })();

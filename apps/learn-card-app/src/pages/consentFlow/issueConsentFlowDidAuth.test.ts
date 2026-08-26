@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import {
     getConsentFlowContractRedirect,
@@ -9,6 +10,10 @@ import {
 const ownerDid = 'did:web:example.test:ai-passport';
 
 describe('getConsentFlowDidAuthRedirect', () => {
+    beforeEach(() => {
+        networkStore.set.aiServiceUrl('https://api.example.test');
+    });
+
     it('binds the presentation to the backend challenge and domain', async () => {
         const issuePresentation = vi.fn(async () => 'signed.jwt');
         const wallet = {
@@ -39,6 +44,57 @@ describe('getConsentFlowDidAuthRedirect', () => {
                 proofPurpose: 'authentication',
             }
         );
+    });
+
+    it('keeps challenged presentations out of callback request URLs when requested', async () => {
+        const wallet = {
+            id: { did: () => 'did:key:holder' },
+            invoke: { issuePresentation: vi.fn(async () => 'signed.jwt') },
+        } as unknown as BespokeLearnCard;
+        const redirect = await getConsentFlowDidAuthRedirect({
+            challenge: 'backend-challenge',
+            contractUri: 'lc:contract:ai-passport',
+            domain: 'https://api.example.test',
+            ownerDid,
+            returnTo:
+                'https://api.example.test/auth/callback?challenge=backend-challenge&response_mode=fragment',
+            wallet,
+        });
+        const url = new URL(redirect);
+        const fragment = new URLSearchParams(url.hash.slice(1));
+
+        expect(url.searchParams.has('vp')).toBe(false);
+        expect(fragment.get('vp')).toBe('signed.jwt');
+    });
+
+    it('rejects challenged callbacks outside the configured AI Passport origin', async () => {
+        const wallet = {
+            id: { did: () => 'did:key:holder' },
+            invoke: { issuePresentation: vi.fn() },
+        } as unknown as BespokeLearnCard;
+        const input = {
+            challenge: 'backend-challenge',
+            contractUri: 'lc:contract:ai-passport',
+            domain: 'https://api.example.test',
+            ownerDid,
+            wallet,
+        };
+
+        await expect(
+            getConsentFlowDidAuthRedirect({
+                ...input,
+                returnTo: 'https://attacker.example/callback',
+            })
+        ).rejects.toThrow('DID Auth callback must use the configured AI Passport origin');
+        await expect(
+            getConsentFlowDidAuthRedirect({
+                ...input,
+                domain: 'https://attacker.example',
+                returnTo: 'https://api.example.test/auth/callback',
+            })
+        ).rejects.toThrow('DID Auth callback must use the configured AI Passport origin');
+
+        expect(wallet.invoke.issuePresentation).not.toHaveBeenCalled();
     });
 
     it('forces challenged callbacks ahead of contract redirects', () => {

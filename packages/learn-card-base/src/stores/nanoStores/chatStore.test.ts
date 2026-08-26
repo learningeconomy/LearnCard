@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     ensureCalls: 0,
     ensureError: null as Error | null,
     ensureMode: 'session' as 'legacy' | 'session',
+    ensureGate: null as Promise<void> | null,
     fetch: vi.fn(),
     showErrorModal: vi.fn(),
     ticketCount: 0,
@@ -41,6 +42,7 @@ vi.mock('../../helpers/aiPassportAuth', () => {
         ensureAiPassportSession: async () => {
             mocks.ensureCalls += 1;
             if (mocks.ensureError) throw mocks.ensureError;
+            if (mocks.ensureGate) await mocks.ensureGate;
 
             mocks.authMode = mocks.ensureMode;
             return mocks.authMode;
@@ -181,6 +183,7 @@ describe('chat session startup', () => {
         mocks.authMode = 'session';
         mocks.ensureCalls = 0;
         mocks.ensureError = null;
+        mocks.ensureGate = null;
         mocks.ensureMode = 'session';
         mocks.ticketCount = 0;
         // getActiveLocale reads this key; clear it so cases that don't set a
@@ -217,6 +220,33 @@ describe('chat session startup', () => {
                 locale: 'en',
             },
         ]);
+    });
+
+    it('disconnects the previous socket before waiting for auth negotiation', async () => {
+        const firstStart = startTopic('First topic');
+        const firstSocket = await openLatestSocket();
+
+        await firstStart;
+
+        mocks.authMode = 'legacy';
+        mocks.ensureMode = 'session';
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        const secondStart = startTopic('Second topic');
+
+        await Promise.resolve();
+
+        expect(firstSocket.readyState).toBe(FakeWebSocket.CLOSED);
+
+        resolve();
+
+        const secondSocket = await openLatestSocket();
+
+        await secondStart;
+
+        expect(secondSocket).not.toBe(firstSocket);
     });
 
     it('uses the legacy DID query only for a legacy backend', async () => {

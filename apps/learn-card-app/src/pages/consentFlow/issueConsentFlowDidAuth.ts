@@ -1,5 +1,6 @@
 import type { UnsignedVP } from '@learncard/types';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 type QueryParam = string | null | (string | null)[] | undefined;
 const validateConsentFlowDidAuthParams = (challenge?: QueryParam, domain?: QueryParam): boolean => {
@@ -46,6 +47,25 @@ export const getConsentFlowDidAuthRedirect = async ({
     validateConsentFlowDidAuthParams(challenge, domain);
 
     const redirect = new URL(returnTo);
+
+    if (redirect.protocol !== 'http:' && redirect.protocol !== 'https:') {
+        throw new Error('Invalid consent redirect URL');
+    }
+
+    if (typeof challenge === 'string' && typeof domain === 'string') {
+        const aiPassportOrigin = new URL(networkStore.get.aiServiceUrl()).origin;
+        let audienceOrigin: string;
+
+        try {
+            audienceOrigin = new URL(domain).origin;
+        } catch {
+            throw new Error('Invalid DID Auth domain');
+        }
+
+        if (redirect.origin !== aiPassportOrigin || audienceOrigin !== aiPassportOrigin) {
+            throw new Error('DID Auth callback must use the configured AI Passport origin');
+        }
+    }
     let presentation: UnsignedVP & { contractUri: string };
     let proofOptions: {
         challenge?: string;
@@ -90,7 +110,17 @@ export const getConsentFlowDidAuthRedirect = async ({
 
     if (typeof vp !== 'string') throw new Error('DID Auth presentation must be a JWT');
 
-    redirect.searchParams.set('vp', vp);
+    if (
+        typeof challenge === 'string' &&
+        redirect.searchParams.get('response_mode') === 'fragment'
+    ) {
+        const fragment = new URLSearchParams(redirect.hash.slice(1));
+
+        fragment.set('vp', vp);
+        redirect.hash = fragment.toString();
+    } else {
+        redirect.searchParams.set('vp', vp);
+    }
 
     return redirect.toString();
 };

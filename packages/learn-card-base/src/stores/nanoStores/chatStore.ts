@@ -1284,11 +1284,11 @@ export async function startTopicWithUri(topicUri: string) {
         showErrorModal('Authentication Required', 'Please sign in to start a topic with a URI.');
         return;
     }
-    await ensureChatAiPassportAuth(did, true);
-
-    // Reset WebSocket and clear current thread to avoid restoring old session
+    // Cancel the previous socket before auth so it cannot invalidate a newer
+    // in-flight connection generation when negotiation completes.
     disconnectWebSocket();
     currentThreadId.set(null);
+    await ensureChatAiPassportAuth(did, true);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -1366,11 +1366,10 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         showErrorModal('Authentication Required', 'Please sign in to start a learning pathway.');
         return;
     }
-    await ensureChatAiPassportAuth(did, true);
-    // Reset WebSocket and clear current thread to avoid restoring old session
-
+    // Cancel the previous socket before auth negotiation begins.
     disconnectWebSocket();
     currentThreadId.set(null);
+    await ensureChatAiPassportAuth(did, true);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -1416,8 +1415,8 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
         return;
     }
 
-    await ensureChatAiPassportAuth(did, true);
     disconnectWebSocket();
+    await ensureChatAiPassportAuth(did, true);
 
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
