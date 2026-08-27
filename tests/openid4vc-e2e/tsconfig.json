@@ -1,9 +1,6 @@
 {
     "compilerOptions": {
-        "lib": [
-            "es2022",
-            "dom"
-        ],
+        "lib": ["es2022", "dom"],
         "module": "esnext",
         "moduleResolution": "node",
         "resolveJsonModule": true,
@@ -28,17 +25,9 @@
         "forceConsistentCasingInFileNames": true,
         "baseUrl": ".",
         "paths": {
-            "@learncard/openid4vc-plugin": [
-                "../../packages/plugins/openid4vc/src/index.ts"
-            ]
+            "@learncard/openid4vc-plugin": ["../../packages/plugins/openid4vc/src/index.ts"]
         }
     },
-    "include": [
-        "tests/**/*",
-        "server/**/*"
-    ],
-    "exclude": [
-        "./dist/**/*",
-        "./node_modules/**/*"
-    ]
+    "include": ["tests/**/*", "server/**/*"],
+    "exclude": ["./dist/**/*", "./node_modules/**/*"]
 }

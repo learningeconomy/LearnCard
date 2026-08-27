@@ -671,13 +671,11 @@ describe('createSSSStrategy', () => {
 
     describe('storeAuthShare', () => {
         it('sends PUT request to the server and stores returned shareVersion', async () => {
-            const fetchSpy = vi
-                .spyOn(globalThis, 'fetch')
-                .mockResolvedValueOnce(
-                    new Response(JSON.stringify({ success: true, shareVersion: 3 }), {
-                        status: 200,
-                    })
-                );
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({ success: true, shareVersion: 3 }), {
+                    status: 200,
+                })
+            );
 
             await strategy.storeAuthShare('token', 'firebase', 'share-data', 'did:key:z1');
 
