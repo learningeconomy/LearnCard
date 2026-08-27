@@ -99,11 +99,15 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const authToken = getAuthToken();
 
     // Scroll focused input into view when keyboard opens on native
+    const containerRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         if (!Capacitor.isNativePlatform()) return;
 
-        let listenerHandle: Awaited<ReturnType<typeof Keyboard.addListener>> | null = null;
+        let keyboardListenerHandle: Awaited<ReturnType<typeof Keyboard.addListener>> | null = null;
+        let hideListenerHandle: Awaited<ReturnType<typeof Keyboard.addListener>> | null = null;
         let isMounted = true;
+        let isKeyboardVisible = false;
 
         const scrollActiveIntoView = () => {
             if (!isMounted) return;
@@ -113,10 +117,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             }
         };
 
-        Keyboard.addListener('keyboardDidShow', scrollActiveIntoView)
+        // Scroll when keyboard finishes opening
+        Keyboard.addListener('keyboardDidShow', () => {
+            isKeyboardVisible = true;
+            scrollActiveIntoView();
+        })
             .then(handle => {
                 if (isMounted) {
-                    listenerHandle = handle;
+                    keyboardListenerHandle = handle;
                 } else {
                     handle.remove();
                 }
@@ -125,12 +133,36 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 console.error('Keyboard listener failed:', err);
             });
 
-        document.addEventListener('focusin', scrollActiveIntoView);
+        // Track when keyboard hides
+        Keyboard.addListener('keyboardDidHide', () => {
+            isKeyboardVisible = false;
+        })
+            .then(handle => {
+                if (isMounted) {
+                    hideListenerHandle = handle;
+                } else {
+                    handle.remove();
+                }
+            })
+            .catch(err => {
+                console.error('Keyboard hide listener failed:', err);
+            });
+
+        // Only scroll on focusin if keyboard is already visible (switching between inputs)
+        const handleFocusIn = () => {
+            if (isKeyboardVisible) {
+                scrollActiveIntoView();
+            }
+        };
+
+        const container = containerRef.current;
+        container?.addEventListener('focusin', handleFocusIn);
 
         return () => {
             isMounted = false;
-            listenerHandle?.remove();
-            document.removeEventListener('focusin', scrollActiveIntoView);
+            keyboardListenerHandle?.remove();
+            hideListenerHandle?.remove();
+            container?.removeEventListener('focusin', handleFocusIn);
         };
     }, []);
 
@@ -685,7 +717,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     );
 
     return (
-        <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative font-poppins">
+        <div
+            ref={containerRef}
+            className="w-full h-full bg-white flex flex-col overflow-y-auto relative font-poppins"
+        >
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div
                     className="absolute inset-0 opacity-[0.14] transition-colors duration-700 ease-in-out"
