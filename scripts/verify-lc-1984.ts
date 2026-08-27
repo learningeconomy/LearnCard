@@ -141,8 +141,18 @@ expect(
     'Legacy Airbnb ESLint config must be removed'
 );
 
+const learnCardAppPackage = readJson('apps/learn-card-app/package.json', packageSchema);
 const scoutsPackage = readJson('apps/scouts/package.json', packageSchema);
 const scoutsMemoScript = scoutsPackage.scripts?.['i18n:check-memos'] ?? '';
+
+expect(
+    learnCardAppPackage.devDependencies?.['@inlang/paraglide-js'] === '2.20.2',
+    'LearnCard App must pin Paraglide to 2.20.2'
+);
+expect(
+    scoutsPackage.devDependencies?.['@inlang/paraglide-js'] === '2.20.2',
+    'ScoutPass must pin Paraglide to 2.20.2'
+);
 
 expect(
     scoutsMemoScript === 'eslint --no-inline-config --config eslint-i18n-memo.config.mjs src',
@@ -280,21 +290,32 @@ expect(
     'All five deployable environment contracts must be registered'
 );
 
+if (failures.length) {
+    console.error(failures.map(failure => `- ${failure}`).join('\n'));
+    process.exit(1);
+}
+
 const run = (
     command: string,
     args: string[],
     label: string,
     environment: Record<string, string> = {}
 ): void => {
+    console.log(`\n▶ ${label}`);
+
     const result = spawnSync(command, args, {
-        encoding: 'utf8',
         env: { ...process.env, ...environment },
+        stdio: 'inherit',
     });
 
+    if (result.error) {
+        console.error(`${label} failed to start:`, result.error);
+        process.exit(1);
+    }
+
     if (result.status !== 0) {
-        failures.push(
-            `${label} failed:\n${[result.stdout, result.stderr].filter(Boolean).join('\n')}`
-        );
+        console.error(`${label} failed with exit code ${result.status ?? 1}.`);
+        process.exit(result.status ?? 1);
     }
 };
 
@@ -315,10 +336,5 @@ run(
     ['nx', 'build', 'react', '--skip-nx-cache'],
     'React component library dependency-aware build'
 );
-
-if (failures.length) {
-    console.error(failures.map(failure => `- ${failure}`).join('\n'));
-    process.exit(1);
-}
 
 console.log('LC-1984 tooling verification passed.');

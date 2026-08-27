@@ -158,7 +158,7 @@
     "devDependencies": {
         "@capacitor/cli": "^8.3.1",
         "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-        "@inlang/paraglide-js": "^2.18.1",
+        "@inlang/paraglide-js": "2.20.2",
         "@ionic/cli": "^7.2.1",
         "@playwright/test": "^1.51.0",
         "@tailwindcss/line-clamp": "^0.4.4",

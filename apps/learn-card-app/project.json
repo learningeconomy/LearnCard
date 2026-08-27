@@ -48,6 +48,12 @@
         "test-mock": {
             "executor": "nx:run-script",
             "inputs": ["source", "tests"],
+            "dependsOn": [
+                {
+                    "projects": ["helpers"],
+                    "target": "build"
+                }
+            ],
             "options": {
                 "script": "test-mock"
             }

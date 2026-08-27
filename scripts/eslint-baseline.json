@@ -2574,6 +2574,9 @@
         "2435f7c9d27b5b496be7197fee25eebc5132e8c71a54a6281dba2fd2ce4c6076": 1,
         "58c16926540f50c8fe4dfc3cd34607e8b7a7af63fc2b5283714c9b7e93848596": 1
     },
+    "packages/learn-card-base/src/helpers/aiPassportAuth.test.ts": {
+        "bdf737a07445050cb60c65d2a1faf0ecb637097020dcb818cd7cca557e0cf1c1": 1
+    },
     "packages/learn-card-base/src/helpers/authHelpers.ts": {
         "09f6cd04a0607689bdf7d3dd35f709e2ebf9ed720232cdb940c156471067f5d5": 1,
         "1215f545ef21abeb1bf77198ca1fe3be62184f4c0e51274dcd65c2d4f5f7cd8a": 1,
@@ -7043,6 +7046,26 @@
     "services/learn-card-network/learn-cloud-service/src/xapi.ts": {
         "2adce8ef4441c8dec878ec0d3fe83692248c128ec489869a5dc68f8e9f6f0083": 1,
         "f949e0ac2da506181b395319f3f1fe9e4337bc0fce6c661aa6f475c6dd05aff0": 1
+    },
+    "services/learn-card-network/vc-api-service/src/app.ts": {
+        "07e0e8c13abc7f4b5c5a2db9327755dc96092eb43da7207fd88d81009d3819ad": 1,
+        "4d11d118fa52fd19c0efde1ae5335ed23a458eee853beb88f409646e4c7f065a": 1,
+        "55883f70c2aab03e44dd6a2121fc90349f5c757c49096b3debecd75c685bc5b6": 1,
+        "6b1c7e60c3b350cfdf5f5fa399d6d0cbb8585c4715982fa9ea8c049fddba1560": 1,
+        "6f0d305d014f379467050f8ffea68e216ecdd30aa90e87a32b060b5881dd4d82": 1,
+        "75cf5e1a7af2ec0d5321b8971bd45e5836aa1bdb9e0f25b81a02d992028c066b": 1,
+        "94b65dd92ebec65ab3c6610c0737f4098d6a772b0cfe17e974579ecaeb99c344": 1,
+        "9ac872921bb3458cfc775e361bcfc5b14d3a580e4a781be3090577cd573dba8a": 1,
+        "b34ff1c14d127f982f8e909460353c2c13ced112e310346c6f96a0472fb97b52": 1,
+        "c2a47120ec513c7a080c1a72f070b406f1987563d6ab98b05461ba94d4e1943e": 1,
+        "c679748c38458df73d3ffcf2a3bceba937b20276c420f00f2477e3a87bf88428": 1,
+        "da73d0842d2977b204b4808347227f4f9083fbd1672653e060e0ee5e07a00f40": 1
+    },
+    "services/learn-card-network/vc-api-service/src/learn-card.ts": {
+        "932ff3a57bb745d897c81f6719d02436c15651272cf524f7846f759575b4ef5f": 1
+    },
+    "services/learn-card-network/vc-api-service/src/types.helpers.ts": {
+        "d2fa166d31e15d247ea8e028c2fb882012194c2fd1fa95d371955c459e0fbd82": 1
     },
     "tests/e2e/tests/api-keys.spec.ts": {
         "0764c6e0d5c722b50c89d265ecd4d64aacb0174adbaa76b0ab1b4f5c92f4a82f": 1,

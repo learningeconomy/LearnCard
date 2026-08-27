@@ -85,7 +85,10 @@ class FakeWebSocket {
     onclose: SocketHandler = null;
     onerror: SocketHandler = null;
 
-    constructor(readonly url: string, readonly protocols?: string | string[]) {
+    constructor(
+        readonly url: string,
+        readonly protocols?: string | string[]
+    ) {
         FakeWebSocket.instances.push(this);
     }
 

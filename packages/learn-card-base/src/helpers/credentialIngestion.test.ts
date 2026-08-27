@@ -30,7 +30,7 @@ const response = () =>
         { status: 202 }
     );
 
-const wallet = (did: string) => ({ id: { did: () => did } } as unknown as BespokeLearnCard);
+const wallet = (did: string) => ({ id: { did: () => did } }) as unknown as BespokeLearnCard;
 
 describe('ensureCredentialIngestion', () => {
     beforeEach(() => {
