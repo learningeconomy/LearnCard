@@ -30,7 +30,11 @@ sed_i \
     "$CLIENT_DIR/pyproject.toml"
 
 if ! grep -q '^filelock' "$CLIENT_DIR/pyproject.toml"; then
-    sed_i 's/^pytest-cov = \(.*\)$/pytest-cov = \1\nfilelock = ">= 3.20.3"/' "$CLIENT_DIR/pyproject.toml"
+    # awk instead of sed: `\n` in a sed replacement is a GNU extension and is
+    # silently ignored by BSD/macOS sed, which would skip the insertion.
+    awk '{ print } /^pytest-cov =/ { print "filelock = \">= 3.20.3\"" }' \
+        "$CLIENT_DIR/pyproject.toml" > "$CLIENT_DIR/pyproject.toml.tmp" &&
+        mv "$CLIENT_DIR/pyproject.toml.tmp" "$CLIENT_DIR/pyproject.toml"
 fi
 
 sed_i \
