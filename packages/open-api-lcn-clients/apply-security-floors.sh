@@ -17,6 +17,8 @@ set -euo pipefail
 
 CLIENT_DIR="$(dirname "$0")/python-client"
 
+trap 'rm -f "$CLIENT_DIR/pyproject.toml.tmp"' EXIT
+
 sed_i() {
     # portable in-place sed (GNU + BSD)
     if sed --version >/dev/null 2>&1; then sed -i "$@"; else sed -i '' "$@"; fi
