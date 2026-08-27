@@ -1,240 +1,92 @@
 ---
-description: Claim Your First Digital Badge in 5 Minutes!
+description: Send a credential to any email address in about 15 lines of code.
 ---
 
 # Your First Integration
 
-Welcome to your first LearnCard integration! In just a few lines of code, you'll create a verifiable, claimable digital badge—what we call a **Boost**.
-
-This quickstart helps you:
-
--   Install LearnCard tools
--   Create a demo issuer profile
--   Generate a verifiable Boost (credential)
--   Output a link that anyone can claim
-
-No experience required. Just code, coffee, and a terminal.
-
-## ⭐️ What You'll Be Making
-
-{% embed url="https://codepen.io/Jacks-n-Smith/pen/KwwEbjY" fullWidth="false" %}
-
-## 🧰 Installation
-
-Choose your preferred package manager:
-
-```bash
-# Using npm
-npm install @learncard/init @learncard/claimable-boosts-plugin @learncard/lca-api-plugin dotenv
-
-# Using yarn
-yarn add @learncard/init @learncard/claimable-boosts-plugin @learncard/lca-api-plugin dotenv
-
-# Using Bun
-bun add @learncard/init @learncard/claimable-boosts-plugin @learncard/lca-api-plugin dotenv
-
-```
-
-## 🚀 Quickstart Script
-
-This script:
-
-1. Initializes a LearnCard wallet
-2. Creates an issuer profile
-3. Defines a Boost template
-4. Issues the Boost to the network
-5. Generates a claim link for anyone to redeem
-
-## ✅ Prerequisites
-
--   Node.js (v18+)
--   A secure seed phrase (stored in `SECURE_SEED`)
--   A unique ID for your issuer (e.g. `my-awesome-org-profile`)
-
-## 📁 Create `createBoost.js`:
-
-<pre class="language-javascript"><code class="lang-javascript">import 'dotenv/config';
-
-<strong>import { initLearnCard } from '@learncard/init';
-</strong>import { getClaimableBoostsPlugin } from '@learncard/claimable-boosts-plugin';
-import { getLCAPlugin } from '@learncard/lca-api-plugin';
-
-const DEMO_SEED = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdee'
-const secure_seed = process.env.SECURE_SEED;
-const profileId = process.env.PROFILE_ID || 'my-awesome-org-profile';
-const profileName = process.env.PROFILE_NAME || 'My Awesome Org';
-
-// Use user provided seed, or use backup DEMO seed 
-const seed = secure_seed || DEMO_SEED;
-if (!secure_seed) {
-  console.warn('Warning: SECURE_SEED environment variable is not set, using DEMO_SEED.');
-}
-
-async function quickstartBoost() {
-  try {
-    console.log('Initializing LearnCard...');
-    const learnCard = await initLearnCard({
-      seed: seed,
-      network: true,
-      allowRemoteContexts: true
-    });
-
-    const lcaApiLearnCard = await learnCard.addPlugin(
-      await getLCAPlugin(learnCard, 'https://api.learncard.app/trpc')
-    );
-
-    const claimableLearnCard = await lcaApiLearnCard.addPlugin(
-      await getClaimableBoostsPlugin(lcaApiLearnCard)
-    );
-    console.log('LearnCard initialized with plugins.');
-
-    try {
-      console.log(`Creating profile "${profileId}"...`);
-      await claimableLearnCard.invoke.createProfile({
-        profileId: profileId,
-        displayName: profileName,
-        description: 'Issuing awesome credentials.',
-      });
-      console.log(`Profile "${profileId}" created successfully.`);
-    } catch (error) {
-      if (error.message?.includes('Profile already exists')) {
-        console.log(`Profile "${profileId}" already exists, continuing.`);
-      } else {
-        throw new Error(`Failed to create profile: ${error.message}`);
-      }
-    }
-
-    console.log('Creating boost template...');
-    const boostTemplate = claimableLearnCard.invoke.newCredential({
-      type: 'boost', 
-      boostName: 'Quickstart Achievement',
-      boostImage: 'https://placehold.co/400x400?text=Quickstart',
-      achievementType: 'Influencer',
-      achievementName:'Quickstart Achievement',
-      achievementDescription: 'Completed the quickstart guide!',
-      achievementNarrative: 'User successfully ran the quickstart script.',
-      achievementImage: 'https://placehold.co/400x400?text=Quickstart'
-    });
-    console.log('Boost template created.');
-
-    console.log('Creating boost on the network...');
-    const boostUri = await claimableLearnCard.invoke.createBoost(
-      boostTemplate,
-      {
-        name: boostTemplate.name,
-        description: boostTemplate.achievementDescription,
-      }
-    );
-    console.log(`Boost created with URI: ${boostUri}`);
-
-    console.log('Generating claim link...');
-    const claimLink = await claimableLearnCard.invoke.generateBoostClaimLink(boostUri);
-    console.log('\n✅ Success! Your Claimable Boost link is ready:');
-    console.log(claimLink);
-
-    return claimLink;
-
-  } catch (error) {
-    console.error('\n❌ Error during quickstart process:', error);
-    process.exit(1);
-  }
-}
-
-quickstartBoost();
-
-</code></pre>
-
-## 🔩 Setup Organization Config (optional)
-
-{% hint style="danger" %}
-This step sets up your secret seed phrase for controlling your Organization's profile. However, for demonstration, **you may safely skip this step to use the provided DEMO_SEED**. Never hardcode a seed in production. Learn more about [seeds](../core-concepts/identities-and-keys/seed-phrases.md).
-{% endhint %}
-
-#### Create and save your seed to .en&#x76;_:_
-
-{% tabs %}
-{% tab title="macOS / Linux" %}
-Run the following command in your terminal:&#x20;
-
-{% code overflow="wrap" %}
-
-```bash
-echo "SECURE_SEED=\"$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")\"" > .env
-```
-
-{% endcode %}
-{% endtab %}
-
-{% tab title="Windows Cmd" %}
-Run the following command in your Windows cmd prompt:&#x20;
-
-{% code overflow="wrap" %}
-
-```bash
-echo "SECURE_SEED=\"$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")\"" > .env
-```
-
-{% endcode %}
-{% endtab %}
-
-{% tab title="Powershell" %}
-Run the following command in Powershell:&#x20;
-
-{% code overflow="wrap" %}
-
-```bash
-"SECURE_SEED=\"$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")\"" | Out-File -Encoding utf8 .env
-```
-
-{% endcode %}
-{% endtab %}
-{% endtabs %}
-
-#### Add config variables to your `.env`:
+The fastest way to see LearnCard work: send a verifiable credential to an email address. The recipient gets an email with a claim link — no account needed before claiming.
 
 {% hint style="info" %}
-You must create a unique profile ID for your organization. It must be 3-40 characters, lowercase, no spaces or special characters. E.g.: `my-organization`, `acme`, `taffy-co-organization` , etc.
+No code at all? You can issue credentials directly from the [LearnCard app](https://learncard.app) — no integration required. This guide is for sending credentials programmatically.
 {% endhint %}
 
-{% code title=".env" overflow="wrap" %}
+## 1. Install
 
 ```bash
-SECURE_SEED="..." # Created from command in prior step.
-PROFILE_ID="<unique-profile-id>" # Unique profile ID.
-PROFILE_NAME="<Display Name>" # Human Readable Display Name
+npm install @learncard/init dotenv
 ```
 
-{% endcode %}
-
-## 🏃‍♂️ Run the Script
+You'll need Node.js 18+ and a secure seed phrase in a `.env` file:
 
 ```bash
-node createBoost.js
+SECURE_SEED=abcdef1234567890...
 ```
 
-## 🎉 What You'll See
-
-The console will print a claimable URL like:
-
-```arduino
-✅ Success! Your Claimable Boost link is ready:
-https://claim.learncard.app/boost/abc123...
-```
-
-Anyone with that link can scan or click to claim their badge. It’s a live verifiable credential issued by your script.
-
-{% hint style="success" %}
-Want to customize your claimable boost even more? Check out our Core Concepts guide on "[Getting Started with Boosts](../core-concepts/credentials-and-data/getting-started-with-boosts.md)."
+{% hint style="warning" %}
+Your seed controls your issuer identity. Generate a random 64-char hex string, keep it secret, and never commit it.
 {% endhint %}
 
-## ➡️ Next Steps
+## 2. Send a credential
 
--   📝 Play with sending different kinds of credentials (see[ Building Verifiable Credentials](../core-concepts/credentials-and-data/building-verifiable-credentials.md))
--   🔐 Add expiration, limits, or QR codes (see [Detailed Usage](../sdks/official-plugins/claimable-boosts.md))
--   🧠 Learn how Boosts work under the hood (see [Core Concepts](../core-concepts/credentials-and-data/boost-credentials.md))
--   🛠️ [Issue credentials ](../tutorials/create-a-credential.md)dynamically in your app or game
+Create `send.js`:
 
-**You just built your first digital credential.**\
-You’ve touched real-world decentralized identity and verifiable credentials—with just a few lines of code.
+```javascript
+import 'dotenv/config';
+import { initLearnCard } from '@learncard/init';
 
-We’re glad you’re here. Ready to build something great?
+const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
+
+await learnCard.invoke.createProfile({
+    profileId: 'my-organization',
+    displayName: 'My Organization',
+});
+
+const credential = await learnCard.invoke.issueCredential(learnCard.invoke.getTestVc());
+
+const result = await learnCard.invoke.sendCredentialViaInbox({
+    recipient: { type: 'email', value: 'learner@example.com' },
+    credential,
+});
+
+console.log(result.status, result.claimUrl);
+```
+
+```bash
+node send.js
+```
+
+That's it. The recipient receives an email with a claim link, and `result.claimUrl` gives you the same link to deliver through your own channels.
+
+{% hint style="info" %}
+`createProfile` only needs to run once per issuer — wrap it in a try/catch or remove it after the first run.
+{% endhint %}
+
+## Prefer raw HTTP?
+
+Generate an API token once, then send from any language:
+
+```javascript
+const grantId = await learnCard.invoke.addAuthGrant({
+    name: 'inbox-sender',
+    scope: 'inbox:write',
+});
+const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
+```
+
+```bash
+curl -X POST https://network.learncard.com/api/inbox/issue \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipient": { "type": "email", "value": "learner@example.com" },
+    "credential": { "...": "your signed credential JSON" }
+  }'
+```
+
+See [Send Credentials](../how-to-guides/send-credentials.md) for the full API reference, phone delivery, templates, and webhooks.
+
+## Next steps
+
+-   **Design a real badge** instead of the test credential → [Create a Credential](../tutorials/create-a-credential.md)
+-   **Issue the same badge to many people** → [Create a Boost](../tutorials/create-a-boost.md)
+-   **Not sure what to build?** → [Use Cases & Possibilities](../introduction/use-cases-and-possibilities.md)
