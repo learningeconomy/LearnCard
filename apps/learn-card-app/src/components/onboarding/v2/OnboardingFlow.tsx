@@ -105,13 +105,15 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         let listenerHandle: Awaited<ReturnType<typeof Keyboard.addListener>> | null = null;
         let isMounted = true;
 
-        Keyboard.addListener('keyboardDidShow', () => {
+        const scrollActiveIntoView = () => {
             if (!isMounted) return;
             const activeEl = document.activeElement as HTMLElement | null;
             if (activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA') {
                 activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-        })
+        };
+
+        Keyboard.addListener('keyboardDidShow', scrollActiveIntoView)
             .then(handle => {
                 if (isMounted) {
                     listenerHandle = handle;
@@ -123,9 +125,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 console.error('Keyboard listener failed:', err);
             });
 
+        document.addEventListener('focusin', scrollActiveIntoView);
+
         return () => {
             isMounted = false;
             listenerHandle?.remove();
+            document.removeEventListener('focusin', scrollActiveIntoView);
         };
     }, []);
 
