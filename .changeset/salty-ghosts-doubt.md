@@ -3,4 +3,4 @@
 "learn-card-base": patch
 ---
 
-feat: [LC-2091] - Add Recipients with Native QR Scanning
+feat: Add recipients with native QR scanning
