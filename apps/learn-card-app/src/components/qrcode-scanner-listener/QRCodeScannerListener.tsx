@@ -128,8 +128,10 @@ export const QRCodeScannerListener: React.FC = () => {
         const previousCleanupPromise = cleanupPromiseRef.current;
 
         let disposed = false;
+        let processingResult = false;
         let listener: PluginListenerHandle | null = null;
         let stopPromise: Promise<void> | null = null;
+        let activeScanId = 0;
 
         const stopOwnedScan = (): Promise<void> => {
             if (stopPromise) return stopPromise;
@@ -151,10 +153,10 @@ export const QRCodeScannerListener: React.FC = () => {
             return stopPromise;
         };
 
-        const handleBarcodeScanned = async (rawValue: string) => {
-            if (disposed) return;
+        const handleBarcodeScanned = async (rawValue: string, scanId: number) => {
+            if (disposed || processingResult || scanId !== activeScanId) return;
 
-            disposed = true;
+            processingResult = true;
             log.debug('scan::success', { rawValue });
 
             try {
@@ -163,7 +165,7 @@ export const QRCodeScannerListener: React.FC = () => {
                 log.warn('scan::cleanup-error', error);
             }
 
-            const onResult = QRCodeScannerStore.set.consumeResultHandler();
+            const onResult = QRCodeScannerStore.get.onResult();
 
             if (!onResult) {
                 QRCodeScannerStore.set.closeScanner();
@@ -192,13 +194,25 @@ export const QRCodeScannerListener: React.FC = () => {
                         await new Promise(resolve => window.setTimeout(resolve, durationMs));
                     }
                 }
+
+                if (feedback?.tone === 'error') {
+                    if (!disposed && QRCodeScannerStore.get.showScanner()) {
+                        QRCodeScannerStore.set.clearFeedback();
+                        processingResult = false;
+                        stopPromise = null;
+                        await startScanning();
+                    }
+
+                    return;
+                }
+
+                QRCodeScannerStore.set.closeScanner();
             } catch (error) {
                 log.error('scan::result-handler-error', error);
                 presentToastRef.current(m['scanner.failed'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
-            } finally {
                 QRCodeScannerStore.set.closeScanner();
             }
         };
@@ -208,11 +222,12 @@ export const QRCodeScannerListener: React.FC = () => {
                 await previousCleanupPromise;
                 if (disposed) return;
 
+                const scanId = ++activeScanId;
                 const registeredListener = await nativeBarcodeScanner.addListener(
                     'barcodeScanned',
                     result => {
                         const rawValue = result?.barcode?.rawValue;
-                        if (rawValue) void handleBarcodeScanned(rawValue);
+                        if (rawValue) void handleBarcodeScanned(rawValue, scanId);
                     }
                 );
 

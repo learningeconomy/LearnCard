@@ -39,9 +39,9 @@ const getDidWebHost = (did?: string): string | undefined =>
     did?.startsWith('did:web:') ? did.split(':')[2]?.toLowerCase() : undefined;
 
 /**
- * Opens the native QR scanner in one-shot recipient capture mode. The recipient
- * is inserted immediately with a profile-id fallback, then enriched from the
- * normal profile query without delaying issuance.
+ * Opens the native QR scanner in scoped recipient capture mode. Invalid scans
+ * remain open for retry. A valid recipient is inserted immediately with a
+ * profile-id fallback, then enriched without delaying issuance.
  */
 export const ScanRecipientButton: React.FC<ScanRecipientButtonProps> = ({
     recipients,

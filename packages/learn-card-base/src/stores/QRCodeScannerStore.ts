@@ -33,7 +33,7 @@ export const QRCodeScannerStore = createStore('qrCodeScannerStore')<{
         feedbackTone: 'success',
     },
     { persist: { name: 'qrCodeScannerStore', enabled: false } }
-).extendActions((set, get) => ({
+).extendActions(set => ({
     openScanner: ({ onResult, mode = 'default' }: OpenQRCodeScannerOptions = {}) => {
         set.state(state => {
             state.onResult = onResult;
@@ -58,10 +58,11 @@ export const QRCodeScannerStore = createStore('qrCodeScannerStore')<{
             state.feedbackTone = tone;
         });
     },
-    consumeResultHandler: (): QRCodeScannerResultHandler | undefined => {
-        const onResult = get.onResult();
-        set.onResult(undefined);
-        return onResult;
+    clearFeedback: () => {
+        set.state(state => {
+            state.feedbackMessage = undefined;
+            state.feedbackTone = 'success';
+        });
     },
     clearResultHandler: () => set.onResult(undefined),
 }));

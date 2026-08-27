@@ -40,11 +40,6 @@ const mocks = vi.hoisted(() => {
             onResult = handler;
         },
         getResultHandler: () => onResult,
-        consumeResultHandler: () => {
-            const handler = onResult;
-            onResult = undefined;
-            return handler;
-        },
         clearResultHandler: () => {
             onResult = undefined;
         },
@@ -52,10 +47,10 @@ const mocks = vi.hoisted(() => {
             feedbackMessage = feedback.message;
             feedbackTone = feedback.tone ?? 'success';
         }),
-        clearFeedback: () => {
+        clearFeedback: vi.fn(() => {
             feedbackMessage = undefined;
             feedbackTone = 'success';
-        },
+        }),
         closeScanner: () => {
             showScanner = false;
             onResult = undefined;
@@ -100,13 +95,13 @@ vi.mock('learn-card-base', () => ({
 vi.mock('learn-card-base/stores/QRCodeScannerStore', () => ({
     default: {
         useTracked: { showScanner: mocks.getShowScanner },
-        get: { showScanner: mocks.getShowScanner },
+        get: { showScanner: mocks.getShowScanner, onResult: mocks.getResultHandler },
         set: {
             showScanner: mocks.setShowScanner,
             closeScanner: mocks.closeScanner,
-            consumeResultHandler: mocks.consumeResultHandler,
             clearResultHandler: mocks.clearResultHandler,
             setFeedback: mocks.setFeedback,
+            clearFeedback: mocks.clearFeedback,
         },
     },
 }));
@@ -128,12 +123,12 @@ import QRCodeScannerListener from './QRCodeScannerListener';
 
 describe('QRCodeScannerListener', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
         mocks.callbacks.length = 0;
         mocks.listenerRemovers.length = 0;
         mocks.setShowScanner(true);
         mocks.clearResultHandler();
         mocks.clearFeedback();
+        vi.clearAllMocks();
     });
 
     it('creates a fresh owned listener for every scan session', async () => {
@@ -193,12 +188,19 @@ describe('QRCodeScannerListener', () => {
         expect(modalTypes).toEqual({ desktop: 'fullscreen', mobile: 'fullscreen' });
     });
 
-    it('delivers a scoped result once without invoking global routing', async () => {
-        const onResult = vi.fn(async () => ({
-            message: "You can't add yourself as a recipient.",
-            tone: 'error' as const,
-            durationMs: 0,
-        }));
+    it('keeps a scoped scanner open and re-arms it after error feedback', async () => {
+        const onResult = vi
+            .fn()
+            .mockResolvedValueOnce({
+                message: "You can't add yourself as a recipient.",
+                tone: 'error' as const,
+                durationMs: 0,
+            })
+            .mockResolvedValueOnce({
+                message: 'Found @test',
+                tone: 'success' as const,
+                durationMs: 0,
+            });
         mocks.setResultHandler(onResult);
 
         render(<QRCodeScannerListener />);
@@ -212,13 +214,23 @@ describe('QRCodeScannerListener', () => {
             expect(onResult).toHaveBeenCalledWith('https://learncard.app/connect?did=test')
         );
         expect(mocks.route).not.toHaveBeenCalled();
-        expect(mocks.getResultHandler()).toBeUndefined();
+        expect(mocks.getResultHandler()).toBe(onResult);
         expect(mocks.setFeedback).toHaveBeenCalledWith({
             message: "You can't add yourself as a recipient.",
             tone: 'error',
             durationMs: 0,
         });
+        await waitFor(() => expect(mocks.startScan).toHaveBeenCalledTimes(2));
+        expect(mocks.clearFeedback).toHaveBeenCalledOnce();
         expect(mocks.getFeedbackTone()).toBe('success');
+        expect(mocks.getShowScanner()).toBe(true);
+
+        await act(async () => {
+            mocks.callbacks[1]({ barcode: { rawValue: 'https://learncard.app/connect?did=test' } });
+        });
+
+        await waitFor(() => expect(onResult).toHaveBeenCalledTimes(2));
+        expect(mocks.getResultHandler()).toBeUndefined();
         expect(mocks.getShowScanner()).toBe(false);
     });
 
