@@ -10,4 +10,14 @@ structure:
 #   - The old source file MUST be removed/renamed, or the redirect is ignored.
 #   - Never chain redirects: map every historical URL directly to its final destination.
 # Verified in CI by scripts/check-docs-links.mjs.
-redirects: {}
+redirects:
+    how-to-guides/implement-flows/chapi: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/chapi-wallet-setup-guide: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/translating-to-chapi-documentation: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/demo-application: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/using-learncard-to-interact-with-a-chapi-wallet: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/cheat-sheets: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/cheat-sheets/issuers: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/cheat-sheets/wallets: introduction/interoperability.md
+    core-concepts/architecture-and-principles/u.s.-state-api: sdks/learncard-network/README.md
+    core-concepts/credentials-and-data/general-best-practices-and-troubleshooting: core-concepts/credentials-and-data/README.md

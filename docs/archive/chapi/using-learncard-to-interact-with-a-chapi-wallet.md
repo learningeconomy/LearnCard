@@ -1,7 +1,7 @@
 ---
 description: >-
-  Learn How to Store an Issued Verifiable Credential into a CHAPI compliant
-  Wallet with LearnCard!
+    Learn How to Store an Issued Verifiable Credential into a CHAPI compliant
+    Wallet with LearnCard!
 ---
 
 # 🔰 Using LearnCard to Interact with a CHAPI Wallet

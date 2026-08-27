@@ -5,6 +5,7 @@ description: Add the following files/routes to your app to become CHAPI complian
 # Wallets
 
 {% code title="/" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 
@@ -12,30 +13,33 @@ const learnCard = await initLearnCard();
 
 await learnCard.invoke.installChapiHandler();
 ```
+
 {% endcode %}
 
 {% code title="/manifest.json" %}
+
 ```json
 {
-  "name": "LearnCard Demo CHAPI Wallet",
-  "short_name": "LearnCard Demo CHAPI Wallet",
-  "icons": [
-    {
-      "sizes": "64x64",
-      "src": "icon.png",
-      "type": "image/png"
+    "name": "LearnCard Demo CHAPI Wallet",
+    "short_name": "LearnCard Demo CHAPI Wallet",
+    "icons": [
+        {
+            "sizes": "64x64",
+            "src": "icon.png",
+            "type": "image/png"
+        }
+    ],
+    "credential_handler": {
+        "url": "/wallet-worker",
+        "enabledTypes": ["VerifiablePresentation"]
     }
-
-  ],
-  "credential_handler": {
-    "url": "/wallet-worker",
-    "enabledTypes": ["VerifiablePresentation"]
-  }
 }
 ```
+
 {% endcode %}
 
 {% code title="/wallet-worker" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 
@@ -54,9 +58,11 @@ learnCard.invoke.activateChapiHandler({
     },
 });
 ```
+
 {% endcode %}
 
 {% code title="/store" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 
@@ -69,18 +75,20 @@ const vp = event.credential.data;
 const vc = Array.isArray(vp.verifiableCredential)
     ? vp.verifiableCredential[0]
     : vp.verifiableCredential;
-    
+
 const accept = async () => {
     const uri = await learnCard.store.Ceramic.upload(vc);
     await wallet.index.IDX.add({ uri, id });
-    event.respondWith(Promise.resolve({ dataType: 'VerifiablePresentation', data: vp }); 
+    event.respondWith(Promise.resolve({ dataType: 'VerifiablePresentation', data: vp });
 };
 
 const reject = () => event.respondWith(Promise.resolve(null));
 ```
+
 {% endcode %}
 
 {% code title="/get" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 
@@ -107,6 +115,7 @@ const accept = () => {
 
 const reject = () => event.respondWith(Promise.resolve(null));
 ```
+
 {% endcode %}
 
 ### More Info

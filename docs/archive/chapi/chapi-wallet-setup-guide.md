@@ -6,12 +6,12 @@ description: Learn how to use LearnCard to build a CHAPI compliant wallet applic
 
 In order to make a CHAPI compliant wallet, there are six things that your site will need to do:
 
-* Install/run the web-credential-polyfill
-* Run the `installHandler` method
-* Host a public manifest.json file
-* Host a public wallet service worker
-* \[Optional] Host a storage endpoint for users to visit when storing a credential via CHAPI
-* \[Optional] Host a get endpoint for users to visit when retrieving a credential via CHAPI
+-   Install/run the web-credential-polyfill
+-   Run the `installHandler` method
+-   Host a public manifest.json file
+-   Host a public wallet service worker
+-   \[Optional] Host a storage endpoint for users to visit when storing a credential via CHAPI
+-   \[Optional] Host a get endpoint for users to visit when retrieving a credential via CHAPI
 
 ## Install/run the web-credential-polyfill
 
@@ -34,24 +34,25 @@ await learnCard.invoke.installChapiHandler();
 This step is a _bit_ trickier, and is deeply intertwined with the next step. The simple answer here is to add a `manifest.json` file to your site that is hosted at `/manifest.json` with contents similar to the following:
 
 {% code title="manifest.json" %}
+
 ```json
 {
-  "name": "LearnCard Demo CHAPI Wallet",
-  "short_name": "LearnCard Demo CHAPI Wallet",
-  "icons": [
-    {
-      "sizes": "64x64",
-      "src": "icon.png",
-      "type": "image/png"
+    "name": "LearnCard Demo CHAPI Wallet",
+    "short_name": "LearnCard Demo CHAPI Wallet",
+    "icons": [
+        {
+            "sizes": "64x64",
+            "src": "icon.png",
+            "type": "image/png"
+        }
+    ],
+    "credential_handler": {
+        "url": "/wallet-worker",
+        "enabledTypes": ["VerifiablePresentation"]
     }
-
-  ],
-  "credential_handler": {
-    "url": "/wallet-worker",
-    "enabledTypes": ["VerifiablePresentation"]
-  }
 }
 ```
+
 {% endcode %}
 
 Replacing the `url` with the path to the service worker you set up in the next step, and pointing `src` to an image file that you would like to appear in the CHAPI menu.

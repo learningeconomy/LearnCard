@@ -5,34 +5,38 @@
 Phase 2 has been implemented. Here's what was built:
 
 ### New Files
-- **`packages/auth-types/src/index.ts`** — Added `SignInAdapter`, `PhoneVerificationHandle` interfaces
-- **`packages/learn-card-base/src/auth-adapters/createFirebaseSignInAdapter.ts`** — Firebase implementation of `SignInAdapter`
-- **`packages/learn-card-base/src/auth-adapters/index.ts`** — Barrel exports
-- **`packages/learn-card-base/src/providers/SignInAdapterProvider.tsx`** — React context provider + `useSignInAdapter` hook
+
+-   **`packages/auth-types/src/index.ts`** — Added `SignInAdapter`, `PhoneVerificationHandle` interfaces
+-   **`packages/learn-card-base/src/auth-adapters/createFirebaseSignInAdapter.ts`** — Firebase implementation of `SignInAdapter`
+-   **`packages/learn-card-base/src/auth-adapters/index.ts`** — Barrel exports
+-   **`packages/learn-card-base/src/providers/SignInAdapterProvider.tsx`** — React context provider + `useSignInAdapter` hook
 
 ### Modified Files
-- **`packages/learn-card-base/src/config/providerRegistry.ts`** — Added `registerSignInAdapterFactory()`, `resolveSignInAdapter()`
-- **`packages/learn-card-base/src/auth-coordinator/types.ts`** — Re-exports `SignInAdapter`, `PhoneVerificationHandle`
-- **`packages/learn-card-base/src/index.ts`** — Exports new modules
-- **`apps/learn-card-app/src/providers/AuthCoordinatorProvider.tsx`** — Registered Firebase sign-in adapter, wrapped with `SignInAdapterProvider`, removed Phase 1 bridge
-- **`apps/learn-card-app/src/hooks/useFirebase.ts`** — Removed all `firebaseAuthStore.set.setFirebaseCurrentUser()` calls
-- **`apps/scouts/src/providers/AuthCoordinatorProvider.tsx`** — Same as LCA
-- **`apps/scouts/src/hooks/useFirebase.ts`** — Same as LCA
+
+-   **`packages/learn-card-base/src/config/providerRegistry.ts`** — Added `registerSignInAdapterFactory()`, `resolveSignInAdapter()`
+-   **`packages/learn-card-base/src/auth-coordinator/types.ts`** — Re-exports `SignInAdapter`, `PhoneVerificationHandle`
+-   **`packages/learn-card-base/src/index.ts`** — Exports new modules
+-   **`apps/learn-card-app/src/providers/AuthCoordinatorProvider.tsx`** — Registered Firebase sign-in adapter, wrapped with `SignInAdapterProvider`, removed Phase 1 bridge
+-   **`apps/learn-card-app/src/hooks/useFirebase.ts`** — Removed all `firebaseAuthStore.set.setFirebaseCurrentUser()` calls
+-   **`apps/scouts/src/providers/AuthCoordinatorProvider.tsx`** — Same as LCA
+-   **`apps/scouts/src/hooks/useFirebase.ts`** — Same as LCA
 
 ### Architecture Decisions
-- The `SignInAdapterProvider` subscribes to `onAuthStateChanged` and writes to `authUserStore` — this is the **single source of truth**, replacing the Phase 1 bridge.
-- `useFirebase` hooks retain their existing Firebase SDK calls and error handling but no longer manually update `firebaseAuthStore.setFirebaseCurrentUser()` — the subscription handles state propagation.
-- `useSignInAdapter()` hook is available for components that want to call adapter methods directly.
-- Adding a new auth provider (Supertokens, Keycloak) requires: (1) implementing `SignInAdapter`, (2) registering via `registerSignInAdapterFactory()`, (3) setting `VITE_AUTH_PROVIDER`.
+
+-   The `SignInAdapterProvider` subscribes to `onAuthStateChanged` and writes to `authUserStore` — this is the **single source of truth**, replacing the Phase 1 bridge.
+-   `useFirebase` hooks retain their existing Firebase SDK calls and error handling but no longer manually update `firebaseAuthStore.setFirebaseCurrentUser()` — the subscription handles state propagation.
+-   `useSignInAdapter()` hook is available for components that want to call adapter methods directly.
+-   Adding a new auth provider (Supertokens, Keycloak) requires: (1) implementing `SignInAdapter`, (2) registering via `registerSignInAdapterFactory()`, (3) setting `VITE_AUTH_PROVIDER`.
 
 ---
 
 ## Overview
 
 Phase 1 established environment-driven auth provider selection at the **coordinator layer**:
-- `authUserStore` — generic user state store
-- `registerAuthProviderFactory()` / `resolveAuthProvider()` — registry pattern
-- Bridge effect syncs `firebaseAuthStore` → `authUserStore` (temporary)
+
+-   `authUserStore` — generic user state store
+-   `registerAuthProviderFactory()` / `resolveAuthProvider()` — registry pattern
+-   Bridge effect syncs `firebaseAuthStore` → `authUserStore` (temporary)
 
 Phase 2 completes the abstraction by making the **sign-in UI layer** generic, allowing apps to swap auth providers (Firebase, Supertokens, Keycloak, etc.) via environment variables with zero code changes to sign-in components.
 
@@ -41,16 +45,18 @@ Phase 2 completes the abstraction by making the **sign-in UI layer** generic, al
 ## Current State (Post-Phase 1)
 
 ### What's Generic
-- `AuthProvider` interface (`getIdToken`, `signOut`, `reauthenticateWithToken`, etc.)
-- `authUserStore` — provider-agnostic user state
-- Coordinator layer uses `authProvider.*` methods exclusively
-- Factory registration via `registerAuthProviderFactory()`
+
+-   `AuthProvider` interface (`getIdToken`, `signOut`, `reauthenticateWithToken`, etc.)
+-   `authUserStore` — provider-agnostic user state
+-   Coordinator layer uses `authProvider.*` methods exclusively
+-   Factory registration via `registerAuthProviderFactory()`
 
 ### What's Still Firebase-Specific
-- `useFirebase` hook — contains all sign-in methods (phone, email, Google, Apple)
-- `firebaseAuthStore` — written to by `useFirebase`, bridged to `authUserStore`
-- Firebase SDK imports scattered across sign-in UI components
-- Native Capacitor Firebase plugin usage (`@capacitor-firebase/authentication`)
+
+-   `useFirebase` hook — contains all sign-in methods (phone, email, Google, Apple)
+-   `firebaseAuthStore` — written to by `useFirebase`, bridged to `authUserStore`
+-   Firebase SDK imports scattered across sign-in UI components
+-   Native Capacitor Firebase plugin usage (`@capacitor-firebase/authentication`)
 
 ---
 
@@ -117,7 +123,7 @@ export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig)
         providerType: 'firebase',
 
         subscribe(onUser) {
-            return onAuthStateChanged(getAuth(), (fbUser) => {
+            return onAuthStateChanged(getAuth(), fbUser => {
                 if (fbUser) {
                     onUser({
                         id: fbUser.uid,
@@ -154,7 +160,9 @@ export function createFirebaseSignInAdapter(config: FirebaseSignInAdapterConfig)
             }
 
             // Web path — requires RecaptchaVerifier
-            const appVerifier = new RecaptchaVerifier(getAuth(), 'recaptcha-container', { size: 'invisible' });
+            const appVerifier = new RecaptchaVerifier(getAuth(), 'recaptcha-container', {
+                size: 'invisible',
+            });
             const result = await signInWithPhoneNumber(getAuth(), phoneNumber, appVerifier);
             return { verificationId: result.verificationId };
         },
@@ -230,15 +238,21 @@ export function useAuth() {
     const authUser = authUserStore.use.currentUser();
 
     // Memoized methods that delegate to the adapter
-    const sendEmailLink = useCallback(async (email: string) => {
-        if (!adapter.sendEmailLink) throw new Error('Email link not supported');
-        await adapter.sendEmailLink(email, getActionCodeSettings());
-    }, [adapter]);
+    const sendEmailLink = useCallback(
+        async (email: string) => {
+            if (!adapter.sendEmailLink) throw new Error('Email link not supported');
+            await adapter.sendEmailLink(email, getActionCodeSettings());
+        },
+        [adapter]
+    );
 
-    const confirmPhoneOtp = useCallback(async (verificationId: string, code: string) => {
-        if (!adapter.confirmPhoneOtp) throw new Error('Phone auth not supported');
-        return adapter.confirmPhoneOtp(verificationId, code);
-    }, [adapter]);
+    const confirmPhoneOtp = useCallback(
+        async (verificationId: string, code: string) => {
+            if (!adapter.confirmPhoneOtp) throw new Error('Phone auth not supported');
+            return adapter.confirmPhoneOtp(verificationId, code);
+        },
+        [adapter]
+    );
 
     const signInWithGoogle = useCallback(async () => {
         if (!adapter.signInWithOAuth) throw new Error('OAuth not supported');
@@ -277,15 +291,13 @@ export function SignInAdapterProvider({ children }: { children: React.ReactNode 
 
     // Subscribe to auth state changes → write to authUserStore
     useEffect(() => {
-        return adapter.subscribe((user) => {
+        return adapter.subscribe(user => {
             authUserStore.set.setUser(user);
         });
     }, [adapter]);
 
     return (
-        <SignInAdapterContext.Provider value={adapter}>
-            {children}
-        </SignInAdapterContext.Provider>
+        <SignInAdapterContext.Provider value={adapter}>{children}</SignInAdapterContext.Provider>
     );
 }
 
@@ -301,28 +313,33 @@ export function useSignInAdapter(): SignInAdapter {
 ## Migration Plan
 
 ### Step 1: Create Sign-In Adapter Interface + Firebase Implementation
-- Add `SignInAdapter` interface to `auth-types`
-- Create `createFirebaseSignInAdapter()` in `learn-card-base`
-- Create `signInAdapterRegistry` with `registerSignInAdapterFactory()` / `resolveSignInAdapter()`
+
+-   Add `SignInAdapter` interface to `auth-types`
+-   Create `createFirebaseSignInAdapter()` in `learn-card-base`
+-   Create `signInAdapterRegistry` with `registerSignInAdapterFactory()` / `resolveSignInAdapter()`
 
 ### Step 2: Create Generic `useAuth` Hook
-- Extract sign-in logic from `useFirebase` into adapter methods
-- Create `useAuth` hook that delegates to `SignInAdapter`
-- Create `SignInAdapterProvider` that sets up subscription
+
+-   Extract sign-in logic from `useFirebase` into adapter methods
+-   Create `useAuth` hook that delegates to `SignInAdapter`
+-   Create `SignInAdapterProvider` that sets up subscription
 
 ### Step 3: Migrate Sign-In Components
-- Update `LoginPage`, `PhoneForm`, `EmailForm`, `GoogleButton`, `AppleButton` to use `useAuth`
-- Remove direct Firebase SDK imports from UI components
-- Remove `useFirebase` hook (or deprecate as re-export of `useAuth`)
+
+-   Update `LoginPage`, `PhoneForm`, `EmailForm`, `GoogleButton`, `AppleButton` to use `useAuth`
+-   Remove direct Firebase SDK imports from UI components
+-   Remove `useFirebase` hook (or deprecate as re-export of `useAuth`)
 
 ### Step 4: Remove Phase 1 Bridge
-- Remove `firebaseAuthStore` → `authUserStore` bridge effect
-- Remove `firebaseAuthStore` reads from coordinator layer
-- `useFirebase` writes to `firebaseAuthStore` are replaced by adapter's `subscribe()`
+
+-   Remove `firebaseAuthStore` → `authUserStore` bridge effect
+-   Remove `firebaseAuthStore` reads from coordinator layer
+-   `useFirebase` writes to `firebaseAuthStore` are replaced by adapter's `subscribe()`
 
 ### Step 5: Retire `firebaseAuthStore`
-- Mark as deprecated
-- Remove from apps after verifying no remaining usages
+
+-   Mark as deprecated
+-   Remove from apps after verifying no remaining usages
 
 ---
 
@@ -340,7 +357,7 @@ And registering the adapter at app startup:
 
 ```typescript
 // App entry point
-registerSignInAdapterFactory('supertokens', (config) =>
+registerSignInAdapterFactory('supertokens', config =>
     createSupertokensSignInAdapter({ apiUrl: config.supertokensApiUrl })
 );
 ```
@@ -357,13 +374,13 @@ registerSignInAdapterFactory('supertokens', (config) =>
 
 ## Timeline Estimate
 
-| Phase | Scope | Estimate |
-|-------|-------|----------|
-| 2a | `SignInAdapter` interface + Firebase impl | 1-2 days |
-| 2b | `useAuth` hook + `SignInAdapterProvider` | 1 day |
-| 2c | Migrate LCA sign-in components | 2-3 days |
-| 2d | Migrate Scouts sign-in components | 1-2 days |
-| 2e | Remove bridge + retire `firebaseAuthStore` | 0.5 day |
+| Phase | Scope                                      | Estimate |
+| ----- | ------------------------------------------ | -------- |
+| 2a    | `SignInAdapter` interface + Firebase impl  | 1-2 days |
+| 2b    | `useAuth` hook + `SignInAdapterProvider`   | 1 day    |
+| 2c    | Migrate LCA sign-in components             | 2-3 days |
+| 2d    | Migrate Scouts sign-in components          | 1-2 days |
+| 2e    | Remove bridge + retire `firebaseAuthStore` | 0.5 day  |
 
 **Total: ~6-8 days**
 
@@ -380,7 +397,8 @@ registerSignInAdapterFactory('supertokens', (config) =>
 ## Summary
 
 Phase 2 completes the auth abstraction by:
-- Moving all sign-in logic behind a `SignInAdapter` interface
-- Creating a generic `useAuth` hook that works with any provider
-- Enabling environment-driven provider selection for the full auth stack (not just coordinator)
-- Retiring Firebase-specific stores and hooks
+
+-   Moving all sign-in logic behind a `SignInAdapter` interface
+-   Creating a generic `useAuth` hook that works with any provider
+-   Enabling environment-driven provider selection for the full auth stack (not just coordinator)
+-   Retiring Firebase-specific stores and hooks
