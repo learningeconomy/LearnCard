@@ -536,12 +536,13 @@ export const getConsentedDataBetweenProfiles = async (
             params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(params)) }),
             cursor,
             ...contractQueryParams,
+            now: new Date().toISOString(),
         })
     ).match({
         related: [
             { model: Profile, where: { profileId: consenterProfileId } },
             ConsentFlowTerms.getRelationshipByAlias('createdBy'),
-            { identifier: 'terms', model: ConsentFlowTerms },
+            { identifier: 'terms', model: ConsentFlowTerms, where: { status: 'live' } },
             ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
             { model: ConsentFlowContract, identifier: 'contract' },
             ConsentFlowContract.getRelationshipByAlias('createdBy'),
@@ -559,6 +560,7 @@ all(key IN keys($params) WHERE
     END
 )
 AND ${contractWhereClause}
+AND (terms.expiresAt IS NULL OR terms.expiresAt > $now)
 `);
 
     const dbQuery = cursor ? _dbQuery.raw(' AND terms.updatedAt < $cursor') : _dbQuery;
@@ -582,6 +584,10 @@ AND ${contractWhereClause}
     return inflatedResults.map(({ term, contract }) => ({
         date: term.updatedAt!,
         contractUri: constructUri('contract', contract.id, domain),
+        termsUri: constructUri('terms', term.id, domain),
+        status: term.status,
+        ...(term.expiresAt ? { expiresAt: term.expiresAt } : {}),
+        terms: term.terms,
         credentials: Object.entries(term.terms.read.credentials.categories)
             .flatMap(([category, { shared, sharing, shareUntil }]) => {
                 if (
