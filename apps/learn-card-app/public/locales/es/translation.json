@@ -114,6 +114,12 @@
         "settings": "Ajustes",
         "closeMenu": "Cerrar menú"
     },
+    "myAssistant": {
+        "schedules": {
+            "autonomyUnavailableTitle": "Las tareas automáticas aún no están habilitadas",
+            "autonomyUnavailableDescription": "Aún puedes chatear con tu asistente. Los horarios recurrentes solo están disponibles para algunas cuentas de prueba."
+        }
+    },
     "passport": {
         "buildMyLearnCard": {
             "addVCs": {

@@ -357,7 +357,7 @@ export const assertSecurityConfig = (config: ServiceConfig): void => {
 
 export const getConfig = (): ServiceConfig => {
     const nodeEnv = readString(process.env.NODE_ENV) ?? 'development';
-    const model = readString(process.env.AI_AGENT_MODEL) ?? 'gpt-5.5';
+    const model = readString(process.env.AI_AGENT_MODEL) ?? 'gpt-5.6-luna';
     const walletSeed =
         readString(process.env.AI_AGENT_WALLET_SEED) ??
         readString(process.env.LEARNCARD_AGENT_SEED) ??

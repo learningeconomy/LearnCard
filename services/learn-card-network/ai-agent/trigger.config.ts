@@ -18,6 +18,18 @@ export default defineConfig({
             syncEnvVars(
                 () => [
                     {
+                        name: 'AI_AGENT_MODEL',
+                        value: 'gpt-5.6-luna',
+                    },
+                    {
+                        name: 'AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION',
+                        value: '0.2',
+                    },
+                    {
+                        name: 'AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION',
+                        value: '1.2',
+                    },
+                    {
                         name: 'SENTRY_TRACES_SAMPLE_RATE',
                         value: '1',
                     },

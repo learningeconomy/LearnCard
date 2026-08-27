@@ -354,7 +354,11 @@ const MyAssistantPageContent: React.FC = () => {
                     onOpenConsent={openConsent}
                 />
 
-                <AssistantSchedulesCard agentUrl={normalizedAgentUrl} auth={assistantAuth} />
+                <AssistantSchedulesCard
+                    agentUrl={normalizedAgentUrl}
+                    auth={assistantAuth}
+                    autonomyEnabled={flags.aiAgentAutonomyEnabled === true}
+                />
 
                 <section className="space-y-5">
                     <div className="flex items-end justify-between gap-4">

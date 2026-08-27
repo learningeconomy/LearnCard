@@ -68,14 +68,14 @@ Parameters:
         Default: ''
     Model:
         Type: String
-        Default: gpt-5.5
+        Default: gpt-5.6-luna
     ModelInputCostUsdPerMillion:
         Type: Number
-        Default: 5
+        Default: 0.2
         MinValue: 0
     ModelOutputCostUsdPerMillion:
         Type: Number
-        Default: 30
+        Default: 1.2
         MinValue: 0
     WebSearchProvider:
         Type: String

@@ -273,13 +273,12 @@ staging ECS task:
     `BRAVE_SEARCH_API_KEY` when Brave is enabled
 -   `AI_AGENT_AUTH_DOMAIN`, `AI_AGENT_CLOUD_URL`, `AI_AGENT_NETWORK_URL`,
     `AI_AGENT_CONSENT_FLOW_CONTRACT_URI`, and `AI_AGENT_CONSENT_FLOW_APP_URL`
--   `AI_AGENT_MODEL`, `AI_AGENT_INPUT_TOKEN_COST_USD_PER_MILLION`,
-    `AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION`, `AI_AGENT_MONGO_DB_NAME`,
-    `AI_AGENT_ENCRYPTION_KEY_ID`, and the same run/budget/web-search settings as ECS
+-   `AI_AGENT_MONGO_DB_NAME`, `AI_AGENT_ENCRYPTION_KEY_ID`, and the same
+    run/budget/web-search settings as ECS
 
-`trigger.config.ts` synchronizes a full staging trace sample rate and the Git commit release. The
-remaining runtime variables above are pre-provisioned and must be updated when their ECS
-counterparts rotate.
+`trigger.config.ts` synchronizes GPT-5.6 Luna with its current token prices, a full staging trace
+sample rate, and the Git commit release. The remaining runtime variables above are pre-provisioned
+and must be updated when their ECS counterparts rotate.
 
 Trigger.dev injects that project's PROD `TRIGGER_SECRET_KEY` into task runs. Do not add the
 personal access token to the task environment. The deployment workflow uses that PAT only for
@@ -305,10 +304,11 @@ It explicitly tells the agent not to write user data. A missing grant, unavailab
 
 1. In the LearnCard LaunchDarkly staging environment—the environment with client-side ID
    `6a07749c1380120a8213715a`—create the boolean flag `ai-agent-autonomy-enabled`. Keep its
-   default variation `false`.
-2. Target the dedicated staging profile's DID with variation `true`. The service evaluates the
-   authenticated DID as the existing LaunchDarkly `user` context key, so individual targets and
-   reusable segments both work.
+   default variation `false` and make it available to client-side SDKs.
+2. Target the dedicated staging profile's DID with variation `true`. The service and app both
+   evaluate the authenticated DID as the existing LaunchDarkly `user` context key, so individual
+   targets and reusable segments work consistently. The Assistant page shows an unavailable
+   schedules callout instead of controls when the client receives `false`.
 3. Deploy the exact branch commit with the `Deploy` workflow command below.
 4. The deployment smoke creates an enabled schedule two or three minutes ahead, confirms both
    Trigger.dev tasks complete, verifies the Assistant feed receives a card with a scheduled
@@ -376,9 +376,10 @@ Application logs are concise logfmt lines such as `INFO agent.run.succeeded runI
 They contain hashed owner IDs, tool names, durations, outcomes, token counts, provider request IDs,
 and cost estimates. They do not contain DIDs, prompts, model responses, tool arguments/results,
 credentials, memory contents, or exception messages. Metrics use the CloudWatch `PutMetricData`
-API and therefore do not add EMF JSON records to the application log stream. Sentry receives a
-verified deployment event, sanitized operational exceptions, and `ai.agent.run` transactions with
-`ai.model` and `ai.tool` child spans. Staging samples all traces; production defaults to `0.1`.
+API and therefore do not add EMF JSON records to the application log stream. Ordinary application
+logs are not forwarded to Sentry. Sentry receives a verified deployment event, sanitized
+operational exceptions, and `ai.agent.run` transactions with `ai.model` and `ai.tool` child spans.
+Staging samples all traces; production defaults to `0.1`.
 
 ## Common failures
 

@@ -114,6 +114,12 @@
         "settings": "Settings",
         "closeMenu": "Close menu"
     },
+    "myAssistant": {
+        "schedules": {
+            "autonomyUnavailableTitle": "Automatic tasks aren't enabled yet",
+            "autonomyUnavailableDescription": "You can still chat with your assistant. Recurring schedules are only available to selected testing accounts."
+        }
+    },
     "passport": {
         "buildMyLearnCard": {
             "addVCs": {

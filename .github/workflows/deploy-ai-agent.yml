@@ -217,6 +217,9 @@ jobs:
                       CreateService=true \
                       ImageTag=sha-${{ github.sha }} \
                       DeploymentId=${{ github.run_id }}-${{ github.run_attempt }} \
+                      Model=gpt-5.6-luna \
+                      ModelInputCostUsdPerMillion=0.2 \
+                      ModelOutputCostUsdPerMillion=1.2 \
                       "${TRIGGER_PARAMETERS[@]}" \
                     --tags \
                       Project=learncard \
@@ -252,3 +255,25 @@ jobs:
                   AI_AGENT_SMOKE_BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
                   AI_AGENT_SMOKE_SEED: ${{ secrets.AI_AGENT_SMOKE_SEED }}
               run: bun run --cwd services/learn-card-network/ai-agent smoke:staging
+
+            - name: Verify readable CloudWatch application logs
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_seconds: 20
+                  max_attempts: 5
+                  retry_wait_seconds: 10
+                  command: |
+                      LOG_GROUP="$(aws cloudformation describe-stacks \
+                        --stack-name '${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}' \
+                        --query "Stacks[0].Outputs[?OutputKey=='ApplicationLogGroupName'].OutputValue | [0]" \
+                        --output text)"
+                      START_TIME="$(( $(date +%s) * 1000 - 600000 ))"
+                      MESSAGES="$(aws logs filter-log-events \
+                        --log-group-name "$LOG_GROUP" \
+                        --start-time "$START_TIME" \
+                        --filter-pattern '"agent.run.succeeded"' \
+                        --query 'events[].message' \
+                        --output text)"
+                      [[ "$MESSAGES" == *'INFO agent.run.succeeded'* ]]
+                      [[ "$MESSAGES" != *'"_aws"'* ]]
+                      printf '%s\n' "$MESSAGES"

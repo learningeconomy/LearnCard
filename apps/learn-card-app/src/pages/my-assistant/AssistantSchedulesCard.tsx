@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { IonIcon } from '@ionic/react';
-import { alertCircleOutline } from 'ionicons/icons';
+import { alertCircleOutline, informationCircleOutline } from 'ionicons/icons';
 import { Toggle } from 'learn-card-base';
+
+import * as m from '../../paraglide/messages.js';
 
 import {
     createLearnCardAssistantSchedule,
@@ -30,13 +32,18 @@ const MORNING_BRIEFING_PLACEHOLDER =
 interface AssistantSchedulesCardProps {
     agentUrl: string;
     auth?: LearnCardAssistantAuth;
+    autonomyEnabled: boolean;
 }
 
 interface ScheduleDraft extends CreateLearnCardAssistantScheduleInput {
     enabled: boolean;
 }
 
-const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({ agentUrl, auth }) => {
+const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
+    agentUrl,
+    auth,
+    autonomyEnabled,
+}) => {
     const queryClient = useQueryClient();
     const queryKey = ['learncard-assistant-schedules', auth?.did, agentUrl];
     const browserTimezone = useMemo(getLearnCardAssistantBrowserTimezone, []);
@@ -55,7 +62,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({ agentUr
     } = useQuery<LearnCardAssistantSchedule[]>({
         queryKey,
         queryFn: () => fetchLearnCardAssistantSchedules(agentUrl, auth!),
-        enabled: Boolean(auth),
+        enabled: Boolean(auth) && autonomyEnabled,
     });
     const saveMutation = useMutation({
         mutationFn: async (scheduleDraft: ScheduleDraft) => {
@@ -145,6 +152,33 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({ agentUr
         setDraft(undefined);
         setActionError('');
     };
+
+    if (!autonomyEnabled)
+        return (
+            <section className="bg-white border border-grayscale-200 rounded-[20px] p-6 shadow-bottom-2-4 space-y-5 font-poppins">
+                <div>
+                    <h2 className="text-xl font-semibold text-grayscale-900 mb-1">Schedules</h2>
+                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                        Choose when your assistant should complete recurring tasks.
+                    </p>
+                </div>
+
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3">
+                    <IonIcon
+                        icon={informationCircleOutline}
+                        className="text-amber-600 text-xl mt-0.5 shrink-0"
+                    />
+                    <div>
+                        <p className="text-sm font-medium text-amber-900">
+                            {m['myAssistant.schedules.autonomyUnavailableTitle']()}
+                        </p>
+                        <p className="text-sm text-amber-700 leading-relaxed mt-1">
+                            {m['myAssistant.schedules.autonomyUnavailableDescription']()}
+                        </p>
+                    </div>
+                </div>
+            </section>
+        );
 
     return (
         <section className="bg-white border border-grayscale-200 rounded-[20px] p-6 shadow-bottom-2-4 space-y-5 font-poppins">

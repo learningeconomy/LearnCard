@@ -114,6 +114,12 @@
         "settings": "الإعدادات",
         "closeMenu": "إغلاق القائمة"
     },
+    "myAssistant": {
+        "schedules": {
+            "autonomyUnavailableTitle": "المهام التلقائية غير مفعّلة بعد",
+            "autonomyUnavailableDescription": "لا يزال بإمكانك الدردشة مع مساعدك. الجداول المتكررة متاحة فقط لحسابات اختبار محددة."
+        }
+    },
     "passport": {
         "buildMyLearnCard": {
             "addVCs": {
