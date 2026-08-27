@@ -1,34 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { useToast, ToastTypeEnum, useDeviceTypeByWidth } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum, useDeviceTypeByWidth } from 'learn-card-base';
 
-import { IonCol, IonRow, IonPage } from '@ionic/react';
+import { IonCol, IonRow, IonPage, IonSpinner } from '@ionic/react';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
+import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 
-import { useInviteLink } from '../../../hooks/useInviteLink';
 import { shareOrCopy } from '../../../helpers/shareHelpers';
 
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;
 }> = ({ handleCloseModal }) => {
     const currentUser = useCurrentUser();
+    const { initWallet } = useWallet();
     const { presentToast } = useToast();
-
-    const { data: invite } = useInviteLink({ enabled: true });
     const { isMobile } = useDeviceTypeByWidth();
 
+    const [walletDid, setWalletDid] = useState<string>('');
+
+    useEffect(() => {
+        const getWalletDid = async () => {
+            const wallet = await initWallet();
+            setWalletDid(wallet?.id?.did());
+        };
+
+        if (!walletDid) getWalletDid();
+    }, [walletDid]);
+
+    /*
+      This is a connection *request* link, deliberately — the recipient acts on
+      it. It is NOT the unlimited-use auto-connect invite from `useInviteLink`:
+      this modal is also mounted from the Boost CMS issue flow
+      (BoostAddressBookContactOptions), where minting a 30-day auto-connect
+      invite just to show a QR would be the wrong trust model. The bug fixed
+      here was only the hardcoded `pass.scout.org` host; the semantics are
+      unchanged.
+    */
+    const connectUrl = walletDid ? `${getAppBaseUrl()}/connect?connect=true&did=${walletDid}` : '';
+
     const handleShare = async () => {
-        if (!invite?.url) return;
+        if (!connectUrl) return;
 
         // Desktop copies rather than opening the macOS share sheet — see
         // InviteLinkModal for why feature detection alone is not enough.
         const result = await shareOrCopy({
-            url: invite.url,
+            url: connectUrl,
             title: m['contacts.addContactDesc'](),
             allowWebShare: isMobile,
         });
@@ -68,12 +89,20 @@ const AddressBookQRCode: React.FC<{
                 </IonRow>
                 <div className="flex justify-center items-center w-full relative px-10 mb-5 mt-5">
                     <div className="max-w-[90%] w-full h-auto relative user-qr-code-modal-qr-wrap">
-                        <QRCodeSVG
-                            className="h-full w-full"
-                            value={invite?.url ?? ''}
-                            data-testid="qrcode-card"
-                            bgColor="transparent"
-                        />
+                        {connectUrl ? (
+                            <QRCodeSVG
+                                className="h-full w-full"
+                                value={connectUrl}
+                                data-testid="qrcode-card"
+                                bgColor="transparent"
+                            />
+                        ) : (
+                            // Never render a QR for the empty string — it scans
+                            // fine and leads nowhere.
+                            <div className="flex items-center justify-center py-10">
+                                <IonSpinner color="black" />
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center justify-center w-full mt-3">

@@ -100,6 +100,27 @@ describe('shareOrCopy', () => {
         expect(result).toEqual({ method: 'clipboard', shared: true });
     });
 
+    // Capacitor's Share plugin REJECTS on iOS when the user dismisses the
+    // activity sheet (`call.reject("Share canceled")`). Before this, that
+    // rejection escaped shareOrCopy and the caller's catch told the user the
+    // invite link had failed — for a link that had resolved fine.
+    it('reports a dismissed native share sheet instead of throwing', async () => {
+        mockCapacitor.isNativePlatform.mockReturnValue(true);
+        mockShare.share.mockRejectedValueOnce(new Error('Share canceled'));
+
+        const result = await shareOrCopy({ url: URL });
+
+        expect(result).toEqual({ method: 'native', shared: false });
+        expect(mockClipboard.write).not.toHaveBeenCalled();
+    });
+
+    it('rethrows a genuine native share failure', async () => {
+        mockCapacitor.isNativePlatform.mockReturnValue(true);
+        mockShare.share.mockRejectedValueOnce(new Error('No sharing activity found'));
+
+        await expect(shareOrCopy({ url: URL })).rejects.toThrow(/no sharing activity/i);
+    });
+
     it('still uses the native sheet on a native platform regardless of allowWebShare', async () => {
         mockCapacitor.isNativePlatform.mockReturnValue(true);
         setNavigatorShare(vi.fn(async () => undefined));

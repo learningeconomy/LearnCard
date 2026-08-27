@@ -9,7 +9,6 @@ import Plus from 'learn-card-base/svgs/Plus';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
 import AddressBookContactOptions from '../addressBook-contact-options/AddressBookContactOptions';
-import InviteButton from '../addressBookInvite/InviteButton';
 
 import { useIsCurrentUserLCNUser } from 'learn-card-base';
 
@@ -75,29 +74,26 @@ export const AddressBookHeader: React.FC<{
                             </span>
                         </button>
                     </IonCol>
-                    <div className="flex items-center gap-[8px]">
-                        <InviteButton variant="pill" surface="header" />
-                        <button
-                            onClick={async () => {
-                                const { prompted } = await gate();
-                                if (prompted) return;
+                    <button
+                        onClick={async () => {
+                            const { prompted } = await gate();
+                            if (prompted) return;
 
-                                if (currentLCNUser) {
-                                    presentCenterModal({
-                                        cssClass: 'generic-modal show-modal ion-disable-focus-trap',
-                                        backdropDismiss: true,
-                                        showBackdrop: false,
-                                    });
-                                }
-                            }}
-                            className={`text-${colorSet.primaryColor} flex rounded-[40px] bg-white py-[6px] px-[16px] text-[17px] font-semibold font-poppins`}
-                        >
-                            {m['contacts.new']()}
-                            <Plus
-                                className={`ml-[5px] w-[24px] h-[24px] text-${colorSet.primaryColor}`}
-                            />
-                        </button>
-                    </div>
+                            if (currentLCNUser) {
+                                presentCenterModal({
+                                    cssClass: 'generic-modal show-modal ion-disable-focus-trap',
+                                    backdropDismiss: true,
+                                    showBackdrop: false,
+                                });
+                            }
+                        }}
+                        className={`text-${colorSet.primaryColor} flex rounded-[40px] bg-white py-[6px] px-[16px] text-[17px] font-semibold font-poppins`}
+                    >
+                        {m['contacts.new']()}
+                        <Plus
+                            className={`ml-[5px] w-[24px] h-[24px] text-${colorSet.primaryColor}`}
+                        />
+                    </button>
                 </IonRow>
                 {children}
             </IonRow>

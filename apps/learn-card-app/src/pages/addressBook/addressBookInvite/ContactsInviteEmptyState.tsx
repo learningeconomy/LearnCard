@@ -57,7 +57,7 @@ const ContactsInviteEmptyState: React.FC = () => {
                 </div>
 
                 <div className="flex w-full max-w-[300px] flex-col items-center justify-center gap-[20px]">
-                    <InviteButton variant="block" surface="empty_state" prefetch />
+                    <InviteButton surface="empty_state" prefetch />
 
                     <div className="flex w-full items-center justify-center gap-[10px]">
                         <span className="h-px flex-1 bg-grayscale-300" />

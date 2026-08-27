@@ -47,7 +47,7 @@ export interface ProfileSnapshot {
 export type FeedbackSurface = 'issue_success' | 'claim_interaction' | 'claim_oidc';
 
 /** Where the LC-2089 contacts invite was surfaced. */
-export type InviteSurface = 'empty_state' | 'header';
+export type InviteSurface = 'empty_state' | 'menu';
 
 /** 3-point sentiment scale used by the SentimentStrip. */
 export type FeedbackSentiment = 'negative' | 'neutral' | 'positive';
@@ -84,8 +84,8 @@ export const AnalyticsEvents = {
     GENERATE_CLAIM_LINK: 'generate_claim_link',
 
     // LC-2089 contacts invite. `surface` separates the zero-contact empty
-    // state (an activation moment) from the always-present header button
-    // (deliberate re-invite). `method` records which share mechanism the
+    // state (an activation moment) from the "New +" menu row (a deliberate
+    // re-invite by someone who already has contacts). `method` records which share mechanism the
     // platform actually offered — `clipboard` on desktop is expected, not a
     // failure.
     CONTACT_INVITE_SHARED: 'contact_invite_shared',

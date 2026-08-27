@@ -39,6 +39,22 @@ export type ShareOrCopyInput = {
  * overwriting their clipboard is a surprise. Any other Web Share failure is a
  * genuine fault and does fall through.
  */
+/**
+ * Did the user dismiss the sheet rather than the share genuinely failing?
+ *
+ * The two platforms signal this differently: the Web Share API throws a DOM
+ * `AbortError`, while Capacitor's Share plugin rejects with `"Share canceled"`
+ * on iOS. Both mean the same thing — the user changed their mind — and neither
+ * is an error worth surfacing.
+ */
+const isShareDismissal = (err: unknown): boolean => {
+    const error = err as { name?: string; message?: string } | undefined;
+
+    if (error?.name === 'AbortError') return true;
+
+    return /cancel/i.test(error?.message ?? '');
+};
+
 export const shareOrCopy = async ({
     url,
     title = '',
@@ -46,9 +62,18 @@ export const shareOrCopy = async ({
     allowWebShare = false,
 }: ShareOrCopyInput): Promise<ShareResult> => {
     if (Capacitor.isNativePlatform()) {
-        await Share.share({ title, text, url, dialogTitle: title });
+        try {
+            await Share.share({ title, text, url, dialogTitle: title });
 
-        return { method: 'native', shared: true };
+            return { method: 'native', shared: true };
+        } catch (err) {
+            // Dismissing the iOS activity sheet rejects. Treat it as "not
+            // shared", never as a failure — otherwise the caller shows an error
+            // toast for a link that resolved perfectly well.
+            if (isShareDismissal(err)) return { method: 'native', shared: false };
+
+            throw err;
+        }
     }
 
     const canWebShare =
@@ -62,7 +87,7 @@ export const shareOrCopy = async ({
 
             return { method: 'web_share', shared: true };
         } catch (err) {
-            if ((err as Error | undefined)?.name === 'AbortError') {
+            if (isShareDismissal(err)) {
                 return { method: 'web_share', shared: false };
             }
             // Fall through to the clipboard for real failures.

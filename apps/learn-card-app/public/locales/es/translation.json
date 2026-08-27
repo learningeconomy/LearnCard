@@ -1541,9 +1541,9 @@
             "invitedYou": "{{name}} te invitó a {{brand}}",
             "notFoundTitle": "¡Vaya!",
             "notFoundBody": "No se pudo encontrar al usuario",
-            "loadError": "No pudimos cargar tus contactos. Inténtalo de nuevo.",
             "copyLink": "Copiar enlace"
-        }
+        },
+        "loadError": "No pudimos cargar tus contactos. Inténtalo de nuevo."
     },
     "consentFlow": {
         "title": "Consentimiento",
