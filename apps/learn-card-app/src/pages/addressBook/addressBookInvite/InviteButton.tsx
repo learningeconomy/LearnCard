@@ -2,12 +2,19 @@ import React, { useState } from 'react';
 import { IonSpinner } from '@ionic/react';
 
 import LinkChain from 'learn-card-base/svgs/LinkChain';
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import {
+    useToast,
+    ToastTypeEnum,
+    useModal,
+    ModalTypes,
+    useDeviceTypeByWidth,
+} from 'learn-card-base';
 import { AnalyticsEvents, useAnalytics, type InviteSurface } from '@analytics';
 
 import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNGatedAction';
 import { useInviteLink } from '../../../hooks/useInviteLink';
 import { shareOrCopy } from '../../../helpers/shareHelpers';
+import InviteLinkModal from './InviteLinkModal';
 import * as m from '../../../paraglide/messages.js';
 
 export type InviteButtonVariant = 'pill' | 'block';
@@ -33,6 +40,8 @@ const InviteButton: React.FC<{
     const { gate } = useLCNGatedAction();
     const { presentToast } = useToast();
     const analytics = useAnalytics();
+    const { newModal } = useModal();
+    const { isMobile } = useDeviceTypeByWidth();
 
     const [sharing, setSharing] = useState(false);
 
@@ -56,9 +65,33 @@ const InviteButton: React.FC<{
 
             if (!link) throw new Error('No invite link');
 
+            /*
+              Desktop web gets this app's own share modal, not an OS sheet.
+              `navigator.share` is not mobile-only — desktop Chrome on macOS
+              implements it — so gating on feature detection alone popped the
+              macOS share sheet, which is out of place beside every other share
+              surface here. Native and mobile web still get their OS sheet.
+            */
+            if (!isMobile) {
+                newModal(
+                    <InviteLinkModal />,
+                    { sectionClassName: '!max-w-[400px]' },
+                    { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
+                );
+
+                await analytics.track(AnalyticsEvents.CONTACT_INVITE_SHARED, {
+                    surface,
+                    method: 'modal',
+                    shared: true,
+                });
+
+                return;
+            }
+
             const result = await shareOrCopy({
                 url: link.url,
                 title: m['contacts.invite.cta'](),
+                allowWebShare: true,
             });
 
             if (result.method === 'clipboard') {

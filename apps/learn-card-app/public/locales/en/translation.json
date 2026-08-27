@@ -1541,7 +1541,8 @@
             "invitedYou": "{{name}} invited you to {{brand}}",
             "notFoundTitle": "Eeek!",
             "notFoundBody": "Unable to find user",
-            "loadError": "We couldn't load your contacts. Please try again."
+            "loadError": "We couldn't load your contacts. Please try again.",
+            "copyLink": "Copy link"
         }
     },
     "consentFlow": {

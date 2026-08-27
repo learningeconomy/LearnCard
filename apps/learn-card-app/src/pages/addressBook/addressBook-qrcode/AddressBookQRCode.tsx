@@ -3,7 +3,7 @@ import * as m from '../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import { useToast, ToastTypeEnum, useDeviceTypeByWidth } from 'learn-card-base';
 
 import { IonCol, IonRow, IonPage } from '@ionic/react';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
@@ -20,13 +20,17 @@ const AddressBookQRCode: React.FC<{
     const { presentToast } = useToast();
 
     const { data: invite } = useInviteLink({ enabled: true });
+    const { isMobile } = useDeviceTypeByWidth();
 
     const handleShare = async () => {
         if (!invite?.url) return;
 
+        // Desktop copies rather than opening the macOS share sheet — see
+        // InviteLinkModal for why feature detection alone is not enough.
         const result = await shareOrCopy({
             url: invite.url,
             title: m['contacts.addContactDesc'](),
+            allowWebShare: isMobile,
         });
 
         if (result.method === 'clipboard') {

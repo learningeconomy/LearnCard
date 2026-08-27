@@ -42,11 +42,11 @@ describe('shareOrCopy', () => {
         expect(result).toEqual({ method: 'native', shared: true });
     });
 
-    it('uses the Web Share API on web when the browser exposes it', async () => {
+    it('uses the Web Share API on web when the browser exposes it and the caller opts in', async () => {
         const webShare = vi.fn(async () => undefined);
         setNavigatorShare(webShare);
 
-        const result = await shareOrCopy({ url: URL, title: 'Join me' });
+        const result = await shareOrCopy({ url: URL, title: 'Join me', allowWebShare: true });
 
         expect(webShare).toHaveBeenCalledWith(expect.objectContaining({ url: URL }));
         expect(mockClipboard.write).not.toHaveBeenCalled();
@@ -54,7 +54,7 @@ describe('shareOrCopy', () => {
     });
 
     it('falls back to the clipboard on web without navigator.share', async () => {
-        const result = await shareOrCopy({ url: URL });
+        const result = await shareOrCopy({ url: URL, allowWebShare: true });
 
         expect(mockClipboard.write).toHaveBeenCalledWith({ string: URL });
         expect(result).toEqual({ method: 'clipboard', shared: true });
@@ -68,7 +68,7 @@ describe('shareOrCopy', () => {
             })
         );
 
-        const result = await shareOrCopy({ url: URL });
+        const result = await shareOrCopy({ url: URL, allowWebShare: true });
 
         expect(mockClipboard.write).not.toHaveBeenCalled();
         expect(result).toEqual({ method: 'web_share', shared: false });
@@ -85,5 +85,28 @@ describe('shareOrCopy', () => {
 
         expect(mockClipboard.write).toHaveBeenCalledWith({ string: URL });
         expect(result).toEqual({ method: 'clipboard', shared: true });
+    });
+    // The bug this guards: navigator.share is NOT mobile-only. Desktop Chrome on
+    // macOS implements it, so feature detection alone sent desktop users to the
+    // OS share sheet instead of this app's in-app share modal.
+    it('ignores navigator.share when the caller has not opted in, even if the browser has it', async () => {
+        const webShare = vi.fn(async () => undefined);
+        setNavigatorShare(webShare);
+
+        const result = await shareOrCopy({ url: URL, title: 'Join me' });
+
+        expect(webShare).not.toHaveBeenCalled();
+        expect(mockClipboard.write).toHaveBeenCalledWith({ string: URL });
+        expect(result).toEqual({ method: 'clipboard', shared: true });
+    });
+
+    it('still uses the native sheet on a native platform regardless of allowWebShare', async () => {
+        mockCapacitor.isNativePlatform.mockReturnValue(true);
+        setNavigatorShare(vi.fn(async () => undefined));
+
+        const result = await shareOrCopy({ url: URL, allowWebShare: false });
+
+        expect(mockShare.share).toHaveBeenCalled();
+        expect(result).toEqual({ method: 'native', shared: true });
     });
 });

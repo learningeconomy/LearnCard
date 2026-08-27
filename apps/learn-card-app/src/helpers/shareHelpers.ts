@@ -15,13 +15,23 @@ export type ShareOrCopyInput = {
     url: string;
     title?: string;
     text?: string;
+    /**
+     * Whether the Web Share API is an appropriate choice here.
+     *
+     * Defaults to false, and callers must opt in — because `navigator.share`
+     * is NOT mobile-only. Desktop Chrome on macOS implements it and pops the
+     * OS share sheet, which is jarring next to this app's in-app share modals.
+     * Pass the caller's own mobile check (`useDeviceTypeByWidth().isMobile`)
+     * rather than relying on feature detection alone.
+     */
+    allowWebShare?: boolean;
 };
 
 /**
  * Share a URL through the best mechanism the current platform offers.
  *
  * Native app  → the OS share sheet via Capacitor.
- * Mobile web  → the Web Share API, which is the same OS sheet in Safari/Chrome.
+ * Mobile web  → the Web Share API, when the caller opts in via `allowWebShare`.
  * Anything else → copy to the clipboard.
  *
  * A dismissed Web Share sheet resolves as `{ shared: false }` rather than
@@ -33,6 +43,7 @@ export const shareOrCopy = async ({
     url,
     title = '',
     text = '',
+    allowWebShare = false,
 }: ShareOrCopyInput): Promise<ShareResult> => {
     if (Capacitor.isNativePlatform()) {
         await Share.share({ title, text, url, dialogTitle: title });
@@ -41,7 +52,9 @@ export const shareOrCopy = async ({
     }
 
     const canWebShare =
-        typeof navigator !== 'undefined' && typeof (navigator as Navigator).share === 'function';
+        allowWebShare &&
+        typeof navigator !== 'undefined' &&
+        typeof (navigator as Navigator).share === 'function';
 
     if (canWebShare) {
         try {

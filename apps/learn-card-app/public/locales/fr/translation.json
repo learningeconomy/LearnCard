@@ -1541,7 +1541,8 @@
             "invitedYou": "{{name}} vous a invité sur {{brand}}",
             "notFoundTitle": "Oups !",
             "notFoundBody": "Utilisateur introuvable",
-            "loadError": "Impossible de charger vos contacts. Veuillez réessayer."
+            "loadError": "Impossible de charger vos contacts. Veuillez réessayer.",
+            "copyLink": "Copier le lien"
         }
     },
     "consentFlow": {

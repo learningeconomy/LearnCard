@@ -417,7 +417,8 @@ export interface AnalyticsEventPayloads {
 
     [AnalyticsEvents.CONTACT_INVITE_SHARED]: {
         surface: InviteSurface;
-        method: 'native' | 'web_share' | 'clipboard';
+        /** `modal` = desktop web, which gets an in-app share modal, not an OS sheet. */
+        method: 'native' | 'web_share' | 'clipboard' | 'modal';
         /** False when the user opened a share sheet and dismissed it. */
         shared: boolean;
     };
