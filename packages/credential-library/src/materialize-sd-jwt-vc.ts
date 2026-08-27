@@ -88,6 +88,22 @@ const validateReservedClaims = (claims: Record<string, unknown>): void => {
     }
 };
 
+const validateSelectivelyDisclosableClaims = (
+    claims: Record<string, unknown>,
+    selectivelyDisclosable: string[]
+): void => {
+    const claimKeys = new Set(Object.keys(claims));
+    const unknownClaims = selectivelyDisclosable.filter(claim => !claimKeys.has(claim));
+
+    if (unknownClaims.length > 0) {
+        throw new Error(
+            `SD-JWT fixture declares selectively disclosable claims that do not exist: ${unknownClaims.join(
+                ', '
+            )}`
+        );
+    }
+};
+
 /**
  * Materializes an SD-JWT VC fixture with a caller-supplied issuer signer and holder key.
  * The returned compact credential is canonical `dc+sd-jwt` and never includes a KB-JWT.
@@ -100,6 +116,10 @@ export const materializeSdJwtVcFixture = async (
     validateNonEmptyIssuerValue(options.issuerKid, 'issuerKid');
     validateHolderPublicJwk(options.holderPublicJwk);
     validateReservedClaims(fixture.template.claims);
+    validateSelectivelyDisclosableClaims(
+        fixture.template.claims,
+        fixture.template.selectivelyDisclosable
+    );
 
     const instance = new SDJwtVcInstance({
         hasher: sha256Hasher,

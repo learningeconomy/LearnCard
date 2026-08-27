@@ -138,6 +138,33 @@ describe('materializeSdJwtVcFixture', () => {
         ).rejects.toThrow(/reserved/i);
     });
 
+    it('rejects selectively disclosable claim names that do not exist in the fixture claims', async () => {
+        const issuer = await makeKeypair();
+        const holder = await makeKeypair();
+        const issuerDid = toDidJwk(issuer.publicJwk);
+        const mismatchedDisclosureFixture: SdJwtVcFixture = {
+            ...fixture,
+            template: {
+                ...fixture.template,
+                selectivelyDisclosable: [
+                    ...fixture.template.selectivelyDisclosable,
+                    'missing_claim',
+                ],
+            },
+        };
+
+        await expect(
+            materializeSdJwtVcFixture(mismatchedDisclosureFixture, {
+                issuerDid,
+                issuerKid: `${issuerDid}#0`,
+                issuerSigner: await makeMaterializerSigner(issuer.privateJwk),
+                holderPublicJwk: { ...holder.publicJwk },
+            })
+        ).rejects.toThrow(
+            'SD-JWT fixture declares selectively disclosable claims that do not exist: missing_claim'
+        );
+    });
+
     it.each([
         { crv: 'Ed25519', x: 'abc' },
         { kty: 'OKP', x: 'abc' },

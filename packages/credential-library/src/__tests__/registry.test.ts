@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, expectTypeOf, beforeAll } from 'vitest';
 import { UnsignedVCValidator } from '@learncard/types';
 
 import {
@@ -173,6 +173,13 @@ describe('Query API', () => {
 
     it('findFixture returns undefined for unknown ID', () => {
         expect(findFixture('nonexistent/fixture')).toBeUndefined();
+    });
+
+    it('types runtime string fixture lookups as the heterogeneous library union', () => {
+        const runtimeId: string = 'sd-jwt-vc/course-completion';
+
+        expectTypeOf(getFixture(runtimeId)).toEqualTypeOf<LibraryFixture>();
+        expectTypeOf(findFixture(runtimeId)).toEqualTypeOf<LibraryFixture | undefined>();
     });
 
     it('filters by spec', () => {

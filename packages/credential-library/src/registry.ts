@@ -181,8 +181,13 @@ export const getAllFixtures = (): readonly LibraryFixture[] => {
     return fixtures;
 };
 
-export function getFixture(id: `sd-jwt-vc/${string}`): SdJwtVcFixture;
-export function getFixture(id: string): CredentialFixture;
+type FixtureForId<Id extends string> = Id extends `sd-jwt-vc/${string}`
+    ? SdJwtVcFixture
+    : string extends Id
+    ? LibraryFixture
+    : CredentialFixture;
+
+export function getFixture<Id extends string>(id: Id): FixtureForId<Id>;
 export function getFixture(id: string): LibraryFixture {
     ensureInitialized();
 
@@ -197,8 +202,7 @@ export function getFixture(id: string): LibraryFixture {
     return fixture;
 }
 
-export function findFixture(id: `sd-jwt-vc/${string}`): SdJwtVcFixture | undefined;
-export function findFixture(id: string): CredentialFixture | undefined;
+export function findFixture<Id extends string>(id: Id): FixtureForId<Id> | undefined;
 export function findFixture(id: string): LibraryFixture | undefined {
     ensureInitialized();
 
