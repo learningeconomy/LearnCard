@@ -1,5 +1,9 @@
 # xAPI Reference
 
+{% hint style="info" %}
+**New to LearnCard?** This page is the deep reference for xAPI storage. For the big picture, start with [What is LearnCard?](../../README.md) — or jump straight to [sending your first credential](../../quick-start/your-first-integration.md).
+{% endhint %}
+
 ## Understanding Key Concepts
 
 {% hint style="success" %}

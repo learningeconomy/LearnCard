@@ -27,3 +27,4 @@ redirects:
     core-concepts/network-and-interactions/credential-activity: core-concepts/network-and-interactions/README.md
     core-concepts/tenant-branded-emails: apps/README.md
     apps/learn-card-app/resume-builder-ler-rs-mapping: apps/learn-card-app/README.md
+    how-to-guides/implement-flows: tutorials/create-a-consentflow.md
