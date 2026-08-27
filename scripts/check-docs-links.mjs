@@ -143,7 +143,8 @@ for (const [source, dest] of Object.entries(redirects)) {
     if (!targetExists(resolve(DOCS, dest))) {
         errors.push(`.gitbook.yaml: redirect destination missing -> ${source}: ${dest}`);
     }
-    if (targetExists(resolve(DOCS, source))) {
+    const sourceAbs = resolve(DOCS, source);
+    if (existsSync(`${sourceAbs}.md`) || existsSync(join(sourceAbs, 'README.md'))) {
         errors.push(
             `.gitbook.yaml: redirect source still exists as a live page (redirect will be ignored) -> ${source}`
         );

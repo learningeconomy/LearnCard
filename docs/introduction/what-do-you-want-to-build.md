@@ -19,8 +19,8 @@ Issue badges, certificates, or credentials to your users — by email, phone, or
 
 Put your product inside the LearnCard app store, where users can install and launch it. Your app gets single sign-on, credential issuance, notifications, and learner context via the Partner Connect SDK.
 
--   Start with the [Partner Connect SDK](../sdks/partner-connect.md) — full local mock mode, no registration needed to start building
--   Working example: the [Basic Launchpad app](https://github.com/learningeconomy/LearnCard/tree/main/examples/app-store-apps/1-basic-launchpad-app)
+-   Start here: [Publish Your App in LearnCard](../how-to-guides/publish-your-app.md) — local mock mode to published listing
+-   Full API surface: [Partner Connect SDK](../sdks/partner-connect.md)
 
 ## 🌐 Add LearnCard to your site
 
