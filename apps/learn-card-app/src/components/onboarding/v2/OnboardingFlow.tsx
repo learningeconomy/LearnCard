@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
@@ -96,6 +97,22 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const currentUser = useCurrentUser();
     const authToken = getAuthToken();
+
+    // Scroll focused input into view when keyboard opens on native
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+
+        const listener = Keyboard.addListener('keyboardDidShow', () => {
+            const activeEl = document.activeElement as HTMLElement | null;
+            if (activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA') {
+                activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+
+        return () => {
+            listener.then(l => l.remove());
+        };
+    }, []);
 
     const flowStartedAt = useRef(
         Number(localStorage.getItem(ONBOARDING_STARTED_AT_KEY) ?? Date.now())
