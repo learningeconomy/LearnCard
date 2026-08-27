@@ -188,8 +188,9 @@ synchronizes imperative schedules using project-scoped, environment-prefixed ded
 thin scheduled dispatch task creates a globally idempotent occurrence and enqueues the full-agent
 execution task with per-owner concurrency 1. The execution task retains the Mongo occurrence and
 renewable lease fences, re-checks schedule existence/enabled state, and records `trigger`
-provenance. Configuration permits only local `dev` and the `staging` deployment, requires an exact
-test-DID allowlist, and rejects production enablement.
+provenance. Configuration permits only local `dev` and the `staging` deployment. Local development
+uses an exact test-DID list; staging uses the fail-closed `ai-agent-autonomy-enabled` LaunchDarkly
+flag with the authenticated DID as the user context key. Production enablement remains rejected.
 
 Live development verification selected Node plus `medium-1x` for the execution task. The first Bun
 worker could not load `@learncard/didkit-plugin-node`; the default 0.5 GB Node worker then exhausted

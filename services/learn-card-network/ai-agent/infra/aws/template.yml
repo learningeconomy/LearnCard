@@ -111,11 +111,15 @@ Parameters:
         Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-trigger
         Description: ARN of the dedicated staging Trigger.dev project's production secret key.
         NoEcho: true
-    AutonomyAllowedDids:
+    LaunchDarklySdkKeySecretArn:
         Type: String
-        Default: ''
+        Default: arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-launchdarkly
+        Description: ARN of the LaunchDarkly staging environment server-side SDK key.
         NoEcho: true
-        Description: Comma-separated staging test DIDs allowed to run autonomous schedules.
+    AutonomyLaunchDarklyFlagKey:
+        Type: String
+        Default: ai-agent-autonomy-enabled
+        Description: Boolean LaunchDarkly flag targeting DIDs allowed to use staging schedules.
     MongoDbName:
         Type: String
         Default: learn-card-ai-agent
@@ -246,13 +250,17 @@ Rules:
                     - !Ref TriggerSecretKeySecretArn
                     - arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-trigger
               AssertDescription: TriggerSecretKeySecretArn is required when Trigger.dev schedules are enabled.
-            - Assert: !Not [!Equals [!Ref AutonomyAllowedDids, '']]
-              AssertDescription: AutonomyAllowedDids must include at least one staging test DID.
+            - Assert: !Not
+                  - !Equals
+                    - !Ref LaunchDarklySdkKeySecretArn
+                    - arn:aws:secretsmanager:us-east-1:000000000000:secret:bootstrap-launchdarkly
+              AssertDescription: LaunchDarklySdkKeySecretArn is required when Trigger.dev schedules are enabled.
 
 Conditions:
     ShouldCreateService: !Equals [!Ref CreateService, 'true']
     UseBrave: !Equals [!Ref WebSearchProvider, brave]
     UseTriggerSchedules: !Equals [!Ref EnableTriggerSchedules, 'true']
+    IsStaging: !Equals [!Ref Environment, staging]
     HasAlertEmail: !And
         - !Condition ShouldCreateService
         - !Not [!Equals [!Ref AlertEmail, '']]
@@ -340,7 +348,35 @@ Resources:
                                       !Ref TriggerSecretKeySecretArn,
                                       !Ref 'AWS::NoValue',
                                   ]
+                                - !If [
+                                      UseTriggerSchedules,
+                                      !Ref LaunchDarklySdkKeySecretArn,
+                                      !Ref 'AWS::NoValue',
+                                  ]
 
+    TaskRole:
+        Type: AWS::IAM::Role
+        Condition: ShouldCreateService
+        Properties:
+            RoleName: !Sub '${ServiceName}-${Environment}-task'
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Service: ecs-tasks.amazonaws.com
+                      Action: sts:AssumeRole
+            Policies:
+                - PolicyName: publish-cloudwatch-metrics
+                  PolicyDocument:
+                      Version: '2012-10-17'
+                      Statement:
+                          - Effect: Allow
+                            Action: cloudwatch:PutMetricData
+                            Resource: '*'
+                            Condition:
+                                StringEquals:
+                                    cloudwatch:namespace: !Ref MetricsNamespace
     TaskSecurityGroup:
         Type: AWS::EC2::SecurityGroup
         Condition: ShouldCreateService
@@ -441,6 +477,7 @@ Resources:
             Cpu: !Ref Cpu
             Memory: !Ref Memory
             ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+            TaskRoleArn: !GetAtt TaskRole.Arn
             RuntimePlatform:
                 CpuArchitecture: ARM64
                 OperatingSystemFamily: LINUX
@@ -495,6 +532,8 @@ Resources:
                         Value: !Ref MaxRunCostUsd
                       - Name: AI_AGENT_METRICS_NAMESPACE
                         Value: !Ref MetricsNamespace
+                      - Name: AI_AGENT_CLOUDWATCH_METRICS_ENABLED
+                        Value: 'true'
                       - Name: AI_AGENT_MONGO_DB_NAME
                         Value: !Ref MongoDbName
                       - Name: AI_AGENT_ENCRYPTION_KEY_ID
@@ -511,12 +550,16 @@ Resources:
                         Value: !Ref EnableTriggerSchedules
                       - Name: AI_AGENT_TRIGGER_ENVIRONMENT
                         Value: !Ref Environment
-                      - Name: AI_AGENT_AUTONOMY_DEV_DIDS
-                        Value: !Ref AutonomyAllowedDids
+                      - Name: AI_AGENT_AUTONOMY_LAUNCHDARKLY_FLAG_KEY
+                        Value: !Ref AutonomyLaunchDarklyFlagKey
                       - Name: AI_AGENT_TRUST_PROXY_HOPS
                         Value: '1'
                       - Name: SENTRY_ENV
                         Value: !Ref Environment
+                      - Name: SENTRY_RELEASE
+                        Value: !Ref ImageTag
+                      - Name: SENTRY_TRACES_SAMPLE_RATE
+                        Value: !If [IsStaging, '1', '0.1']
                       - Name: AI_AGENT_DEPLOYMENT_ID
                         Value: !Ref DeploymentId
                   Secrets:
@@ -537,6 +580,11 @@ Resources:
                         - UseTriggerSchedules
                         - Name: TRIGGER_SECRET_KEY
                           ValueFrom: !Ref TriggerSecretKeySecretArn
+                        - !Ref 'AWS::NoValue'
+                      - !If
+                        - UseTriggerSchedules
+                        - Name: LAUNCHDARKLY_SDK_KEY
+                          ValueFrom: !Ref LaunchDarklySdkKeySecretArn
                         - !Ref 'AWS::NoValue'
             Tags:
                 - Key: Project

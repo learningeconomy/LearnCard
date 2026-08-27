@@ -1,5 +1,11 @@
 import { createHash } from 'node:crypto';
 
+import {
+    CloudWatchClient,
+    PutMetricDataCommand,
+    type Dimension,
+    type MetricDatum,
+} from '@aws-sdk/client-cloudwatch';
 import * as Sentry from '@sentry/node';
 
 import type { AgentRunObserver, AgentRunResult, AgentTokenUsage } from './agent/types';
@@ -8,6 +14,7 @@ import type { ServiceConfig } from './config';
 type TelemetryValue = string | number | boolean | undefined;
 type TelemetryFields = Record<string, TelemetryValue>;
 type MetricUnit = 'Count' | 'Milliseconds' | 'None';
+type SentryDeliveryState = 'disabled' | 'unchecked' | 'delivered' | 'failed';
 
 interface MetricValue {
     name: string;
@@ -39,9 +46,17 @@ interface AutonomyCycleTelemetry {
 
 const SERVICE_NAME = 'learncard-ai-agent';
 const MAX_FIELD_LENGTH = 256;
-let activeConfig: ServiceConfig | undefined;
+const MAX_CLOUDWATCH_METRICS_PER_REQUEST = 1_000;
+const CLOUDWATCH_FLUSH_DELAY_MS = 1_000;
 
+let activeConfig: ServiceConfig | undefined;
+let cloudWatchClient: CloudWatchClient | undefined;
+let cloudWatchFlushPromise: Promise<void> | undefined;
+let cloudWatchFlushTimer: ReturnType<typeof setTimeout> | undefined;
 let sentryInitialized = false;
+let sentryDeliveryState: SentryDeliveryState = 'disabled';
+let pendingMetrics: MetricDatum[] = [];
+
 const sanitizeField = (value: TelemetryValue): TelemetryValue =>
     typeof value === 'string' ? value.slice(0, MAX_FIELD_LENGTH) : value;
 
@@ -60,64 +75,115 @@ const getEnvironment = (config?: ServiceConfig): string =>
 
 const shouldEmitTelemetry = (config?: ServiceConfig): boolean => getEnvironment(config) !== 'test';
 
+const formatLogValue = (value: Exclude<TelemetryValue, undefined>): string => {
+    const normalized = String(value);
+
+    return /^[A-Za-z0-9_.:/-]+$/.test(normalized) ? normalized : JSON.stringify(normalized);
+};
+
 const writeLog = (
     level: 'info' | 'warn' | 'error',
     event: string,
     fields: TelemetryFields = {}
 ): void => {
-    const config = activeConfig;
-    if (!shouldEmitTelemetry(config)) return;
+    if (!shouldEmitTelemetry(activeConfig)) return;
 
-    console.log(
-        JSON.stringify({
-            timestamp: new Date().toISOString(),
-            level,
-            event,
-            service: SERVICE_NAME,
-            environment: getEnvironment(config),
-            ...sanitizeFields(fields),
-        })
-    );
+    const details = Object.entries(sanitizeFields(fields))
+        .map(([key, value]) => `${key}=${formatLogValue(value)}`)
+        .join(' ');
+    const line = `${level.toUpperCase()} ${event}${details ? ` ${details}` : ''}`;
+
+    if (level === 'error') console.error(line);
+    else if (level === 'warn') console.warn(line);
+    else console.log(line);
+};
+
+const toDimensions = (fields: TelemetryFields): Dimension[] =>
+    Object.entries(sanitizeFields(fields)).map(([Name, value]) => ({
+        Name,
+        Value: String(value),
+    }));
+
+const flushCloudWatchMetrics = async (): Promise<void> => {
+    if (cloudWatchFlushTimer) {
+        clearTimeout(cloudWatchFlushTimer);
+        cloudWatchFlushTimer = undefined;
+    }
+
+    if (!activeConfig?.cloudWatchMetricsEnabled || pendingMetrics.length === 0) return;
+    if (cloudWatchFlushPromise) return cloudWatchFlushPromise;
+
+    cloudWatchFlushPromise = (async () => {
+        cloudWatchClient ??= new CloudWatchClient({});
+
+        while (pendingMetrics.length > 0) {
+            const MetricData = pendingMetrics.splice(0, MAX_CLOUDWATCH_METRICS_PER_REQUEST);
+
+            try {
+                await cloudWatchClient.send(
+                    new PutMetricDataCommand({
+                        Namespace: activeConfig?.metricsNamespace ?? 'LearnCard/AIAgent',
+                        MetricData,
+                    })
+                );
+            } catch (error) {
+                writeLog('error', 'cloudwatch.metrics.failed', getSafeErrorFields(error));
+                captureOperationalError('cloudwatch.metrics', error, {});
+            }
+        }
+    })().finally(() => {
+        cloudWatchFlushPromise = undefined;
+    });
+
+    return cloudWatchFlushPromise;
+};
+
+const scheduleCloudWatchFlush = (): void => {
+    if (cloudWatchFlushTimer) return;
+
+    cloudWatchFlushTimer = setTimeout(() => {
+        cloudWatchFlushTimer = undefined;
+        void flushCloudWatchMetrics();
+    }, CLOUDWATCH_FLUSH_DELAY_MS);
+    cloudWatchFlushTimer.unref();
 };
 
 const writeMetrics = (
-    event: string,
+    _event: string,
     metrics: MetricValue[],
-    fields: TelemetryFields = {},
+    _fields: TelemetryFields = {},
     dimensions: TelemetryFields = {}
 ): void => {
     const config = activeConfig;
-    if (!shouldEmitTelemetry(config)) return;
-    const environment = getEnvironment(config);
-    const baseDimensions = sanitizeFields({
-        Service: SERVICE_NAME,
-        Environment: environment,
-    });
-    const specificDimensions = sanitizeFields(dimensions);
-    const safeDimensions = { ...baseDimensions, ...specificDimensions };
-    const dimensionSets = [
-        Object.keys(baseDimensions),
-        ...(Object.keys(specificDimensions).length > 0 ? [Object.keys(safeDimensions)] : []),
-    ];
+    if (!shouldEmitTelemetry(config) || !config?.cloudWatchMetricsEnabled) return;
 
-    console.log(
-        JSON.stringify({
-            _aws: {
-                Timestamp: Date.now(),
-                CloudWatchMetrics: [
-                    {
-                        Namespace: config?.metricsNamespace ?? 'LearnCard/AIAgent',
-                        Dimensions: dimensionSets,
-                        Metrics: metrics.map(({ name, unit }) => ({ Name: name, Unit: unit })),
-                    },
-                ],
-            },
-            event,
-            ...safeDimensions,
-            ...sanitizeFields(fields),
-            ...Object.fromEntries(metrics.map(({ name, value }) => [name, value])),
-        })
+    const baseDimensions = {
+        Service: SERVICE_NAME,
+        Environment: getEnvironment(config),
+    };
+    const specificDimensions = sanitizeFields(dimensions);
+    const dimensionSets = [
+        toDimensions(baseDimensions),
+        ...(Object.keys(specificDimensions).length > 0
+            ? [toDimensions({ ...baseDimensions, ...specificDimensions })]
+            : []),
+    ];
+    const Timestamp = new Date();
+
+    pendingMetrics.push(
+        ...dimensionSets.flatMap(Dimensions =>
+            metrics.map(
+                ({ name: MetricName, unit: Unit, value: Value }): MetricDatum => ({
+                    MetricName,
+                    Unit,
+                    Value,
+                    Timestamp,
+                    Dimensions,
+                })
+            )
+        )
     );
+    scheduleCloudWatchFlush();
 };
 
 const getSafeErrorFields = (error: unknown): TelemetryFields => {
@@ -174,6 +240,7 @@ export const getOwnerTelemetryId = (did: string): string =>
 
 export const initializeObservability = (config: ServiceConfig): void => {
     activeConfig = config;
+    sentryDeliveryState = config.sentryDsn ? 'unchecked' : 'disabled';
 
     if (config.sentryDsn && !sentryInitialized) {
         Sentry.init({
@@ -192,12 +259,71 @@ export const initializeObservability = (config: ServiceConfig): void => {
 
     writeLog('info', 'service.started', {
         model: config.model,
-        metricsNamespace: config.metricsNamespace,
+        cloudWatchMetrics: config.cloudWatchMetricsEnabled,
         sentryEnabled: Boolean(config.sentryDsn),
+        release: config.sentryRelease,
     });
 };
 
+export const verifySentryDelivery = async (config: ServiceConfig): Promise<boolean> => {
+    if (!config.sentryDsn || !sentryInitialized) return false;
+
+    const client = Sentry.getCurrentHub().getClient();
+    let eventId: string | undefined;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const response = new Promise<number | undefined>(resolve => {
+        client?.on?.('afterSendEvent', (event, result) => {
+            if (event.event_id === eventId) resolve(result?.statusCode);
+        });
+    });
+
+    eventId = Sentry.captureMessage('AI Agent deployment observability check', {
+        level: 'info',
+        fingerprint: ['ai-agent-deployment-observability-check'],
+        tags: sanitizeFields({
+            component: 'service.startup',
+            deploymentId: config.deploymentId,
+        }),
+    });
+
+    const flush = Sentry.flush(5_000);
+    const statusCode = await Promise.race([
+        response,
+        new Promise<undefined>(resolve => {
+            timeout = setTimeout(resolve, 5_000);
+        }),
+    ]);
+    clearTimeout(timeout);
+
+    const flushed = await flush;
+    const delivered = flushed && statusCode !== undefined && statusCode >= 200 && statusCode < 300;
+
+    sentryDeliveryState = delivered ? 'delivered' : 'failed';
+    writeLog(delivered ? 'info' : 'error', 'sentry.delivery.checked', {
+        delivered,
+        statusCode,
+        eventId,
+    });
+
+    return delivered;
+};
+
+export const getObservabilityStatus = (): {
+    cloudWatchMetrics: boolean;
+    sentry: {
+        enabled: boolean;
+        delivery: SentryDeliveryState;
+    };
+} => ({
+    cloudWatchMetrics: Boolean(activeConfig?.cloudWatchMetricsEnabled),
+    sentry: {
+        enabled: Boolean(activeConfig?.sentryDsn),
+        delivery: sentryDeliveryState,
+    },
+});
+
 export const flushObservability = async (): Promise<void> => {
+    await flushCloudWatchMetrics();
     if (activeConfig?.sentryDsn) await Sentry.flush(2_000);
 };
 

@@ -16,19 +16,20 @@ export default defineConfig({
         conditions: ['development'],
         extensions: [
             syncEnvVars(
-                () => {
-                    const allowedDids = process.env.AI_AGENT_AUTONOMY_ALLOWED_DIDS?.trim();
-
-                    if (!allowedDids) return;
-
-                    return [
-                        {
-                            name: 'AI_AGENT_AUTONOMY_DEV_DIDS',
-                            value: allowedDids,
-                            isSecret: true,
-                        },
-                    ];
-                },
+                () => [
+                    {
+                        name: 'SENTRY_TRACES_SAMPLE_RATE',
+                        value: '1',
+                    },
+                    ...(process.env.GITHUB_SHA
+                        ? [
+                              {
+                                  name: 'SENTRY_RELEASE',
+                                  value: `sha-${process.env.GITHUB_SHA}`,
+                              },
+                          ]
+                        : []),
+                ],
                 { override: true }
             ),
         ],

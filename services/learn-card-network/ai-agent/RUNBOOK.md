@@ -1,6 +1,6 @@
 # LearnCard AI Agent AWS runbook
 
-This runbook operates the HTTP AI Agent service from `services/learn-card-network/ai-agent`. Production autonomous schedules remain disabled. Trigger.dev and the local polling worker are not part of this deployment.
+This runbook operates the HTTP AI Agent service from `services/learn-card-network/ai-agent`. Production autonomous schedules remain disabled; staging schedules use the isolated LearnCard Staging Trigger.dev project and a LaunchDarkly boolean flag.
 
 ## Architecture
 
@@ -13,7 +13,7 @@ flowchart LR
     ECS --> OA[OpenAI]
     ECS --> BS[Brave Search]
     ECS --> DB[(MongoDB)]
-    ECS --> CW[CloudWatch logs + EMF metrics]
+    ECS --> CW[CloudWatch logfmt logs + direct metrics]
     ECS --> SE[Sentry]
     GH[GitHub Actions] --> ECR[Amazon ECR]
     ECR --> ECS
@@ -53,6 +53,8 @@ Create one AWS Secrets Manager secret for each environment variable below. Store
 -   `AI_AGENT_WALLET_SEED`
 -   `AI_AGENT_MONGO_URI`
 -   `SENTRY_DSN`
+-   staging only: the LaunchDarkly staging environment server-side SDK key used as
+    `LAUNCHDARKLY_SDK_KEY`
 -   staging only: the dedicated staging Trigger.dev project's **PROD** secret used as
     `TRIGGER_SECRET_KEY`
 
@@ -242,12 +244,12 @@ Environment variables:
 -   staging only: `AI_AGENT_TRIGGER_PROJECT_REF`, the dedicated staging Trigger.dev project ref
 -   staging only: `AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN`, the ARN of the AWS secret containing
     that project's PROD secret
+-   staging only: `AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN`, the ARN of the AWS secret containing
+    the server-side SDK key for the LearnCard LaunchDarkly staging environment
 
 Environment secrets:
 
 -   `AI_AGENT_SMOKE_SEED` for staging only
--   `AI_AGENT_AUTONOMY_ALLOWED_DIDS` for staging only, containing comma-separated dedicated test
-    profile DIDs
 -   `TRIGGER_ACCESS_TOKEN` for staging only, containing a Trigger.dev personal access token
     beginning with `tr_pat_`; this deploys task code and is not the runtime project secret
 
@@ -266,7 +268,7 @@ staging ECS task:
 -   `NODE_ENV=production`, `SENTRY_ENV=staging`, `AI_AGENT_TRIGGER_ENABLED=true`,
     `AI_AGENT_TRIGGER_ENVIRONMENT=staging`, `AI_AGENT_AUTONOMY_DEV_ENABLED=false`, and
     `AI_AGENT_SELF_IMPROVEMENT_ENABLED=true`
--   `AI_AGENT_AUTONOMY_DEV_DIDS` with the same test DIDs as the GitHub environment secret
+-   `LAUNCHDARKLY_SDK_KEY` from the LearnCard LaunchDarkly staging environment
 -   `OPENAI_API_KEY`, `AI_AGENT_WALLET_SEED`, `AI_AGENT_MONGO_URI`, `SENTRY_DSN`, and
     `BRAVE_SEARCH_API_KEY` when Brave is enabled
 -   `AI_AGENT_AUTH_DOMAIN`, `AI_AGENT_CLOUD_URL`, `AI_AGENT_NETWORK_URL`,
@@ -275,11 +277,15 @@ staging ECS task:
     `AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION`, `AI_AGENT_MONGO_DB_NAME`,
     `AI_AGENT_ENCRYPTION_KEY_ID`, and the same run/budget/web-search settings as ECS
 
+`trigger.config.ts` synchronizes a full staging trace sample rate and the Git commit release. The
+remaining runtime variables above are pre-provisioned and must be updated when their ECS
+counterparts rotate.
+
 Trigger.dev injects that project's PROD `TRIGGER_SECRET_KEY` into task runs. Do not add the
 personal access token to the task environment. The deployment workflow uses that PAT only for
 `trigger deploy --env prod`, then enables ECS schedule synchronization with the AWS-stored
-dedicated-project secret. CloudFormation rejects Trigger enablement outside the staging stack and
-rejects an empty test-DID allowlist.
+dedicated-project secret. CloudFormation rejects Trigger enablement outside the staging stack or
+without the LaunchDarkly SDK-key secret.
 
 ## Staging test-account setup
 
@@ -297,20 +303,21 @@ It explicitly tells the agent not to write user data. A missing grant, unavailab
 
 ### Scheduled-job staging smoke
 
-1. Confirm the staging profile DID is present in both `AI_AGENT_AUTONOMY_ALLOWED_DIDS` in the
-   GitHub environment and `AI_AGENT_AUTONOMY_DEV_DIDS` in Trigger.dev Staging.
-2. Deploy the exact branch commit with the `Deploy` workflow command below.
-3. Sign in to the staging LearnCard App as that profile, open Assistant schedules, and create one
-   enabled schedule two or three minutes ahead in the profile's IANA timezone.
-4. In Trigger.dev Staging, confirm `learncard-autonomous-schedule-dispatch` completes and its
-   `learncard-autonomous-agent-execution` child completes for the same schedule.
-5. Confirm the Assistant feed receives the autonomous card and its stored run has `trigger`
-   provenance, `succeeded` status, and an advanced `nextRunAt`.
-6. Delete the schedule and confirm its Trigger.dev imperative schedule is removed.
+1. In the LearnCard LaunchDarkly staging environment—the environment with client-side ID
+   `6a07749c1380120a8213715a`—create the boolean flag `ai-agent-autonomy-enabled`. Keep its
+   default variation `false`.
+2. Target the dedicated staging profile's DID with variation `true`. The service evaluates the
+   authenticated DID as the existing LaunchDarkly `user` context key, so individual targets and
+   reusable segments both work.
+3. Deploy the exact branch commit with the `Deploy` workflow command below.
+4. The deployment smoke creates an enabled schedule two or three minutes ahead, confirms both
+   Trigger.dev tasks complete, verifies the Assistant feed receives a card with a scheduled
+   `sourceRunId`, and deletes the temporary schedule.
 
-Any non-allowlisted DID must fail schedule creation before Trigger.dev creates a schedule. Keep
-prompts read-only during this staging gate because autonomous tools can perform irreversible
-effects.
+Any DID receiving the flag's `false` variation must fail schedule creation before Trigger.dev
+creates a schedule. A missing flag or LaunchDarkly evaluation failure also fails closed and emits
+an operational error. Keep prompts read-only during this staging gate because autonomous tools can
+perform irreversible effects.
 
 ## Deploy
 
@@ -346,10 +353,12 @@ After production dispatch, use the dedicated synthetic production test account f
 
 Every HTTP response includes `X-Request-ID`. The agent response includes `runId`.
 
-The application log group is `/ecs/learncard-ai-agent-<environment>`. Filter JSON logs by either value:
+The application log group is `/ecs/learncard-ai-agent-<environment>`. Filter logfmt messages by either correlation value:
 
 ```text
-{ $.requestId = "<request-id>" || $.correlationId = "<request-id>" || $.runId = "<run-id>" }
+fields @timestamp, @message, @logStream
+| filter @message like /runId=<run-id>/ or @message like /correlationId=<request-id>/
+| sort @timestamp asc
 ```
 
 The correlated event sequence is:
@@ -363,29 +372,35 @@ The correlated event sequence is:
 
 Autonomous development executions additionally emit `autonomy.cycle.completed` and `autonomy.occurrence.completed`.
 
-Logs contain hashed owner IDs, tool names, durations, outcomes, token counts, provider request IDs, and cost estimates. They do not contain DIDs, prompts, model responses, tool arguments/results, credentials, memory contents, or exception messages. Sentry receives sanitized operational exceptions with the same correlation tags plus sampled `ai.agent.run` transactions with `ai.model` and `ai.tool` child spans. Post-response trace persistence and retro work emit a correlated `ai.agent.post_run` transaction.
-
-The dashboard shows run volume/outcomes, HTTP/run/model/tool latency, provider/tool failures, tokens, and estimated cost. SNS alarms cover HTTP failures, sustained p95 latency, run failures, model-provider failures, unhealthy ALB targets, and hourly estimated spend. ECS deployment-circuit-breaker events and service events provide rollout diagnostics.
+Application logs are concise logfmt lines such as `INFO agent.run.succeeded runId=... durationMs=...`.
+They contain hashed owner IDs, tool names, durations, outcomes, token counts, provider request IDs,
+and cost estimates. They do not contain DIDs, prompts, model responses, tool arguments/results,
+credentials, memory contents, or exception messages. Metrics use the CloudWatch `PutMetricData`
+API and therefore do not add EMF JSON records to the application log stream. Sentry receives a
+verified deployment event, sanitized operational exceptions, and `ai.agent.run` transactions with
+`ai.model` and `ai.tool` child spans. Staging samples all traces; production defaults to `0.1`.
 
 ## Common failures
 
-| Symptom                                     | Check                                                                                                        |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| ECS service cannot place a task             | Private subnet capacity, Fargate ARM64 availability, task security group, and execution-role permissions     |
-| Listener rule or certificate creation fails | Listener ARN, unused priority, hosted-zone ownership, ACM validation records, and ELB permissions            |
-| New task never becomes healthy              | `/api/health/ready`, Mongo connectivity, NAT/VPC routing, required secret ARNs, OpenAI secret                |
-| DID Auth always returns 401                 | `AI_AGENT_AUTH_DOMAIN` exactly matches the public origin; clocks are correct; challenge Mongo writes succeed |
-| `getConsentedUserData` fails                | Contract URI, test-account grant, LearnCard network/cloud URLs, agent wallet seed                            |
-| Web search tool is missing                  | `AI_AGENT_WEB_SEARCH_PROVIDER=brave` and `BRAVE_SEARCH_API_KEY` secret are present                           |
-| Sentry has no events                        | `SENTRY_DSN`, outbound network/NAT, and Sentry project environment                                           |
-| CloudWatch custom metrics are absent        | The application log group contains `_aws` records and the namespace matches CloudFormation                   |
-| Estimated cost is zero or implausible       | Model name and both current per-million token prices                                                         |
-| Requests stop near two minutes              | `RunTimeoutMs`, client timeout, model/provider latency                                                       |
-| ECS cannot read a secret                    | Secret ARN, execution-role resource policy, and `kms:Decrypt` for customer-managed keys                      |
+| Symptom                                     | Check                                                                                                                                            |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ECS service cannot place a task             | Private subnet capacity, Fargate ARM64 availability, task security group, and execution-role permissions                                         |
+| Listener rule or certificate creation fails | Listener ARN, unused priority, hosted-zone ownership, ACM validation records, and ELB permissions                                                |
+| New task never becomes healthy              | `/api/health/ready`, Mongo connectivity, NAT/VPC routing, required secret ARNs, OpenAI secret                                                    |
+| DID Auth always returns 401                 | `AI_AGENT_AUTH_DOMAIN` exactly matches the public origin; clocks are correct; challenge Mongo writes succeed                                     |
+| `getConsentedUserData` fails                | Contract URI, test-account grant, LearnCard network/cloud URLs, agent wallet seed                                                                |
+| Web search tool is missing                  | `AI_AGENT_WEB_SEARCH_PROVIDER=brave` and `BRAVE_SEARCH_API_KEY` secret are present                                                               |
+| Sentry has no events                        | `/api/health` reports `observability.sentry.delivery=delivered`; verify the raw-URL `SENTRY_DSN`, NAT egress, and Sentry staging environment     |
+| CloudWatch custom metrics are absent        | ECS task role permits `cloudwatch:PutMetricData`, `AI_AGENT_CLOUDWATCH_METRICS_ENABLED=true`, and the configured namespace matches the dashboard |
+| Estimated cost is zero or implausible       | Model name and both current per-million token prices                                                                                             |
+| Requests stop near two minutes              | `RunTimeoutMs`, client timeout, model/provider latency                                                                                           |
+| ECS cannot read a secret                    | Secret ARN, execution-role resource policy, and `kms:Decrypt` for customer-managed keys                                                          |
 
 ## Secret and key rotation
 
 -   **OpenAI, Brave, or Sentry:** create a new provider credential, update the existing Secrets Manager value, run the deployment workflow to force a new ECS revision, verify, then revoke the old credential.
+-   **LaunchDarkly:** rotate the server-side staging SDK key in both AWS Secrets Manager and the
+    dedicated Trigger.dev staging project, deploy and verify, then revoke the old key.
 -   **MongoDB:** create a second database user, update `AI_AGENT_MONGO_URI`, deploy and verify, then remove the old user.
 -   **AI Agent wallet seed:** do not rotate in place. It is required to decrypt existing DAG-JWE records. Build and verify an explicit decrypt/re-encrypt migration with both identities before changing the secret.
 -   **`AI_AGENT_ENCRYPTION_KEY_ID`:** do not change it casually; it is part of the persisted encryption envelope/AAD contract. Treat a change as a data migration.

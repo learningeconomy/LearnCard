@@ -8,6 +8,7 @@ import {
     createLearnCardAssistantProfileRuntime,
     type LearnCardAssistantProfileRuntime,
 } from './assistantProfile';
+import { isAutonomousExecutionAllowed } from './autonomy/accessControl';
 import {
     createLearnCardAssistantSchedulesRuntime,
     type LearnCardAssistantSchedulesRuntime,
@@ -120,7 +121,7 @@ export const createAgentServiceRuntime = (
         (config.triggerEnabled
             ? createTriggerAgentAutonomyScheduleProvider({
                   environment: config.triggerEnvironment ?? config.nodeEnv,
-                  allowedOwnerDids: config.autonomyDevDids,
+                  isOwnerAllowed: ownerDid => isAutonomousExecutionAllowed(config, ownerDid),
               })
             : undefined);
     const assistantSchedulesRuntime = assistantScheduleProvider

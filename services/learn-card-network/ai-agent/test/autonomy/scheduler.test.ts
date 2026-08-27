@@ -61,6 +61,7 @@ const config: ServiceConfig = {
     autonomyDevPollIntervalMs: 1_000,
     autonomyDevMaxRunsPerCycle: 3,
     autonomyDevLeaseMs: 900_000,
+    autonomyLaunchDarklyFlagKey: 'ai-agent-autonomy-enabled',
 };
 
 const mongoRuntime: MongoRuntime = {

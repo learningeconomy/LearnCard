@@ -6,12 +6,8 @@ import {
 } from '../autonomy/runs';
 import { createAutonomousScheduler, type AutonomyCycleResult } from '../autonomy/scheduler';
 import { TRIGGER_AUTONOMOUS_SCHEDULE_TASK_ID } from '../autonomy/triggerScheduleProvider';
-import {
-    assertTriggerConfig,
-    assertTriggerOwnerAllowed,
-    getConfig,
-    type ServiceConfig,
-} from '../config';
+import { assertAutonomousExecutionAllowed } from '../autonomy/accessControl';
+import { assertTriggerConfig, getConfig, type ServiceConfig } from '../config';
 import {
     flushObservability,
     getOwnerTelemetryId,
@@ -58,9 +54,9 @@ export const requireNonFailedAutonomyResult = (
 
     return result;
 };
-const assertTriggerOwner = (config: ServiceConfig, ownerDid: string): void => {
+const assertTriggerOwner = async (config: ServiceConfig, ownerDid: string): Promise<void> => {
     try {
-        assertTriggerOwnerAllowed(config, ownerDid);
+        await assertAutonomousExecutionAllowed(config, ownerDid);
     } catch (error) {
         throw new AbortTaskRunError(
             error instanceof Error ? error.message : 'The schedule owner is not allowed.'
@@ -77,9 +73,17 @@ export const autonomousAgentExecution = task({
     run: async (payload: TriggerAutonomousAgentExecutionPayload, { signal }) => {
         const parsed = parseExecutionPayload(payload);
         const config = getConfig();
-        assertTriggerOwner(config, parsed.ownerDid);
         initializeObservability(config);
         assertTriggerConfig(config);
+
+        try {
+            await assertTriggerOwner(config, parsed.ownerDid);
+        } catch (error) {
+            recordServiceError('trigger.autonomy-access', error);
+            await flushObservability();
+            throw error;
+        }
+
         const runtime = createAgentServiceRuntime({ config });
         const startedAt = new Date();
         const ownerId = getOwnerTelemetryId(parsed.ownerDid);
@@ -185,28 +189,38 @@ export const autonomousScheduleDispatch = schedules.task({
 
         const ownerDid = payload.externalId.trim();
         if (!ownerDid) throw new AbortTaskRunError('The autonomous schedule owner DID is empty.');
-        assertTriggerOwner(getConfig(), ownerDid);
-        const ownerId = getOwnerTelemetryId(ownerDid);
 
-        const scheduledFor = payload.timestamp.toISOString();
-        const idempotencyKey = await idempotencyKeys.create(
-            `${ctx.environment.slug}:${ownerDid}:${payload.scheduleId}:${scheduledFor}`,
-            { scope: 'global' }
-        );
-        const handle = await autonomousAgentExecution.trigger(
-            {
-                ownerDid,
-                triggerScheduleId: payload.scheduleId,
-                scheduledFor,
-            },
-            {
-                concurrencyKey: ownerDid,
-                idempotencyKey,
-                idempotencyKeyTTL: '30d',
-                tags: [`owner:${ownerId}`, `schedule:${payload.scheduleId}`],
-            }
-        );
+        const config = getConfig();
+        initializeObservability(config);
 
-        return { executionRunId: handle.id };
+        try {
+            await assertTriggerOwner(config, ownerDid);
+            const ownerId = getOwnerTelemetryId(ownerDid);
+            const scheduledFor = payload.timestamp.toISOString();
+            const idempotencyKey = await idempotencyKeys.create(
+                `${ctx.environment.slug}:${ownerDid}:${payload.scheduleId}:${scheduledFor}`,
+                { scope: 'global' }
+            );
+            const handle = await autonomousAgentExecution.trigger(
+                {
+                    ownerDid,
+                    triggerScheduleId: payload.scheduleId,
+                    scheduledFor,
+                },
+                {
+                    concurrencyKey: ownerDid,
+                    idempotencyKey,
+                    idempotencyKeyTTL: '30d',
+                    tags: [`owner:${ownerId}`, `schedule:${payload.scheduleId}`],
+                }
+            );
+
+            return { executionRunId: handle.id };
+        } catch (error) {
+            recordServiceError('trigger.schedule-dispatch', error);
+            throw error;
+        } finally {
+            await flushObservability();
+        }
     },
 });

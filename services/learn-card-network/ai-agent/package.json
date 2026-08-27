@@ -21,6 +21,8 @@
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
     "dependencies": {
+        "@aws-sdk/client-cloudwatch": "^3.1120.0",
+        "@launchdarkly/node-server-sdk": "^9.13.1",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/didkit-plugin-node": "workspace:*",
         "@learncard/init": "workspace:*",

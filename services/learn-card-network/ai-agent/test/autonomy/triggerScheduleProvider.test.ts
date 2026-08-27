@@ -142,7 +142,7 @@ describe('Trigger.dev schedule synchronization', () => {
         };
         const provider = createTriggerAgentAutonomyScheduleProvider({
             environment: 'dev',
-            allowedOwnerDids: [OWNER_DID],
+            isOwnerAllowed: async ownerDid => ownerDid === OWNER_DID,
             client,
         });
         const runtime = createRuntime(provider);
@@ -160,7 +160,7 @@ describe('Trigger.dev schedule synchronization', () => {
         expect(client.activate).not.toHaveBeenCalled();
     });
 
-    it('rejects schedule owners outside the configured test allowlist', async () => {
+    it('rejects schedule owners disabled by runtime access control', async () => {
         const client: TriggerScheduleClient = {
             create: vi.fn(async () => ({ id: 'sched_1' })),
             activate: vi.fn(async () => undefined),
@@ -169,12 +169,14 @@ describe('Trigger.dev schedule synchronization', () => {
         };
         const provider = createTriggerAgentAutonomyScheduleProvider({
             environment: 'staging',
-            allowedOwnerDids: ['did:key:fixture'],
+            isOwnerAllowed: async () => false,
             client,
         });
         const runtime = createRuntime(provider);
 
-        await expect(runtime.create(input())).rejects.toThrow('not allowlisted');
+        await expect(runtime.create(input())).rejects.toThrow(
+            'not enabled for autonomous execution'
+        );
         expect(client.create).not.toHaveBeenCalled();
         await expect(runtime.list(OWNER_DID)).resolves.toEqual([]);
     });

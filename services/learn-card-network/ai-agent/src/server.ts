@@ -23,11 +23,13 @@ import {
     UpdateAgentAutonomyScheduleBodyValidator,
     toAgentAutonomyScheduleResponse,
 } from './autonomy/schedules';
+import { AutonomousExecutionNotEnabledError } from './autonomy/triggerScheduleProvider';
 import { createConsentFlowRuntime, isProdNetworkUrl, type ConsentFlowRuntime } from './consentFlow';
 import type { ServiceConfig } from './config';
 import { getEmptyAgentLearnCard } from './helpers/learnCard.helpers';
 import {
     createAgentRunTelemetry,
+    getObservabilityStatus,
     getOwnerTelemetryId,
     recordHttpRequest,
     recordServiceError,
@@ -681,7 +683,7 @@ export const createServer = ({
             },
             observability: {
                 metricsNamespace: config.metricsNamespace,
-                sentryEnabled: Boolean(config.sentryDsn),
+                ...getObservabilityStatus(),
             },
         });
     });
@@ -1025,6 +1027,12 @@ export const createServer = ({
                     schedule: toAgentAutonomyScheduleResponse(schedule),
                 });
             } catch (error) {
+                if (error instanceof AutonomousExecutionNotEnabledError) {
+                    res.status(403).json({ ok: false, error: error.message });
+                    return;
+                }
+
+                recordServiceError('assistant-schedules.create', error);
                 const message =
                     error instanceof Error ? error.message : 'Could not create assistant schedule.';
 
@@ -1058,6 +1066,15 @@ export const createServer = ({
                     schedule: toAgentAutonomyScheduleResponse(schedule),
                 });
             } catch (error) {
+                if (error instanceof AutonomousExecutionNotEnabledError) {
+                    res.status(403).json({ ok: false, error: error.message });
+                    return;
+                }
+
+                if (!(error instanceof AgentAutonomyScheduleNotFoundError)) {
+                    recordServiceError('assistant-schedules.update', error);
+                }
+
                 const message =
                     error instanceof Error ? error.message : 'Could not update assistant schedule.';
                 const status =

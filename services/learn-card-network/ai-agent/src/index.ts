@@ -1,15 +1,25 @@
 import 'dotenv/config';
 
+import { closeAutonomyAccessControl } from './autonomy/accessControl';
 import { getConfig } from './config';
-import { flushObservability, initializeObservability, recordServiceError } from './observability';
+import {
+    flushObservability,
+    initializeObservability,
+    recordServiceError,
+    verifySentryDelivery,
+} from './observability';
 import { AGENT_SERVER_SHUTDOWN, createServer } from './server';
 
 const config = getConfig();
 
 initializeObservability(config);
+await verifySentryDelivery(config);
 
 const app = createServer({ config });
 const server = app.listen(config.port);
+const flushRuntime = async (): Promise<void> => {
+    await Promise.all([flushObservability(), closeAutonomyAccessControl()]);
+};
 let shuttingDown = false;
 
 const shutdown = (_signal: NodeJS.Signals): void => {
@@ -19,7 +29,7 @@ const shutdown = (_signal: NodeJS.Signals): void => {
     const forceCloseTimer = setTimeout(() => {
         recordServiceError('service.shutdown-timeout', new Error('Graceful shutdown timed out.'));
         server.closeAllConnections();
-        void flushObservability().finally(() => process.exit(1));
+        void flushRuntime().finally(() => process.exit(1));
     }, 15_000);
 
     forceCloseTimer.unref();
@@ -34,7 +44,7 @@ const shutdown = (_signal: NodeJS.Signals): void => {
             })
             .finally(() => {
                 clearTimeout(forceCloseTimer);
-                void flushObservability().finally(() => {
+                void flushRuntime().finally(() => {
                     process.exit(shutdownFailed ? 1 : 0);
                 });
             });
@@ -45,9 +55,9 @@ process.once('SIGTERM', shutdown);
 process.once('SIGINT', shutdown);
 process.once('uncaughtException', error => {
     recordServiceError('service.uncaught-exception', error);
-    void flushObservability().finally(() => process.exit(1));
+    void flushRuntime().finally(() => process.exit(1));
 });
 process.once('unhandledRejection', error => {
     recordServiceError('service.unhandled-rejection', error);
-    void flushObservability().finally(() => process.exit(1));
+    void flushRuntime().finally(() => process.exit(1));
 });

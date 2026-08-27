@@ -4,7 +4,6 @@ import {
     assertAutonomyDevConfig,
     assertSecurityConfig,
     assertTriggerConfig,
-    assertTriggerOwnerAllowed,
     type ServiceConfig,
 } from '../../src/config';
 
@@ -33,6 +32,7 @@ const validConfig: ServiceConfig = {
     autonomyDevPollIntervalMs: 30_000,
     autonomyDevMaxRunsPerCycle: 3,
     autonomyDevLeaseMs: 900_000,
+    autonomyLaunchDarklyFlagKey: 'ai-agent-autonomy-enabled',
 };
 
 describe('autonomy development configuration gate', () => {
@@ -137,6 +137,10 @@ describe('production service configuration gate', () => {
             message: 'SENTRY_DSN',
         },
         {
+            override: { sentryDsn: '{"dsn":"https://public@example.ingest.sentry.io/1"}' },
+            message: 'raw Sentry DSN URL',
+        },
+        {
             override: { debugEnabled: true },
             message: 'AI_AGENT_DEBUG_ENABLED',
         },
@@ -163,6 +167,7 @@ describe('Trigger.dev environment configuration gate', () => {
         nodeEnv: 'production',
         sentryEnvironment: 'staging',
         triggerEnvironment: 'staging',
+        launchDarklySdkKey: 'sdk-test',
         authDomain: 'https://agent-staging.learncard.app',
         cloudUrl: 'https://cloud.learncard.com/trpc',
         networkUrl: 'https://network.learncard.com/trpc',
@@ -181,7 +186,7 @@ describe('Trigger.dev environment configuration gate', () => {
         expect(() => assertSecurityConfig(stagingTriggerConfig)).not.toThrow();
     });
 
-    it('rejects production, missing credentials, missing allowlists, and local polling', () => {
+    it('rejects production, missing credentials, missing access control, and local polling', () => {
         expect(() =>
             assertTriggerConfig({
                 ...stagingTriggerConfig,
@@ -195,17 +200,11 @@ describe('Trigger.dev environment configuration gate', () => {
         expect(() => assertTriggerConfig({ ...triggerConfig, autonomyDevDids: [] })).toThrow(
             'AI_AGENT_AUTONOMY_DEV_DIDS'
         );
+        expect(() =>
+            assertTriggerConfig({ ...stagingTriggerConfig, launchDarklySdkKey: undefined })
+        ).toThrow('LAUNCHDARKLY_SDK_KEY');
         expect(() => assertSecurityConfig({ ...triggerConfig, autonomyDevEnabled: true })).toThrow(
             'cannot both be true'
-        );
-    });
-
-    it('allows only explicitly configured schedule owners', () => {
-        expect(() =>
-            assertTriggerOwnerAllowed(stagingTriggerConfig, 'did:key:fixture')
-        ).not.toThrow();
-        expect(() => assertTriggerOwnerAllowed(stagingTriggerConfig, 'did:key:other')).toThrow(
-            'not allowlisted'
         );
     });
 });

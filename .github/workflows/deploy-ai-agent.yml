@@ -66,7 +66,7 @@ jobs:
                   AWS_ROLE_ARN: ${{ vars.AI_AGENT_AWS_ROLE_ARN }}
                   TRIGGER_SECRET_KEY_SECRET_ARN: ${{ vars.AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN }}
                   TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
-                  AUTONOMY_ALLOWED_DIDS: ${{ secrets.AI_AGENT_AUTONOMY_ALLOWED_DIDS }}
+                  LAUNCHDARKLY_SDK_KEY_SECRET_ARN: ${{ vars.AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN }}
                   TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
               run: |
                   test -n "$ECR_REPOSITORY_URL" || { echo "::error::AI_AGENT_ECR_REPOSITORY_URL is missing"; exit 1; }
@@ -77,7 +77,7 @@ jobs:
                   if [ "$TARGET_ENVIRONMENT" = 'staging' ]; then
                     test -n "$TRIGGER_SECRET_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN is missing"; exit 1; }
                     test -n "$TRIGGER_PROJECT_REF" || { echo "::error::AI_AGENT_TRIGGER_PROJECT_REF is missing"; exit 1; }
-                    test -n "$AUTONOMY_ALLOWED_DIDS" || { echo "::error::AI_AGENT_AUTONOMY_ALLOWED_DIDS is missing"; exit 1; }
+                    test -n "$LAUNCHDARKLY_SDK_KEY_SECRET_ARN" || { echo "::error::AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN is missing"; exit 1; }
                     test -n "$TRIGGER_ACCESS_TOKEN" || { echo "::error::TRIGGER_ACCESS_TOKEN is missing"; exit 1; }
                   fi
             - name: Deploy Trigger.dev staging tasks
@@ -85,7 +85,6 @@ jobs:
               working-directory: services/learn-card-network/ai-agent
               env:
                   AI_AGENT_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
-                  AI_AGENT_AUTONOMY_ALLOWED_DIDS: ${{ secrets.AI_AGENT_AUTONOMY_ALLOWED_DIDS }}
                   TRIGGER_ACCESS_TOKEN: ${{ secrets.TRIGGER_ACCESS_TOKEN }}
               run: bunx trigger deploy --env prod --skip-update-check
             - name: Configure AWS credentials
@@ -198,7 +197,7 @@ jobs:
               env:
                   CLOUDFORMATION_STACK: ${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}
                   TRIGGER_SECRET_KEY_SECRET_ARN: ${{ vars.AI_AGENT_TRIGGER_SECRET_KEY_SECRET_ARN }}
-                  AUTONOMY_ALLOWED_DIDS: ${{ secrets.AI_AGENT_AUTONOMY_ALLOWED_DIDS }}
+                  LAUNCHDARKLY_SDK_KEY_SECRET_ARN: ${{ vars.AI_AGENT_LAUNCHDARKLY_SDK_KEY_SECRET_ARN }}
               run: |
                   TRIGGER_PARAMETERS=(EnableTriggerSchedules=false)
 
@@ -206,7 +205,7 @@ jobs:
                     TRIGGER_PARAMETERS=(
                       EnableTriggerSchedules=true
                       TriggerSecretKeySecretArn="$TRIGGER_SECRET_KEY_SECRET_ARN"
-                      AutonomyAllowedDids="$AUTONOMY_ALLOWED_DIDS"
+                      LaunchDarklySdkKeySecretArn="$LAUNCHDARKLY_SDK_KEY_SECRET_ARN"
                     )
                   fi
 
@@ -232,6 +231,20 @@ jobs:
                   max_attempts: 10
                   retry_wait_seconds: 10
                   command: bun -e "const r = await fetch('${{ vars.AI_AGENT_BASE_URL }}/api/health/ready'); if (!r.ok) throw new Error('Readiness returned ' + r.status); const body = await r.json(); if (!body.ok) throw new Error('Service is not ready')"
+
+            - name: Verify observability delivery
+              run: |
+                  bun -e "
+                    const response = await fetch('${{ vars.AI_AGENT_BASE_URL }}/api/health');
+                    if (!response.ok) throw new Error('Health returned ' + response.status);
+                    const body = await response.json();
+                    if (!body.observability?.cloudWatchMetrics) {
+                      throw new Error('Direct CloudWatch metrics are not enabled');
+                    }
+                    if (body.observability?.sentry?.delivery !== 'delivered') {
+                      throw new Error('Sentry deployment event was not delivered');
+                    }
+                  "
 
             - name: Run authenticated staging smoke test
               if: env.TARGET_ENVIRONMENT == 'staging'

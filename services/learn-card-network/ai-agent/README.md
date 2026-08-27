@@ -56,12 +56,14 @@ workspace packages first.
 | `AI_AGENT_RETRO_MODEL`                        | `AI_AGENT_MODEL`                                                           | Model used by the background retro agent.                                                                                                       |
 | `AI_AGENT_RETRO_MAX_TRACE_CHARS`              | `24000`                                                                    | Maximum serialized run-trace size sent to the retro agent.                                                                                      |
 | `AI_AGENT_AUTONOMY_DEV_ENABLED`               | `false`                                                                    | Enables the separate development autonomy worker. Rejected outside `NODE_ENV=development`; never starts from the HTTP service.                  |
-| `AI_AGENT_AUTONOMY_DEV_DIDS`                  | none                                                                       | Comma-separated exact test DIDs allowed to execute autonomous schedules. Required for the local worker and Trigger.dev.                         |
+| `AI_AGENT_AUTONOMY_DEV_DIDS`                  | none                                                                       | Comma-separated exact test DIDs allowed by the local development worker.                                                                        |
 | `AI_AGENT_AUTONOMY_DEV_POLL_INTERVAL_MS`      | `30000`                                                                    | Delay after one completed development cycle before the next cycle starts. Minimum `1000`.                                                       |
 | `AI_AGENT_AUTONOMY_DEV_MAX_RUNS_PER_CYCLE`    | `3`                                                                        | Maximum due schedules attempted sequentially in one worker cycle. Integer from `1` through `10`.                                                |
 | `AI_AGENT_AUTONOMY_DEV_LEASE_MS`              | `900000`                                                                   | Owner/run lease duration. Must exceed the poll interval; active runs renew leases and terminal writes are fenced.                               |
-| `AI_AGENT_TRIGGER_ENABLED`                    | `false`                                                                    | Enables allowlisted Trigger.dev schedule synchronization in local development or staging. Production deployments reject it.                     |
+| `AI_AGENT_TRIGGER_ENABLED`                    | `false`                                                                    | Enables Trigger.dev schedule synchronization in local development or staging. Production deployments reject it.                                 |
 | `AI_AGENT_TRIGGER_ENVIRONMENT`                | `dev` in development                                                       | Must be `dev` locally or `staging` in the staging deployment; included in schedule deduplication keys.                                          |
+| `AI_AGENT_AUTONOMY_LAUNCHDARKLY_FLAG_KEY`     | `ai-agent-autonomy-enabled`                                                | Staging boolean flag evaluated with the authenticated DID as the LaunchDarkly `user` context key.                                               |
+| `LAUNCHDARKLY_SDK_KEY`                        | none                                                                       | Server-side SDK key for the LaunchDarkly staging environment. Required for staging schedules.                                                   |
 | `TRIGGER_SECRET_KEY`                          | none                                                                       | Environment-specific Trigger.dev secret used by the HTTP service to synchronize schedule CRUD. Required when Trigger integration is enabled.    |
 | `AI_AGENT_WEB_SEARCH_PROVIDER`                | `brave` when `BRAVE_SEARCH_API_KEY` exists, otherwise `none`               | Current-info provider. Supported values: `brave`, `none`; `mock` is for tests.                                                                  |
 | `BRAVE_SEARCH_API_KEY`                        | none                                                                       | Brave Web Search API key. Never returned in health responses or tool output.                                                                    |
@@ -70,18 +72,19 @@ workspace packages first.
 | `AI_AGENT_WEB_SEARCH_COUNTRY`                 | none                                                                       | Optional default 2-letter country code, such as `US`.                                                                                           |
 | `AI_AGENT_WEB_SEARCH_LANG`                    | none                                                                       | Optional default search language, such as `en`.                                                                                                 |
 | `AI_AGENT_WEB_SEARCH_SAFESEARCH`              | none                                                                       | Optional default SafeSearch level: `off`, `moderate`, or `strict`.                                                                              |
-| `SENTRY_DSN`                                  | none                                                                       | Existing project Sentry transport for sanitized operational errors. Required in production.                                                     |
+| `AI_AGENT_CLOUDWATCH_METRICS_ENABLED`         | `false`                                                                    | Publishes metrics directly with CloudWatch `PutMetricData`; enabled on ECS only.                                                                |
+| `SENTRY_DSN`                                  | none                                                                       | Raw Sentry DSN URL for sanitized operational errors and traces. Required in production.                                                         |
 | `SENTRY_ENV`                                  | `NODE_ENV`                                                                 | Sentry environment and CloudWatch metric environment dimension.                                                                                 |
 | `SENTRY_RELEASE`                              | `GIT_SHA`                                                                  | Deployed release identifier.                                                                                                                    |
-| `SENTRY_TRACES_SAMPLE_RATE`                   | `0.1`                                                                      | Sentry trace sampling rate from `0` through `1`.                                                                                                |
+| `SENTRY_TRACES_SAMPLE_RATE`                   | `0.1`                                                                      | Sentry trace sampling rate from `0` through `1`; staging ECS and Trigger tasks use `1`.                                                         |
 
 ## Health, telemetry, and AWS deployment
 
 -   `GET /api/health/live` is a process liveness probe.
 -   `GET /api/health/ready` returns 503 until the model provider and MongoDB are ready.
--   `GET /api/health` retains the detailed feature/configuration status used by local QA.
+-   `GET /api/health` retains detailed feature/configuration status, including the Sentry deployment-delivery check.
 -   Every response includes `X-Request-ID`; agent runs also return a `runId`.
--   Structured logs and CloudWatch metrics correlate HTTP, model, tool, run, and post-run stages without recording DIDs, prompts, responses, memory, tool payloads, or exception messages.
+-   Concise logfmt application lines correlate HTTP, model, tool, run, and post-run stages without recording DIDs, prompts, responses, memory, tool payloads, or exception messages. ECS sends metrics directly to CloudWatch instead of mixing EMF JSON records into the log stream.
 
 The production ARM64 container, reusable-infrastructure ECS/Fargate CloudFormation stack, deployment workflow, alarms, dashboard, staging smoke test, rollout procedure, key rotation, troubleshooting, and rollback steps are documented in [RUNBOOK.md](./RUNBOOK.md).
 
@@ -207,9 +210,10 @@ capability policy.
 
 Trigger.dev can replace the local polling loop while preserving the same Mongo occurrence, owner
 lease, full-agent runtime, Assistant card, trace, and retro lifecycle. It is restricted to local
-development and an explicit staging deployment, and every schedule owner must appear in
-`AI_AGENT_AUTONOMY_DEV_DIDS`. Production remains disabled until privacy, consent, and
-effect-idempotency prerequisites are implemented.
+development and an explicit staging deployment. Local Trigger development uses
+`AI_AGENT_AUTONOMY_DEV_DIDS`; staging evaluates the `ai-agent-autonomy-enabled` LaunchDarkly
+boolean flag with the authenticated DID as the `user` context key. Production remains disabled
+until privacy, consent, and effect-idempotency prerequisites are implemented.
 
 The Trigger task runtime is Node even though repository commands use Bun. A live Bun task run
 failed in `@learncard/init` while loading DidKit, so the native

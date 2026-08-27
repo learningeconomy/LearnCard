@@ -17,6 +17,8 @@ export interface ServiceConfig {
     inputTokenCostUsdPerMillion?: number;
     outputTokenCostUsdPerMillion?: number;
     metricsNamespace?: string;
+    cloudWatchMetricsEnabled: boolean;
+    deploymentId?: string;
     sentryDsn?: string;
     sentryEnvironment?: string;
     sentryRelease?: string;
@@ -48,6 +50,8 @@ export interface ServiceConfig {
     autonomyDevPollIntervalMs: number;
     autonomyDevMaxRunsPerCycle: number;
     autonomyDevLeaseMs: number;
+    autonomyLaunchDarklyFlagKey: string;
+    launchDarklySdkKey?: string;
     triggerEnabled?: boolean;
     triggerEnvironment?: string;
     triggerSecretKey?: string;
@@ -116,6 +120,21 @@ const readList = (value: string | undefined): string[] => [
             .filter(Boolean)
     ),
 ];
+
+const isValidSentryDsn = (value: string): boolean => {
+    try {
+        const dsn = new URL(value);
+
+        return (
+            ['http:', 'https:'].includes(dsn.protocol) &&
+            Boolean(dsn.username) &&
+            Boolean(dsn.hostname) &&
+            dsn.pathname !== '/'
+        );
+    } catch {
+        return false;
+    }
+};
 export const assertAutonomousExecutionConfig = (config: ServiceConfig): void => {
     if (!config.mongoUri) {
         throw new Error('AI_AGENT_MONGO_URI or MONGO_URI must be set for autonomous execution.');
@@ -170,12 +189,6 @@ export const assertAutonomyDevConfig = (config: ServiceConfig): void => {
     }
 };
 
-export const assertTriggerOwnerAllowed = (config: ServiceConfig, ownerDid: string): void => {
-    if (config.autonomyDevDids.includes(ownerDid)) return;
-
-    throw new Error('The schedule owner DID is not allowlisted for autonomous execution.');
-};
-
 export const assertTriggerConfig = (config: ServiceConfig): void => {
     if (!config.triggerEnabled) {
         throw new Error('AI_AGENT_TRIGGER_ENABLED=true is required for Trigger.dev schedules.');
@@ -199,8 +212,11 @@ export const assertTriggerConfig = (config: ServiceConfig): void => {
     if (!triggerEnvironment) {
         throw new Error('AI_AGENT_TRIGGER_ENVIRONMENT must identify the Trigger.dev environment.');
     }
-    if (config.autonomyDevDids.length === 0) {
-        throw new Error('AI_AGENT_AUTONOMY_DEV_DIDS must include at least one test DID.');
+    if (isDevelopment && config.autonomyDevDids.length === 0) {
+        throw new Error('AI_AGENT_AUTONOMY_DEV_DIDS must include at least one local test DID.');
+    }
+    if (isStaging && !config.launchDarklySdkKey) {
+        throw new Error('LAUNCHDARKLY_SDK_KEY must be set for staging Trigger.dev schedules.');
     }
 
     assertAutonomousExecutionConfig(config);
@@ -309,6 +325,9 @@ export const assertSecurityConfig = (config: ServiceConfig): void => {
     if (config.nodeEnv === 'production' && !config.sentryDsn) {
         throw new Error('SENTRY_DSN must be set in production.');
     }
+    if (config.sentryDsn && !isValidSentryDsn(config.sentryDsn)) {
+        throw new Error('SENTRY_DSN must be a raw Sentry DSN URL.');
+    }
 
     if (config.webSearchProvider === 'brave' && !config.braveSearchApiKey) {
         throw new Error(
@@ -380,6 +399,11 @@ export const getConfig = (): ServiceConfig => {
             process.env.AI_AGENT_OUTPUT_TOKEN_COST_USD_PER_MILLION
         ),
         metricsNamespace: readString(process.env.AI_AGENT_METRICS_NAMESPACE) ?? 'LearnCard/AIAgent',
+        cloudWatchMetricsEnabled: readBoolean(
+            process.env.AI_AGENT_CLOUDWATCH_METRICS_ENABLED,
+            false
+        ),
+        deploymentId: readString(process.env.AI_AGENT_DEPLOYMENT_ID),
         sentryDsn: readString(process.env.SENTRY_DSN),
         sentryEnvironment: readString(process.env.SENTRY_ENV) ?? readString(process.env.NODE_ENV),
         sentryRelease: readString(process.env.SENTRY_RELEASE) ?? readString(process.env.GIT_SHA),
@@ -428,6 +452,10 @@ export const getConfig = (): ServiceConfig => {
             3
         ),
         autonomyDevLeaseMs: readNumber(process.env.AI_AGENT_AUTONOMY_DEV_LEASE_MS, 900_000),
+        autonomyLaunchDarklyFlagKey:
+            readString(process.env.AI_AGENT_AUTONOMY_LAUNCHDARKLY_FLAG_KEY) ??
+            'ai-agent-autonomy-enabled',
+        launchDarklySdkKey: readString(process.env.LAUNCHDARKLY_SDK_KEY),
         triggerEnabled: readBoolean(process.env.AI_AGENT_TRIGGER_ENABLED, false),
         triggerEnvironment:
             readString(process.env.AI_AGENT_TRIGGER_ENVIRONMENT) ??
