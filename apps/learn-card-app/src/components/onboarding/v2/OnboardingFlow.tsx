@@ -102,15 +102,26 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     useEffect(() => {
         if (!Capacitor.isNativePlatform()) return;
 
-        const listener = Keyboard.addListener('keyboardDidShow', () => {
+        let listenerHandle: Awaited<ReturnType<typeof Keyboard.addListener>> | null = null;
+        let isMounted = true;
+
+        Keyboard.addListener('keyboardDidShow', () => {
+            if (!isMounted) return;
             const activeEl = document.activeElement as HTMLElement | null;
             if (activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA') {
                 activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
+        }).then(handle => {
+            if (isMounted) {
+                listenerHandle = handle;
+            } else {
+                handle.remove();
+            }
         });
 
         return () => {
-            listener.then(l => l.remove());
+            isMounted = false;
+            listenerHandle?.remove();
         };
     }, []);
 
