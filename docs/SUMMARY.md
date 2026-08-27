@@ -3,9 +3,11 @@
 ## 🚀 Introduction
 
 -   [What is LearnCard?](README.md)
+-   [What Do You Want to Build?](introduction/what-do-you-want-to-build.md)
 -   [Use Cases & Possibilities](introduction/use-cases-and-possibilities.md)
 -   [Ecosystem Architecture](introduction/ecosystem-architecture.md)
 -   [Interoperability](introduction/interoperability.md)
+-   [Glossary](introduction/glossary.md)
 
 ## ⚡ Quick Start
 
@@ -48,6 +50,7 @@
 
 ## 🛠️ SDKs & API Reference <a href="#sdks" id="sdks"></a>
 
+-   [Which SDK Do I Need?](sdks/which-sdk.md)
 -   [LearnCard Wallet SDK](sdks/learncard-core/README.md)
     -   [Authentication](sdks/learncard-core/authentication.md)
     -   [Usage Examples](sdks/learncard-core/construction.md)

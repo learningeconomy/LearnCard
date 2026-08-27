@@ -1,6 +1,8 @@
 # Verifiable Credentials (VCs)
 
-Verifiable Credentials are a W3C standard for expressing credentials in a way that is cryptographically secure, privacy-respecting, and machine-verifiable. They enable trusted digital claims about subjects.
+A Verifiable Credential is a digital certificate or badge — like a diploma, a skill badge, or a license — that proves something about a person. It's cryptographically signed, so anyone can check it's real without calling the issuer, and the person who earned it owns it and can share it anywhere.
+
+Technically, Verifiable Credentials are a W3C standard for expressing credentials in a way that is cryptographically secure, privacy-respecting, and machine-verifiable.
 
 ### Verifiable Credential Data Model <a href="#credential-data-model" id="credential-data-model"></a>
 
@@ -9,7 +11,7 @@ LearnCard implements the W3C Verifiable Credentials Data Model, with support for
 #### Credential Structure <a href="#credential-structure" id="credential-structure"></a>
 
 ```mermaid
-graph 
+graph
     subgraph "Verifiable Credential"
         VC["Verifiable Credential"]
         VC --> Context["@context"]
@@ -42,8 +44,8 @@ graph
 
 Version differences:
 
-* VC 1.0 uses `issuanceDate` and `expirationDate`
-* VC 2.0 uses `validFrom` and `validUntil`
+-   VC 1.0 uses `issuanceDate` and `expirationDate`
+-   VC 2.0 uses `validFrom` and `validUntil`
 
 {% @github-files/github-code-block url="https://github.com/learningeconomy/LearnCard/blob/942bb5f7/packages/learn-card-types/src/vc.ts#L129-L177" %}
 
@@ -54,7 +56,7 @@ Version differences:
 Verifiable Presentations allow holders to bundle and selectively disclose credentials:
 
 ```mermaid
-graph 
+graph
     subgraph "Verifiable Presentation"
         VP["Verifiable Presentation"]
         VP --> VPContext["@context"]
@@ -76,4 +78,3 @@ graph
         VPProof --> VPJWS["jws (signature)"]
     end
 ```
-
