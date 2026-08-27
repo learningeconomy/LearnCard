@@ -19,12 +19,21 @@ export const injectContractUriIntoStatement = (
     },
 });
 
+const getAccountName = (actor: unknown): string => {
+    if (!actor || typeof actor !== 'object' || !('account' in actor)) return '';
+
+    const { account } = actor;
+    if (!account || typeof account !== 'object' || !('name' in account)) return '';
+
+    return typeof account.name === 'string' ? account.name : '';
+};
+
 export const verifyVoidStatement = async (
     targetDid: string,
     did: string,
     statementId: string,
     auth: string
-) => {
+): Promise<boolean> => {
     const response = await fetch(
         new URL(`${XAPI_ENDPOINT}/statements?statementId=${statementId}`),
         { headers: { Authorization: auth, 'X-Experience-API-Version': '1.0.3' } }
@@ -32,16 +41,23 @@ export const verifyVoidStatement = async (
 
     if (response.status !== 200) return false;
 
-    const statement = (await response.json()) as Statement;
-    const actorAccountName =
-        'account' in statement.actor ? statement.actor.account?.name ?? '' : '';
+    const statement: unknown = await response.json();
+    if (!statement || typeof statement !== 'object') return false;
+
+    const actorAccountName = getAccountName('actor' in statement ? statement.actor : undefined);
+    const authority = 'authority' in statement ? statement.authority : undefined;
     const authorityMembers =
-        statement.authority?.objectType === 'Group' ? statement.authority.member ?? [] : [];
+        authority &&
+        typeof authority === 'object' &&
+        'objectType' in authority &&
+        authority.objectType === 'Group' &&
+        'member' in authority &&
+        Array.isArray(authority.member)
+            ? authority.member
+            : [];
 
     return (
         (await areDidsEqual(targetDid, actorAccountName)) &&
-        (await some(authorityMembers, async member =>
-            areDidsEqual(did, member.account?.name ?? '')
-        ))
+        (await some(authorityMembers, async member => areDidsEqual(did, getAccountName(member))))
     );
 };

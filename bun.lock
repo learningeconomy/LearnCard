@@ -227,6 +227,7 @@
         "eslint-plugin-i18next": "^6.1.4",
         "http-server": "14.1.1",
         "jeep-sqlite": "2.5.8",
+        "jsdom": "^24.0.0",
         "neo4j-driver": "5.18.0",
         "node-gyp": "^12.2.0",
         "node-stdlib-browser": "1.2.1",
