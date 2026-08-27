@@ -21,3 +21,9 @@ redirects:
     how-to-guides/implement-flows/chapi/cheat-sheets/wallets: introduction/interoperability.md
     core-concepts/architecture-and-principles/u.s.-state-api: sdks/learncard-network/README.md
     core-concepts/credentials-and-data/general-best-practices-and-troubleshooting: core-concepts/credentials-and-data/README.md
+    core-concepts/network-and-interactions/network-vision-and-principles: core-concepts/network-and-interactions/network-architecture.md
+    core-concepts/network-and-interactions/key-network-procedures: core-concepts/network-and-interactions/network-architecture.md
+    core-concepts/network-and-interactions/core-interaction-workflows: core-concepts/network-and-interactions/network-architecture.md
+    core-concepts/network-and-interactions/credential-activity: core-concepts/network-and-interactions/README.md
+    core-concepts/tenant-branded-emails: apps/README.md
+    apps/learn-card-app/resume-builder-ler-rs-mapping: apps/learn-card-app/README.md

@@ -14,13 +14,13 @@ CREATED → DELIVERED → CLAIMED
 
 ## Event Types
 
-| Event | Description |
-|-------|-------------|
-| `CREATED` | Credential created and sent to inbox (email/phone recipient) |
-| `DELIVERED` | Credential delivered to profile (profile ID/DID recipient) |
-| `CLAIMED` | Recipient claimed/accepted the credential |
-| `EXPIRED` | Credential expired before being claimed |
-| `FAILED` | Credential delivery failed |
+| Event       | Description                                                  |
+| ----------- | ------------------------------------------------------------ |
+| `CREATED`   | Credential created and sent to inbox (email/phone recipient) |
+| `DELIVERED` | Credential delivered to profile (profile ID/DID recipient)   |
+| `CLAIMED`   | Recipient claimed/accepted the credential                    |
+| `EXPIRED`   | Credential expired before being claimed                      |
+| `FAILED`    | Credential delivery failed                                   |
 
 ## Activity Record Structure
 
@@ -28,19 +28,19 @@ Each activity record contains:
 
 ```typescript
 interface CredentialActivity {
-    id: string;              // Unique event ID
-    activityId: string;      // Groups related events for same issuance
-    eventType: string;       // CREATED | DELIVERED | CLAIMED | EXPIRED | FAILED
-    timestamp: string;       // ISO timestamp
-    actorProfileId: string;  // Who triggered the action
-    recipientType: string;   // 'profile' | 'email' | 'phone'
+    id: string; // Unique event ID
+    activityId: string; // Groups related events for same issuance
+    eventType: string; // CREATED | DELIVERED | CLAIMED | EXPIRED | FAILED
+    timestamp: string; // ISO timestamp
+    actorProfileId: string; // Who triggered the action
+    recipientType: string; // 'profile' | 'email' | 'phone'
     recipientIdentifier: string;
-    boostUri?: string;       // Associated boost template
-    credentialUri?: string;  // Credential URI (for profile sends)
+    boostUri?: string; // Associated boost template
+    credentialUri?: string; // Credential URI (for profile sends)
     inboxCredentialId?: string; // Inbox credential ID (for inbox sends)
-    integrationId?: string;  // Integration attribution
-    source: string;          // Entry point (see Source Types below)
-    metadata?: object;       // Additional context
+    integrationId?: string; // Integration attribution
+    source: string; // Entry point (see Source Types below)
+    metadata?: object; // Additional context
 }
 ```
 
@@ -56,7 +56,7 @@ Boost "Employee Badge"
 │   ├── DELIVERED (timestamp 1)
 │   └── CLAIMED (timestamp 2) ← same activityId "abc123"
 │
-├── send() to Bob → activityId: "def456"  
+├── send() to Bob → activityId: "def456"
 │   ├── DELIVERED (timestamp 3)
 │   └── CLAIMED (timestamp 4) ← same activityId "def456"
 │
@@ -65,25 +65,26 @@ Boost "Employee Badge"
 ```
 
 **Key points:**
-- `activityId` tracks a **single issuance lifecycle**, not a boost or recipient
-- Same boost sent twice = two different `activityId`s
-- Same recipient receiving twice = two different `activityId`s
-- The `boostUri` field links activities to the boost template for aggregate stats
+
+-   `activityId` tracks a **single issuance lifecycle**, not a boost or recipient
+-   Same boost sent twice = two different `activityId`s
+-   Same recipient receiving twice = two different `activityId`s
+-   The `boostUri` field links activities to the boost template for aggregate stats
 
 ## Source Types
 
 The `source` field indicates how the credential was issued:
 
-| Source | Description |
-|--------|-------------|
-| `send` | Via the unified `send()` route |
-| `sendBoost` | Via the `sendBoost` route |
-| `sendCredential` | Via the `sendCredential` route |
-| `inbox` | Claimed from Universal Inbox |
-| `claim` | Profile-to-profile credential acceptance |
-| `claimLink` | Claimed via a claim link (combined send+claim) |
-| `contract` | Issued via ConsentFlow contract |
-| `acceptCredential` | Credential accepted by recipient |
+| Source             | Description                                    |
+| ------------------ | ---------------------------------------------- |
+| `send`             | Via the unified `send()` route                 |
+| `sendBoost`        | Via the `sendBoost` route                      |
+| `sendCredential`   | Via the `sendCredential` route                 |
+| `inbox`            | Claimed from Universal Inbox                   |
+| `claim`            | Profile-to-profile credential acceptance       |
+| `claimLink`        | Claimed via a claim link (combined send+claim) |
+| `contract`         | Issued via ConsentFlow contract                |
+| `acceptCredential` | Credential accepted by recipient               |
 
 ## API Endpoints
 
@@ -96,13 +97,15 @@ GET /activity/credentials
 ```
 
 **Query Parameters:**
-- `limit` (number, default: 25) - Max results per page
-- `cursor` (string) - Pagination cursor
-- `boostUri` (string) - Filter by boost template
-- `eventType` (string) - Filter by event type
-- `integrationId` (string) - Filter by integration
+
+-   `limit` (number, default: 25) - Max results per page
+-   `cursor` (string) - Pagination cursor
+-   `boostUri` (string) - Filter by boost template
+-   `eventType` (string) - Filter by event type
+-   `integrationId` (string) - Filter by integration
 
 **Response:**
+
 ```json
 {
     "records": [
@@ -139,10 +142,12 @@ GET /activity/credentials/stats
 ```
 
 **Query Parameters:**
-- `boostUris` (string[]) - Filter by boost templates
-- `integrationId` (string) - Filter by integration
+
+-   `boostUris` (string[]) - Filter by boost templates
+-   `integrationId` (string) - Filter by integration
 
 **Response:**
+
 ```json
 {
     "total": 150,
@@ -172,6 +177,7 @@ GET /activity/credentials/{activityId}/chain
 ```
 
 **Response:**
+
 ```json
 [
     {
