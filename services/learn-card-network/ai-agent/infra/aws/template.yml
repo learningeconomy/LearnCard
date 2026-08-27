@@ -13,6 +13,10 @@ Parameters:
     ServiceName:
         Type: String
         Default: learncard-ai-agent
+    DeploymentRoleName:
+        Type: String
+        Default: learncard-ai-agent-github-deploy
+        Description: Existing GitHub OIDC deployment role that receives read-only access to this service's application logs.
     DeploymentId:
         Type: String
         Default: bootstrap
@@ -310,6 +314,22 @@ Resources:
         Properties:
             LogGroupName: !Sub '/ecs/${ServiceName}-${Environment}'
             RetentionInDays: 30
+
+    DeploymentLogReadPolicy:
+        Type: AWS::IAM::Policy
+        Condition: ShouldCreateService
+        Properties:
+            PolicyName: !Sub '${ServiceName}-${Environment}-read-application-logs'
+            Roles:
+                - !Ref DeploymentRoleName
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Effect: Allow
+                      Action: logs:FilterLogEvents
+                      Resource:
+                          - !GetAtt ApplicationLogGroup.Arn
+                          - !Sub '${ApplicationLogGroup.Arn}:*'
 
     TaskExecutionRole:
         Type: AWS::IAM::Role

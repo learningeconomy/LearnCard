@@ -253,7 +253,7 @@ Environment secrets:
 -   `TRIGGER_ACCESS_TOKEN` for staging only, containing a Trigger.dev personal access token
     beginning with `tr_pat_`; this deploys task code and is not the runtime project secret
 
-Grant the workflow `id-token: write` and use GitHub OIDC; do not create long-lived AWS access keys. Scope the role trust policy to `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-staging` and `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-production`. Restrict its policy to the two AI Agent ECR repositories, CloudFormation stacks, and resource types the template manages. Require a non-self production approval and protected-branch deployment.
+Grant the workflow `id-token: write` and use GitHub OIDC; do not create long-lived AWS access keys. Scope the role trust policy to `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-staging` and `repo:learningeconomy/LearnCard:environment:learn-card-ai-agent-production`. Restrict its policy to the two AI Agent ECR repositories, CloudFormation stacks, and resource types the template manages. The service stack attaches only `logs:FilterLogEvents` for its own application log group so deployment can verify readable logs. Set `DeploymentRoleName` if the existing role is not named `learncard-ai-agent-github-deploy`. Require a non-self production approval and protected-branch deployment.
 
 ### 9. Configure the dedicated Trigger.dev staging project
 

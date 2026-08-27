@@ -266,6 +266,7 @@ jobs:
                   max_attempts: 5
                   retry_wait_seconds: 10
                   command: |
+                      set -euo pipefail
                       LOG_GROUP="$(aws cloudformation describe-stacks \
                         --stack-name '${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}' \
                         --query "Stacks[0].Outputs[?OutputKey=='ApplicationLogGroupName'].OutputValue | [0]" \
