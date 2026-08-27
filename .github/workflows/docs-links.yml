@@ -1,0 +1,19 @@
+name: Docs Link Integrity
+
+on:
+    pull_request:
+        paths:
+            - 'docs/**'
+            - '.gitbook.yaml'
+            - 'scripts/check-docs-links.mjs'
+            - 'scripts/docs-links-allowlist.json'
+
+jobs:
+    check-links:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+            - run: node scripts/check-docs-links.mjs
