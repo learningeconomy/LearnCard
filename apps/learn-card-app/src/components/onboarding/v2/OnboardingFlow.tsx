@@ -111,13 +111,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             if (activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA') {
                 activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-        }).then(handle => {
-            if (isMounted) {
-                listenerHandle = handle;
-            } else {
-                handle.remove();
-            }
-        });
+        })
+            .then(handle => {
+                if (isMounted) {
+                    listenerHandle = handle;
+                } else {
+                    handle.remove();
+                }
+            })
+            .catch(err => {
+                console.error('Keyboard listener failed:', err);
+            });
 
         return () => {
             isMounted = false;
