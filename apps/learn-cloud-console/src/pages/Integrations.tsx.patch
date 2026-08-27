@@ -1,0 +1,24 @@
+--- src/pages/Integrations.tsx
++++ src/pages/Integrations.tsx
+@@ -1,4 +1,5 @@
+ import { useState, useEffect, useCallback } from 'react';
++import { useLocation } from 'wouter';
+ import { Cable, Search, Loader2 } from 'lucide-react';
+ import { Badge } from '../components/ui/badge';
+ import { Input } from '../components/ui/input';
+@@ -14,6 +15,7 @@
+ }
+ 
+ export function Integrations({ session }: IntegrationsProps) {
++    const [, setLocation] = useLocation();
+     const [search, setSearch] = useState('');
+     const [activeCategory, setActiveCategory] = useState<string | null>(null);
+     const [listings, setListings] = useState<CatalogListing[]>([]);
+@@ -83,6 +85,7 @@
+             <div
+                 key={plugin.listing_id}
+                 className={`bg-card border rounded-xl p-4 md:p-6 shadow-card transition-all cursor-pointer hover:shadow-md ${isInstalled ? 'border-emerald/30' : 'border-border'}`}
++                onClick={() => setLocation(`/integrations/${plugin.listing_id}`)}
+             >
+                 <div className="flex items-start justify-between mb-4">
+                     <div className="flex items-center gap-3">

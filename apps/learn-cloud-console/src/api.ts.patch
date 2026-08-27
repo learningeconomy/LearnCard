@@ -1,0 +1,23 @@
+--- src/api.ts
++++ src/api.ts
+@@ -11,6 +11,8 @@
+ export type EcosystemDetail = inferRouterOutputs<ConsoleRouter>['ecosystem']['get'];
+ export type Group = inferRouterOutputs<ConsoleRouter>['group']['listByEcosystem'][number];
+ export type GroupDetail = inferRouterOutputs<ConsoleRouter>['group']['get'];
++export type CatalogListing = inferRouterOutputs<ConsoleRouter>['catalog']['listings']['records'][number];
++export type CatalogListingDetail = inferRouterOutputs<ConsoleRouter>['catalog']['get'];
+ 
+ const TENANT_ID = 'learncard';
+ const PROVIDER_ID = 'lef-wallet';
+@@ -132,3 +134,11 @@
+ export async function createOrgProfile(input: { name: string; type: 'institution' | 'employer'; groupId?: string }) {
+     return trpc.group.createOrgProfile.mutate(input);
+ }
++
++export async function listCatalogListings(input: { limit?: number; cursor?: string; category?: string } = {}) {
++    return trpc.catalog.listings.query(input);
++}
++
++export async function getCatalogListing(input: { listingId: string }) {
++    return trpc.catalog.get.query(input);
++}

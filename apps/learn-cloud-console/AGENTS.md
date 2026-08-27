@@ -56,8 +56,23 @@ prototype's tokens change, mirror the change.
 text-[13px]` with `h-4 w-4` lucide icons; active item is `text-lc-blue font-medium`
     (icon too). Collapsible groups (Apps / Plugins / Data) use `bg-lc-blue/10
 hover:bg-lc-blue/15` triggers with a `ChevronRight h-3 w-3` that rotates 90° when
-    open; only one group open at a time; content indented `pl-3`. No radix / react-router
-    / shadcn deps — plain React state + `cn()` from `src/lib/utils.ts`.
+    open; only one group open at a time; content indented `pl-3`. No radix / shadcn
+    deps — plain React state + `cn()` from `src/lib/utils.ts`. Navigation uses
+    **wouter** (`Link`, `useLocation`); active state derives from the URL, and the
+    route table in `src/routes.ts` is the single source of truth shared by the sidebar
+    and `App.tsx` routes.
+
+## Routing: wouter, NOT react-router (IMPORTANT)
+
+This app uses [wouter](https://github.com/molefrog/wouter) (`Switch`/`Route`/`Redirect`/
+`Link href=...`/`useLocation`). **Never add react-router / react-router-dom here**: the
+monorepo root `package.json` has `overrides` pinning `react-router` and
+`react-router-dom` to **5.3.3** (required by Ionic in `learn-card-app`/`scouts`). Those
+overrides rewrite even transitive deps, so any v6+ install silently regresses to v5 on
+the next `bun install` and breaks at runtime. wouter has no name collision with the
+override, so it is safe. Note the prototype uses react-router — translate its `NavLink`/
+`Route` patterns to wouter equivalents when porting pages (visuals stay identical).
+
 -   **Header** (`src/components/Layout.tsx`): `h-14 bg-card border-b`, persona block on
     the right (`text-sm font-medium` name over `text-[10px] text-muted-foreground` role)
     -   circular `bg-emerald/10 text-emerald` avatar. When the sidebar is collapsed the
@@ -70,10 +85,11 @@ text-primary`).
 
 ## Component Conventions
 
--   UI primitives live in `src/components/ui/` (`card`, `badge`, `button`) — shadcn-style
+-   UI primitives live in `src/components/ui/` (`card`, `badge`, `button`, `dialog`, `input`) — shadcn-style
     class strings, no runtime deps. Extend this folder rather than inlining long class
     strings; when adding a primitive, copy the prototype's version and strip
     radix/`cva` dependencies if needed.
+-   Buttons: use `variant="hero"` for prominent "Add" actions (matches prototype's gradient/shadow style).
 -   Cards: `Card` + `CardHeader`/`CardTitle`/`CardDescription`/`CardContent`; titles
     render in Space Grotesk automatically.
 -   Status badges: use `Badge` variants (`success`, `warning`, `destructive`, `outline`).

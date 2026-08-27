@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'wouter';
 import { Sidebar } from './Sidebar';
 import { DashboardSession } from '../api';
 import { Crown } from 'lucide-react';
@@ -27,13 +28,13 @@ export function Layout({ children, session, onLogin, onLogout, busy }: LayoutPro
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                         {collapsed && (
                             <>
-                                <a href="#">
+                                <Link href="/">
                                     <img
                                         src={eduosHorizontal}
                                         alt="Education OS"
                                         className="object-contain object-left cursor-pointer h-5 sm:h-6"
                                     />
-                                </a>
+                                </Link>
                                 <span className="inline-flex items-center justify-center rounded-full border px-1.5 py-0 text-[10px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-primary/30 text-primary h-5 shrink-0">
                                     DEMO
                                 </span>

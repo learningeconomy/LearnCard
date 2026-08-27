@@ -7,6 +7,7 @@ import type { ConsoleAuthService } from '../src/app';
 import { SESSION_COOKIE_NAME, readSessionCookie } from '@session';
 import { StubBrainServiceTransport } from '../src/brain/stub-transport';
 import { LocalKeyManagementService } from '@kms/local';
+import { InMemoryKeyDirectory } from '@did';
 
 const COOKIE_SECRET = 'test-secret';
 
@@ -15,6 +16,8 @@ const stubSpineDeps = () => ({
     transport: new StubBrainServiceTransport(),
     kms: new LocalKeyManagementService(),
     keyRefFor: async () => null,
+    directory: new InMemoryKeyDirectory(),
+    consoleDomain: 'localhost:3200',
 });
 
 const stubSession = (sessionId: string): DashboardSession => ({

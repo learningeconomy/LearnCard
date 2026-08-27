@@ -3,11 +3,14 @@ import type { DashboardSession } from '@learncard/types';
 
 import type { BrainServiceTransport } from '../brain';
 import type { KeyManagementService, ManagedKeyRef } from '@kms';
+import type { MutableManagedKeyDirectory } from '@did';
 
 export type ConsoleContext = {
     transport: BrainServiceTransport;
     kms: KeyManagementService;
     keyRefFor: (did: string) => Promise<ManagedKeyRef | null>;
+    directory: MutableManagedKeyDirectory;
+    consoleDomain: string;
     session: DashboardSession | null;
 };
 

@@ -2,6 +2,17 @@ import { Ecosystem } from '@models';
 import { Ecosystem as EcosystemType, EcosystemSettings } from '@learncard/types';
 import { FlatEcosystemType } from 'types/ecosystem';
 
+export const toJsNumber = (value: unknown): number => {
+    if (typeof value === 'object' && value !== null) {
+        const candidate = (value as { toNumber?: unknown }).toNumber;
+        if (typeof candidate === 'function') {
+            return (value as { toNumber: () => number }).toNumber();
+        }
+    }
+
+    return Number(value);
+};
+
 export const inflateEcosystem = (flat: FlatEcosystemType): EcosystemType => {
     const { settings, parentEcosystemId, ...rest } = flat;
 
@@ -16,7 +27,12 @@ export const inflateEcosystem = (flat: FlatEcosystemType): EcosystemType => {
         }
     }
 
-    return { ...rest, parentEcosystemId: parentEcosystemId ?? null, settings: parsedSettings };
+    return {
+        ...rest,
+        depth: toJsNumber(rest.depth),
+        parentEcosystemId: parentEcosystemId ?? null,
+        settings: parsedSettings,
+    };
 };
 
 export const getEcosystemById = async (id: string): Promise<EcosystemType | null> => {

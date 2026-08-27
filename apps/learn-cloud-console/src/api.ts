@@ -6,6 +6,14 @@ import type { ConsoleRouter } from '@console-bff/trpc/router';
 import { trpc } from './trpc';
 
 export type DashboardSession = inferRouterOutputs<ConsoleRouter>['session']['get'];
+export type EcosystemAccess = inferRouterOutputs<ConsoleRouter>['ecosystem']['list'][number];
+export type EcosystemDetail = inferRouterOutputs<ConsoleRouter>['ecosystem']['get'];
+export type Group = inferRouterOutputs<ConsoleRouter>['group']['listByEcosystem'][number];
+export type GroupDetail = inferRouterOutputs<ConsoleRouter>['group']['get'];
+export type CatalogListing =
+    inferRouterOutputs<ConsoleRouter>['catalog']['listings']['records'][number];
+export type CatalogListingDetail = inferRouterOutputs<ConsoleRouter>['catalog']['get'];
+export type CatalogEnablement = inferRouterOutputs<ConsoleRouter>['catalog']['enablement']['get'];
 
 const TENANT_ID = 'learncard';
 const PROVIDER_ID = 'lef-wallet';
@@ -83,4 +91,98 @@ export async function logout(): Promise<void> {
     const res = await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
 
     if (!res.ok) throw new Error(`logout failed (${res.status})`);
+}
+
+export async function listEcosystems() {
+    return trpc.ecosystem.list.query();
+}
+
+export async function getEcosystemDetail(id: string) {
+    return trpc.ecosystem.get.query({ id });
+}
+
+export async function grantEcosystemMembership(input: {
+    id: string;
+    profileId: string;
+    role: 'ADMIN' | 'MEMBER' | 'VIEWER';
+}) {
+    return trpc.ecosystem.grantMembership.mutate(input);
+}
+
+export async function revokeEcosystemMembership(input: { id: string; profileId: string }) {
+    return trpc.ecosystem.revokeMembership.mutate(input);
+}
+
+export async function createEcosystem(input: {
+    parentEcosystemId: string;
+    name: string;
+    slug: string;
+    description?: string;
+}) {
+    return trpc.ecosystem.create.mutate(input);
+}
+
+export async function listGroupsByEcosystem(ecosystemId: string) {
+    return trpc.group.listByEcosystem.query({ ecosystemId });
+}
+
+export async function getGroupDetail(id: string) {
+    return trpc.group.get.query({ id });
+}
+
+export async function createGroup(input: {
+    ownerEcosystemId: string;
+    name: string;
+    slug: string;
+    type: 'geographic' | 'administrative' | 'programmatic' | 'functional' | 'cohort' | 'custom';
+    description?: string;
+}) {
+    return trpc.group.create.mutate(input);
+}
+
+export async function addGroupMember(input: { id: string; profileId: string }) {
+    return trpc.group.addMember.mutate(input);
+}
+
+export async function removeGroupMember(input: { id: string; profileId: string }) {
+    return trpc.group.removeMember.mutate(input);
+}
+
+export async function createOrgProfile(input: {
+    name: string;
+    type: 'institution' | 'employer';
+    groupId?: string;
+}) {
+    return trpc.group.createOrgProfile.mutate(input);
+}
+
+export async function listCatalogListings(
+    input: { limit?: number; cursor?: string; category?: string } = {}
+) {
+    return trpc.catalog.listings.query(input);
+}
+
+export async function getCatalogListing(input: { listingId: string }) {
+    return trpc.catalog.get.query(input);
+}
+
+export async function listCatalogListingsForEcosystem(input: {
+    ecosystemId: string;
+    limit?: number;
+    cursor?: string;
+    category?: string;
+}) {
+    return trpc.catalog.listingsForEcosystem.query(input);
+}
+
+export async function getCatalogEnablement(input: { ecosystemId: string }) {
+    return trpc.catalog.enablement.get.query(input);
+}
+
+export async function enableCatalogListing(input: { ecosystemId: string; listingId: string }) {
+    return trpc.catalog.enablement.enable.mutate(input);
+}
+
+export async function disableCatalogListing(input: { ecosystemId: string; listingId: string }) {
+    return trpc.catalog.enablement.disable.mutate(input);
 }

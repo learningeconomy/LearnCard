@@ -2238,6 +2238,47 @@ export const appStoreRouter = t.router({
             return { hasMore, cursor, records };
         }),
 
+    getListingVersions: openRoute
+        .meta({
+            openapi: {
+                protect: false,
+                method: 'GET',
+                path: '/app-store/public/listing/{listingId}/versions',
+                tags: ['App Store'],
+                summary: 'Get Listing Versions',
+                description: 'Get the LISTED versions of a publicly listed app',
+            },
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(
+            z.array(
+                z.object({
+                    version_id: z.string(),
+                    version: z.string(),
+                    status: z.string(),
+                    created_at: z.string(),
+                })
+            )
+        )
+        .query(async ({ input }) => {
+            const listing = await readAppStoreListingById(input.listingId);
+
+            if (!listing || listing.app_listing_status !== 'LISTED') {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+            }
+
+            const versions = await readListingVersionsForListing(input.listingId);
+
+            return versions
+                .filter(version => version.status === 'LISTED')
+                .map(version => ({
+                    version_id: version.version_id,
+                    version: version.version,
+                    status: version.status,
+                    created_at: version.created_at,
+                }));
+        }),
+
     getPublicListing: openRoute
         .meta({
             openapi: {

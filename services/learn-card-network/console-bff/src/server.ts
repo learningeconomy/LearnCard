@@ -3,7 +3,7 @@ import cookie from '@fastify/cookie';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 
 import { SESSION_COOKIE_NAME, readSessionCookie, signSessionCookie } from '@session';
-import { didWebFromDomain, type DidDocumentService } from '@did';
+import { didWebFromDomain, type DidDocumentService, type MutableManagedKeyDirectory } from '@did';
 import { consoleRouter, makeCreateConsoleContext } from './trpc';
 
 import type { ConsoleAuthService } from './app';
@@ -15,6 +15,8 @@ export type ConsoleBffServerConfig = {
     transport: BrainServiceTransport;
     kms: KeyManagementService;
     keyRefFor: (did: string) => Promise<ManagedKeyRef | null>;
+    directory: MutableManagedKeyDirectory;
+    consoleDomain: string;
     authService: ConsoleAuthService;
     cookieSecret: string;
     secureCookies?: boolean;
@@ -39,6 +41,8 @@ export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
                 transport: config.transport,
                 kms: config.kms,
                 keyRefFor: config.keyRefFor,
+                directory: config.directory,
+                consoleDomain: config.consoleDomain,
                 authService: config.authService,
                 cookieSecret: config.cookieSecret,
             }),

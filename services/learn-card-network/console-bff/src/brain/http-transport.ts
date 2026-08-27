@@ -101,7 +101,7 @@ export class HttpBrainServiceTransport implements BrainServiceTransport {
 
     async createProfile(
         bearer: string,
-        body: { profileId: string; displayName?: string }
+        body: { profileId: string; displayName?: string; type?: string }
     ): Promise<void> {
         const res = await this.fetchImpl(`${this.base}/profile/create`, {
             method: 'POST',
@@ -109,6 +109,7 @@ export class HttpBrainServiceTransport implements BrainServiceTransport {
             body: JSON.stringify({
                 profileId: body.profileId,
                 displayName: body.displayName ?? body.profileId,
+                ...(body.type ? { type: body.type } : {}),
             }),
         });
 

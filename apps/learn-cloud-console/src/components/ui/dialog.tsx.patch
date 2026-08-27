@@ -1,0 +1,33 @@
+--- src/components/ui/dialog.tsx
++++ src/components/ui/dialog.tsx
+@@ -58,8 +58,8 @@
+     );
+ }
+ 
+-export function DialogContent({ children, className }: { children: React.ReactNode; className?: string }) {
+-    return <div className={cn(className)}>{children}</div>;
++export function DialogContent({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) {
++    return <div className={cn(className)} onClick={onClick}>{children}</div>;
+ }
+ 
+ export function DialogHeader({ children, className }: { children: React.ReactNode; className?: string }) {
+@@ -76,4 +76,16 @@
+         </h2>
+     );
+ }
++
++export function DialogDescription({ children, className }: { children: React.ReactNode; className?: string }) {
++    return (
++        <p className={cn("text-sm text-muted-foreground", className)}>
++            {children}
++        </p>
++    );
++}
++
++export function DialogFooter({ children, className }: { children: React.ReactNode; className?: string }) {
++    return (
++        <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}>
++            {children}
++        </div>
++    );
++}

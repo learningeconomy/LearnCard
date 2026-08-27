@@ -1,0 +1,21 @@
+--- src/pages/ListingDetail.tsx
++++ src/pages/ListingDetail.tsx
+@@ -1,8 +1,7 @@
+ import { useState, useEffect, useCallback } from 'react';
+-import { Link, useParams, useLocation } from 'wouter';
+-import { ArrowLeft, Cable, LayoutGrid, Loader2 } from 'lucide-react';
++import { Link, useParams } from 'wouter';
++import { ArrowLeft, Cable, LayoutGrid } from 'lucide-react';
+ import { Badge } from '../components/ui/badge';
+-import { Button } from '../components/ui/button';
+ import { InstallActions } from '../components/catalog/InstallActions';
+ import { PageSkeleton } from '../components/PageSkeleton';
+ import { ErrorState } from '../components/ErrorState';
+@@ -16,7 +15,6 @@
+ export function ListingDetail({ session }: ListingDetailProps) {
+     const params = useParams<{ id: string }>();
+     const id = params?.id;
+-    const [, setLocation] = useLocation();
+     
+     const [listing, setListing] = useState<CatalogListing | null>(null);
+     const [versions, setVersions] = useState<any[]>([]);

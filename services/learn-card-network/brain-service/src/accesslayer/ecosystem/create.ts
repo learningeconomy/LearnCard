@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { Ecosystem, EcosystemInstance } from '@models';
 import { Ecosystem as EcosystemType } from '@learncard/types';
 import { FlatEcosystemType } from 'types/ecosystem';
+import { toJsNumber } from '@accesslayer/ecosystem/read';
 
 export type CreateEcosystemInput = Omit<
     EcosystemType,
@@ -27,7 +28,7 @@ export const createEcosystem = async (input: CreateEcosystemInput): Promise<Ecos
         parentEcosystemId: input.parentEcosystemId ?? undefined,
         pathIds: parent ? [...parent.pathIds, id] : [id],
         slugPath: parent ? [...parent.slugPath, input.slug] : [input.slug],
-        depth: parent ? parent.depth + 1 : 0,
+        depth: parent ? toJsNumber(parent.depth) + 1 : 0,
         rootEcosystemId: parent ? parent.rootEcosystemId : id,
         settings: JSON.stringify(input.settings ?? {}),
         createdAt: now,

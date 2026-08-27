@@ -1,0 +1,26 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -11,6 +11,7 @@
+ import { GroupDetail } from './pages/GroupDetail';
+ import { Integrations } from './pages/Integrations';
+ import { UserApps } from './pages/UserApps';
++import { ListingDetail } from './pages/ListingDetail';
+ import { Users } from './pages/Users';
+ import { ComingSoon } from './pages/ComingSoon';
+ import { allRoutes } from './routes';
+@@ -87,9 +88,15 @@
+                         <Route path="/integrations">
+                             <Integrations session={session} />
+                         </Route>
++                        <Route path="/integrations/:id">
++                            <ListingDetail session={session} />
++                        </Route>
+                         <Route path="/apps">
+                             <UserApps session={session} />
+                         </Route>
++                        <Route path="/apps/:id">
++                            <ListingDetail session={session} />
++                        </Route>
+                         <Route path="/users">
+                             <Users session={session} />
+                         </Route>

@@ -7,6 +7,7 @@ import {
     GroupReferenceView,
 } from '@learncard/types';
 import { FlatGroupType } from 'types/group';
+import { toJsNumber } from '@accesslayer/ecosystem/read';
 
 export const inflateGroup = (flat: FlatGroupType): GroupType => {
     const { computedCriteria, parentGroupId, ...rest } = flat;
@@ -26,10 +27,32 @@ export const inflateGroup = (flat: FlatGroupType): GroupType => {
 
     return {
         ...rest,
+        depth: toJsNumber(rest.depth),
         parentGroupId: parentGroupId ?? null,
         computedCriteria: parsedCriteria,
         identityIssuanceEnabled: rest.identityIssuanceEnabled ?? Boolean(rest.identityProfileId),
     };
+};
+
+export type GroupMemberProfile = {
+    profileId: string;
+    displayName: string;
+    type?: string;
+};
+
+export const getGroupMemberProfiles = async (groupId: string): Promise<GroupMemberProfile[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (p:Profile)-[:MEMBER_OF]->(:Group { id: $groupId })
+         RETURN p.profileId AS profileId, p.displayName AS displayName, p.type AS type
+         ORDER BY p.profileId ASC`,
+        { groupId }
+    );
+
+    return result.records.map(record => ({
+        profileId: String(record.get('profileId')),
+        displayName: (record.get('displayName') as string | null) ?? '',
+        type: (record.get('type') as string | null) ?? undefined,
+    }));
 };
 
 export const getGroupById = async (id: string): Promise<GroupType | null> => {

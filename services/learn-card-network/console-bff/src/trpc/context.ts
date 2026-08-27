@@ -7,11 +7,14 @@ import type { ConsoleContext } from './trpc';
 
 import type { BrainServiceTransport } from '../brain';
 import type { KeyManagementService, ManagedKeyRef } from '@kms';
+import type { MutableManagedKeyDirectory } from '@did';
 
 export type CreateConsoleContextDeps = {
     transport: BrainServiceTransport;
     kms: KeyManagementService;
     keyRefFor: (did: string) => Promise<ManagedKeyRef | null>;
+    directory: MutableManagedKeyDirectory;
+    consoleDomain: string;
     authService: ConsoleAuthService;
     cookieSecret: string;
 };
@@ -27,6 +30,8 @@ export function makeCreateConsoleContext(deps: CreateConsoleContextDeps) {
             transport: deps.transport,
             kms: deps.kms,
             keyRefFor: deps.keyRefFor,
+            directory: deps.directory,
+            consoleDomain: deps.consoleDomain,
         };
     };
 }

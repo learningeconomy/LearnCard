@@ -23,6 +23,7 @@ import {
     getGroupsOwnedByEcosystem,
     getChildGroups,
     getGroupReferenceView,
+    getGroupMemberProfiles,
 } from '@accesslayer/group/read';
 import {
     addGroupMember,
@@ -94,6 +95,36 @@ export const groupsRouter = t.router({
         .output(z.array(GroupValidator))
         .query(async ({ input }) => {
             return getChildGroups(input.id);
+        }),
+
+    getGroupMembers: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/group/{id}/members',
+                tags: ['Groups'],
+                summary: 'List Group member Profiles',
+                description:
+                    'Lists Profiles with a MEMBER_OF edge into the Group, including display name and type.',
+            },
+        })
+        .input(z.object({ id: z.string() }))
+        .output(
+            z.array(
+                z.object({
+                    profileId: z.string(),
+                    displayName: z.string(),
+                    type: z.string().optional(),
+                })
+            )
+        )
+        .query(async ({ input }) => {
+            const group = await getGroupById(input.id);
+
+            if (!group) throw new TRPCError({ code: 'NOT_FOUND', message: 'Group not found' });
+
+            return getGroupMemberProfiles(input.id);
         }),
 
     getGroupReferenceView: didAndChallengeRoute

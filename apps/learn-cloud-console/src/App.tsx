@@ -1,8 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Switch, Route, Redirect } from 'wouter';
 import { getSession, login, logout, type DashboardSession } from './api';
-import { InstallIntents } from './InstallIntents';
 import { Layout } from './components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
+import { Overview } from './pages/Overview';
+import { MyStack } from './pages/MyStack';
+import { Ecosystem } from './pages/Ecosystem';
+import { EcosystemDetail } from './pages/EcosystemDetail';
+import { GroupDetail } from './pages/GroupDetail';
+import { Integrations } from './pages/Integrations';
+import { UserApps } from './pages/UserApps';
+import { ListingDetail } from './pages/ListingDetail';
+import { Users } from './pages/Users';
+import { ComingSoon } from './pages/ComingSoon';
+import { allRoutes } from './routes';
 
 type Status = 'idle' | 'working';
 
@@ -46,7 +57,7 @@ export function App() {
             onLogout={() => run(logout)}
             busy={busy}
         >
-            <div className="flex flex-col gap-8">
+            <div className="space-y-8">
                 {error && (
                     <div className="rounded-lg bg-destructive/15 p-4 text-destructive border border-destructive/20">
                         {error}
@@ -70,76 +81,56 @@ export function App() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <>
-                        <div className="grid gap-6 md:grid-cols-2">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Session Details</CardTitle>
-                                    <CardDescription>Current authenticated profile</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <dl className="grid grid-cols-[120px_1fr] gap-y-3 text-sm">
-                                        <dt className="text-muted-foreground">Profile</dt>
-                                        <dd className="font-medium">{session.profileId}</dd>
-                                        <dt className="text-muted-foreground">Tenant</dt>
-                                        <dd>{session.tenantId}</dd>
-                                        <dt className="text-muted-foreground">Provider</dt>
-                                        <dd>
-                                            {session.providerId} ({session.providerKind})
-                                        </dd>
-                                        <dt className="text-muted-foreground">Managed DID</dt>
-                                        <dd className="font-mono text-xs bg-muted p-1 rounded">
-                                            {session.managedDid ?? '—'}
-                                        </dd>
-                                        <dt className="text-muted-foreground">Assurance</dt>
-                                        <dd>{session.assuranceLevel}</dd>
-                                    </dl>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Effective Access</CardTitle>
-                                    <CardDescription>
-                                        Ecosystem roles for this profile
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    {session.effectiveAccess.ecosystemRoles.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">
-                                            No ecosystem roles.
-                                        </p>
-                                    ) : (
-                                        <ul className="space-y-2">
-                                            {session.effectiveAccess.ecosystemRoles.map(grant => (
-                                                <li
-                                                    key={`${grant.ecosystemId}:${grant.role}`}
-                                                    className="flex items-center justify-between p-2 rounded-md bg-muted/50 border"
-                                                >
-                                                    <code className="text-xs font-mono">
-                                                        {grant.ecosystemId}
-                                                    </code>
-                                                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground">
-                                                        {grant.role}
-                                                    </span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        <InstallIntents
-                            ecosystemIds={[
-                                ...new Set(
-                                    session.effectiveAccess.ecosystemRoles.map(
-                                        grant => grant.ecosystemId
-                                    )
-                                ),
-                            ]}
-                        />
-                    </>
+                    <Switch>
+                        <Route path="/">
+                            <Overview session={session} />
+                        </Route>
+                        <Route path="/my-stack">
+                            <MyStack session={session} />
+                        </Route>
+                        <Route path="/ecosystem">
+                            <Ecosystem />
+                        </Route>
+                        <Route path="/ecosystem/:id">
+                            <EcosystemDetail />
+                        </Route>
+                        <Route path="/group/:id">
+                            <GroupDetail />
+                        </Route>
+                        <Route path="/integrations">
+                            <Integrations session={session} />
+                        </Route>
+                        <Route path="/integrations/:id">
+                            <ListingDetail session={session} />
+                        </Route>
+                        <Route path="/apps">
+                            <UserApps session={session} />
+                        </Route>
+                        <Route path="/apps/:id">
+                            <ListingDetail session={session} />
+                        </Route>
+                        <Route path="/users">
+                            <Users session={session} />
+                        </Route>
+                        {allRoutes
+                            .filter(
+                                r =>
+                                    r.path !== '/' &&
+                                    r.path !== '/my-stack' &&
+                                    r.path !== '/ecosystem' &&
+                                    r.path !== '/integrations' &&
+                                    r.path !== '/apps' &&
+                                    r.path !== '/users'
+                            )
+                            .map(route => (
+                                <Route key={route.path} path={route.path}>
+                                    <ComingSoon title={route.title} icon={route.icon} />
+                                </Route>
+                            ))}
+                        <Route>
+                            <Redirect to="/" replace />
+                        </Route>
+                    </Switch>
                 )}
             </div>
         </Layout>

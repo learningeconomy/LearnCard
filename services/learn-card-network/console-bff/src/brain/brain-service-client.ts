@@ -10,7 +10,10 @@ export interface BrainServiceTransport {
     trpcQuery<T>(bearer: string, path: string, input: unknown): Promise<T>;
     trpcMutation<T>(bearer: string, path: string, input: unknown): Promise<T>;
     requestChallenge(bootstrapBearer: string): Promise<string>;
-    createProfile(bearer: string, body: { profileId: string; displayName?: string }): Promise<void>;
+    createProfile(
+        bearer: string,
+        body: { profileId: string; displayName?: string; type?: string }
+    ): Promise<void>;
     grantProvisionedMembership(
         bearer: string,
         body: { ecosystemId: string; profileId: string; role: EcosystemRole | ProvisionableRole }

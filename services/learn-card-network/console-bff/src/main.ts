@@ -182,6 +182,8 @@ async function main(): Promise<void> {
         transport,
         kms,
         keyRefFor: resolveKeyRef,
+        directory,
+        consoleDomain: config.consoleDomain,
         authService,
         cookieSecret: config.cookieSecret,
         secureCookies: config.secureCookies,
