@@ -22,6 +22,7 @@ import { useConsentedContracts } from './useConsentedContracts';
 import { useGetCredentialsForSkills } from '../react-query/queries/vcQueries';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from '../constants/aiPassport';
 import { AiServiceError, getAiServiceError } from '../helpers/aiErrors';
+import { aiPassportFetch, ensureAiPassportSession } from '../helpers/aiPassportAuth';
 const log = getLogger('use-ai-insight-credential');
 
 // Types for pathway data
@@ -143,15 +144,15 @@ const createAiInsightCredentialInternal = async (
         did,
         aiServiceUrl: networkStore.get.aiServiceUrl(),
     });
+    await ensureAiPassportSession(wallet);
 
-    const response = await fetch(
-        addActiveLocaleToUrl(
-            `${networkStore.get.aiServiceUrl()}/credentials/ai-insight?did=${did}`
-        ),
+    const response = await aiPassportFetch(
+        addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/credentials/ai-insight`),
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-        }
+        },
+        did
     );
 
     if (response.status === 204) {

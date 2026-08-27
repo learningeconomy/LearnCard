@@ -44,6 +44,7 @@ SERVICE_KEYS=(
   cloud
   app
   lca-api
+  vc-api
 )
 
 # Infisical folder paths — use "|" to merge multiple paths into one export.
@@ -53,6 +54,7 @@ INFISICAL_PATHS=(
   "/LearnCard/cloud-service"                  # cloud
   "/learn-card-app"                           # app
   "/LearnCard/lca-api"                        # lca-api
+  "/LearnCard/vc-api-service"                 # vc-api
 )
 
 # Local .env file paths (relative to repo root). Staging/prod pulls write
@@ -62,6 +64,7 @@ LOCAL_ENV_FILES=(
   "services/learn-card-network/learn-cloud-service/.env"    # cloud
   "apps/learn-card-app/.env"                                # app
   "services/learn-card-network/lca-api/.env"                # lca-api
+  "services/learn-card-network/vc-api-service/.env"         # vc-api
 )
 
 # Human-readable labels for --list output
@@ -70,6 +73,7 @@ SERVICE_LABELS=(
   "LearnCloud Service"
   "LearnCard App"
   "LCA API"
+  "VC-API Service"
 )
 
 # ---------------------------------------------------------------------------

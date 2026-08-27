@@ -25,6 +25,7 @@
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
     "devDependencies": {
+        "@sentry/esbuild-plugin": "2.16.0",
         "@testcontainers/neo4j": "^10.7.2",
         "@types/aws-lambda": "^8.10.106",
         "@types/cors": "^2.8.13",
@@ -67,7 +68,6 @@
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
-        "@sentry/esbuild-plugin": "2.16.0",
         "@sentry/serverless": "7.61.0",
         "@trpc/server": "11.8.0",
         "@types/lodash": "^4.14.191",
