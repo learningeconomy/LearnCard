@@ -1,6 +1,13 @@
+import tsconfigPaths from 'vite-tsconfig-paths';
+
 import { createVitestConfig, nodePreset } from '../../../vitest.shared';
 
-export default createVitestConfig(nodePreset, {
+const brainServicePreset = {
+    ...nodePreset,
+    plugins: [tsconfigPaths({ root: '../../' })],
+};
+
+export default createVitestConfig(brainServicePreset, {
     test: {
         include: [
             'test/uri-helpers.spec.ts',

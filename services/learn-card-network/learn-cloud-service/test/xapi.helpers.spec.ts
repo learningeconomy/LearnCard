@@ -81,15 +81,58 @@ describe('verifyVoidStatement', () => {
         ).resolves.toBe(true);
     });
 
-    it('rejects member arrays on an explicit non-Group authority', async () => {
+    it.each(['Agent', 'CustomAuthority'])(
+        'accepts authority members when objectType is %s',
+        async objectType => {
+            fetchMock.mockResolvedValue({
+                status: 200,
+                json: vi.fn().mockResolvedValue({
+                    actor: { account: { name: 'did:example:target' } },
+                    authority: {
+                        objectType,
+                        member: [{ account: { name: 'did:example:requester' } }],
+                    },
+                }),
+            });
+
+            await expect(
+                verifyVoidStatement(
+                    'did:example:target',
+                    'did:example:requester',
+                    'statement-id',
+                    'auth'
+                )
+            ).resolves.toBe(true);
+        }
+    );
+
+    it.each([undefined, null, {}, 'not-an-array', [{}], [null], [{ account: { name: 123 } }]])(
+        'rejects a malformed authority member value: %j',
+        async member => {
+            fetchMock.mockResolvedValue({
+                status: 200,
+                json: vi.fn().mockResolvedValue({
+                    actor: { account: { name: 'did:example:target' } },
+                    authority: { objectType: 'Group', member },
+                }),
+            });
+
+            await expect(
+                verifyVoidStatement(
+                    'did:example:target',
+                    'did:example:requester',
+                    'statement-id',
+                    'auth'
+                )
+            ).resolves.toBe(false);
+        }
+    );
+
+    it('rejects a missing authority', async () => {
         fetchMock.mockResolvedValue({
             status: 200,
             json: vi.fn().mockResolvedValue({
                 actor: { account: { name: 'did:example:target' } },
-                authority: {
-                    objectType: 'Agent',
-                    member: [{ account: { name: 'did:example:requester' } }],
-                },
             }),
         });
 
