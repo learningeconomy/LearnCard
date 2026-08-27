@@ -124,6 +124,10 @@ export const createOpenAIProvider = (apiKey: string): AgentProvider => {
                 messages: messages.map(toOpenAIMessage) as never,
             };
 
+            if (model === 'gpt-5.6-luna' && tools.length > 0) {
+                request.reasoning_effort = 'none';
+            }
+
             if (maxOutputTokens) request.max_completion_tokens = maxOutputTokens;
 
             if (tools.length > 0) {

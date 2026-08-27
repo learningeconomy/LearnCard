@@ -250,13 +250,16 @@ jobs:
                   "
 
             - name: Run authenticated staging smoke test
+              id: staging-smoke
               if: env.TARGET_ENVIRONMENT == 'staging'
+              continue-on-error: true
               env:
                   AI_AGENT_SMOKE_BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
                   AI_AGENT_SMOKE_SEED: ${{ secrets.AI_AGENT_SMOKE_SEED }}
               run: bun run --cwd services/learn-card-network/ai-agent smoke:staging
 
             - name: Verify readable CloudWatch application logs
+              if: always() && env.TARGET_ENVIRONMENT == 'staging'
               uses: nick-fields/retry@v2
               with:
                   timeout_seconds: 20
@@ -271,9 +274,18 @@ jobs:
                       MESSAGES="$(aws logs filter-log-events \
                         --log-group-name "$LOG_GROUP" \
                         --start-time "$START_TIME" \
-                        --filter-pattern '"agent.run.succeeded"' \
                         --query 'events[].message' \
                         --output text)"
-                      [[ "$MESSAGES" == *'INFO agent.run.succeeded'* ]]
+                      [[ "$MESSAGES" == *'agent.run.'* ]]
                       [[ "$MESSAGES" != *'"_aws"'* ]]
                       printf '%s\n' "$MESSAGES"
+
+            - name: Require staging smoke success
+              if: always() && env.TARGET_ENVIRONMENT == 'staging'
+              env:
+                  SMOKE_OUTCOME: ${{ steps.staging-smoke.outcome }}
+              run: |
+                  if [ "$SMOKE_OUTCOME" != 'success' ]; then
+                    echo "::error::Authenticated staging smoke test failed"
+                    exit 1
+                  fi

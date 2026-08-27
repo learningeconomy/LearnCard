@@ -48,10 +48,12 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
     const payload = (await response.json()) as T & { error?: string };
 
     if (!response.ok) {
+        const requestId = response.headers.get('x-request-id');
+
         throw new Error(
             `AI Agent smoke request failed with HTTP ${response.status}: ${
                 payload.error ?? 'unknown error'
-            }`
+            }${requestId ? ` (requestId: ${requestId})` : ''}`
         );
     }
 
