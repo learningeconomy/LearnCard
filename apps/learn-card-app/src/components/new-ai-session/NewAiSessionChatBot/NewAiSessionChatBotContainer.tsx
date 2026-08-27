@@ -20,6 +20,7 @@ import {
 
 import {
     getLogger,
+    getAiPassportLaunchUrl,
     useGetCurrentLCNUser,
     useModal,
     useDeviceTypeByWidth,
@@ -265,9 +266,10 @@ export const NewAiSessionChatBotContainer: React.FC<{
             closeAllModals();
             const url = aiPassportApps.find(app => app.id === appAnswer)?.url;
 
-            window.location.href = `${url}/chats?topic=${encodeURIComponent(
-                topicAnswer || ''
-            )}&did=${currentLCNUser?.did}`;
+            window.location.href = getAiPassportLaunchUrl(
+                `${url}/chats?topic=${encodeURIComponent(topicAnswer || '')}`,
+                currentLCNUser?.did
+            );
         }, 3000);
     };
 

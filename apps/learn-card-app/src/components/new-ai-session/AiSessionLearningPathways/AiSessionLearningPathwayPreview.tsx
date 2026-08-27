@@ -12,7 +12,12 @@ import {
     getAiAppBackgroundStylesForApp,
     getAiPassportAppByContractUri,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { LaunchPadAppListItem, useGetCurrentLCNUser, useModal } from 'learn-card-base';
+import {
+    getAiPassportLaunchUrl,
+    LaunchPadAppListItem,
+    useGetCurrentLCNUser,
+    useModal,
+} from 'learn-card-base';
 import { LearnCardAiChatBot } from '../LearnCardAiChatBot/LearnCardAiChatBot';
 import { VC } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
@@ -50,11 +55,12 @@ export const AiSessionLearningPathwayPreview: React.FC<{
         setShowLoader(true);
         closeAllModals();
         const url = app?.url;
-        window.location.href = `${url}/chats?topicUri=${encodeURIComponent(
-            topicBoost?.uri || ''
-        )}&did=${encodeURIComponent(currentLCNUser?.did || '')}${
-            pathwayBoost ? `&pathwayUri=${encodeURIComponent(pathwayBoost?.uri || '')}` : ''
-        }`;
+        window.location.href = getAiPassportLaunchUrl(
+            `${url}/chats?topicUri=${encodeURIComponent(topicBoost?.uri || '')}${
+                pathwayBoost ? `&pathwayUri=${encodeURIComponent(pathwayBoost?.uri || '')}` : ''
+            }`,
+            currentLCNUser?.did
+        );
     };
 
     if (showInModalChat) {

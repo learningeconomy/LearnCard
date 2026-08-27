@@ -72,6 +72,8 @@ import {
 } from 'learn-card-base/security/platformPrivateKeyStorage';
 import { clearAll as clearWebSecureAll } from 'learn-card-base/security/webSecureStorage';
 import { unsetAuthToken, clearAuthServiceProvider } from 'learn-card-base/helpers/authHelpers';
+import { clearAiPassportAuth } from 'learn-card-base/helpers/aiPassportAuth';
+import { disconnectWebSocket, resetChatStores } from 'learn-card-base/stores/nanoStores/chatStore';
 import { clearAllIndexedDB } from 'learn-card-base/helpers/indexedDBHelpers';
 import web3AuthStore from 'learn-card-base/stores/web3AuthStore';
 import redirectStore from 'learn-card-base/stores/redirectStore';
@@ -1808,6 +1810,9 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
 
         clearAuthServiceProvider();
         unsetAuthToken();
+        disconnectWebSocket();
+        clearAiPassportAuth();
+        resetChatStores();
 
         try {
             await clearDBRef.current();

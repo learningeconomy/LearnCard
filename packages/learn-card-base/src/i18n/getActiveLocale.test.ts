@@ -80,16 +80,14 @@ describe('addActiveLocaleToUrl', () => {
         }
     );
 
-    // The AI-Passport WS upgrade gate is a literal `req.url.includes('?did=')`
-    // substring test, so the rewrite must not reorder `did` out of first place.
-    it('keeps did as the first query param so the WS upgrade gate still matches', () => {
+    it('adds locale to a cookie-authenticated WebSocket URL', () => {
         store['i18n.language'] = 'es';
 
-        const out = addActiveLocaleToUrl('ws://ai.example?did=did:key:123&threadId=abc');
+        const out = addActiveLocaleToUrl('ws://ai.example?threadId=abc');
 
-        expect(out).toContain('?did=');
-        expect(new URL(out).searchParams.get('did')).toBe('did:key:123');
+        expect(new URL(out).searchParams.get('threadId')).toBe('abc');
         expect(new URL(out).searchParams.get('locale')).toBe('es');
+        expect(new URL(out).searchParams.has('did')).toBe(false);
     });
 });
 
