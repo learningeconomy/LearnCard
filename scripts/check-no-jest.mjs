@@ -16,6 +16,7 @@ const ignoredDirectories = new Set([
 ]);
 const allowedJestDependencies = new Set(['@testing-library/jest-dom']);
 const sourceExtensions = new Set(['.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.mts', '.cts']);
+const jestRuntimeApiPattern = /\bjest\s*\.\s*[A-Za-z_$][\w$]*\b/;
 const failures = [];
 
 const addFailure = (file, reason) => failures.push(`${relative(root, file)}: ${reason}`);
@@ -53,11 +54,7 @@ const checkFile = file => {
         if (/from\s+['"]@jest\/globals['"]|require\(['"]@jest\/globals['"]\)/.test(source)) {
             addFailure(file, 'imports @jest/globals');
         }
-        if (
-            /\bjest\s*\.\s*(fn|mock|spyOn|resetModules|restoreAllMocks|clearAllMocks)\b/.test(
-                source
-            )
-        ) {
+        if (jestRuntimeApiPattern.test(source)) {
             addFailure(file, 'uses the Jest runtime API');
         }
     }

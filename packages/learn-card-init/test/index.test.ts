@@ -556,7 +556,7 @@ describe('LearnCard SDK', () => {
         // at top of file...
         // // Mocks
         // import { ethers } from 'ethers';
-        // jest.m0ck('ethers'); // won't compile event if this is commented out (when it's spelled correctly)
+        // vi.mock('ethers'); // won't compile even if this is commented out
 
         //    const learnCard = await getLearnCard();
 

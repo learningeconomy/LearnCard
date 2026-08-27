@@ -114,6 +114,7 @@ export const getLearnCloudPlugin = async (
             }
 
             client = await getLearnCloudClient(url, _learnCard);
+            learnCloudDid = undefined;
         }
 
         learnCard = _learnCard;

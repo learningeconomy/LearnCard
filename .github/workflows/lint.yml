@@ -99,6 +99,9 @@ jobs:
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
+            - name: Test no-Jest guard
+              run: node --test scripts/check-no-jest.test.mjs
+
             - name: Check test-runner contract
               run: node scripts/check-no-jest.mjs
 

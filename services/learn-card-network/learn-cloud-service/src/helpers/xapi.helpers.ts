@@ -49,8 +49,7 @@ export const verifyVoidStatement = async (
     const authorityMembers =
         authority &&
         typeof authority === 'object' &&
-        'objectType' in authority &&
-        authority.objectType === 'Group' &&
+        (!('objectType' in authority) || authority.objectType === 'Group') &&
         'member' in authority &&
         Array.isArray(authority.member)
             ? authority.member
