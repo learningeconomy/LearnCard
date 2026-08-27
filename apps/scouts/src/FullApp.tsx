@@ -36,6 +36,7 @@ import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeSc
 import NetworkListener from './components/network-listener/NetworkListener';
 import UserProfileSetupListener from './components/user-profile/UserProfileSetupListener';
 import { QRCodeScannerStore } from 'learn-card-base';
+import * as m from './paraglide/messages.js';
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
@@ -128,7 +129,15 @@ const FullApp: React.FC = () => {
                                     <AppRouter />
                                     <InAppMessageHost />
                                     <QRCodeScannerListener />
-                                    {showScannerOverlay && <QRCodeScannerOverlay />}
+                                    {showScannerOverlay && (
+                                        <QRCodeScannerOverlay
+                                            title={m['scanner.title']()}
+                                            description={m['scanner.description']()}
+                                            frameLabel={m['scanner.frameLabel']()}
+                                            searchingLabel={m['scanner.lookingForQr']()}
+                                            closeLabel={m['scanner.closeAria']()}
+                                        />
+                                    )}
                                     <AuthKeyDebugWidget />
                                 </ModalsProvider>
                             </AuthCoordinatorProvider>
