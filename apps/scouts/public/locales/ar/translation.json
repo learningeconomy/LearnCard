@@ -138,6 +138,10 @@
     },
     "scanner": {
         "title": "مسح رمز QR",
+        "description": "وجّه الكاميرا نحو رمز QR",
+        "frameLabel": "ضع رمز QR داخل الإطار",
+        "lookingForQr": "جارٍ البحث عن رمز QR…",
+        "closeAria": "إغلاق الماسح",
         "scanning": "جاري المسح...",
         "noCamera": "لا توجد كاميرا متاحة",
         "cameraPermission": "يلزم إذن الكاميرا",

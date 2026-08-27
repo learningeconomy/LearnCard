@@ -1,5 +1,10 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
+import {
+    BarcodeScanner,
+    BarcodeFormat,
+    LensFacing,
+    type BarcodeScannedEvent,
+} from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 
 import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
@@ -14,6 +19,17 @@ import * as m from '../../paraglide/messages.js';
 import { useClaimInputRouter } from '../../hooks/useClaimInputRouter';
 
 const log = getLogger('qr-scanner');
+
+// Native v8 still emits the one-result event used by the app, although the
+// package declaration only exposes the newer batched event overload. Keep this
+// compatibility shim visible while the native event differs from the documented
+// batched API: https://github.com/capawesome-team/capacitor-mlkit/tree/main/packages/barcode-scanning#addlistenerbarcodesscanned-
+const nativeBarcodeScanner = BarcodeScanner as typeof BarcodeScanner & {
+    addListener(
+        eventName: 'barcodeScanned',
+        listenerFunc: (event: BarcodeScannedEvent) => void
+    ): Promise<PluginListenerHandle>;
+};
 
 export const QRCodeScannerListener: React.FC = () => {
     const { presentToast } = useToast();
@@ -112,8 +128,10 @@ export const QRCodeScannerListener: React.FC = () => {
         const previousCleanupPromise = cleanupPromiseRef.current;
 
         let disposed = false;
+        let processingResult = false;
         let listener: PluginListenerHandle | null = null;
         let stopPromise: Promise<void> | null = null;
+        let activeScanId = 0;
 
         const stopOwnedScan = (): Promise<void> => {
             if (stopPromise) return stopPromise;
@@ -135,10 +153,10 @@ export const QRCodeScannerListener: React.FC = () => {
             return stopPromise;
         };
 
-        const handleBarcodeScanned = async (rawValue: string) => {
-            if (disposed) return;
+        const handleBarcodeScanned = async (rawValue: string, scanId: number) => {
+            if (disposed || processingResult || scanId !== activeScanId) return;
 
-            disposed = true;
+            processingResult = true;
             log.debug('scan::success', { rawValue });
 
             try {
@@ -147,8 +165,56 @@ export const QRCodeScannerListener: React.FC = () => {
                 log.warn('scan::cleanup-error', error);
             }
 
-            QRCodeScannerStore.set.showScanner(false);
-            await handleScanRef.current(rawValue);
+            const onResult = QRCodeScannerStore.get.onResult();
+
+            if (!onResult) {
+                QRCodeScannerStore.set.closeScanner();
+
+                try {
+                    await handleScanRef.current(rawValue);
+                } catch (error) {
+                    log.error('scan::result-handler-error', error);
+                    presentToastRef.current(m['scanner.failed'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                }
+
+                return;
+            }
+
+            try {
+                const feedback = await onResult(rawValue);
+
+                if (feedback && QRCodeScannerStore.get.showScanner()) {
+                    QRCodeScannerStore.set.setFeedback(feedback);
+
+                    const durationMs = feedback.durationMs ?? 650;
+                    if (durationMs > 0) {
+                        await new Promise(resolve => window.setTimeout(resolve, durationMs));
+                    }
+                }
+
+                if (feedback?.tone === 'error') {
+                    if (!disposed && QRCodeScannerStore.get.showScanner()) {
+                        QRCodeScannerStore.set.clearFeedback();
+                        processingResult = false;
+                        stopPromise = null;
+                        await startScanning();
+                    }
+
+                    return;
+                }
+
+                QRCodeScannerStore.set.closeScanner();
+            } catch (error) {
+                log.error('scan::result-handler-error', error);
+                presentToastRef.current(m['scanner.failed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+                QRCodeScannerStore.set.closeScanner();
+            }
         };
 
         const startScanning = async () => {
@@ -156,10 +222,12 @@ export const QRCodeScannerListener: React.FC = () => {
                 await previousCleanupPromise;
                 if (disposed) return;
 
-                const registeredListener = await BarcodeScanner.addListener(
+                const scanId = ++activeScanId;
+                const registeredListener = await nativeBarcodeScanner.addListener(
                     'barcodeScanned',
                     result => {
-                        void handleBarcodeScanned(result.barcode.rawValue);
+                        const rawValue = result?.barcode?.rawValue;
+                        if (rawValue) void handleBarcodeScanned(rawValue, scanId);
                     }
                 );
 
@@ -189,7 +257,7 @@ export const QRCodeScannerListener: React.FC = () => {
                     log.warn('scan::cleanup-error', cleanupError);
                 }
 
-                QRCodeScannerStore.set.showScanner(false);
+                QRCodeScannerStore.set.closeScanner();
                 presentToastRef.current(m['scanner.failed'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
@@ -201,6 +269,9 @@ export const QRCodeScannerListener: React.FC = () => {
 
         return () => {
             disposed = true;
+            if (QRCodeScannerStore.get.showScanner()) {
+                QRCodeScannerStore.set.closeScanner();
+            }
             cleanupPromiseRef.current = previousCleanupPromise
                 .then(stopOwnedScan)
                 .catch(error => log.warn('scan::cleanup-error', error));
