@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { UnsignedVP } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('external-consent-flow-door');
 
@@ -34,6 +35,7 @@ import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import ConsentFlowError from './ConsentFlowError';
+import { createConsentFlowReturnUrl } from './createConsentFlowReturnUrl';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 
 import useTheme from '../../theme/hooks/useTheme';
@@ -77,7 +79,12 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     // Warm up the consented contracts cache
     useConsentedContracts();
 
-    const { uri, returnTo, recipientToken } = queryString.parse(location.search);
+    const {
+        uri,
+        returnTo,
+        response_mode: responseMode,
+        recipientToken,
+    } = queryString.parse(location.search);
 
     const { data: consentedContracts, isLoading: consentedContractLoading } =
         useConsentedContracts();
@@ -138,8 +145,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
                     const wallet = await initWallet();
 
-                    const urlObj = new URL(returnTo);
-                    urlObj.searchParams.set('did', wallet.id.did());
+                    let presentation: string | undefined;
 
                     if (consentedContract?.contract?.owner?.did) {
                         const unsignedDelegateCredential = wallet.invoke.newCredential({
@@ -152,23 +158,25 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             unsignedDelegateCredential
                         );
 
-                        const unsignedDidAuthVp: any = await wallet.invoke.newPresentation(
-                            delegateCredential
-                        );
+                        const unsignedDidAuthVp: UnsignedVP & { contractUri?: string } =
+                            await wallet.invoke.newPresentation(delegateCredential);
 
                         if (uri && typeof uri === 'string') {
                             unsignedDidAuthVp.contractUri = uri;
                         }
 
-                        const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                        presentation = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                             proofPurpose: 'authentication',
                             proofFormat: 'jwt',
-                        })) as any as string;
-
-                        urlObj.searchParams.set('vp', vp);
+                        })) as unknown as string;
                     }
 
-                    window.location.href = urlObj.toString();
+                    window.location.href = createConsentFlowReturnUrl({
+                        returnTo,
+                        did: wallet.id.did(),
+                        presentation,
+                        mode: responseMode === 'fragment' ? 'fragment' : 'query',
+                    });
                     return;
                 }
             }
@@ -178,15 +186,16 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 setStep(Step.credFrontDoor);
             } else if (returnTo) {
                 history.push(
-                    `/consent-flow-sync-data?uri=${uri}&returnTo=${returnTo}${
-                        recipientToken ? `&recipientToken=${recipientToken}` : ''
-                    }`
+                    `/consent-flow-sync-data?${queryString.stringify({
+                        uri,
+                        returnTo,
+                        response_mode: responseMode,
+                        recipientToken,
+                    })}`
                 );
             } else {
                 history.push(
-                    `/consent-flow-sync-data?uri=${uri}${
-                        recipientToken ? `&recipientToken=${recipientToken}` : ''
-                    }`
+                    `/consent-flow-sync-data?${queryString.stringify({ uri, recipientToken })}`
                 );
             }
         };
@@ -205,6 +214,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         consentedContract,
         login,
         returnTo,
+        responseMode,
         contractDetails,
         uri,
         recipientToken,

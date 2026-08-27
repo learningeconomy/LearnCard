@@ -23,9 +23,15 @@ import { useGuardianGate } from '../../hooks/useGuardianGate';
 import ConsentFlowConnecting from './ConsentFlowConnecting';
 import ConsentFlowConfirmation from './ConsentFlowConfirmation';
 import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
+import { createConsentFlowReturnUrl } from './createConsentFlowReturnUrl';
 import AiPassportAppProfileConnectedView from '../../components/ai-passport-apps/AiPassportAppProfileConnectedView/AiPassportAppProfileConnectedView';
 
-import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
+import {
+    ConsentFlowContractDetails,
+    ConsentFlowTerms,
+    LCNProfile,
+    UnsignedVP,
+} from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 
 enum ConsentFlowStep {
@@ -89,7 +95,11 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         !!childInsightsProfile
     );
 
-    const { returnTo: urlReturnTo, recipientToken } = queryString.parse(location.search);
+    const {
+        returnTo: urlReturnTo,
+        response_mode: responseMode,
+        recipientToken,
+    } = queryString.parse(location.search);
     const returnTo = urlReturnTo || contractDetails?.redirectUrl?.trim(); // prefer url param
     const shouldDisableRedirect =
         disableRedirect || Boolean(insightsProfile) || Boolean(childInsightsProfile);
@@ -168,9 +178,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                     if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
                         const wallet = await initWallet();
 
-                        // add user's did to returnTo url
-                        const urlObj = new URL(returnTo);
-                        urlObj.searchParams.set('did', wallet.id.did());
+                        let presentation: string | undefined;
 
                         if (contractDetails?.owner?.did) {
                             const unsignedDelegateCredential = wallet.invoke.newCredential({
@@ -183,24 +191,29 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                                 unsignedDelegateCredential
                             );
 
-                            const unsignedDidAuthVp: any = await wallet.invoke.newPresentation(
-                                delegateCredential
-                            );
+                            const unsignedDidAuthVp: UnsignedVP & { contractUri?: string } =
+                                await wallet.invoke.newPresentation(delegateCredential);
 
                             // Add contractUri to VP before signing for xAPI tracking
                             if (contractDetails?.uri) {
                                 unsignedDidAuthVp.contractUri = contractDetails.uri;
                             }
 
-                            const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
-                                proofPurpose: 'authentication',
-                                proofFormat: 'jwt',
-                            })) as any as string;
-
-                            urlObj.searchParams.set('vp', vp);
+                            presentation = (await wallet.invoke.issuePresentation(
+                                unsignedDidAuthVp,
+                                {
+                                    proofPurpose: 'authentication',
+                                    proofFormat: 'jwt',
+                                }
+                            )) as unknown as string;
                         }
 
-                        window.location.href = urlObj.toString();
+                        window.location.href = createConsentFlowReturnUrl({
+                            returnTo,
+                            did: wallet.id.did(),
+                            presentation,
+                            mode: responseMode === 'fragment' ? 'fragment' : 'query',
+                        });
                     } else history.push(returnTo);
                 }
             }

@@ -26,6 +26,7 @@ import ConsentFlowEditAccess from '../launchPad/ConsentFlowEditAccess';
 
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
+import { createConsentFlowReturnUrl } from './createConsentFlowReturnUrl';
 
 export type ConsentFlowWriteAccessType = {
     [BoostCategoryOptionsEnum.socialBadge]: boolean;
@@ -97,7 +98,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
     const location = useLocation();
     const brandingConfig = useBrandingConfig();
 
-    const { returnTo } = queryString.parse(location.search);
+    const { returnTo, response_mode: responseMode } = queryString.parse(location.search);
 
     // state for handling - data share duration
     const [shareDuration, setShareDuration] = useState<{
@@ -221,9 +222,8 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                     ) {
                                         const wallet = await initWallet();
 
-                                        // add user's did to returnTo url
-                                        const urlObj = new URL(returnTo);
-                                        urlObj.searchParams.set('did', wallet.id.did());
+                                        let presentation: string | undefined;
+
                                         if (contractDetails.owner.did) {
                                             const unsignedDelegateCredential =
                                                 wallet.invoke.newCredential({
@@ -241,18 +241,22 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                                 await wallet.invoke.newPresentation(
                                                     delegateCredential
                                                 );
-                                            const vp = (await wallet.invoke.issuePresentation(
+                                            presentation = (await wallet.invoke.issuePresentation(
                                                 unsignedDidAuthVp,
                                                 {
                                                     proofPurpose: 'authentication',
                                                     proofFormat: 'jwt',
                                                 }
-                                            )) as any as string;
-
-                                            urlObj.searchParams.set('vp', vp);
+                                            )) as unknown as string;
                                         }
 
-                                        window.location.href = urlObj.toString();
+                                        window.location.href = createConsentFlowReturnUrl({
+                                            returnTo,
+                                            did: wallet.id.did(),
+                                            presentation,
+                                            mode:
+                                                responseMode === 'fragment' ? 'fragment' : 'query',
+                                        });
                                     } else history.push(returnTo);
                                 } else history.push(`/launchpad?uri=${contractDetails.uri}`);
                             } finally {

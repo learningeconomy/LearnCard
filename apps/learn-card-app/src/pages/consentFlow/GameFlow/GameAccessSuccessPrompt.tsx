@@ -6,6 +6,7 @@ import { useModal, useWallet } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import GamePromptHeader from './GamePromptHeader';
+import { createConsentFlowReturnUrl } from '../createConsentFlowReturnUrl';
 
 import { ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
@@ -32,7 +33,9 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
     const gameTitle = name ?? '...';
     const gameImage = image ?? '';
 
-    const { returnTo: urlReturnTo } = queryString.parse(location.search);
+    const { returnTo: urlReturnTo, response_mode: responseMode } = queryString.parse(
+        location.search
+    );
 
     const returnTo = urlReturnTo || contractDetails?.redirectUrl; // prefer url param
 
@@ -40,9 +43,8 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
         closeModal();
         if (returnTo && !Array.isArray(returnTo)) {
             if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                // add user's did to returnTo url
-                const urlObj = new URL(returnTo);
-                urlObj.searchParams.set('did', user.did);
+                let presentation: string | undefined;
+
                 if (contractDetails?.owner?.did) {
                     const wallet = await initWallet();
 
@@ -59,15 +61,18 @@ export const GameAccessSuccessPrompt: React.FC<GameAccessSuccessPromptProps> = (
                     const unsignedDidAuthVp = await wallet.invoke.newPresentation(
                         delegateCredential
                     );
-                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                    presentation = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
-                    })) as any as string;
-
-                    urlObj.searchParams.set('vp', vp);
+                    })) as unknown as string;
                 }
 
-                window.location.href = urlObj.toString();
+                window.location.href = createConsentFlowReturnUrl({
+                    returnTo,
+                    did: user.did,
+                    presentation,
+                    mode: responseMode === 'fragment' ? 'fragment' : 'query',
+                });
             } else history.push(returnTo);
         }
     };

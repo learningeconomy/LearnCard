@@ -14,6 +14,7 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
 import { useRegistryState } from '../../hooks/useRegistryEntryState';
 import * as m from '../../paraglide/messages.js';
+import { createConsentFlowReturnUrl } from './createConsentFlowReturnUrl';
 
 // Deprecated - ConsentFlow happens on LaunchPad now
 const ConsentFlowSyncData: React.FC = () => {
@@ -25,7 +26,7 @@ const ConsentFlowSyncData: React.FC = () => {
 
     const { newModal } = useModal();
 
-    const { uri, returnTo } = queryString.parse(location.search);
+    const { uri, returnTo, response_mode: responseMode } = queryString.parse(location.search);
 
     const contractUri = Array.isArray(uri) ? uri[0] ?? '' : uri ?? '';
 
@@ -146,9 +147,8 @@ const ConsentFlowSyncData: React.FC = () => {
                             if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
                                 const wallet = await initWallet();
 
-                                // add user's did to returnTo url
-                                const urlObj = new URL(returnTo);
-                                urlObj.searchParams.set('did', wallet.id.did());
+                                let presentation: string | undefined;
+
                                 if (contractDetails?.owner?.did) {
                                     const unsignedDelegateCredential = wallet.invoke.newCredential({
                                         type: 'delegate',
@@ -163,18 +163,21 @@ const ConsentFlowSyncData: React.FC = () => {
                                     const unsignedDidAuthVp = await wallet.invoke.newPresentation(
                                         delegateCredential
                                     );
-                                    const vp = (await wallet.invoke.issuePresentation(
+                                    presentation = (await wallet.invoke.issuePresentation(
                                         unsignedDidAuthVp,
                                         {
                                             proofPurpose: 'authentication',
                                             proofFormat: 'jwt',
                                         }
-                                    )) as any as string;
-
-                                    urlObj.searchParams.set('vp', vp);
+                                    )) as unknown as string;
                                 }
 
-                                window.location.href = urlObj.toString();
+                                window.location.href = createConsentFlowReturnUrl({
+                                    returnTo,
+                                    did: wallet.id.did(),
+                                    presentation,
+                                    mode: responseMode === 'fragment' ? 'fragment' : 'query',
+                                });
                             } else history.push(returnTo);
                         } else history.push('/home');
                     }}

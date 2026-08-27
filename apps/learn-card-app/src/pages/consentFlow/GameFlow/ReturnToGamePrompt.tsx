@@ -3,6 +3,7 @@ import queryString from 'query-string';
 import { useHistory } from 'react-router-dom';
 
 import GamePromptHeader from './GamePromptHeader';
+import { createConsentFlowReturnUrl } from '../createConsentFlowReturnUrl';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -21,7 +22,9 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
 }) => {
     const history = useHistory();
     const brandingConfig = useBrandingConfig();
-    const { returnTo: urlReturnTo } = queryString.parse(location.search);
+    const { returnTo: urlReturnTo, response_mode: responseMode } = queryString.parse(
+        location.search
+    );
 
     const { data: consentedContracts } = useConsentedContracts();
     const consentedContract = consentedContracts?.find(
@@ -39,7 +42,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
     const handleBackToGameRdirect = async () => {
         if (returnTo && !Array.isArray(returnTo)) {
             if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                const urlObj = new URL(returnTo);
+                let presentation: string | undefined;
 
                 if (contractDetails?.owner?.did && consentedContract?.status === 'live') {
                     const wallet = await initWallet();
@@ -57,14 +60,17 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
                     const unsignedDidAuthVp = await wallet.invoke.newPresentation(
                         delegateCredential
                     );
-                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                    presentation = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
-                    })) as any as string;
-
-                    urlObj.searchParams.set('vp', vp);
+                    })) as unknown as string;
                 }
-                window.location.href = urlObj.toString();
+
+                window.location.href = createConsentFlowReturnUrl({
+                    returnTo,
+                    presentation,
+                    mode: responseMode === 'fragment' ? 'fragment' : 'query',
+                });
             } else history.push(returnTo);
         }
     };

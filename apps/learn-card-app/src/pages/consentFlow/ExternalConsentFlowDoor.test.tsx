@@ -22,13 +22,18 @@ vi.mock('query-string', () => ({
         parse: vi.fn(() => ({
             uri: 'lc:network:localhost:contract:test-123',
             returnTo: 'https://example.com/callback',
+            response_mode: 'fragment',
             recipientToken: undefined,
         })),
+        stringify: vi.fn(
+            () => 'uri=test&returnTo=https%3A%2F%2Fexample.com%2Fcallback&response_mode=fragment'
+        ),
     },
     parse: vi.fn(() => ({
         uri: 'lc:network:localhost:contract:test-123',
         returnTo: 'https://example.com/callback',
         recipientToken: undefined,
+        response_mode: 'fragment',
     })),
 }));
 
@@ -377,10 +382,12 @@ describe('ExternalConsentFlowDoor', () => {
             const continueButton = screen.getByRole('button', { name: /continue as/i });
             fireEvent.click(continueButton);
 
-            // For non-consented user, SHOULD navigate to sync-data
-            expect(mockPush).toHaveBeenCalledWith(
-                expect.stringContaining('consent-flow-sync-data')
-            );
+            // For non-consented user, preserve fragment mode through sync-data.
+            await waitFor(() => {
+                expect(mockPush).toHaveBeenCalledWith(
+                    expect.stringContaining('response_mode=fragment')
+                );
+            });
         });
     });
 });
