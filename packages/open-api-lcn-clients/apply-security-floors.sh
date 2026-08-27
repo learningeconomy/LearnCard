@@ -49,4 +49,39 @@ if ! grep -q '^filelock' "$CLIENT_DIR/test-requirements.txt"; then
     echo 'filelock >= 3.20.3' >> "$CLIENT_DIR/test-requirements.txt"
 fi
 
+sed_i 's/python-version: \["3\.9", /python-version: \[/' "$CLIENT_DIR/.github/workflows/python.yml"
+sed_i '/^  - "3\.9"$/d' "$CLIENT_DIR/.travis.yml"
+sed_i '/^pytest-3\.9:$/,/^  image: python:3\.9-alpine$/d' "$CLIENT_DIR/.gitlab-ci.yml"
+
+# Post-condition checks: sed exits 0 on unmatched patterns, so if the
+# openapi-generator stock template text drifts, the substitutions above
+# silently no-op and the vulnerable floors come back. Fail loudly instead.
+verify() {
+    grep -qE "$2" "$1" || {
+        echo "FAIL: '$3' not applied in $1 (generator template drift?)" >&2
+        exit 1
+    }
+}
+refute() {
+    ! grep -qE "$2" "$1" || {
+        echo "FAIL: '$3' still present in $1 (generator template drift?)" >&2
+        exit 1
+    }
+}
+
+verify "$CLIENT_DIR/pyproject.toml" 'urllib3 \(>=2\.7\.0,<3\.0\.0\)' 'urllib3 floor'
+verify "$CLIENT_DIR/pyproject.toml" '^pytest = ">= 9\.0\.3"' 'pytest floor'
+verify "$CLIENT_DIR/pyproject.toml" '^filelock = ">= 3\.20\.3"' 'filelock pin'
+verify "$CLIENT_DIR/pyproject.toml" '^tox = ">= 4\.11\.0"' 'tox floor'
+verify "$CLIENT_DIR/pyproject.toml" '^requires-python = ">=3\.10"' 'requires-python floor'
+verify "$CLIENT_DIR/setup.py" 'PYTHON_REQUIRES = ">= 3\.10"' 'python floor'
+verify "$CLIENT_DIR/setup.py" 'urllib3 >= 2\.7\.0, < 3\.0\.0' 'urllib3 floor'
+verify "$CLIENT_DIR/requirements.txt" '^urllib3 >= 2\.7\.0' 'urllib3 floor'
+verify "$CLIENT_DIR/test-requirements.txt" '^pytest >= 9\.0\.3' 'pytest floor'
+verify "$CLIENT_DIR/test-requirements.txt" '^tox >= 4\.11\.0' 'tox floor'
+verify "$CLIENT_DIR/test-requirements.txt" '^filelock >= 3\.20\.3' 'filelock pin'
+refute "$CLIENT_DIR/.github/workflows/python.yml" '"3\.9"' 'python 3.9 matrix removal'
+refute "$CLIENT_DIR/.travis.yml" '^  - "3\.9"' 'python 3.9 removal'
+refute "$CLIENT_DIR/.gitlab-ci.yml" 'python:3\.9-alpine' 'python 3.9 job removal'
+
 echo "Security floors applied to $CLIENT_DIR"
