@@ -4,13 +4,6 @@
     "sourceRoot": "tests/smoketests",
     "projectType": "application",
     "targets": {
-        "test": {
-            "executor": "nx:run-commands",
-            "options": {
-                "command": "bun run test",
-                "cwd": "tests/smoketests"
-            }
-        },
         "smoke": {
             "executor": "nx:run-commands",
             "options": {

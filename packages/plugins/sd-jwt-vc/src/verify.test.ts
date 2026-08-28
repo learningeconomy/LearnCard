@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import { generateKeyPair, exportJWK, importJWK, SignJWT } from 'jose';
 
@@ -30,9 +31,7 @@ const makeIssuerSigner = async () => {
             );
         const header = decode(headerSegment);
         const payload = decode(payloadSegment);
-        const compact = await new SignJWT(payload)
-            .setProtectedHeader(header)
-            .sign(privateKey);
+        const compact = await new SignJWT(payload).setProtectedHeader(header).sign(privateKey);
         return compact.split('.')[2]!;
     };
 
@@ -57,7 +56,7 @@ const buildLearnCardMock = (publicJwk: Record<string, unknown>): LearnCardMock =
 
     const learnCard = {
         invoke: {
-            resolveDid: jest.fn(async (did: string) => {
+            resolveDid: vi.fn(async (did: string) => {
                 if (did !== ISSUER_DID) throw new Error(`Unexpected DID resolve: ${did}`);
                 return didDocument;
             }),
@@ -115,7 +114,7 @@ describe('verifySdJwtVc', () => {
         const { compact } = await issueTestCredential();
         const learnCard = {
             invoke: {
-                resolveDid: jest.fn(async () => {
+                resolveDid: vi.fn(async () => {
                     throw new Error('DNS lookup failed');
                 }),
             },
@@ -129,7 +128,7 @@ describe('verifySdJwtVc', () => {
         const { compact, publicJwk } = await issueTestCredential();
         const learnCard = {
             invoke: {
-                resolveDid: jest.fn(async () => ({
+                resolveDid: vi.fn(async () => ({
                     '@context': ['https://www.w3.org/ns/did/v1'],
                     id: ISSUER_DID,
                     verificationMethod: [
@@ -145,9 +144,7 @@ describe('verifySdJwtVc', () => {
         } as unknown as LearnCardMock;
 
         const result = await verifySdJwtVc(learnCard, compact);
-        expect(
-            result.errors.some(e => e.includes('verification_method_not_found'))
-        ).toBe(true);
+        expect(result.errors.some(e => e.includes('verification_method_not_found'))).toBe(true);
     });
 
     it('records an error when the signature does not validate against the resolved key', async () => {
@@ -243,9 +240,7 @@ describe('verifySdJwtVc', () => {
         const result = await verifySdJwtVc(learnCard, compact, {
             audience: 'https://verifier.example.com',
         });
-        expect(result.errors.some(e => e.includes('audience_or_nonce_requires_kb_jwt'))).toBe(
-            true
-        );
+        expect(result.errors.some(e => e.includes('audience_or_nonce_requires_kb_jwt'))).toBe(true);
     });
 
     it('returns hard error when nonce option is provided in read path (no KB-JWT)', async () => {
@@ -253,16 +248,14 @@ describe('verifySdJwtVc', () => {
         const learnCard = buildLearnCardMock(publicJwk);
 
         const result = await verifySdJwtVc(learnCard, compact, { nonce: 'abc' });
-        expect(result.errors.some(e => e.includes('audience_or_nonce_requires_kb_jwt'))).toBe(
-            true
-        );
+        expect(result.errors.some(e => e.includes('audience_or_nonce_requires_kb_jwt'))).toBe(true);
     });
 
     it('rejects when the resolved key is not in assertionMethod (W3C DID §5.3.2)', async () => {
         const { compact, publicJwk } = await issueTestCredential();
         const learnCard = {
             invoke: {
-                resolveDid: jest.fn(async () => ({
+                resolveDid: vi.fn(async () => ({
                     '@context': ['https://www.w3.org/ns/did/v1'],
                     id: ISSUER_DID,
                     verificationMethod: [
@@ -279,16 +272,16 @@ describe('verifySdJwtVc', () => {
         } as unknown as LearnCardMock;
 
         const result = await verifySdJwtVc(learnCard, compact);
-        expect(
-            result.errors.some(e => e.includes('verification_method_not_authorized'))
-        ).toBe(true);
+        expect(result.errors.some(e => e.includes('verification_method_not_authorized'))).toBe(
+            true
+        );
     });
 
     it('accepts a fragment-only ("#key-1") reference in assertionMethod', async () => {
         const { compact, publicJwk } = await issueTestCredential();
         const learnCard = {
             invoke: {
-                resolveDid: jest.fn(async () => ({
+                resolveDid: vi.fn(async () => ({
                     '@context': ['https://www.w3.org/ns/did/v1'],
                     id: ISSUER_DID,
                     verificationMethod: [
@@ -316,7 +309,7 @@ describe('verifySdJwtVc', () => {
         };
         const learnCard = {
             invoke: {
-                resolveDid: jest.fn(async (did: string) => {
+                resolveDid: vi.fn(async (did: string) => {
                     if (did !== ISSUER_DID) throw new Error(`Unexpected DID resolve: ${did}`);
                     return {
                         '@context': ['https://www.w3.org/ns/did/v1'],

@@ -5,7 +5,11 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "test": "vitest",
+        "test": "vitest run --config vitest.config.ts",
+        "test:watch": "vitest --config vitest.config.ts",
+        "test:coverage": "vitest run --coverage --config vitest.config.ts",
+        "test:integration": "vitest run --config vitest.integration.config.ts",
+        "test:integration:watch": "vitest --config vitest.integration.config.ts",
         "build": "shx rm -rf dist && node bundle.mjs && tsc --p tsconfig.build.json",
         "build:docker": "shx rm -rf dist && node esbuild-docker.mjs",
         "start": "PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003 --config serverless-local.yml",

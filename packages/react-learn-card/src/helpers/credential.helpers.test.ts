@@ -88,7 +88,7 @@ describe('Credential Helpers', () => {
                 ...JffCredential,
                 issuanceDate: 'invalid-date-string',
             };
-            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
             const result = getInfoFromCredential(credentialWithInvalidDate as any);
             expect(result.createdAt).toEqual('');
             expect(consoleSpy).toHaveBeenCalledWith(

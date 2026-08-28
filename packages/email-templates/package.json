@@ -14,7 +14,8 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "typecheck": "tsc --noEmit",
-        "build": "tsc"
+        "build": "tsc",
+        "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@react-email/components": "^0.0.36",
@@ -25,7 +26,7 @@
         "@types/react": "^18.3.0",
         "react-email": "^3.0.0",
         "typescript": "^5.0.0",
-        "vitest": "^3.2.6"
+        "vitest": "4.1.10"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
