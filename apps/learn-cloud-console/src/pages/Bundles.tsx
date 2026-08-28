@@ -127,9 +127,14 @@ export function Bundles({ session }: BundlesProps) {
     const renderCard = (bundle: CatalogListing) => {
         const members = membersByListing[bundle.listing_id] ?? [];
         const sections = sectionsForMembers(members);
-        const installedCount = members.filter(member => getActiveIntent(member.listingId)).length;
         const activeIntent = getActiveIntent(bundle.listing_id);
         const isInstalled = !!activeIntent;
+        // ADR-008: a READY bundle intent pins all required members, so members count
+        // as installed via their own intent or the covering bundle intent (same rule
+        // as BundleDetail).
+        const installedCount = members.filter(
+            member => getActiveIntent(member.listingId) || (isInstalled && !member.optional)
+        ).length;
 
         return (
             <div

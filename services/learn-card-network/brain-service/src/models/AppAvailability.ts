@@ -22,6 +22,7 @@ export const AppAvailability = ModelFactory<AppAvailabilityType, AppAvailability
             targetType: { type: 'string', required: true },
             status: { type: 'string', required: true },
             createdAt: { type: 'string', required: true },
+            listingId: { type: 'string', required: false },
         },
         primaryKeyField: 'id',
     },

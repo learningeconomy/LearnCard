@@ -565,6 +565,7 @@ const runInstallPass = async (
             intentId: current.intentId,
             ecosystemId: current.ecosystemId,
             targetType: target.targetType,
+            listingId: target.listingId,
             status: 'READY',
             createdAt: new Date().toISOString(),
         });

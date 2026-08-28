@@ -23,18 +23,28 @@
  *   bun run seed:dev-bundle --members dev-integration,learncard-wallet,dev-partner-app
  *   bun run seed:dev-bundle --ecosystem eco_dev_root
  *
+ * Members accept an explicit install-target override via `slug=TARGET_TYPE`
+ * (ADR-008 §3.6: the manifest declares what each member materializes as, so
+ * REGISTRY_SUBSCRIPTION / WORKLOAD_DEPLOYMENT members — which no listing kind
+ * maps to — are declared here). Overridden members that don't exist yet are
+ * created as plain APP listings so the manifest can pin them:
+ *
+ *   bun scripts/seed-dev-bundle.ts --bundle-name "Credential Engine" \
+ *     --members "credential-registry=REGISTRY_SUBSCRIPTION,credential-finder"
+ *
  * Idempotent: re-running repairs the fixture (relisting, re-signing a stale or unsigned
  * manifest, re-pointing members) rather than duplicating it.
  */
 
 import * as dotenv from 'dotenv';
 
-import type {
-    BundleManifest,
-    BundleManifestMember,
-    InstallTargetType,
-    IntegrationManifest,
-    WalletManifest,
+import {
+    InstallTargetTypeEnum,
+    type BundleManifest,
+    type BundleManifestMember,
+    type InstallTargetType,
+    type IntegrationManifest,
+    type WalletManifest,
 } from '@learncard/types';
 
 dotenv.config();
@@ -231,8 +241,38 @@ const main = async (): Promise<void> => {
     const members: BundleManifestMember[] = [];
     const memberSummaries: string[] = [];
 
-    for (const memberSlug of memberSlugs) {
-        const memberListing = await readAppStoreListingBySlug(memberSlug);
+    const titleCase = (raw: string): string =>
+        raw
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+    for (const memberSpec of memberSlugs) {
+        const [memberSlug, declaredTargetType] = memberSpec.split('=');
+
+        if (declaredTargetType) InstallTargetTypeEnum.parse(declaredTargetType);
+
+        let memberListing = await readAppStoreListingBySlug(memberSlug);
+
+        if (!memberListing && declaredTargetType) {
+            // The manifest pins (listingId, versionId), so overridden members that
+            // have no catalog presence yet get a plain APP listing to pin against.
+            memberListing = await createAppStoreListing({
+                slug: memberSlug,
+                kind: 'APP',
+                display_name: titleCase(memberSlug),
+                tagline: `${titleCase(memberSlug)} (dev seed)`,
+                full_description: `Locally seeded ${declaredTargetType} bundle member.`,
+                icon_url: 'https://placehold.co/250x250/navy/white?text=Registry',
+                app_listing_status: 'LISTED',
+                launch_type: 'SERVER_HEADLESS',
+                launch_config_json: JSON.stringify({}),
+                category: 'Registries',
+                promotion_level: 'STANDARD',
+            });
+
+            console.log(`  Member listing:      ${memberSlug} (created as APP for pinning)`);
+        }
 
         if (!memberListing) {
             throw new Error(
@@ -240,7 +280,9 @@ const main = async (): Promise<void> => {
             );
         }
 
-        const targetType = TARGET_TYPE_BY_KIND[memberListing.kind ?? 'APP'];
+        const targetType =
+            (declaredTargetType as InstallTargetType | undefined) ??
+            TARGET_TYPE_BY_KIND[memberListing.kind ?? 'APP'];
 
         if (!targetType) {
             throw new Error(

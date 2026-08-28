@@ -39,7 +39,10 @@ import {
     listWorkloadDeploymentsByEcosystemId,
 } from '@accesslayer/install-target/internal';
 import { BindingRecordValidator } from 'types/binding';
-import { RegistrySubscriptionValidator, WorkloadDeploymentValidator } from 'types/install-target';
+import {
+    EnrichedRegistrySubscriptionValidator,
+    EnrichedWorkloadDeploymentValidator,
+} from 'types/install-target';
 import { InstallIntentRecordValidator, type InstallIntentRecordType } from 'types/install-intent';
 import { AppStoreListingValidator } from 'types/app-store-listing';
 import {
@@ -236,6 +239,36 @@ const bindEcosystem = (ecosystemId: string, bindings: BindingProposal[]): Bindin
         provider: { ...binding.provider, ecosystemId },
         consumer: { ...binding.consumer, ecosystemId },
     }));
+};
+
+const enrichInstallTargetsWithListingMetadata = async <T extends { listingId?: string }>(
+    targets: T[]
+): Promise<(T & { displayName?: string; tagline?: string })[]> => {
+    const listingIds = [
+        ...new Set(
+            targets
+                .map(target => target.listingId)
+                .filter((listingId): listingId is string => Boolean(listingId))
+        ),
+    ];
+    const listings = await Promise.all(listingIds.map(readAppStoreListingById));
+    const listingById = new Map(
+        listings
+            .filter((listing): listing is NonNullable<(typeof listings)[number]> =>
+                Boolean(listing)
+            )
+            .map(listing => [listing.listing_id, listing])
+    );
+
+    return targets.map(target => {
+        const listing = target.listingId ? listingById.get(target.listingId) : undefined;
+
+        return {
+            ...target,
+            displayName: listing?.display_name,
+            tagline: listing?.tagline ?? undefined,
+        };
+    });
 };
 
 const buildSpecForIntent = async (input: {
@@ -686,7 +719,7 @@ export const installIntentsRouter = t.router({
     listWorkloadDeployments: profileRoute
         .meta({ requiredScope: 'app-store:read' })
         .input(ListEcosystemInstallTargetsInputValidator)
-        .output(z.array(WorkloadDeploymentValidator))
+        .output(z.array(EnrichedWorkloadDeploymentValidator))
         .query(async ({ ctx, input }) => {
             await requireEcosystemRole(input.ecosystemId, ctx.user.profile.profileId, [
                 'OWNER',
@@ -695,13 +728,15 @@ export const installIntentsRouter = t.router({
                 'VIEWER',
             ]);
 
-            return listWorkloadDeploymentsByEcosystemId(input.ecosystemId);
+            return enrichInstallTargetsWithListingMetadata(
+                await listWorkloadDeploymentsByEcosystemId(input.ecosystemId)
+            );
         }),
 
     listRegistrySubscriptions: profileRoute
         .meta({ requiredScope: 'app-store:read' })
         .input(ListEcosystemInstallTargetsInputValidator)
-        .output(z.array(RegistrySubscriptionValidator))
+        .output(z.array(EnrichedRegistrySubscriptionValidator))
         .query(async ({ ctx, input }) => {
             await requireEcosystemRole(input.ecosystemId, ctx.user.profile.profileId, [
                 'OWNER',
@@ -710,7 +745,9 @@ export const installIntentsRouter = t.router({
                 'VIEWER',
             ]);
 
-            return listRegistrySubscriptionsByEcosystemId(input.ecosystemId);
+            return enrichInstallTargetsWithListingMetadata(
+                await listRegistrySubscriptionsByEcosystemId(input.ecosystemId)
+            );
         }),
 
     getInstallIntentReconcilerHealth: profileRoute

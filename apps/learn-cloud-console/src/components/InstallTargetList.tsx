@@ -6,6 +6,9 @@ export type InstallTargetSummary = {
     intentId: string;
     status: string;
     createdAt: string;
+    listingId?: string;
+    displayName?: string;
+    tagline?: string;
 };
 
 type BadgeVariant = 'success' | 'warning' | 'destructive' | 'outline';
@@ -22,6 +25,24 @@ const formatCreatedAt = (createdAt: string): string => {
     const date = new Date(createdAt);
 
     return Number.isNaN(date.getTime()) ? createdAt : date.toLocaleDateString();
+};
+
+// Fallback for legacy targets without a persisted listingId: target ids are
+// `target_<intentId>_<declarationId>` (brain getIntentTargetId), and the
+// declarationId is the bundle manifest's own name for the member (ADR-008).
+const displayTitle = (target: InstallTargetSummary): string => {
+    if (target.displayName) return target.displayName;
+
+    const declarationId = target.id.startsWith(`target_${target.intentId}_`)
+        ? target.id.slice(`target_${target.intentId}_`.length)
+        : null;
+
+    if (!declarationId) return target.id;
+
+    return declarationId
+        .split(/[-_]/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 };
 
 type InstallTargetListProps = {
@@ -47,9 +68,14 @@ export function InstallTargetList({ targets, icon: Icon, emptyMessage }: Install
                             <Icon className="w-6 h-6" />
                         </div>
                         <div className="min-w-0">
-                            <h3 className="font-display font-bold text-foreground break-all">
-                                {target.id}
+                            <h3 className="font-display font-bold text-foreground break-words">
+                                {displayTitle(target)}
                             </h3>
+                            {target.tagline && (
+                                <p className="text-sm text-muted-foreground mt-0.5">
+                                    {target.tagline}
+                                </p>
+                            )}
                             <div className="flex flex-wrap items-center gap-1 mt-1">
                                 <Badge
                                     variant={statusVariant(target.status)}
