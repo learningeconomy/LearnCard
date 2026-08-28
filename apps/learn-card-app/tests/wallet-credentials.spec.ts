@@ -103,10 +103,16 @@ test.describe('Wallet Credentials', () => {
         await expect(acceptButton).toBeEnabled({ timeout: 30_000 });
         await acceptButton.click({ timeout: 30_000 });
 
-        // Assert badge was claimed
-        await expect(page2.getByText(/successfully claimed/i)).toBeVisible({
-            timeout: 30_000,
+        // LC-2088 presents the recipient's connection nudge immediately after the claim modal
+        // closes. It supersedes the short-lived success toast and must be resolved before the
+        // recipient can continue interacting with the wallet.
+        const connectionPromptHeading = page2.getByRole('heading', {
+            name: /^Connect with .+\?$/i,
         });
+        await expect(connectionPromptHeading).toBeVisible({ timeout: 30_000 });
+
+        await page2.getByRole('button', { name: 'Skip for Now', exact: true }).click();
+        await expect(connectionPromptHeading).toBeHidden({ timeout: 30_000 });
 
         // User 2: Navigate to wallet and verify the badge via category
         await page2.goto('/wallet');
