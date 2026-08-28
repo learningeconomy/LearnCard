@@ -17,7 +17,11 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { createSSSStrategy, formatVersionedEmailShare, parseVersionedEmailShare } from './sss-strategy';
+import {
+    createSSSStrategy,
+    formatVersionedEmailShare,
+    parseVersionedEmailShare,
+} from './sss-strategy';
 import { reconstructFromShares } from './sss';
 import { splitAndVerify } from './atomic-operations';
 import { shareToRecoveryPhrase, recoveryPhraseToShare } from './recovery-phrase';
@@ -31,7 +35,10 @@ import type { SSSKeyDerivationStrategy } from './types';
 
 const DEFAULT_KEY = 'device';
 
-const createMemoryStorage = (): SSSStorageFunctions & { _store: Map<string, string>; _versions: Map<string, number> } => {
+const createMemoryStorage = (): SSSStorageFunctions & {
+    _store: Map<string, string>;
+    _versions: Map<string, number>;
+} => {
     const store = new Map<string, string>();
     const versions = new Map<string, number>();
 
@@ -322,13 +329,16 @@ describe('createSSSStrategy', () => {
     describe('fetchServerKeyStatus shareVersion', () => {
         it('returns shareVersion when server includes it', async () => {
             vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'share-data',
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z123',
-                    recoveryMethods: [],
-                    shareVersion: 5,
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: 'share-data',
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [],
+                        shareVersion: 5,
+                    }),
+                    { status: 200 }
+                )
             );
 
             const status = await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -338,12 +348,15 @@ describe('createSSSStrategy', () => {
 
         it('returns null shareVersion when server omits it', async () => {
             vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'share-data',
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z123',
-                    recoveryMethods: [],
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: 'share-data',
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [],
+                    }),
+                    { status: 200 }
+                )
             );
 
             const status = await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -358,13 +371,16 @@ describe('createSSSStrategy', () => {
             expect(await strategy.getLocalShareVersion!()).toBeNull();
 
             vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'share-data',
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z123',
-                    recoveryMethods: [],
-                    shareVersion: 3,
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: 'share-data',
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [],
+                        shareVersion: 3,
+                    }),
+                    { status: 200 }
+                )
             );
 
             const status = await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -374,7 +390,10 @@ describe('createSSSStrategy', () => {
             // Wait for the fire-and-forget backfill to complete
             await new Promise(r => setTimeout(r, 10));
 
-            expect(storage.storeShareVersion).toHaveBeenCalledWith(3, 'sss-device-share:legacy-user');
+            expect(storage.storeShareVersion).toHaveBeenCalledWith(
+                3,
+                'sss-device-share:legacy-user'
+            );
             expect(await strategy.getLocalShareVersion!()).toBe(3);
         });
 
@@ -385,13 +404,16 @@ describe('createSSSStrategy', () => {
             storage.storeShareVersion.mockClear();
 
             vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'share-data',
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z123',
-                    recoveryMethods: [],
-                    shareVersion: 5,
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: 'share-data',
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [],
+                        shareVersion: 5,
+                    }),
+                    { status: 200 }
+                )
             );
 
             await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -459,13 +481,16 @@ describe('createSSSStrategy', () => {
                 const method = (init?.method ?? 'GET').toUpperCase();
 
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
-                    return new Response(JSON.stringify({
-                        authShare: { encryptedData: remoteKey, encryptedDek: '', iv: '' },
-                        primaryDid: 'did:key:zCorrect',
-                        recoveryMethods: [],
-                        keyProvider: 'sss',
-                        shareVersion: 42,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: { encryptedData: remoteKey, encryptedDek: '', iv: '' },
+                            primaryDid: 'did:key:zCorrect',
+                            recoveryMethods: [],
+                            keyProvider: 'sss',
+                            shareVersion: 42,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 return new Response(null, { status: 200 });
@@ -492,13 +517,16 @@ describe('createSSSStrategy', () => {
                 const method = (init?.method ?? 'GET').toUpperCase();
 
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
-                    return new Response(JSON.stringify({
-                        authShare: { encryptedData: remoteKey, encryptedDek: '', iv: '' },
-                        primaryDid: 'did:key:zCorrect',
-                        recoveryMethods: [],
-                        keyProvider: 'sss',
-                        // no shareVersion field
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: { encryptedData: remoteKey, encryptedDek: '', iv: '' },
+                            primaryDid: 'did:key:zCorrect',
+                            recoveryMethods: [],
+                            keyProvider: 'sss',
+                            // no shareVersion field
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 return new Response(null, { status: 200 });
@@ -564,12 +592,15 @@ describe('createSSSStrategy', () => {
 
         it('parses server response with string authShare', async () => {
             vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'raw-auth-share-string',
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z123',
-                    recoveryMethods: [{ type: 'passkey', createdAt: '2024-01-01' }],
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: 'raw-auth-share-string',
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [{ type: 'passkey', createdAt: '2024-01-01' }],
+                    }),
+                    { status: 200 }
+                )
             );
 
             const status = await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -584,12 +615,19 @@ describe('createSSSStrategy', () => {
 
         it('parses server response with object authShare (encrypted envelope)', async () => {
             vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: { encryptedData: 'encrypted-share', iv: 'iv-value', encryptedDek: 'dek' },
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z456',
-                    recoveryMethods: [],
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: {
+                            encryptedData: 'encrypted-share',
+                            iv: 'iv-value',
+                            encryptedDek: 'dek',
+                        },
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z456',
+                        recoveryMethods: [],
+                    }),
+                    { status: 200 }
+                )
             );
 
             const status = await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -600,12 +638,15 @@ describe('createSSSStrategy', () => {
 
         it('detects web3auth migration', async () => {
             vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'share',
-                    keyProvider: 'web3auth',
-                    primaryDid: 'did:key:zOld',
-                    recoveryMethods: [],
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: 'share',
+                        keyProvider: 'web3auth',
+                        primaryDid: 'did:key:zOld',
+                        recoveryMethods: [],
+                    }),
+                    { status: 200 }
+                )
             );
 
             const status = await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -618,8 +659,9 @@ describe('createSSSStrategy', () => {
                 new Response(null, { status: 500, statusText: 'Internal Server Error' })
             );
 
-            await expect(strategy.fetchServerKeyStatus('token', 'firebase'))
-                .rejects.toThrow('Failed to fetch key status');
+            await expect(strategy.fetchServerKeyStatus('token', 'firebase')).rejects.toThrow(
+                'Failed to fetch key status'
+            );
         });
     });
 
@@ -630,7 +672,9 @@ describe('createSSSStrategy', () => {
     describe('storeAuthShare', () => {
         it('sends PUT request to the server and stores returned shareVersion', async () => {
             const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({ success: true, shareVersion: 3 }), { status: 200 })
+                new Response(JSON.stringify({ success: true, shareVersion: 3 }), {
+                    status: 200,
+                })
             );
 
             await strategy.storeAuthShare('token', 'firebase', 'share-data', 'did:key:z1');
@@ -652,8 +696,9 @@ describe('createSSSStrategy', () => {
                 new Response(null, { status: 500, statusText: 'Server Error' })
             );
 
-            await expect(strategy.storeAuthShare('token', 'firebase', 'share', 'did'))
-                .rejects.toThrow('Failed to store auth share');
+            await expect(
+                strategy.storeAuthShare('token', 'firebase', 'share', 'did')
+            ).rejects.toThrow('Failed to store auth share');
         });
     });
 
@@ -663,9 +708,9 @@ describe('createSSSStrategy', () => {
 
     describe('markMigrated', () => {
         it('sends POST to /keys/migrate', async () => {
-            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(null, { status: 200 })
-            );
+            const fetchSpy = vi
+                .spyOn(globalThis, 'fetch')
+                .mockResolvedValueOnce(new Response(null, { status: 200 }));
 
             await strategy.markMigrated!('token', 'firebase');
 
@@ -682,8 +727,9 @@ describe('createSSSStrategy', () => {
                 new Response(null, { status: 500, statusText: 'Fail' })
             );
 
-            await expect(strategy.markMigrated!('token', 'firebase'))
-                .rejects.toThrow('Failed to mark migrated');
+            await expect(strategy.markMigrated!('token', 'firebase')).rejects.toThrow(
+                'Failed to mark migrated'
+            );
         });
     });
 
@@ -728,17 +774,20 @@ describe('createSSSStrategy', () => {
                 fetchCalls.push({
                     url: urlStr,
                     method,
-                    body: init?.body as string ?? '',
+                    body: (init?.body as string) ?? '',
                 });
 
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
-                    return new Response(JSON.stringify({
-                        authShare: { encryptedData: remoteKey, encryptedDek: '', iv: '' },
-                        primaryDid: 'did:key:zCorrect',
-                        recoveryMethods: [],
-                        keyProvider: 'sss',
-                        shareVersion: 1,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: { encryptedData: remoteKey, encryptedDek: '', iv: '' },
+                            primaryDid: 'did:key:zCorrect',
+                            recoveryMethods: [],
+                            keyProvider: 'sss',
+                            shareVersion: 1,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 return new Response(null, { status: 200 });
@@ -854,13 +903,16 @@ describe('createSSSStrategy', () => {
             await strategy.storeLocalShareVersion!(2);
 
             const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'v2-auth-share',
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z123',
-                    recoveryMethods: [],
-                    shareVersion: 3,
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: 'v2-auth-share',
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [],
+                        shareVersion: 3,
+                    }),
+                    { status: 200 }
+                )
             );
 
             await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -874,13 +926,16 @@ describe('createSSSStrategy', () => {
             strategy.setActiveUser!('new-device');
 
             const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'current-share',
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z123',
-                    recoveryMethods: [],
-                    shareVersion: 3,
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: 'current-share',
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [],
+                        shareVersion: 3,
+                    }),
+                    { status: 200 }
+                )
             );
 
             await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -893,7 +948,9 @@ describe('createSSSStrategy', () => {
         it('full flow: v2 device share from another device reconstructs with v2 auth share from server', async () => {
             // --- Setup: split a key to get a real v2 device/auth pair ---
             const originalKey = 'deadbeef1234'.padEnd(64, '0');
-            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } = await strategy.splitKey(originalKey);
+            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } = await strategy.splitKey(
+                originalKey
+            );
 
             // --- Simulate: Device A receives v2 share via QR recovery ---
             strategy.setActiveUser!('recovering-user');
@@ -902,13 +959,16 @@ describe('createSSSStrategy', () => {
 
             // --- Mock server: returns the v2 auth share when version 2 is requested ---
             vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: { encryptedData: v2AuthShare, encryptedDek: '', iv: '' },
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:zRecoveredUser',
-                    recoveryMethods: [{ type: 'passkey', createdAt: '2024-01-01' }],
-                    shareVersion: 3, // server is at v3 but returns v2 auth share
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: { encryptedData: v2AuthShare, encryptedDek: '', iv: '' },
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:zRecoveredUser',
+                        recoveryMethods: [{ type: 'passkey', createdAt: '2024-01-01' }],
+                        shareVersion: 3, // server is at v3 but returns v2 auth share
+                    }),
+                    { status: 200 }
+                )
             );
 
             const status = await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -927,14 +987,17 @@ describe('createSSSStrategy', () => {
             strategy.setActiveUser!('overwrite-user');
 
             // Step 1: First initialize — no local key, server backfills v3
-            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'v3-auth-share',
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z123',
-                    recoveryMethods: [],
-                    shareVersion: 3,
-                }), { status: 200 })
+            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        authShare: 'v3-auth-share',
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [],
+                        shareVersion: 3,
+                    }),
+                    { status: 200 }
+                )
             );
 
             await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -950,14 +1013,17 @@ describe('createSSSStrategy', () => {
             expect(await strategy.getLocalShareVersion!()).toBe(2);
 
             // Step 3: Second fetchServerKeyStatus — should send version 2
-            const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'v2-auth-share-from-previous',
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z123',
-                    recoveryMethods: [],
-                    shareVersion: 3,
-                }), { status: 200 })
+            fetchSpy.mockClear().mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify({
+                        authShare: 'v2-auth-share-from-previous',
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [],
+                        shareVersion: 3,
+                    }),
+                    { status: 200 }
+                )
             );
 
             const status = await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -975,20 +1041,25 @@ describe('createSSSStrategy', () => {
             // 3. coordinator.initialize() → fetchServerKeyStatus sends v2
 
             const originalKey = 'cafe0123babe'.padEnd(64, '0');
-            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } = await strategy.splitKey(originalKey);
+            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } = await strategy.splitKey(
+                originalKey
+            );
 
             strategy.setActiveUser!('device-recovery-user');
             await strategy.storeLocalKey(v2DeviceShare);
             await strategy.storeLocalShareVersion!(2);
 
             const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: { encryptedData: v2AuthShare, encryptedDek: '', iv: '' },
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:zUser',
-                    recoveryMethods: [],
-                    shareVersion: 3,
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: { encryptedData: v2AuthShare, encryptedDek: '', iv: '' },
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:zUser',
+                        recoveryMethods: [],
+                        shareVersion: 3,
+                    }),
+                    { status: 200 }
+                )
             );
 
             const status = await strategy.fetchServerKeyStatus('token', 'firebase');
@@ -1038,8 +1109,11 @@ describe('createSSSStrategy', () => {
             const { remoteKey } = await emailStrategy.splitKey(originalKey);
 
             // Step 1b: storeAuthShare so the version is cached for email send
-            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
-                new Response(JSON.stringify({ success: true, shareVersion: 5 }), { status: 200 })
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(
+                async () =>
+                    new Response(JSON.stringify({ success: true, shareVersion: 5 }), {
+                        status: 200,
+                    })
             );
 
             await emailStrategy.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
@@ -1055,7 +1129,10 @@ describe('createSSSStrategy', () => {
             });
 
             await emailStrategy.sendEmailBackupShare!(
-                'token', 'firebase', originalKey, 'user@test.com'
+                'token',
+                'firebase',
+                originalKey,
+                'user@test.com'
             );
 
             expect(capturedPayload).toBeDefined();
@@ -1078,8 +1155,11 @@ describe('createSSSStrategy', () => {
             const { localKey, remoteKey } = await emailStrategy.splitKey(originalKey);
 
             // storeAuthShare so version is cached
-            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
-                new Response(JSON.stringify({ success: true, shareVersion: 1 }), { status: 200 })
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(
+                async () =>
+                    new Response(JSON.stringify({ success: true, shareVersion: 1 }), {
+                        status: 200,
+                    })
             );
 
             await emailStrategy.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
@@ -1095,7 +1175,10 @@ describe('createSSSStrategy', () => {
             });
 
             await emailStrategy.sendEmailBackupShare!(
-                'token', 'firebase', originalKey, 'user@test.com'
+                'token',
+                'firebase',
+                originalKey,
+                'user@test.com'
             );
 
             // Strip 4-char hex version prefix
@@ -1117,7 +1200,10 @@ describe('createSSSStrategy', () => {
 
             // Call sendEmailBackupShare without calling splitKey first
             await emailStrategy.sendEmailBackupShare!(
-                'token', 'firebase', 'some-key', 'user@test.com'
+                'token',
+                'firebase',
+                'some-key',
+                'user@test.com'
             );
 
             expect(warnSpy).toHaveBeenCalledWith(
@@ -1133,8 +1219,11 @@ describe('createSSSStrategy', () => {
             const { remoteKey } = await emailStrategy.splitKey(originalKey);
 
             // storeAuthShare to cache version
-            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
-                new Response(JSON.stringify({ success: true, shareVersion: 2 }), { status: 200 })
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(
+                async () =>
+                    new Response(JSON.stringify({ success: true, shareVersion: 2 }), {
+                        status: 200,
+                    })
             );
 
             await emailStrategy.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
@@ -1144,14 +1233,17 @@ describe('createSSSStrategy', () => {
             vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
                 fetchCalls.push({
                     url: typeof url === 'string' ? url : url.toString(),
-                    body: init?.body as string ?? '',
+                    body: (init?.body as string) ?? '',
                 });
 
                 return new Response(null, { status: 200 });
             });
 
             await emailStrategy.sendEmailBackupShare!(
-                'token', 'firebase', originalKey, 'user@test.com'
+                'token',
+                'firebase',
+                originalKey,
+                'user@test.com'
             );
 
             // Only one fetch call should have been made — to the email relay
@@ -1194,22 +1286,27 @@ describe('createSSSStrategy', () => {
 
                 fetchCalls.push({
                     url: urlStr,
-                    body: init?.body as string ?? '',
+                    body: (init?.body as string) ?? '',
                 });
 
                 // fetchAuthShareRaw needs to return server data
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
-                    return new Response(JSON.stringify({
-                        authShare: 'existing-auth-share',
-                        primaryDid: 'did:key:z123',
-                        recoveryMethods: [],
-                        shareVersion: 2,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: 'existing-auth-share',
+                            primaryDid: 'did:key:z123',
+                            recoveryMethods: [],
+                            shareVersion: 2,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 // putAuthShare returns shareVersion
                 if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
-                    return new Response(JSON.stringify({ success: true, shareVersion: 3 }), { status: 200 });
+                    return new Response(JSON.stringify({ success: true, shareVersion: 3 }), {
+                        status: 200,
+                    });
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1250,8 +1347,11 @@ describe('createSSSStrategy', () => {
             await emailStrategy.splitKey(originalKey);
 
             // storeAuthShare returns version 7
-            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
-                new Response(JSON.stringify({ success: true, shareVersion: 7 }), { status: 200 })
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(
+                async () =>
+                    new Response(JSON.stringify({ success: true, shareVersion: 7 }), {
+                        status: 200,
+                    })
             );
 
             await emailStrategy.storeAuthShare('token', 'firebase', 'auth-share', 'did:key:z1');
@@ -1267,7 +1367,10 @@ describe('createSSSStrategy', () => {
             });
 
             await emailStrategy.sendEmailBackupShare!(
-                'token', 'firebase', originalKey, 'user@test.com'
+                'token',
+                'firebase',
+                originalKey,
+                'user@test.com'
             );
 
             // New format: 4-char hex prefix (version 7 = "0007")
@@ -1287,20 +1390,25 @@ describe('createSSSStrategy', () => {
 
                 fetchCalls.push({
                     url: urlStr,
-                    body: init?.body as string ?? '',
+                    body: (init?.body as string) ?? '',
                 });
 
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
-                    return new Response(JSON.stringify({
-                        authShare: 'existing',
-                        primaryDid: 'did:key:z1',
-                        recoveryMethods: [],
-                        shareVersion: 4,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: 'existing',
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 4,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
-                    return new Response(JSON.stringify({ success: true, shareVersion: 5 }), { status: 200 });
+                    return new Response(JSON.stringify({ success: true, shareVersion: 5 }), {
+                        status: 200,
+                    });
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1345,12 +1453,15 @@ describe('createSSSStrategy', () => {
                     const body = JSON.parse(init?.body as string);
                     capturedVersion = body.shareVersion;
 
-                    return new Response(JSON.stringify({
-                        authShare: shares.authShare,
-                        primaryDid: 'did:key:z1',
-                        recoveryMethods: [],
-                        shareVersion: 2,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: shares.authShare,
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 2,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1383,12 +1494,15 @@ describe('createSSSStrategy', () => {
                     const body = JSON.parse(init?.body as string);
                     capturedVersion = body.shareVersion;
 
-                    return new Response(JSON.stringify({
-                        authShare: shares.authShare,
-                        primaryDid: 'did:key:z1',
-                        recoveryMethods: [],
-                        shareVersion: 255,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: shares.authShare,
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 255,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1418,22 +1532,27 @@ describe('createSSSStrategy', () => {
                 fetchCalls.push({
                     url: urlStr,
                     method,
-                    body: init?.body as string ?? '',
+                    body: (init?.body as string) ?? '',
                 });
 
                 // fetchAuthShareRaw
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
-                    return new Response(JSON.stringify({
-                        authShare: 'existing',
-                        primaryDid: 'did:key:z1',
-                        recoveryMethods: [],
-                        shareVersion: 5,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: 'existing',
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 5,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 // putAuthShare
                 if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
-                    return new Response(JSON.stringify({ success: true, shareVersion: 6 }), { status: 200 });
+                    return new Response(JSON.stringify({ success: true, shareVersion: 6 }), {
+                        status: 200,
+                    });
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1489,9 +1608,12 @@ describe('createSSSStrategy', () => {
 
                 // getRecoveryShare for phrase — returns shareVersion only (no encryptedShare)
                 if (urlStr.includes('/keys/recovery') && method === 'GET') {
-                    return new Response(JSON.stringify({
-                        shareVersion: 3,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            shareVersion: 3,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 // fetchAuthShareRaw — capture requested shareVersion
@@ -1499,12 +1621,17 @@ describe('createSSSStrategy', () => {
                     const body = JSON.parse(init?.body as string);
                     authShareRequestVersion = body.shareVersion;
 
-                    return new Response(JSON.stringify({
-                        authShare: shares.authShare,
-                        primaryDid: 'did:key:z1',
-                        recoveryMethods: [{ type: 'phrase', createdAt: new Date().toISOString() }],
-                        shareVersion: 3,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: shares.authShare,
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [
+                                { type: 'phrase', createdAt: new Date().toISOString() },
+                            ],
+                            shareVersion: 3,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1536,22 +1663,27 @@ describe('createSSSStrategy', () => {
                 fetchCalls.push({
                     url: urlStr,
                     method,
-                    body: init?.body as string ?? '',
+                    body: (init?.body as string) ?? '',
                 });
 
                 // fetchAuthShareRaw
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
-                    return new Response(JSON.stringify({
-                        authShare: 'existing',
-                        primaryDid: 'did:key:z1',
-                        recoveryMethods: [],
-                        shareVersion: 7,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: 'existing',
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 7,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 // putAuthShare
                 if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
-                    return new Response(JSON.stringify({ success: true, shareVersion: 8 }), { status: 200 });
+                    return new Response(JSON.stringify({ success: true, shareVersion: 8 }), {
+                        status: 200,
+                    });
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1594,7 +1726,6 @@ describe('createSSSStrategy', () => {
     // -----------------------------------------------------------------------
 
     describe('email routing — recovery email vs primary', () => {
-
         it('setupRecoveryMethod("email") sends ONLY to recovery email, never to primary', async () => {
             const strat = createSSSStrategy({
                 serverUrl: 'http://test-server:5100/api',
@@ -1612,21 +1743,26 @@ describe('createSSSStrategy', () => {
                 const urlStr = typeof url === 'string' ? url : url.toString();
                 const method = (init?.method ?? 'GET').toUpperCase();
 
-                fetchCalls.push({ url: urlStr, method, body: init?.body as string ?? '' });
+                fetchCalls.push({ url: urlStr, method, body: (init?.body as string) ?? '' });
 
                 // fetchAuthShareRaw
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
-                    return new Response(JSON.stringify({
-                        authShare: 'existing',
-                        primaryDid: 'did:key:z1',
-                        recoveryMethods: [],
-                        shareVersion: 10,
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: 'existing',
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 10,
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 // putAuthShare
                 if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
-                    return new Response(JSON.stringify({ success: true, shareVersion: 11 }), { status: 200 });
+                    return new Response(JSON.stringify({ success: true, shareVersion: 11 }), {
+                        status: 200,
+                    });
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1663,15 +1799,19 @@ describe('createSSSStrategy', () => {
             const originalKey = 'f1f2f3f4f5f6'.padEnd(64, '0');
 
             // First: fetchServerKeyStatus to set hasRecoveryEmail = true
-            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
-                new Response(JSON.stringify({
-                    authShare: 'existing-share',
-                    primaryDid: 'did:key:z1',
-                    recoveryMethods: [],
-                    shareVersion: 1,
-                    keyProvider: 'sss',
-                    maskedRecoveryEmail: 'r****@personal.com',
-                }), { status: 200 })
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(
+                async () =>
+                    new Response(
+                        JSON.stringify({
+                            authShare: 'existing-share',
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 1,
+                            keyProvider: 'sss',
+                            maskedRecoveryEmail: 'r****@personal.com',
+                        }),
+                        { status: 200 }
+                    )
             );
 
             await stratWithRecovery.fetchServerKeyStatus('token', 'firebase');
@@ -1687,20 +1827,25 @@ describe('createSSSStrategy', () => {
                 const urlStr = typeof url === 'string' ? url : url.toString();
                 const method = (init?.method ?? 'GET').toUpperCase();
 
-                fetchCalls.push({ url: urlStr, method, body: init?.body as string ?? '' });
+                fetchCalls.push({ url: urlStr, method, body: (init?.body as string) ?? '' });
 
                 if (urlStr.includes('/keys/auth-share') && method === 'POST') {
-                    return new Response(JSON.stringify({
-                        authShare: 'existing',
-                        primaryDid: 'did:key:z1',
-                        recoveryMethods: [],
-                        shareVersion: 1,
-                        maskedRecoveryEmail: 'r****@personal.com',
-                    }), { status: 200 });
+                    return new Response(
+                        JSON.stringify({
+                            authShare: 'existing',
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 1,
+                            maskedRecoveryEmail: 'r****@personal.com',
+                        }),
+                        { status: 200 }
+                    );
                 }
 
                 if (urlStr.includes('/keys/auth-share') && method === 'PUT') {
-                    return new Response(JSON.stringify({ success: true, shareVersion: 2 }), { status: 200 });
+                    return new Response(JSON.stringify({ success: true, shareVersion: 2 }), {
+                        status: 200,
+                    });
                 }
 
                 return new Response(JSON.stringify({ success: true }), { status: 200 });
@@ -1735,15 +1880,19 @@ describe('createSSSStrategy', () => {
             const originalKey = 'd1d2d3d4d5d6'.padEnd(64, '0');
 
             // Prime hasRecoveryEmail via fetchServerKeyStatus
-            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
-                new Response(JSON.stringify({
-                    authShare: 'existing-share',
-                    primaryDid: 'did:key:z1',
-                    recoveryMethods: [],
-                    shareVersion: 3,
-                    keyProvider: 'sss',
-                    maskedRecoveryEmail: 'r****@personal.com',
-                }), { status: 200 })
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(
+                async () =>
+                    new Response(
+                        JSON.stringify({
+                            authShare: 'existing-share',
+                            primaryDid: 'did:key:z1',
+                            recoveryMethods: [],
+                            shareVersion: 3,
+                            keyProvider: 'sss',
+                            maskedRecoveryEmail: 'r****@personal.com',
+                        }),
+                        { status: 200 }
+                    )
             );
 
             await stratWithRecovery.fetchServerKeyStatus('token', 'firebase');
@@ -1754,8 +1903,11 @@ describe('createSSSStrategy', () => {
             const { remoteKey } = await stratWithRecovery.splitKey(originalKey);
 
             // storeAuthShare to cache version
-            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
-                new Response(JSON.stringify({ success: true, shareVersion: 4 }), { status: 200 })
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(
+                async () =>
+                    new Response(JSON.stringify({ success: true, shareVersion: 4 }), {
+                        status: 200,
+                    })
             );
 
             await stratWithRecovery.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
@@ -1769,7 +1921,10 @@ describe('createSSSStrategy', () => {
             });
 
             await stratWithRecovery.sendEmailBackupShare!(
-                'token', 'firebase', originalKey, 'primary@test.com'
+                'token',
+                'firebase',
+                originalKey,
+                'primary@test.com'
             );
 
             // Should route to recovery email, not primary
@@ -1790,8 +1945,11 @@ describe('createSSSStrategy', () => {
             const { remoteKey } = await strat.splitKey(originalKey);
 
             // storeAuthShare to cache version
-            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () =>
-                new Response(JSON.stringify({ success: true, shareVersion: 1 }), { status: 200 })
+            vi.spyOn(globalThis, 'fetch').mockImplementationOnce(
+                async () =>
+                    new Response(JSON.stringify({ success: true, shareVersion: 1 }), {
+                        status: 200,
+                    })
             );
 
             await strat.storeAuthShare('token', 'firebase', remoteKey, 'did:key:z1');
@@ -1803,9 +1961,7 @@ describe('createSSSStrategy', () => {
                 return new Response(null, { status: 200 });
             });
 
-            await strat.sendEmailBackupShare!(
-                'token', 'firebase', originalKey, 'primary@test.com'
-            );
+            await strat.sendEmailBackupShare!('token', 'firebase', originalKey, 'primary@test.com');
 
             // Should send to the explicit primary email
             expect(capturedBody).toBeDefined();
@@ -1830,14 +1986,17 @@ describe('createSSSStrategy', () => {
 
             // Step 1: fetchServerKeyStatus returns a user WITH a recovery email
             vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-                new Response(JSON.stringify({
-                    authShare: 'share',
-                    keyProvider: 'sss',
-                    primaryDid: 'did:key:z1',
-                    recoveryMethods: [{ type: 'email', createdAt: new Date().toISOString() }],
-                    maskedRecoveryEmail: 'r***@test.com',
-                    shareVersion: 1,
-                }), { status: 200 })
+                new Response(
+                    JSON.stringify({
+                        authShare: 'share',
+                        keyProvider: 'sss',
+                        primaryDid: 'did:key:z1',
+                        recoveryMethods: [{ type: 'email', createdAt: new Date().toISOString() }],
+                        maskedRecoveryEmail: 'r***@test.com',
+                        shareVersion: 1,
+                    }),
+                    { status: 200 }
+                )
             );
 
             await strat.fetchServerKeyStatus('token', 'firebase');
@@ -1885,7 +2044,6 @@ describe('createSSSStrategy', () => {
     // -----------------------------------------------------------------------
 
     describe('formatVersionedEmailShare / parseVersionedEmailShare', () => {
-
         it('round-trip: format then parse recovers the original share and version', () => {
             const share = 'abcdef1234567890';
             const version = 5;

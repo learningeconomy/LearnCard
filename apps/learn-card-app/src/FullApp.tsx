@@ -52,6 +52,7 @@ import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import { FeedbackProvider } from './feedback/reporting';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
+import * as m from './paraglide/messages.js';
 
 const log = getLogger('cache');
 
@@ -189,7 +190,9 @@ const ThemeInitializer: React.FC = () => {
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
     sqliteInit(); // initializes SQLite on native
-    const showScannerOverlay = QRCodeScannerStore?.use?.showScanner();
+    const showScannerOverlay = QRCodeScannerStore.useTracked.showScanner();
+    const scannerMode = QRCodeScannerStore.useTracked.mode();
+    const isRecipientScanner = scannerMode === 'recipient';
 
     return (
         <PersistQueryClientProvider
@@ -227,7 +230,28 @@ const FullApp: React.FC = () => {
                                         <InAppMessageHost />
                                         <QRCodeScannerListener />
 
-                                        {showScannerOverlay && <QRCodeScannerOverlay />}
+                                        {showScannerOverlay && (
+                                            <QRCodeScannerOverlay
+                                                title={
+                                                    isRecipientScanner
+                                                        ? m['scanner.profileTitle']()
+                                                        : m['scanner.title']()
+                                                }
+                                                description={
+                                                    isRecipientScanner
+                                                        ? m['scanner.profileDescription']()
+                                                        : m['scanner.description']()
+                                                }
+                                                frameLabel={m['scanner.frameLabel']()}
+                                                searchingLabel={m['scanner.lookingForQr']()}
+                                                helperLabel={
+                                                    isRecipientScanner
+                                                        ? m['scanner.recipientAutoAdd']()
+                                                        : undefined
+                                                }
+                                                closeLabel={m['scanner.closeAria']()}
+                                            />
+                                        )}
 
                                         <DevDebugPanel />
                                     </IonApp>
