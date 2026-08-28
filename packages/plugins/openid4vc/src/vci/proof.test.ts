@@ -1,6 +1,13 @@
+import { vi } from 'vitest';
 import { generateKeyPair, exportJWK, jwtVerify, importJWK } from 'jose';
 
-import { buildProofJwt, createJoseEd25519Signer, OID4VCI_PROOF_TYP } from './proof';
+import {
+    buildDiVpProof,
+    buildProofJwt,
+    createJoseEd25519Signer,
+    OID4VCI_PROOF_TYP,
+    selectKeyProofType,
+} from './proof';
 import { ProofJwtSigner } from './types';
 
 const fakeSigner = (
@@ -16,7 +23,7 @@ const fakeSigner = (
     const signer = {
         alg: opts.alg ?? 'EdDSA',
         kid: opts.kid ?? 'did:key:z6Mk...#z6Mk...',
-        sign: jest.fn().mockImplementation(async (header, payload) => {
+        sign: vi.fn().mockImplementation(async (header, payload) => {
             (signer as typeof signer & { lastHeader?: unknown; lastPayload?: unknown }).lastHeader =
                 header;
             (
@@ -161,8 +168,6 @@ describe('createJoseEd25519Signer', () => {
 });
 
 describe('selectKeyProofType', () => {
-    const { selectKeyProofType } = require('./proof');
-
     it('defaults to jwt when the config has no proof_types_supported', () => {
         expect(selectKeyProofType(undefined)).toEqual({ proofType: 'jwt' });
         expect(selectKeyProofType({ format: 'jwt_vc_json' })).toEqual({ proofType: 'jwt' });
@@ -272,11 +277,9 @@ describe('selectKeyProofType', () => {
 });
 
 describe('buildDiVpProof', () => {
-    const { buildDiVpProof } = require('./proof');
-
     const signer = {
         holder: 'did:key:z6Mkholder',
-        signPresentation: jest.fn(async (vp: Record<string, unknown>, opts: unknown) => ({
+        signPresentation: vi.fn(async (vp: Record<string, unknown>, opts: unknown) => ({
             ...vp,
             proof: { type: 'DataIntegrityProof', ...(opts as Record<string, unknown>) },
         })),

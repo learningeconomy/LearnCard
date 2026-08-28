@@ -26,7 +26,7 @@ describe('Running Tests for CircleIcon', () => {
     // });
 
     // it('calls onClick', async () => {
-    //     const handleOnClick = jest.fn();
+    //     const handleOnClick = vi.fn();
     //     const user = userEvent.setup();
 
     //     const { container } = render(<CircleIcon onClick={handleOnClick} />);

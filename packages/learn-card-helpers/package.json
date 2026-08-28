@@ -27,9 +27,9 @@
         "start": "aqu watch",
         "lint": "aqu lint",
         "lint:fix": "aqu lint --fix",
-        "test": "jest",
-        "test:watch": "jest --watch",
-        "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
@@ -43,17 +43,12 @@
     },
     "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.1.4",
-        "@types/jest": "^27.5.0",
         "@types/node": "^18.7.19",
         "@types/react": "^18.0.0",
         "aqu": "0.4.3",
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.27.1",
-        "esbuild-jest": "^0.5.0",
-        "jest": "^28.1.3",
-        "jest-environment-jsdom": "^28.1.3",
-        "shx": "^0.3.4",
-        "ts-jest": "^28.0.5"
+        "shx": "^0.3.4"
     },
     "types": "./dist/helpers.d.ts",
     "dependencies": {
