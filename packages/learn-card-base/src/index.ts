@@ -215,6 +215,7 @@ export {
 } from './stores/nanoStores/chatStore';
 
 export * from './helpers/aiErrors';
+export * from './helpers/aiPassportAuth';
 export * from './helpers/credentialHelpers';
 export * from './helpers/credentialIngestion';
 export * from './helpers/credentials/queries';

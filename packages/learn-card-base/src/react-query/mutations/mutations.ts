@@ -30,6 +30,8 @@ type ProfileIdParam = { profileId: string };
 
 export const useConnectWithMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useMutation<boolean, Error, ProfileIdParam>({
         mutationFn: async ({ profileId }) => {
@@ -41,6 +43,20 @@ export const useConnectWithMutation = () => {
             } catch (error) {
                 return Promise.reject(new Error(String(error)));
             }
+        },
+        onSuccess: async () => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['connections', switchedDid ?? ''] }),
+                queryClient.invalidateQueries({
+                    queryKey: ['paginatedConnections', switchedDid ?? ''],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ['pendingConnections', switchedDid ?? ''],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ['paginatedPendingConnections', switchedDid ?? ''],
+                }),
+            ]);
         },
     });
 };
