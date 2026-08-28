@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 /**
@@ -12,7 +12,7 @@ const user = {
 };
 
 import FeedbackComposer from './FeedbackComposer';
-import type { FeedbackContext, FeedbackDraft, FeedbackReport } from './types';
+import type { FeedbackContext, FeedbackDraft, FeedbackReport, FeedbackScreenshot } from './types';
 
 vi.mock('../../paraglide/messages.js', () => ({
     'feedback.reporting.reportProblem': () => 'Report a Problem',
@@ -22,6 +22,7 @@ vi.mock('../../paraglide/messages.js', () => ({
     'feedback.reporting.ideaQuestion': () => 'What would make LearnCard better?',
     'feedback.reporting.ideaPlaceholder': () => 'Describe your idea.',
     'feedback.reporting.screenshotAttached': () => 'Screenshot attached',
+    'feedback.reporting.capturingScreenshot': () => 'Capturing screenshot...',
     'feedback.reporting.removeScreenshot': () => 'Remove Screenshot',
     'feedback.reporting.whatWeSend': () => 'What we’ll send',
     'feedback.reporting.bugDisclosure': () =>
@@ -64,16 +65,34 @@ const ideaDraft: FeedbackDraft = {
     context,
 };
 
+const createDeferred = <T,>() => {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    const promise = new Promise<T>(resolvePromise => {
+        resolve = resolvePromise;
+    });
+    return { promise, resolve };
+};
+
 const renderComposer = (
     draft: FeedbackDraft = bugDraft,
     overrides: Partial<{
         onCancel: () => void;
         onSubmit: (report: FeedbackReport) => Promise<void>;
+        pendingScreenshot: Promise<FeedbackScreenshot | undefined>;
+        pendingContext: Promise<FeedbackContext>;
     }> = {}
 ) => {
     const onCancel = overrides.onCancel ?? vi.fn();
     const onSubmit = overrides.onSubmit ?? vi.fn().mockResolvedValue(undefined);
-    render(<FeedbackComposer draft={draft} onCancel={onCancel} onSubmit={onSubmit} />);
+    render(
+        <FeedbackComposer
+            draft={draft}
+            pendingScreenshot={overrides.pendingScreenshot}
+            pendingContext={overrides.pendingContext}
+            onCancel={onCancel}
+            onSubmit={onSubmit}
+        />
+    );
     return { onCancel, onSubmit };
 };
 
@@ -115,6 +134,67 @@ describe('FeedbackComposer', () => {
                     screenshot: undefined,
                 })
             )
+        );
+    });
+
+    it('shows a pending shake capture and attaches it when rendering finishes', async () => {
+        let resolveScreenshot!: (screenshot: FeedbackScreenshot | undefined) => void;
+        const pendingScreenshot = new Promise<FeedbackScreenshot | undefined>(resolve => {
+            resolveScreenshot = resolve;
+        });
+        renderComposer({ ...bugDraft, screenshot: undefined }, { pendingScreenshot });
+
+        expect(screen.getByText('Capturing screenshot...')).toBeVisible();
+        expect(screen.queryByRole('img', { name: 'Screenshot attached' })).not.toBeInTheDocument();
+
+        resolveScreenshot(bugDraft.screenshot);
+
+        expect(await screen.findByRole('img', { name: 'Screenshot attached' })).toBeVisible();
+        expect(screen.queryByText('Capturing screenshot...')).not.toBeInTheDocument();
+    });
+
+    it('uses richer diagnostic context when it arrives after the composer opens', async () => {
+        let resolveContext!: (context: FeedbackContext) => void;
+        const pendingContext = new Promise<FeedbackContext>(resolve => {
+            resolveContext = resolve;
+        });
+        const { onSubmit } = renderComposer(
+            { ...bugDraft, context: { currentRoute: '/wallet', recentRoutes: ['/wallet'] } },
+            { pendingContext }
+        );
+
+        await act(async () => {
+            resolveContext(context);
+            await pendingContext;
+        });
+        await user.type(screen.getByLabelText('What happened?'), 'The claim button froze');
+        await user.click(screen.getByRole('button', { name: 'Send Report' }));
+
+        await waitFor(() =>
+            expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ context }))
+        );
+    });
+
+    it('waits for richer diagnostic context when Send is tapped before it arrives', async () => {
+        const pending = createDeferred<FeedbackContext>();
+        const { onSubmit } = renderComposer(
+            { ...bugDraft, context: { currentRoute: '/wallet', recentRoutes: ['/wallet'] } },
+            { pendingContext: pending.promise }
+        );
+
+        await user.type(screen.getByLabelText('What happened?'), 'The claim button froze');
+        await user.click(screen.getByRole('button', { name: 'Send Report' }));
+
+        expect(onSubmit).not.toHaveBeenCalled();
+        expect(screen.getByText('Sending Report...')).toBeVisible();
+
+        await act(async () => {
+            pending.resolve(context);
+            await pending.promise;
+        });
+
+        await waitFor(() =>
+            expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ context }))
         );
     });
 

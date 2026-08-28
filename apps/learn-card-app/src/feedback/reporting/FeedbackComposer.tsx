@@ -1,10 +1,12 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import * as m from '../../paraglide/messages.js';
 import type { FeedbackDraft, FeedbackReport, FeedbackScreenshot } from './types';
 
 export interface FeedbackComposerProps {
     draft: FeedbackDraft;
+    pendingScreenshot?: Promise<FeedbackScreenshot | undefined>;
+    pendingContext?: Promise<FeedbackDraft['context']>;
     onCancel(): void;
     onSubmit(report: FeedbackReport): Promise<void>;
 }
@@ -20,17 +22,54 @@ export interface FeedbackComposerProps {
  */
 export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
     draft,
+    pendingScreenshot,
+    pendingContext,
     onCancel,
     onSubmit,
 }) => {
     const isBug = draft.kind === 'bug';
     const [message, setMessage] = useState(draft.initialMessage ?? '');
     const [screenshot, setScreenshot] = useState<FeedbackScreenshot | undefined>(draft.screenshot);
+    const [context, setContext] = useState(draft.context);
+    const [isScreenshotPending, setIsScreenshotPending] = useState(Boolean(pendingScreenshot));
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasError, setHasError] = useState(false);
     const [isDone, setIsDone] = useState(false);
 
     const canSubmit = message.trim().length > 0;
+
+    useEffect(() => {
+        if (!pendingScreenshot) return;
+
+        let isMounted = true;
+        void pendingScreenshot
+            .then(capturedScreenshot => {
+                if (isMounted && capturedScreenshot) setScreenshot(capturedScreenshot);
+            })
+            .finally(() => {
+                if (isMounted) setIsScreenshotPending(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [pendingScreenshot]);
+
+    useEffect(() => {
+        if (!pendingContext) return;
+
+        let isMounted = true;
+        void pendingContext.then(
+            capturedContext => {
+                if (isMounted) setContext(capturedContext);
+            },
+            () => undefined
+        );
+
+        return () => {
+            isMounted = false;
+        };
+    }, [pendingContext]);
 
     const handleSubmit = useCallback(async () => {
         if (!canSubmit || isSubmitting || isDone) return;
@@ -38,8 +77,10 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
         setIsSubmitting(true);
         setHasError(false);
         try {
+            const reportContext = pendingContext ? await pendingContext : context;
             const report: FeedbackReport = {
                 ...draft,
+                context: reportContext,
                 message: message.trim(),
                 screenshot,
             };
@@ -51,7 +92,17 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
         } finally {
             setIsSubmitting(false);
         }
-    }, [canSubmit, draft, isDone, isSubmitting, message, onSubmit, screenshot]);
+    }, [
+        canSubmit,
+        context,
+        draft,
+        isDone,
+        isSubmitting,
+        message,
+        onSubmit,
+        pendingContext,
+        screenshot,
+    ]);
 
     if (isDone) {
         return (
@@ -167,6 +218,15 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                     </div>
                 )}
 
+                {isScreenshotPending && (
+                    <div className="flex items-center gap-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-3">
+                        <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-grayscale-300 border-t-grayscale-700" />
+                        <span className="text-xs text-grayscale-600">
+                            {m['feedback.reporting.capturingScreenshot']()}
+                        </span>
+                    </div>
+                )}
+
                 <details className="rounded-2xl border border-grayscale-200 p-3">
                     <summary className="cursor-pointer text-xs font-medium text-grayscale-700">
                         {m['feedback.reporting.whatWeSend']()}
@@ -191,7 +251,7 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                 <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={!canSubmit || isSubmitting}
+                    disabled={!canSubmit || isSubmitting || isScreenshotPending}
                     className="flex-1 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     {isSubmitting ? (

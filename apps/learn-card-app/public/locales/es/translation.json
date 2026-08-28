@@ -2647,6 +2647,7 @@
             "ideaQuestion": "¿Qué mejoraría LearnCard?",
             "ideaPlaceholder": "Describe tu idea.",
             "screenshotAttached": "Captura de pantalla adjunta",
+            "capturingScreenshot": "Capturando pantalla...",
             "removeScreenshot": "Eliminar captura",
             "whatWeSend": "Qué enviaremos",
             "bugDisclosure": "Tu mensaje, una captura opcional, datos de la aplicación y del dispositivo, pantallas recientes y registros depurados.",

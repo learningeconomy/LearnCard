@@ -23,80 +23,73 @@ const log = getLogger('feedback');
 export const SCREENSHOT_CAPTURE_TIMEOUT_MS = 2_000;
 
 const PNG_DATA_URL_PREFIX = 'data:image/png;base64,';
-const REDACTED_TEXT = 'Content hidden';
-const REDACTION_STYLE_ATTRIBUTE = 'data-feedback-redaction';
 
-const redactCloneForFeedback = (clonedDocument: Document): void => {
+const replaceEmbeddedDocumentWithPlaceholder = (element: Element): void => {
+    const placeholder = element.ownerDocument.createElement('div');
+    const existingClass = element.getAttribute('class')?.trim();
+    placeholder.className = [existingClass, 'feedback-frame-placeholder'].filter(Boolean).join(' ');
+
+    const inlineStyle = element.getAttribute('style');
+    if (inlineStyle) placeholder.setAttribute('style', inlineStyle);
+
+    const width = Number(element.getAttribute('width'));
+    const height = Number(element.getAttribute('height'));
+    if (width > 0 && !placeholder.style.width) placeholder.style.width = `${width}px`;
+    if (height > 0 && !placeholder.style.height) placeholder.style.height = `${height}px`;
+
+    element.replaceWith(placeholder);
+};
+
+const sanitizeCloneForFeedback = (clonedDocument: Document): void => {
     clonedDocument
-        .querySelectorAll('[data-feedback-exclude], script, style, link[rel~="stylesheet"]')
+        .querySelectorAll('[data-feedback-exclude], script')
         .forEach(element => element.remove());
 
+    // Embedded documents have their own DOM and could bypass the form-field
+    // sanitization below. Preserve their layout without capturing their data.
     clonedDocument
-        .querySelectorAll('img, svg, canvas, video, audio, iframe, object, embed, picture, source')
-        .forEach(element => element.remove());
+        .querySelectorAll('iframe, object, embed')
+        .forEach(replaceEmbeddedDocumentWithPlaceholder);
 
     clonedDocument.querySelectorAll('input, textarea, select').forEach(element => {
         const tagName = element.tagName.toLowerCase();
-        if (tagName === 'input' || tagName === 'textarea') {
-            const field = element as HTMLInputElement | HTMLTextAreaElement;
+        if (tagName === 'input') {
+            const field = element as HTMLInputElement;
             field.value = '';
             field.defaultValue = '';
+            field.checked = false;
+            field.defaultChecked = false;
             element.setAttribute('value', '');
             element.setAttribute('placeholder', '');
         }
-        if (tagName === 'select') (element as HTMLSelectElement).selectedIndex = -1;
-        element.textContent = '';
-    });
-
-    clonedDocument.querySelectorAll('*').forEach(element => {
-        element.removeAttribute('style');
-        for (const attribute of [...element.attributes]) {
-            if (
-                attribute.name.startsWith('data-') ||
-                [
-                    'alt',
-                    'aria-label',
-                    'aria-description',
-                    'href',
-                    'name',
-                    'poster',
-                    'src',
-                    'srcset',
-                    'title',
-                ].includes(attribute.name)
-            ) {
-                element.removeAttribute(attribute.name);
-            }
+        if (tagName === 'textarea') {
+            const field = element as HTMLTextAreaElement;
+            field.value = '';
+            field.defaultValue = '';
+            field.textContent = '';
+            element.setAttribute('value', '');
+            element.setAttribute('placeholder', '');
+        }
+        if (tagName === 'select') {
+            const field = element as HTMLSelectElement;
+            [...field.options].forEach(option => {
+                option.selected = false;
+                option.defaultSelected = false;
+            });
+            field.selectedIndex = -1;
         }
     });
 
-    const textNodes = clonedDocument.createTreeWalker(clonedDocument.body, NodeFilter.SHOW_TEXT);
-    const nodesToRedact: Text[] = [];
-    while (textNodes.nextNode()) nodesToRedact.push(textNodes.currentNode as Text);
-    nodesToRedact.forEach(textNode => {
-        textNode.nodeValue = REDACTED_TEXT;
-    });
-
-    const style = clonedDocument.createElement('style');
-    style.setAttribute(REDACTION_STYLE_ATTRIBUTE, '');
-    style.textContent = `
-        *, *::before, *::after {
-            background-image: none !important;
-            mask-image: none !important;
-            -webkit-mask-image: none !important;
-            content: none !important;
-        }
-        img, svg, canvas, video, audio, iframe, object, embed, picture, source {
-            display: none !important;
-            visibility: hidden !important;
-        }
-    `;
-    clonedDocument.head.append(style);
+    clonedDocument
+        .querySelectorAll('[contenteditable]:not([contenteditable="false"])')
+        .forEach(element => element.replaceChildren());
 };
 
 export interface CaptureFeedbackScreenshotOptions {
     /** Deadline for the render; defaults to {@link SCREENSHOT_CAPTURE_TIMEOUT_MS}. */
     timeoutMs?: number;
+    /** Called once html2canvas owns an isolated clone of the pre-feedback UI. */
+    onSourceFrozen?: () => void;
 }
 
 /**
@@ -107,8 +100,15 @@ export interface CaptureFeedbackScreenshotOptions {
  */
 export const captureFeedbackScreenshot = async ({
     timeoutMs = SCREENSHOT_CAPTURE_TIMEOUT_MS,
+    onSourceFrozen,
 }: CaptureFeedbackScreenshotOptions = {}): Promise<FeedbackScreenshot | undefined> => {
     let deadline: ReturnType<typeof setTimeout> | undefined;
+    let sourceFrozen = false;
+    const notifySourceFrozen = (): void => {
+        if (sourceFrozen) return;
+        sourceFrozen = true;
+        onSourceFrozen?.();
+    };
 
     try {
         const canvas = await Promise.race([
@@ -122,7 +122,13 @@ export const captureFeedbackScreenshot = async ({
                 useCORS: true,
                 logging: false,
                 ignoreElements: element => element.hasAttribute('data-feedback-exclude'),
-                onclone: redactCloneForFeedback,
+                onclone: clonedDocument => {
+                    try {
+                        sanitizeCloneForFeedback(clonedDocument);
+                    } finally {
+                        notifySourceFrozen();
+                    }
+                },
             }),
             new Promise<never>((_, reject) => {
                 deadline = setTimeout(
@@ -146,6 +152,9 @@ export const captureFeedbackScreenshot = async ({
         log.warn('feedback.screenshot.capture_failed');
         return undefined;
     } finally {
+        // Rendering can fail before html2canvas produces a clone. Callers
+        // waiting to present feedback UI must still be released.
+        notifySourceFrozen();
         clearTimeout(deadline);
     }
 };

@@ -68,18 +68,21 @@ describe('captureFeedbackScreenshot', () => {
         expect(ignoreElements(excluded)).toBe(true);
     });
 
-    it('globally redacts the cloned document before html2canvas renders it', async () => {
+    it('preserves visible page content while clearing form values and explicit exclusions', async () => {
         document.body.innerHTML = `
-            <main style="background-image: url('https://example.test/private-background.png'); mask-image: url('mask.png')">
+            <style id="app-styles">main { color: rgb(24, 34, 78); }</style>
+            <link id="app-stylesheet" rel="stylesheet" href="/assets/app.css" />
+            <main class="dashboard-card" style="background-color: white; background-image: url('https://example.test/private-background.png'); border-image-source: URL('https://example.test/private-border.png'); mask-image: url('mask.png')">
                 <p>Alex Example has a private credential</p>
                 <input value="alex@example.com" placeholder="Type your secret" />
                 <textarea placeholder="Private notes">private notes</textarea>
                 <select><option value="private-selection">Private selection</option></select>
                 <img src="https://example.test/private-avatar.png" alt="Alex Example" />
+                <picture><source srcset="https://example.test/private-picture.webp" /><img src="https://example.test/private-picture.png" /></picture>
                 <svg><text>QR: private-claim-code</text></svg>
                 <canvas data-secret="canvas-private"></canvas>
-                <video src="https://example.test/private-video.mp4"></video>
-                <iframe src="https://example.test/private-frame"></iframe>
+                <video style="width: 320px; height: 180px" src="https://example.test/private-video.mp4"></video>
+                <iframe style="width: 300px; height: 160px" srcdoc="<input value='private-frame-value' />"></iframe>
                 <div data-feedback-exclude>excluded private content</div>
             </main>
         `;
@@ -94,34 +97,72 @@ describe('captureFeedbackScreenshot', () => {
 
         const renderedHtml = clone.documentElement.innerHTML;
         for (const sensitiveValue of [
-            'Alex Example',
             'alex@example.com',
-            'private credential',
             'private notes',
-            'private-selection',
+            'private-frame-value',
+            'excluded private content',
+        ]) {
+            expect(renderedHtml).not.toContain(sensitiveValue);
+        }
+
+        for (const visibleValue of [
+            'Alex Example has a private credential',
             'private-avatar.png',
             'private-claim-code',
             'canvas-private',
             'private-video.mp4',
-            'private-frame',
             'private-background.png',
-            'excluded private content',
+            'private-border.png',
+            'private-picture.webp',
+            'private-picture.png',
         ]) {
-            expect(renderedHtml).not.toContain(sensitiveValue);
+            expect(renderedHtml).toContain(visibleValue);
         }
 
         expect(clone.querySelector('input')?.getAttribute('value')).toBe('');
         expect(clone.querySelector('input')?.getAttribute('placeholder')).toBe('');
         expect(clone.querySelector('textarea')?.value).toBe('');
         expect(clone.querySelector('select')?.selectedIndex).toBe(-1);
-        expect(clone.querySelectorAll('img, svg, canvas, video, iframe')).toHaveLength(0);
-        expect(clone.head.querySelector('style[data-feedback-redaction]')?.textContent).toContain(
-            'content: none !important'
+        expect(clone.querySelector('#app-styles')?.textContent).toContain('color: rgb(24, 34, 78)');
+        expect(clone.querySelector('#app-stylesheet')?.getAttribute('href')).toBe(
+            '/assets/app.css'
         );
+        expect(clone.querySelectorAll('img, svg, canvas')).toHaveLength(4);
+        expect(clone.querySelector('img')?.getAttribute('src')).toContain('private-avatar.png');
+        expect(clone.querySelector('svg')?.textContent).toContain('private-claim-code');
+        expect(clone.querySelector('picture')).not.toBeNull();
+        expect(clone.querySelectorAll('source')).toHaveLength(1);
+        expect(clone.querySelectorAll('video')).toHaveLength(1);
+        expect(clone.querySelectorAll('iframe')).toHaveLength(0);
+        expect(clone.querySelectorAll('.feedback-frame-placeholder')).toHaveLength(1);
+        expect(clone.querySelector<HTMLElement>('.feedback-frame-placeholder')?.style.width).toBe(
+            '300px'
+        );
+        expect(clone.querySelector('#app-styles')).not.toBeNull();
+        expect(clone.querySelector('main')?.className).toBe('dashboard-card');
+        expect(clone.querySelector('main')?.getAttribute('style')).toContain(
+            'background-color: white'
+        );
+        expect(clone.querySelector('p')?.textContent).toBe('Alex Example has a private credential');
+        expect(clone.head.querySelector('style[data-feedback-redaction]')).toBeNull();
 
         // Redaction only applies to html2canvas's clone, never the live app.
         expect(document.body.textContent).toContain('Alex Example');
         expect(document.querySelector('input')?.value).toBe('alex@example.com');
+    });
+
+    it('signals when the source document has been frozen for rendering', async () => {
+        const clone = document.implementation.createHTMLDocument('feedback clone');
+        const onSourceFrozen = vi.fn();
+        html2canvasMock.mockImplementation((_element, options) => {
+            (options as { onclone?: (clonedDocument: Document) => void }).onclone?.(clone);
+            expect(onSourceFrozen).toHaveBeenCalledTimes(1);
+            return Promise.resolve({ toDataURL: () => 'data:image/png;base64,AAAA' });
+        });
+
+        await captureFeedbackScreenshot({ onSourceFrozen });
+
+        expect(onSourceFrozen).toHaveBeenCalledTimes(1);
     });
 
     it("clears form fields owned by html2canvas's iframe clone realm", async () => {

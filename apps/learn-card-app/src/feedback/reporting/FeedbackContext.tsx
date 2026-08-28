@@ -36,7 +36,10 @@ import * as m from '../../paraglide/messages.js';
 
 import { FeedbackComposer } from './FeedbackComposer';
 import { FeedbackPromptToast } from './FeedbackPromptToast';
-import { captureFeedbackScreenshot } from './captureScreenshot';
+import {
+    captureFeedbackScreenshot,
+    type CaptureFeedbackScreenshotOptions,
+} from './captureScreenshot';
 import { collectFeedbackContext } from './collectFeedbackContext';
 import { createFeedbackTransport, type FeedbackAnalyticsAdapter } from './createFeedbackTransport';
 import { useFeedbackReportingEligibility } from './eligibility';
@@ -69,7 +72,8 @@ export interface FeedbackController {
      * Checks bug eligibility, then captures privacy-safe context before
      * deciding whether to open the composer, defer behind a pending toast, or
      * (for `submitImmediately`) submit without UI. A screenshot attachment is
-     * captured only when `source` is `screenshot`.
+     * captured for native screenshot and shake triggers. Shake capture is
+     * attached lazily after the pre-composer source DOM is frozen.
      */
     reportProblem(options?: ReportProblemOptions): Promise<void>;
 
@@ -91,7 +95,9 @@ export interface FeedbackProviderDeps {
     /** Epoch-ms clock; defaults to `Date.now`. */
     now?: () => number;
     /** Screenshot capture; defaults to `captureFeedbackScreenshot`. */
-    captureScreenshot?: () => Promise<FeedbackScreenshot | undefined>;
+    captureScreenshot?: (
+        options?: CaptureFeedbackScreenshotOptions
+    ) => Promise<FeedbackScreenshot | undefined>;
     /** Context collector; defaults to `collectFeedbackContext` over the
      * bounded route history and offline-resolved tenant config. */
     collectContext?: (input: CollectFeedbackContextForKind) => Promise<FeedbackContextData>;
@@ -206,6 +212,9 @@ export const FeedbackProvider: React.FC<{
      */
     const composerFlowOwnerRef = useRef<symbol | undefined>(undefined);
 
+    /** Explicit no-UI submissions temporarily block automatic capture flows. */
+    const explicitSubmissionCountRef = useRef(0);
+
     /** Whether the feedback composer is currently presented. */
     const isComposerOpenRef = useRef(false);
     const composerModalIdRef = useRef<number | undefined>(undefined);
@@ -216,6 +225,9 @@ export const FeedbackProvider: React.FC<{
 
     /** Invalidates asynchronous capture started for an earlier profile/privacy state. */
     const eligibilityGenerationRef = useRef(0);
+
+    /** Newer user intent supersedes any older asynchronous automatic capture. */
+    const feedbackIntentGenerationRef = useRef(0);
     const previousEligibilityRef = useRef({
         bug: eligibility.bug,
         idea: eligibility.idea,
@@ -331,7 +343,12 @@ export const FeedbackProvider: React.FC<{
     }, []);
 
     const openComposer = useCallback(
-        (draft: FeedbackDraft, requestedOwner?: symbol): boolean => {
+        (
+            draft: FeedbackDraft,
+            requestedOwner?: symbol,
+            pendingScreenshot?: Promise<FeedbackScreenshot | undefined>,
+            pendingContext?: Promise<FeedbackContextData>
+        ): boolean => {
             const owner = requestedOwner ?? beginComposerFlow();
             if (owner === undefined || composerFlowOwnerRef.current !== owner) return false;
 
@@ -341,6 +358,8 @@ export const FeedbackProvider: React.FC<{
             const composer = (
                 <FeedbackComposer
                     draft={draft}
+                    pendingScreenshot={pendingScreenshot}
+                    pendingContext={pendingContext}
                     onCancel={() => closeFeedbackComposer(owner)}
                     onSubmit={report => submitAndClose(report, captureGeneration, owner)}
                 />
@@ -425,7 +444,11 @@ export const FeedbackProvider: React.FC<{
         async (
             source: ReportProblemOptions['source'],
             options: ReportProblemOptions
-        ): Promise<FeedbackDraft> => {
+        ): Promise<{
+            draft: FeedbackDraft;
+            pendingScreenshot?: Promise<FeedbackScreenshot | undefined>;
+            pendingContext?: Promise<FeedbackContextData>;
+        }> => {
             const { now, captureScreenshot, collectContext } = {
                 now: Date.now,
                 captureScreenshot: captureFeedbackScreenshot,
@@ -433,26 +456,68 @@ export const FeedbackProvider: React.FC<{
                 ...depsRef.current,
             };
 
-            // A screenshot attachment is opt-in through the native screenshot
-            // trigger only. Settings, shake, and error entry points collect
-            // diagnostics without silently photographing the current screen.
-            // When present, screenshot and context collection remain parallel
-            // and finish before any feedback UI exists.
+            const contextPromise = collectContext({ kind: 'bug' });
+
+            // A shake begins rendering before the composer opens. As soon as
+            // html2canvas owns an isolated clone, the live UI is safe to
+            // change and the remaining PNG work can finish in the composer.
+            if (source === 'shake') {
+                let markSourceFrozen!: () => void;
+                const sourceFrozen = new Promise<void>(resolve => {
+                    markSourceFrozen = resolve;
+                });
+                const pendingScreenshot = captureScreenshot({
+                    onSourceFrozen: markSourceFrozen,
+                });
+                // Test doubles and alternate capture implementations may not
+                // support the callback; settlement is still a safe fallback.
+                void pendingScreenshot.then(markSourceFrozen, markSourceFrozen);
+
+                await sourceFrozen;
+
+                const recentRoutes = getRecentFeedbackRoutes();
+                const immediateContext: FeedbackContextData = {
+                    currentRoute:
+                        recentRoutes.at(-1) ?? normalizeFeedbackRoute(window.location.pathname),
+                    recentRoutes,
+                };
+                const pendingContext = contextPromise.catch(() => immediateContext);
+
+                return {
+                    draft: {
+                        kind: 'bug',
+                        source,
+                        capturedAt: new Date(now()).toISOString(),
+                        context: immediateContext,
+                        ...(options.associatedEventId
+                            ? { associatedEventId: options.associatedEventId }
+                            : {}),
+                        ...(options.initialMessage
+                            ? { initialMessage: options.initialMessage }
+                            : {}),
+                    },
+                    pendingScreenshot,
+                    pendingContext,
+                };
+            }
+
             const [screenshot, context] = await Promise.all([
                 source === 'screenshot' ? captureScreenshot() : Promise.resolve(undefined),
-                collectContext({ kind: 'bug' }),
+                contextPromise,
             ]);
 
             return {
-                kind: 'bug',
-                source: source ?? 'settings',
-                capturedAt: new Date(now()).toISOString(),
-                ...(screenshot ? { screenshot } : {}),
-                context,
-                ...(options.associatedEventId
-                    ? { associatedEventId: options.associatedEventId }
-                    : {}),
-                ...(options.initialMessage ? { initialMessage: options.initialMessage } : {}),
+                draft: {
+                    kind: 'bug',
+                    source: source ?? 'settings',
+                    capturedAt: new Date(now()).toISOString(),
+                    ...(screenshot ? { screenshot } : {}),
+                    context,
+                    ...(options.associatedEventId
+                        ? { associatedEventId: options.associatedEventId }
+                        : {}),
+                    ...(options.initialMessage ? { initialMessage: options.initialMessage } : {}),
+                },
             };
         },
         []
@@ -465,7 +530,11 @@ export const FeedbackProvider: React.FC<{
 
             const isAutomatic = isAutomaticFeedbackSource(source);
 
-            if (isAutomatic && composerFlowOwnerRef.current !== undefined) {
+            if (
+                isAutomatic &&
+                (composerFlowOwnerRef.current !== undefined ||
+                    explicitSubmissionCountRef.current > 0)
+            ) {
                 // A feedback composer flow is already capturing or presented —
                 // never queue another automatic report behind it.
                 return;
@@ -476,49 +545,70 @@ export const FeedbackProvider: React.FC<{
 
             const captureGeneration = eligibilityGenerationRef.current;
 
-            if (source === 'micro-feedback' && options.submitImmediately === true) {
-                const message = options.initialMessage?.trim() ?? '';
-                if (!message) {
-                    throw new Error('submitImmediately requires a non-empty initialMessage');
-                }
-
-                const context = await defaultCollectMinimalContext();
-
-                if (
-                    captureGeneration !== eligibilityGenerationRef.current ||
-                    !eligibilityRef.current.bug
-                ) {
-                    return;
-                }
-
-                await transportRef.current.submit({
-                    kind: 'bug',
-                    source,
-                    capturedAt: new Date(now()).toISOString(),
-                    context,
-                    message,
-                });
-                return;
-            }
-
-            let explicitOwner: symbol | undefined;
-            if (!isAutomatic && options.submitImmediately !== true) {
-                explicitOwner = beginComposerFlow();
-                if (explicitOwner === undefined) return;
-            }
-
             if (source === 'shake') {
                 const timestamp = now();
                 if (isShakeInCooldown(timestamp, lastShakeAtRef.current)) return;
                 lastShakeAtRef.current = timestamp;
             }
 
+            let explicitOwner: symbol | undefined;
+            let intentGeneration: number;
+            if (!isAutomatic && options.submitImmediately !== true) {
+                explicitOwner = beginComposerFlow();
+                if (explicitOwner === undefined) return;
+                intentGeneration = feedbackIntentGenerationRef.current + 1;
+                feedbackIntentGenerationRef.current = intentGeneration;
+            } else {
+                intentGeneration = feedbackIntentGenerationRef.current + 1;
+                feedbackIntentGenerationRef.current = intentGeneration;
+                if (isAutomatic) pendingRef.current = undefined;
+            }
+
+            if (!isAutomatic) {
+                pendingRef.current = undefined;
+                dismissFeedbackPrompt();
+            }
+
+            if (source === 'micro-feedback' && options.submitImmediately === true) {
+                const message = options.initialMessage?.trim() ?? '';
+                if (!message) {
+                    throw new Error('submitImmediately requires a non-empty initialMessage');
+                }
+
+                explicitSubmissionCountRef.current += 1;
+                try {
+                    const context = await defaultCollectMinimalContext();
+
+                    if (
+                        captureGeneration !== eligibilityGenerationRef.current ||
+                        !eligibilityRef.current.bug
+                    ) {
+                        return;
+                    }
+
+                    await transportRef.current.submit({
+                        kind: 'bug',
+                        source,
+                        capturedAt: new Date(now()).toISOString(),
+                        context,
+                        message,
+                    });
+                } finally {
+                    explicitSubmissionCountRef.current -= 1;
+                }
+                return;
+            }
+
             let keepExplicitOwnership = false;
             try {
-                const draft = await captureBugDraft(source, options);
+                let { draft, pendingScreenshot, pendingContext } = await captureBugDraft(
+                    source,
+                    options
+                );
 
                 if (
                     captureGeneration !== eligibilityGenerationRef.current ||
+                    intentGeneration !== feedbackIntentGenerationRef.current ||
                     !eligibilityRef.current.bug
                 ) {
                     return;
@@ -548,7 +638,32 @@ export const FeedbackProvider: React.FC<{
                 if (isBusyRef.current) {
                     // Capture now, present later. A newer automatic draft simply
                     // replaces this one.
-                    pendingRef.current = draft;
+                    if (pendingScreenshot) {
+                        const [screenshot, context] = await Promise.all([
+                            pendingScreenshot,
+                            pendingContext ?? Promise.resolve(draft.context),
+                        ]);
+                        if (
+                            captureGeneration !== eligibilityGenerationRef.current ||
+                            intentGeneration !== feedbackIntentGenerationRef.current ||
+                            !eligibilityRef.current.bug ||
+                            composerFlowOwnerRef.current !== undefined
+                        ) {
+                            return;
+                        }
+                        draft = {
+                            ...draft,
+                            context,
+                            ...(screenshot ? { screenshot } : {}),
+                        };
+                        pendingScreenshot = undefined;
+                        pendingContext = undefined;
+                    }
+                    if (isBusyRef.current) {
+                        pendingRef.current = draft;
+                    } else {
+                        presentPromptToast(draft);
+                    }
                     return;
                 }
 
@@ -558,14 +673,21 @@ export const FeedbackProvider: React.FC<{
                 }
 
                 // Shake while idle opens the composer right away.
-                openComposer(draft);
+                openComposer(draft, undefined, pendingScreenshot, pendingContext);
             } finally {
                 if (explicitOwner !== undefined && !keepExplicitOwnership) {
                     releaseComposerFlow(explicitOwner);
                 }
             }
         },
-        [beginComposerFlow, captureBugDraft, openComposer, presentPromptToast, releaseComposerFlow]
+        [
+            beginComposerFlow,
+            captureBugDraft,
+            dismissFeedbackPrompt,
+            openComposer,
+            presentPromptToast,
+            releaseComposerFlow,
+        ]
     );
 
     const shareIdea = useCallback(
@@ -574,6 +696,12 @@ export const FeedbackProvider: React.FC<{
 
             const owner = beginComposerFlow();
             if (owner === undefined) return;
+
+            // An explicit idea flow supersedes any automatic bug capture that
+            // is still rendering in the background.
+            feedbackIntentGenerationRef.current += 1;
+            pendingRef.current = undefined;
+            dismissFeedbackPrompt();
 
             const captureGeneration = eligibilityGenerationRef.current;
 
@@ -610,7 +738,7 @@ export const FeedbackProvider: React.FC<{
                 if (!keepOwnership) releaseComposerFlow(owner);
             }
         },
-        [beginComposerFlow, openComposer, releaseComposerFlow]
+        [beginComposerFlow, dismissFeedbackPrompt, openComposer, releaseComposerFlow]
     );
 
     const controller = useMemo<FeedbackController>(
