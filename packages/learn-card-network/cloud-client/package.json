@@ -26,7 +26,8 @@
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "keywords": [],
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
@@ -35,7 +36,7 @@
         "@learncard/types": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.27.1",
-        "vitest": "^3.2.6"
+        "vitest": "4.1.10"
     },
     "dependencies": {
         "@learncard/learn-cloud-service": "workspace:*",

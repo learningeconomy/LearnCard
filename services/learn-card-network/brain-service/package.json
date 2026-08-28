@@ -5,8 +5,12 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "test": "vitest",
-        "test:watch": "vitest --watch",
+        "test": "vitest run --config vitest.config.ts",
+        "test:watch": "vitest --config vitest.config.ts",
+        "test:coverage": "vitest run --coverage --config vitest.config.ts",
+        "test:integration": "vitest run --config vitest.integration.config.ts",
+        "test:integration:watch": "vitest --config vitest.integration.config.ts",
+        "test:docker": "vitest run --config vitest.integration.config.ts",
         "seed:dev-app": "bun scripts/seed-dev-app.ts",
         "seed:dev-integration": "bun scripts/seed-dev-integration.ts",
         "seed:dev-bundle": "bun scripts/seed-dev-bundle.ts",
@@ -29,7 +33,6 @@
     "devDependencies": {
         "@sentry/esbuild-plugin": "2.16.0",
         "@testcontainers/neo4j": "^10.7.2",
-        "@trendyol/jest-testcontainers": "^2.1.1",
         "@types/aws-lambda": "^8.10.106",
         "@types/cors": "^2.8.13",
         "@types/express": "^4.17.15",
