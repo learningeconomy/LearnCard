@@ -1,6 +1,6 @@
 {
     "name": "@learncard/vc-api-service",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "private": true,
     "description": "Stateless W3C VC-API conformance issuer/verifier service (used by the W3C/CCG interoperability test suites, e.g. canivc.com).",
     "main": "dist/index.js",

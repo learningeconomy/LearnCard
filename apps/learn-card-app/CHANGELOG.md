@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.98.4
+
+### Patch Changes
+
+-   [#1509](https://github.com/learningeconomy/LearnCard/pull/1509) [`07bd9fedd1b4054e40cd86c88bd02fe8d17708a4`](https://github.com/learningeconomy/LearnCard/commit/07bd9fedd1b4054e40cd86c88bd02fe8d17708a4) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2057] Fix new user onboarding flow mobile issues
+
+-   [#1474](https://github.com/learningeconomy/LearnCard/pull/1474) [`a1ac82e44d56f1fecd6f39e1a4e4c1ba29ff005d`](https://github.com/learningeconomy/LearnCard/commit/a1ac82e44d56f1fecd6f39e1a4e4c1ba29ff005d) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump vite, sharp, nx dev deps (high Dependabot alerts)
+
+-   [#1494](https://github.com/learningeconomy/LearnCard/pull/1494) [`1b5a39f78e0c121516e04f0cffba91e0676a762b`](https://github.com/learningeconomy/LearnCard/commit/1b5a39f78e0c121516e04f0cffba91e0676a762b) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2110] Add profile/notification icon to Dashboard Page
+
+-   [#1490](https://github.com/learningeconomy/LearnCard/pull/1490) [`e6bba21a77adcf50ab9672c196239555f60f38c0`](https://github.com/learningeconomy/LearnCard/commit/e6bba21a77adcf50ab9672c196239555f60f38c0) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2061] Design Change for passport discovery filter & mobile header behavior
+
+-   [#1493](https://github.com/learningeconomy/LearnCard/pull/1493) [`6618bd588eafbf3be8da10cc93e066f877c91842`](https://github.com/learningeconomy/LearnCard/commit/6618bd588eafbf3be8da10cc93e066f877c91842) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: Add recipients with native QR scanning
+
+-   [#1498](https://github.com/learningeconomy/LearnCard/pull/1498) [`5a3b9f202619f54370f7a3b315b267ad9ef1eab4`](https://github.com/learningeconomy/LearnCard/commit/5a3b9f202619f54370f7a3b315b267ad9ef1eab4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add challenge-based AI Passport authentication with backward-compatible rollout handling for legacy backends and cross-site bearer sessions.
+
+-   Updated dependencies [[`a1ac82e44d56f1fecd6f39e1a4e4c1ba29ff005d`](https://github.com/learningeconomy/LearnCard/commit/a1ac82e44d56f1fecd6f39e1a4e4c1ba29ff005d)]:
+    -   @learncard/react@2.12.2
+    -   @learncard/credential-library@1.0.17
+    -   @learncard/helpers@1.3.13
+    -   @learncard/lca-api-plugin@2.0.1
+    -   @learncard/ler-rs-plugin@0.1.22
+    -   @learncard/open-badge-v2-plugin@1.1.32
+    -   @learncard/render-method-plugin@4.0.4
+    -   @learncard/sss-key-manager@0.1.20
+
 ## 1.98.3
 
 ### Patch Changes
