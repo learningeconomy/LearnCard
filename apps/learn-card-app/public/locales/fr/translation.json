@@ -1,4 +1,16 @@
 {
+    "connectionPrompts": {
+        "title": "Se connecter avec {{name}} ?",
+        "description": "Restez en contact et valorisez la suite.",
+        "connect": "Se connecter",
+        "skipForNow": "Ignorer pour le moment",
+        "connecting": "Connexion...",
+        "skipping": "Ignorer...",
+        "error": "Une erreur s'est produite. Veuillez réessayer.",
+        "connected": "Connecté",
+        "skipped": "Ignoré",
+        "claimedType": "Justificatif réclamé"
+    },
     "common": {
         "share": "Partager",
         "open": "Ouvrir",

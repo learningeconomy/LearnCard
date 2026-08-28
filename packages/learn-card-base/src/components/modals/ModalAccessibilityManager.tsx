@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { useModalActionsContext, useModalsContext } from 'learn-card-base';
+import { useModalActionsContext, useModalsContext } from './ModalsContext';
 
 const FOCUSABLE_SELECTOR = [
     'a[href]',
@@ -39,13 +39,12 @@ const getModalDom = (): {
 };
 
 /**
- * Adds accessible behavior to the app's existing shared modal portal without
- * changing the shared modal implementation. This can be removed when the base
- * modal shells provide the same dialog contract themselves.
+ * Adds dialog semantics, focus management, background isolation, and vetoable
+ * Escape dismissal to the shared modal portal used by both applications.
  */
-const ModalAccessibilityManager: React.FC = () => {
+export const ModalAccessibilityManager: React.FC = () => {
     const { modals } = useModalsContext();
-    const { closeModal } = useModalActionsContext();
+    const { requestCloseModal } = useModalActionsContext();
     const returnFocusByModalIdRef = useRef(new Map<number, HTMLElement | null>());
     const activeModalIdRef = useRef<number | null>(null);
     const activeDialogRef = useRef<HTMLElement | null>(null);
@@ -204,7 +203,7 @@ const ModalAccessibilityManager: React.FC = () => {
 
             if (event.key === 'Escape' && !topModal.options?.disableCloseHandlers) {
                 event.preventDefault();
-                closeModal();
+                void requestCloseModal();
                 return;
             }
 
@@ -241,7 +240,7 @@ const ModalAccessibilityManager: React.FC = () => {
             dialog.removeAttribute('aria-label');
             dialog.removeAttribute('tabindex');
         };
-    }, [closeModal, domRevision, openModalIds, topModal]);
+    }, [domRevision, openModalIds, requestCloseModal, topModal]);
 
     return null;
 };

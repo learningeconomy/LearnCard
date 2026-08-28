@@ -5,12 +5,11 @@ import AppModal from './surfaces/AppModal';
 import { useModal } from './useModal';
 
 export const FreeformModal: ModalContainer = ({ component, options, open }) => {
-    const { closeModal } = useModal();
+    const { requestCloseModal } = useModal();
 
     const handleBackdropClick = () => {
         if (options?.disableCloseHandlers) return;
-        options?.onClose?.();
-        closeModal();
+        void requestCloseModal();
     };
 
     return (
