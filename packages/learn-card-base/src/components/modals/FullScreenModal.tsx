@@ -6,7 +6,7 @@ import { ModalContainer } from './types/Modals';
 import AppModal from './surfaces/AppModal';
 
 export const FullScreenModal: ModalContainer = ({ component, options, open }) => {
-    const { closeModal } = useModal();
+    const { requestCloseModal } = useModal();
 
     const optionalClass = options?.className || '';
     const customSectionClass = options?.sectionClassName || '';
@@ -14,8 +14,7 @@ export const FullScreenModal: ModalContainer = ({ component, options, open }) =>
     const handleCloseModal = () => {
         if (options?.disableCloseHandlers) return;
 
-        options?.onClose?.();
-        closeModal();
+        void requestCloseModal();
     };
 
     const backgroundImage = insertParamsToFilestackUrl(

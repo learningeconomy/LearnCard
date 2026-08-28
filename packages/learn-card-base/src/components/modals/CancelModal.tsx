@@ -12,7 +12,7 @@ interface CancelModalOptions {
 }
 
 export const CancelModal: ModalContainer = ({ component, options, open }) => {
-    const { closeModal } = useModal();
+    const { requestCloseModal } = useModal();
     const t = useT();
     const optionalClass = options?.className || 'd-c-modal';
     const hideButton = typeof options?.hideButton === 'boolean' ? options.hideButton : false;
@@ -26,8 +26,7 @@ export const CancelModal: ModalContainer = ({ component, options, open }) => {
     const handleCloseModal = () => {
         if (options?.disableCloseHandlers) return;
 
-        options?.onClose?.();
-        closeModal();
+        void requestCloseModal();
     };
 
     return (
@@ -91,7 +90,7 @@ export const CancelModal: ModalContainer = ({ component, options, open }) => {
 export default CancelModal;
 
 export const SelectModal: ModalContainer = ({ component, options, open }) => {
-    const { closeModal } = useModal();
+    const { requestCloseModal } = useModal();
     const t = useT();
 
     const optionalClass = options?.className || 'd-c-modal';
@@ -99,10 +98,9 @@ export const SelectModal: ModalContainer = ({ component, options, open }) => {
     const customSectionClass = options?.sectionClassName || '';
 
     const handleCloseModal = () => {
-        if (options.disableCloseHandlers) return;
+        if (options?.disableCloseHandlers) return;
 
-        options?.onClose?.();
-        closeModal();
+        void requestCloseModal();
     };
 
     return (

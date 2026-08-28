@@ -1,4 +1,16 @@
 {
+    "connectionPrompts": {
+        "title": "¿Conectar con {{name}}?",
+        "description": "Mantente en contacto y reconoce lo que viene después.",
+        "connect": "Conectar",
+        "skipForNow": "Omitir por ahora",
+        "connecting": "Conectando...",
+        "skipping": "Omitiendo...",
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "connected": "Conectado",
+        "skipped": "Omitido",
+        "claimedType": "Credencial reclamada"
+    },
     "common": {
         "share": "Compartir",
         "open": "Abrir",

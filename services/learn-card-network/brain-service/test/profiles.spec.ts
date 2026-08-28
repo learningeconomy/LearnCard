@@ -2086,22 +2086,21 @@ describe('Profiles', () => {
         });
 
         it('should paginate correctly', async () => {
-            await Promise.all(
-                Array(10)
-                    .fill(0)
-                    .map(async (_zero, index) => {
-                        const client = getClient({
-                            did: `did:test:${index + 1}`,
-                            isChallengeValid: true,
-                            scope: '*:*',
-                        });
-                        await client.profile.createProfile({ profileId: `generated${index + 1}` });
-                        await userA.clients.fullAuth.profile.connectWith({
-                            profileId: `generated${index + 1}`,
-                        });
-                        await client.profile.acceptConnectionRequest({ profileId: 'usera' });
-                    })
-            );
+            // This test verifies cursor pagination, not concurrent connection writes. Sequence the
+            // shared-user setup so a transient Neo4j deadlock cannot reject Promise.all while
+            // sibling handshakes continue running into later tests.
+            for (const index of Array.from({ length: 10 }, (_, index) => index)) {
+                const client = getClient({
+                    did: `did:test:${index + 1}`,
+                    isChallengeValid: true,
+                    scope: '*:*',
+                });
+                await client.profile.createProfile({ profileId: `generated${index + 1}` });
+                await userA.clients.fullAuth.profile.connectWith({
+                    profileId: `generated${index + 1}`,
+                });
+                await client.profile.acceptConnectionRequest({ profileId: 'usera' });
+            }
 
             await expect(
                 userA.clients.fullAuth.profile.paginatedConnections()

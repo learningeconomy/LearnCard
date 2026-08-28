@@ -61,7 +61,6 @@ import { AI_ROUTES } from './constants/aiRoutes';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
-import ModalAccessibilityManager from './components/accessibility/ModalAccessibilityManager';
 import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 
 const log = getLogger('app-router');
@@ -520,7 +519,6 @@ const AppRouter: React.FC = () => {
                 </div>
             </GenericErrorBoundary>
             <Modals />
-            <ModalAccessibilityManager />
             <ReducedMotionManager />
         </SharedI18nProvider>
     );
