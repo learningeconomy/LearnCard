@@ -27,26 +27,28 @@ export const FeedbackPromptToast: React.FC<FeedbackPromptToastProps> = ({
 }) => (
     <div
         data-feedback-exclude
-        className="flex min-w-0 items-center justify-between gap-3 font-poppins"
+        className="flex w-full min-w-0 flex-col items-stretch gap-4 font-poppins"
     >
-        <div className="flex min-w-0 flex-1 flex-col text-left">
+        <div className="flex w-full min-w-0 flex-col text-left">
             <h4 className="text-sm font-semibold text-grayscale-900">
                 {m['feedback.reporting.promptTitle']()}
             </h4>
-            <p className="text-sm text-grayscale-600">{m['feedback.reporting.promptBody']()}</p>
+            <p className="text-sm leading-relaxed text-grayscale-600">
+                {m['feedback.reporting.promptBody']()}
+            </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex w-full items-center gap-2">
             <button
                 type="button"
                 onClick={onDismiss}
-                className="rounded-[20px] border border-grayscale-300 px-3 py-2 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10"
+                className="flex-1 rounded-[20px] border border-grayscale-300 px-3 py-2 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10"
             >
                 {m['feedback.reporting.dismiss']()}
             </button>
             <button
                 type="button"
                 onClick={onReport}
-                className="rounded-[20px] bg-grayscale-900 px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                className="flex-1 rounded-[20px] bg-grayscale-900 px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
             >
                 {m['feedback.reporting.promptAction']()}
             </button>
