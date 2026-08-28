@@ -1,9 +1,7 @@
-import { defineConfig } from 'vitest/config';
+import { createVitestConfig, nodePreset } from '../../../vitest.shared';
 
-export default defineConfig({
+export default createVitestConfig(nodePreset, {
     test: {
-        environment: 'node',
-        globals: true,
         include: ['test/**/*.test.ts'],
     },
 });

@@ -24,6 +24,12 @@
             "options": {
                 "script": "test"
             }
+        },
+        "test:integration": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "test:integration"
+            }
         }
     }
 }

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { requestCredential } from './request';
 
 const mockResponse = (body: unknown, init: { ok?: boolean; status?: number } = {}) =>
@@ -9,7 +10,7 @@ const mockResponse = (body: unknown, init: { ok?: boolean; status?: number } = {
 
 describe('requestCredential', () => {
     it('sends proofs array + credential_configuration_id + Authorization header (config-id path)', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt', c_nonce: 'new-nonce' }));
 
@@ -39,7 +40,7 @@ describe('requestCredential', () => {
     });
 
     it('[draft-13-compat] sends the Draft 13 body (format + credential_definition + singular proof) when specVersion is draft-13', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
 
         await requestCredential({
             credentialEndpoint: 'https://issuer.example.com/credential',
@@ -67,7 +68,7 @@ describe('requestCredential', () => {
     });
 
     it('[draft-13-compat] echoes `vct` (not credential_definition) for an SD-JWT VC config', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(mockResponse({ credential: 'eyJ.sdjwt~disc~' }));
 
@@ -90,7 +91,7 @@ describe('requestCredential', () => {
     });
 
     it('sends credential_identifier (and NOT credential_configuration_id) when caller supplies one from authorization_details', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
 
         await requestCredential({
             credentialEndpoint: 'https://issuer.example.com/credential',
@@ -113,7 +114,7 @@ describe('requestCredential', () => {
                 credentialEndpoint: 'https://issuer.example.com/credential',
                 accessToken: 'token-abc',
                 proofJwt: 'eyJ.proof.sig',
-                fetchImpl: jest.fn() as unknown as typeof fetch,
+                fetchImpl: vi.fn() as unknown as typeof fetch,
             })
         ).rejects.toMatchObject({
             code: 'credential_request_failed',
@@ -122,7 +123,7 @@ describe('requestCredential', () => {
     });
 
     it('uses the supplied token_type verbatim in the Authorization header', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
 
         await requestCredential({
             credentialEndpoint: 'https://issuer.example.com/credential',
@@ -137,7 +138,7 @@ describe('requestCredential', () => {
     });
 
     it('surfaces OAuth error body as credential_request_failed', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(
                 mockResponse(
@@ -162,7 +163,7 @@ describe('requestCredential', () => {
     });
 
     it('throws credential_request_failed on network error', async () => {
-        const fetchMock = jest.fn().mockRejectedValue(new Error('timeout'));
+        const fetchMock = vi.fn().mockRejectedValue(new Error('timeout'));
 
         await expect(
             requestCredential({
@@ -176,7 +177,7 @@ describe('requestCredential', () => {
     });
 
     it('throws credential_response_invalid on non-JSON body', async () => {
-        const fetchMock = jest.fn().mockResolvedValue({
+        const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
             json: async () => {
@@ -205,7 +206,7 @@ describe('requestCredential di_vp proofs', () => {
         } as unknown as Response);
 
     it('sends proofs.di_vp when a di_vp proof is supplied', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockOk());
+        const fetchMock = vi.fn().mockResolvedValue(mockOk());
         const diVp = { type: ['VerifiablePresentation'], proof: { type: 'DataIntegrityProof' } };
 
         await requestCredential({
@@ -229,7 +230,7 @@ describe('requestCredential di_vp proofs', () => {
                 credentialConfigurationId: 'OpenBadgeCredential',
                 proofJwt: 'eyJ.proof.sig',
                 proofDiVp: {},
-                fetchImpl: jest.fn() as unknown as typeof fetch,
+                fetchImpl: vi.fn() as unknown as typeof fetch,
             })
         ).rejects.toThrow(/exactly one of/);
     });
@@ -240,7 +241,7 @@ describe('requestCredential di_vp proofs', () => {
                 credentialEndpoint: 'https://issuer.example.com/credential',
                 accessToken: 'token-abc',
                 credentialConfigurationId: 'OpenBadgeCredential',
-                fetchImpl: jest.fn() as unknown as typeof fetch,
+                fetchImpl: vi.fn() as unknown as typeof fetch,
             })
         ).rejects.toThrow(/exactly one of/);
     });
@@ -253,7 +254,7 @@ describe('requestCredential di_vp proofs', () => {
                 credentialConfigurationId: 'OpenBadgeCredential',
                 proofDiVp: {},
                 specVersion: 'draft-13',
-                fetchImpl: jest.fn() as unknown as typeof fetch,
+                fetchImpl: vi.fn() as unknown as typeof fetch,
             })
         ).rejects.toThrow(/only support the `jwt` proof type/);
     });
