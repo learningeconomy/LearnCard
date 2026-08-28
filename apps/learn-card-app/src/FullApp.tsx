@@ -54,7 +54,6 @@ import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
-import * as m from './paraglide/messages.js';
 
 const log = getLogger('cache');
 
