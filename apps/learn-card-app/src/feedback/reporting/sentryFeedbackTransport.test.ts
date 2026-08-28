@@ -16,7 +16,7 @@
  *   - structured app/device/network context passed as scope extras, not tags.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FEEDBACK_TRANSPORT_ERROR_MESSAGE, submitSentryFeedback } from './sentryFeedbackTransport';
 import type { FeedbackReport } from './types';
@@ -114,6 +114,10 @@ const bugReport: FeedbackReport = {
 };
 
 describe('submitSentryFeedback', () => {
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
     beforeEach(() => {
         vi.clearAllMocks();
         clientHooks.beforeSendEvent.splice(0);
@@ -283,13 +287,16 @@ describe('submitSentryFeedback', () => {
     });
 
     it('rejects instead of claiming success when delivery is not acknowledged', async () => {
+        vi.useFakeTimers();
         captureFeedbackMock.mockImplementation(
             (_params, hint: { event_id: string }) => hint.event_id
         );
 
-        await expect(submitSentryFeedback(bugReport)).rejects.toThrow(
-            FEEDBACK_TRANSPORT_ERROR_MESSAGE
-        );
+        const submission = submitSentryFeedback(bugReport);
+        const rejection = expect(submission).rejects.toThrow(FEEDBACK_TRANSPORT_ERROR_MESSAGE);
+        await vi.advanceTimersByTimeAsync(5_000);
+
+        await rejection;
     });
 
     it('rejects with the friendly transport error when capture throws', async () => {

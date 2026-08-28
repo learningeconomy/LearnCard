@@ -179,12 +179,21 @@ export const submitSentryFeedback = async (report: FeedbackReport): Promise<{ id
     feedbackScope.setClient(client);
     feedbackScope.addEventProcessor(event => buildAllowlistedEvent(event, report));
 
-    let deliveryStatus: number | undefined;
     const stopFinalAllowlist = client.on('beforeSendEvent', event => {
         if (event.event_id === eventId) applyAllowlistInPlace(event, report);
     });
+
+    let deliveryTimeout: ReturnType<typeof setTimeout> | undefined;
+    let resolveDeliveryStatus: (status: number | undefined) => void = () => undefined;
+    const deliveryStatusPromise = new Promise<number | undefined>(resolve => {
+        resolveDeliveryStatus = resolve;
+        deliveryTimeout = setTimeout(() => resolve(undefined), SENTRY_DELIVERY_TIMEOUT_MS);
+    });
     const stopDeliveryObserver = client.on('afterSendEvent', (event, response) => {
-        if (event.event_id === eventId) deliveryStatus = response.statusCode;
+        if (event.event_id !== eventId) return;
+
+        clearTimeout(deliveryTimeout);
+        resolveDeliveryStatus(response?.statusCode);
     });
 
     try {
@@ -200,7 +209,14 @@ export const submitSentryFeedback = async (report: FeedbackReport): Promise<{ id
             feedbackScope
         );
 
-        const flushed = await client.flush(SENTRY_DELIVERY_TIMEOUT_MS);
+        // Sentry's transport buffer can report itself flushed one microtask
+        // before `afterSendEvent` publishes the HTTP acknowledgement. Wait for
+        // both signals so a successful 2xx delivery cannot be reported as a
+        // failure merely because that observer callback has not run yet.
+        const [flushed, deliveryStatus] = await Promise.all([
+            client.flush(SENTRY_DELIVERY_TIMEOUT_MS),
+            deliveryStatusPromise,
+        ]);
         const delivered =
             capturedEventId === eventId &&
             flushed &&
@@ -214,6 +230,7 @@ export const submitSentryFeedback = async (report: FeedbackReport): Promise<{ id
     } catch {
         throw new Error(FEEDBACK_TRANSPORT_ERROR_MESSAGE);
     } finally {
+        clearTimeout(deliveryTimeout);
         stopFinalAllowlist();
         stopDeliveryObserver();
     }

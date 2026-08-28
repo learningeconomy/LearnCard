@@ -90,4 +90,20 @@ describe('submitSentryFeedback installed SDK boundary', () => {
         expect(JSON.stringify(event)).not.toContain('must-not-leak');
         expect(JSON.stringify(event)).not.toContain('did:key');
     });
+
+    it('waits for the delivery acknowledgement after the transport flushes', async () => {
+        Sentry.init({
+            dsn: 'https://public@example.com/1',
+            defaultIntegrations: false,
+            transport: options =>
+                Sentry.makeFetchTransport(options, async () => {
+                    await new Promise(resolve => setTimeout(resolve, 25));
+                    return new Response(null, { status: 200 });
+                }),
+        });
+
+        await expect(submitSentryFeedback(report)).resolves.toEqual({
+            id: expect.stringMatching(/^[a-f0-9]{32}$/),
+        });
+    });
 });
