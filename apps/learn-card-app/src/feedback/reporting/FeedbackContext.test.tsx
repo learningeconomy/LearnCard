@@ -266,8 +266,8 @@ describe('FeedbackProvider automatic triggers wiring', () => {
 
 describe('FeedbackProvider reportProblem', () => {
     it('keeps concurrent explicit reports single-flight from capture through dismissal', async () => {
-        const screenshot = createDeferred<FeedbackScreenshot | undefined>();
-        captureScreenshot.mockReturnValueOnce(screenshot.promise);
+        const context = createDeferred<FeedbackContextData>();
+        collectContext.mockReturnValueOnce(context.promise);
         renderProvider();
 
         let firstReport!: Promise<void>;
@@ -277,11 +277,11 @@ describe('FeedbackProvider reportProblem', () => {
             secondReport = controller!.reportProblem({ source: 'settings' });
         });
 
-        expect(captureScreenshot).toHaveBeenCalledTimes(1);
+        expect(captureScreenshot).not.toHaveBeenCalled();
         expect(collectContext).toHaveBeenCalledTimes(1);
 
         await act(async () => {
-            screenshot.resolve(SCREENSHOT);
+            context.resolve(CONTEXT);
             await Promise.all([firstReport, secondReport]);
         });
 
@@ -290,7 +290,7 @@ describe('FeedbackProvider reportProblem', () => {
         await act(async () => {
             await controller!.reportProblem({ source: 'settings' });
         });
-        expect(captureScreenshot).toHaveBeenCalledTimes(1);
+        expect(captureScreenshot).not.toHaveBeenCalled();
         expect(modalHost.openModal).toHaveBeenCalledTimes(1);
 
         const [, modalOptions] = composerCall();
@@ -301,13 +301,14 @@ describe('FeedbackProvider reportProblem', () => {
         await act(async () => {
             await controller!.reportProblem({ source: 'settings' });
         });
-        expect(captureScreenshot).toHaveBeenCalledTimes(2);
+        expect(captureScreenshot).not.toHaveBeenCalled();
+        expect(collectContext).toHaveBeenCalledTimes(2);
         expect(modalHost.openModal).toHaveBeenCalledTimes(2);
     });
 
     it('shares the explicit single-flight guard across problem and idea entry points', async () => {
-        const screenshot = createDeferred<FeedbackScreenshot | undefined>();
-        captureScreenshot.mockReturnValueOnce(screenshot.promise);
+        const context = createDeferred<FeedbackContextData>();
+        collectContext.mockReturnValueOnce(context.promise);
         renderProvider();
 
         let report!: Promise<void>;
@@ -317,11 +318,11 @@ describe('FeedbackProvider reportProblem', () => {
             idea = controller!.shareIdea();
         });
 
-        expect(captureScreenshot).toHaveBeenCalledTimes(1);
+        expect(captureScreenshot).not.toHaveBeenCalled();
         expect(collectContext).toHaveBeenCalledTimes(1);
 
         await act(async () => {
-            screenshot.resolve(SCREENSHOT);
+            context.resolve(CONTEXT);
             await Promise.all([report, idea]);
         });
 
@@ -337,18 +338,18 @@ describe('FeedbackProvider reportProblem', () => {
             await controller?.reportProblem({ source: 'settings' });
         });
 
-        expect(captureScreenshot).toHaveBeenCalledTimes(1);
+        expect(captureScreenshot).not.toHaveBeenCalled();
         expect(collectContext).toHaveBeenCalledWith({ kind: 'bug' });
 
         const [element, options, type] = composerCall();
         expect(element.type).toBe(FeedbackComposer);
         expect(element.props.draft.kind).toBe('bug');
         expect(element.props.draft.source).toBe('settings');
-        expect(element.props.draft.screenshot).toBe(SCREENSHOT);
+        expect(element.props.draft.screenshot).toBeUndefined();
         expect(element.props.draft.context).toBe(CONTEXT);
         expect(element.props.draft.capturedAt).toBe(new Date(clock.nowMs).toISOString());
         expect(options).toEqual({
-            sectionClassName: '!max-w-[480px]',
+            sectionClassName: '!max-w-[480px] !bg-white',
             onClose: expect.any(Function),
         });
         expect(type).toEqual({ desktop: 'center', mobile: 'full-screen' });
@@ -389,7 +390,7 @@ describe('FeedbackProvider reportProblem', () => {
             await controller?.reportProblem({ source: 'shake' });
         });
 
-        expect(captureScreenshot).toHaveBeenCalledTimes(1);
+        expect(captureScreenshot).not.toHaveBeenCalled();
         expect(collectContext).toHaveBeenCalledTimes(1);
         expect(modalHost.openModal).not.toHaveBeenCalled();
         expect(modalHost.presentToast).not.toHaveBeenCalled();
@@ -450,12 +451,12 @@ describe('FeedbackProvider reportProblem', () => {
         expect(modalHost.openModal).not.toHaveBeenCalled();
     });
 
-    it('restores the preserved screenshot and context when the prompt is tapped', async () => {
+    it('restores the preserved screenshot and context when the screenshot prompt is tapped', async () => {
         busy.value = true;
         const { rerenderWithBusy } = renderProvider();
 
         await act(async () => {
-            await controller?.reportProblem({ source: 'shake' });
+            await controller?.reportProblem({ source: 'screenshot' });
         });
 
         rerenderWithBusy(false);
@@ -470,7 +471,7 @@ describe('FeedbackProvider reportProblem', () => {
         const draft = composerCall()[0].props.draft;
         expect(draft.screenshot).toBe(SCREENSHOT);
         expect(draft.context).toBe(CONTEXT);
-        expect(draft.source).toBe('shake');
+        expect(draft.source).toBe('screenshot');
     });
 
     it('keeps the composer open after a transport rejection', async () => {
@@ -546,7 +547,7 @@ describe('FeedbackProvider reportProblem', () => {
             await controller?.reportProblem({ source: 'shake' });
         });
 
-        expect(captureScreenshot).toHaveBeenCalledTimes(1);
+        expect(captureScreenshot).not.toHaveBeenCalled();
         expect(modalHost.openModal).toHaveBeenCalledTimes(1);
     });
 
@@ -561,7 +562,7 @@ describe('FeedbackProvider reportProblem', () => {
             await controller?.reportProblem({ source: 'shake' });
         });
 
-        expect(captureScreenshot).toHaveBeenCalledTimes(1); // only the Settings capture
+        expect(captureScreenshot).not.toHaveBeenCalled();
         expect(modalHost.openModal).toHaveBeenCalledTimes(1);
     });
 
@@ -649,13 +650,8 @@ describe('FeedbackProvider reportProblem', () => {
     });
 
     it('drops an in-flight bug capture after eligibility is lost', async () => {
-        let resolveScreenshot: (screenshot: FeedbackScreenshot) => void;
-        captureScreenshot.mockImplementationOnce(
-            () =>
-                new Promise<FeedbackScreenshot>(resolve => {
-                    resolveScreenshot = resolve;
-                })
-        );
+        const context = createDeferred<FeedbackContextData>();
+        collectContext.mockReturnValueOnce(context.promise);
         const { rerenderWithEligibility } = renderProvider();
 
         let report: Promise<void> | undefined;
@@ -666,7 +662,7 @@ describe('FeedbackProvider reportProblem', () => {
         rerenderWithEligibility({ bug: false, idea: true, isLoading: false });
 
         await act(async () => {
-            resolveScreenshot(SCREENSHOT);
+            context.resolve(CONTEXT);
             await report;
         });
 

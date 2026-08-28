@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 
+import CaretListItem from '../../components/learncard/CaretListItem';
 import { useFeedback } from './FeedbackContext';
 import { useFeedbackReportingEligibility } from './eligibility';
 import * as m from '../../paraglide/messages.js';
@@ -20,7 +21,7 @@ const AlertIcon: React.FC = () => (
         fill="none"
         stroke="currentColor"
         strokeWidth="1.7"
-        className="w-5 h-5 shrink-0"
+        className="h-[30px] w-[30px] shrink-0 text-grayscale-700"
         aria-hidden="true"
     >
         <circle cx="12" cy="12" r="9" />
@@ -35,7 +36,7 @@ const BulbIcon: React.FC = () => (
         fill="none"
         stroke="currentColor"
         strokeWidth="1.7"
-        className="w-5 h-5 shrink-0"
+        className="h-[30px] w-[30px] shrink-0 text-grayscale-700"
         aria-hidden="true"
     >
         <path
@@ -46,43 +47,68 @@ const BulbIcon: React.FC = () => (
     </svg>
 );
 
-const rowClasses =
-    'w-full flex items-center gap-3 py-3 px-4 rounded-[20px] border border-grayscale-300 ' +
-    'bg-white text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 ' +
-    'transition-colors text-left';
+const PreparingSpinner: React.FC = () => (
+    <span
+        className="h-5 w-5 animate-spin rounded-full border-2 border-grayscale-200 border-t-grayscale-700"
+        aria-hidden="true"
+    />
+);
+
+type PendingAction = 'bug' | 'idea';
 
 export const FeedbackSettingsRows: React.FC = () => {
     const { reportProblem, shareIdea } = useFeedback();
     const { bug, idea } = useFeedbackReportingEligibility();
+    const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+
+    const prepare = useCallback(
+        async (action: PendingAction, run: () => Promise<void>): Promise<void> => {
+            if (pendingAction !== null) return;
+
+            setPendingAction(action);
+            try {
+                await run();
+            } finally {
+                setPendingAction(null);
+            }
+        },
+        [pendingAction]
+    );
 
     if (!bug && !idea) return null;
 
+    const isPreparing = pendingAction !== null;
+
     return (
-        <div className="flex flex-col gap-[10px] pt-[10px] pb-[10px] font-poppins">
+        <div>
             {bug && (
-                <button
-                    type="button"
-                    className={rowClasses}
+                <CaretListItem
+                    icon={<AlertIcon />}
+                    mainText={m['feedback.reporting.reportProblem']()}
                     onClick={() => {
-                        void reportProblem({ source: 'settings' });
+                        void prepare('bug', () => reportProblem({ source: 'settings' })).catch(
+                            () => undefined
+                        );
                     }}
-                >
-                    <AlertIcon />
-                    {m['feedback.reporting.reportProblem']()}
-                </button>
+                    disabled={isPreparing}
+                    ariaBusy={pendingAction === 'bug'}
+                    caretOverride={pendingAction === 'bug' ? <PreparingSpinner /> : undefined}
+                />
             )}
 
             {idea && (
-                <button
-                    type="button"
-                    className={rowClasses}
+                <CaretListItem
+                    icon={<BulbIcon />}
+                    mainText={m['feedback.reporting.shareIdea']()}
                     onClick={() => {
-                        void shareIdea({ source: 'settings' });
+                        void prepare('idea', () => shareIdea({ source: 'settings' })).catch(
+                            () => undefined
+                        );
                     }}
-                >
-                    <BulbIcon />
-                    {m['feedback.reporting.shareIdea']()}
-                </button>
+                    disabled={isPreparing}
+                    ariaBusy={pendingAction === 'idea'}
+                    caretOverride={pendingAction === 'idea' ? <PreparingSpinner /> : undefined}
+                />
             )}
         </div>
     );

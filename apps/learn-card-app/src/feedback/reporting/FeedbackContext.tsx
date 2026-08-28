@@ -66,9 +66,10 @@ export interface FeedbackController {
     /**
      * Capture and present a bug report.
      *
-     * Checks bug eligibility, then captures the screenshot and privacy-safe
-     * context before deciding whether to open the composer, defer behind a
-     * pending toast, or (for `submitImmediately`) submit without UI.
+     * Checks bug eligibility, then captures privacy-safe context before
+     * deciding whether to open the composer, defer behind a pending toast, or
+     * (for `submitImmediately`) submit without UI. A screenshot attachment is
+     * captured only when `source` is `screenshot`.
      */
     reportProblem(options?: ReportProblemOptions): Promise<void>;
 
@@ -349,7 +350,7 @@ export const FeedbackProvider: React.FC<{
                 composerModalIdRef.current = newModal(
                     composer,
                     {
-                        sectionClassName: '!max-w-[480px]',
+                        sectionClassName: '!max-w-[480px] !bg-white',
                         onClose: () => handleComposerClosed(owner),
                     },
                     { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
@@ -432,10 +433,13 @@ export const FeedbackProvider: React.FC<{
                 ...depsRef.current,
             };
 
-            // Screenshot and context are independent — capture both in
-            // parallel before any feedback UI exists.
+            // A screenshot attachment is opt-in through the native screenshot
+            // trigger only. Settings, shake, and error entry points collect
+            // diagnostics without silently photographing the current screen.
+            // When present, screenshot and context collection remain parallel
+            // and finish before any feedback UI exists.
             const [screenshot, context] = await Promise.all([
-                captureScreenshot(),
+                source === 'screenshot' ? captureScreenshot() : Promise.resolve(undefined),
                 collectContext({ kind: 'bug' }),
             ]);
 

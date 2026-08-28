@@ -1,12 +1,12 @@
 import Capacitor
-import CoreMotion
 import Foundation
 
 /**
- * Local, explicitly controlled shake observer for iOS.
+ * Local, explicitly controlled UIKit shake observer for iOS.
  *
- * Construction and plugin loading do not start Core Motion. The accelerometer
- * is active only between matching `start` and `stop` calls from the JS hook.
+ * UIKit decides what constitutes a shake. This plugin only gates delivery to
+ * JavaScript between matching `start` and `stop` calls from the JS hook and
+ * retains the native cooldown used by the shared Capacitor contract.
  */
 @objc(ShakeObserverPlugin)
 public class ShakeObserverPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -17,13 +17,14 @@ public class ShakeObserverPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise)
     ]
 
-    private let motionManager = CMMotionManager()
-    private var threshold = 2.7
     private var cooldownMs = 2_000.0
     private var lastShakeAtMs = -Double.infinity
+    private var isObserving = false
 
     @objc func start(_ call: CAPPluginCall) {
-        let requestedThreshold = call.getDouble("threshold", threshold)
+        // Threshold remains part of the cross-platform call shape for Android,
+        // but UIKit owns shake sensitivity on iOS.
+        let requestedThreshold = call.getDouble("threshold", 2.7)
         let requestedCooldownMs = call.getDouble("cooldownMs", cooldownMs)
 
         guard requestedThreshold.isFinite, requestedThreshold > 1 else {
@@ -41,39 +42,9 @@ public class ShakeObserverPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
 
-            self.threshold = requestedThreshold
             self.cooldownMs = requestedCooldownMs
-
-            guard self.motionManager.isAccelerometerAvailable else {
-                call.unavailable("Accelerometer is unavailable")
-                return
-            }
-
-            // Idempotent: a repeated start only refreshes tuning values.
-            guard !self.motionManager.isAccelerometerActive else {
-                call.resolve()
-                return
-            }
-
             self.lastShakeAtMs = -Double.infinity
-            self.motionManager.accelerometerUpdateInterval = 1.0 / 50.0
-            self.motionManager.startAccelerometerUpdates(to: .main) { [weak self] data, _ in
-                guard let self, let acceleration = data?.acceleration else { return }
-
-                let magnitude = sqrt(
-                    acceleration.x * acceleration.x +
-                        acceleration.y * acceleration.y +
-                        acceleration.z * acceleration.z
-                )
-                let nowMs = ProcessInfo.processInfo.systemUptime * 1_000
-
-                guard magnitude >= self.threshold else { return }
-                guard nowMs - self.lastShakeAtMs >= self.cooldownMs else { return }
-
-                self.lastShakeAtMs = nowMs
-                self.notifyListeners("shake", data: [:])
-            }
-
+            self.isObserving = true
             call.resolve()
         }
     }
@@ -85,13 +56,23 @@ public class ShakeObserverPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
+    /** Forward a UIKit `.motionShake` event when JavaScript has enabled sensing. */
+    func handleShakeGesture() {
+        guard isObserving else { return }
+
+        let nowMs = ProcessInfo.processInfo.systemUptime * 1_000
+        guard nowMs - lastShakeAtMs >= cooldownMs else { return }
+
+        lastShakeAtMs = nowMs
+        notifyListeners("shake", data: [:])
+    }
+
     private func stopSensing() {
-        // Core Motion's stop method is safe to call repeatedly.
-        motionManager.stopAccelerometerUpdates()
+        isObserving = false
         lastShakeAtMs = -Double.infinity
     }
 
     deinit {
-        motionManager.stopAccelerometerUpdates()
+        stopSensing()
     }
 }

@@ -76,6 +76,29 @@ afterEach(() => {
 });
 
 describe('collectVersionInfo', () => {
+    it('starts independent native diagnostics without waiting for network status', async () => {
+        capacitorMock.getPlatform.mockReturnValue('ios');
+        capacitorMock.isNativePlatform.mockReturnValue(true);
+
+        let resolveNetwork!: (status: typeof WIFI) => void;
+        networkMock.getStatus.mockReturnValueOnce(
+            new Promise(resolve => {
+                resolveNetwork = resolve;
+            })
+        );
+
+        const result = collectVersionInfo('1.98.3');
+        await Promise.resolve();
+
+        expect(appMock.getInfo).toHaveBeenCalledTimes(1);
+        expect(updaterMock.current).toHaveBeenCalledTimes(1);
+        expect(updaterMock.getChannel).toHaveBeenCalledTimes(1);
+        expect(deviceMock.getInfo).toHaveBeenCalledTimes(1);
+
+        resolveNetwork(WIFI);
+        await result;
+    });
+
     it('falls back to the web summary without touching native plugins', async () => {
         capacitorMock.getPlatform.mockReturnValue('web');
         capacitorMock.isNativePlatform.mockReturnValue(false);

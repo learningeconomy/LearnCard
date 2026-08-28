@@ -9,8 +9,27 @@ import Capacitor
  * before the JS runtime resolves them.
  */
 class MyViewController: CAPBridgeViewController {
+    private let shakeObserverPlugin = ShakeObserverPlugin()
+
+    override var canBecomeFirstResponder: Bool {
+        true
+    }
+
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(ScreenshotObserverPlugin())
-        bridge?.registerPluginInstance(ShakeObserverPlugin())
+        bridge?.registerPluginInstance(shakeObserverPlugin)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        becomeFirstResponder()
+    }
+
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        if motion == .motionShake {
+            shakeObserverPlugin.handleShakeGesture()
+        }
+
+        super.motionEnded(motion, with: event)
     }
 }

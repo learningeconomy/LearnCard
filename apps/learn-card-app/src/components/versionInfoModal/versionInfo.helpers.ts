@@ -213,28 +213,40 @@ export const collectVersionInfo = async (fallbackVersion: string): Promise<Versi
     const platform = Capacitor.getPlatform() as Platform;
     const isNative = Capacitor.isNativePlatform();
 
-    // Network status works on both web and native, so collect it unconditionally.
-    const networkStatus = await Network.getStatus().catch(() => null);
-    const network = formatNetwork(networkStatus);
-
     if (!isNative) {
+        const networkStatus = await Network.getStatus().catch(() => null);
+
         return {
             platform,
             isNative,
             displayVersion: fallbackVersion,
-            network,
+            network: formatNetwork(networkStatus),
         };
     }
 
-    // Each of these is wrapped individually so one failing plugin call
-    // doesn't blank the whole modal.
-    const appInfo = await App.getInfo().catch((): AppInfo | null => null);
-    const bundle = await CapacitorUpdater.current().catch(() => null);
-    const channelResult = await CapacitorUpdater.getChannel().catch(() => null);
-    const deviceIdResult = await CapacitorUpdater.getDeviceId().catch(() => null);
-    const pluginVersionResult = await CapacitorUpdater.getPluginVersion().catch(() => null);
-    const builtinResult = await CapacitorUpdater.getBuiltinVersion().catch(() => null);
-    const deviceInfo = await Device.getInfo().catch((): DeviceInfo | null => null);
+    // These bridge calls are independent. Start them together so opening a
+    // diagnostics consumer waits for the slowest call, not the sum of every
+    // native round trip. Each failure remains isolated from the others.
+    const [
+        networkStatus,
+        appInfo,
+        bundle,
+        channelResult,
+        deviceIdResult,
+        pluginVersionResult,
+        builtinResult,
+        deviceInfo,
+    ] = await Promise.all([
+        Network.getStatus().catch(() => null),
+        App.getInfo().catch((): AppInfo | null => null),
+        CapacitorUpdater.current().catch(() => null),
+        CapacitorUpdater.getChannel().catch(() => null),
+        CapacitorUpdater.getDeviceId().catch(() => null),
+        CapacitorUpdater.getPluginVersion().catch(() => null),
+        CapacitorUpdater.getBuiltinVersion().catch(() => null),
+        Device.getInfo().catch((): DeviceInfo | null => null),
+    ]);
+    const network = formatNetwork(networkStatus);
 
     const bundleVersion = bundle?.bundle?.version;
     const displayVersion =

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 /**
@@ -84,6 +84,31 @@ describe('FeedbackSettingsRows', () => {
 
         expect(screen.getByRole('button', { name: 'Report a Problem' })).toBeVisible();
         expect(screen.getByRole('button', { name: 'Share an Idea' })).toBeVisible();
+    });
+
+    it('marks both actions busy while the selected feedback flow is preparing', async () => {
+        let resolveReport!: () => void;
+        reportProblem.mockReturnValueOnce(
+            new Promise<void>(resolve => {
+                resolveReport = resolve;
+            })
+        );
+        const renderWith = renderEligible({ bug: true, idea: true });
+        renderWith(<FeedbackSettingsRows />);
+
+        await user.click(screen.getByRole('button', { name: 'Report a Problem' }));
+
+        expect(screen.getByRole('button', { name: 'Report a Problem' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Report a Problem' })).toHaveAttribute(
+            'aria-busy',
+            'true'
+        );
+        expect(screen.getByRole('button', { name: 'Share an Idea' })).toBeDisabled();
+
+        resolveReport();
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: 'Report a Problem' })).toBeEnabled();
+        });
     });
 
     it('renders nothing when both destinations are ineligible', () => {
