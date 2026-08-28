@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { isHex, RegExpTransformer } from '../src';
 
 describe('isHex', () => {
@@ -110,7 +111,7 @@ describe('RegExp Transformer', () => {
         });
 
         it('should handle invalid RegExp patterns gracefully', () => {
-            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
             const input = '{"pattern":"/[invalid/g"}';
             expect(() => RegExpTransformer.deserialize(input)).not.toThrow();
             const deserialized = RegExpTransformer.deserialize(input);

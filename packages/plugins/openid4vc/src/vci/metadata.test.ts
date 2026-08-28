@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import {
     fetchAuthorizationServerMetadata,
     fetchCredentialIssuerMetadata,
@@ -26,7 +27,7 @@ describe('fetchCredentialIssuerMetadata', () => {
     };
 
     it('fetches issuer metadata from the well-known endpoint', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(validMetadata));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(validMetadata));
 
         const result = await fetchCredentialIssuerMetadata(
             'https://issuer.example.com',
@@ -43,7 +44,7 @@ describe('fetchCredentialIssuerMetadata', () => {
     });
 
     it('strips trailing slash from issuer URL before inserting well-known path', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(validMetadata));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(validMetadata));
 
         await fetchCredentialIssuerMetadata(
             'https://issuer.example.com/',
@@ -62,7 +63,7 @@ describe('fetchCredentialIssuerMetadata', () => {
             credential_issuer: 'https://issuer.example.com/tenant',
             credential_endpoint: 'https://issuer.example.com/tenant/credential',
         };
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(tenantMetadata));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(tenantMetadata));
 
         await fetchCredentialIssuerMetadata(
             'https://issuer.example.com/tenant',
@@ -82,7 +83,7 @@ describe('fetchCredentialIssuerMetadata', () => {
             credential_endpoint:
                 'https://transactions.example.com/workflows/claim/exchanges/abc-123/credential',
         };
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(deepMetadata));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(deepMetadata));
 
         await fetchCredentialIssuerMetadata(
             'https://transactions.example.com/workflows/claim/exchanges/abc-123',
@@ -101,7 +102,7 @@ describe('fetchCredentialIssuerMetadata', () => {
             credential_issuer: 'https://issuer.example.com/draft13',
             credential_endpoint: 'https://issuer.example.com/draft13/credential',
         };
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(
                 mockResponse({}, { ok: false, status: 404, statusText: 'Not Found' })
@@ -127,7 +128,7 @@ describe('fetchCredentialIssuerMetadata', () => {
     });
 
     it('does not fall back for a path-less issuer (insert === append)', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(
                 mockResponse({}, { ok: false, status: 404, statusText: 'Not Found' })
@@ -145,7 +146,7 @@ describe('fetchCredentialIssuerMetadata', () => {
 
     it('throws metadata_issuer_mismatch when advertised issuer differs', async () => {
         const mismatched = { ...validMetadata, credential_issuer: 'https://other.example.com' };
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(mismatched));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(mismatched));
 
         await expect(
             fetchCredentialIssuerMetadata(
@@ -157,7 +158,7 @@ describe('fetchCredentialIssuerMetadata', () => {
 
     it('tolerates trailing-slash / scheme-case differences in issuer identifier comparison', async () => {
         const withSlash = { ...validMetadata, credential_issuer: 'https://issuer.example.com/' };
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(withSlash));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(withSlash));
 
         await expect(
             fetchCredentialIssuerMetadata(
@@ -169,7 +170,7 @@ describe('fetchCredentialIssuerMetadata', () => {
 
     it('throws metadata_invalid when credential_endpoint is missing', async () => {
         const bad = { credential_issuer: 'https://issuer.example.com' };
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(bad));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(bad));
 
         await expect(
             fetchCredentialIssuerMetadata(
@@ -181,7 +182,7 @@ describe('fetchCredentialIssuerMetadata', () => {
 
     it('throws metadata_invalid when credential_issuer is missing', async () => {
         const bad = { credential_endpoint: 'https://issuer.example.com/credential' };
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(bad));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(bad));
 
         await expect(
             fetchCredentialIssuerMetadata(
@@ -192,7 +193,7 @@ describe('fetchCredentialIssuerMetadata', () => {
     });
 
     it('throws metadata_fetch_failed on HTTP 404', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(
                 mockResponse({}, { ok: false, status: 404, statusText: 'Not Found' })
@@ -207,7 +208,7 @@ describe('fetchCredentialIssuerMetadata', () => {
     });
 
     it('throws metadata_fetch_failed on network error', async () => {
-        const fetchMock = jest.fn().mockRejectedValue(new Error('ENOTFOUND'));
+        const fetchMock = vi.fn().mockRejectedValue(new Error('ENOTFOUND'));
 
         await expect(
             fetchCredentialIssuerMetadata(
@@ -226,7 +227,7 @@ describe('fetchAuthorizationServerMetadata', () => {
     };
 
     it('fetches from oauth-authorization-server well-known path first', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(validAsMetadata));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(validAsMetadata));
 
         const result = await fetchAuthorizationServerMetadata(
             'https://issuer.example.com',
@@ -241,7 +242,7 @@ describe('fetchAuthorizationServerMetadata', () => {
     });
 
     it('falls back to openid-configuration when oauth path 404s', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(mockResponse({}, { ok: false, status: 404 }))
             .mockResolvedValueOnce(mockResponse(validAsMetadata));
@@ -260,7 +261,7 @@ describe('fetchAuthorizationServerMetadata', () => {
     });
 
     it('inserts oauth-authorization-server well-known between host and path (RFC 8414 §3)', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(validAsMetadata));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(validAsMetadata));
 
         await fetchAuthorizationServerMetadata(
             'https://issuer.example.com/tenant',
@@ -274,7 +275,7 @@ describe('fetchAuthorizationServerMetadata', () => {
     });
 
     it('appends openid-configuration to the path on fallback (OIDC Discovery style)', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(mockResponse({}, { ok: false, status: 404 }))
             .mockResolvedValueOnce(mockResponse(validAsMetadata));
@@ -297,7 +298,7 @@ describe('fetchAuthorizationServerMetadata', () => {
     });
 
     it('[draft-13-compat] falls back to append-style oauth-authorization-server when insert + openid-configuration 404', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValueOnce(mockResponse({}, { ok: false, status: 404 }))
             .mockResolvedValueOnce(mockResponse({}, { ok: false, status: 404 }))
@@ -327,7 +328,7 @@ describe('fetchAuthorizationServerMetadata', () => {
     });
 
     it('throws metadata_fetch_failed when both well-known paths fail', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse({}, { ok: false, status: 404 }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({}, { ok: false, status: 404 }));
 
         await expect(
             fetchAuthorizationServerMetadata(
@@ -339,7 +340,7 @@ describe('fetchAuthorizationServerMetadata', () => {
 
     it('throws metadata_invalid when token_endpoint is missing', async () => {
         const bad = { issuer: 'https://issuer.example.com' };
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse(bad));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse(bad));
 
         await expect(
             fetchAuthorizationServerMetadata(
