@@ -3,24 +3,21 @@ import { getDidKitPlugin } from '@learncard/didkit-plugin';
 import { getDidKeyPlugin } from '@learncard/didkey-plugin';
 import { getVCPlugin } from '@learncard/vc-plugin';
 import { getClient as getBrainClient } from '@learncard/network-brain-client';
+import { vi } from 'vitest';
 
 import { getLearnCardNetworkPlugin } from '../';
 import { SAMPLE_VCS } from './mocks/sample-vcs';
 
-jest.mock(
-    '@learncard/network-brain-client',
-    () => ({
-        getClient: jest.fn(),
-        getApiTokenClient: jest.fn(),
-    }),
-    { virtual: true }
-);
-jest.mock('@learncard/core', () => ({ generateLearnCard: jest.fn() }), { virtual: true });
-jest.mock('@learncard/didkit-plugin', () => ({ getDidKitPlugin: jest.fn() }), { virtual: true });
-jest.mock('@learncard/didkey-plugin', () => ({ getDidKeyPlugin: jest.fn() }), { virtual: true });
-jest.mock('@learncard/vc-plugin', () => ({ getVCPlugin: jest.fn() }), { virtual: true });
-jest.mock('@learncard/helpers', () => ({}), { virtual: true });
-jest.mock('@learncard/types', () => ({}), { virtual: true });
+vi.mock('@learncard/network-brain-client', () => ({
+    getClient: vi.fn(),
+    getApiTokenClient: vi.fn(),
+}));
+vi.mock('@learncard/core', () => ({ generateLearnCard: vi.fn() }));
+vi.mock('@learncard/didkit-plugin', () => ({ getDidKitPlugin: vi.fn() }));
+vi.mock('@learncard/didkey-plugin', () => ({ getDidKeyPlugin: vi.fn() }));
+vi.mock('@learncard/vc-plugin', () => ({ getVCPlugin: vi.fn() }));
+vi.mock('@learncard/helpers', () => ({}));
+vi.mock('@learncard/types', () => ({}));
 
 const PROFILE = {
     profileId: 'usera',
@@ -40,15 +37,15 @@ const PROMPT_ID = '00000000-0000-4000-8000-000000000001';
 const getMockLearnCard = () =>
     ({
         id: { did: () => PROFILE.did },
-        invoke: { getDidAuthVp: jest.fn() },
-        debug: jest.fn(),
+        invoke: { getDidAuthVp: vi.fn() },
+        debug: vi.fn(),
     } as any);
 
 const getMockClient = (profile: typeof PROFILE | null = PROFILE) => ({
     profile: {
-        getProfile: { query: jest.fn().mockResolvedValue(profile ?? undefined) },
+        getProfile: { query: vi.fn().mockResolvedValue(profile ?? undefined) },
         pendingConnectionPrompts: {
-            query: jest.fn().mockResolvedValue([
+            query: vi.fn().mockResolvedValue([
                 {
                     promptId: PROMPT_ID,
                     status: 'PENDING',
@@ -61,13 +58,13 @@ const getMockClient = (profile: typeof PROFILE | null = PROFILE) => ({
             ]),
         },
         connectionPromptStatus: {
-            query: jest.fn().mockResolvedValue({ promptId: PROMPT_ID, status: 'PENDING' }),
+            query: vi.fn().mockResolvedValue({ promptId: PROMPT_ID, status: 'PENDING' }),
         },
         skipConnectionPrompt: {
-            mutate: jest.fn().mockResolvedValue({ promptId: PROMPT_ID, status: 'SKIPPED' }),
+            mutate: vi.fn().mockResolvedValue({ promptId: PROMPT_ID, status: 'SKIPPED' }),
         },
         connectWithConnectionPrompt: {
-            mutate: jest.fn().mockResolvedValue({ promptId: PROMPT_ID, status: 'CONNECTED' }),
+            mutate: vi.fn().mockResolvedValue({ promptId: PROMPT_ID, status: 'CONNECTED' }),
         },
     },
 });
@@ -95,12 +92,12 @@ const getLearnCard = async (seed = 'a'.repeat(64)) => {
 
 describe('connection prompt methods', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('forwards all four methods to the authenticated profile procedures', async () => {
         const client = getMockClient();
-        (getBrainClient as jest.Mock).mockResolvedValue(client);
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
         const learnCard = getMockLearnCard();
         const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
 
@@ -137,7 +134,7 @@ describe('connection prompt methods', () => {
         ['connectWithConnectionPrompt', [PROMPT_ID]],
     ] as const)('runs ensureUser before %s', async (method, args) => {
         const client = getMockClient(null);
-        (getBrainClient as jest.Mock).mockResolvedValue(client);
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
         const learnCard = getMockLearnCard();
         const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
 
