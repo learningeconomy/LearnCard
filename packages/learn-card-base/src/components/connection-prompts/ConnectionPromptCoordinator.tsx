@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import { useToast } from '../../hooks/useToast';
 import {
@@ -34,6 +34,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     const currentViewerKeyRef = useRef(viewerKey);
     currentViewerKeyRef.current = viewerKey;
     const activePromptIdRef = useRef<string | null>(null);
+    const resolvedPromptIdsRef = useRef(new Set<string>());
     const ownedModalTokenRef = useRef<ModalInstanceToken | null>(null);
     const resolvedRef = useRef(false);
     const actionInFlightRef = useRef(false);
@@ -47,17 +48,17 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
         mobile: ModalTypes.Center,
     });
 
-    const nextPrompt = useMemo(
-        () =>
-            [...pendingPrompts]
-                .filter(prompt => prompt.surface === 'POST_CLAIM')
-                .sort(
-                    (left, right) =>
-                        left.triggeredAt.localeCompare(right.triggeredAt) ||
-                        left.promptId.localeCompare(right.promptId)
-                )[0],
-        [pendingPrompts]
-    );
+    const nextPrompt = [...pendingPrompts]
+        .filter(
+            prompt =>
+                prompt.surface === 'POST_CLAIM' &&
+                !resolvedPromptIdsRef.current.has(prompt.promptId)
+        )
+        .sort(
+            (left, right) =>
+                left.triggeredAt.localeCompare(right.triggeredAt) ||
+                left.promptId.localeCompare(right.promptId)
+        )[0];
 
     useEffect(() => {
         if (previousViewerKeyRef.current === viewerKey) return;
@@ -65,6 +66,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
         const ownedModalToken = ownedModalTokenRef.current;
         previousViewerKeyRef.current = viewerKey;
         activePromptIdRef.current = null;
+        resolvedPromptIdsRef.current.clear();
         ownedModalTokenRef.current = null;
         resolvedRef.current = true;
         actionInFlightRef.current = false;
@@ -93,10 +95,23 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     }, [modals]);
 
     useEffect(() => {
-        if (!viewerKey || modals.length > 0 || !nextPrompt || activePromptIdRef.current) return;
+        if (
+            !viewerKey ||
+            modals.length > 0 ||
+            !nextPrompt ||
+            activePromptIdRef.current ||
+            resolvedPromptIdsRef.current.has(nextPrompt.promptId)
+        ) {
+            return;
+        }
 
         const timeout = setTimeout(() => {
-            if (activePromptIdRef.current) return;
+            if (
+                activePromptIdRef.current ||
+                resolvedPromptIdsRef.current.has(nextPrompt.promptId)
+            ) {
+                return;
+            }
 
             activePromptIdRef.current = nextPrompt.promptId;
             resolvedRef.current = false;
@@ -127,6 +142,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
                 if (!ownsPromptModal()) return;
 
+                resolvedPromptIdsRef.current.add(promptId);
                 resolvedRef.current = true;
                 actionInFlightRef.current = false;
                 if (modalToken !== null) forceCloseModalByToken(modalToken);
@@ -145,6 +161,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
                 if (!ownsPromptModal()) return;
 
+                resolvedPromptIdsRef.current.add(promptId);
                 resolvedRef.current = true;
                 actionInFlightRef.current = false;
                 if (modalToken !== null) forceCloseModalByToken(modalToken);

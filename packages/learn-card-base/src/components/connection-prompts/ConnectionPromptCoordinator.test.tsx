@@ -350,6 +350,33 @@ describe('ConnectionPromptCoordinator', () => {
         expect(state.skip).not.toHaveBeenCalled();
     });
 
+    it('does not reopen a resolved prompt while the pending query is stale', async () => {
+        state.prompts = [alice];
+        const view = renderCoordinator();
+        await advance(150);
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Skip for Now' }));
+        });
+        await advance(500);
+
+        expect(state.skip).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
+        expect(screen.getByTestId('modal-count').textContent).toBe('0');
+
+        state.prompts = [bob, alice];
+        view.rerender(
+            <ModalsProvider>
+                <ConnectionPromptCoordinator copy={copy} />
+                <ModalHarness />
+            </ModalsProvider>
+        );
+        await advance(150);
+
+        expect(screen.getByRole('heading', { name: 'Connect with Bob?' })).toBeTruthy();
+        expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
+    });
+
     it('suppresses native dismissal during Connect and resets the guard after failure', async () => {
         const request = deferred<void>();
         state.prompts = [alice];
