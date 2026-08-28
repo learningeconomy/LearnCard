@@ -70,10 +70,9 @@
             }
         },
         "test:watch": {
-            "executor": "./tools/executors/workspace:run-command",
+            "executor": "nx:run-script",
             "options": {
-                "command": "bun run test:watch",
-                "cwd": "{root}/services/learn-card-network/learn-cloud-service"
+                "script": "test:watch"
             }
         },
         "test:integration": {

@@ -3,6 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "test": "vitest run",
         "test:e2e": "vitest run",
         "test:e2e:watch": "vitest",
         "test:e2e:no-docker": "E2E_MANAGE_DOCKER=false vitest run",

@@ -124,6 +124,31 @@ export const brainServiceEnvironmentSchema = z
         }
     });
 
+const notificationRuntimeEnvironmentSchema = z
+    .object({
+        NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
+        DOMAIN_NAME: brainServiceEnvironmentShape.DOMAIN_NAME,
+        NOTIFICATIONS_QUEUE_URL: brainServiceEnvironmentShape.NOTIFICATIONS_QUEUE_URL,
+        NOTIFICATIONS_SERVICE_WEBHOOK_URL:
+            brainServiceEnvironmentShape.NOTIFICATIONS_SERVICE_WEBHOOK_URL,
+        NOTIFICATIONS_SERVICE_PORT: brainServiceEnvironmentShape.NOTIFICATIONS_SERVICE_PORT,
+        IS_OFFLINE: brainServiceEnvironmentShape.IS_OFFLINE,
+        IS_E2E_TEST: brainServiceEnvironmentShape.IS_E2E_TEST,
+    })
+    .transform(runtimeEnvironment => ({
+        ...runtimeEnvironment,
+        NOTIFICATIONS_SERVICE_PORT: runtimeEnvironment.NOTIFICATIONS_SERVICE_PORT ?? 5100,
+    }));
+
+export type NotificationRuntimeEnvironment = z.output<typeof notificationRuntimeEnvironmentSchema>;
+
+export const getNotificationRuntimeEnvironment = (): NotificationRuntimeEnvironment =>
+    parseEnvironment(notificationRuntimeEnvironmentSchema, process.env, {
+        project: 'brain-service',
+        source: 'process environment',
+        examplePath: 'services/learn-card-network/brain-service/.env.example',
+    });
+
 export type BrainServiceEnvironment = z.output<typeof brainServiceEnvironmentSchema>;
 
 export const parseBrainServiceEnvironment = (

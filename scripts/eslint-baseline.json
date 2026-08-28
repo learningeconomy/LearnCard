@@ -2953,7 +2953,10 @@
         "d353ca56eff2d89bc197ed3eaedeb121ab3756e5bd3521a6395feb390b08a8ff": 1,
         "e2f500516d4631a8caf285cc538b4469c2716b2b9e98bb1f6040fc81fb22c91b": 1,
         "e4d012af34df5cb145380a401c4a2da3b7b5c8ce273638c9dca3320a6da50ca0": 1,
-        "f8aebb036e2b44088158b0e1164c623d5235e685d6203772c2d9233f21c77b8a": 1
+        "f8aebb036e2b44088158b0e1164c623d5235e685d6203772c2d9233f21c77b8a": 1,
+        "4878b43e080422fcb783e9f309de2e03c7ee5704be25909b54a40eeb807321d0": 1,
+        "508532004803bee637989881e18e569c76c58f4afa5fd07a4c12600982b6fdaf": 1,
+        "a543828c4f7fe9913546cd1476b73ca502100cb354ec1af2054c5598722874f9": 1
     },
     "packages/learn-card-base/src/react-query/mutations/syncAllCredentials.ts": {
         "4537961604e84fe8df52422a555adea26257eba3b2da856449e095daadca8bd2": 1,
@@ -4081,7 +4084,8 @@
         "f480b5ef39799d95bb5b719a189bc6a897ddbc489b07d0f52be2b1c909b1de36": 1,
         "f9a4a795e0d5718ccef30219b7d49ce52776024b9b15ae4a9aa96046b0a7628e": 1,
         "fbe9bbb8476b7dd1ff48fbdf6b384e7cd27ce698b6b83441ca15a1c703b7b4a1": 1,
-        "fc7538b745ffb1a52bb9db0a17c5b63fe6fc82225d1e8532fbdaf09803d70f78": 1
+        "fc7538b745ffb1a52bb9db0a17c5b63fe6fc82225d1e8532fbdaf09803d70f78": 1,
+        "88208cc1cffe1c4846d40efbc931240e4cb3dfaa3b503a08fc04d8a7c9341137": 1
     },
     "packages/learn-card-embed-sdk/src/index.ts": {
         "20e0a1e6bb4030ee8b20d115404d3e1358609baf988f17ad9047bb8067acada1": 1,
@@ -4350,7 +4354,8 @@
         "b3806f74eca6260e94270d7b82416556b4b16911cb382488f6a45fbc0a2aaf1a": 1,
         "c5a6b7389425053c85a17df7063bb9431fe5016bf6b0391028cdf5d9161f4746": 1,
         "d90f5eaa3c0aefad8fc8a168a5cede5c3cbaefdb723d366f5cbe64dd7c2de2ad": 1,
-        "ffa8292c0964b0932cf3f57398539dac8171448e35a333e5ea713a0df92e295b": 1
+        "ffa8292c0964b0932cf3f57398539dac8171448e35a333e5ea713a0df92e295b": 1,
+        "6a93971b0eac075fd58550c3a8350f1a1cdb275afd3bca54a0d3b53e2c92588c": 1
     },
     "packages/plugins/claimable-boosts/src/types.ts": {
         "5ecfa9670675833425b04ce270635e9a90e5d98b434858cc6f0c713606c3d1cb": 2
@@ -4484,7 +4489,13 @@
         "f9cca57bbff4b8571e6fc342f4e0b21a03cb3b8cf3774baaa4322ed0553df19c": 1
     },
     "packages/plugins/learn-card-network/src/test/index.test.ts": {
-        "bf9f4065b7051cfbe3bec89d842508ea119468e69e700b8cb83e7f58f1dc1e35": 1
+        "bf9f4065b7051cfbe3bec89d842508ea119468e69e700b8cb83e7f58f1dc1e35": 1,
+        "1d6863be19628f23dedff49c621b5cab41b899d0c7657b3e5d5f55ac8e2af354": 1,
+        "63e7759eb32cc5ae50c906d1d07959d1644c7146215fe330d17250e8dc574162": 1,
+        "89cee0bc67d96fdcaa8ba667950f90fe62bd2b6d66e4737cf7ca272354347488": 1,
+        "a09ea074b1ee96c445f4b7529a24c046c0f5b8a4b74a8d440d171b3230c81256": 1,
+        "b57a7592c383de3ef68477b9d572dc4af0ef6f7caba56c3905bea9ed5fbc43d7": 1,
+        "b58e2c11a602206b758b13aad6c923470ca2ae91d43b66e8e4d3b0a379742897": 1
     },
     "packages/plugins/learn-card-network/src/types.ts": {
         "06cb18b6853de96f25da7320bc686643e35cfde993bca91d353c6ab6fc7dbf5d": 2,
@@ -5591,7 +5602,8 @@
         "fba55e0d8ce16bc0335497aedac4bb333c0f3b0e33ca97b71a2bbfa26dbd5709": 1,
         "fcbef0ea485c0c546d41a5dc3ff9eb6a09792890e84fd3bd1f5bafee203bf218": 1,
         "fd42a57adcbfb3d6339a4b362cafb3247d6a7886e38423c456c3990125ec647d": 3,
-        "fe4bbc369db457a044fade8f2b0bd2676a00539b930995a4835db16ee32db413": 1
+        "fe4bbc369db457a044fade8f2b0bd2676a00539b930995a4835db16ee32db413": 1,
+        "1fd8653a5c8042471949378a587a5262257c6a7fb0fb7bae53d48653b240e0a3": 2
     },
     "packages/sss-key-manager/src/sss-strategy.ts": {
         "081c343d720bd6ad544b0bfe4bd088b7c9c40ad1fc8a1a15d3a67dbfa67b2bfe": 1,
@@ -7268,5 +7280,38 @@
     },
     "tests/smoketests/playwright.config.ts": {
         "d15cd80ba3506adc848b9b7d8a9a647a1812421f5d75835c4879def04a2ed3f8": 1
+    },
+    "packages/learn-card-base/src/components/connection-prompts/ConnectionPromptCoordinator.test.tsx": {
+        "334745cbcbaf72229d6b5a1cddb8d0ec2f0dcc19ebf534b842e38f230def2908": 1
+    },
+    "packages/learn-card-base/src/components/connection-prompts/ConnectionPromptCoordinator.tsx": {
+        "2c0467314d932abefc7bf37ecb952067ef7de6c920c19720b708273106293ddc": 1,
+        "88d9a7a061a49f27299c5fe80b35bb0b9508d51744db66f4559049c17a294ea8": 1,
+        "bf210b868cf545b31b6664317a13adf4a26861b608ac4f09d0c9024688489b73": 1,
+        "e5eacfcad29818366786639562c87995cbf9659fc7d9666c98c8d4886e3cb023": 1
+    },
+    "packages/learn-card-base/src/components/connection-prompts/ConnectionPromptNotificationCard.test.tsx": {
+        "12e04a494b86f0e254c08adcfdb34467b3629e7f1e515d2e750ffc49fe8b15c5": 1
+    },
+    "packages/learn-card-base/src/components/connection-prompts/ConnectionPromptNotificationCard.tsx": {
+        "0b44bff11b55a392e5f1af7675a587145d5ed5c56dd5d5f0795051951ad9ecdb": 1,
+        "1988ef0222675f4e74a9449b7c07a5d0021d9c3e7a247c3b708ab0633eb44e6c": 1,
+        "6e08893e36217717c0c933319c521f9c20309acdd76b9a5df5c5c1d308dbdc94": 1,
+        "8b6d1a0288770421f0f5f9b510d2f00d064320053ad4386242cd872edab1db0e": 1,
+        "d83eecac62ab1ade093e992e3aac7f435733c56a83a7aee3de6d509d6c094dcb": 1
+    },
+    "packages/learn-card-base/src/components/connection-prompts/deduplicateConnectionPromptNotifications.ts": {
+        "c86a0e01af70fcaa6301735eef40d3108f80b4241f80e60130b04199b9fc3fb5": 1
+    },
+    "packages/learn-card-base/src/components/modals/ModalsContext.tsx": {
+        "3a9d71735b88e96d4886718d24dd338a4f8f2d0a5a20471cc0d5f2ad466a60c1": 1,
+        "da14c4413d9e3745a11caabe3da5d3a4a5a69b083bbb5a2bfd14e9feb5be59a9": 1
+    },
+    "packages/learn-card-base/src/react-query/connectionPrompts.test.tsx": {
+        "1dd80b8fccf19b753b8d884ab16500717e00c2880a41909420d185f9c3151812": 1
+    },
+    "services/learn-card-network/brain-service/src/helpers/connectionPrompt.helpers.ts": {
+        "3e5f971210b0de63c3da2f0600aa20b278ec7d651560d308fd6635be9d1bff6b": 1,
+        "479f1639f1001de6459ec60b8c6282e8ad9d44a51812a508d33dd7705d1e2273": 1
     }
 }
