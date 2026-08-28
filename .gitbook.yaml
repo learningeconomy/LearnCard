@@ -4,7 +4,7 @@ structure:
     readme: README.md
     summary: SUMMARY.md
 
-# Redirect manifest for the docs migration (see .sisyphus/plans/docs-migration-v3.md).
+# Redirect manifest for the docs migration (URL inventory: scripts/docs-migration-map.csv).
 # Rules (per GitBook docs):
 #   - Paths are relative to `root` (no leading slash).
 #   - The old source file MUST be removed/renamed, or the redirect is ignored.

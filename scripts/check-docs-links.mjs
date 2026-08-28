@@ -23,10 +23,12 @@ const DOCS = join(ROOT, 'docs');
 const ALLOWLIST_PATH = join(ROOT, 'scripts', 'docs-links-allowlist.json');
 const UPDATE_ALLOWLIST = process.argv.includes('--update-allowlist');
 
+const SKIP_DIRS = new Set(['.git', '.gitbook']);
+
 const walk = dir =>
     readdirSync(dir).flatMap(name => {
         const full = join(dir, name);
-        if (name.startsWith('.git')) return [];
+        if (SKIP_DIRS.has(name)) return [];
         return statSync(full).isDirectory() ? walk(full) : [full];
     });
 
@@ -56,24 +58,52 @@ const targetExists = target => {
     return false;
 };
 
+const stripCode = content =>
+    content.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
+
+const canonicalPage = target => {
+    if (existsSync(`${target}.md`)) return `${target}.md`;
+    if (existsSync(join(target, 'README.md'))) return join(target, 'README.md');
+    return existsSync(target) ? target : null;
+};
+
+const summaryContent = readFileSync(join(DOCS, 'SUMMARY.md'), 'utf8');
+const publishedPages = new Set([join(DOCS, 'README.md'), join(DOCS, 'SUMMARY.md')]);
+for (const match of summaryContent.matchAll(/\]\(([^)#\s]+\.md)/g)) {
+    if (!match[1].startsWith('http')) publishedPages.add(resolve(DOCS, match[1]));
+}
+
 const errors = [];
 
 for (const file of mdFiles) {
-    const content = readFileSync(file, 'utf8');
+    const content = stripCode(readFileSync(file, 'utf8'));
     const rel = relative(ROOT, file).split(sep).join('/');
     for (const pattern of LINK_PATTERNS) {
         for (const match of content.matchAll(pattern)) {
             const url = match[1];
             if (isExternal(url) || url.startsWith('broken-reference')) continue;
             const target = resolveTarget(file, url);
-            if (target && !targetExists(target)) {
+            if (!target) continue;
+            const page = canonicalPage(target);
+            if (!page) {
                 errors.push(`${rel}: broken link -> ${url}`);
+            } else if (
+                page.endsWith('.md') &&
+                publishedPages.has(file) &&
+                !publishedPages.has(page)
+            ) {
+                errors.push(`${rel}: links to unpublished page -> ${url}`);
             }
         }
     }
 }
 
-const gitbookYaml = readFileSync(join(ROOT, '.gitbook.yaml'), 'utf8');
+const GITBOOK_YAML = join(ROOT, '.gitbook.yaml');
+if (!existsSync(GITBOOK_YAML)) {
+    console.error('Missing .gitbook.yaml at repo root — did it move? check-docs-links.mjs expects it there.');
+    process.exit(1);
+}
+const gitbookYaml = readFileSync(GITBOOK_YAML, 'utf8');
 const redirects = {};
 let inRedirects = false;
 for (const line of gitbookYaml.split('\n')) {
@@ -88,7 +118,6 @@ for (const line of gitbookYaml.split('\n')) {
     }
 }
 
-const redirectDestinations = new Set(Object.values(redirects));
 for (const [source, dest] of Object.entries(redirects)) {
     if (source.startsWith('/')) {
         errors.push(`.gitbook.yaml: redirect source has leading slash -> ${source}`);
@@ -106,7 +135,6 @@ for (const [source, dest] of Object.entries(redirects)) {
         errors.push(`.gitbook.yaml: redirect chain detected -> ${source}: ${dest}`);
     }
 }
-void redirectDestinations;
 
 const allowlist = existsSync(ALLOWLIST_PATH)
     ? new Set(JSON.parse(readFileSync(ALLOWLIST_PATH, 'utf8')))

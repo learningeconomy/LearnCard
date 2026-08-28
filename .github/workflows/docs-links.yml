@@ -7,6 +7,13 @@ on:
             - '.gitbook.yaml'
             - 'scripts/check-docs-links.mjs'
             - 'scripts/docs-links-allowlist.json'
+            - '.github/workflows/docs-links.yml'
+    push:
+        branches:
+            - main
+        paths:
+            - 'docs/**'
+            - '.gitbook.yaml'
 
 jobs:
     check-links:
