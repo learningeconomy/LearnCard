@@ -1324,7 +1324,7 @@ describe('credential claim connection prompts', () => {
         });
     });
 
-    it('does not reopen a skipped prompt for the same trigger but reopens for a later claim', async () => {
+    it('does not reopen a skipped viewer prompt for a later claim with the same person', async () => {
         const first = await createPrompts('credential:claim-1');
         await skipConnectionPrompt(profileB, first.claimerPrompt!.promptId);
 
@@ -1332,8 +1332,10 @@ describe('credential claim connection prompts', () => {
         expect(await getPendingConnectionPrompts(profileB)).toHaveLength(0);
 
         const later = await createPrompts('credential:claim-2');
-        expect(later.claimerPrompt?.promptId).not.toBe(first.claimerPrompt?.promptId);
-        expect(await getPendingConnectionPrompts(profileB)).toHaveLength(1);
+        expect(later.claimerPrompt).toBeUndefined();
+        expect(later.senderPrompt?.promptId).toBe(first.senderPrompt?.promptId);
+        expect(await getPendingConnectionPrompts(profileB)).toHaveLength(0);
+        expect(await getPendingConnectionPrompts(profileA)).toHaveLength(1);
     });
 
     it('keeps the counterpart prompt pending when one participant skips', async () => {
@@ -1355,7 +1357,7 @@ describe('credential claim connection prompts', () => {
         expect(repeated.senderPrompt?.isNew).toBe(false);
     });
 
-    it('does not reopen either direction for a trigger covered while pending', async () => {
+    it('does not reopen either skipped direction for a later claim', async () => {
         const triggerA = 'credential:covered-a';
         const triggerB = 'credential:covered-b';
         const triggerC = 'credential:unseen-c';
@@ -1394,10 +1396,8 @@ describe('credential claim connection prompts', () => {
             getConnectionPromptStatus(profileA, first.senderPrompt!.promptId)
         ).resolves.toEqual({ promptId: first.senderPrompt!.promptId, status: 'SKIPPED' });
 
-        const reopened = await createPrompts(triggerC);
-        expect(reopened.claimerPrompt?.promptId).not.toBe(first.claimerPrompt?.promptId);
-        expect(reopened.senderPrompt?.promptId).not.toBe(first.senderPrompt?.promptId);
-        const reopenedResult = await neogma.queryRunner.run(
+        expect(await createPrompts(triggerC)).toEqual({});
+        const skippedResult = await neogma.queryRunner.run(
             `
                 MATCH (:Profile { profileId: $aId })-[prompt:CONNECTION_PROMPT]-
                       (:Profile { profileId: $bId })
@@ -1407,8 +1407,11 @@ describe('credential claim connection prompts', () => {
             { aId: profileA.profileId, bId: profileB.profileId }
         );
         expect(
-            reopenedResult.records.map(record => record.get('coveredTriggerIds') as string[])
-        ).toEqual([[triggerC], [triggerC]]);
+            skippedResult.records.map(record => record.get('coveredTriggerIds') as string[])
+        ).toEqual([
+            [triggerA, triggerB],
+            [triggerA, triggerB],
+        ]);
     });
 
     it('does not create prompts for a claim sent to self', async () => {
@@ -1443,18 +1446,18 @@ describe('credential claim connection prompts', () => {
         expect(await createPrompts('credential:connected')).toEqual({});
     });
 
-    it('reports an old prompt as stale after a later claim reopens the direction', async () => {
+    it('keeps a skipped prompt terminal after a later claim', async () => {
         const first = await createPrompts('credential:claim-1');
         await skipConnectionPrompt(profileB, first.claimerPrompt!.promptId);
 
         const later = await createPrompts('credential:claim-2');
 
-        expect(later.claimerPrompt?.promptId).not.toBe(first.claimerPrompt?.promptId);
+        expect(later.claimerPrompt).toBeUndefined();
         await expect(
             getConnectionPromptStatus(profileB, first.claimerPrompt!.promptId)
         ).resolves.toEqual({
             promptId: first.claimerPrompt!.promptId,
-            status: 'STALE',
+            status: 'SKIPPED',
         });
     });
 

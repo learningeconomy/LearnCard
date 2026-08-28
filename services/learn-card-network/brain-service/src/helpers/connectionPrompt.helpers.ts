@@ -112,7 +112,9 @@ export const markConnectionPromptsSkipped = async (
             MATCH (first:Profile { profileId: $firstProfileId })
             MATCH (second:Profile { profileId: $secondProfileId })
             MATCH (first)-[prompt:CONNECTION_PROMPT]-(second)
-            SET prompt.status = 'SKIPPED', prompt.updatedAt = $updatedAt
+            SET prompt.status = 'SKIPPED',
+                prompt.suppressed = true,
+                prompt.updatedAt = $updatedAt
         `,
         {
             firstProfileId: first.profileId,
@@ -171,11 +173,14 @@ export const createConnectionPromptsForClaim = async (
                      ) AS coveredTriggerIds
                 WITH prompt, direction, coveredTriggerIds,
                      prompt.promptId IS NULL OR (
-                         prompt.status <> 'PENDING' AND NOT $triggerId IN coveredTriggerIds
+                         coalesce(prompt.suppressed, false) = false
+                         AND prompt.status <> 'PENDING'
+                         AND NOT $triggerId IN coveredTriggerIds
                      ) AS isNew
                 FOREACH (_ IN CASE WHEN isNew THEN [1] ELSE [] END |
                     SET prompt.promptId = direction.promptId,
                         prompt.status = 'PENDING',
+                        prompt.suppressed = false,
                         prompt.triggerId = $triggerId,
                         prompt.coveredTriggerIds = [$triggerId],
                         prompt.surface = direction.surface,
@@ -701,7 +706,9 @@ export const skipConnectionPrompt = async (
                 WHEN prompt IS NOT NULL AND prompt.status = 'PENDING' THEN [1]
                 ELSE []
             END |
-                SET prompt.status = 'SKIPPED', prompt.updatedAt = $updatedAt
+                SET prompt.status = 'SKIPPED',
+                    prompt.suppressed = true,
+                    prompt.updatedAt = $updatedAt
             )
             REMOVE first.__connectionPromptPairLock
             RETURN $promptId AS promptId, coalesce(prompt.status, 'STALE') AS status
@@ -784,7 +791,9 @@ export const connectWithConnectionPrompt = async (
                 WHEN pairPrompt IS NOT NULL AND isPending AND isBlocked THEN [1]
                 ELSE []
             END |
-                SET pairPrompt.status = 'SKIPPED', pairPrompt.updatedAt = $updatedAt
+                SET pairPrompt.status = 'SKIPPED',
+                    pairPrompt.suppressed = true,
+                    pairPrompt.updatedAt = $updatedAt
             )
             FOREACH (_ IN CASE
                 WHEN pairPrompt IS NOT NULL AND isPending AND NOT isBlocked THEN [1]

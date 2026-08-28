@@ -38,6 +38,7 @@ type CredentialRelationshipProps = {
 type ConnectionPromptRelationshipProps = {
     promptId: string;
     status: LCNConnectionPromptStatus;
+    suppressed?: boolean;
     triggerId: string;
     coveredTriggerIds?: string[];
     surface: LCNConnectionPromptSurface;
@@ -164,6 +165,10 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                     status: {
                         property: 'status',
                         schema: { type: 'string', required: true },
+                    },
+                    suppressed: {
+                        property: 'suppressed',
+                        schema: { type: 'boolean', required: false },
                     },
                     triggerId: {
                         property: 'triggerId',

@@ -711,7 +711,9 @@ export const blockProfile = async (source: ProfileType, target: ProfileType): Pr
             WITH source, target, first
             OPTIONAL MATCH (source)-[prompt:CONNECTION_PROMPT]-(target)
             FOREACH (_ IN CASE WHEN prompt IS NULL THEN [] ELSE [1] END |
-                SET prompt.status = 'SKIPPED', prompt.updatedAt = $updatedAt
+                SET prompt.status = 'SKIPPED',
+                    prompt.suppressed = true,
+                    prompt.updatedAt = $updatedAt
             )
             REMOVE first.__connectionPromptPairLock
         `,
