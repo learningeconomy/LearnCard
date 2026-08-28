@@ -9,6 +9,9 @@
  *      and its source path does not shadow a live page (GitBook silently
  *      ignores redirects whose source still exists).
  *   4. No redirect chains (a redirect destination must not itself be redirected).
+ *   5. Pages listed in SUMMARY.md must not link to unpublished pages. This is
+ *      source-gated: links between unpublished/orphaned pages are allowed
+ *      (e.g. within docs/archive/).
  *
  * Pre-existing broken links are grandfathered in scripts/docs-links-allowlist.json
  * (shrink-only: fixing links removes entries; new breakage fails CI).
@@ -17,8 +20,9 @@
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, resolve, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(import.meta.dirname, '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(ROOT, 'docs');
 const ALLOWLIST_PATH = join(ROOT, 'scripts', 'docs-links-allowlist.json');
 const UPDATE_ALLOWLIST = process.argv.includes('--update-allowlist');
@@ -58,8 +62,22 @@ const targetExists = target => {
     return false;
 };
 
-const stripCode = content =>
-    content.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '');
+const FENCE_OPEN = /^[ \t]*(?:[-*+]\s+)?(`{3,})/;
+
+const stripCode = content => {
+    const kept = [];
+    let fenceLength = null;
+    for (const line of content.split('\n')) {
+        const fence = line.match(FENCE_OPEN);
+        if (fenceLength === null) {
+            if (fence) fenceLength = fence[1].length;
+            else kept.push(line);
+        } else if (fence && fence[1].length >= fenceLength) {
+            fenceLength = null;
+        }
+    }
+    return kept.join('\n').replace(/`[^`\n]*`/g, '');
+};
 
 const canonicalPage = target => {
     if (existsSync(`${target}.md`)) return `${target}.md`;
@@ -161,7 +179,8 @@ if (newErrors.length > 0) {
     process.exit(1);
 }
 
+if (fixed.length > 0) process.exit(1);
+
 console.log(
     `Docs integrity OK: ${mdFiles.length} files, ${Object.keys(redirects).length} redirects, ${allowlist.size} grandfathered issues.`
 );
-if (fixed.length > 0) process.exit(1);

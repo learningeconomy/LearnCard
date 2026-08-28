@@ -14,6 +14,12 @@ on:
         paths:
             - 'docs/**'
             - '.gitbook.yaml'
+            - 'scripts/check-docs-links.mjs'
+            - 'scripts/docs-links-allowlist.json'
+            - '.github/workflows/docs-links.yml'
+
+permissions:
+    contents: read
 
 jobs:
     check-links:
