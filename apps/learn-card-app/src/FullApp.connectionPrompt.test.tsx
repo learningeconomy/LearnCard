@@ -43,7 +43,12 @@ vi.mock('learn-card-base', () => ({
     sqliteStore: { get: { db: () => null } },
     ensureReactQueryTableExists: vi.fn(),
     getLogger: () => ({ error: vi.fn() }),
-    QRCodeScannerStore: { use: { showScanner: () => false } },
+    QRCodeScannerStore: {
+        useTracked: {
+            showScanner: () => false,
+            mode: () => 'default',
+        },
+    },
     ModalsProvider: ({ children }: { children: React.ReactNode }) => children,
     ConnectionPromptCoordinator: (props: unknown) => {
         coordinatorProps(props);
