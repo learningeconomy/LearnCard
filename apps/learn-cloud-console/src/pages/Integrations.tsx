@@ -100,7 +100,21 @@ export function Integrations({ session }: IntegrationsProps) {
         }
     };
 
+    // ADR-007 §3.2 + ADR-008 D6: this surface is systems of record. Pure reference
+    // feeds (insight-source only, no subject-data capability) render on Data Sources
+    // instead; hybrids stay here per ADR-013's strictest-lane-wins review logic.
+    const isReferenceFeedOnly = (listingId: string) => {
+        const provided = summaries[listingId]?.capabilities?.provided ?? [];
+
+        return (
+            provided.includes('insight-source') &&
+            !provided.includes('roster-source') &&
+            !provided.includes('record-provisioning')
+        );
+    };
+
     const filtered = listings
+        .filter(p => !isReferenceFeedOnly(p.listing_id))
         .filter(p => p.display_name.toLowerCase().includes(search.toLowerCase()))
         .filter(p => !activeCategory || p.category === activeCategory);
 
