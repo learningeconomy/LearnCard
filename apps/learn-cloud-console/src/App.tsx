@@ -13,6 +13,7 @@ import { DataSources } from './pages/DataSources';
 import { UserApps } from './pages/UserApps';
 import { Wallets } from './pages/Wallets';
 import { Bundles } from './pages/Bundles';
+import { BundleDetail } from './pages/BundleDetail';
 import { ListingDetail } from './pages/ListingDetail';
 import { Users } from './pages/Users';
 import { SkillsRegistries } from './pages/SkillsRegistries';
@@ -128,7 +129,7 @@ export function App() {
                             <Bundles session={session} />
                         </Route>
                         <Route path="/bundles/:id">
-                            <ListingDetail session={session} />
+                            <BundleDetail session={session} />
                         </Route>
                         <Route path="/users">
                             <Users session={session} />
