@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
-import { act, render } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import React, { type ReactElement } from 'react';
 
 /**
@@ -102,6 +102,7 @@ vi.mock('../../paraglide/messages.js', () => ({
     'feedback.reporting.ideaPlaceholder': () => 'Describe your idea.',
     'feedback.reporting.screenshotAttached': () => 'Screenshot attached',
     'feedback.reporting.capturingScreenshot': () => 'Capturing screenshot...',
+    'feedback.reporting.openingFeedbackForm': () => 'Opening feedback form...',
     'feedback.reporting.removeScreenshot': () => 'Remove Screenshot',
     'feedback.reporting.whatWeSend': () => 'What we’ll send',
     'feedback.reporting.bugDisclosure': () =>
@@ -389,6 +390,75 @@ describe('FeedbackProvider reportProblem', () => {
         });
     });
 
+    it('shows immediate feedback while a shake freezes the source, then clears it before opening', async () => {
+        const screenshot = createDeferred<FeedbackScreenshot | undefined>();
+        let freezeSource!: () => void;
+        captureScreenshot.mockImplementationOnce(options => {
+            freezeSource = options?.onSourceFrozen ?? (() => undefined);
+            return screenshot.promise;
+        });
+        renderProvider();
+
+        let report!: Promise<void>;
+        await act(async () => {
+            report = controller!.reportProblem({ source: 'shake' });
+            await Promise.resolve();
+        });
+
+        expect(
+            screen.getByRole('status', { name: 'Opening feedback form...' })
+        ).toBeInTheDocument();
+        expect(modalHost.openModal).not.toHaveBeenCalled();
+
+        await act(async () => {
+            freezeSource();
+            await report;
+        });
+
+        expect(
+            screen.queryByRole('status', { name: 'Opening feedback form...' })
+        ).not.toBeInTheDocument();
+        expect(modalHost.openModal).toHaveBeenCalledTimes(1);
+
+        screenshot.resolve(SCREENSHOT);
+    });
+
+    it('clears a slow shake indicator when a newer screenshot prompt supersedes it', async () => {
+        const slowShake = createDeferred<FeedbackScreenshot | undefined>();
+        let freezeShakeSource!: () => void;
+        captureScreenshot.mockImplementationOnce(options => {
+            freezeShakeSource = options?.onSourceFrozen ?? (() => undefined);
+            return slowShake.promise;
+        });
+        renderProvider();
+
+        let shakeReport!: Promise<void>;
+        await act(async () => {
+            shakeReport = controller!.reportProblem({ source: 'shake' });
+            await Promise.resolve();
+        });
+        expect(
+            screen.getByRole('status', { name: 'Opening feedback form...' })
+        ).toBeInTheDocument();
+
+        await act(async () => {
+            await controller!.reportProblem({ source: 'screenshot' });
+        });
+
+        expect(
+            screen.queryByRole('status', { name: 'Opening feedback form...' })
+        ).not.toBeInTheDocument();
+        expect(toastCall()[0].type).toBe(FeedbackPromptToast);
+
+        await act(async () => {
+            freezeShakeSource();
+            await shakeReport;
+        });
+        expect(modalHost.openModal).not.toHaveBeenCalled();
+
+        slowShake.resolve(SCREENSHOT);
+    });
+
     it('presents an actionable toast when a screenshot arrives while idle', async () => {
         renderProvider();
 
@@ -401,6 +471,49 @@ describe('FeedbackProvider reportProblem', () => {
         const [message, options] = toastCall();
         expect(message.type).toBe(FeedbackPromptToast);
         expect(options).toEqual(expect.objectContaining({ autoDismiss: false }));
+    });
+
+    it('lets an accepted prompt supersede a slow shake without leaving or reopening its flow', async () => {
+        const slowShake = createDeferred<FeedbackScreenshot | undefined>();
+        let freezeShakeSource!: () => void;
+        captureScreenshot.mockResolvedValueOnce(SCREENSHOT).mockImplementationOnce(options => {
+            freezeShakeSource = options?.onSourceFrozen ?? (() => undefined);
+            return slowShake.promise;
+        });
+        renderProvider();
+
+        await act(async () => {
+            await controller!.reportProblem({ source: 'screenshot' });
+        });
+        const [prompt] = toastCall();
+
+        let shakeReport!: Promise<void>;
+        await act(async () => {
+            shakeReport = controller!.reportProblem({ source: 'shake' });
+            await Promise.resolve();
+        });
+        expect(
+            screen.getByRole('status', { name: 'Opening feedback form...' })
+        ).toBeInTheDocument();
+
+        act(() => {
+            prompt.props.onReport();
+        });
+        expect(
+            screen.queryByRole('status', { name: 'Opening feedback form...' })
+        ).not.toBeInTheDocument();
+        expect(composerCall()[0].props.draft.source).toBe('screenshot');
+
+        act(() => {
+            composerCall()[0].props.onCancel();
+        });
+        await act(async () => {
+            freezeShakeSource();
+            await shakeReport;
+        });
+
+        expect(modalHost.openModal).toHaveBeenCalledTimes(1);
+        slowShake.resolve(SCREENSHOT);
     });
 
     it('captures while busy but defers presentation until the app is idle', async () => {
@@ -962,6 +1075,42 @@ describe('FeedbackProvider reportProblem', () => {
 });
 
 describe('FeedbackProvider shareIdea', () => {
+    it('clears a superseded shake indicator before opening the idea composer', async () => {
+        const screenshot = createDeferred<FeedbackScreenshot | undefined>();
+        let freezeSource!: () => void;
+        captureScreenshot.mockImplementationOnce(options => {
+            freezeSource = options?.onSourceFrozen ?? (() => undefined);
+            return screenshot.promise;
+        });
+        renderProvider();
+
+        let shakeReport!: Promise<void>;
+        await act(async () => {
+            shakeReport = controller!.reportProblem({ source: 'shake' });
+            await Promise.resolve();
+        });
+        expect(
+            screen.getByRole('status', { name: 'Opening feedback form...' })
+        ).toBeInTheDocument();
+
+        await act(async () => {
+            await controller!.shareIdea();
+        });
+
+        expect(
+            screen.queryByRole('status', { name: 'Opening feedback form...' })
+        ).not.toBeInTheDocument();
+        expect(composerCall()[0].props.draft.kind).toBe('idea');
+
+        await act(async () => {
+            freezeSource();
+            await shakeReport;
+        });
+        expect(modalHost.openModal).toHaveBeenCalledTimes(1);
+
+        screenshot.resolve(SCREENSHOT);
+    });
+
     it('keeps concurrent explicit idea captures single-flight', async () => {
         const context = createDeferred<FeedbackContextData>();
         collectContext.mockReturnValueOnce(context.promise);

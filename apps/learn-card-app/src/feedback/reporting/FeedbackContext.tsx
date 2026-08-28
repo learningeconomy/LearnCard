@@ -27,7 +27,15 @@
  * here — explicit and automatic reports are never rate-limited by it.
  */
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import React, {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 
 import { getLogger, useModal, ModalTypes, resolveTenantConfig } from 'learn-card-base';
 import { toastStore } from 'learn-card-base/stores/toastStore';
@@ -175,6 +183,27 @@ export const FeedbackProvider: React.FC<{
     const isBusy = useFeedbackBusyState();
     const { newModal, closeModalById } = useModal();
     const analytics = useAnalytics();
+    const openingShakeFeedbackTokenRef = useRef<symbol | undefined>(undefined);
+    const [openingShakeFeedbackToken, setOpeningShakeFeedbackToken] = useState<symbol | undefined>(
+        undefined
+    );
+
+    const showOpeningShakeFeedback = useCallback((): symbol => {
+        const token = Symbol('opening-shake-feedback');
+        openingShakeFeedbackTokenRef.current = token;
+        setOpeningShakeFeedbackToken(token);
+        return token;
+    }, []);
+
+    const hideOpeningShakeFeedback = useCallback((token?: symbol) => {
+        if (token !== undefined && openingShakeFeedbackTokenRef.current !== token) return;
+
+        openingShakeFeedbackTokenRef.current = undefined;
+        setOpeningShakeFeedbackToken(current => {
+            if (token !== undefined && current !== token) return current;
+            return undefined;
+        });
+    }, []);
 
     // Read dependencies and reactive values at call time through refs so the
     // controller identity stays stable across re-renders.
@@ -291,6 +320,7 @@ export const FeedbackProvider: React.FC<{
 
         previousEligibilityRef.current = nextEligibility;
         eligibilityGenerationRef.current += 1;
+        hideOpeningShakeFeedback();
         pendingRef.current = undefined;
         dismissFeedbackPrompt();
         closeFeedbackComposer();
@@ -300,6 +330,7 @@ export const FeedbackProvider: React.FC<{
         eligibility.bug,
         eligibility.idea,
         eligibility.profileId,
+        hideOpeningShakeFeedback,
     ]);
 
     const submitAndClose = useCallback(
@@ -408,6 +439,11 @@ export const FeedbackProvider: React.FC<{
                             return;
                         }
 
+                        // Accepting an earlier prompt is newer explicit intent:
+                        // retire any shake still freezing its screenshot so it
+                        // cannot leave a cue behind or reopen after this closes.
+                        hideOpeningShakeFeedback();
+                        feedbackIntentGenerationRef.current += 1;
                         dismissFeedbackPrompt();
                         openComposer(draft);
                     }}
@@ -417,7 +453,7 @@ export const FeedbackProvider: React.FC<{
             promptToastRef.current = prompt;
             toastStore.set.presentToast(prompt, { autoDismiss: false });
         },
-        [dismissFeedbackPrompt, openComposer]
+        [dismissFeedbackPrompt, hideOpeningShakeFeedback, openComposer]
     );
 
     // Offer the pending draft when the app transitions busy → idle. Pending
@@ -564,6 +600,11 @@ export const FeedbackProvider: React.FC<{
                 if (isAutomatic) pendingRef.current = undefined;
             }
 
+            // Every accepted feedback intent supersedes an older shake cue.
+            // Token ownership prevents an older capture's cleanup from hiding
+            // a newer shake cue after the cooldown expires.
+            hideOpeningShakeFeedback();
+
             if (!isAutomatic) {
                 pendingRef.current = undefined;
                 dismissFeedbackPrompt();
@@ -600,11 +641,14 @@ export const FeedbackProvider: React.FC<{
             }
 
             let keepExplicitOwnership = false;
+            const openingIndicatorToken =
+                source === 'shake' && !isBusyRef.current ? showOpeningShakeFeedback() : undefined;
             try {
                 let { draft, pendingScreenshot, pendingContext } = await captureBugDraft(
                     source,
                     options
                 );
+                if (openingIndicatorToken) hideOpeningShakeFeedback(openingIndicatorToken);
 
                 if (
                     captureGeneration !== eligibilityGenerationRef.current ||
@@ -675,6 +719,7 @@ export const FeedbackProvider: React.FC<{
                 // Shake while idle opens the composer right away.
                 openComposer(draft, undefined, pendingScreenshot, pendingContext);
             } finally {
+                if (openingIndicatorToken) hideOpeningShakeFeedback(openingIndicatorToken);
                 if (explicitOwner !== undefined && !keepExplicitOwnership) {
                     releaseComposerFlow(explicitOwner);
                 }
@@ -684,9 +729,11 @@ export const FeedbackProvider: React.FC<{
             beginComposerFlow,
             captureBugDraft,
             dismissFeedbackPrompt,
+            hideOpeningShakeFeedback,
             openComposer,
             presentPromptToast,
             releaseComposerFlow,
+            showOpeningShakeFeedback,
         ]
     );
 
@@ -699,6 +746,7 @@ export const FeedbackProvider: React.FC<{
 
             // An explicit idea flow supersedes any automatic bug capture that
             // is still rendering in the background.
+            hideOpeningShakeFeedback();
             feedbackIntentGenerationRef.current += 1;
             pendingRef.current = undefined;
             dismissFeedbackPrompt();
@@ -738,7 +786,13 @@ export const FeedbackProvider: React.FC<{
                 if (!keepOwnership) releaseComposerFlow(owner);
             }
         },
-        [beginComposerFlow, dismissFeedbackPrompt, openComposer, releaseComposerFlow]
+        [
+            beginComposerFlow,
+            dismissFeedbackPrompt,
+            hideOpeningShakeFeedback,
+            openComposer,
+            releaseComposerFlow,
+        ]
     );
 
     const controller = useMemo<FeedbackController>(
@@ -757,6 +811,23 @@ export const FeedbackProvider: React.FC<{
     return (
         <FeedbackControllerContext.Provider value={controller}>
             {children}
+            {openingShakeFeedbackToken && (
+                <div
+                    role="status"
+                    aria-label={m['feedback.reporting.openingFeedbackForm']()}
+                    data-feedback-exclude
+                    className="pointer-events-none fixed inset-x-0 top-[calc(0.75rem+var(--lc-overlay-inset-top,var(--ion-safe-area-top,0px)))] z-[100000] flex justify-center px-4 font-poppins"
+                >
+                    <div className="w-full max-w-[240px] overflow-hidden rounded-[20px] border border-grayscale-200 bg-white/95 shadow-lg backdrop-blur-sm">
+                        <div className="px-4 py-2.5 text-center text-xs font-medium text-grayscale-700">
+                            {m['feedback.reporting.openingFeedbackForm']()}
+                        </div>
+                        <div className="h-0.5 overflow-hidden bg-grayscale-100">
+                            <div className="h-full w-full bg-grayscale-600 motion-safe:animate-pulse" />
+                        </div>
+                    </div>
+                </div>
+            )}
         </FeedbackControllerContext.Provider>
     );
 };

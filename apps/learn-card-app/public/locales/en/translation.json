@@ -2660,6 +2660,7 @@
             "ideaPlaceholder": "Describe your idea.",
             "screenshotAttached": "Screenshot attached",
             "capturingScreenshot": "Capturing screenshot...",
+            "openingFeedbackForm": "Opening feedback form...",
             "removeScreenshot": "Remove Screenshot",
             "whatWeSend": "What we’ll send",
             "bugDisclosure": "Your message, optional screenshot, app and device details, recent screens, and sanitized logs.",
