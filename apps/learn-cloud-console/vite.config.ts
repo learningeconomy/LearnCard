@@ -7,10 +7,14 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
     const bffUrl = env.BFF_URL ?? 'http://localhost:3200';
 
+    // '^/p/' is a regex, not a prefix: a plain '/p' entry also captures SPA routes like
+    // /plugins and serves them from the BFF instead of index.html. Vite skips
+    // changeOrigin for regex keys, so Host is pinned explicitly to keep the forwarded
+    // Host identical to what the prefix entry produced.
     const proxy = Object.fromEntries(
-        ['/auth', '/health', '/p', '/trpc'].map(path => [
+        ['/auth', '/health', '^/p/', '/trpc'].map(path => [
             path,
-            { target: bffUrl, changeOrigin: true },
+            { target: bffUrl, changeOrigin: true, headers: { host: new URL(bffUrl).host } },
         ])
     );
 

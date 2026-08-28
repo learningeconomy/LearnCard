@@ -1,28 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
-import { Cable, Search, Loader2 } from 'lucide-react';
+import { Database, Search, Loader2 } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { ClampText } from '../components/ClampText';
 import { InstallActions } from '../components/catalog/InstallActions';
 import { trpc } from '../trpc';
-import { getCatalogIntegrationManifestSummary } from '../api';
-import type { DashboardSession, CatalogListing, CatalogIntegrationManifestSummary } from '../api';
+import type { CatalogListing, CatalogIntegrationManifestSummary, DashboardSession } from '../api';
 import type { InstallIntent } from '@learncard/types';
 
-interface IntegrationsProps {
+interface DataSourcesProps {
     session: DashboardSession;
 }
 
-export function Integrations({ session }: IntegrationsProps) {
+type DataSource = { listing: CatalogListing; summary: CatalogIntegrationManifestSummary };
+
+export function DataSources({ session }: DataSourcesProps) {
     const [, setLocation] = useLocation();
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
-    const [listings, setListings] = useState<CatalogListing[]>([]);
-    const [summaries, setSummaries] = useState<
-        Record<string, CatalogIntegrationManifestSummary | null>
-    >({});
+    const [dataSources, setDataSources] = useState<DataSource[]>([]);
     const [intents, setIntents] = useState<InstallIntent[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -37,28 +35,34 @@ export function Integrations({ session }: IntegrationsProps) {
                 trpc.catalog.listings.query({ limit: 100 }),
                 trpc.installIntents.listInstallIntents.query({ ecosystemId }),
             ]);
-            // ADR-007 §3.2: kind=INTEGRATION is the operator surface shown here;
-            // kind=APP (or legacy listings without kind) belongs to User Apps.
+
+            // ADR-007 §3.2: only kind=INTEGRATION listings carry a signed lc.integration
+            // manifest, which is the only place a capability can be declared.
             const integrations = listingsRes.records.filter(l => l.kind === 'INTEGRATION');
 
-            setListings(integrations);
-            setIntents(intentsRes as InstallIntent[]);
-
-            // An integration whose manifest fails verification declares nothing we may
-            // trust, so its card degrades to no record-class pills rather than erroring.
-            const summaryResults = await Promise.all(
-                integrations.map(
-                    async listing =>
-                        [
-                            listing.listing_id,
-                            await getCatalogIntegrationManifestSummary({
-                                listingId: listing.listing_id,
-                            }).catch(() => null),
-                        ] as const
+            const summaries = await Promise.all(
+                integrations.map(listing =>
+                    trpc.catalog.getIntegrationManifestSummary
+                        .query({ listingId: listing.listing_id })
+                        // An integration whose manifest fails verification declares no
+                        // capability we may trust, so it is simply not a Data Source.
+                        .catch(() => null)
                 )
             );
 
-            setSummaries(Object.fromEntries(summaryResults));
+            setDataSources(
+                integrations
+                    .map((listing, index) => ({ listing, summary: summaries[index] }))
+                    // ADR-008 D6: `insight-source` is the capability for non-subject
+                    // reference / insight data flowing *in* — that is this page.
+                    // ADR-013 Q4: "Non-subject reference enrichment requires no record
+                    // class", so record classes mark the subject-data lane (rendered on
+                    // Integrations) and must never gate this listing.
+                    .filter((entry): entry is DataSource =>
+                        Boolean(entry.summary?.capabilities.provided.includes('insight-source'))
+                    )
+            );
+            setIntents(intentsRes as InstallIntent[]);
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         } finally {
@@ -82,111 +86,76 @@ export function Integrations({ session }: IntegrationsProps) {
         );
     }
 
-    const categories = Array.from(
-        new Set(listings.map(l => l.category).filter(Boolean) as string[])
-    ).sort();
+    const categories = Array.from(new Set(dataSources.map(e => e.summary.category))).sort();
 
-    const kindLabel = (kind?: string) => {
-        switch (kind) {
-            case 'APP':
-                return 'App';
-            case 'WALLET':
-                return 'Wallet';
-            case 'BUNDLE':
-                return 'Bundle';
-            case 'INTEGRATION':
-            default:
-                return 'Integration';
-        }
-    };
+    const filtered = dataSources
+        .filter(e => e.listing.display_name.toLowerCase().includes(search.toLowerCase()))
+        .filter(e => !activeCategory || e.summary.category === activeCategory);
 
-    const filtered = listings
-        .filter(p => p.display_name.toLowerCase().includes(search.toLowerCase()))
-        .filter(p => !activeCategory || p.category === activeCategory);
+    const getActiveIntent = (listingId: string) =>
+        intents.find(i => i.proposal.source.listingId === listingId && i.status?.phase === 'READY');
 
-    const getActiveIntent = (listingId: string) => {
-        return intents.find(
-            i => i.proposal.source.listingId === listingId && i.status?.phase === 'READY'
-        );
-    };
+    const activeItems = filtered.filter(e => getActiveIntent(e.listing.listing_id));
+    const restItems = filtered.filter(e => !getActiveIntent(e.listing.listing_id));
+    const installed = dataSources.filter(e => getActiveIntent(e.listing.listing_id)).length;
 
-    const activeItems = filtered.filter(p => getActiveIntent(p.listing_id));
-    const restItems = filtered.filter(p => !getActiveIntent(p.listing_id));
-    const connectedCount = listings.filter(p => getActiveIntent(p.listing_id)).length;
-
-    const renderRecordClassPill = (recordClass: string) => (
-        <Badge
-            key={recordClass}
-            variant="outline"
-            className={
-                recordClass === 'employment'
-                    ? 'border-amber-500/40 bg-amber-500/10 text-[10px] text-amber-600'
-                    : 'border-lc-blue/40 bg-lc-blue/10 text-[10px] text-lc-blue'
-            }
-        >
-            {recordClass.charAt(0).toUpperCase() + recordClass.slice(1)}
-        </Badge>
-    );
-
-    const renderCard = (plugin: CatalogListing) => {
-        const activeIntent = getActiveIntent(plugin.listing_id);
+    const renderCard = ({ listing, summary }: DataSource) => {
+        const activeIntent = getActiveIntent(listing.listing_id);
         const isInstalled = !!activeIntent;
-        const recordClasses = summaries[plugin.listing_id]?.supportedRecordClasses ?? [];
 
         return (
             <div
-                key={plugin.listing_id}
+                key={listing.listing_id}
                 className={`bg-card border rounded-xl p-4 md:p-6 shadow-card transition-all cursor-pointer hover:shadow-md ${
                     isInstalled ? 'border-emerald/30' : 'border-border'
                 }`}
-                onClick={() => setLocation(`/integrations/${plugin.listing_id}`)}
+                // A Data Source is the same listing as its Integration, so it has no
+                // separate detail route.
+                onClick={() => setLocation(`/integrations/${listing.listing_id}`)}
             >
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-muted text-muted-foreground overflow-hidden">
-                            {plugin.icon_url ? (
+                            {listing.icon_url ? (
                                 <img
-                                    src={plugin.icon_url}
-                                    alt={plugin.display_name}
+                                    src={listing.icon_url}
+                                    alt={listing.display_name}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <Cable className="w-5 h-5" />
+                                <Database className="w-5 h-5" />
                             )}
                         </div>
                         <div>
                             <h3 className="font-display font-bold text-foreground">
-                                {plugin.display_name}
+                                {listing.display_name}
                             </h3>
                             <div className="flex flex-wrap items-center gap-1 mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                    {summary.category}
+                                </Badge>
                                 <Badge
                                     variant="outline"
                                     className="text-[10px] gap-1 border-lc-blue/40 text-lc-blue"
                                 >
-                                    <Cable className="w-3 h-3" /> {kindLabel(plugin.kind)}
+                                    <Database className="w-3 h-3" /> Data Source
                                 </Badge>
-                                {/* ADR-012 + ADR-013 §3.1: record classes mark the
-                                    subject-data lane (records out of a system of record)
-                                    and set review depth + consent tier, so they render
-                                    here — never on Data Sources, whose reference
-                                    enrichment declares no record class (ADR-013 Q4). */}
-                                {recordClasses.map(renderRecordClassPill)}
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="mb-4">
                     <ClampText
-                        text={plugin.tagline || plugin.full_description}
+                        text={listing.tagline || listing.full_description}
                         className="text-sm text-muted-foreground"
                     />
                 </div>
                 <div onClick={e => e.stopPropagation()}>
                     <InstallActions
                         ecosystemId={ecosystemId}
-                        itemId={plugin.listing_id}
-                        itemName={plugin.display_name}
-                        category={plugin.category}
+                        itemId={listing.listing_id}
+                        itemName={listing.display_name}
+                        category={summary.category}
                         isInstalled={isInstalled}
                         existingIntentId={activeIntent?.intentId}
                         onChanged={loadData}
@@ -201,17 +170,14 @@ export function Integrations({ session }: IntegrationsProps) {
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <h1 className="font-display text-3xl font-bold text-foreground flex items-center gap-2">
-                        <Cable className="w-7 h-7 text-lc-blue" />
-                        Integrations
+                        <Database className="w-7 h-7 text-lc-blue" />
+                        Data Sources
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Connect the systems of record for your ecosystem — learning management,
-                        student information, and HR systems.
-                        {connectedCount > 0 && (
-                            <span className="text-emerald font-medium">
-                                {' '}
-                                {connectedCount} connected
-                            </span>
+                        Install connectors that pull reference data into your ecosystem — labor
+                        market, federal education, and standards feeds.
+                        {installed > 0 && (
+                            <span className="text-emerald font-medium"> {installed} installed</span>
                         )}
                     </p>
                 </div>
@@ -227,7 +193,7 @@ export function Integrations({ session }: IntegrationsProps) {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                     className="pl-10"
-                    placeholder="Search integrations..."
+                    placeholder="Search data sources..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                 />
@@ -237,8 +203,8 @@ export function Integrations({ session }: IntegrationsProps) {
                 categories={categories}
                 activeCategory={activeCategory}
                 onCategoryChange={setActiveCategory}
-                allCount={listings.length}
-                getCategoryCount={cat => listings.filter(p => p.category === cat).length}
+                allCount={dataSources.length}
+                getCategoryCount={cat => dataSources.filter(e => e.summary.category === cat).length}
             />
 
             {activeItems.length > 0 && (
@@ -272,13 +238,13 @@ export function Integrations({ session }: IntegrationsProps) {
 
             {filtered.length === 0 && (search || activeCategory) && (
                 <div className="text-center py-12 text-muted-foreground">
-                    No integrations match your search.
+                    No data sources match your search.
                 </div>
             )}
 
-            {listings.length === 0 && !search && !activeCategory && (
+            {dataSources.length === 0 && !search && !activeCategory && (
                 <div className="text-center py-12 text-muted-foreground">
-                    No integrations available in the catalog.
+                    No data sources available in the catalog.
                 </div>
             )}
         </div>

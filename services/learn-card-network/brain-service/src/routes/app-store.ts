@@ -3,7 +3,12 @@ import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import {
     AppEventValidator,
+    BundleManifestValidator,
+    CapabilityEnum,
+    InstallTargetTypeEnum,
+    IntegrationManifestValidator,
     LCNNotificationTypeEnumValidator,
+    RecordClassEnum,
     SendNotificationEventValidator,
 } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
@@ -53,6 +58,7 @@ import {
     checkIfProfileInstalledApp,
 } from '@accesslayer/app-store-listing/read';
 import { readListingVersionsForListing } from '@accesslayer/listing-version/read';
+import { expandBundle } from '@helpers/install-intent.helpers';
 import { updateAppStoreListing } from '@accesslayer/app-store-listing/update';
 import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
@@ -2277,6 +2283,135 @@ export const appStoreRouter = t.router({
                     status: version.status,
                     created_at: version.created_at,
                 }));
+        }),
+
+    getBundleMembers: openRoute
+        .meta({
+            openapi: {
+                protect: false,
+                method: 'GET',
+                path: '/app-store/public/listing/{listingId}/bundle-members',
+                tags: ['App Store'],
+                summary: 'Get Bundle Members',
+                description:
+                    'Get the members declared by the signed lc.bundle manifest of a LISTED bundle',
+            },
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(
+            z.array(
+                z.object({
+                    declarationId: z.string(),
+                    targetType: InstallTargetTypeEnum,
+                    listingId: z.string(),
+                    versionId: z.string(),
+                    optional: z.boolean(),
+                    display_name: z.string().optional(),
+                })
+            )
+        )
+        .query(async ({ input }) => {
+            const listing = await readAppStoreListingById(input.listingId);
+
+            if (!listing || listing.app_listing_status !== 'LISTED') {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+            }
+
+            if (listing.kind !== 'BUNDLE') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Listing is not a bundle',
+                });
+            }
+
+            const version = (await readListingVersionsForListing(input.listingId)).find(
+                candidate => candidate.status === 'LISTED'
+            );
+
+            if (!version) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Bundle has no LISTED version',
+                });
+            }
+
+            // Same gate buildSpecForIntent runs before it fans a bundle out: the stored
+            // manifest must verify against its publisher DID before its members are read.
+            const validated = await assertSignedListingVersionOrThrow(listing.kind, version);
+            const { members } = expandBundle(BundleManifestValidator.parse(validated));
+
+            const memberListings = await Promise.all(
+                members.map(member => readAppStoreListingById(member.listingId))
+            );
+
+            return members.map((member, index) => ({
+                ...member,
+                display_name: memberListings[index]?.display_name,
+            }));
+        }),
+
+    getIntegrationManifestSummary: openRoute
+        .meta({
+            openapi: {
+                protect: false,
+                method: 'GET',
+                path: '/app-store/public/listing/{listingId}/integration-manifest-summary',
+                tags: ['App Store'],
+                summary: 'Get Integration Manifest Summary',
+                description:
+                    'Get the declarative summary of the signed lc.integration manifest of a LISTED integration',
+            },
+        })
+        .input(z.object({ listingId: z.string() }))
+        .output(
+            z.object({
+                apiVersion: z.string(),
+                category: z.string(),
+                supportedRecordClasses: z.array(RecordClassEnum),
+                capabilities: z.object({
+                    provided: z.array(CapabilityEnum),
+                    consumed: z.array(CapabilityEnum),
+                }),
+            })
+        )
+        .query(async ({ input }) => {
+            const listing = await readAppStoreListingById(input.listingId);
+
+            if (!listing || listing.app_listing_status !== 'LISTED') {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Listing not found' });
+            }
+
+            if (listing.kind !== 'INTEGRATION') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Listing is not an integration',
+                });
+            }
+
+            const version = (await readListingVersionsForListing(input.listingId)).find(
+                candidate => candidate.status === 'LISTED'
+            );
+
+            if (!version) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Integration has no LISTED version',
+                });
+            }
+
+            // Same gate getBundleMembers runs: the stored manifest must verify against its
+            // publisher DID before any of its declarations are read. Reading an unverified
+            // manifest would let an unsigned edit dictate record-class governance (ADR-013
+            // §3.1 — review depth and consent tier key off the declared classes).
+            const validated = await assertSignedListingVersionOrThrow(listing.kind, version);
+            const manifest = IntegrationManifestValidator.parse(validated);
+
+            return {
+                apiVersion: manifest.apiVersion,
+                category: manifest.category,
+                supportedRecordClasses: manifest.supportedRecordClasses,
+                capabilities: manifest.capabilities,
+            };
         }),
 
     getPublicListing: openRoute

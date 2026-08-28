@@ -16,11 +16,88 @@ prototype changes, this app follows.
 
 Key reference files in the prototype:
 
-| Concern            | Prototype file                        | Our equivalent                                       |
-| ------------------ | ------------------------------------- | ---------------------------------------------------- |
-| Sidebar            | `src/components/DashboardSidebar.tsx` | `src/components/Sidebar.tsx`                         |
-| Header / app shell | `src/components/DashboardLayout.tsx`  | `src/components/Layout.tsx`                          |
-| Design tokens      | `src/index.css`, `tailwind.config.ts` | `src/styles.css`, `tailwind.config.ts` (already 1:1) |
+| Concern            | Prototype file                              | Our equivalent                                        |
+| ------------------ | ------------------------------------------- | ----------------------------------------------------- |
+| Sidebar            | `src/components/DashboardSidebar.tsx`       | `src/components/Sidebar.tsx`                          |
+| Header / app shell | `src/components/DashboardLayout.tsx`        | `src/components/Layout.tsx`                           |
+| Design tokens      | `src/index.css`, `tailwind.config.ts`       | `src/styles.css`, `tailwind.config.ts` (already 1:1)  |
+| Catalog grids      | `src/pages/dashboard/Integrations.tsx`      | `src/pages/Integrations.tsx`, `UserApps.tsx`          |
+| Install flow       | `src/components/catalog/InstallActions.tsx` | `src/components/catalog/InstallActions.tsx`           |
+| Stack overview     | `src/pages/dashboard/MyStack.tsx`           | `src/pages/MyStack.tsx`                               |
+| Users/table pages  | `src/pages/dashboard/LearnCards.tsx`        | `src/pages/Users.tsx` + `src/components/ui/table.tsx` |
+| Detail pages       | `src/pages/dashboard/PluginDetail.tsx`      | `src/pages/ListingDetail.tsx`                         |
+
+### Porting rules learned in practice (follow these exactly)
+
+1. **Copy class strings verbatim.** When the same element exists in the prototype, our
+   class list must be byte-identical. When parity is questioned, diff element-by-element
+   against the prototype source, not against screenshots.
+2. **Mechanics are replicated too, not just paint.** The prototype's interaction models
+   are part of the visual contract — e.g. My Stack's stat tiles are _toggle buttons_
+   driving a single open section (`openKey`), not static tiles above stacked sections.
+3. **No framer-motion / sonner / radix.** The prototype uses them; we do not. Render
+   `motion.*` elements as plain elements (drop the animation), replace toasts with
+   inline state, and port radix components as no-radix primitives in
+   `src/components/ui/` (see `dialog`, `dropdown-menu`, `table`).
+4. **Prototype-only mock features are omitted, not faked**: pricing/paygate,
+   reviews, learner counts, locations, statuses that have no real primitive. Precedent:
+   ADR-001 discussion. If a mock feature maps to a _real_ primitive, wire it instead
+   (e.g. the prototype's "Enable" button → ADR-010 ecosystem catalog policy).
+5. **Cite the governing ADR at semantic filter/branch sites** so rules don't regress —
+   e.g. `// ADR-007 §3.2: kind=INTEGRATION is the operator surface shown here` in
+   `Integrations.tsx`/`UserApps.tsx`. The ADRs live in the prototype repo under
+   `docs/adr/`.
+6. **Dropdown/dialog text must not wrap**: menus use `min-w-[11rem] w-max` +
+   `whitespace-nowrap` items.
+7. **Page width bug**: route wrappers in `App.tsx` must stay plain block flow
+   (`space-y-8`). A flex-column parent makes `mx-auto` children shrink-to-fit
+   ("squished rows").
+
+## Domain / taxonomy rules (ADR-driven, NON-NEGOTIABLE)
+
+The prototype's flat catalog is split by `AppStoreListing.kind` (ADR-007 §3.2):
+
+| Sidebar page | Listing kind          | Notes                                                                                                                                                                                                                                                               |
+| ------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Integrations | `INTEGRATION`         | Operator surface (SIS/LMS/HR); requires signed manifest                                                                                                                                                                                                             |
+| User Apps    | `APP` or missing kind | Learner surface; legacy upstream listings are Apps                                                                                                                                                                                                                  |
+| Wallets      | `WALLET`              | Enablement via ADR-010 like User Apps                                                                                                                                                                                                                               |
+| Bundles      | `BUNDLE`              | Signed `lc.bundle/v1` manifest; members via `catalog.getBundleMembers`                                                                                                                                                                                              |
+| Data Sources | `INTEGRATION` subset  | Integrations whose signed manifest provides the `insight-source` capability (ADR-008 D6, ADR-013 Q4) — non-subject reference data _in_, NOT a separate listing kind. Record classes mark the SUBJECT-DATA lane and render as pills on the Integrations page instead |
+
+Skills Registries are NOT listings: they are brain `SkillFramework` nodes via
+`skillFrameworks.*` (no install flow). Infrastructure / Trust Registries are thin views
+over `WorkloadDeployment` / `RegistrySubscription` install targets (ADR-009).
+Manifest-derived data must only be read AFTER `assertSignedListingVersionOrThrow`
+(see `getBundleMembers` / `getIntegrationManifestSummary` in brain app-store.ts).
+
+-   Install = ADR-008 install intents (plan → approve → apply → revoke) via
+    `trpc.installIntents.*`; "installed" means an intent with `status.phase === 'READY'`
+    for the target ecosystem. INTEGRATION kinds are rejected by the planner unless their
+    version carries a _signed_ `lc.integration` manifest (dev seed:
+    `bun run seed:dev-integration` in brain-service).
+-   Enablement = ADR-010 catalog policy (`catalog.enablement.*`,
+    `catalog.listingsForEcosystem`): absent `allowedListings` ⇒ unrestricted; the first
+    enable starts explicit curation.
+-   Ecosystem ≠ Group ≠ Profile (ADR-001): the console presents them in one
+    prototype-identical list, but they are distinct primitives.
+-   UI gates admin controls on the session's `effectiveAccess` role; enforcement is
+    brain-side. In local dev the JIT session role is MEMBER, so admin controls are
+    hidden even when the Neo4j edge says ADMIN — that is correct behavior, not a bug.
+
+## Verification workflow (required for UI changes)
+
+1. `bun run typecheck` (this app; also console-bff / brain-service if touched —
+   brain-service baseline is exactly 141 pre-existing test errors; more = regression).
+2. Backend changes need `docker restart lcn-console-bff lcn-brain-service`.
+3. Headless smoke: playwright-core from the prototype repo's node_modules +
+   `~/Library/Caches/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-mac-arm64/chrome-headless-shell`;
+   flow: goto `localhost:5173` → click "Sign in (dev)" → navigate → screenshot →
+   compare against the prototype page. The pre-sign-in `getSession` 401 in the console
+   is expected.
+4. Realistic dev data lives in Neo4j (`docker exec lcn-neo4j cypher-shell -u neo4j -p
+password`); member profiles have real displayName/role/email personas — keep new
+   seed data in that spirit (names like "Carmen Reyes / teacher", not "test-user-1").
 
 ## Design Tokens
 

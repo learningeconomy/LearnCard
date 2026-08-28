@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'wouter';
-import { ArrowLeft, Cable, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, Cable, LayoutGrid, Wallet, Package } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { InstallActions } from '../components/catalog/InstallActions';
 import { PageSkeleton } from '../components/PageSkeleton';
@@ -68,9 +68,27 @@ export function ListingDetail({ session }: ListingDetailProps) {
     const activeIntent = getActiveIntent();
     const isInstalled = !!activeIntent;
 
-    const Icon = listing.kind === 'INTEGRATION' ? Cable : LayoutGrid;
-    const backPath = listing.kind === 'INTEGRATION' ? '/integrations' : '/apps';
-    const backLabel = listing.kind === 'INTEGRATION' ? 'Integrations' : 'Apps';
+    let Icon = LayoutGrid;
+    let backPath = '/apps';
+    let backLabel = 'Apps';
+    let kindLabel = 'App';
+
+    if (listing.kind === 'INTEGRATION') {
+        Icon = Cable;
+        backPath = '/integrations';
+        backLabel = 'Integrations';
+        kindLabel = 'Integration';
+    } else if (listing.kind === 'WALLET') {
+        Icon = Wallet;
+        backPath = '/wallets';
+        backLabel = 'Wallets';
+        kindLabel = 'Wallet';
+    } else if (listing.kind === 'BUNDLE') {
+        Icon = Package;
+        backPath = '/bundles';
+        backLabel = 'Bundles';
+        kindLabel = 'Bundle';
+    }
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -106,8 +124,7 @@ export function ListingDetail({ session }: ListingDetailProps) {
                                 variant="outline"
                                 className="text-xs gap-1 border-lc-blue/40 text-lc-blue"
                             >
-                                <Icon className="w-3 h-3" />{' '}
-                                {listing.kind === 'INTEGRATION' ? 'Integration' : 'App'}
+                                <Icon className="w-3 h-3" /> {kindLabel}
                             </Badge>
                         </div>
                         <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground break-words">

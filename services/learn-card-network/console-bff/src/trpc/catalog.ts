@@ -20,6 +20,32 @@ export type CatalogListingDetail = {
 };
 
 /**
+ * One entry of a BUNDLE listing's signed `lc.bundle` manifest (ADR-008). `targetType` is
+ * the install target the member materializes as, which is what the console maps to its
+ * catalog sections.
+ */
+export type CatalogBundleMember = {
+    declarationId: string;
+    targetType: string;
+    listingId: string;
+    versionId: string;
+    optional: boolean;
+    display_name?: string;
+};
+
+/**
+ * The declarative surface of an INTEGRATION listing's signed `lc.integration` manifest.
+ * `supportedRecordClasses` is what makes a listing a Data Source (ADR-013 §3.1): an
+ * integration that provisions subject-data records must declare its record classes.
+ */
+export type CatalogIntegrationManifestSummary = {
+    apiVersion: string;
+    category: string;
+    supportedRecordClasses: string[];
+    capabilities: { provided: string[]; consumed: string[] };
+};
+
+/**
  * ADR-010 §3.1/§3.2 catalog policy state for one ecosystem. `allowedListings` is null
  * while the ecosystem is still implicitly permissive (`unrestricted`).
  */
@@ -246,5 +272,38 @@ export const catalogRouter = router({
             }
 
             return { listing, versions: Array.isArray(versions) ? versions : [] };
+        }),
+
+    getBundleMembers: protectedProcedure
+        .input(z.object({ listingId: z.string().min(1) }))
+        .query(async ({ ctx, input }): Promise<CatalogBundleMember[]> => {
+            const keyRef = await ctx.keyRefFor(ctx.session.managedDid);
+            if (!keyRef) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No managed key' });
+
+            const query = makeBrainCaller(ctx.kms, ctx.transport, ctx.session.managedDid, keyRef);
+
+            const result = await query<CatalogBundleMember[]>('appStore.getBundleMembers', input);
+
+            // Stubbed transports return {} for every query — normalize to a safe shape.
+            return Array.isArray(result) ? result : [];
+        }),
+
+    getIntegrationManifestSummary: protectedProcedure
+        .input(z.object({ listingId: z.string().min(1) }))
+        .query(async ({ ctx, input }): Promise<CatalogIntegrationManifestSummary | null> => {
+            const keyRef = await ctx.keyRefFor(ctx.session.managedDid);
+            if (!keyRef) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No managed key' });
+
+            const query = makeBrainCaller(ctx.kms, ctx.transport, ctx.session.managedDid, keyRef);
+
+            const result = await query<CatalogIntegrationManifestSummary>(
+                'appStore.getIntegrationManifestSummary',
+                input
+            );
+
+            // Stubbed transports return {} for every query — normalize to a safe shape.
+            if (!result || !Array.isArray(result.supportedRecordClasses)) return null;
+
+            return result;
         }),
 });

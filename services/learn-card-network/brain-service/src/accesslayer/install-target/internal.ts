@@ -80,6 +80,22 @@ export const listInstallTargetsByIntentId = async (
     ];
 };
 
+export const listWorkloadDeploymentsByEcosystemId = async (
+    ecosystemId: string
+): Promise<WorkloadDeploymentType[]> =>
+    (await WorkloadDeployment.findMany({
+        where: { ecosystemId },
+        plain: true,
+    })) as WorkloadDeploymentType[];
+
+export const listRegistrySubscriptionsByEcosystemId = async (
+    ecosystemId: string
+): Promise<RegistrySubscriptionType[]> =>
+    (await RegistrySubscription.findMany({
+        where: { ecosystemId },
+        plain: true,
+    })) as RegistrySubscriptionType[];
+
 export const deleteInstallTargetInternal = async (
     input: Pick<InstallTargetRecord, 'id' | 'targetType'>
 ): Promise<void> => {

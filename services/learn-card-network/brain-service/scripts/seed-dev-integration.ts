@@ -15,6 +15,7 @@
  *   bun run seed:dev-integration
  *   bun run seed:dev-integration --app-name "Acme SIS" --slug acme-sis
  *   bun run seed:dev-integration --category lms --capabilities-provided roster-source
+ *   bun run seed:dev-integration --capabilities-provided insight-source --record-classes
  *   bun run seed:dev-integration --profile my-owner --version 1.1.0
  *   bun run seed:dev-integration --ecosystem eco_dev_root
  *
@@ -53,15 +54,23 @@ const arg = (name: string, fallback: string): string => {
     return value ?? fallback;
 };
 
+// An omitted flag takes the fallback; a valueless one (`--record-classes` with nothing or
+// another flag after it) declares none. An ADR-013 Q4 reference feed carries no record
+// class, and the fallback would silently re-add one. Valueless rather than `""` because
+// `bun run <script> -- --flag ""` drops empty arguments before the script sees them.
 const listArg = (name: string, fallback: string[]): string[] => {
-    const raw = arg(name, '');
+    const index = process.argv.indexOf(`--${name}`);
+
+    if (index < 0) return fallback;
+
+    const raw = process.argv[index + 1];
+
+    if (!raw || raw.startsWith('--')) return [];
 
     return raw
-        ? raw
-              .split(',')
-              .map(entry => entry.trim())
-              .filter(Boolean)
-        : fallback;
+        .split(',')
+        .map(entry => entry.trim())
+        .filter(Boolean);
 };
 
 // Mirrors transformProfileId in @helpers/profile.helpers — profile ids are stored

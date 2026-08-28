@@ -9,9 +9,15 @@ import { Ecosystem } from './pages/Ecosystem';
 import { EcosystemDetail } from './pages/EcosystemDetail';
 import { GroupDetail } from './pages/GroupDetail';
 import { Integrations } from './pages/Integrations';
+import { DataSources } from './pages/DataSources';
 import { UserApps } from './pages/UserApps';
+import { Wallets } from './pages/Wallets';
+import { Bundles } from './pages/Bundles';
 import { ListingDetail } from './pages/ListingDetail';
 import { Users } from './pages/Users';
+import { SkillsRegistries } from './pages/SkillsRegistries';
+import { Infrastructure } from './pages/Infrastructure';
+import { TrustRegistries } from './pages/TrustRegistries';
 import { ComingSoon } from './pages/ComingSoon';
 import { allRoutes } from './routes';
 
@@ -103,14 +109,38 @@ export function App() {
                         <Route path="/integrations/:id">
                             <ListingDetail session={session} />
                         </Route>
+                        <Route path="/data-sources">
+                            <DataSources session={session} />
+                        </Route>
                         <Route path="/apps">
                             <UserApps session={session} />
                         </Route>
                         <Route path="/apps/:id">
                             <ListingDetail session={session} />
                         </Route>
+                        <Route path="/wallets">
+                            <Wallets session={session} />
+                        </Route>
+                        <Route path="/wallets/:id">
+                            <ListingDetail session={session} />
+                        </Route>
+                        <Route path="/bundles">
+                            <Bundles session={session} />
+                        </Route>
+                        <Route path="/bundles/:id">
+                            <ListingDetail session={session} />
+                        </Route>
                         <Route path="/users">
                             <Users session={session} />
+                        </Route>
+                        <Route path="/skills-registries">
+                            <SkillsRegistries />
+                        </Route>
+                        <Route path="/plugins">
+                            <Infrastructure session={session} />
+                        </Route>
+                        <Route path="/trust-registries">
+                            <TrustRegistries session={session} />
                         </Route>
                         {allRoutes
                             .filter(
@@ -119,8 +149,14 @@ export function App() {
                                     r.path !== '/my-stack' &&
                                     r.path !== '/ecosystem' &&
                                     r.path !== '/integrations' &&
+                                    r.path !== '/data-sources' &&
                                     r.path !== '/apps' &&
-                                    r.path !== '/users'
+                                    r.path !== '/wallets' &&
+                                    r.path !== '/bundles' &&
+                                    r.path !== '/users' &&
+                                    r.path !== '/skills-registries' &&
+                                    r.path !== '/plugins' &&
+                                    r.path !== '/trust-registries'
                             )
                             .map(route => (
                                 <Route key={route.path} path={route.path}>

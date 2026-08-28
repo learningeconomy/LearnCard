@@ -34,7 +34,12 @@ import {
 } from '@accesslayer/binding/write';
 import { readBindingById } from '@accesslayer/binding/read';
 import { getConsentDecisionRecordsForBinding } from '@accesslayer/consent-decision-record/store';
+import {
+    listRegistrySubscriptionsByEcosystemId,
+    listWorkloadDeploymentsByEcosystemId,
+} from '@accesslayer/install-target/internal';
 import { BindingRecordValidator } from 'types/binding';
+import { RegistrySubscriptionValidator, WorkloadDeploymentValidator } from 'types/install-target';
 import { InstallIntentRecordValidator, type InstallIntentRecordType } from 'types/install-intent';
 import { AppStoreListingValidator } from 'types/app-store-listing';
 import {
@@ -122,6 +127,7 @@ const RevokeInstallIntentInputValidator = z.object({
 });
 const GetInstallIntentInputValidator = z.object({ intentId: z.string() });
 const ListInstallIntentsInputValidator = z.object({ ecosystemId: z.string() });
+const ListEcosystemInstallTargetsInputValidator = z.object({ ecosystemId: z.string() });
 const ListInstallableListingsInputValidator = z.object({
     ecosystemId: z.string(),
     limit: z.number().int().positive().max(100).default(50),
@@ -673,6 +679,38 @@ export const installIntentsRouter = t.router({
             ]);
 
             return listInstallIntentsByEcosystem(input.ecosystemId);
+        }),
+
+    // ADR-009 install targets are only reachable through their parent intent; these two
+    // routes give the console an ecosystem-scoped read without exposing a browse catalog.
+    listWorkloadDeployments: profileRoute
+        .meta({ requiredScope: 'app-store:read' })
+        .input(ListEcosystemInstallTargetsInputValidator)
+        .output(z.array(WorkloadDeploymentValidator))
+        .query(async ({ ctx, input }) => {
+            await requireEcosystemRole(input.ecosystemId, ctx.user.profile.profileId, [
+                'OWNER',
+                'ADMIN',
+                'MEMBER',
+                'VIEWER',
+            ]);
+
+            return listWorkloadDeploymentsByEcosystemId(input.ecosystemId);
+        }),
+
+    listRegistrySubscriptions: profileRoute
+        .meta({ requiredScope: 'app-store:read' })
+        .input(ListEcosystemInstallTargetsInputValidator)
+        .output(z.array(RegistrySubscriptionValidator))
+        .query(async ({ ctx, input }) => {
+            await requireEcosystemRole(input.ecosystemId, ctx.user.profile.profileId, [
+                'OWNER',
+                'ADMIN',
+                'MEMBER',
+                'VIEWER',
+            ]);
+
+            return listRegistrySubscriptionsByEcosystemId(input.ecosystemId);
         }),
 
     getInstallIntentReconcilerHealth: profileRoute

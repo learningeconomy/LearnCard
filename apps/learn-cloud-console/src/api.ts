@@ -14,6 +14,18 @@ export type CatalogListing =
     inferRouterOutputs<ConsoleRouter>['catalog']['listings']['records'][number];
 export type CatalogListingDetail = inferRouterOutputs<ConsoleRouter>['catalog']['get'];
 export type CatalogEnablement = inferRouterOutputs<ConsoleRouter>['catalog']['enablement']['get'];
+export type CatalogBundleMember =
+    inferRouterOutputs<ConsoleRouter>['catalog']['getBundleMembers'][number];
+export type CatalogIntegrationManifestSummary = NonNullable<
+    inferRouterOutputs<ConsoleRouter>['catalog']['getIntegrationManifestSummary']
+>;
+export type SkillFramework = inferRouterOutputs<ConsoleRouter>['skillFrameworks']['list'][number];
+export type SkillFrameworkDetail = inferRouterOutputs<ConsoleRouter>['skillFrameworks']['get'];
+export type SkillTreeNode = SkillFrameworkDetail['skills']['records'][number];
+export type WorkloadDeployment =
+    inferRouterOutputs<ConsoleRouter>['infra']['listDeployments'][number];
+export type RegistrySubscription =
+    inferRouterOutputs<ConsoleRouter>['registries']['listSubscriptions'][number];
 
 const TENANT_ID = 'learncard';
 const PROVIDER_ID = 'lef-wallet';
@@ -166,6 +178,14 @@ export async function getCatalogListing(input: { listingId: string }) {
     return trpc.catalog.get.query(input);
 }
 
+export async function getCatalogBundleMembers(input: { listingId: string }) {
+    return trpc.catalog.getBundleMembers.query(input);
+}
+
+export async function getCatalogIntegrationManifestSummary(input: { listingId: string }) {
+    return trpc.catalog.getIntegrationManifestSummary.query(input);
+}
+
 export async function listCatalogListingsForEcosystem(input: {
     ecosystemId: string;
     limit?: number;
@@ -185,4 +205,20 @@ export async function enableCatalogListing(input: { ecosystemId: string; listing
 
 export async function disableCatalogListing(input: { ecosystemId: string; listingId: string }) {
     return trpc.catalog.enablement.disable.mutate(input);
+}
+
+export async function listSkillFrameworks(input: { limit?: number } = {}) {
+    return trpc.skillFrameworks.list.query(input);
+}
+
+export async function getSkillFramework(input: { id: string }) {
+    return trpc.skillFrameworks.get.query(input);
+}
+
+export async function listWorkloadDeployments(input: { ecosystemId: string }) {
+    return trpc.infra.listDeployments.query(input);
+}
+
+export async function listRegistrySubscriptions(input: { ecosystemId: string }) {
+    return trpc.registries.listSubscriptions.query(input);
 }

@@ -1,29 +1,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
-import { Cable, Search, Loader2 } from 'lucide-react';
+import { Wallet, Search, Loader2 } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { ClampText } from '../components/ClampText';
 import { InstallActions } from '../components/catalog/InstallActions';
+import { EnableActions } from '../components/catalog/EnableActions';
 import { trpc } from '../trpc';
-import { getCatalogIntegrationManifestSummary } from '../api';
-import type { DashboardSession, CatalogListing, CatalogIntegrationManifestSummary } from '../api';
+import { getCatalogEnablement, listCatalogListingsForEcosystem } from '../api';
+import type { DashboardSession, CatalogListing, CatalogEnablement } from '../api';
 import type { InstallIntent } from '@learncard/types';
 
-interface IntegrationsProps {
+interface WalletsProps {
     session: DashboardSession;
 }
 
-export function Integrations({ session }: IntegrationsProps) {
+export function Wallets({ session }: WalletsProps) {
     const [, setLocation] = useLocation();
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [listings, setListings] = useState<CatalogListing[]>([]);
-    const [summaries, setSummaries] = useState<
-        Record<string, CatalogIntegrationManifestSummary | null>
-    >({});
     const [intents, setIntents] = useState<InstallIntent[]>([]);
+    const [enablement, setEnablement] = useState<CatalogEnablement | null>(null);
+    const [ecosystemCatalogIds, setEcosystemCatalogIds] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -33,32 +33,20 @@ export function Integrations({ session }: IntegrationsProps) {
         if (!ecosystemId) return;
         setError(null);
         try {
-            const [listingsRes, intentsRes] = await Promise.all([
-                trpc.catalog.listings.query({ limit: 100 }),
-                trpc.installIntents.listInstallIntents.query({ ecosystemId }),
-            ]);
-            // ADR-007 §3.2: kind=INTEGRATION is the operator surface shown here;
-            // kind=APP (or legacy listings without kind) belongs to User Apps.
-            const integrations = listingsRes.records.filter(l => l.kind === 'INTEGRATION');
-
-            setListings(integrations);
+            const [listingsRes, intentsRes, enablementRes, ecosystemListingsRes] =
+                await Promise.all([
+                    trpc.catalog.listings.query({ limit: 100 }),
+                    trpc.installIntents.listInstallIntents.query({ ecosystemId }),
+                    getCatalogEnablement({ ecosystemId }),
+                    listCatalogListingsForEcosystem({ ecosystemId, limit: 100 }),
+                ]);
+            // ADR-007 §3.2: kind=WALLET is the learner surface shown here.
+            setListings(listingsRes.records.filter(l => l.kind === 'WALLET'));
             setIntents(intentsRes as InstallIntent[]);
-
-            // An integration whose manifest fails verification declares nothing we may
-            // trust, so its card degrades to no record-class pills rather than erroring.
-            const summaryResults = await Promise.all(
-                integrations.map(
-                    async listing =>
-                        [
-                            listing.listing_id,
-                            await getCatalogIntegrationManifestSummary({
-                                listingId: listing.listing_id,
-                            }).catch(() => null),
-                        ] as const
-                )
+            setEnablement(enablementRes);
+            setEcosystemCatalogIds(
+                new Set(ecosystemListingsRes.records.map(record => record.listing_id))
             );
-
-            setSummaries(Object.fromEntries(summaryResults));
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         } finally {
@@ -114,24 +102,18 @@ export function Integrations({ session }: IntegrationsProps) {
     const restItems = filtered.filter(p => !getActiveIntent(p.listing_id));
     const connectedCount = listings.filter(p => getActiveIntent(p.listing_id)).length;
 
-    const renderRecordClassPill = (recordClass: string) => (
-        <Badge
-            key={recordClass}
-            variant="outline"
-            className={
-                recordClass === 'employment'
-                    ? 'border-amber-500/40 bg-amber-500/10 text-[10px] text-amber-600'
-                    : 'border-lc-blue/40 bg-lc-blue/10 text-[10px] text-lc-blue'
-            }
-        >
-            {recordClass.charAt(0).toUpperCase() + recordClass.slice(1)}
-        </Badge>
-    );
+    // ADR-010 §3.2: an absent allowlist is implicitly permissive, so nothing is
+    // individually enabled until the operator makes the first explicit enablement.
+    const isEnabled = (listingId: string) =>
+        enablement?.allowedListings?.includes(listingId) ?? false;
+
+    const availableInEcosystemCount = listings.filter(p =>
+        ecosystemCatalogIds.has(p.listing_id)
+    ).length;
 
     const renderCard = (plugin: CatalogListing) => {
         const activeIntent = getActiveIntent(plugin.listing_id);
         const isInstalled = !!activeIntent;
-        const recordClasses = summaries[plugin.listing_id]?.supportedRecordClasses ?? [];
 
         return (
             <div
@@ -139,7 +121,7 @@ export function Integrations({ session }: IntegrationsProps) {
                 className={`bg-card border rounded-xl p-4 md:p-6 shadow-card transition-all cursor-pointer hover:shadow-md ${
                     isInstalled ? 'border-emerald/30' : 'border-border'
                 }`}
-                onClick={() => setLocation(`/integrations/${plugin.listing_id}`)}
+                onClick={() => setLocation(`/wallets/${plugin.listing_id}`)}
             >
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -151,7 +133,7 @@ export function Integrations({ session }: IntegrationsProps) {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <Cable className="w-5 h-5" />
+                                <Wallet className="w-5 h-5" />
                             )}
                         </div>
                         <div>
@@ -163,14 +145,8 @@ export function Integrations({ session }: IntegrationsProps) {
                                     variant="outline"
                                     className="text-[10px] gap-1 border-lc-blue/40 text-lc-blue"
                                 >
-                                    <Cable className="w-3 h-3" /> {kindLabel(plugin.kind)}
+                                    <Wallet className="w-3 h-3" /> {kindLabel(plugin.kind)}
                                 </Badge>
-                                {/* ADR-012 + ADR-013 §3.1: record classes mark the
-                                    subject-data lane (records out of a system of record)
-                                    and set review depth + consent tier, so they render
-                                    here — never on Data Sources, whose reference
-                                    enrichment declares no record class (ADR-013 Q4). */}
-                                {recordClasses.map(renderRecordClassPill)}
                             </div>
                         </div>
                     </div>
@@ -181,7 +157,15 @@ export function Integrations({ session }: IntegrationsProps) {
                         className="text-sm text-muted-foreground"
                     />
                 </div>
-                <div onClick={e => e.stopPropagation()}>
+                <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                    <EnableActions
+                        ecosystemId={ecosystemId}
+                        listingId={plugin.listing_id}
+                        itemName={plugin.display_name}
+                        enabled={isEnabled(plugin.listing_id)}
+                        unrestricted={enablement?.unrestricted ?? true}
+                        onChanged={loadData}
+                    />
                     <InstallActions
                         ecosystemId={ecosystemId}
                         itemId={plugin.listing_id}
@@ -189,6 +173,7 @@ export function Integrations({ session }: IntegrationsProps) {
                         category={plugin.category}
                         isInstalled={isInstalled}
                         existingIntentId={activeIntent?.intentId}
+                        className="flex-1"
                         onChanged={loadData}
                     />
                 </div>
@@ -201,16 +186,20 @@ export function Integrations({ session }: IntegrationsProps) {
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <h1 className="font-display text-3xl font-bold text-foreground flex items-center gap-2">
-                        <Cable className="w-7 h-7 text-lc-blue" />
-                        Integrations
+                        <Wallet className="w-7 h-7 text-lc-blue" />
+                        Wallets
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Connect the systems of record for your ecosystem — learning management,
-                        student information, and HR systems.
+                        Learner-held passports and credential wallets — enable them for your
+                        ecosystem.
+                        <span className="text-lc-blue font-medium">
+                            {' '}
+                            {availableInEcosystemCount} in your catalog
+                        </span>
                         {connectedCount > 0 && (
                             <span className="text-emerald font-medium">
                                 {' '}
-                                {connectedCount} connected
+                                · {connectedCount} connected
                             </span>
                         )}
                     </p>
@@ -227,7 +216,7 @@ export function Integrations({ session }: IntegrationsProps) {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                     className="pl-10"
-                    placeholder="Search integrations..."
+                    placeholder="Search wallets..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                 />
@@ -272,13 +261,13 @@ export function Integrations({ session }: IntegrationsProps) {
 
             {filtered.length === 0 && (search || activeCategory) && (
                 <div className="text-center py-12 text-muted-foreground">
-                    No integrations match your search.
+                    No wallets match your search.
                 </div>
             )}
 
             {listings.length === 0 && !search && !activeCategory && (
                 <div className="text-center py-12 text-muted-foreground">
-                    No integrations available in the catalog.
+                    No wallets available in the catalog.
                 </div>
             )}
         </div>
