@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
@@ -96,6 +97,74 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const currentUser = useCurrentUser();
     const authToken = getAuthToken();
+
+    // Scroll focused input into view when keyboard opens on native
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+
+        let keyboardListenerHandle: Awaited<ReturnType<typeof Keyboard.addListener>> | null = null;
+        let hideListenerHandle: Awaited<ReturnType<typeof Keyboard.addListener>> | null = null;
+        let isMounted = true;
+        let isKeyboardVisible = false;
+
+        const scrollActiveIntoView = () => {
+            if (!isMounted) return;
+            const activeEl = document.activeElement as HTMLElement | null;
+            if (activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA') {
+                activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        // Scroll when keyboard finishes opening
+        Keyboard.addListener('keyboardDidShow', () => {
+            isKeyboardVisible = true;
+            scrollActiveIntoView();
+        })
+            .then(handle => {
+                if (isMounted) {
+                    keyboardListenerHandle = handle;
+                } else {
+                    handle.remove();
+                }
+            })
+            .catch(err => {
+                console.error('Keyboard listener failed:', err);
+            });
+
+        // Track when keyboard hides
+        Keyboard.addListener('keyboardDidHide', () => {
+            isKeyboardVisible = false;
+        })
+            .then(handle => {
+                if (isMounted) {
+                    hideListenerHandle = handle;
+                } else {
+                    handle.remove();
+                }
+            })
+            .catch(err => {
+                console.error('Keyboard hide listener failed:', err);
+            });
+
+        // Only scroll on focusin if keyboard is already visible (switching between inputs)
+        const handleFocusIn = () => {
+            if (isKeyboardVisible) {
+                scrollActiveIntoView();
+            }
+        };
+
+        const container = containerRef.current;
+        container?.addEventListener('focusin', handleFocusIn);
+
+        return () => {
+            isMounted = false;
+            keyboardListenerHandle?.remove();
+            hideListenerHandle?.remove();
+            container?.removeEventListener('focusin', handleFocusIn);
+        };
+    }, []);
 
     const flowStartedAt = useRef(
         Number(localStorage.getItem(ONBOARDING_STARTED_AT_KEY) ?? Date.now())
@@ -648,7 +717,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     );
 
     return (
-        <div className="w-full h-full bg-white flex flex-col overflow-y-auto relative font-poppins">
+        <div
+            ref={containerRef}
+            className="w-full h-full bg-white flex flex-col overflow-y-auto relative font-poppins"
+        >
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div
                     className="absolute inset-0 opacity-[0.14] transition-colors duration-700 ease-in-out"
@@ -862,9 +934,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 <div className="w-full flex justify-center">
                                     <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-6 pt-8 flex flex-col items-center gap-3 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
                                         <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/15 via-emerald-50/5 to-transparent pointer-events-none" />
-                                        <div className="absolute top-4 left-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700/50">
-                                            {brandName}
-                                        </div>
                                         <div className="relative">
                                             <div className="relative flex justify-center items-center h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 transition-transform duration-300 group-hover:scale-105">
                                                 {photo ? (
@@ -974,7 +1043,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         setProfileIdError('');
                                                     }}
                                                     placeholder={m['onboarding.v2.username']()}
-                                                    className="flex-1 py-3 px-2 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none bg-transparent"
+                                                    className="block w-full min-w-0 box-border py-3 px-2 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none bg-transparent"
                                                 />
                                                 <div className="pr-4 flex items-center">
                                                     {uniqueProfileFetching && (
