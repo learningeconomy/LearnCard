@@ -166,13 +166,13 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
                 <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3">
                     <IonIcon
                         icon={informationCircleOutline}
-                        className="text-amber-600 text-xl mt-0.5 shrink-0"
+                        className="text-amber-700 text-xl mt-0.5 shrink-0"
                     />
                     <div>
-                        <p className="text-sm font-medium text-amber-900">
+                        <p className="text-sm font-medium text-grayscale-900">
                             {m['myAssistant.schedules.autonomyUnavailableTitle']()}
                         </p>
-                        <p className="text-sm text-amber-700 leading-relaxed mt-1">
+                        <p className="text-sm text-grayscale-700 leading-relaxed mt-1">
                             {m['myAssistant.schedules.autonomyUnavailableDescription']()}
                         </p>
                     </div>
