@@ -56,7 +56,9 @@ const { scopeMock, ScopeMock, captureFeedbackMock, getClientMock, clientMock, cl
         };
         return {
             scopeMock,
-            ScopeMock: vi.fn(() => scopeMock),
+            ScopeMock: vi.fn(function ScopeMockConstructor() {
+                return scopeMock;
+            }),
             captureFeedbackMock: vi.fn(),
             getClientMock: vi.fn(),
             clientMock,
