@@ -1258,9 +1258,10 @@ describe('credential claim connection prompts', () => {
 
         it('reports an overwritten prompt id as stale', async () => {
             const first = await createPrompts('credential:claim-1');
-            await userB.clients.fullAuth.profile.skipConnectionPrompt({
+            await userB.clients.fullAuth.profile.connectWithConnectionPrompt({
                 promptId: first.claimerPrompt!.promptId,
             });
+            await disconnectProfiles(profileA, profileB);
             const later = await createPrompts('credential:claim-2');
 
             expect(later.claimerPrompt?.promptId).not.toBe(first.claimerPrompt?.promptId);

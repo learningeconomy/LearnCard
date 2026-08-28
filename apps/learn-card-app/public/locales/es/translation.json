@@ -1,6 +1,6 @@
 {
     "connectionPrompts": {
-        "title": "¿Conectar con {name}?",
+        "title": "¿Conectar con {{name}}?",
         "description": "Mantente en contacto y reconoce lo que viene después.",
         "connect": "Conectar",
         "skipForNow": "Omitir por ahora",

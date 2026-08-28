@@ -1,6 +1,6 @@
 {
     "connectionPrompts": {
-        "title": "هل تريد التواصل مع {name}؟",
+        "title": "هل تريد التواصل مع {{name}}؟",
         "description": "ابقَ على تواصل وتابع ما يأتي بعد ذلك.",
         "connect": "تواصل",
         "skipForNow": "تخطي الآن",

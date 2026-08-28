@@ -244,6 +244,31 @@ describe('ConnectionPromptCoordinator', () => {
         expect(screen.queryByRole('heading', { name: 'Connect with Bob?' })).toBeNull();
     });
 
+    it('preserves the presentation deadline across rerenders and uses the latest copy', async () => {
+        state.prompts = [alice];
+        const view = renderCoordinator();
+
+        await advance(100);
+
+        const updatedCopy: ConnectionPromptCopy = {
+            ...copy,
+            description: 'Updated connection prompt description.',
+        };
+        view.rerender(
+            <ModalsProvider>
+                <ConnectionPromptCoordinator copy={updatedCopy} />
+                <ModalHarness />
+            </ModalsProvider>
+        );
+
+        await advance(49);
+        expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
+
+        await advance(1);
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+        expect(screen.getByText(updatedCopy.description)).toBeTruthy();
+    });
+
     it('keeps the modal open with skipping feedback until one native Skip succeeds', async () => {
         const request = deferred<void>();
         state.prompts = [alice];

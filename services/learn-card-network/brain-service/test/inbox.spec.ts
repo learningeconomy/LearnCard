@@ -1922,7 +1922,7 @@ describe('Universal Inbox', () => {
             expect(promptNotifications).toHaveLength(1);
         });
 
-        it('keeps same-inbox retries idempotent and reopens skipped prompts for a later inbox claim', async () => {
+        it('keeps same-inbox retries idempotent and suppresses prompts for later inbox claims', async () => {
             vi.spyOn(notifications, 'addNotificationToQueue').mockImplementation(
                 addNotificationToQueueSpy
             );
@@ -1994,12 +1994,9 @@ describe('Universal Inbox', () => {
                 claimed: 1,
                 errors: 0,
             });
-            const [laterPrompt] = await userB.clients.fullAuth.profile.pendingConnectionPrompts();
-            expect(laterPrompt).toMatchObject({
-                triggerId: `inbox:${secondIssue.issuanceId}`,
-                counterpart: { profileId: 'usera' },
-            });
-            expect(laterPrompt?.promptId).not.toBe(firstClaimerPrompt?.promptId);
+            expect(await userB.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+            expect(await userA.clients.fullAuth.profile.pendingConnectionPrompts()).toHaveLength(0);
+            expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
         });
 
         it('finalizes a verified-contact application issuance without creating prompts', async () => {

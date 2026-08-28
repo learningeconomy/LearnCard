@@ -1,6 +1,6 @@
 {
     "connectionPrompts": {
-        "title": "Connect with {name}?",
+        "title": "Connect with {{name}}?",
         "description": "Stay in touch and recognize what comes next.",
         "connect": "Connect",
         "skipForNow": "Skip for Now",

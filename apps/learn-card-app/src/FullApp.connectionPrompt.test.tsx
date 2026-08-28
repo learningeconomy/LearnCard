@@ -87,13 +87,16 @@ vi.mock('./providers/AuthCoordinatorProvider', () => ({
 }));
 vi.mock('./theme/hooks/useTheme', () => ({ useInitializeTheme: vi.fn() }));
 vi.mock('./paraglide/messages.js', () => ({
-    'connectionPrompts.title': () => 'Connect with {name}?',
+    'connectionPrompts.title': ({ name }: { name: string }) => `Connect with ${name}?`,
     'connectionPrompts.description': () => 'Description',
     'connectionPrompts.connect': () => 'Connect',
     'connectionPrompts.skipForNow': () => 'Skip for Now',
     'connectionPrompts.connecting': () => 'Connecting...',
     'connectionPrompts.skipping': () => 'Skipping...',
     'connectionPrompts.error': () => 'Error',
+    'connectionPrompts.connected': () => 'Connected',
+    'connectionPrompts.skipped': () => 'Skipped',
+    'connectionPrompts.claimedType': () => 'Credential claimed',
 }));
 
 import FullApp from './FullApp';

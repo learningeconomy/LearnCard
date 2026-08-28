@@ -103,27 +103,6 @@ const normalizeNotificationTransportError = (error: unknown): NotificationTransp
     return 'uncertain';
 };
 
-export const markConnectionPromptsSkipped = async (
-    first: ProfileType,
-    second: ProfileType
-): Promise<void> => {
-    await neogma.queryRunner.run(
-        `
-            MATCH (first:Profile { profileId: $firstProfileId })
-            MATCH (second:Profile { profileId: $secondProfileId })
-            MATCH (first)-[prompt:CONNECTION_PROMPT]-(second)
-            SET prompt.status = 'SKIPPED',
-                prompt.suppressed = true,
-                prompt.updatedAt = $updatedAt
-        `,
-        {
-            firstProfileId: first.profileId,
-            secondProfileId: second.profileId,
-            updatedAt: new Date().toISOString(),
-        }
-    );
-};
-
 export const createConnectionPromptsForClaim = async (
     input: CreateConnectionPromptsForClaimInput
 ): Promise<ConnectionPromptCreationResult> => {

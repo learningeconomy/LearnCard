@@ -28,6 +28,8 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     const isLoggedIn = useIsLoggedIn();
     const switchedDid = switchedProfileStore.use.switchedDid();
     const viewerKey = isLoggedIn ? switchedDid ?? 'primary-profile' : null;
+    const copyRef = useRef(copy);
+    copyRef.current = copy;
     const previousViewerKeyRef = useRef(viewerKey);
     const currentViewerKeyRef = useRef(viewerKey);
     currentViewerKeyRef.current = viewerKey;
@@ -36,8 +38,8 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     const resolvedRef = useRef(false);
     const actionInFlightRef = useRef(false);
     const { data: pendingPrompts = [] } = usePendingConnectionPrompts(isLoggedIn);
-    const connectPrompt = useConnectWithConnectionPromptMutation();
-    const skipPrompt = useSkipConnectionPromptMutation();
+    const { mutateAsync: connectPrompt } = useConnectWithConnectionPromptMutation();
+    const { mutateAsync: skipPrompt } = useSkipConnectionPromptMutation();
     const { dismissToast } = useToast();
     const { modals } = useModalsContext();
     const { newModalWithToken, forceCloseModalByToken } = useModal({
@@ -117,7 +119,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
                 actionInFlightRef.current = true;
                 try {
-                    await connectPrompt.mutateAsync(promptId);
+                    await connectPrompt(promptId);
                 } catch (error) {
                     if (ownsPromptModal()) actionInFlightRef.current = false;
                     throw error;
@@ -135,7 +137,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 
                 actionInFlightRef.current = true;
                 try {
-                    await skipPrompt.mutateAsync(promptId);
+                    await skipPrompt(promptId);
                 } catch (error) {
                     if (ownsPromptModal()) actionInFlightRef.current = false;
                     throw error;
@@ -166,7 +168,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
             modalToken = newModalWithToken(
                 <ConnectionPromptModal
                     prompt={nextPrompt}
-                    copy={copy}
+                    copy={copyRef.current}
                     onConnect={handleConnect}
                     onSkip={handleSkip}
                     actionsRef={promptModalActionsRef}
@@ -179,7 +181,6 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
         return () => clearTimeout(timeout);
     }, [
         connectPrompt,
-        copy,
         dismissToast,
         forceCloseModalByToken,
         modals.length,

@@ -9,7 +9,7 @@ import {
     useGetProfile,
     useGetCurrentLCNUser,
 } from 'learn-card-base';
-import * as m from '../../../paraglide/messages.js';
+import { getConnectionPromptCopy } from '../../../helpers/connectionPromptCopy';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { notificationCardStyles } from './types';
 import NotificationBoostCard from './NotificationBoostCard';
@@ -257,18 +257,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                 }
                 title={messageBody}
                 issueDate={displayDate}
-                copy={{
-                    title: name => m['connectionPrompts.title']().replace('{name}', name),
-                    description: m['connectionPrompts.description'](),
-                    connect: m['connectionPrompts.connect'](),
-                    skipForNow: m['connectionPrompts.skipForNow'](),
-                    connecting: m['connectionPrompts.connecting'](),
-                    skipping: m['connectionPrompts.skipping'](),
-                    error: m['connectionPrompts.error'](),
-                    connected: m['connectionPrompts.connected'](),
-                    skipped: m['connectionPrompts.skipped'](),
-                    claimedType: m['connectionPrompts.claimedType'](),
-                }}
+                copy={getConnectionPromptCopy()}
             />
         );
     }
