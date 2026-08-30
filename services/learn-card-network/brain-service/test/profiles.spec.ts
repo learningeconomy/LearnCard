@@ -266,8 +266,7 @@ describe('Profiles', () => {
                 expect(mockVerifyAuthToken).toHaveBeenCalledWith('fake-valid-jwt');
 
                 // Verify contact method was created and linked
-                const methods =
-                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const methods = await userA.clients.fullAuth.contactMethods.getMyContactMethods();
                 const cm = methods?.find(m => m.value === 'alice@test.com');
                 expect(cm).toBeDefined();
                 expect(cm?.type).toBe('email');
@@ -294,8 +293,7 @@ describe('Profiles', () => {
                 expect(didWeb).toEqual('did:web:localhost%3A3000:users:usera');
 
                 // No contact method should be created
-                const methods =
-                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const methods = await userA.clients.fullAuth.contactMethods.getMyContactMethods();
                 expect(methods?.length ?? 0).toBe(0);
             });
 
@@ -325,8 +323,7 @@ describe('Profiles', () => {
 
                 // emailVerified is false, but the check is `!== false` so this should still pass
                 // Let's verify the actual behavior matches the route logic
-                const methods =
-                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const methods = await userA.clients.fullAuth.contactMethods.getMyContactMethods();
                 // emailVerified === false → the condition `claims.emailVerified !== false` is false → skip
                 expect(methods?.length ?? 0).toBe(0);
             });
@@ -346,8 +343,7 @@ describe('Profiles', () => {
                 });
 
                 // Verify CM was created
-                const methodsA =
-                    await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+                const methodsA = await userA.clients.fullAuth.contactMethods.getMyContactMethods();
                 const cmA = methodsA?.find(m => m.value === 'shared@test.com');
                 expect(cmA).toBeDefined();
                 expect(cmA?.isVerified).toBe(true);
@@ -2090,22 +2086,21 @@ describe('Profiles', () => {
         });
 
         it('should paginate correctly', async () => {
-            await Promise.all(
-                Array(10)
-                    .fill(0)
-                    .map(async (_zero, index) => {
-                        const client = getClient({
-                            did: `did:test:${index + 1}`,
-                            isChallengeValid: true,
-                            scope: '*:*',
-                        });
-                        await client.profile.createProfile({ profileId: `generated${index + 1}` });
-                        await userA.clients.fullAuth.profile.connectWith({
-                            profileId: `generated${index + 1}`,
-                        });
-                        await client.profile.acceptConnectionRequest({ profileId: 'usera' });
-                    })
-            );
+            // This test verifies cursor pagination, not concurrent connection writes. Sequence the
+            // shared-user setup so a transient Neo4j deadlock cannot reject Promise.all while
+            // sibling handshakes continue running into later tests.
+            for (const index of Array.from({ length: 10 }, (_, index) => index)) {
+                const client = getClient({
+                    did: `did:test:${index + 1}`,
+                    isChallengeValid: true,
+                    scope: '*:*',
+                });
+                await client.profile.createProfile({ profileId: `generated${index + 1}` });
+                await userA.clients.fullAuth.profile.connectWith({
+                    profileId: `generated${index + 1}`,
+                });
+                await client.profile.acceptConnectionRequest({ profileId: 'usera' });
+            }
 
             await expect(
                 userA.clients.fullAuth.profile.paginatedConnections()

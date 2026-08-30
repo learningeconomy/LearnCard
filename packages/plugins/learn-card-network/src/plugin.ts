@@ -788,6 +788,26 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.profile.acceptConnectionRequest.mutate({ profileId });
             },
+            getPendingConnectionPrompts: async _learnCard => {
+                await ensureUser();
+
+                return client.profile.pendingConnectionPrompts.query();
+            },
+            getConnectionPromptStatus: async (_learnCard, promptId) => {
+                await ensureUser();
+
+                return client.profile.connectionPromptStatus.query({ promptId });
+            },
+            skipConnectionPrompt: async (_learnCard, promptId) => {
+                await ensureUser();
+
+                return client.profile.skipConnectionPrompt.mutate({ promptId });
+            },
+            connectWithConnectionPrompt: async (_learnCard, promptId) => {
+                await ensureUser();
+
+                return client.profile.connectWithConnectionPrompt.mutate({ promptId });
+            },
             getConnections: async _learnCard => {
                 console.warn(
                     'The getConnections method is deprecated! Please use getPaginatedConnections instead!'

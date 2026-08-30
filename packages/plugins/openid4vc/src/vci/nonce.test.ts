@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { fetchNonceFromEndpoint } from './nonce';
 
 const mockResponse = (
@@ -16,7 +17,7 @@ const mockResponse = (
 
 describe('fetchNonceFromEndpoint', () => {
     it('POSTs an empty body and returns c_nonce + expiry', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(mockResponse({ c_nonce: 'nonce-123', c_nonce_expires_in: 86400 }));
 
@@ -33,7 +34,7 @@ describe('fetchNonceFromEndpoint', () => {
     });
 
     it('returns undefined expiry when c_nonce_expires_in is omitted', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ c_nonce: 'nonce-123' }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({ c_nonce: 'nonce-123' }));
 
         const result = await fetchNonceFromEndpoint(
             'https://issuer.example.com/nonce',
@@ -44,7 +45,7 @@ describe('fetchNonceFromEndpoint', () => {
     });
 
     it('throws on non-200 response', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(
                 mockResponse('bad nonce', { ok: false, status: 500, text: 'bad nonce' })
@@ -62,7 +63,7 @@ describe('fetchNonceFromEndpoint', () => {
     });
 
     it('throws on non-JSON response', async () => {
-        const fetchMock = jest
+        const fetchMock = vi
             .fn()
             .mockResolvedValue(mockResponse(undefined, { jsonError: new Error('not json') }));
 
@@ -75,7 +76,7 @@ describe('fetchNonceFromEndpoint', () => {
     });
 
     it('throws when c_nonce is missing', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ c_nonce_expires_in: 600 }));
+        const fetchMock = vi.fn().mockResolvedValue(mockResponse({ c_nonce_expires_in: 600 }));
 
         await expect(
             fetchNonceFromEndpoint(

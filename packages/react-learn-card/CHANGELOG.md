@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.12.2
+
+### Patch Changes
+
+-   [#1474](https://github.com/learningeconomy/LearnCard/pull/1474) [`a1ac82e44d56f1fecd6f39e1a4e4c1ba29ff005d`](https://github.com/learningeconomy/LearnCard/commit/a1ac82e44d56f1fecd6f39e1a4e4c1ba29ff005d) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump vite, sharp, nx dev deps (high Dependabot alerts)
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.12
+
 ## 2.12.1
 
 ### Patch Changes

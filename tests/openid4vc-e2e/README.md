@@ -52,14 +52,14 @@ bun install
 
 ```bash
 # From tests/openid4vc-e2e/:
-bun run test          # single run
-bun run test:watch    # watch mode
+bun run test:openid4vc:e2e          # single run
+bun run test:openid4vc:e2e:watch    # watch mode
 ```
 
 Or from the monorepo root:
 
 ```bash
-bun --filter @workspace/openid4vc-e2e-tests run test
+bun --filter @workspace/openid4vc-e2e-tests run test:openid4vc:e2e
 ```
 
 ## Test coverage

@@ -1,4 +1,16 @@
 {
+    "connectionPrompts": {
+        "title": "Connect with {{name}}?",
+        "description": "Stay in touch and recognize what comes next.",
+        "connect": "Connect",
+        "skipForNow": "Skip for Now",
+        "connecting": "Connecting...",
+        "skipping": "Skipping...",
+        "error": "Something went wrong. Please try again.",
+        "connected": "Connected",
+        "skipped": "Skipped",
+        "claimedType": "Credential claimed"
+    },
     "common": {
         "share": "Share",
         "open": "Open",
@@ -1261,7 +1273,7 @@
             "alreadyTaken": "Already taken",
             "findYouHint": "Friends can find you with this.",
             "privacyTitle": "Your Privacy",
-            "privacyDesc": "Set based on your age. Change anytime in Settings.",
+            "privacyDesc": "Change anytime in Settings.",
             "brandAi": "{{brand}} AI",
             "aiMinorNote": "AI features are disabled for minors.",
             "analytics": "Analytics",
