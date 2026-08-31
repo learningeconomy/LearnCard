@@ -25,11 +25,11 @@ class MyViewController: CAPBridgeViewController {
         becomeFirstResponder()
     }
 
-    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+    override func motionBegan(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
         if motion == .motionShake {
             shakeObserverPlugin.handleShakeGesture()
         }
 
-        super.motionEnded(motion, with: event)
+        super.motionBegan(motion, with: event)
     }
 }
