@@ -63,12 +63,20 @@ export const useInviteAction = ({
     };
 
     const share = async () => {
-        const { prompted } = await gate();
-        if (prompted) return;
-
         setIsSharing(true);
 
         try {
+            /*
+              Inside the try: `gate()` presents the join-network and EU parental
+              consent modals, both of which resolve async state. If either
+              rejects, letting it escape `share` makes the button a silent no-op
+              — an unhandled rejection with no feedback at all. The spinner
+              covering the gate is also the more honest reading, since the gate
+              can take a network round trip.
+            */
+            const { prompted } = await gate();
+            if (prompted) return;
+
             const link = invite ?? (await refetch()).data;
 
             if (!link) throw new Error('No invite link');
