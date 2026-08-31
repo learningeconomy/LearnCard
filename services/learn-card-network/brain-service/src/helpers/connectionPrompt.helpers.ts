@@ -725,6 +725,7 @@ export const connectWithConnectionPrompt = async (
 
     if (!counterpartId) return getConnectionPromptStatus(viewer, promptId);
 
+    const connectedAt = new Date().toISOString();
     const result = await runConnectionPairQuery(
         `
             MATCH (first:Profile { profileId: $firstId })
@@ -750,14 +751,14 @@ export const connectWithConnectionPrompt = async (
             )
             FOREACH (_ IN CASE WHEN isPending AND NOT isBlocked THEN [1] ELSE [] END |
                 MERGE (a)-[r:CONNECTED_WITH]->(b)
-                ON CREATE SET r.sources = [$key]
+                ON CREATE SET r.sources = [$key], r.createdAt = $connectedAt
                 ON MATCH SET r.sources = CASE
                     WHEN r.sources IS NULL THEN [$key]
                     WHEN NOT $key IN r.sources THEN r.sources + $key
                     ELSE r.sources
                 END
                 MERGE (b)-[r2:CONNECTED_WITH]->(a)
-                ON CREATE SET r2.sources = [$key]
+                ON CREATE SET r2.sources = [$key], r2.createdAt = $connectedAt
                 ON MATCH SET r2.sources = CASE
                     WHEN r2.sources IS NULL THEN [$key]
                     WHEN NOT $key IN r2.sources THEN r2.sources + $key
@@ -797,7 +798,8 @@ export const connectWithConnectionPrompt = async (
             promptId,
             key: 'manual',
             status: 'CONNECTED',
-            updatedAt: new Date().toISOString(),
+            connectedAt,
+            updatedAt: connectedAt,
         }
     );
     const [row] = convertQueryResultToPropertiesObjectArray<{
