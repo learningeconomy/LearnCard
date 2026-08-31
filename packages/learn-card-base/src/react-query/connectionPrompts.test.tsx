@@ -493,10 +493,21 @@ describe('connection prompt mutations', () => {
         ).toEqual({ promptId: OTHER_PROMPT_ID, status: 'CONNECTED' });
     });
 
-    it('invalidates pending prompts only after credential acceptance succeeds', async () => {
+    it('invalidates pending prompts and contact credential history after acceptance succeeds', async () => {
         mockAcceptCredential.mockResolvedValue(true);
         const queryClient = makeQueryClient();
         queryClient.setQueryData(connectionPromptKeys.pending(SWITCHED_DID), []);
+        const contactCredentialHistoryKey = [
+            'contactCredentialHistory',
+            SWITCHED_DID,
+            'issuer-profile',
+            10,
+        ];
+        queryClient.setQueryData(contactCredentialHistoryKey, {
+            items: [],
+            receivedCount: 0,
+            sentCount: 0,
+        });
 
         const { result } = renderHook(() => useAcceptCredentialMutation(), {
             wrapper: makeWrapper(queryClient),
@@ -505,6 +516,7 @@ describe('connection prompt mutations', () => {
         expect(
             queryClient.getQueryState(connectionPromptKeys.pending(SWITCHED_DID))?.isInvalidated
         ).toBe(false);
+        expect(queryClient.getQueryState(contactCredentialHistoryKey)?.isInvalidated).toBe(false);
 
         await act(async () =>
             result.current.mutateAsync({ uri: 'lc:credential:123', metadata: { source: 'claim' } })
@@ -516,5 +528,6 @@ describe('connection prompt mutations', () => {
         expect(
             queryClient.getQueryState(connectionPromptKeys.pending(SWITCHED_DID))?.isInvalidated
         ).toBe(true);
+        expect(queryClient.getQueryState(contactCredentialHistoryKey)?.isInvalidated).toBe(true);
     });
 });
