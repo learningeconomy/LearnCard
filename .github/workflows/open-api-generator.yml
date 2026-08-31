@@ -44,6 +44,10 @@ jobs:
                   openapi-url: https://network.learncard.com/docs/openapi.json
                   command-args: -o ${{ env.working-directory }}/${{ matrix.generator-name }}-client/ --skip-validate-spec
 
+            - name: Re-apply security dependency floors
+              if: matrix.generator-name == 'python'
+              run: bash ${{ env.working-directory }}/apply-security-floors.sh
+
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
 

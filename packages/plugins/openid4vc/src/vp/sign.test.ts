@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { UnsignedVP, VP } from '@learncard/types';
 
 import { signPresentation, VpSignError, LdpVpSigner } from './sign';
@@ -30,7 +31,7 @@ const makeJwtSigner = (
         signCount: 0,
         lastHeader: undefined as Record<string, unknown> | undefined,
         lastPayload: undefined as Record<string, unknown> | undefined,
-        sign: jest.fn(
+        sign: vi.fn(
             async (
                 header: Record<string, unknown>,
                 payload: Record<string, unknown>
@@ -55,7 +56,7 @@ const makeLdpSigner = (): LdpVpSigner & {
         lastInput: undefined as UnsignedVP | undefined,
         lastOptions: undefined as { domain: string; challenge: string } | undefined,
         signCount: 0,
-        sign: jest.fn(
+        sign: vi.fn(
             async (vp: UnsignedVP, opts: { domain: string; challenge: string }): Promise<VP> => {
                 signer.lastInput = vp;
                 signer.lastOptions = opts;
@@ -209,7 +210,7 @@ describe('signPresentation — jwt_vp_json', () => {
 
     it('wraps signer errors in VpSignError with code jwt_sign_failed', async () => {
         const signer = makeJwtSigner({
-            sign: jest.fn().mockRejectedValue(new Error('kid not found')),
+            sign: vi.fn().mockRejectedValue(new Error('kid not found')),
         });
 
         await expect(
@@ -274,7 +275,7 @@ describe('signPresentation — ldp_vp', () => {
 
     it('wraps signer errors in VpSignError with code ldp_sign_failed', async () => {
         const signer: LdpVpSigner = {
-            sign: jest.fn().mockRejectedValue(new Error('no didkit')),
+            sign: vi.fn().mockRejectedValue(new Error('no didkit')),
         };
 
         await expect(
@@ -389,7 +390,7 @@ describe('signPresentation — SD-JWT-VC passthrough', () => {
     const presentedCompact = `${compact}eyJraGVhZGVyIjoia2Ira2J0In0.eyJzZF9oYXNoIjoiYWJjIn0.kbsig`;
 
     it('routes dc+sd-jwt format through sdJwtPresenter and uses its output as vp_token', async () => {
-        const presenter = jest.fn(async (_compact: string, _opts) => ({
+        const presenter = vi.fn(async (_compact: string, _opts) => ({
             compact: presentedCompact,
         }));
 
@@ -415,7 +416,7 @@ describe('signPresentation — SD-JWT-VC passthrough', () => {
     });
 
     it('accepts the legacy vc+sd-jwt format string identically', async () => {
-        const presenter = jest.fn(async (_compact: string, _opts) => ({
+        const presenter = vi.fn(async (_compact: string, _opts) => ({
             compact: presentedCompact,
         }));
 
@@ -436,7 +437,7 @@ describe('signPresentation — SD-JWT-VC passthrough', () => {
     });
 
     it('throws missing_sd_jwt_source when sdJwtSource is not provided', async () => {
-        const presenter = jest.fn(async () => ({ compact: presentedCompact }));
+        const presenter = vi.fn(async () => ({ compact: presentedCompact }));
 
         await expect(
             signPresentation(
@@ -476,7 +477,7 @@ describe('signPresentation — SD-JWT-VC passthrough', () => {
     });
 
     it('wraps presenter errors in VpSignError with code sd_jwt_present_failed', async () => {
-        const presenter = jest.fn(async () => {
+        const presenter = vi.fn(async () => {
             throw new Error('verifier rejected nonce');
         });
 
@@ -498,7 +499,7 @@ describe('signPresentation — SD-JWT-VC passthrough', () => {
     });
 
     it('rejects empty audience for SD-JWT path (no VP envelope validation skip)', async () => {
-        const presenter = jest.fn(async () => ({ compact: presentedCompact }));
+        const presenter = vi.fn(async () => ({ compact: presentedCompact }));
 
         await expect(
             signPresentation(
@@ -519,7 +520,7 @@ describe('signPresentation — SD-JWT-VC passthrough', () => {
     });
 
     it('rejects empty nonce for SD-JWT path', async () => {
-        const presenter = jest.fn(async () => ({ compact: presentedCompact }));
+        const presenter = vi.fn(async () => ({ compact: presentedCompact }));
 
         await expect(
             signPresentation(

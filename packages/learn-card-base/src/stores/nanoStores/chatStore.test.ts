@@ -3,8 +3,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+    authMode: 'session' as 'legacy' | 'session' | undefined,
+    ensureCalls: 0,
+    ensureError: null as Error | null,
+    ensureMode: 'session' as 'legacy' | 'session',
+    ensureGate: null as Promise<void> | null,
     fetch: vi.fn(),
     showErrorModal: vi.fn(),
+    ticketCount: 0,
 }));
 
 vi.mock('./authStore', () => ({
@@ -16,6 +22,43 @@ vi.mock('./ErrorModalStore', () => ({ showErrorModal: mocks.showErrorModal }));
 vi.mock('../NetworkStore', () => ({
     networkStore: { get: { aiServiceUrl: () => 'http://localhost:3001' } },
 }));
+vi.mock('../walletStore', () => ({
+    walletStore: {
+        get: { wallet: () => ({ id: { did: () => 'did:example:learner' } }) },
+    },
+}));
+vi.mock('../../helpers/aiPassportAuth', () => {
+    const getUrl = (path: string, did?: string) => {
+        const url = new URL(path, 'http://localhost:3001');
+
+        if (mocks.authMode === 'legacy' && did) url.searchParams.set('did', did);
+
+        return url;
+    };
+
+    return {
+        aiPassportFetch: (path: string, init: RequestInit = {}, did?: string) =>
+            mocks.fetch(getUrl(path, did), { ...init, credentials: 'include' }),
+        ensureAiPassportSession: async () => {
+            mocks.ensureCalls += 1;
+            if (mocks.ensureError) throw mocks.ensureError;
+            if (mocks.ensureGate) await mocks.ensureGate;
+
+            mocks.authMode = mocks.ensureMode;
+            return mocks.authMode;
+        },
+        getAiPassportAuthMode: () => mocks.authMode,
+        getAiPassportWebSocketProtocols: async () =>
+            mocks.authMode === 'session'
+                ? [
+                      'ai-passport',
+                      `ai-passport-ticket.ticket-${String(++mocks.ticketCount).padStart(32, '0')}`,
+                  ]
+                : undefined,
+        getAiPassportUrl: getUrl,
+        waitForAiPassportAuthMode: async () => mocks.authMode,
+    };
+});
 vi.mock('../../logging/logger', () => ({
     getLogger: () => ({
         debug: vi.fn(),
@@ -41,7 +84,7 @@ class FakeWebSocket {
     onclose: SocketHandler = null;
     onerror: SocketHandler = null;
 
-    constructor(readonly url: string) {
+    constructor(readonly url: string, readonly protocols?: string | string[]) {
         FakeWebSocket.instances.push(this);
     }
 
@@ -96,9 +139,12 @@ if (!Promise.withResolvers) {
 // The store must capture the fake browser WebSocket during module initialization.
 const {
     connectWebSocket,
+    closeInsightsSession,
     continuePlan,
     credentialContextReadiness,
     currentThreadId,
+    getActiveSessionStatus,
+    finishSession,
     disconnectWebSocket,
     isLoading,
     lastAiError,
@@ -117,7 +163,8 @@ const {
 } = await import('./chatStore');
 
 const openLatestSocket = async (): Promise<FakeWebSocket> => {
-    await Promise.resolve();
+    for (let attempt = 0; attempt < 10; attempt += 1) await Promise.resolve();
+
     const socket = FakeWebSocket.instances.at(-1);
 
     if (!socket) throw new Error('Expected a WebSocket connection');
@@ -134,6 +181,12 @@ describe('chat session startup', () => {
         FakeWebSocket.instances = [];
         mocks.showErrorModal.mockClear();
         mocks.fetch.mockClear();
+        mocks.authMode = 'session';
+        mocks.ensureCalls = 0;
+        mocks.ensureError = null;
+        mocks.ensureGate = null;
+        mocks.ensureMode = 'session';
+        mocks.ticketCount = 0;
         // getActiveLocale reads this key; clear it so cases that don't set a
         // language get the 'en' default rather than a previous test's value.
         localStorage.removeItem('i18n.language');
@@ -152,12 +205,16 @@ describe('chat session startup', () => {
         await start;
 
         expect(mocks.fetch).not.toHaveBeenCalled();
+        expect(new URL(socket.url).searchParams.has('did')).toBe(false);
+        expect(socket.protocols).toEqual([
+            'ai-passport',
+            'ai-passport-ticket.ticket-00000000000000000000000000000001',
+        ]);
         expect(socket.sent.map(payload => JSON.parse(payload))).toEqual([
             {
                 action: 'start_topic',
                 topic: 'Algebra',
                 introStreamMode: 'structured',
-                did: 'did:example:learner',
                 mode: 'ai-tutor',
                 // LC-1901: every outbound frame carries the UI locale so the AI
                 // replies in the user's language. Defaults to 'en'.
@@ -166,6 +223,220 @@ describe('chat session startup', () => {
         ]);
     });
 
+    it('disconnects the previous socket before waiting for auth negotiation', async () => {
+        const firstStart = startTopic('First topic');
+        const firstSocket = await openLatestSocket();
+
+        await firstStart;
+
+        mocks.authMode = 'legacy';
+        mocks.ensureMode = 'session';
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        const secondStart = startTopic('Second topic');
+
+        await Promise.resolve();
+
+        expect(firstSocket.readyState).toBe(FakeWebSocket.CLOSED);
+
+        resolve();
+
+        const secondSocket = await openLatestSocket();
+
+        await secondStart;
+
+        expect(secondSocket).not.toBe(firstSocket);
+    });
+
+    it('uses the legacy DID query only for a legacy backend', async () => {
+        mocks.authMode = 'legacy';
+        mocks.ensureMode = 'legacy';
+
+        const start = startTopic('Legacy Algebra');
+        await Promise.resolve();
+        await Promise.resolve();
+        const socket = await openLatestSocket();
+
+        await start;
+
+        expect(new URL(socket.url).searchParams.get('did')).toBe('did:example:learner');
+        expect(socket.protocols).toBeUndefined();
+        expect(JSON.parse(socket.sent[0]!)).not.toHaveProperty('did');
+    });
+
+    it('actively negotiates before the cold active-session preflight', async () => {
+        mocks.authMode = undefined;
+        mocks.ensureMode = 'legacy';
+        mocks.fetch.mockResolvedValueOnce(Response.json({ isActive: false, activeThreadId: null }));
+
+        await expect(getActiveSessionStatus()).resolves.toEqual({
+            isActive: false,
+            activeThreadId: null,
+        });
+
+        const requestUrl = new URL(mocks.fetch.mock.calls[0]![0] as URL);
+
+        expect(requestUrl.pathname).toBe('/api/chat/active-session-status');
+        expect(requestUrl.searchParams.get('did')).toBe('did:example:learner');
+    });
+
+    it('finalizes session JSON without caller DID transport in session mode', async () => {
+        currentThreadId.set('thread-session');
+        mocks.fetch.mockResolvedValueOnce(
+            Response.json({ event: 'no_conversation_summary', threadId: 'thread-session' })
+        );
+
+        await finishSession();
+
+        const [request, options] = mocks.fetch.mock.calls[0]!;
+        const url = new URL(request as URL);
+        const headers = new Headers(options.headers);
+        const body = JSON.parse(options.body as string);
+
+        expect(url.pathname).toBe('/threads/finish');
+        expect(url.searchParams.has('did')).toBe(false);
+        expect(url.toString()).not.toContain('did:example:learner');
+        expect(headers.get('Content-Type')).toBe('application/json');
+        expect(body).toEqual({ threadId: 'thread-session' });
+        expect(options.body).not.toContain('did:example:learner');
+    });
+
+    it('limits legacy session finalization DID transport to the compatibility query', async () => {
+        mocks.authMode = 'legacy';
+        mocks.ensureMode = 'legacy';
+        currentThreadId.set('thread-legacy');
+        mocks.fetch.mockResolvedValueOnce(
+            Response.json({ event: 'no_conversation_summary', threadId: 'thread-legacy' })
+        );
+
+        await finishSession();
+
+        const [request, options] = mocks.fetch.mock.calls[0]!;
+        const url = new URL(request as URL);
+        const headers = new Headers(options.headers);
+
+        expect(url.searchParams.get('did')).toBe('did:example:learner');
+        expect(headers.get('Content-Type')).toBe('application/json');
+        expect(JSON.parse(options.body as string)).toEqual({ threadId: 'thread-legacy' });
+        expect(options.body).not.toContain('did:example:learner');
+    });
+
+    it('renegotiates before reconnecting a legacy socket after backend rollout', async () => {
+        mocks.authMode = 'legacy';
+        mocks.ensureMode = 'legacy';
+
+        const start = startTopic('Long-running legacy session');
+        await Promise.resolve();
+        await Promise.resolve();
+        const legacySocket = await openLatestSocket();
+
+        await start;
+        expect(new URL(legacySocket.url).searchParams.get('did')).toBe('did:example:learner');
+
+        mocks.ensureMode = 'session';
+        legacySocket.close();
+        await Promise.resolve();
+        await vi.advanceTimersByTimeAsync(1000);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        const sessionSocket = FakeWebSocket.instances.at(-1);
+
+        expect(sessionSocket).not.toBe(legacySocket);
+        expect(new URL(sessionSocket!.url).searchParams.has('did')).toBe(false);
+    });
+
+    it('uses a fresh one-time ticket for every authenticated reconnect', async () => {
+        const start = startTopic('Ticket rotation');
+        const firstSocket = await openLatestSocket();
+
+        await start;
+        firstSocket.close();
+        await Promise.resolve();
+        await vi.advanceTimersByTimeAsync(1000);
+        const secondSocket = FakeWebSocket.instances.at(-1);
+
+        expect(secondSocket).not.toBe(firstSocket);
+        expect(firstSocket.protocols).toEqual([
+            'ai-passport',
+            'ai-passport-ticket.ticket-00000000000000000000000000000001',
+        ]);
+        expect(secondSocket?.protocols).toEqual([
+            'ai-passport',
+            'ai-passport-ticket.ticket-00000000000000000000000000000002',
+        ]);
+        expect(firstSocket.url).not.toContain('ticket-');
+        expect(secondSocket?.url).not.toContain('ticket-');
+    });
+
+    it('counts each failed reconnect once and enforces the exact maximum', async () => {
+        const start = startTopic('Reconnect budget');
+        const socket = await openLatestSocket();
+
+        await start;
+        isTyping.set(true);
+        isLoading.set(true);
+        mocks.authMode = 'legacy';
+        mocks.ensureError = new Error('authentication unavailable');
+        socket.close();
+        await Promise.resolve();
+
+        for (let attempt = 1; attempt <= 5; attempt += 1) {
+            await vi.advanceTimersByTimeAsync(1000);
+            expect(mocks.ensureCalls).toBe(attempt);
+        }
+
+        await vi.advanceTimersByTimeAsync(5000);
+
+        expect(mocks.ensureCalls).toBe(5);
+        expect(FakeWebSocket.instances).toHaveLength(1);
+        expect(isTyping.get()).toBe(false);
+        expect(isLoading.get()).toBe(false);
+    });
+
+    it('resets the reconnect budget after a successful open', async () => {
+        const start = startTopic('Reconnect reset');
+        const firstSocket = await openLatestSocket();
+
+        await start;
+        mocks.authMode = 'legacy';
+        mocks.ensureMode = 'session';
+        firstSocket.close();
+        await Promise.resolve();
+        await vi.advanceTimersByTimeAsync(1000);
+
+        const secondSocket = FakeWebSocket.instances.at(-1)!;
+
+        secondSocket.open();
+        mocks.authMode = 'legacy';
+        mocks.ensureError = new Error('authentication unavailable');
+        secondSocket.close();
+        await Promise.resolve();
+
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+            await vi.advanceTimersByTimeAsync(1000);
+        }
+
+        expect(mocks.ensureCalls).toBe(6);
+        expect(isTyping.get()).toBe(false);
+        expect(isLoading.get()).toBe(false);
+    });
+
+    it('cancels a scheduled reconnect after deliberate disconnect', async () => {
+        const start = startTopic('Deliberate disconnect');
+        const socket = await openLatestSocket();
+
+        await start;
+        socket.close();
+        await Promise.resolve();
+        disconnectWebSocket();
+        await vi.advanceTimersByTimeAsync(5000);
+
+        expect(FakeWebSocket.instances).toHaveLength(1);
+        expect(mocks.ensureCalls).toBe(0);
+    });
     // LC-1901: the locale rides on both the socket URL (read at connect time)
     // and every payload (read per message), so assert both actually track the
     // stored language rather than the 'en' default.
@@ -213,7 +484,7 @@ describe('chat session startup', () => {
     });
 
     it('keeps ended threads read-only while preserving legacy threads with omitted state', async () => {
-        connectWebSocket();
+        await connectWebSocket();
         const socket = await openLatestSocket();
         currentThreadId.set('ended-thread');
         threads.set([
@@ -428,7 +699,7 @@ describe('chat session startup', () => {
     });
 
     it('preserves a partial assistant response when a typed AI error interrupts streaming', async () => {
-        connectWebSocket();
+        await connectWebSocket();
         const socket = await openLatestSocket();
         currentThreadId.set('thread-stream');
         messages.set([{ role: 'user', content: 'My question' }]);
@@ -455,7 +726,7 @@ describe('chat session startup', () => {
     });
 
     it('preserves a partial assistant response when a legacy error interrupts streaming', async () => {
-        connectWebSocket();
+        await connectWebSocket();
         const socket = await openLatestSocket();
         currentThreadId.set('thread-legacy-stream');
         messages.set([{ role: 'user', content: 'My question' }]);
@@ -475,7 +746,7 @@ describe('chat session startup', () => {
     });
 
     it('does not resurrect typing when a responding frame arrives after a quota error', async () => {
-        connectWebSocket();
+        await connectWebSocket();
         const socket = await openLatestSocket();
         currentThreadId.set('thread-quota');
         isTyping.set(true);
@@ -552,6 +823,30 @@ describe('chat session startup', () => {
         );
     });
 
+    it('clears the previous Insights thread before accepting frames for the new socket', async () => {
+        currentThreadId.set('stale-thread');
+
+        const start = startInsightsSession('Career options');
+
+        await Promise.resolve();
+        expect(currentThreadId.get()).toBeNull();
+
+        const socket = await openLatestSocket();
+
+        await start;
+        socket.receive({ event: 'insights_ready', threadId: 'fresh-thread' });
+        socket.receive({ event: 'assistant_typing', threadId: 'fresh-thread' });
+
+        expect(currentThreadId.get()).toBe('fresh-thread');
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(true);
+
+        socket.receive({ done: true, threadId: 'fresh-thread' });
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+    });
+
     it('accepts an untagged Insights error after a correlated topic startup', async () => {
         const topicStart = startTopic('Algebra');
         const topicSocket = await openLatestSocket();
@@ -579,7 +874,7 @@ describe('chat session startup', () => {
     });
 
     it('ignores completion frames for another browser session', async () => {
-        connectWebSocket();
+        await connectWebSocket();
         const socket = await openLatestSocket();
         currentThreadId.set('current-thread');
 
@@ -600,7 +895,7 @@ describe('chat session startup', () => {
     });
 
     it('marks a session ended when another tab replaces it', async () => {
-        connectWebSocket();
+        await connectWebSocket();
         const socket = await openLatestSocket();
         currentThreadId.set('thread-current');
         threads.set([
@@ -635,7 +930,7 @@ describe('chat session startup', () => {
     });
 
     it('reports a non-fatal topic publication failure after the session is ready', async () => {
-        connectWebSocket();
+        await connectWebSocket();
         const socket = await openLatestSocket();
         currentThreadId.set('thread-current');
 
@@ -653,7 +948,7 @@ describe('chat session startup', () => {
     });
 
     it('reloads a shared thread when another tab finishes a response', async () => {
-        connectWebSocket();
+        await connectWebSocket();
         const socket = await openLatestSocket();
         currentThreadId.set('thread-current');
         threads.set([
@@ -812,6 +1107,19 @@ describe('chat session startup', () => {
         expect(isTyping.get()).toBe(false);
     });
 
+    it('does not reconnect a deliberately disconnected socket to close Insights', async () => {
+        currentThreadId.set('thread-insights');
+        await connectWebSocket();
+        const socket = await openLatestSocket();
+
+        disconnectWebSocket();
+        await closeInsightsSession();
+        await vi.advanceTimersByTimeAsync(1_000);
+
+        expect(FakeWebSocket.instances).toHaveLength(1);
+        expect(socket.sent).not.toContainEqual(expect.stringContaining('close_insights_session'));
+    });
+
     it('accepts a continuation error carrying the startup request ID', async () => {
         const start = startTopic('Algebra');
         const socket = await openLatestSocket();
@@ -842,7 +1150,7 @@ describe('chat session startup', () => {
     });
 
     it('ends a silent plan continuation after 32 seconds', async () => {
-        connectWebSocket();
+        await connectWebSocket();
         const socket = await openLatestSocket();
         currentThreadId.set('thread-continuation');
         planReady.set(true);

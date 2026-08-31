@@ -274,15 +274,24 @@ export const notificationsRouter = t.router({
                 return true;
             }
 
-            const [sendNotificationResponse, createdNotificationId] = await Promise.all([
-                sendPushNotification(input),
-                createNotification(input),
-            ]);
+            const creationResult = await createNotification(input);
+
+            if (!creationResult) return false;
+
+            let sendNotificationResponse: unknown;
+            if (creationResult.created) {
+                try {
+                    sendNotificationResponse = await sendPushNotification(input);
+                } catch (error) {
+                    console.error('Failed to send push notification after durable storage', error);
+                }
+            }
+
             if (ctx.debug)
                 console.log(
                     '✅ Send Notification Completed',
                     sendNotificationResponse,
-                    createdNotificationId
+                    creationResult
                 );
             return true;
         }),

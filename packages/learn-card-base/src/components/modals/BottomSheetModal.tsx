@@ -9,7 +9,7 @@ import AppModal from './surfaces/AppModal';
 const DRAG_CLOSE_THRESHOLD = 96;
 
 const BottomSheetModal: ModalContainer = ({ component, options, open }) => {
-    const { closeModal } = useModal();
+    const { requestCloseModal } = useModal();
     const [dragOffset, setDragOffset] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const startYRef = useRef<number | null>(null);
@@ -21,9 +21,8 @@ const BottomSheetModal: ModalContainer = ({ component, options, open }) => {
     const handleCloseModal = useCallback(() => {
         if (options?.disableCloseHandlers) return;
 
-        options?.onClose?.();
-        closeModal();
-    }, [closeModal, options]);
+        void requestCloseModal();
+    }, [options?.disableCloseHandlers, requestCloseModal]);
 
     const stopDragging = useCallback(
         (shouldClose: boolean) => {

@@ -66,7 +66,14 @@
             "executor": "./tools/executors/workspace:run-command",
             "options": {
                 "command": "bun run test:watch",
-                "cwd": "{root}/services/learn-card-network/brain-service"
+                "cwd": "{root}/services/learn-card-network/learn-cloud-service"
+            }
+        },
+        "test:integration": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "tests"],
+            "options": {
+                "script": "test:integration"
             }
         }
     }

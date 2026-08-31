@@ -8,6 +8,7 @@ import { deleteCredentialFromAllContracts } from './pruneConsentFlowDeletedCrede
 import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 import { ToastTypeEnum, useToast } from '../../hooks/useToast';
 import { getLogger } from '../../logging/logger';
+import { connectionPromptKeys } from '../connectionPrompts';
 const log = getLogger('mutations');
 
 export const getDeletedUrisForCredentialRecord = (record: LCR): string[] => {
@@ -29,6 +30,8 @@ type ProfileIdParam = { profileId: string };
 
 export const useConnectWithMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+    const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useMutation<boolean, Error, ProfileIdParam>({
         mutationFn: async ({ profileId }) => {
@@ -40,6 +43,20 @@ export const useConnectWithMutation = () => {
             } catch (error) {
                 return Promise.reject(new Error(String(error)));
             }
+        },
+        onSuccess: async () => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['connections', switchedDid ?? ''] }),
+                queryClient.invalidateQueries({
+                    queryKey: ['paginatedConnections', switchedDid ?? ''],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ['pendingConnections', switchedDid ?? ''],
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: ['paginatedPendingConnections', switchedDid ?? ''],
+                }),
+            ]);
         },
     });
 };
@@ -132,6 +149,7 @@ export const useBlockProfileMutation = () => {
 // ** CREDENTIAL MUTATIONS **
 export const useAcceptCredentialMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async ({
@@ -147,6 +165,9 @@ export const useAcceptCredentialMutation = () => {
             });
 
             return data;
+        },
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
         },
     });
 };

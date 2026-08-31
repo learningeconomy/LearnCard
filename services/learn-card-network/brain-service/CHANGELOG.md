@@ -1,5 +1,29 @@
 # @learncard/network-brain-service
 
+## 3.16.15
+
+### Patch Changes
+
+-   [#1491](https://github.com/learningeconomy/LearnCard/pull/1491) [`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e) Thanks [@goblincore](https://github.com/goblincore)! - Prompt credential claimers and senders to create an explicit LearnCard connection, with durable and idempotent actionable notification delivery.
+
+-   [#1496](https://github.com/learningeconomy/LearnCard/pull/1496) [`93ad0e53137d9bd86d7154d68a259d6424e60d79`](https://github.com/learningeconomy/LearnCard/commit/93ad0e53137d9bd86d7154d68a259d6424e60d79) Thanks [@Custard7](https://github.com/Custard7)! - fix: move serverless-offline + @sentry/esbuild-plugin to devDependencies
+
+-   Updated dependencies [[`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e)]:
+    -   @learncard/types@5.18.2
+    -   @learncard/core@9.4.31
+    -   @learncard/helpers@1.3.13
+    -   @learncard/did-web-plugin@1.1.31
+    -   @learncard/didkey-plugin@1.1.31
+    -   @learncard/didkit-plugin@1.9.11
+    -   @learncard/didkit-plugin-node@0.2.29
+    -   @learncard/encryption-plugin@1.1.31
+    -   @learncard/learn-card-plugin@1.2.31
+    -   @learncard/vc-plugin@1.5.11
+    -   @learncard/vc-templates-plugin@1.1.31
+    -   @learncard/crypto-plugin@1.1.31
+    -   @learncard/dynamic-loader-plugin@1.1.31
+    -   @learncard/expiration-plugin@1.2.31
+
 ## 3.16.14
 
 ### Patch Changes
