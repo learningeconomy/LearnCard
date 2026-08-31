@@ -1,6 +1,6 @@
 {
     "name": "@learncard/didkit-plugin-node",
-    "version": "0.2.28",
+    "version": "0.2.29",
     "description": "Node-native DIDKit plugin for LearnCard (N-API addon wrapper)",
     "type": "commonjs",
     "main": "./dist/index.js",
@@ -28,10 +28,12 @@
     "scripts": {
         "build": "node scripts/build.js",
         "build:debug": "napi build --platform --cargo-cwd native && tsc -p tsconfig.json",
-        "test": "jest --passWithNoTests",
+        "test": "vitest run",
         "artifacts": "napi artifacts",
         "create-npm-dir": "napi create-npm-dir -t .",
-        "prepublishOnly": "napi prepublish -t npm --skip-gh-release"
+        "prepublishOnly": "napi prepublish -t npm --skip-gh-release",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",

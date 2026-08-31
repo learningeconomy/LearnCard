@@ -12,10 +12,10 @@ describe('posthog.helpers', () => {
         process.env.POSTHOG_API_KEY = 'phc_test_key';
         const captureSpy = vi.fn();
         vi.doMock('posthog-node', () => ({
-            PostHog: vi.fn().mockImplementation(() => ({
-                capture: captureSpy,
-                shutdown: vi.fn(),
-            })),
+            PostHog: class MockPostHog {
+                capture = captureSpy;
+                shutdown = vi.fn();
+            },
         }));
         const mod = await import('./posthog.helpers');
         const result = await mod.captureBenchEvent('bench.appevent.iteration', { foo: 1 });
@@ -34,10 +34,10 @@ describe('posthog.helpers', () => {
         process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY = 'true';
         const captureSpy = vi.fn();
         vi.doMock('posthog-node', () => ({
-            PostHog: vi.fn().mockImplementation(() => ({
-                capture: captureSpy,
-                shutdown: vi.fn(),
-            })),
+            PostHog: class MockPostHog {
+                capture = captureSpy;
+                shutdown = vi.fn();
+            },
         }));
         const mod = await import('./posthog.helpers');
         const result = await mod.captureBenchEvent('bench.appevent.iteration', { foo: 1 });
@@ -53,12 +53,12 @@ describe('posthog.helpers', () => {
         process.env.POSTHOG_API_KEY = 'phc_test_key';
         process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY = 'true';
         vi.doMock('posthog-node', () => ({
-            PostHog: vi.fn().mockImplementation(() => ({
-                capture: () => {
+            PostHog: class MockPostHog {
+                capture = () => {
                     throw new Error('posthog down');
-                },
-                shutdown: vi.fn(),
-            })),
+                };
+                shutdown = vi.fn();
+            },
         }));
         const mod = await import('./posthog.helpers');
         const result = await mod.captureBenchEvent('bench.appevent.iteration', { foo: 1 });
@@ -70,10 +70,10 @@ describe('posthog.helpers', () => {
         process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY = '1'; // strict "true" only
         const captureSpy = vi.fn();
         vi.doMock('posthog-node', () => ({
-            PostHog: vi.fn().mockImplementation(() => ({
-                capture: captureSpy,
-                shutdown: vi.fn(),
-            })),
+            PostHog: class MockPostHog {
+                capture = captureSpy;
+                shutdown = vi.fn();
+            },
         }));
         const mod = await import('./posthog.helpers');
         const result = await mod.captureBenchEvent('bench.appevent.iteration', { foo: 1 });

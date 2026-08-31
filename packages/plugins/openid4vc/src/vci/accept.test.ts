@@ -1,3 +1,6 @@
+import { vi } from 'vitest';
+import type { Mock } from 'vitest';
+
 import { acceptCredentialOffer } from './accept';
 import { CredentialOffer, PRE_AUTHORIZED_CODE_GRANT } from '../offer/types';
 import { ProofJwtSigner } from './types';
@@ -52,18 +55,18 @@ const credentialResponse = {
 const fakeSigner: ProofJwtSigner = {
     alg: 'EdDSA',
     kid: 'did:key:z6Mk#z6Mk',
-    sign: jest.fn().mockResolvedValue('proof.jwt.sig'),
+    sign: vi.fn().mockResolvedValue('proof.jwt.sig'),
 };
 
 const makeFetch = (responses: unknown[]) => {
-    const mock = jest.fn();
+    const mock = vi.fn();
     for (const r of responses) mock.mockResolvedValueOnce(r);
     return mock as unknown as typeof fetch;
 };
 
 describe('acceptCredentialOffer', () => {
     beforeEach(() => {
-        (fakeSigner.sign as jest.Mock).mockClear();
+        (fakeSigner.sign as Mock).mockClear();
     });
 
     it('drives the full pre-authorized_code flow end-to-end', async () => {
@@ -90,7 +93,7 @@ describe('acceptCredentialOffer', () => {
 
         // Verify the proof JWT was built with the issuer's nonce.
         expect(fakeSigner.sign).toHaveBeenCalledTimes(1);
-        const signCall = (fakeSigner.sign as jest.Mock).mock.calls[0];
+        const signCall = (fakeSigner.sign as Mock).mock.calls[0];
         expect(signCall[1]).toMatchObject({
             aud: 'https://issuer.example.com',
             nonce: 'nonce-xyz',
@@ -112,12 +115,12 @@ describe('acceptCredentialOffer', () => {
             fetchImpl: fetchMock,
         });
 
-        expect((fetchMock as unknown as jest.Mock).mock.calls[3]).toEqual([
+        expect((fetchMock as unknown as Mock).mock.calls[3]).toEqual([
             'https://issuer.example.com/nonce',
             { method: 'POST' },
         ]);
 
-        const signCall = (fakeSigner.sign as jest.Mock).mock.calls[0];
+        const signCall = (fakeSigner.sign as Mock).mock.calls[0];
         expect(signCall[1]).toMatchObject({ nonce: 'fresh-endpoint-nonce' });
     });
 
@@ -147,13 +150,13 @@ describe('acceptCredentialOffer', () => {
 
         expect(result.credentials).toHaveLength(1);
         expect(fakeSigner.sign).toHaveBeenCalledTimes(2);
-        expect((fakeSigner.sign as jest.Mock).mock.calls[0][1]).toMatchObject({
+        expect((fakeSigner.sign as Mock).mock.calls[0][1]).toMatchObject({
             nonce: 'fresh-endpoint-nonce',
         });
-        expect((fakeSigner.sign as jest.Mock).mock.calls[1][1]).toMatchObject({
+        expect((fakeSigner.sign as Mock).mock.calls[1][1]).toMatchObject({
             nonce: 'refreshed-endpoint-nonce',
         });
-        expect((fetchMock as unknown as jest.Mock).mock.calls[5]).toEqual([
+        expect((fetchMock as unknown as Mock).mock.calls[5]).toEqual([
             'https://issuer.example.com/nonce',
             { method: 'POST' },
         ]);
@@ -178,7 +181,7 @@ describe('acceptCredentialOffer', () => {
         });
 
         // Fourth call is the credential endpoint.
-        const credentialCall = (fetchMock as unknown as jest.Mock).mock.calls[3];
+        const credentialCall = (fetchMock as unknown as Mock).mock.calls[3];
         const body = JSON.parse(credentialCall[1].body);
 
         expect(body.credential_configuration_id).toBe('UniversityDegree_jwt_vc_json');
@@ -220,8 +223,8 @@ describe('acceptCredentialOffer', () => {
         // One credential request per credential_identifier.
         expect(result.credentials).toHaveLength(2);
 
-        const call1Body = JSON.parse((fetchMock as unknown as jest.Mock).mock.calls[3][1].body);
-        const call2Body = JSON.parse((fetchMock as unknown as jest.Mock).mock.calls[4][1].body);
+        const call1Body = JSON.parse((fetchMock as unknown as Mock).mock.calls[3][1].body);
+        const call2Body = JSON.parse((fetchMock as unknown as Mock).mock.calls[4][1].body);
 
         expect(call1Body.credential_identifier).toBe('issuer-scoped-id-1');
         expect(call1Body.credential_configuration_id).toBeUndefined();
@@ -241,7 +244,7 @@ describe('acceptCredentialOffer', () => {
             acceptCredentialOffer({
                 offer: offerWithoutGrant,
                 signer: fakeSigner,
-                fetchImpl: jest.fn() as unknown as typeof fetch,
+                fetchImpl: vi.fn() as unknown as typeof fetch,
             })
         ).rejects.toMatchObject({ code: 'unsupported_grant' });
     });
@@ -261,7 +264,7 @@ describe('acceptCredentialOffer', () => {
             acceptCredentialOffer({
                 offer: offerWithTxCode,
                 signer: fakeSigner,
-                fetchImpl: jest.fn() as unknown as typeof fetch,
+                fetchImpl: vi.fn() as unknown as typeof fetch,
             })
         ).rejects.toMatchObject({ code: 'tx_code_required' });
     });
@@ -292,7 +295,7 @@ describe('acceptCredentialOffer', () => {
         });
 
         // Third call is token endpoint POST.
-        const tokenCall = (fetchMock as unknown as jest.Mock).mock.calls[2];
+        const tokenCall = (fetchMock as unknown as Mock).mock.calls[2];
         const body = new URLSearchParams(tokenCall[1].body);
         expect(body.get('tx_code')).toBe('1234');
     });
@@ -344,7 +347,7 @@ describe('acceptCredentialOffer', () => {
         expect(result.credentials).toHaveLength(1);
         expect(result.credentials[0].configuration_id).toBe('UniversityDegree_jwt_vc_json');
         // Only one credential-endpoint call since we filtered to one id.
-        expect((fetchMock as unknown as jest.Mock).mock.calls).toHaveLength(4);
+        expect((fetchMock as unknown as Mock).mock.calls).toHaveLength(4);
     });
 
     it('throws unsupported_format when the filter yields no matches', async () => {
@@ -353,7 +356,7 @@ describe('acceptCredentialOffer', () => {
                 offer: baseOffer,
                 signer: fakeSigner,
                 options: { configurationIds: ['NotInOffer'] },
-                fetchImpl: jest.fn() as unknown as typeof fetch,
+                fetchImpl: vi.fn() as unknown as typeof fetch,
             })
         ).rejects.toMatchObject({ code: 'unsupported_format' });
     });
@@ -375,7 +378,7 @@ describe('acceptCredentialOffer di_vp key proofs', () => {
 
     const diVpSigner = {
         holder: 'did:key:z6Mkholder',
-        signPresentation: jest.fn(async (vp: Record<string, unknown>, opts: unknown) => ({
+        signPresentation: vi.fn(async (vp: Record<string, unknown>, opts: unknown) => ({
             ...vp,
             proof: {
                 type: 'DataIntegrityProof',
@@ -387,7 +390,7 @@ describe('acceptCredentialOffer di_vp key proofs', () => {
 
     beforeEach(() => {
         diVpSigner.signPresentation.mockClear();
-        (fakeSigner.sign as jest.Mock).mockClear();
+        (fakeSigner.sign as Mock).mockClear();
     });
 
     it('sends a di_vp key proof when the issuer only advertises di_vp', async () => {
@@ -416,7 +419,7 @@ describe('acceptCredentialOffer di_vp key proofs', () => {
             }
         );
 
-        const credentialCall = (fetchMock as unknown as jest.Mock).mock.calls[3];
+        const credentialCall = (fetchMock as unknown as Mock).mock.calls[3];
         const body = JSON.parse(credentialCall[1].body);
         expect(body.proofs.di_vp).toHaveLength(1);
         expect(body.proofs.di_vp[0].proof.type).toBe('DataIntegrityProof');

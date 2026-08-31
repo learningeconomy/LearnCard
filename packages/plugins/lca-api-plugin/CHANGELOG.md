@@ -1,5 +1,16 @@
 # lca-api-plugin
 
+## 2.0.1
+
+### Patch Changes
+
+-   Updated dependencies [[`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e)]:
+    -   @learncard/types@5.18.2
+    -   @learncard/lca-api-client@1.2.4
+    -   @learncard/core@9.4.31
+    -   @learncard/init@2.4.12
+    -   @learncard/didkit-plugin@1.9.11
+
 ## 2.0.0
 
 ### Major Changes

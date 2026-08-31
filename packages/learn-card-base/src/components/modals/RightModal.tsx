@@ -7,20 +7,22 @@ import { ModalContainer } from './types/Modals';
 import AppModal from './surfaces/AppModal';
 
 const RightModal: ModalContainer = ({ component, options, open }) => {
-    const { closeModal } = useModal();
+    const { requestCloseModal } = useModal();
     const confirm = useConfirmation({ widen: true, className: options?.confirmationClassName });
 
     const optionalClass = options?.className || '';
     const sectionClass = options?.sectionClassName || '';
 
     const handleCloseModal = () => {
-        if (options.disableCloseHandlers) return;
+        if (options?.disableCloseHandlers) return;
 
         if (options?.confirmClose) {
-            confirm({ text: options.confirmClose, onConfirm: () => setTimeout(closeModal, 350) });
+            confirm({
+                text: options.confirmClose,
+                onConfirm: () => setTimeout(() => void requestCloseModal(), 350),
+            });
         } else {
-            options?.onClose?.();
-            closeModal();
+            void requestCloseModal();
         }
     };
 

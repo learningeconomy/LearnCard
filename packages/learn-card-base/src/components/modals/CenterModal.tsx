@@ -8,17 +8,16 @@ import { ModalContainer } from './types/Modals';
 import AppModal from './surfaces/AppModal';
 
 export const CenterModal: ModalContainer = ({ component, options, open }) => {
-    const { closeModal } = useModal();
+    const { requestCloseModal } = useModal();
 
     const optionalClass = options?.className || 'd-c-modal';
     const hideButton = typeof options?.hideButton === 'boolean' ? options.hideButton : true;
     const customSectionClass = options?.sectionClassName || '';
 
     const handleCloseModal = () => {
-        if (options.disableCloseHandlers) return;
+        if (options?.disableCloseHandlers) return;
 
-        options?.onClose?.();
-        closeModal();
+        void requestCloseModal();
     };
 
     return (

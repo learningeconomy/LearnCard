@@ -1,12 +1,13 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
+import { createVitestConfig, nodePreset } from '../../vitest.shared';
 
 export default defineConfig(async () => {
     // Keep this import dynamic: Paraglide is ESM-only, while this Vitest version
     // loads TypeScript config files through a CommonJS compatibility bundle.
     const { paraglideVitePlugin } = await import('@inlang/paraglide-js');
 
-    return {
+    return createVitestConfig(nodePreset, {
         plugins: [
             paraglideVitePlugin({
                 project: './project.inlang',
@@ -15,9 +16,7 @@ export default defineConfig(async () => {
             }),
         ],
         test: {
-            environment: 'node',
-            globals: true,
-            include: ['src/**/*.test.{ts,tsx}'],
+            include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.{ts,tsx}'],
         },
         resolve: {
             alias: {
@@ -25,5 +24,5 @@ export default defineConfig(async () => {
                 'apps/scouts': path.resolve(__dirname),
             },
         },
-    };
+    });
 });

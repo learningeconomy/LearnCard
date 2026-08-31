@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 import { decodeSdJwt } from '@sd-jwt/decode';
 import { generateKeyPair, exportJWK, importJWK, SignJWT } from 'jose';
@@ -47,7 +48,7 @@ const makeHolderKeypair = async () => {
 };
 
 const makeVerificationOk = () =>
-    jest.fn().mockResolvedValue({ checks: [], warnings: [], errors: [] });
+    vi.fn().mockResolvedValue({ checks: [], warnings: [], errors: [] });
 
 const tamperIssuerSignature = (compact: string): string => {
     const [jwt, ...rest] = compact.split('~');
@@ -340,7 +341,7 @@ describe('presentSdJwtVc', () => {
         it('throws when the compact fails re-verification and does not invoke the kb signer', async () => {
             const holder = await makeHolderKeypair();
             const { compact } = await issueCredential({ holderPublicJwk: holder.publicJwk });
-            const kbSigner = jest.fn().mockResolvedValue('signature');
+            const kbSigner = vi.fn().mockResolvedValue('signature');
             const tampered = tamperIssuerSignature(compact);
 
             await expect(
@@ -349,7 +350,7 @@ describe('presentSdJwtVc', () => {
                     nonce: 'abc',
                     kbSigner,
                     activeHolderPublicJwk: holder.publicJwk as Record<string, unknown>,
-                    verify: jest.fn().mockResolvedValue({
+                    verify: vi.fn().mockResolvedValue({
                         checks: ['parse'],
                         warnings: [],
                         errors: ['signature_invalid: detached signature mismatch'],
@@ -457,7 +458,7 @@ describe('plugin surface: presentSdJwtVc', () => {
 
         const learnCard = {
             id: {
-                keypair: jest.fn().mockReturnValue({
+                keypair: vi.fn().mockReturnValue({
                     kty: 'OKP',
                     crv: 'Ed25519',
                     x: 'holder-x',
@@ -465,8 +466,8 @@ describe('plugin surface: presentSdJwtVc', () => {
                 }),
             },
             invoke: {
-                verifyCredential: jest.fn(),
-                resolveDid: jest.fn().mockResolvedValue({
+                verifyCredential: vi.fn(),
+                resolveDid: vi.fn().mockResolvedValue({
                     verificationMethod: [
                         {
                             id: `${ISSUER_DID}#key-1`,

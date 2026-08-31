@@ -1,10 +1,11 @@
+import { vi } from 'vitest';
 import { getClient } from '@learncard/lca-api-client';
 
 import { getLCAPlugin } from '../plugin';
 
-jest.mock('@learncard/lca-api-client', () => ({ getClient: jest.fn() }), { virtual: true });
+vi.mock('@learncard/lca-api-client', () => ({ getClient: vi.fn() }));
 
-const mockedGetClient = jest.mocked(getClient);
+const mockedGetClient = vi.mocked(getClient);
 
 const learnCard = {
     id: { did: () => 'did:key:z6MkTest' },
@@ -17,7 +18,7 @@ describe('getLCAPlugin', () => {
     });
 
     it('reports when initial setup falls back to offline mode', async () => {
-        const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
         try {
             mockedGetClient.mockRejectedValueOnce(new Error('connection failed'));

@@ -1,5 +1,28 @@
 # learn-card-base
 
+## 0.4.5
+
+### Patch Changes
+
+-   [#1501](https://github.com/learningeconomy/LearnCard/pull/1501) [`059d0869c2831deafa03244b1800aa65b46f3561`](https://github.com/learningeconomy/LearnCard/commit/059d0869c2831deafa03244b1800aa65b46f3561) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump axios to ^0.33.0 to resolve Dependabot alerts (formToJSON DoS, NO_PROXY bypass, prototype pollution)
+
+-   [#1494](https://github.com/learningeconomy/LearnCard/pull/1494) [`1b5a39f78e0c121516e04f0cffba91e0676a762b`](https://github.com/learningeconomy/LearnCard/commit/1b5a39f78e0c121516e04f0cffba91e0676a762b) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2110] Add profile/notification icon to Dashboard Page
+
+-   [#1490](https://github.com/learningeconomy/LearnCard/pull/1490) [`e6bba21a77adcf50ab9672c196239555f60f38c0`](https://github.com/learningeconomy/LearnCard/commit/e6bba21a77adcf50ab9672c196239555f60f38c0) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-2061] Design Change for passport discovery filter & mobile header behavior
+
+-   [#1493](https://github.com/learningeconomy/LearnCard/pull/1493) [`6618bd588eafbf3be8da10cc93e066f877c91842`](https://github.com/learningeconomy/LearnCard/commit/6618bd588eafbf3be8da10cc93e066f877c91842) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: Add recipients with native QR scanning
+
+-   [#1498](https://github.com/learningeconomy/LearnCard/pull/1498) [`5a3b9f202619f54370f7a3b315b267ad9ef1eab4`](https://github.com/learningeconomy/LearnCard/commit/5a3b9f202619f54370f7a3b315b267ad9ef1eab4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add challenge-based AI Passport authentication with backward-compatible rollout handling for legacy backends and cross-site bearer sessions.
+
+-   Updated dependencies [[`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e)]:
+    -   @learncard/types@5.18.2
+    -   @learncard/helpers@1.3.13
+    -   @learncard/lca-api-plugin@2.0.1
+    -   @learncard/learn-card-plugin@1.2.31
+    -   @learncard/ler-rs-plugin@0.1.22
+    -   @learncard/render-method-plugin@4.0.4
+    -   @learncard/sss-key-manager@0.1.20
+
 ## 0.4.4
 
 ### Patch Changes

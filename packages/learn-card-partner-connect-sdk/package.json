@@ -1,6 +1,6 @@
 {
     "name": "@learncard/partner-connect",
-    "version": "0.4.2",
+    "version": "0.4.3",
     "repository": {
         "type": "git",
         "url": "https://github.com/learningeconomy/LearnCard"
@@ -27,8 +27,9 @@
         "build": "rollup -c",
         "dev": "rollup -c -w",
         "typecheck": "tsc --noEmit",
-        "test": "jest -c jest.config.js",
-        "test:watch": "jest -c jest.config.js --watch"
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "keywords": [
         "learncard",

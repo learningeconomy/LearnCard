@@ -5,6 +5,7 @@ import type {
     Context,
     APIGatewayProxyResultV2,
     APIGatewayProxyEventV2,
+    SQSBatchResponse,
     SQSHandler,
 } from 'aws-lambda';
 import { LCNNotificationValidator } from '@learncard/types';
@@ -16,6 +17,7 @@ import skillsViewerApp from './src/skills-viewer';
 import statusListsApp from './src/status-lists';
 import { appRouter, createContext } from './src/app';
 import { sendNotification } from './src/helpers/notifications.helpers';
+import { acknowledgeConnectionPromptNotificationDelivery } from './src/helpers/connectionPrompt.helpers';
 import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
 import {
@@ -112,20 +114,51 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
     }
 );
 
-export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(
-    async (event, context) => {
-        await Promise.all(
-            event.Records.map(async record => {
-                try {
-                    const _notification = JSON.parse(record.body);
+export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
+    const batchItemFailures = await Promise.all(
+        event.Records.map(async record => {
+            try {
+                const _notification = JSON.parse(record.body);
 
-                    const notification = await LCNNotificationValidator.parseAsync(_notification);
+                const notification = await LCNNotificationValidator.parseAsync(_notification);
 
-                    await sendNotification(notification);
-                } catch (error) {
-                    console.error('Invalid Notification Object', record.body);
+                const stored = await sendNotification(notification, {
+                    propagateDirectWebhookTransportErrors: true,
+                });
+
+                if (!stored) throw new Error('Notification was not durably stored');
+
+                const connectionPrompt = notification.data?.metadata?.connectionPrompt;
+                if (connectionPrompt) {
+                    const viewerProfileId = notification.to.profileId;
+
+                    if (!viewerProfileId) {
+                        throw new Error(
+                            'Actionable notification is missing its recipient profile id'
+                        );
+                    }
+
+                    await acknowledgeConnectionPromptNotificationDelivery(
+                        viewerProfileId,
+                        connectionPrompt.promptId
+                    );
                 }
-            })
-        );
-    }
-);
+
+                return undefined;
+            } catch (error) {
+                console.error('Notification queue record failed', {
+                    messageId: record.messageId,
+                    error,
+                });
+
+                return { itemIdentifier: record.messageId };
+            }
+        })
+    );
+
+    return {
+        batchItemFailures: batchItemFailures.filter(
+            (failure): failure is { itemIdentifier: string } => failure !== undefined
+        ),
+    } satisfies SQSBatchResponse;
+});

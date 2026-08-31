@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { getClaimableBoostsPlugin } from '../';
 
 describe('Claimable Boosts Plugin', () => {
@@ -8,8 +9,8 @@ describe('Claimable Boosts Plugin', () => {
     it('returns a plugin', () => {
         const plugin = getClaimableBoostsPlugin({
             invoke: {
-                generateClaimLink: jest.fn(),
-                getRegisteredSigningAuthorities: jest.fn(),
+                generateClaimLink: vi.fn(),
+                getRegisteredSigningAuthorities: vi.fn(),
             },
         } as any);
         expect(plugin).toBeDefined();
@@ -18,22 +19,24 @@ describe('Claimable Boosts Plugin', () => {
     it('returns a plugin with the correct name', () => {
         const plugin = getClaimableBoostsPlugin({
             invoke: {
-                generateClaimLink: jest.fn(),
-                getRegisteredSigningAuthorities: jest.fn(),
+                generateClaimLink: vi.fn(),
+                getRegisteredSigningAuthorities: vi.fn(),
             },
         } as any);
         expect(plugin.name).toBe('ClaimableBoosts');
     });
 
     it('generates a claim link for a boost', async () => {
-        const mockGenerateClaimLink = jest.fn().mockResolvedValue({
+        const mockGenerateClaimLink = vi.fn().mockResolvedValue({
             boostUri: 'test-uri',
-            challenge: 'test-challenge'
+            challenge: 'test-challenge',
         });
-        const mockGetRegisteredSigningAuthorities = jest.fn().mockResolvedValue([{
-            relationship: { name: 'test-name' },
-            signingAuthority: { endpoint: 'test-endpoint' }
-        }]);
+        const mockGetRegisteredSigningAuthorities = vi.fn().mockResolvedValue([
+            {
+                relationship: { name: 'test-name' },
+                signingAuthority: { endpoint: 'test-endpoint' },
+            },
+        ]);
 
         const mockLearnCard = {
             invoke: {
@@ -44,13 +47,22 @@ describe('Claimable Boosts Plugin', () => {
 
         const plugin = getClaimableBoostsPlugin(mockLearnCard as any);
 
-        const result = await plugin.methods.generateBoostClaimLink(mockLearnCard as any, 'test-boost-uri');
-        expect(result).toBe('https://learncard.app/claim/boost?claim=true&boostUri=test-uri&challenge=test-challenge');
-        
+        const result = await plugin.methods.generateBoostClaimLink(
+            mockLearnCard as any,
+            'test-boost-uri'
+        );
+        expect(result).toBe(
+            'https://learncard.app/claim/boost?claim=true&boostUri=test-uri&challenge=test-challenge'
+        );
+
         expect(mockGetRegisteredSigningAuthorities).toHaveBeenCalled();
-        expect(mockGenerateClaimLink).toHaveBeenCalledWith('test-boost-uri', {
-            name: 'test-name',
-            endpoint: 'test-endpoint'
-        }, undefined);
+        expect(mockGenerateClaimLink).toHaveBeenCalledWith(
+            'test-boost-uri',
+            {
+                name: 'test-name',
+                endpoint: 'test-endpoint',
+            },
+            undefined
+        );
     });
 });

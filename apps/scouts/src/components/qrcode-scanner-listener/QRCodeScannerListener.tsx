@@ -123,7 +123,7 @@ export const QRCodeScannerListener: React.FC = () => {
 
     const handleCancelScanning = async () => {
         document?.querySelector('#app-router')?.classList?.remove('scanner-active');
-        QRCodeScannerStore.set.showScanner(false);
+        QRCodeScannerStore.set.closeScanner();
 
         // Remove all listeners
         await BarcodeScanner?.removeAllListeners();

@@ -10,14 +10,6 @@
         "tests": ["{projectRoot}/tests/**/*"]
     },
     "targets": {
-        "test": {
-            "executor": "./tools/executors/workspace:run-command",
-            "dependsOn": ["^build"],
-            "options": {
-                "command": "bun run test",
-                "cwd": "{root}/tests/e2e"
-            }
-        },
         "test:e2e": {
             "executor": "./tools/executors/workspace:run-command",
             "dependsOn": ["^build"],
