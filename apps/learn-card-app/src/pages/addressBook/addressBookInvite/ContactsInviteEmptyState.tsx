@@ -27,10 +27,14 @@ const ContactsInviteEmptyState: React.FC = () => {
         handleCloseModal: () => dismissQrModal(),
     });
 
-    const handleShowQr = async () => {
-        await analytics.track(AnalyticsEvents.CONTACT_INVITE_QR_SHOWN, {
-            surface: 'empty_state',
-        });
+    const handleShowQr = () => {
+        // Fire-and-forget, exactly as `useInviteAction` does. Awaiting this
+        // delayed the modal behind the analytics round trip, and a rejecting
+        // provider stopped it opening at all — a dead button because a metric
+        // failed.
+        void analytics
+            .track(AnalyticsEvents.CONTACT_INVITE_QR_SHOWN, { surface: 'empty_state' })
+            .catch(() => {});
 
         presentQrModal({
             cssClass: 'generic-modal show-modal ion-disable-focus-trap',
