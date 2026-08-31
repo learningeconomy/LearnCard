@@ -326,8 +326,10 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     };
 
     const relationshipLabel = contact.connectedAt
-        ? `Connected since ${moment(contact.connectedAt).format('MMM D, YYYY')}`
-        : 'Connected';
+        ? m['contacts.connectedSince']({
+              date: moment(contact.connectedAt).format('MMM D, YYYY'),
+          })
+        : m['contacts.connected']();
 
     const renderConnectionAction = (): React.ReactNode => {
         if (
@@ -345,7 +347,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                         );
                     }}
                 >
-                    Accept Request
+                    {m['contacts.acceptRequest']()}
                 </button>
             );
         }
@@ -365,7 +367,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                         );
                     }}
                 >
-                    Cancel Request
+                    {m['contacts.cancelRequest']()}
                 </button>
             );
         }
@@ -382,7 +384,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                         );
                     }}
                 >
-                    Unblock Contact
+                    {m['contacts.unblockContact']()}
                 </button>
             );
         }
@@ -399,7 +401,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                         );
                     }}
                 >
-                    Request Connection
+                    {m['contacts.requestConnection']()}
                 </button>
             );
         }
@@ -430,7 +432,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 ) : (
                                     <BoostOutline3 className="text-lg text-white" />
                                 )}
-                                {loadingAction === 'boost' ? 'Opening...' : 'Boost'}
+                                {loadingAction === 'boost'
+                                    ? m['contacts.opening']()
+                                    : m['contacts.boost']()}
                             </button>
                         )}
                         <button
@@ -444,7 +448,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                             ) : (
                                 <CredentialGeneralIcon className="text-lg text-grayscale-900" />
                             )}
-                            {loadingAction === 'send' ? 'Opening...' : 'Send Credential'}
+                            {loadingAction === 'send'
+                                ? m['contacts.opening']()
+                                : m['contacts.sendCredential']()}
                         </button>
                     </>
                 ) : (
@@ -464,7 +470,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 type="button"
                                 onClick={closeModal}
                                 className="flex h-10 w-10 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-100"
-                                aria-label="Close contact details"
+                                aria-label={m['contacts.closeContactDetails']()}
                             >
                                 <X className="h-5 w-5" />
                             </button>
@@ -480,7 +486,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                         <div className="flex min-w-0 items-center gap-2 text-sm text-grayscale-600 font-semibold">
                             <CalendarIcon className="shrink-0 text-lg" />
                             <span className="truncate">
-                                {isConnected ? relationshipLabel : 'Contact'}
+                                {isConnected ? relationshipLabel : m['contacts.contact']()}
                             </span>
                         </div>
 
@@ -489,7 +495,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 type="button"
                                 onClick={() => setShowOverflow(value => !value)}
                                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-grayscale-700 transition-colors hover:bg-grayscale-100 bg-white border border-grayscale-200 border-solid border-1px"
-                                aria-label="More contact actions"
+                                aria-label={m['contacts.moreContactActions']()}
                                 aria-expanded={showOverflow}
                             >
                                 <ThreeDotVertical />
@@ -505,7 +511,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10"
                                     >
                                         <IonIcon icon={copyOutline} className="text-lg" />
-                                        Copy LearnCard Number
+                                        {m['contacts.copyLearnCardNumber']()}
                                     </button>
                                 )}
                                 {showDeleteButton && (
@@ -523,7 +529,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-red-700 transition-colors hover:bg-red-50"
                                     >
                                         <IonIcon icon={trashOutline} className="text-lg" />
-                                        Remove Contact
+                                        {m['contacts.removeContact']()}
                                     </button>
                                 )}
                                 {showBlockButton && (
@@ -552,7 +558,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                         ) : (
                                             <IonIcon icon={banOutline} className="text-lg" />
                                         )}
-                                        Block Contact
+                                        {m['contacts.blockContact']()}
                                     </button>
                                 )}
                             </div>
