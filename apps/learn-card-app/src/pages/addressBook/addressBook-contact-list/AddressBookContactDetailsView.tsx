@@ -654,19 +654,20 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
 
                                     {showCredentialNavigation && (
                                         <>
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    credentialSwiperRef.current?.slidePrev()
-                                                }
-                                                disabled={credentialAtBeginning}
-                                                className="absolute -left-4 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-30 md:flex"
-                                                aria-label={m[
-                                                    'contacts.credentialHistory.previous'
-                                                ]()}
-                                            >
-                                                <SlimCaretLeft className="h-5 w-5" />
-                                            </button>
+                                            {!credentialAtBeginning && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        credentialSwiperRef.current?.slidePrev()
+                                                    }
+                                                    className="absolute -left-4 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-10 md:flex"
+                                                    aria-label={m[
+                                                        'contacts.credentialHistory.previous'
+                                                    ]()}
+                                                >
+                                                    <SlimCaretLeft className="h-5 w-5" />
+                                                </button>
+                                            )}
                                             <button
                                                 type="button"
                                                 onClick={() =>
