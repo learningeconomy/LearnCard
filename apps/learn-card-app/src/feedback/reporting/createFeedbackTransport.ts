@@ -6,8 +6,9 @@
  *   - `bug` → the Sentry adapter (`submitSentryFeedback`); analytics is never
  *     touched, so bug diagnostics cannot leak into PostHog.
  *   - `idea` → the dedicated typed `AnalyticsProvider.submitFeedbackIdea`
- *     operation. Only source, message, currentRoute, and appVersion travel —
- *     no screenshot, logs, device data, or signed-in analytics identity.
+ *     operation. Only source, message, currentRoute, and appVersion travel to
+ *     analytics. If the user explicitly attaches a screenshot, a separate
+ *     privacy-safe Sentry feedback event carries that attachment.
  *
  * An unready provider or a non-PostHog provider is treated as a retryable
  * submission failure: the idea rejects with the friendly transport error and is
@@ -35,7 +36,9 @@ export interface FeedbackAnalyticsAdapter {
  * Create a `FeedbackTransport` bound to the app's analytics provider.
  *
  * Bugs are submitted to Sentry immediately; ideas are tracked as
- * `feedback_idea_submitted` once the PostHog provider is ready.
+ * `feedback_idea_submitted` once the PostHog provider is ready. Idea
+ * screenshots are additionally delivered through Sentry because analytics
+ * events do not provide an attachment channel.
  */
 export const createFeedbackTransport = (
     analytics: FeedbackAnalyticsAdapter
@@ -59,6 +62,7 @@ export const createFeedbackTransport = (
                 currentRoute: report.context.currentRoute,
                 appVersion: report.context.app?.displayVersion,
             });
+            if (report.screenshot) await submitSentryFeedback(report);
         } catch {
             throw new Error(FEEDBACK_TRANSPORT_ERROR_MESSAGE);
         }

@@ -7,9 +7,9 @@
  *   1. **Privacy gating** — destination eligibility (`bug` / `idea`) is
  *      consulted before anything is captured; ineligible users never trigger
  *      a screenshot, context collection, or UI.
- *   2. **Capture** — screenshot and privacy-safe context are collected before
- *      any feedback UI opens, so the composer and prompt toast never appear
- *      in their own attachment.
+ *   2. **Capture** — privacy-safe context is collected for every report. The
+ *      native screenshot trigger preserves the captured screen, while shake
+ *      opens immediately without taking one automatically.
  *   3. **Presentation** — explicit entry points (Settings, error boundary)
  *      always open the composer, stacking above whatever is on screen.
  *      Automatic triggers (shake, iOS screenshot) open immediately when the
@@ -27,15 +27,7 @@
  * here — explicit and automatic reports are never rate-limited by it.
  */
 
-import React, {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 
 import { getLogger, useModal, ModalTypes, resolveTenantConfig } from 'learn-card-base';
 import { toastStore } from 'learn-card-base/stores/toastStore';
@@ -79,16 +71,16 @@ export interface FeedbackController {
      *
      * Checks bug eligibility, then captures privacy-safe context before
      * deciding whether to open the composer, defer behind a pending toast, or
-     * (for `submitImmediately`) submit without UI. A screenshot attachment is
-     * captured for native screenshot and shake triggers. Shake capture is
-     * attached lazily after the pre-composer source DOM is frozen.
+     * (for `submitImmediately`) submit without UI. Native screenshot triggers
+     * preserve their captured screen; shake opens immediately and lets the
+     * user add an optional image from their library.
      */
     reportProblem(options?: ReportProblemOptions): Promise<void>;
 
     /**
      * Capture and present an idea. Collects idea context (route, tenant, app
-     * version — no screenshot, device details, or logs) and opens the
-     * composer.
+     * version — no automatic screenshot, device details, or logs) and opens
+     * the composer, where the user may attach an image explicitly.
      */
     shareIdea(options?: ShareIdeaOptions): Promise<void>;
 }
@@ -112,27 +104,10 @@ export interface FeedbackProviderDeps {
     /** Submission transport; defaults to `createFeedbackTransport` over the
      * central analytics provider abstraction. */
     transport?: FeedbackTransport;
-    /** Browser paint boundary used before shake screenshot capture. */
-    waitForPaint?: () => Promise<void>;
 }
 
 const FeedbackControllerContext = createContext<FeedbackController | null>(null);
 FeedbackControllerContext.displayName = 'Feedback';
-
-/**
- * Wait until the browser has completed at least one paint. Resolving from a
- * second animation frame prevents html2canvas's synchronous DOM clone from
- * blocking the first frame that contains the shake acknowledgement.
- */
-const waitForFeedbackIndicatorPaint = (): Promise<void> => {
-    if (typeof requestAnimationFrame !== 'function') return Promise.resolve();
-
-    return new Promise(resolve => {
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => resolve());
-        });
-    });
-};
 
 /**
  * Access the feedback controller. Must be used inside `FeedbackProvider`.
@@ -200,28 +175,6 @@ export const FeedbackProvider: React.FC<{
     const isBusy = useFeedbackBusyState();
     const { newModal, closeModalById } = useModal();
     const analytics = useAnalytics();
-    const openingShakeFeedbackTokenRef = useRef<symbol | undefined>(undefined);
-    const [openingShakeFeedbackToken, setOpeningShakeFeedbackToken] = useState<symbol | undefined>(
-        undefined
-    );
-
-    const showOpeningShakeFeedback = useCallback((): symbol => {
-        const token = Symbol('opening-shake-feedback');
-        openingShakeFeedbackTokenRef.current = token;
-        setOpeningShakeFeedbackToken(token);
-        return token;
-    }, []);
-
-    const hideOpeningShakeFeedback = useCallback((token?: symbol) => {
-        if (token !== undefined && openingShakeFeedbackTokenRef.current !== token) return;
-
-        openingShakeFeedbackTokenRef.current = undefined;
-        setOpeningShakeFeedbackToken(current => {
-            if (token !== undefined && current !== token) return current;
-            return undefined;
-        });
-    }, []);
-
     // Read dependencies and reactive values at call time through refs so the
     // controller identity stays stable across re-renders.
     const depsRef = useRef<FeedbackProviderDeps>({});
@@ -249,7 +202,13 @@ export const FeedbackProvider: React.FC<{
     const lastShakeAtRef = useRef<number | undefined>(undefined);
 
     /** The single deferred automatic draft; newest wins, never persisted. */
-    const pendingRef = useRef<FeedbackDraft | undefined>(undefined);
+    const pendingRef = useRef<
+        | {
+              draft: FeedbackDraft;
+              pendingContext?: Promise<FeedbackContextData>;
+          }
+        | undefined
+    >(undefined);
 
     /**
      * Owns the composer lifecycle from explicit capture start through modal
@@ -337,7 +296,6 @@ export const FeedbackProvider: React.FC<{
 
         previousEligibilityRef.current = nextEligibility;
         eligibilityGenerationRef.current += 1;
-        hideOpeningShakeFeedback();
         pendingRef.current = undefined;
         dismissFeedbackPrompt();
         closeFeedbackComposer();
@@ -347,7 +305,6 @@ export const FeedbackProvider: React.FC<{
         eligibility.bug,
         eligibility.idea,
         eligibility.profileId,
-        hideOpeningShakeFeedback,
     ]);
 
     const submitAndClose = useCallback(
@@ -394,7 +351,6 @@ export const FeedbackProvider: React.FC<{
         (
             draft: FeedbackDraft,
             requestedOwner?: symbol,
-            pendingScreenshot?: Promise<FeedbackScreenshot | undefined>,
             pendingContext?: Promise<FeedbackContextData>
         ): boolean => {
             const owner = requestedOwner ?? beginComposerFlow();
@@ -406,7 +362,6 @@ export const FeedbackProvider: React.FC<{
             const composer = (
                 <FeedbackComposer
                     draft={draft}
-                    pendingScreenshot={pendingScreenshot}
                     pendingContext={pendingContext}
                     onCancel={() => closeFeedbackComposer(owner)}
                     onSubmit={report => submitAndClose(report, captureGeneration, owner)}
@@ -441,7 +396,7 @@ export const FeedbackProvider: React.FC<{
     );
 
     const presentPromptToast = useCallback(
-        (draft: FeedbackDraft) => {
+        (draft: FeedbackDraft, pendingContext?: Promise<FeedbackContextData>) => {
             promptDraftRef.current = draft;
             let prompt: React.ReactNode;
             prompt = (
@@ -456,21 +411,20 @@ export const FeedbackProvider: React.FC<{
                             return;
                         }
 
-                        // Accepting an earlier prompt is newer explicit intent:
-                        // retire any shake still freezing its screenshot so it
-                        // cannot leave a cue behind or reopen after this closes.
-                        hideOpeningShakeFeedback();
+                        // Accepting an earlier prompt is newer explicit intent,
+                        // so older asynchronous automatic work cannot reopen.
                         feedbackIntentGenerationRef.current += 1;
                         dismissFeedbackPrompt();
-                        openComposer(draft);
+                        openComposer(draft, undefined, pendingContext);
                     }}
                     onDismiss={dismissFeedbackPrompt}
+                    source={draft.source === 'screenshot' ? 'screenshot' : 'shake'}
                 />
             );
             promptToastRef.current = prompt;
             toastStore.set.presentToast(prompt, { autoDismiss: false });
         },
-        [dismissFeedbackPrompt, hideOpeningShakeFeedback, openComposer]
+        [dismissFeedbackPrompt, openComposer]
     );
 
     // Offer the pending draft when the app transitions busy → idle. Pending
@@ -485,9 +439,12 @@ export const FeedbackProvider: React.FC<{
             if (
                 pending &&
                 eligibilityRef.current.bug &&
-                !isPendingFeedbackExpired(pending.capturedAt, depsRef.current.now?.() ?? Date.now())
+                !isPendingFeedbackExpired(
+                    pending.draft.capturedAt,
+                    depsRef.current.now?.() ?? Date.now()
+                )
             ) {
-                presentPromptToast(pending);
+                presentPromptToast(pending.draft, pending.pendingContext);
             }
         }
         wasBusyRef.current = isBusy;
@@ -499,7 +456,6 @@ export const FeedbackProvider: React.FC<{
             options: ReportProblemOptions
         ): Promise<{
             draft: FeedbackDraft;
-            pendingScreenshot?: Promise<FeedbackScreenshot | undefined>;
             pendingContext?: Promise<FeedbackContextData>;
         }> => {
             const { now, captureScreenshot, collectContext } = {
@@ -511,23 +467,9 @@ export const FeedbackProvider: React.FC<{
 
             const contextPromise = collectContext({ kind: 'bug' });
 
-            // A shake begins rendering before the composer opens. As soon as
-            // html2canvas owns an isolated clone, the live UI is safe to
-            // change and the remaining PNG work can finish in the composer.
+            // Shake should feel immediate. Start richer diagnostics in the
+            // background, but never block the composer on screenshot capture.
             if (source === 'shake') {
-                let markSourceFrozen!: () => void;
-                const sourceFrozen = new Promise<void>(resolve => {
-                    markSourceFrozen = resolve;
-                });
-                const pendingScreenshot = captureScreenshot({
-                    onSourceFrozen: markSourceFrozen,
-                });
-                // Test doubles and alternate capture implementations may not
-                // support the callback; settlement is still a safe fallback.
-                void pendingScreenshot.then(markSourceFrozen, markSourceFrozen);
-
-                await sourceFrozen;
-
                 const recentRoutes = getRecentFeedbackRoutes();
                 const immediateContext: FeedbackContextData = {
                     currentRoute:
@@ -549,7 +491,6 @@ export const FeedbackProvider: React.FC<{
                             ? { initialMessage: options.initialMessage }
                             : {}),
                     },
-                    pendingScreenshot,
                     pendingContext,
                 };
             }
@@ -617,11 +558,6 @@ export const FeedbackProvider: React.FC<{
                 if (isAutomatic) pendingRef.current = undefined;
             }
 
-            // Every accepted feedback intent supersedes an older shake cue.
-            // Token ownership prevents an older capture's cleanup from hiding
-            // a newer shake cue after the cooldown expires.
-            hideOpeningShakeFeedback();
-
             if (!isAutomatic) {
                 pendingRef.current = undefined;
                 dismissFeedbackPrompt();
@@ -658,26 +594,8 @@ export const FeedbackProvider: React.FC<{
             }
 
             let keepExplicitOwnership = false;
-            const openingIndicatorToken =
-                source === 'shake' && !isBusyRef.current ? showOpeningShakeFeedback() : undefined;
             try {
-                if (openingIndicatorToken) {
-                    await (depsRef.current.waitForPaint ?? waitForFeedbackIndicatorPaint)();
-
-                    if (
-                        captureGeneration !== eligibilityGenerationRef.current ||
-                        intentGeneration !== feedbackIntentGenerationRef.current ||
-                        !eligibilityRef.current.bug
-                    ) {
-                        return;
-                    }
-                }
-
-                let { draft, pendingScreenshot, pendingContext } = await captureBugDraft(
-                    source,
-                    options
-                );
-                if (openingIndicatorToken) hideOpeningShakeFeedback(openingIndicatorToken);
+                const { draft, pendingContext } = await captureBugDraft(source, options);
 
                 if (
                     captureGeneration !== eligibilityGenerationRef.current ||
@@ -711,31 +629,10 @@ export const FeedbackProvider: React.FC<{
                 if (isBusyRef.current) {
                     // Capture now, present later. A newer automatic draft simply
                     // replaces this one.
-                    if (pendingScreenshot) {
-                        const [screenshot, context] = await Promise.all([
-                            pendingScreenshot,
-                            pendingContext ?? Promise.resolve(draft.context),
-                        ]);
-                        if (
-                            captureGeneration !== eligibilityGenerationRef.current ||
-                            intentGeneration !== feedbackIntentGenerationRef.current ||
-                            !eligibilityRef.current.bug ||
-                            composerFlowOwnerRef.current !== undefined
-                        ) {
-                            return;
-                        }
-                        draft = {
-                            ...draft,
-                            context,
-                            ...(screenshot ? { screenshot } : {}),
-                        };
-                        pendingScreenshot = undefined;
-                        pendingContext = undefined;
-                    }
                     if (isBusyRef.current) {
-                        pendingRef.current = draft;
+                        pendingRef.current = { draft, pendingContext };
                     } else {
-                        presentPromptToast(draft);
+                        presentPromptToast(draft, pendingContext);
                     }
                     return;
                 }
@@ -746,9 +643,8 @@ export const FeedbackProvider: React.FC<{
                 }
 
                 // Shake while idle opens the composer right away.
-                openComposer(draft, undefined, pendingScreenshot, pendingContext);
+                openComposer(draft, undefined, pendingContext);
             } finally {
-                if (openingIndicatorToken) hideOpeningShakeFeedback(openingIndicatorToken);
                 if (explicitOwner !== undefined && !keepExplicitOwnership) {
                     releaseComposerFlow(explicitOwner);
                 }
@@ -758,11 +654,9 @@ export const FeedbackProvider: React.FC<{
             beginComposerFlow,
             captureBugDraft,
             dismissFeedbackPrompt,
-            hideOpeningShakeFeedback,
             openComposer,
             presentPromptToast,
             releaseComposerFlow,
-            showOpeningShakeFeedback,
         ]
     );
 
@@ -773,9 +667,7 @@ export const FeedbackProvider: React.FC<{
             const owner = beginComposerFlow();
             if (owner === undefined) return;
 
-            // An explicit idea flow supersedes any automatic bug capture that
-            // is still rendering in the background.
-            hideOpeningShakeFeedback();
+            // An explicit idea flow supersedes any older automatic bug work.
             feedbackIntentGenerationRef.current += 1;
             pendingRef.current = undefined;
             dismissFeedbackPrompt();
@@ -815,13 +707,7 @@ export const FeedbackProvider: React.FC<{
                 if (!keepOwnership) releaseComposerFlow(owner);
             }
         },
-        [
-            beginComposerFlow,
-            dismissFeedbackPrompt,
-            hideOpeningShakeFeedback,
-            openComposer,
-            releaseComposerFlow,
-        ]
+        [beginComposerFlow, dismissFeedbackPrompt, openComposer, releaseComposerFlow]
     );
 
     const controller = useMemo<FeedbackController>(
@@ -840,23 +726,6 @@ export const FeedbackProvider: React.FC<{
     return (
         <FeedbackControllerContext.Provider value={controller}>
             {children}
-            {openingShakeFeedbackToken && (
-                <div
-                    role="status"
-                    aria-label={m['feedback.reporting.openingFeedbackForm']()}
-                    data-feedback-exclude
-                    className="pointer-events-none fixed inset-x-0 top-[calc(0.75rem+var(--lc-overlay-inset-top,var(--ion-safe-area-top,0px)))] z-[100000] flex justify-center px-4 font-poppins"
-                >
-                    <div className="w-full max-w-[240px] overflow-hidden rounded-[20px] border border-grayscale-200 bg-white/95 shadow-lg backdrop-blur-sm">
-                        <div className="px-4 py-2.5 text-center text-xs font-medium text-grayscale-700">
-                            {m['feedback.reporting.openingFeedbackForm']()}
-                        </div>
-                        <div className="h-0.5 overflow-hidden bg-grayscale-100">
-                            <div className="h-full w-full bg-grayscale-600 motion-safe:animate-pulse" />
-                        </div>
-                    </div>
-                </div>
-            )}
         </FeedbackControllerContext.Provider>
     );
 };

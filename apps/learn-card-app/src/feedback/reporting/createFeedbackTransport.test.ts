@@ -5,8 +5,9 @@
  *
  *   - bugs go to the Sentry adapter and NEVER touch analytics,
  *   - ideas go through the typed analytics adapter (`feedback_idea_submitted`)
- *     carrying only source/message/currentRoute/appVersion — no screenshot,
- *     logs, device data, or other bug diagnostics,
+ *     carrying only source/message/currentRoute/appVersion; when the user
+ *     explicitly attaches a screenshot, a privacy-safe Sentry feedback event
+ *     carries the attachment alongside the anonymous analytics event,
  *   - ideas reject with the friendly transport error when analytics is not
  *     ready or the active provider is not PostHog (never report success
  *     through the noop provider).
@@ -86,7 +87,7 @@ describe('createFeedbackTransport', () => {
         ...overrides,
     });
 
-    it('sends ideas only through the anonymous analytics operation without bug diagnostics', async () => {
+    it('sends an idea screenshot through Sentry alongside the anonymous analytics event', async () => {
         const transport = createFeedbackTransport(createAnalyticsAdapter());
 
         await transport.submit(ideaReport);
@@ -99,6 +100,17 @@ describe('createFeedbackTransport', () => {
             appVersion: '1.98.3',
         });
         expect(track).not.toHaveBeenCalled();
+        expect(submitSentryFeedback).toHaveBeenCalledTimes(1);
+        expect(submitSentryFeedback).toHaveBeenCalledWith(ideaReport);
+    });
+
+    it('does not create a Sentry event for an idea without a screenshot', async () => {
+        const transport = createFeedbackTransport(createAnalyticsAdapter());
+        const { screenshot, ...ideaWithoutScreenshot } = ideaReport;
+
+        await transport.submit(ideaWithoutScreenshot);
+
+        expect(submitFeedbackIdea).toHaveBeenCalledTimes(1);
         expect(submitSentryFeedback).not.toHaveBeenCalled();
     });
 

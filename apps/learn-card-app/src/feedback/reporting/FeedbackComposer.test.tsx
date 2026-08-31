@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -12,7 +12,17 @@ const user = {
 };
 
 import FeedbackComposer from './FeedbackComposer';
-import type { FeedbackContext, FeedbackDraft, FeedbackReport, FeedbackScreenshot } from './types';
+import type { FeedbackContext, FeedbackDraft, FeedbackReport } from './types';
+
+const cameraHost = vi.hoisted(() => ({
+    chooseFromGallery: vi.fn(),
+}));
+
+vi.mock('@capacitor/camera', () => ({
+    Camera: { chooseFromGallery: cameraHost.chooseFromGallery },
+    CameraErrorCode: { ChooseMediaCancelled: 'OS-PLUG-CAMR-0020' },
+    MediaTypeSelection: { Photo: 0 },
+}));
 
 vi.mock('../../paraglide/messages.js', () => ({
     'feedback.reporting.reportProblem': () => 'Report a Problem',
@@ -22,13 +32,16 @@ vi.mock('../../paraglide/messages.js', () => ({
     'feedback.reporting.ideaQuestion': () => 'What would make LearnCard better?',
     'feedback.reporting.ideaPlaceholder': () => 'Describe your idea.',
     'feedback.reporting.screenshotAttached': () => 'Screenshot attached',
-    'feedback.reporting.capturingScreenshot': () => 'Capturing screenshot...',
+    'feedback.reporting.addScreenshot': () => 'Add Screenshot',
+    'feedback.reporting.addingScreenshot': () => 'Adding Screenshot...',
+    'feedback.reporting.screenshotError': () =>
+        'We couldn’t add that screenshot. Please try another.',
     'feedback.reporting.removeScreenshot': () => 'Remove Screenshot',
     'feedback.reporting.whatWeSend': () => 'What we’ll send',
     'feedback.reporting.bugDisclosure': () =>
         'Your message, optional screenshot, app and device details, recent screens, and sanitized logs.',
     'feedback.reporting.ideaDisclosure': () =>
-        'Your idea, current screen, app version, and tenant.',
+        'Your idea, optional screenshot, current screen, app version, and tenant.',
     'feedback.reporting.cancel': () => 'Cancel',
     'feedback.reporting.sendReport': () => 'Send Report',
     'feedback.reporting.sendingReport': () => 'Sending Report...',
@@ -78,7 +91,6 @@ const renderComposer = (
     overrides: Partial<{
         onCancel: () => void;
         onSubmit: (report: FeedbackReport) => Promise<void>;
-        pendingScreenshot: Promise<FeedbackScreenshot | undefined>;
         pendingContext: Promise<FeedbackContext>;
     }> = {}
 ) => {
@@ -87,7 +99,6 @@ const renderComposer = (
     render(
         <FeedbackComposer
             draft={draft}
-            pendingScreenshot={overrides.pendingScreenshot}
             pendingContext={overrides.pendingContext}
             onCancel={onCancel}
             onSubmit={onSubmit}
@@ -97,6 +108,129 @@ const renderComposer = (
 };
 
 describe('FeedbackComposer', () => {
+    beforeEach(() => {
+        cameraHost.chooseFromGallery.mockReset();
+    });
+
+    it('adds a user-selected screenshot to a bug report', async () => {
+        cameraHost.chooseFromGallery.mockResolvedValueOnce({
+            results: [
+                {
+                    type: 0,
+                    thumbnail: 'c2VsZWN0ZWQ=',
+                    metadata: { format: 'jpeg' },
+                    saved: false,
+                },
+            ],
+        });
+        const { onSubmit } = renderComposer({ ...bugDraft, screenshot: undefined });
+
+        await user.click(screen.getByRole('button', { name: 'Add Screenshot' }));
+
+        expect(await screen.findByRole('img', { name: 'Screenshot attached' })).toHaveAttribute(
+            'src',
+            'data:image/jpeg;base64,c2VsZWN0ZWQ='
+        );
+        await user.type(screen.getByLabelText('What happened?'), 'The claim button froze');
+        await user.click(screen.getByRole('button', { name: 'Send Report' }));
+
+        await waitFor(() =>
+            expect(onSubmit).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    screenshot: expect.objectContaining({
+                        filename: 'feedback-screenshot.jpg',
+                        contentType: 'image/jpeg',
+                    }),
+                })
+            )
+        );
+    });
+
+    it('offers an optional screenshot on idea reports', () => {
+        renderComposer(ideaDraft);
+
+        expect(screen.getByRole('button', { name: 'Add Screenshot' })).toBeVisible();
+    });
+
+    it('labels native gallery thumbnails as JPEG even when the source asset was PNG', async () => {
+        cameraHost.chooseFromGallery.mockResolvedValueOnce({
+            results: [
+                {
+                    type: 0,
+                    uri: 'file:///selected.png',
+                    thumbnail: 'bmF0aXZl',
+                    metadata: { format: 'png' },
+                    saved: false,
+                },
+            ],
+        });
+        renderComposer({ ...bugDraft, screenshot: undefined });
+
+        await user.click(screen.getByRole('button', { name: 'Add Screenshot' }));
+
+        expect(await screen.findByRole('img', { name: 'Screenshot attached' })).toHaveAttribute(
+            'src',
+            'data:image/jpeg;base64,bmF0aXZl'
+        );
+    });
+
+    it('shows screenshot picker progress and blocks sending until selection finishes', async () => {
+        const pending = createDeferred<{ results: [] }>();
+        cameraHost.chooseFromGallery.mockReturnValueOnce(pending.promise);
+        renderComposer({ ...bugDraft, screenshot: undefined });
+
+        await user.type(screen.getByLabelText('What happened?'), 'The claim button froze');
+        await user.click(screen.getByRole('button', { name: 'Add Screenshot' }));
+
+        expect(screen.getByRole('button', { name: 'Adding Screenshot...' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Send Report' })).toBeDisabled();
+
+        await act(async () => {
+            pending.resolve({ results: [] });
+            await pending.promise;
+        });
+
+        expect(screen.getByRole('button', { name: 'Add Screenshot' })).toBeEnabled();
+        expect(screen.getByRole('button', { name: 'Send Report' })).toBeEnabled();
+    });
+
+    it('silently returns to the form when image selection is cancelled', async () => {
+        cameraHost.chooseFromGallery.mockRejectedValueOnce({ code: 'OS-PLUG-CAMR-0020' });
+        renderComposer({ ...bugDraft, screenshot: undefined });
+
+        await user.click(screen.getByRole('button', { name: 'Add Screenshot' }));
+
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: 'Add Screenshot' })).toBeEnabled()
+        );
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('silently returns to the form when the web image picker is cancelled', async () => {
+        cameraHost.chooseFromGallery.mockRejectedValueOnce({
+            message: 'User cancelled photos app',
+        });
+        renderComposer({ ...bugDraft, screenshot: undefined });
+
+        await user.click(screen.getByRole('button', { name: 'Add Screenshot' }));
+
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: 'Add Screenshot' })).toBeEnabled()
+        );
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('shows a friendly error when the image cannot be added', async () => {
+        cameraHost.chooseFromGallery.mockRejectedValueOnce({ code: 'OS-PLUG-CAMR-0018' });
+        renderComposer({ ...bugDraft, screenshot: undefined });
+
+        await user.click(screen.getByRole('button', { name: 'Add Screenshot' }));
+
+        expect(
+            await screen.findByText('We couldn’t add that screenshot. Please try another.')
+        ).toBeVisible();
+    });
+
     it('renders the bug composer with heading, labeled textarea, disclosure, and screenshot', async () => {
         renderComposer();
 
@@ -135,22 +269,6 @@ describe('FeedbackComposer', () => {
                 })
             )
         );
-    });
-
-    it('shows a pending shake capture and attaches it when rendering finishes', async () => {
-        let resolveScreenshot!: (screenshot: FeedbackScreenshot | undefined) => void;
-        const pendingScreenshot = new Promise<FeedbackScreenshot | undefined>(resolve => {
-            resolveScreenshot = resolve;
-        });
-        renderComposer({ ...bugDraft, screenshot: undefined }, { pendingScreenshot });
-
-        expect(screen.getByText('Capturing screenshot...')).toBeVisible();
-        expect(screen.queryByRole('img', { name: 'Screenshot attached' })).not.toBeInTheDocument();
-
-        resolveScreenshot(bugDraft.screenshot);
-
-        expect(await screen.findByRole('img', { name: 'Screenshot attached' })).toBeVisible();
-        expect(screen.queryByText('Capturing screenshot...')).not.toBeInTheDocument();
     });
 
     it('uses richer diagnostic context when it arrives after the composer opens', async () => {
@@ -264,7 +382,9 @@ describe('FeedbackComposer', () => {
         expect(screen.getByText('What we’ll send')).toBeVisible();
         await user.click(screen.getByText('What we’ll send'));
         expect(
-            screen.getByText('Your idea, current screen, app version, and tenant.')
+            screen.getByText(
+                'Your idea, optional screenshot, current screen, app version, and tenant.'
+            )
         ).toBeVisible();
         expect(screen.queryByRole('img', { name: 'Screenshot attached' })).not.toBeInTheDocument();
 

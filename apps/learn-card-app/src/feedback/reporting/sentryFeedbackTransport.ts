@@ -12,7 +12,7 @@
  *     (the event ID returned by the logger's injected transport),
  *   - an exact, enumerated set of tags: feedbackType, feedbackSource, route,
  *     tenant, platform, appVersion, bundle — nothing else,
- *   - screenshot (PNG data URL → `Uint8Array`) and diagnostic logs (pretty
+ *   - screenshot (image data URL → `Uint8Array`) and diagnostic logs (pretty
  *     JSON → `Uint8Array`) as event-hint attachments,
  *   - structured privacy-safe app/device/network context as scope extras,
  *     never as tags.
@@ -60,7 +60,7 @@ const buildTags = (report: FeedbackReport): Record<string, string> => {
     return tags;
 };
 
-/** Decode a base64 PNG data URL into attachment bytes. */
+/** Decode a base64 image data URL into attachment bytes. */
 const dataUrlToUint8Array = (dataUrl: string): Uint8Array => {
     const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
     const binary = atob(base64);
@@ -155,7 +155,7 @@ const createFeedbackEventId = (): string => {
 const SENTRY_DELIVERY_TIMEOUT_MS = 5_000;
 
 /**
- * Submit a bug report to Sentry and resolve with the feedback event ID.
+ * Submit a feedback report to Sentry and resolve with the feedback event ID.
  *
  * Rejects with the friendly transport error when no Sentry client is
  * available — success is never claimed for an undelivered report.

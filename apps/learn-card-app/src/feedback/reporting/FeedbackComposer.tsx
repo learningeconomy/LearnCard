@@ -1,11 +1,23 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { IonIcon } from '@ionic/react';
+import { imageOutline } from 'ionicons/icons';
 
 import * as m from '../../paraglide/messages.js';
 import type { FeedbackDraft, FeedbackReport, FeedbackScreenshot } from './types';
 
+const CHOOSE_MEDIA_CANCELLED_CODE = 'OS-PLUG-CAMR-0020';
+const WEB_GALLERY_CANCELLED_MESSAGE = 'User cancelled photos app';
+
+const isGallerySelectionCancelled = (error: unknown): boolean => {
+    const candidate = error as { code?: string; message?: string };
+    return (
+        candidate?.code === CHOOSE_MEDIA_CANCELLED_CODE ||
+        candidate?.message === WEB_GALLERY_CANCELLED_MESSAGE
+    );
+};
+
 export interface FeedbackComposerProps {
     draft: FeedbackDraft;
-    pendingScreenshot?: Promise<FeedbackScreenshot | undefined>;
     pendingContext?: Promise<FeedbackDraft['context']>;
     onCancel(): void;
     onSubmit(report: FeedbackReport): Promise<void>;
@@ -22,7 +34,6 @@ export interface FeedbackComposerProps {
  */
 export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
     draft,
-    pendingScreenshot,
     pendingContext,
     onCancel,
     onSubmit,
@@ -31,29 +42,13 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
     const [message, setMessage] = useState(draft.initialMessage ?? '');
     const [screenshot, setScreenshot] = useState<FeedbackScreenshot | undefined>(draft.screenshot);
     const [context, setContext] = useState(draft.context);
-    const [isScreenshotPending, setIsScreenshotPending] = useState(Boolean(pendingScreenshot));
+    const [isAddingScreenshot, setIsAddingScreenshot] = useState(false);
+    const [hasScreenshotError, setHasScreenshotError] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasError, setHasError] = useState(false);
     const [isDone, setIsDone] = useState(false);
 
     const canSubmit = message.trim().length > 0;
-
-    useEffect(() => {
-        if (!pendingScreenshot) return;
-
-        let isMounted = true;
-        void pendingScreenshot
-            .then(capturedScreenshot => {
-                if (isMounted && capturedScreenshot) setScreenshot(capturedScreenshot);
-            })
-            .finally(() => {
-                if (isMounted) setIsScreenshotPending(false);
-            });
-
-        return () => {
-            isMounted = false;
-        };
-    }, [pendingScreenshot]);
 
     useEffect(() => {
         if (!pendingContext) return;
@@ -70,6 +65,52 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
             isMounted = false;
         };
     }, [pendingContext]);
+
+    const handleAddScreenshot = useCallback(async () => {
+        if (isAddingScreenshot || isSubmitting) return;
+
+        setIsAddingScreenshot(true);
+        setHasScreenshotError(false);
+        try {
+            const { Camera, MediaTypeSelection } = await import('@capacitor/camera');
+            const { results } = await Camera.chooseFromGallery({
+                mediaType: MediaTypeSelection.Photo,
+                allowMultipleSelection: false,
+                includeMetadata: true,
+                quality: 80,
+                targetWidth: 1600,
+                targetHeight: 1600,
+            });
+            const selected = results[0];
+            if (!selected) return;
+            if (!selected.thumbnail) throw new Error('Selected image has no preview data');
+
+            // Native thumbnails are JPEG-encoded by the camera plugin even
+            // when the source asset is PNG/HEIC. Web returns the original
+            // image bytes, so only web results should use metadata.format.
+            const rawFormat = selected.uri
+                ? 'jpeg'
+                : selected.metadata?.format?.toLowerCase() ?? 'jpeg';
+            const format = rawFormat === 'jpg' ? 'jpeg' : rawFormat;
+            const supportedFormat = ['jpeg', 'png', 'webp', 'gif'].includes(format)
+                ? format
+                : 'jpeg';
+            const contentType = `image/${supportedFormat}` as const;
+            const extension = supportedFormat === 'jpeg' ? 'jpg' : supportedFormat;
+
+            setScreenshot({
+                dataUrl: `data:${contentType};base64,${selected.thumbnail}`,
+                filename: `feedback-screenshot.${extension}`,
+                contentType,
+            });
+        } catch (error) {
+            if (!isGallerySelectionCancelled(error)) {
+                setHasScreenshotError(true);
+            }
+        } finally {
+            setIsAddingScreenshot(false);
+        }
+    }, [isAddingScreenshot, isSubmitting]);
 
     const handleSubmit = useCallback(async () => {
         if (!canSubmit || isSubmitting || isDone) return;
@@ -218,12 +259,37 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                     </div>
                 )}
 
-                {isScreenshotPending && (
-                    <div className="flex items-center gap-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-3">
-                        <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-grayscale-300 border-t-grayscale-700" />
-                        <span className="text-xs text-grayscale-600">
-                            {m['feedback.reporting.capturingScreenshot']()}
-                        </span>
+                {!screenshot && (
+                    <button
+                        type="button"
+                        onClick={handleAddScreenshot}
+                        disabled={isSubmitting || isAddingScreenshot}
+                        className="flex w-full items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 transition-colors hover:bg-grayscale-10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        {isAddingScreenshot ? (
+                            <>
+                                <span className="h-4 w-4 animate-spin rounded-full border-2 border-grayscale-300 border-t-grayscale-700" />
+                                {m['feedback.reporting.addingScreenshot']()}
+                            </>
+                        ) : (
+                            <>
+                                <IonIcon
+                                    icon={imageOutline}
+                                    className="text-lg"
+                                    aria-hidden="true"
+                                />
+                                {m['feedback.reporting.addScreenshot']()}
+                            </>
+                        )}
+                    </button>
+                )}
+
+                {hasScreenshotError && (
+                    <div
+                        role="alert"
+                        className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm leading-relaxed text-red-700"
+                    >
+                        {m['feedback.reporting.screenshotError']()}
                     </div>
                 )}
 
@@ -251,7 +317,7 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                 <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={!canSubmit || isSubmitting || isScreenshotPending}
+                    disabled={!canSubmit || isSubmitting || isAddingScreenshot}
                     className="flex-1 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     {isSubmitting ? (

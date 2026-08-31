@@ -1,8 +1,10 @@
 import React from 'react';
 
 import * as m from '../../paraglide/messages.js';
+import type { FeedbackSource } from './types';
 
 export interface FeedbackPromptToastProps {
+    source: Extract<FeedbackSource, 'shake' | 'screenshot'>;
     /** Open the feedback composer with the preserved pending draft. */
     onReport(): void;
     /** Discard the pending draft without opening the composer. */
@@ -22,6 +24,7 @@ export interface FeedbackPromptToastProps {
  * include the prompt in its own attachment.
  */
 export const FeedbackPromptToast: React.FC<FeedbackPromptToastProps> = ({
+    source,
     onReport,
     onDismiss,
 }) => (
@@ -34,7 +37,9 @@ export const FeedbackPromptToast: React.FC<FeedbackPromptToastProps> = ({
                 {m['feedback.reporting.promptTitle']()}
             </h4>
             <p className="text-sm leading-relaxed text-grayscale-600">
-                {m['feedback.reporting.promptBody']()}
+                {source === 'screenshot'
+                    ? m['feedback.reporting.promptScreenshotBody']()
+                    : m['feedback.reporting.promptShakeBody']()}
             </p>
         </div>
         <div className="flex w-full items-center gap-2">

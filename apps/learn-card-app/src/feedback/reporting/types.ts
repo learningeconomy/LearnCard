@@ -20,11 +20,11 @@ export type FeedbackSource =
     | 'error-boundary'
     | 'micro-feedback';
 
-/** Screenshot captured before any feedback UI opens. */
+/** Screenshot captured by the app or explicitly selected by the user. */
 export interface FeedbackScreenshot {
     dataUrl: string;
-    filename: 'feedback-screenshot.png';
-    contentType: 'image/png';
+    filename: string;
+    contentType: `image/${string}`;
 }
 
 /**
