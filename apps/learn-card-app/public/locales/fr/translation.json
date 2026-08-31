@@ -1536,7 +1536,26 @@
         "removeContactError": "Une erreur s'est produite, impossible de supprimer le contact",
         "blockUserError": "Une erreur s'est produite, impossible de bloquer l'utilisateur",
         "contactsCount": "{{count}} contacts",
-        "noConnectionsYet": "Aucune connexion pour le moment"
+        "noConnectionsYet": "Aucune connexion pour le moment",
+        "invite": {
+            "heading": "Invitez un ami sur {{brand}}",
+            "bodyLine1": "Partagez votre lien d'invitation personnel.",
+            "bodyLine2": "Dès qu'il rejoint, vous serez automatiquement connectés.",
+            "cta": "Inviter un ami",
+            "short": "Inviter",
+            "or": "ou",
+            "nearby": "Pour quelqu'un à proximité",
+            "showQr": "Afficher le code QR",
+            "qrHeading": "Inviter un ami",
+            "qrBody": "Demandez à votre ami de scanner ce code.",
+            "linkCopied": "Lien d'invitation copié dans le presse-papiers",
+            "linkFailed": "Impossible de créer le lien d'invitation. Veuillez réessayer.",
+            "invitedYou": "{{name}} vous a invité sur {{brand}}",
+            "notFoundTitle": "Oups !",
+            "notFoundBody": "Utilisateur introuvable",
+            "copyLink": "Copier le lien"
+        },
+        "loadError": "Impossible de charger vos contacts. Veuillez réessayer."
     },
     "consentFlow": {
         "title": "Consentement",
