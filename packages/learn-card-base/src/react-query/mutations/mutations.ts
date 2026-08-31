@@ -167,7 +167,10 @@ export const useAcceptCredentialMutation = () => {
             return data;
         },
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all }),
+                queryClient.invalidateQueries({ queryKey: ['contactCredentialHistory'] }),
+            ]);
         },
     });
 };
