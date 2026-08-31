@@ -170,6 +170,7 @@ const deps: FeedbackProviderDeps = {
     captureScreenshot,
     collectContext,
     transport,
+    waitForPaint: async () => undefined,
 };
 
 const createDeferred = <T,>() => {
@@ -421,6 +422,82 @@ describe('FeedbackProvider reportProblem', () => {
         expect(modalHost.openModal).toHaveBeenCalledTimes(1);
 
         screenshot.resolve(SCREENSHOT);
+    });
+
+    it('paints the shake indicator before screenshot capture begins', async () => {
+        const screenshot = createDeferred<FeedbackScreenshot | undefined>();
+        const animationFrames: FrameRequestCallback[] = [];
+        const originalRequestAnimationFrame = window.requestAnimationFrame;
+        window.requestAnimationFrame = callback => {
+            animationFrames.push(callback);
+            return animationFrames.length;
+        };
+        captureScreenshot.mockReturnValueOnce(screenshot.promise);
+        const { waitForPaint: _testScheduler, ...browserScheduledDeps } = deps;
+        renderProvider(browserScheduledDeps);
+
+        let report!: Promise<void>;
+        try {
+            await act(async () => {
+                report = controller!.reportProblem({ source: 'shake' });
+                await Promise.resolve();
+            });
+
+            expect(
+                screen.getByRole('status', { name: 'Opening feedback form...' })
+            ).toBeInTheDocument();
+            expect(captureScreenshot).not.toHaveBeenCalled();
+            expect(animationFrames).toHaveLength(1);
+
+            await act(async () => {
+                animationFrames.shift()?.(0);
+                await Promise.resolve();
+            });
+            expect(captureScreenshot).not.toHaveBeenCalled();
+            expect(animationFrames).toHaveLength(1);
+
+            await act(async () => {
+                animationFrames.shift()?.(16);
+                await Promise.resolve();
+            });
+            expect(captureScreenshot).toHaveBeenCalledTimes(1);
+
+            await act(async () => {
+                screenshot.resolve(SCREENSHOT);
+                await report;
+            });
+        } finally {
+            window.requestAnimationFrame = originalRequestAnimationFrame;
+        }
+    });
+
+    it('does not start capture when a newer intent supersedes the shake during paint', async () => {
+        const painted = createDeferred<void>();
+        const providerDeps = {
+            ...deps,
+            waitForPaint: () => painted.promise,
+        };
+        renderProvider(providerDeps);
+
+        let shakeReport!: Promise<void>;
+        await act(async () => {
+            shakeReport = controller!.reportProblem({ source: 'shake' });
+            await Promise.resolve();
+        });
+        expect(captureScreenshot).not.toHaveBeenCalled();
+
+        await act(async () => {
+            await controller!.shareIdea();
+        });
+        expect(composerCall()[0].props.draft.kind).toBe('idea');
+
+        await act(async () => {
+            painted.resolve();
+            await shakeReport;
+        });
+
+        expect(captureScreenshot).not.toHaveBeenCalled();
+        expect(modalHost.openModal).toHaveBeenCalledTimes(1);
     });
 
     it('clears a slow shake indicator when a newer screenshot prompt supersedes it', async () => {

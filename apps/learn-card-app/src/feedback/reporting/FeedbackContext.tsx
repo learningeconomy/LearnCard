@@ -112,10 +112,27 @@ export interface FeedbackProviderDeps {
     /** Submission transport; defaults to `createFeedbackTransport` over the
      * central analytics provider abstraction. */
     transport?: FeedbackTransport;
+    /** Browser paint boundary used before shake screenshot capture. */
+    waitForPaint?: () => Promise<void>;
 }
 
 const FeedbackControllerContext = createContext<FeedbackController | null>(null);
 FeedbackControllerContext.displayName = 'Feedback';
+
+/**
+ * Wait until the browser has completed at least one paint. Resolving from a
+ * second animation frame prevents html2canvas's synchronous DOM clone from
+ * blocking the first frame that contains the shake acknowledgement.
+ */
+const waitForFeedbackIndicatorPaint = (): Promise<void> => {
+    if (typeof requestAnimationFrame !== 'function') return Promise.resolve();
+
+    return new Promise(resolve => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => resolve());
+        });
+    });
+};
 
 /**
  * Access the feedback controller. Must be used inside `FeedbackProvider`.
@@ -644,6 +661,18 @@ export const FeedbackProvider: React.FC<{
             const openingIndicatorToken =
                 source === 'shake' && !isBusyRef.current ? showOpeningShakeFeedback() : undefined;
             try {
+                if (openingIndicatorToken) {
+                    await (depsRef.current.waitForPaint ?? waitForFeedbackIndicatorPaint)();
+
+                    if (
+                        captureGeneration !== eligibilityGenerationRef.current ||
+                        intentGeneration !== feedbackIntentGenerationRef.current ||
+                        !eligibilityRef.current.bug
+                    ) {
+                        return;
+                    }
+                }
+
                 let { draft, pendingScreenshot, pendingContext } = await captureBugDraft(
                     source,
                     options
