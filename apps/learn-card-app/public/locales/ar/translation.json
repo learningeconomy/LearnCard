@@ -1514,7 +1514,7 @@
         "closeContactDetails": "إغلاق تفاصيل جهة الاتصال",
         "connected": "متصل",
         "connectedSince": "متصل منذ {{date}}",
-        "copyLearnCardNumber": "نسخ رقم LearnCard",
+        "copyLearnCardNumber": "نسخ رقم LearnCard (DID)",
         "moreContactActions": "المزيد من إجراءات جهة الاتصال",
         "opening": "جارٍ الفتح...",
         "sendCredential": "إرسال بيان اعتماد",

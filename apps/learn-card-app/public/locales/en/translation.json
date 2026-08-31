@@ -1487,7 +1487,7 @@
         "closeContactDetails": "Close contact details",
         "connected": "Connected",
         "connectedSince": "Connected since {{date}}",
-        "copyLearnCardNumber": "Copy LearnCard Number",
+        "copyLearnCardNumber": "Copy LearnCard Number (DID)",
         "moreContactActions": "More contact actions",
         "opening": "Opening...",
         "sendCredential": "Send Credential",

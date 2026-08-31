@@ -1514,7 +1514,7 @@
         "closeContactDetails": "Cerrar detalles del contacto",
         "connected": "Conectado",
         "connectedSince": "Conectado desde el {{date}}",
-        "copyLearnCardNumber": "Copiar número de LearnCard",
+        "copyLearnCardNumber": "Copiar número de LearnCard (DID)",
         "moreContactActions": "Más acciones de contacto",
         "opening": "Abriendo...",
         "sendCredential": "Enviar credencial",
