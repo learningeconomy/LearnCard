@@ -66,9 +66,58 @@ const ModalHarness: React.FC = () => {
     );
 };
 
+const ownedModal = <div>Owned feedback modal</div>;
+const unrelatedModal = <div>Unrelated modal</div>;
+
+const TargetedCloseHarness: React.FC = () => {
+    const { modals } = useModalsContext();
+    const { newModal, closeModalById } = useModal();
+    const ownedId = React.useRef<number | undefined>(undefined);
+
+    return (
+        <>
+            <button type="button" onClick={() => (ownedId.current = newModal(ownedModal))}>
+                Open owned
+            </button>
+            <button type="button" onClick={() => newModal(unrelatedModal)}>
+                Open unrelated
+            </button>
+            <button
+                type="button"
+                onClick={() => {
+                    if (ownedId.current !== undefined) closeModalById(ownedId.current);
+                }}
+            >
+                Close owned
+            </button>
+            <output data-testid="owned-open">
+                {String(modals.find(modal => modal.id === ownedId.current)?.open)}
+            </output>
+            <output data-testid="unrelated-open">
+                {String(modals.find(modal => modal.component === unrelatedModal)?.open)}
+            </output>
+        </>
+    );
+};
+
 describe('ModalsProvider', () => {
     beforeEach(() => {
         cleanupCallback.mockReset().mockReturnValue(false);
+    });
+
+    it('closes a specified modal without closing an unrelated modal above it', () => {
+        render(
+            <ModalsProvider>
+                <TargetedCloseHarness />
+            </ModalsProvider>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Open owned' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Open unrelated' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Close owned' }));
+
+        expect(screen.getByTestId('owned-open').textContent).toBe('false');
+        expect(screen.getByTestId('unrelated-open').textContent).toBe('true');
     });
 
     it('replaces the current modal component and type without changing the stack', () => {

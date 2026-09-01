@@ -90,6 +90,9 @@ vi.mock('./components/debug/DevDebugPanel', () => ({ default: () => null }));
 vi.mock('./providers/AuthCoordinatorProvider', () => ({
     default: ({ children }: { children: React.ReactNode }) => children,
 }));
+vi.mock('./feedback/reporting', () => ({
+    FeedbackProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 vi.mock('./theme/hooks/useTheme', () => ({ useInitializeTheme: vi.fn() }));
 vi.mock('./paraglide/messages.js', () => ({
     'connectionPrompts.title': ({ name }: { name: string }) => `Connect with ${name}?`,

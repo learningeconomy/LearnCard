@@ -57,6 +57,7 @@ import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModa
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import { MyLearnCardModalViewModeEnum } from './MyLearnCardModal.types';
 import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
+import { FeedbackSettingsRows } from '../../feedback/reporting/FeedbackSettingsRows';
 
 type MyLearnCardModalProps = {
     branding: BrandingEnum;
@@ -706,6 +707,12 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                     />
                                 );
                             })}
+
+                            {/* Explicit feedback entry points (LC-2086), gated
+                                per destination by privacy eligibility. */}
+                            {viewMode === MyLearnCardModalViewModeEnum.guardian && (
+                                <FeedbackSettingsRows />
+                            )}
                         </div>
 
                         {!hideLogout && (
