@@ -23,14 +23,20 @@ vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({ default: () => null 
 const state = vi.hoisted(() => ({
     loggedIn: true,
     switchedDid: undefined as string | undefined,
-    prompts: [] as LCNConnectionPrompt[],
+    prompts: [] as LCNConnectionPrompt[] | undefined,
+    promptsQueryIsSuccess: true,
+    promptsQueryIsFetching: false,
     connect: vi.fn<(promptId: string) => Promise<void>>(),
     skip: vi.fn<(promptId: string) => Promise<void>>(),
     dismissToast: vi.fn(),
 }));
 
 vi.mock('../../react-query/connectionPrompts', () => ({
-    usePendingConnectionPrompts: () => ({ data: state.prompts }),
+    usePendingConnectionPrompts: () => ({
+        data: state.prompts,
+        isSuccess: state.promptsQueryIsSuccess,
+        isFetching: state.promptsQueryIsFetching,
+    }),
     useConnectWithConnectionPromptMutation: () => ({ mutateAsync: state.connect }),
     useSkipConnectionPromptMutation: () => ({ mutateAsync: state.skip }),
 }));
@@ -189,6 +195,8 @@ describe('ConnectionPromptCoordinator', () => {
         state.loggedIn = true;
         state.switchedDid = undefined;
         state.prompts = [];
+        state.promptsQueryIsSuccess = true;
+        state.promptsQueryIsFetching = false;
         state.connect.mockReset().mockResolvedValue(undefined);
         state.skip.mockReset().mockResolvedValue(undefined);
         state.dismissToast.mockReset();
@@ -274,7 +282,7 @@ describe('ConnectionPromptCoordinator', () => {
         state.prompts = [alice];
         state.skip.mockImplementation(async promptId => {
             await request.promise;
-            state.prompts = state.prompts.filter(prompt => prompt.promptId !== promptId);
+            state.prompts = (state.prompts ?? []).filter(prompt => prompt.promptId !== promptId);
         });
         renderCoordinator();
         await advance(150);
@@ -337,7 +345,7 @@ describe('ConnectionPromptCoordinator', () => {
     it('does not turn a successful explicit Connect into a Skip', async () => {
         state.prompts = [alice];
         state.connect.mockImplementation(async promptId => {
-            state.prompts = state.prompts.filter(prompt => prompt.promptId !== promptId);
+            state.prompts = (state.prompts ?? []).filter(prompt => prompt.promptId !== promptId);
         });
         renderCoordinator();
         await advance(150);
@@ -375,6 +383,72 @@ describe('ConnectionPromptCoordinator', () => {
 
         expect(screen.getByRole('heading', { name: 'Connect with Bob?' })).toBeTruthy();
         expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
+    });
+
+    it('closes a restored prompt when the refreshed pending query no longer includes it', async () => {
+        state.prompts = [alice];
+        const view = renderCoordinator();
+        await advance(150);
+
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+
+        state.promptsQueryIsFetching = true;
+        view.rerender(
+            <ModalsProvider>
+                <ConnectionPromptCoordinator copy={copy} />
+                <ModalHarness />
+            </ModalsProvider>
+        );
+        await advance(300);
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+
+        state.prompts = [];
+        state.promptsQueryIsFetching = false;
+        view.rerender(
+            <ModalsProvider>
+                <ConnectionPromptCoordinator copy={copy} />
+                <ModalHarness />
+            </ModalsProvider>
+        );
+        await advance(300);
+
+        expect(screen.queryByRole('heading', { name: 'Connect with Alice?' })).toBeNull();
+        expect(screen.getByTestId('modal-count').textContent).toBe('0');
+        expect(state.connect).not.toHaveBeenCalled();
+        expect(state.skip).not.toHaveBeenCalled();
+    });
+
+    it('keeps an active prompt through reset/loading and a failed refetch', async () => {
+        state.prompts = [alice];
+        const view = renderCoordinator();
+        await advance(150);
+
+        state.prompts = undefined;
+        state.promptsQueryIsSuccess = false;
+        state.promptsQueryIsFetching = true;
+        view.rerender(
+            <ModalsProvider>
+                <ConnectionPromptCoordinator copy={copy} />
+                <ModalHarness />
+            </ModalsProvider>
+        );
+        await advance(300);
+
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+
+        state.promptsQueryIsFetching = false;
+        view.rerender(
+            <ModalsProvider>
+                <ConnectionPromptCoordinator copy={copy} />
+                <ModalHarness />
+            </ModalsProvider>
+        );
+        await advance(300);
+
+        expect(screen.getByRole('heading', { name: 'Connect with Alice?' })).toBeTruthy();
+        expect(screen.getByTestId('modal-count').textContent).toBe('1');
+        expect(state.connect).not.toHaveBeenCalled();
+        expect(state.skip).not.toHaveBeenCalled();
     });
 
     it('suppresses native dismissal during Connect and resets the guard after failure', async () => {
@@ -546,7 +620,7 @@ describe('ConnectionPromptCoordinator', () => {
     it('queues different counterparts one at a time without reopening the active pair', async () => {
         state.prompts = [bob, alice];
         state.skip.mockImplementation(async promptId => {
-            state.prompts = state.prompts.filter(prompt => prompt.promptId !== promptId);
+            state.prompts = (state.prompts ?? []).filter(prompt => prompt.promptId !== promptId);
         });
         const view = renderCoordinator();
         await advance(150);
