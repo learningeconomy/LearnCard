@@ -25,9 +25,7 @@ interface NewFixturePanelProps {
 type SaveStep = 'editing' | 'saving' | 'success' | 'error';
 
 const DEFAULT_CREDENTIAL = {
-    '@context': [
-        'https://www.w3.org/ns/credentials/v2',
-    ],
+    '@context': ['https://www.w3.org/ns/credentials/v2'],
     type: ['VerifiableCredential'],
     issuer: { id: 'did:example:issuer' },
     validFrom: new Date().toISOString().slice(0, 19) + 'Z',
@@ -38,6 +36,8 @@ const DEFAULT_CREDENTIAL = {
 
 const toggleFeature = (arr: CredentialFeature[], item: CredentialFeature): CredentialFeature[] =>
     arr.includes(item) ? arr.filter(f => f !== item) : [...arr, item];
+
+const W3C_FIXTURE_SPECS = CREDENTIAL_SPECS.filter(spec => spec !== 'sd-jwt-vc');
 
 type TestResult = { status: 'idle' | 'testing' | 'pass' | 'fail'; message: string };
 
@@ -65,7 +65,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
 
     // Credential JSON
     const [credentialJson, setCredentialJson] = useState(
-        JSON.stringify(DEFAULT_CREDENTIAL, null, 2),
+        JSON.stringify(DEFAULT_CREDENTIAL, null, 2)
     );
     const [jsonError, setJsonError] = useState<string | null>(null);
 
@@ -137,18 +137,12 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
         if (!tags && inferred.tags && inferred.tags.length > 0) {
             setTags(inferred.tags.join(', '));
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [credentialJson]);
 
     const isWalletConnected = walletStatus === 'connected' && wallet;
 
-    const canSave =
-        fixtureId &&
-        name &&
-        description &&
-        effectiveFolder &&
-        filename &&
-        !jsonError;
+    const canSave = fixtureId && name && description && effectiveFolder && filename && !jsonError;
 
     const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -157,7 +151,7 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
 
         const reader = new FileReader();
 
-        reader.onload = (evt) => {
+        reader.onload = evt => {
             const text = evt.target?.result as string;
 
             // Reset fields so inference can re-fill them from the new file
@@ -197,9 +191,10 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
 
             const toIssue = {
                 ...credential,
-                issuer: typeof credential.issuer === 'string'
-                    ? did
-                    : { ...(credential.issuer ?? {}), id: did },
+                issuer:
+                    typeof credential.issuer === 'string'
+                        ? did
+                        : { ...(credential.issuer ?? {}), id: did },
             };
 
             // If credentialSubject has a placeholder DID, replace it
@@ -216,7 +211,8 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
             } else {
                 setTestResult({
                     status: 'pass',
-                    message: 'issueCredential returned without error (no proof — may be unsigned format).',
+                    message:
+                        'issueCredential returned without error (no proof — may be unsigned format).',
                 });
             }
         } catch (err) {
@@ -278,9 +274,20 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
             setStep('error');
         }
     }, [
-        canSave, credentialJson, tags, fixtureId, name, description,
-        spec, profile, features, source, signed, validity,
-        effectiveFolder, onSaved,
+        canSave,
+        credentialJson,
+        tags,
+        fixtureId,
+        name,
+        description,
+        spec,
+        profile,
+        features,
+        source,
+        signed,
+        validity,
+        effectiveFolder,
+        onSaved,
     ]);
 
     return (
@@ -290,14 +297,26 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                            <svg
+                                className="w-4 h-4 text-white"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 4v16m8-8H4"
+                                />
                             </svg>
                         </div>
 
                         <div>
                             <h2 className="text-base font-semibold text-white">New Fixture</h2>
-                            <p className="text-xs text-gray-500">Create a new credential fixture file</p>
+                            <p className="text-xs text-gray-500">
+                                Create a new credential fixture file
+                            </p>
                         </div>
                     </div>
 
@@ -305,8 +324,18 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                         onClick={onClose}
                         className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors cursor-pointer"
                     >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M6 18L18 6M6 6l12 12"
+                            />
                         </svg>
                     </button>
                 </div>
@@ -317,7 +346,9 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                         {/* Folder + Filename */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Folder</label>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                    Folder
+                                </label>
 
                                 <div className="space-y-1.5">
                                     <select
@@ -333,7 +364,9 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                         className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                                     >
                                         {folders.map(f => (
-                                            <option key={f} value={f}>{f}</option>
+                                            <option key={f} value={f}>
+                                                {f}
+                                            </option>
                                         ))}
 
                                         <option value="__new__">+ New folder...</option>
@@ -344,7 +377,11 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                             type="text"
                                             placeholder="folder-name"
                                             value={newFolderName}
-                                            onChange={e => setNewFolderName(e.target.value.replace(/[^a-z0-9-]/g, ''))}
+                                            onChange={e =>
+                                                setNewFolderName(
+                                                    e.target.value.replace(/[^a-z0-9-]/g, '')
+                                                )
+                                            }
                                             className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                                         />
                                     )}
@@ -352,13 +389,17 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Filename</label>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                    Filename
+                                </label>
 
                                 <input
                                     type="text"
                                     placeholder="my-credential"
                                     value={filename}
-                                    onChange={e => setFilename(e.target.value.replace(/[^a-z0-9-]/g, ''))}
+                                    onChange={e =>
+                                        setFilename(e.target.value.replace(/[^a-z0-9-]/g, ''))
+                                    }
                                     className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                                 />
 
@@ -372,7 +413,9 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
 
                         {/* Name + Description */}
                         <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">Name</label>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">
+                                Name
+                            </label>
 
                             <input
                                 type="text"
@@ -384,7 +427,9 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">
+                                Description
+                            </label>
 
                             <textarea
                                 placeholder="What this fixture tests or demonstrates"
@@ -398,21 +443,27 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                         {/* Spec + Profile + Source row */}
                         <div className="grid grid-cols-3 gap-3">
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Spec</label>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                    Spec
+                                </label>
 
                                 <select
                                     value={spec}
                                     onChange={e => setSpec(e.target.value as CredentialSpec)}
                                     className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                                 >
-                                    {CREDENTIAL_SPECS.map(s => (
-                                        <option key={s} value={s}>{SPEC_LABELS[s] ?? s}</option>
+                                    {W3C_FIXTURE_SPECS.map(s => (
+                                        <option key={s} value={s}>
+                                            {SPEC_LABELS[s] ?? s}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Profile</label>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                    Profile
+                                </label>
 
                                 <select
                                     value={profile}
@@ -420,13 +471,17 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                     className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                                 >
                                     {CREDENTIAL_PROFILES.map(p => (
-                                        <option key={p} value={p}>{PROFILE_LABELS[p] ?? p}</option>
+                                        <option key={p} value={p}>
+                                            {PROFILE_LABELS[p] ?? p}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Source</label>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                    Source
+                                </label>
 
                                 <select
                                     value={source}
@@ -434,7 +489,9 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                     className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                                 >
                                     {FIXTURE_SOURCES.map(s => (
-                                        <option key={s} value={s}>{s}</option>
+                                        <option key={s} value={s}>
+                                            {s}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -443,7 +500,9 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                         {/* Validity + Signed row */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-medium text-gray-400 mb-1">Validity</label>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                    Validity
+                                </label>
 
                                 <select
                                     value={validity}
@@ -451,7 +510,9 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                     className="w-full bg-gray-800 border border-gray-700 text-sm text-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                                 >
                                     {FIXTURE_VALIDITIES.map(v => (
-                                        <option key={v} value={v}>{v}</option>
+                                        <option key={v} value={v}>
+                                            {v}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -472,13 +533,17 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
 
                         {/* Features */}
                         <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1.5">Features</label>
+                            <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                Features
+                            </label>
 
                             <div className="flex flex-wrap gap-1.5">
                                 {CREDENTIAL_FEATURES.map(feat => (
                                     <button
                                         key={feat}
-                                        onClick={() => setFeatures(prev => toggleFeature(prev, feat))}
+                                        onClick={() =>
+                                            setFeatures(prev => toggleFeature(prev, feat))
+                                        }
                                         className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
                                             features.includes(feat)
                                                 ? 'bg-blue-600/30 text-blue-300 ring-1 ring-blue-500/30'
@@ -493,7 +558,9 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
 
                         {/* Tags */}
                         <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1">Tags (comma-separated)</label>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">
+                                Tags (comma-separated)
+                            </label>
 
                             <input
                                 type="text"
@@ -507,11 +574,15 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                         {/* Credential JSON */}
                         <div>
                             <div className="flex items-center justify-between mb-1">
-                                <label className="text-xs font-medium text-gray-400">Credential JSON</label>
+                                <label className="text-xs font-medium text-gray-400">
+                                    Credential JSON
+                                </label>
 
                                 <div className="flex items-center gap-2">
                                     {jsonError && (
-                                        <span className="text-[11px] text-red-400">{jsonError}</span>
+                                        <span className="text-[11px] text-red-400">
+                                            {jsonError}
+                                        </span>
                                     )}
 
                                     <input
@@ -526,8 +597,18 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                                         onClick={() => fileInputRef.current?.click()}
                                         className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors cursor-pointer"
                                     >
-                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        <svg
+                                            className="w-3 h-3"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            strokeWidth={2}
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                                            />
                                         </svg>
                                         Upload JSON
                                     </button>
@@ -553,15 +634,26 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                 {step === 'success' && (
                     <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
                         <div className="w-12 h-12 rounded-full bg-green-900/40 flex items-center justify-center mb-4">
-                            <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            <svg
+                                className="w-6 h-6 text-green-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M5 13l4 4L19 7"
+                                />
                             </svg>
                         </div>
 
                         <h3 className="text-lg font-semibold text-white mb-1">Fixture Saved</h3>
 
                         <p className="text-sm text-gray-400 mb-1">
-                            Written to <span className="font-mono text-emerald-400">{savedPath}</span>
+                            Written to{' '}
+                            <span className="font-mono text-emerald-400">{savedPath}</span>
                         </p>
 
                         <p className="text-xs text-gray-500 mb-6">
@@ -590,8 +682,18 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                 {step === 'error' && (
                     <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
                         <div className="w-12 h-12 rounded-full bg-red-900/40 flex items-center justify-center mb-4">
-                            <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            <svg
+                                className="w-6 h-6 text-red-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
                             </svg>
                         </div>
 
@@ -622,9 +724,13 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                     <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800 flex-shrink-0">
                         <div className="text-[11px] text-gray-500">
                             {fixtureId ? (
-                                <span>ID: <span className="font-mono text-gray-400">{fixtureId}</span></span>
+                                <span>
+                                    ID: <span className="font-mono text-gray-400">{fixtureId}</span>
+                                </span>
                             ) : (
-                                <span className="text-amber-500">Set folder + filename to generate ID</span>
+                                <span className="text-amber-500">
+                                    Set folder + filename to generate ID
+                                </span>
                             )}
                         </div>
 
@@ -638,18 +744,44 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
                             )}
 
                             {testResult.status === 'pass' && (
-                                <div className="flex items-center gap-1 text-[11px] text-green-400 max-w-[200px] truncate" title={testResult.message}>
-                                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                <div
+                                    className="flex items-center gap-1 text-[11px] text-green-400 max-w-[200px] truncate"
+                                    title={testResult.message}
+                                >
+                                    <svg
+                                        className="w-3.5 h-3.5 flex-shrink-0"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M5 13l4 4L19 7"
+                                        />
                                     </svg>
                                     Pass
                                 </div>
                             )}
 
                             {testResult.status === 'fail' && (
-                                <div className="flex items-center gap-1 text-[11px] text-red-400 max-w-[200px] truncate" title={testResult.message}>
-                                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                <div
+                                    className="flex items-center gap-1 text-[11px] text-red-400 max-w-[200px] truncate"
+                                    title={testResult.message}
+                                >
+                                    <svg
+                                        className="w-3.5 h-3.5 flex-shrink-0"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
                                     </svg>
                                     {testResult.message}
                                 </div>
@@ -657,13 +789,19 @@ export const NewFixturePanel: React.FC<NewFixturePanelProps> = ({ onClose, onSav
 
                             <button
                                 onClick={handleTestIssue}
-                                disabled={!isWalletConnected || !!jsonError || testResult.status === 'testing'}
+                                disabled={
+                                    !isWalletConnected ||
+                                    !!jsonError ||
+                                    testResult.status === 'testing'
+                                }
                                 className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
                                     isWalletConnected && !jsonError
                                         ? 'bg-amber-600/20 text-amber-400 hover:bg-amber-600/30'
                                         : 'bg-gray-800 text-gray-600 cursor-not-allowed'
                                 }`}
-                                title={!isWalletConnected ? 'Connect wallet first to test issue' : ''}
+                                title={
+                                    !isWalletConnected ? 'Connect wallet first to test issue' : ''
+                                }
                             >
                                 Test Issue
                             </button>
