@@ -423,14 +423,14 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                         {showBoostButton && (
                             <button
                                 type="button"
-                                className={PRIMARY_BUTTON_CLASSES}
+                                className={`${PRIMARY_BUTTON_CLASSES} !bg-blue-500`}
                                 disabled={Boolean(loadingAction)}
                                 onClick={handleBoost}
                             >
                                 {loadingAction === 'boost' ? (
                                     <IonSpinner className="h-4 w-4 text-white" />
                                 ) : (
-                                    <BoostOutline3 className="text-lg text-white" />
+                                    <BoostOutline3 className="text-lg text-blue-500" />
                                 )}
                                 {loadingAction === 'boost'
                                     ? m['contacts.opening']()
