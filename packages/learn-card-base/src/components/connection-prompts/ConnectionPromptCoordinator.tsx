@@ -27,7 +27,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 }) => {
     const isLoggedIn = useIsLoggedIn();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    const viewerKey = isLoggedIn ? (switchedDid ?? 'primary-profile') : null;
+    const viewerKey = isLoggedIn ? switchedDid ?? 'primary-profile' : null;
     const copyRef = useRef(copy);
     copyRef.current = copy;
     const previousViewerKeyRef = useRef(viewerKey);
