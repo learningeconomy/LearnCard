@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.app_store_get_installed_apps200_response_records_inner import AppStoreGetInstalledApps200ResponseRecordsInner
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class AppStoreGetInstalledApps200Response(BaseModel):
     """
@@ -34,7 +35,8 @@ class AppStoreGetInstalledApps200Response(BaseModel):
     __properties: ClassVar[List[str]] = ["hasMore", "cursor", "records"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -46,8 +48,7 @@ class AppStoreGetInstalledApps200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -78,8 +79,7 @@ class AppStoreGetInstalledApps200Response(BaseModel):
         _items = []
         if self.records:
             for _item_records in self.records:
-                if _item_records:
-                    _items.append(_item_records.to_dict())
+                _items.append(_item_records.to_dict() if _item_records is not None else None)
             _dict['records'] = _items
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:

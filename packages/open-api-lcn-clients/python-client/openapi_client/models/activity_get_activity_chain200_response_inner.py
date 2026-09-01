@@ -23,6 +23,7 @@ from openapi_client.models.activity_get_activity200_response_boost import Activi
 from openapi_client.models.activity_get_activity200_response_recipient_profile import ActivityGetActivity200ResponseRecipientProfile
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ActivityGetActivityChain200ResponseInner(BaseModel):
     """
@@ -32,7 +33,7 @@ class ActivityGetActivityChain200ResponseInner(BaseModel):
     activity_id: StrictStr = Field(alias="activityId")
     event_type: StrictStr = Field(alias="eventType")
     timestamp: StrictStr
-    actor_profile_id: StrictStr = Field(alias="actorProfileId")
+    actor_profile_id: Optional[StrictStr] = Field(default=None, alias="actorProfileId")
     recipient_type: StrictStr = Field(alias="recipientType")
     recipient_identifier: StrictStr = Field(alias="recipientIdentifier")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
@@ -41,9 +42,10 @@ class ActivityGetActivityChain200ResponseInner(BaseModel):
     integration_id: Optional[StrictStr] = Field(default=None, alias="integrationId")
     source: StrictStr
     metadata: Optional[Dict[str, Any]] = None
+    status: Optional[StrictStr] = None
     boost: Optional[ActivityGetActivity200ResponseBoost] = None
     recipient_profile: Optional[ActivityGetActivity200ResponseRecipientProfile] = Field(default=None, alias="recipientProfile")
-    __properties: ClassVar[List[str]] = ["id", "activityId", "eventType", "timestamp", "actorProfileId", "recipientType", "recipientIdentifier", "boostUri", "credentialUri", "inboxCredentialId", "integrationId", "source", "metadata", "boost", "recipientProfile"]
+    __properties: ClassVar[List[str]] = ["id", "activityId", "eventType", "timestamp", "actorProfileId", "recipientType", "recipientIdentifier", "boostUri", "credentialUri", "inboxCredentialId", "integrationId", "source", "metadata", "status", "boost", "recipientProfile"]
 
     @field_validator('event_type')
     def event_type_validate_enum(cls, value):
@@ -62,12 +64,23 @@ class ActivityGetActivityChain200ResponseInner(BaseModel):
     @field_validator('source')
     def source_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential']):
-            raise ValueError("must be one of enum values ('send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential')")
+        if value not in set(['send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential', 'appEvent']):
+            raise ValueError("must be one of enum values ('send', 'sendBoost', 'sendCredential', 'contract', 'claim', 'inbox', 'claimLink', 'acceptCredential', 'appEvent')")
+        return value
+
+    @field_validator('status')
+    def status_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['active', 'revoked', 'suspended']):
+            raise ValueError("must be one of enum values ('active', 'revoked', 'suspended')")
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -79,8 +92,7 @@ class ActivityGetActivityChain200ResponseInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -136,6 +148,7 @@ class ActivityGetActivityChain200ResponseInner(BaseModel):
             "integrationId": obj.get("integrationId"),
             "source": obj.get("source"),
             "metadata": obj.get("metadata"),
+            "status": obj.get("status"),
             "boost": ActivityGetActivity200ResponseBoost.from_dict(obj["boost"]) if obj.get("boost") is not None else None,
             "recipientProfile": ActivityGetActivity200ResponseRecipientProfile.from_dict(obj["recipientProfile"]) if obj.get("recipientProfile") is not None else None
         })

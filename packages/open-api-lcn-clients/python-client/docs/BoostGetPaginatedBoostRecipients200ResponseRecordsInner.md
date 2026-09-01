@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **var_from** | **str** |  | 
 **received** | **str** |  | [optional] 
 **uri** | **str** |  | [optional] 
+**status** | **str** |  | [optional] 
 
 ## Example
 
