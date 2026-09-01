@@ -114,7 +114,7 @@ const assertNoHighImpactViolations = async (
         await Promise.allSettled(transientAnimations.map(animation => animation.finished));
     });
 
-    const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+    const results = await new AxeBuilder({ page }).withTags(AXE_SCAN_TAGS).analyze();
     const violations = results.violations.filter(
         violation => violation.impact && HIGH_IMPACT_LEVELS.has(violation.impact)
     );
