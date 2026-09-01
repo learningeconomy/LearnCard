@@ -15,8 +15,7 @@ import SpilledCup from 'learn-card-base/svgs/SpilledCup';
 import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors/index';
 import ArrowCircle from 'learn-card-base/svgs/ArrowCircle';
-import { useFeedback } from '../../feedback/reporting/FeedbackContext';
-import { useFeedbackReportingEligibility } from '../../feedback/reporting/eligibility';
+import { useFeedbackOptional } from '../../feedback/reporting/FeedbackContext';
 
 type ErrorFallbackProps = {
     error: Error;
@@ -179,13 +178,15 @@ const GenericErrorBoundary: React.FC<GenericErrorBoundaryProps> = ({
     extraButtons,
     category,
 }) => {
-    const { reportProblem } = useFeedback();
-    const { bug: bugEligible } = useFeedbackReportingEligibility();
+    const feedback = useFeedbackOptional();
+    const reportProblem = feedback?.reportProblem;
 
     /** Sentry event id returned by the logger when this boundary caught. */
     const associatedEventIdRef = useRef<string | undefined>(undefined);
 
     const handleReportProblem = useCallback(() => {
+        if (!reportProblem) return;
+
         void reportProblem({
             source: 'error-boundary',
             ...(associatedEventIdRef.current
@@ -203,7 +204,7 @@ const GenericErrorBoundary: React.FC<GenericErrorBoundaryProps> = ({
                     hideGoHome={hideGoHome}
                     extraButtons={extraButtons}
                     category={category}
-                    onReportProblem={bugEligible ? handleReportProblem : undefined}
+                    onReportProblem={feedback?.bugEligible ? handleReportProblem : undefined}
                 />
             )}
             onReset={onReset}

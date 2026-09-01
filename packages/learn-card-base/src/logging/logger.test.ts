@@ -35,14 +35,22 @@ function makeMockTransport(): SentryTransport & {
 beforeEach(() => {
     configureSentryTransport(null);
     // Pass null (not undefined) to actually clear tenantId between tests
-    configureLoggerContext({ bugReportsEnabled: true, tenantId: null });
+    configureLoggerContext({
+        bugReportsEnabled: true,
+        diagnosticLogCollectionEnabled: true,
+        tenantId: null,
+    });
     clearDiagnosticLogs();
     vi.restoreAllMocks();
 });
 
 afterAll(() => {
     configureSentryTransport(null);
-    configureLoggerContext({ bugReportsEnabled: true, tenantId: null });
+    configureLoggerContext({
+        bugReportsEnabled: true,
+        diagnosticLogCollectionEnabled: true,
+        tenantId: null,
+    });
     clearDiagnosticLogs();
 });
 
@@ -158,7 +166,7 @@ describe('PII scrubbing', () => {
 // ---------------------------------------------------------------------------
 
 describe('privacy gate', () => {
-    it('drops diagnostics emitted before an authenticated adult first configures eligibility', async () => {
+    it('forwards remote logs but drops diagnostics before feedback eligibility is configured', async () => {
         // Loading fresh modules models an app that has authenticated already but whose
         // first useSentryIdentify effect has not configured the logger yet. If the
         // defaults ever become permissive again, the first log below becomes an
@@ -184,21 +192,23 @@ describe('privacy gate', () => {
         isolatedLogger.info('before eligibility configuration');
 
         expect(getIsolatedDiagnosticLogs()).toEqual([]);
-        expect(sentryCalls).toEqual([]);
+        expect(sentryCalls).toEqual(['breadcrumb']);
 
         configureIsolatedLoggerContext({
             bugReportsEnabled: true,
+            diagnosticLogCollectionEnabled: true,
             diagnosticIdentity: 'adult-a',
         });
         isolatedLogger.info('after eligibility configuration');
 
         expect(getIsolatedDiagnosticLogs()).toHaveLength(1);
-        expect(sentryCalls).toEqual(['breadcrumb']);
+        expect(sentryCalls).toEqual(['breadcrumb', 'breadcrumb']);
     });
 
     it('clears process-global diagnostics when the opaque reporting identity changes', () => {
         configureLoggerContext({
             bugReportsEnabled: true,
+            diagnosticLogCollectionEnabled: true,
             diagnosticIdentity: 'adult-a',
         });
         logger.info('first profile event');
@@ -206,6 +216,7 @@ describe('privacy gate', () => {
 
         configureLoggerContext({
             bugReportsEnabled: true,
+            diagnosticLogCollectionEnabled: true,
             diagnosticIdentity: 'adult-b',
         });
 
@@ -677,7 +688,7 @@ describe('rest-args contract', () => {
 
 describe('diagnostic buffer integration', () => {
     it('records default-private info entries when bug reports are enabled', () => {
-        configureLoggerContext({ bugReportsEnabled: true });
+        configureLoggerContext({ diagnosticLogCollectionEnabled: true });
         getLogger('feedback-test').info('opened', { email: 'alice@example.com', route: '/wallet' });
         expect(getDiagnosticLogs()).toEqual([
             expect.objectContaining({
@@ -714,10 +725,25 @@ describe('diagnostic buffer integration', () => {
         expect('data' in getDiagnosticLogs()[0]).toBe(false);
     });
 
-    it('clears and stops the diagnostic buffer when bug reports are disabled', () => {
+    it('keeps diagnostic collection independent from remote reporting', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+        configureLoggerContext({
+            bugReportsEnabled: false,
+            diagnosticLogCollectionEnabled: true,
+        });
+        vi.spyOn(console, 'info').mockImplementation(() => {});
+
+        logger.info('diagnostic only');
+
+        expect(getDiagnosticLogs()).toHaveLength(1);
+        expect(transport.calls).toEqual([]);
+    });
+
+    it('clears and stops the diagnostic buffer when diagnostic collection is disabled', () => {
         vi.spyOn(console, 'info').mockImplementation(() => {});
         logger.info('before');
-        configureLoggerContext({ bugReportsEnabled: false });
+        configureLoggerContext({ diagnosticLogCollectionEnabled: false });
         logger.info('after');
         expect(getDiagnosticLogs()).toEqual([]);
     });

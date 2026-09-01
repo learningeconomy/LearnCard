@@ -16,10 +16,8 @@
  *   - `idea`  → normalized route, tenant, and app version only. Screenshots,
  *               device details, and logs are never sent for ideas.
  *
- * `FeedbackKind` and `FeedbackContext` mirror the domain types in the LC-2086
- * spec. They are declared here so this module stays self-contained; once the
- * shared domain module (`feedback/reporting/types.ts`) lands, consolidate by
- * re-exporting from there — the shapes must stay identical.
+ * The report-domain types live in `feedback/reporting/types.ts`; this module
+ * only constructs that shared shape.
  */
 
 import { getDiagnosticLogs, type DiagnosticLogEntry } from 'learn-card-base';
@@ -27,34 +25,9 @@ import { getDiagnosticLogs, type DiagnosticLogEntry } from 'learn-card-base';
 import { normalizeScreenName } from '../../analytics/useScreenView';
 import {
     collectVersionInfo,
-    type DeviceSummary,
-    type NetworkSummary,
-    type Platform,
     type VersionInfo,
 } from '../../components/versionInfoModal/versionInfo.helpers';
-
-export type FeedbackKind = 'bug' | 'idea';
-
-/**
- * Privacy-safe diagnostics attached to a feedback report. Built exclusively
- * by `collectFeedbackContext` — never spread from `VersionInfo`.
- */
-export interface FeedbackContext {
-    currentRoute: string;
-    recentRoutes: string[];
-    tenantId?: string;
-    app?: {
-        platform: Platform;
-        displayVersion: string;
-        nativeVersion?: string;
-        nativeBuild?: string;
-        bundleVersion?: string;
-        channel?: string;
-    };
-    device?: DeviceSummary;
-    network?: NetworkSummary;
-    logs?: DiagnosticLogEntry[];
-}
+import type { FeedbackContext, FeedbackKind } from './types';
 
 export interface CollectFeedbackContextInput {
     kind: FeedbackKind;
@@ -73,11 +46,8 @@ export interface CollectFeedbackContextDeps {
 }
 
 /**
- * Default route-history source. The bounded route-history module
- * (`feedback/reporting/routeHistory.ts`, LC-2086 Task 3) is the intended
- * provider — wire `getRecentFeedbackRoutes()` in here once that module is
- * merged. Until then this degrades to an empty history; `currentRoute` still
- * resolves from the normalized current location.
+ * The root coordinator injects its active-profile-owned route history. Other
+ * callers degrade safely to the normalized current location.
  */
 const defaultGetRoutes = (): string[] => [];
 

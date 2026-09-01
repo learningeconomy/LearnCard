@@ -19,12 +19,15 @@ const user = {
  * returned by the central logger's `log.error` as `associatedEventId`.
  */
 
-const eligibility = vi.hoisted(() => ({
-    value: { bug: false, idea: false, isLoading: false },
-}));
-
 const reportProblem = vi.hoisted(() => vi.fn());
 const guardedChunkReload = vi.hoisted(() => vi.fn());
+const feedback = vi.hoisted(() => ({
+    value: null as null | {
+        bugEligible: boolean;
+        reportProblem: typeof reportProblem;
+        shareIdea: ReturnType<typeof vi.fn>;
+    },
+}));
 
 vi.mock('learn-card-base', () => ({
     CredentialCategoryEnum: {},
@@ -61,12 +64,8 @@ vi.mock('../../paraglide/messages.js', () => {
     return { ...messages, m: messages };
 });
 
-vi.mock('../../feedback/reporting/eligibility', () => ({
-    useFeedbackReportingEligibility: () => eligibility.value,
-}));
-
 vi.mock('../../feedback/reporting/FeedbackContext', () => ({
-    useFeedback: () => ({ reportProblem, shareIdea: vi.fn() }),
+    useFeedbackOptional: () => feedback.value,
 }));
 
 import GenericErrorBoundary from './GenericErrorBoundary';
@@ -81,25 +80,24 @@ const renderCrashed = (element: React.ReactNode) =>
 describe('GenericErrorBoundary feedback entry point', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        eligibility.value = { bug: false, idea: false, isLoading: false };
+        feedback.value = { bugEligible: false, reportProblem, shareIdea: vi.fn() };
     });
 
     it('shows Send Report only when bug reports are eligible', () => {
-        eligibility.value = { bug: true, idea: false, isLoading: false };
+        feedback.value = { bugEligible: true, reportProblem, shareIdea: vi.fn() };
         renderCrashed(<Thrower />);
 
         expect(screen.getByRole('button', { name: 'Send Report' })).toBeVisible();
     });
 
     it('hides Send Report when bug reports are ineligible', () => {
-        eligibility.value = { bug: false, idea: true, isLoading: false };
         renderCrashed(<Thrower />);
 
         expect(screen.queryByRole('button', { name: 'Send Report' })).not.toBeInTheDocument();
     });
 
     it('reports with the logger event id and error-boundary source', async () => {
-        eligibility.value = { bug: true, idea: false, isLoading: false };
+        feedback.value = { bugEligible: true, reportProblem, shareIdea: vi.fn() };
         renderCrashed(<Thrower />);
 
         await user.click(screen.getByRole('button', { name: 'Send Report' }));
@@ -112,11 +110,20 @@ describe('GenericErrorBoundary feedback entry point', () => {
     });
 
     it('keeps the stale-chunk fallback refresh-only', () => {
-        eligibility.value = { bug: true, idea: false, isLoading: false };
+        feedback.value = { bugEligible: true, reportProblem, shareIdea: vi.fn() };
         renderCrashed(<Thrower message="Loading chunk 5 failed" />);
 
         expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible();
         expect(screen.queryByRole('button', { name: 'Send Report' })).not.toBeInTheDocument();
         expect(guardedChunkReload).toHaveBeenCalledTimes(1);
+    });
+
+    it('still catches and renders errors when no feedback provider is mounted', () => {
+        feedback.value = null;
+
+        renderCrashed(<Thrower />);
+
+        expect(screen.getByText('Something went wrong')).toBeVisible();
+        expect(screen.queryByRole('button', { name: 'Send Report' })).not.toBeInTheDocument();
     });
 });

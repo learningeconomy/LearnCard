@@ -43,7 +43,11 @@ import {
 import { collectFeedbackContext } from './collectFeedbackContext';
 import { createFeedbackTransport, type FeedbackAnalyticsAdapter } from './createFeedbackTransport';
 import { useFeedbackReportingEligibility } from './eligibility';
-import { getRecentFeedbackRoutes, normalizeFeedbackRoute } from './routeHistory';
+import {
+    clearFeedbackRouteHistory,
+    getRecentFeedbackRoutes,
+    normalizeFeedbackRoute,
+} from './routeHistory';
 import {
     isAutomaticFeedbackSource,
     isPendingFeedbackExpired,
@@ -66,14 +70,16 @@ const log = getLogger('feedback');
 
 /** Entry points exposed to Settings, error boundaries, and native listeners. */
 export interface FeedbackController {
+    /** Whether the active profile may submit bug reports. */
+    bugEligible: boolean;
+
     /**
      * Capture and present a bug report.
      *
-     * Checks bug eligibility, then captures privacy-safe context before
-     * deciding whether to open the composer, defer behind a pending toast, or
-     * (for `submitImmediately`) submit without UI. Native screenshot triggers
-     * preserve their captured screen; shake opens immediately and lets the
-     * user add an optional image from their library.
+     * Checks bug eligibility, starts privacy-safe context collection, then
+     * opens immediately with route-only context or defers behind a pending
+     * toast. Native screenshot triggers preserve their captured screen; shake
+     * opens immediately and lets the user add an optional library image.
      */
     reportProblem(options?: ReportProblemOptions): Promise<void>;
 
@@ -109,11 +115,15 @@ export interface FeedbackProviderDeps {
 const FeedbackControllerContext = createContext<FeedbackController | null>(null);
 FeedbackControllerContext.displayName = 'Feedback';
 
+/** Access the controller when feedback may not be mounted for this app surface. */
+export const useFeedbackOptional = (): FeedbackController | null =>
+    useContext(FeedbackControllerContext);
+
 /**
  * Access the feedback controller. Must be used inside `FeedbackProvider`.
  */
 export const useFeedback = (): FeedbackController => {
-    const controller = useContext(FeedbackControllerContext);
+    const controller = useFeedbackOptional();
 
     if (!controller) {
         throw new Error('useFeedback must be used within a FeedbackProvider');
@@ -167,6 +177,36 @@ const defaultCollectMinimalContext = async (): Promise<FeedbackContextData> => {
     };
 };
 
+const FEEDBACK_CONTEXT_DEADLINE_MS = 2_000;
+
+/** Route-only context that is safe to construct synchronously before UI opens. */
+const collectImmediateContext = (): FeedbackContextData => {
+    const recentRoutes = getRecentFeedbackRoutes();
+    return {
+        currentRoute: recentRoutes.at(-1) ?? normalizeFeedbackRoute(window.location.pathname),
+        recentRoutes,
+    };
+};
+
+/** Rich diagnostics are best-effort and must never hold the feedback UI open. */
+const resolveContextByDeadline = (
+    contextPromise: Promise<FeedbackContextData>,
+    fallback: FeedbackContextData
+): Promise<FeedbackContextData> =>
+    new Promise(resolve => {
+        const timeout = setTimeout(() => resolve(fallback), FEEDBACK_CONTEXT_DEADLINE_MS);
+        void contextPromise.then(
+            context => {
+                clearTimeout(timeout);
+                resolve(context);
+            },
+            () => {
+                clearTimeout(timeout);
+                resolve(fallback);
+            }
+        );
+    });
+
 export const FeedbackProvider: React.FC<{
     children: React.ReactNode;
     deps?: FeedbackProviderDeps;
@@ -186,14 +226,19 @@ export const FeedbackProvider: React.FC<{
     const isBusyRef = useRef(isBusy);
     isBusyRef.current = isBusy;
 
+    // Route history is diagnostic data owned by the active profile. Clear it
+    // before a different profile can inherit it and when the provider unmounts.
+    useEffect(() => () => clearFeedbackRouteHistory(), [eligibility.profileId]);
+
     const defaultTransport = useMemo<FeedbackTransport>(() => {
         const adapter: FeedbackAnalyticsAdapter = {
             submitFeedbackIdea: analytics.submitFeedbackIdea,
             isReady: analytics.isReady,
             providerName: analytics.providerName,
+            bugEligible: eligibility.bug,
         };
         return createFeedbackTransport(adapter);
-    }, [analytics.submitFeedbackIdea, analytics.isReady, analytics.providerName]);
+    }, [analytics.submitFeedbackIdea, analytics.isReady, analytics.providerName, eligibility.bug]);
 
     const transportRef = useRef<FeedbackTransport>(defaultTransport);
     transportRef.current = depsRef.current.transport ?? defaultTransport;
@@ -363,6 +408,7 @@ export const FeedbackProvider: React.FC<{
                 <FeedbackComposer
                     draft={draft}
                     pendingContext={pendingContext}
+                    allowScreenshot={draft.kind === 'bug' || eligibilityRef.current.bug}
                     onCancel={() => closeFeedbackComposer(owner)}
                     onSubmit={report => submitAndClose(report, captureGeneration, owner)}
                 />
@@ -465,19 +511,15 @@ export const FeedbackProvider: React.FC<{
                 ...depsRef.current,
             };
 
-            const contextPromise = collectContext({ kind: 'bug' });
+            const immediateContext = collectImmediateContext();
+            const pendingContext = resolveContextByDeadline(
+                collectContext({ kind: 'bug' }),
+                immediateContext
+            );
 
             // Shake should feel immediate. Start richer diagnostics in the
             // background, but never block the composer on screenshot capture.
             if (source === 'shake') {
-                const recentRoutes = getRecentFeedbackRoutes();
-                const immediateContext: FeedbackContextData = {
-                    currentRoute:
-                        recentRoutes.at(-1) ?? normalizeFeedbackRoute(window.location.pathname),
-                    recentRoutes,
-                };
-                const pendingContext = contextPromise.catch(() => immediateContext);
-
                 return {
                     draft: {
                         kind: 'bug',
@@ -495,10 +537,7 @@ export const FeedbackProvider: React.FC<{
                 };
             }
 
-            const [screenshot, context] = await Promise.all([
-                source === 'screenshot' ? captureScreenshot() : Promise.resolve(undefined),
-                contextPromise,
-            ]);
+            const screenshot = source === 'screenshot' ? await captureScreenshot() : undefined;
 
             return {
                 draft: {
@@ -506,12 +545,13 @@ export const FeedbackProvider: React.FC<{
                     source: source ?? 'settings',
                     capturedAt: new Date(now()).toISOString(),
                     ...(screenshot ? { screenshot } : {}),
-                    context,
+                    context: immediateContext,
                     ...(options.associatedEventId
                         ? { associatedEventId: options.associatedEventId }
                         : {}),
                     ...(options.initialMessage ? { initialMessage: options.initialMessage } : {}),
                 },
+                pendingContext,
             };
         },
         []
@@ -620,7 +660,7 @@ export const FeedbackProvider: React.FC<{
                 if (!isAutomatic) {
                     // Explicit entry points always open — the feedback modal
                     // stacks above whatever is already on screen (e.g. Settings).
-                    keepExplicitOwnership = openComposer(draft, explicitOwner);
+                    keepExplicitOwnership = openComposer(draft, explicitOwner, pendingContext);
                     return;
                 }
 
@@ -629,16 +669,12 @@ export const FeedbackProvider: React.FC<{
                 if (isBusyRef.current) {
                     // Capture now, present later. A newer automatic draft simply
                     // replaces this one.
-                    if (isBusyRef.current) {
-                        pendingRef.current = { draft, pendingContext };
-                    } else {
-                        presentPromptToast(draft, pendingContext);
-                    }
+                    pendingRef.current = { draft, pendingContext };
                     return;
                 }
 
                 if (source === 'screenshot') {
-                    presentPromptToast(draft);
+                    presentPromptToast(draft, pendingContext);
                     return;
                 }
 
@@ -682,7 +718,11 @@ export const FeedbackProvider: React.FC<{
 
             let keepOwnership = false;
             try {
-                const context = await collectContext({ kind: 'idea' });
+                const immediateContext = collectImmediateContext();
+                const pendingContext = resolveContextByDeadline(
+                    collectContext({ kind: 'idea' }),
+                    immediateContext
+                );
 
                 if (
                     captureGeneration !== eligibilityGenerationRef.current ||
@@ -696,12 +736,13 @@ export const FeedbackProvider: React.FC<{
                         kind: 'idea',
                         source: options.source ?? 'settings',
                         capturedAt: new Date(now()).toISOString(),
-                        context,
+                        context: immediateContext,
                         ...(options.initialMessage
                             ? { initialMessage: options.initialMessage }
                             : {}),
                     },
-                    owner
+                    owner,
+                    pendingContext
                 );
             } finally {
                 if (!keepOwnership) releaseComposerFlow(owner);
@@ -711,8 +752,8 @@ export const FeedbackProvider: React.FC<{
     );
 
     const controller = useMemo<FeedbackController>(
-        () => ({ reportProblem, shareIdea }),
-        [reportProblem, shareIdea]
+        () => ({ reportProblem, shareIdea, bugEligible: eligibility.bug }),
+        [reportProblem, shareIdea, eligibility.bug]
     );
 
     // Automatic entry points (shake, iOS screenshot) mount their native

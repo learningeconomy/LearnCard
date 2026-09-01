@@ -42,6 +42,8 @@ vi.mock('../../paraglide/messages.js', () => ({
         'Your message, optional screenshot, app and device details, recent screens, and sanitized logs.',
     'feedback.reporting.ideaDisclosure': () =>
         'Your idea, optional screenshot, current screen, app version, and tenant.',
+    'feedback.reporting.ideaDisclosureWithoutScreenshot': () =>
+        'Your idea, current screen, app version, and tenant.',
     'feedback.reporting.cancel': () => 'Cancel',
     'feedback.reporting.sendReport': () => 'Send Report',
     'feedback.reporting.sendingReport': () => 'Sending Report...',
@@ -92,6 +94,7 @@ const renderComposer = (
         onCancel: () => void;
         onSubmit: (report: FeedbackReport) => Promise<void>;
         pendingContext: Promise<FeedbackContext>;
+        allowScreenshot: boolean;
     }> = {}
 ) => {
     const onCancel = overrides.onCancel ?? vi.fn();
@@ -100,6 +103,7 @@ const renderComposer = (
         <FeedbackComposer
             draft={draft}
             pendingContext={overrides.pendingContext}
+            allowScreenshot={overrides.allowScreenshot}
             onCancel={onCancel}
             onSubmit={onSubmit}
         />
@@ -146,10 +150,27 @@ describe('FeedbackComposer', () => {
         );
     });
 
-    it('offers an optional screenshot on idea reports', () => {
-        renderComposer(ideaDraft);
+    it('offers an optional screenshot on idea reports when bug consent is explicit', () => {
+        renderComposer(ideaDraft, { allowScreenshot: true });
 
         expect(screen.getByRole('button', { name: 'Add Screenshot' })).toBeVisible();
+    });
+
+    it('fails closed for idea screenshots when consent is not supplied', () => {
+        renderComposer(ideaDraft);
+
+        expect(screen.queryByRole('button', { name: 'Add Screenshot' })).not.toBeInTheDocument();
+    });
+
+    it('hides screenshot controls and screenshot disclosure for ideas without bug consent', async () => {
+        renderComposer(ideaDraft, { allowScreenshot: false });
+
+        expect(screen.queryByRole('button', { name: 'Add Screenshot' })).not.toBeInTheDocument();
+        await user.click(screen.getByText('What we’ll send'));
+        expect(
+            screen.getByText('Your idea, current screen, app version, and tenant.')
+        ).toBeVisible();
+        expect(screen.queryByText(/optional screenshot/i)).not.toBeInTheDocument();
     });
 
     it('labels native gallery thumbnails as JPEG even when the source asset was PNG', async () => {
@@ -372,7 +393,7 @@ describe('FeedbackComposer', () => {
     });
 
     it('renders idea copy and the idea disclosure', async () => {
-        const { onSubmit } = renderComposer(ideaDraft);
+        const { onSubmit } = renderComposer(ideaDraft, { allowScreenshot: true });
 
         expect(screen.getByRole('heading', { name: 'Share an Idea' })).toBeVisible();
         expect(screen.getByLabelText('What would make LearnCard better?')).toHaveAttribute(
@@ -423,15 +444,17 @@ describe('FeedbackComposer', () => {
         );
     });
 
-    it('shows the thanks message after a successful submit', async () => {
+    it('leaves successful dismissal and confirmation to the parent', async () => {
         const { onSubmit } = renderComposer();
 
         await user.type(screen.getByLabelText('What happened?'), 'All good now');
         await user.click(screen.getByRole('button', { name: 'Send Report' }));
 
-        expect(await screen.findByText('Thanks for helping us improve LearnCard.')).toBeVisible();
-        expect(screen.queryByLabelText('What happened?')).not.toBeInTheDocument();
-        expect(onSubmit).toHaveBeenCalledTimes(1);
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+        expect(
+            screen.queryByText('Thanks for helping us improve LearnCard.')
+        ).not.toBeInTheDocument();
+        expect(screen.getByLabelText('What happened?')).toHaveValue('All good now');
     });
 
     it('shows idea loading text while an idea is submitting', async () => {
@@ -473,7 +496,8 @@ describe('FeedbackComposer', () => {
 
         await user.click(screen.getByRole('button', { name: 'Try Again' }));
         await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(2));
-        expect(await screen.findByText('Thanks for helping us improve LearnCard.')).toBeVisible();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('What happened?')).toHaveValue('Offline error');
     });
 
     it('notifies the parent when cancelled without submitting', async () => {

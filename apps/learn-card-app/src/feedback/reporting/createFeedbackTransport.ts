@@ -7,8 +7,8 @@
  *     touched, so bug diagnostics cannot leak into PostHog.
  *   - `idea` → the dedicated typed `AnalyticsProvider.submitFeedbackIdea`
  *     operation. Only source, message, currentRoute, and appVersion travel to
- *     analytics. If the user explicitly attaches a screenshot, a separate
- *     privacy-safe Sentry feedback event carries that attachment.
+ *     analytics. With separate bug-report consent, an explicitly attached
+ *     screenshot is sent as a best-effort Sentry sidecar.
  *
  * An unready provider or a non-PostHog provider is treated as a retryable
  * submission failure: the idea rejects with the friendly transport error and is
@@ -30,6 +30,8 @@ export interface FeedbackAnalyticsAdapter {
     isReady: boolean;
     /** Active provider name (`'posthog'` is the only idea-capable provider). */
     providerName: string;
+    /** Whether the user currently permits the Sentry screenshot sidecar. */
+    bugEligible: boolean;
 }
 
 /**
@@ -37,8 +39,8 @@ export interface FeedbackAnalyticsAdapter {
  *
  * Bugs are submitted to Sentry immediately; ideas are tracked as
  * `feedback_idea_submitted` once the PostHog provider is ready. Idea
- * screenshots are additionally delivered through Sentry because analytics
- * events do not provide an attachment channel.
+ * screenshots are additionally delivered through Sentry when bug-report
+ * consent permits it. Sidecar failure never retries the accepted PostHog event.
  */
 export const createFeedbackTransport = (
     analytics: FeedbackAnalyticsAdapter
@@ -62,9 +64,15 @@ export const createFeedbackTransport = (
                 currentRoute: report.context.currentRoute,
                 appVersion: report.context.app?.displayVersion,
             });
-            if (report.screenshot) await submitSentryFeedback(report);
         } catch {
             throw new Error(FEEDBACK_TRANSPORT_ERROR_MESSAGE);
+        }
+
+        // The typed PostHog event is the primary idea submission. A screenshot
+        // is an optional, separately-consented Sentry sidecar; never make its
+        // failure turn an accepted idea into a retry that duplicates analytics.
+        if (report.screenshot && analytics.bugEligible) {
+            void submitSentryFeedback(report).catch(() => undefined);
         }
 
         // Ideas have no provider-side event ID; acceptance is success.

@@ -19,6 +19,8 @@ const isGallerySelectionCancelled = (error: unknown): boolean => {
 export interface FeedbackComposerProps {
     draft: FeedbackDraft;
     pendingContext?: Promise<FeedbackDraft['context']>;
+    /** Idea screenshots require the separate bug-report/Sentry consent gate. */
+    allowScreenshot?: boolean;
     onCancel(): void;
     onSubmit(report: FeedbackReport): Promise<void>;
 }
@@ -35,18 +37,21 @@ export interface FeedbackComposerProps {
 export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
     draft,
     pendingContext,
+    allowScreenshot,
     onCancel,
     onSubmit,
 }) => {
     const isBug = draft.kind === 'bug';
+    const canAttachScreenshot = isBug || allowScreenshot === true;
     const [message, setMessage] = useState(draft.initialMessage ?? '');
-    const [screenshot, setScreenshot] = useState<FeedbackScreenshot | undefined>(draft.screenshot);
+    const [screenshot, setScreenshot] = useState<FeedbackScreenshot | undefined>(
+        canAttachScreenshot ? draft.screenshot : undefined
+    );
     const [context, setContext] = useState(draft.context);
     const [isAddingScreenshot, setIsAddingScreenshot] = useState(false);
     const [hasScreenshotError, setHasScreenshotError] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [hasError, setHasError] = useState(false);
-    const [isDone, setIsDone] = useState(false);
 
     const canSubmit = message.trim().length > 0;
 
@@ -67,7 +72,7 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
     }, [pendingContext]);
 
     const handleAddScreenshot = useCallback(async () => {
-        if (isAddingScreenshot || isSubmitting) return;
+        if (!canAttachScreenshot || isAddingScreenshot || isSubmitting) return;
 
         setIsAddingScreenshot(true);
         setHasScreenshotError(false);
@@ -110,10 +115,10 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
         } finally {
             setIsAddingScreenshot(false);
         }
-    }, [isAddingScreenshot, isSubmitting]);
+    }, [canAttachScreenshot, isAddingScreenshot, isSubmitting]);
 
     const handleSubmit = useCallback(async () => {
-        if (!canSubmit || isSubmitting || isDone) return;
+        if (!canSubmit || isSubmitting) return;
 
         setIsSubmitting(true);
         setHasError(false);
@@ -126,49 +131,13 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                 screenshot,
             };
             await onSubmit(report);
-            setIsDone(true);
         } catch {
             // Intentionally swallowed: the transport error is never rendered.
             setHasError(true);
         } finally {
             setIsSubmitting(false);
         }
-    }, [
-        canSubmit,
-        context,
-        draft,
-        isDone,
-        isSubmitting,
-        message,
-        onSubmit,
-        pendingContext,
-        screenshot,
-    ]);
-
-    if (isDone) {
-        return (
-            <div className="p-6 font-poppins" data-testid="feedback-composer-thanks">
-                <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-100 bg-emerald-50 p-3">
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                        className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500"
-                    >
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                        <path d="m9 11 3 3L22 4" />
-                    </svg>
-                    <span className="text-sm leading-relaxed text-emerald-700">
-                        {m['feedback.reporting.thanks']()}
-                    </span>
-                </div>
-            </div>
-        );
-    }
+    }, [canSubmit, context, draft, isSubmitting, message, onSubmit, pendingContext, screenshot]);
 
     return (
         <div className="flex flex-col gap-5 p-6 font-poppins">
@@ -238,7 +207,7 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                     />
                 </div>
 
-                {screenshot && (
+                {canAttachScreenshot && screenshot && (
                     <div className="flex items-center gap-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-2.5">
                         <img
                             src={screenshot.dataUrl}
@@ -259,7 +228,7 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                     </div>
                 )}
 
-                {!screenshot && (
+                {canAttachScreenshot && !screenshot && (
                     <button
                         type="button"
                         onClick={handleAddScreenshot}
@@ -300,7 +269,9 @@ export const FeedbackComposer: React.FC<FeedbackComposerProps> = ({
                     <p className="mt-2 text-xs leading-relaxed text-grayscale-500">
                         {isBug
                             ? m['feedback.reporting.bugDisclosure']()
-                            : m['feedback.reporting.ideaDisclosure']()}
+                            : canAttachScreenshot
+                            ? m['feedback.reporting.ideaDisclosure']()
+                            : m['feedback.reporting.ideaDisclosureWithoutScreenshot']()}
                     </p>
                 </details>
             </div>

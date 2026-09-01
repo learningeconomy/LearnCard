@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { useWallet } from 'learn-card-base';
+import { useGetPreferencesForDid, useWallet } from 'learn-card-base';
 import { configureSentryTransport, configureLoggerContext } from 'learn-card-base';
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { getLogger } from 'learn-card-base';
@@ -109,13 +109,22 @@ export const initSentryFromTenant = (): void => {
 export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
     const currentUser = useCurrentUser();
     const { getDID } = useWallet();
+    const { data: preferences, isLoading: preferencesLoading } = useGetPreferencesForDid();
     const reportingEligibility = useFeedbackReportingEligibility();
-    const bugReportsEnabled = reportingEligibility.bug;
+    // Remote crash reporting preserves the existing preference semantics so
+    // login/onboarding/logout failures remain observable. Cached preferences
+    // are trusted only for a fully resolved authenticated profile; only the
+    // user-attachable diagnostic buffer uses the stricter adult eligibility.
+    const canTrustPreferences = Boolean(
+        currentUser && reportingEligibility.profileId && !preferencesLoading
+    );
+    const bugReportsEnabled = canTrustPreferences ? preferences?.bugReportsEnabled ?? true : true;
 
     useEffect(() => {
         // Keep logger privacy gate in sync with user preferences
         configureLoggerContext({
             bugReportsEnabled,
+            diagnosticLogCollectionEnabled: reportingEligibility.bug,
             diagnosticIdentity: reportingEligibility.profileId ?? null,
         });
 
@@ -149,5 +158,5 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
                 Sentry.setTag('packageVersion', __PACKAGE_VERSION__);
             }
         }
-    }, [currentUser, bugReportsEnabled, reportingEligibility.profileId]);
+    }, [currentUser, bugReportsEnabled, reportingEligibility.bug, reportingEligibility.profileId]);
 };

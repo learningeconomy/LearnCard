@@ -111,6 +111,8 @@ vi.mock('../../paraglide/messages.js', () => ({
         'Your message, optional screenshot, app and device details, recent screens, and sanitized logs.',
     'feedback.reporting.ideaDisclosure': () =>
         'Your idea, optional screenshot, current screen, app version, and tenant.',
+    'feedback.reporting.ideaDisclosureWithoutScreenshot': () =>
+        'Your idea, current screen, app version, and tenant.',
     'feedback.reporting.cancel': () => 'Cancel',
     'feedback.reporting.sendReport': () => 'Send Report',
     'feedback.reporting.sendingReport': () => 'Sending Report...',
@@ -138,6 +140,11 @@ import {
 } from './FeedbackContext';
 import { captureFeedbackScreenshot } from './captureScreenshot';
 import { collectFeedbackContext } from './collectFeedbackContext';
+import {
+    clearFeedbackRouteHistory,
+    getRecentFeedbackRoutes,
+    recordFeedbackRoute,
+} from './routeHistory';
 import type {
     FeedbackContext as FeedbackContextData,
     FeedbackDraft,
@@ -254,6 +261,7 @@ beforeEach(() => {
     captureScreenshot.mockResolvedValue(SCREENSHOT);
     collectContext.mockResolvedValue(CONTEXT);
     submit.mockResolvedValue({ id: 'feedback-1' });
+    clearFeedbackRouteHistory();
     controller = undefined;
 });
 
@@ -271,6 +279,31 @@ describe('FeedbackProvider automatic triggers wiring', () => {
         renderProvider();
 
         expect(automaticTriggers.calls.at(-1)?.enabled).toBe(false);
+    });
+});
+
+describe('FeedbackProvider route-history ownership', () => {
+    it('clears route history when the active profile changes', () => {
+        const { rerenderWithEligibility } = renderProvider();
+        recordFeedbackRoute('/wallet');
+
+        rerenderWithEligibility({
+            bug: true,
+            idea: true,
+            isLoading: false,
+            profileId: 'adult-b',
+        });
+
+        expect(getRecentFeedbackRoutes()).toEqual([]);
+    });
+
+    it('clears route history when the provider unmounts during sign-out', () => {
+        const { unmount } = renderProvider();
+        recordFeedbackRoute('/wallet');
+
+        unmount();
+
+        expect(getRecentFeedbackRoutes()).toEqual([]);
     });
 });
 
@@ -356,7 +389,8 @@ describe('FeedbackProvider reportProblem', () => {
         expect(element.props.draft.kind).toBe('bug');
         expect(element.props.draft.source).toBe('settings');
         expect(element.props.draft.screenshot).toBeUndefined();
-        expect(element.props.draft.context).toBe(CONTEXT);
+        expect(element.props.draft.context).toEqual({ currentRoute: '/', recentRoutes: [] });
+        await expect(element.props.pendingContext).resolves.toBe(CONTEXT);
         expect(element.props.draft.capturedAt).toBe(new Date(clock.nowMs).toISOString());
         expect(options).toEqual({
             sectionClassName: '!max-w-[480px] !bg-white',
@@ -364,6 +398,48 @@ describe('FeedbackProvider reportProblem', () => {
         });
         expect(type).toEqual({ desktop: 'center', mobile: 'full-screen' });
         expect(modalHost.presentToast).not.toHaveBeenCalled();
+    });
+
+    it('opens the Settings composer before rich context collection resolves', async () => {
+        const context = createDeferred<FeedbackContextData>();
+        collectContext.mockReturnValueOnce(context.promise);
+        renderProvider();
+
+        await act(async () => {
+            await controller?.reportProblem({ source: 'settings' });
+        });
+
+        expect(modalHost.openModal).toHaveBeenCalledTimes(1);
+        expect(composerCall()[0].props.draft.context).toEqual({
+            currentRoute: '/',
+            recentRoutes: [],
+        });
+        expect(composerCall()[0].props.pendingContext).toBeDefined();
+
+        context.resolve(CONTEXT);
+        await context.promise;
+    });
+
+    it('falls back from unresolved rich context after two seconds', async () => {
+        vi.useFakeTimers();
+        try {
+            const context = createDeferred<FeedbackContextData>();
+            collectContext.mockReturnValueOnce(context.promise);
+            renderProvider();
+
+            await act(async () => {
+                await controller?.reportProblem({ source: 'settings' });
+            });
+
+            const composer = composerCall()[0].props;
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(2_000);
+            });
+
+            await expect(composer.pendingContext).resolves.toEqual(composer.draft.context);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('opens a shake composer without capturing a screenshot', async () => {
@@ -405,6 +481,26 @@ describe('FeedbackProvider reportProblem', () => {
         expect(message.type).toBe(FeedbackPromptToast);
         expect(message.props.source).toBe('screenshot');
         expect(options).toEqual(expect.objectContaining({ autoDismiss: false }));
+    });
+
+    it('presents the screenshot prompt without waiting for rich context', async () => {
+        const context = createDeferred<FeedbackContextData>();
+        collectContext.mockReturnValueOnce(context.promise);
+        renderProvider();
+
+        await act(async () => {
+            await controller?.reportProblem({ source: 'screenshot' });
+        });
+
+        expect(captureScreenshot).toHaveBeenCalledTimes(1);
+        expect(modalHost.presentToast).toHaveBeenCalledTimes(1);
+
+        const [prompt] = toastCall();
+        act(() => prompt.props.onReport());
+        expect(composerCall()[0].props.pendingContext).toBeDefined();
+
+        context.resolve(CONTEXT);
+        await context.promise;
     });
 
     it('defers a screenshot-free shake while busy and offers it when idle', async () => {
@@ -520,7 +616,8 @@ describe('FeedbackProvider reportProblem', () => {
         expect(modalHost.openModal).toHaveBeenCalledTimes(1);
         const draft = composerCall()[0].props.draft;
         expect(draft.screenshot).toBe(SCREENSHOT);
-        expect(draft.context).toBe(CONTEXT);
+        expect(draft.context).toEqual({ currentRoute: '/', recentRoutes: [] });
+        await expect(composerCall()[0].props.pendingContext).resolves.toBe(CONTEXT);
         expect(draft.source).toBe('screenshot');
     });
 
@@ -875,6 +972,26 @@ describe('FeedbackProvider reportProblem', () => {
 });
 
 describe('FeedbackProvider shareIdea', () => {
+    it('opens the idea composer before rich context collection resolves', async () => {
+        const context = createDeferred<FeedbackContextData>();
+        collectContext.mockReturnValueOnce(context.promise);
+        renderProvider();
+
+        await act(async () => {
+            await controller?.shareIdea();
+        });
+
+        expect(modalHost.openModal).toHaveBeenCalledTimes(1);
+        expect(composerCall()[0].props.draft.context).toEqual({
+            currentRoute: '/',
+            recentRoutes: [],
+        });
+        expect(composerCall()[0].props.pendingContext).toBeDefined();
+
+        context.resolve(CONTEXT);
+        await context.promise;
+    });
+
     it('keeps concurrent explicit idea captures single-flight', async () => {
         const context = createDeferred<FeedbackContextData>();
         collectContext.mockReturnValueOnce(context.promise);

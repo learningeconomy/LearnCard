@@ -222,9 +222,10 @@ export interface SentryTransport {
 // ---------------------------------------------------------------------------
 
 let _transport: SentryTransport | null = null; // null = dev mode, no Sentry forwarding
-// Keep remote reporting fail-closed until the authenticated-adult eligibility
-// gate explicitly configures this module.
-let _bugReportsEnabled = false;
+// Preserve the pre-LC-2086 crash-reporting default for signed-out, onboarding,
+// and preferences-loading surfaces. Feedback diagnostics have a separate,
+// fail-closed gate below.
+let _bugReportsEnabled = true;
 let _tenantId: string | undefined; // included as a Sentry tag on every captured event
 let _diagnosticIdentity: string | null | undefined;
 
@@ -236,6 +237,7 @@ export const configureSentryTransport = (t: SentryTransport | null): void => {
 /** Called by useSentryIdentify whenever preferences / tenantId change. Pass null to clear tenantId (e.g. on logout). */
 export const configureLoggerContext = (opts: {
     bugReportsEnabled?: boolean;
+    diagnosticLogCollectionEnabled?: boolean;
     tenantId?: string | null;
     /** Opaque owner key for the process-global diagnostic buffer. */
     diagnosticIdentity?: string | null;
@@ -248,8 +250,9 @@ export const configureLoggerContext = (opts: {
     }
     if (opts.bugReportsEnabled !== undefined) {
         _bugReportsEnabled = opts.bugReportsEnabled;
-        // Disabling bug reports also stops and clears the diagnostic buffer.
-        setDiagnosticLogCollectionEnabled(_bugReportsEnabled);
+    }
+    if (opts.diagnosticLogCollectionEnabled !== undefined) {
+        setDiagnosticLogCollectionEnabled(opts.diagnosticLogCollectionEnabled);
     }
     if (opts.tenantId !== undefined) _tenantId = opts.tenantId ?? undefined;
 };

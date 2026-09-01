@@ -2719,6 +2719,7 @@
             "whatWeSend": "What we’ll send",
             "bugDisclosure": "Your message, optional screenshot, app and device details, recent screens, and sanitized logs.",
             "ideaDisclosure": "Your idea, optional screenshot, current screen, app version, and tenant.",
+            "ideaDisclosureWithoutScreenshot": "Your idea, current screen, app version, and tenant.",
             "cancel": "Cancel",
             "sendReport": "Send Report",
             "sendingReport": "Sending Report...",

@@ -76,7 +76,7 @@ describe('createFeedbackTransport', () => {
     });
 
     const createAnalyticsAdapter = (
-        overrides: { isReady?: boolean; providerName?: string } = {}
+        overrides: { isReady?: boolean; providerName?: string; bugEligible?: boolean } = {}
     ) => ({
         // Deliberately present as an extra property: the feedback adapter no
         // longer exposes identified tracking, and the spy proves it stays unused.
@@ -84,6 +84,7 @@ describe('createFeedbackTransport', () => {
         submitFeedbackIdea,
         isReady: true,
         providerName: 'posthog',
+        bugEligible: true,
         ...overrides,
     });
 
@@ -112,6 +113,25 @@ describe('createFeedbackTransport', () => {
 
         expect(submitFeedbackIdea).toHaveBeenCalledTimes(1);
         expect(submitSentryFeedback).not.toHaveBeenCalled();
+    });
+
+    it('does not send an idea screenshot to Sentry without bug-report consent', async () => {
+        const transport = createFeedbackTransport(createAnalyticsAdapter({ bugEligible: false }));
+
+        await expect(transport.submit(ideaReport)).resolves.toEqual({});
+
+        expect(submitFeedbackIdea).toHaveBeenCalledTimes(1);
+        expect(submitSentryFeedback).not.toHaveBeenCalled();
+    });
+
+    it('does not fail or duplicate the accepted idea when its screenshot sidecar fails', async () => {
+        vi.mocked(submitSentryFeedback).mockRejectedValueOnce(new Error('sentry offline'));
+        const transport = createFeedbackTransport(createAnalyticsAdapter());
+
+        await expect(transport.submit(ideaReport)).resolves.toEqual({});
+
+        expect(submitFeedbackIdea).toHaveBeenCalledTimes(1);
+        expect(submitSentryFeedback).toHaveBeenCalledTimes(1);
     });
 
     it('omits appVersion when the report has no app context', async () => {

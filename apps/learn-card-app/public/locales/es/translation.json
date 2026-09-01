@@ -2719,6 +2719,7 @@
             "whatWeSend": "Qué enviaremos",
             "bugDisclosure": "Tu mensaje, una captura opcional, datos de la aplicación y del dispositivo, pantallas recientes y registros depurados.",
             "ideaDisclosure": "Tu idea, una captura opcional, la pantalla actual, la versión de la aplicación y la organización.",
+            "ideaDisclosureWithoutScreenshot": "Tu idea, la pantalla actual, la versión de la aplicación y la organización.",
             "cancel": "Cancelar",
             "sendReport": "Enviar informe",
             "sendingReport": "Enviando informe...",

@@ -6,7 +6,7 @@
  * automatic listener wiring (shake / iOS screenshot observers).
  */
 
-export { FeedbackProvider, useFeedback } from './FeedbackContext';
+export { FeedbackProvider, useFeedback, useFeedbackOptional } from './FeedbackContext';
 export type {
     CollectFeedbackContextForKind,
     FeedbackController,
