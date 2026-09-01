@@ -14,7 +14,7 @@ const HIGH_IMPACT_LEVELS = new Set(['serious', 'critical']);
 // Scan explicitly against WCAG 2.0/2.1/2.2 A+AA (plus axe best-practices) so
 // the report surfaces WCAG 2.2-specific rules (e.g. target-size) instead of
 // axe's narrower defaults.
-const WCAG_TAGS = [
+const AXE_SCAN_TAGS = [
     'wcag2a',
     'wcag2aa',
     'wcag21a',
