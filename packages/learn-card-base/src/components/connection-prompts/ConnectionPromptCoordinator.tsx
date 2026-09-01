@@ -27,7 +27,7 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
 }) => {
     const isLoggedIn = useIsLoggedIn();
     const switchedDid = switchedProfileStore.use.switchedDid();
-    const viewerKey = isLoggedIn ? switchedDid ?? 'primary-profile' : null;
+    const viewerKey = isLoggedIn ? (switchedDid ?? 'primary-profile') : null;
     const copyRef = useRef(copy);
     copyRef.current = copy;
     const previousViewerKeyRef = useRef(viewerKey);
@@ -38,7 +38,12 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
     const ownedModalTokenRef = useRef<ModalInstanceToken | null>(null);
     const resolvedRef = useRef(false);
     const actionInFlightRef = useRef(false);
-    const { data: pendingPrompts = [] } = usePendingConnectionPrompts(isLoggedIn);
+    const {
+        data: pendingPromptsData,
+        isSuccess: pendingPromptsQueryIsSuccess,
+        isFetching: pendingPromptsQueryIsFetching,
+    } = usePendingConnectionPrompts(isLoggedIn);
+    const pendingPrompts = pendingPromptsData ?? [];
     const { mutateAsync: connectPrompt } = useConnectWithConnectionPromptMutation();
     const { mutateAsync: skipPrompt } = useSkipConnectionPromptMutation();
     const { dismissToast } = useToast();
@@ -93,6 +98,32 @@ export const ConnectionPromptCoordinator: React.FC<ConnectionPromptCoordinatorPr
         resolvedRef.current = true;
         actionInFlightRef.current = false;
     }, [modals]);
+
+    useEffect(() => {
+        const activePromptId = activePromptIdRef.current;
+        const ownedModalToken = ownedModalTokenRef.current;
+
+        if (
+            pendingPromptsData === undefined ||
+            !pendingPromptsQueryIsSuccess ||
+            pendingPromptsQueryIsFetching ||
+            activePromptId === null ||
+            ownedModalToken === null ||
+            actionInFlightRef.current ||
+            pendingPromptsData.some(prompt => prompt.promptId === activePromptId)
+        ) {
+            return;
+        }
+
+        resolvedPromptIdsRef.current.add(activePromptId);
+        resolvedRef.current = true;
+        forceCloseModalByToken(ownedModalToken);
+    }, [
+        forceCloseModalByToken,
+        pendingPromptsData,
+        pendingPromptsQueryIsFetching,
+        pendingPromptsQueryIsSuccess,
+    ]);
 
     useEffect(() => {
         if (
