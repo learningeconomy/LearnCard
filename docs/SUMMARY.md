@@ -93,7 +93,6 @@
 -   [LearnCard Wallet SDK](sdks/learncard-core/README.md)
     -   [Authentication](sdks/learncard-core/authentication.md)
     -   [Usage Examples](sdks/learncard-core/construction.md)
-    -   [SDK Reference](https://api.docs.learncard.com/docs/core/modules)
     -   [Plugin API Reference](sdks/learncard-core/writing-plugins.md)
     -   [Integration Strategies](sdks/learncard-core/architectural-patterns.md)
     -   [Deployment](sdks/learncard-core/production-deployment-guide.md)
