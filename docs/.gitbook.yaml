@@ -1,10 +1,14 @@
-root: ./docs/
+root: ./
 
 structure:
     readme: README.md
     summary: SUMMARY.md
 
 # Redirect manifest for the docs migration (URL inventory: scripts/docs-migration-map.csv).
+#
+# LOCATION: this file MUST live in the directory GitBook Git Sync is mapped to (the
+# "Project directory" in the space's Git Sync settings, shown as "GitBook (./docs)" in the
+# PR check name). A .gitbook.yaml at the repository root is silently ignored.
 #
 # HOW GITBOOK URLS WORK (this is why the manifest is large):
 #   A page's URL is <section-group-slug>/<parent-slug>/.../<page-slug>, derived from the

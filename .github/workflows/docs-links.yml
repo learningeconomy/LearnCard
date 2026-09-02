@@ -4,7 +4,7 @@ on:
     pull_request:
         paths:
             - 'docs/**'
-            - '.gitbook.yaml'
+            - 'docs/.gitbook.yaml'
             - 'scripts/check-docs-links.mjs'
             - 'scripts/docs-links-allowlist.json'
             - '.github/workflows/docs-links.yml'
@@ -13,7 +13,7 @@ on:
             - main
         paths:
             - 'docs/**'
-            - '.gitbook.yaml'
+            - 'docs/.gitbook.yaml'
             - 'scripts/check-docs-links.mjs'
             - 'scripts/docs-links-allowlist.json'
             - '.github/workflows/docs-links.yml'

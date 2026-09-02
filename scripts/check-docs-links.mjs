@@ -5,7 +5,7 @@
  * Checks:
  *   1. Every internal link in docs/**\/*.md resolves to an existing file.
  *   2. Every SUMMARY.md entry resolves to an existing file.
- *   3. Every redirect in .gitbook.yaml points at an existing destination file,
+ *   3. Every redirect in docs/.gitbook.yaml points at an existing destination file,
  *      and its source path does not shadow a live page (GitBook silently
  *      ignores redirects whose source still exists).
  *   4. No redirect chains (a redirect destination must not itself be redirected).
@@ -198,14 +198,29 @@ for (const file of mdFiles) {
     }
 }
 
-const GITBOOK_YAML = join(ROOT, '.gitbook.yaml');
+// .gitbook.yaml must live in the directory GitBook Git Sync is mapped to (docs/), not the
+// repo root — GitBook silently ignores a config outside the mapped directory.
+const GITBOOK_YAML = join(DOCS, '.gitbook.yaml');
 if (!existsSync(GITBOOK_YAML)) {
     console.error(
-        'Missing .gitbook.yaml at repo root — did it move? check-docs-links.mjs expects it there.'
+        'Missing docs/.gitbook.yaml — GitBook reads it from the mapped docs/ directory only.'
+    );
+    process.exit(1);
+}
+if (existsSync(join(ROOT, '.gitbook.yaml'))) {
+    console.error(
+        'Found .gitbook.yaml at repo root — GitBook ignores it there. Keep the single copy in docs/.'
     );
     process.exit(1);
 }
 const gitbookYaml = readFileSync(GITBOOK_YAML, 'utf8');
+const rootDecl = gitbookYaml.match(/^root:\s*(\S+)/m);
+if (rootDecl && !/^\.?\/?$/.test(rootDecl[1].replace(/\/$/, ''))) {
+    console.error(
+        `docs/.gitbook.yaml: root must be ./ (file already lives in docs/), got ${rootDecl[1]}`
+    );
+    process.exit(1);
+}
 const redirects = {};
 let inRedirects = false;
 for (const line of gitbookYaml.split('\n')) {
