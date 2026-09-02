@@ -10,13 +10,6 @@
         "tests": ["{projectRoot}/tests/**/*"]
     },
     "targets": {
-        "test": {
-            "executor": "nx:run-script",
-            "dependsOn": ["^build"],
-            "options": {
-                "script": "test"
-            }
-        },
         "test:e2e": {
             "executor": "nx:run-script",
             "dependsOn": ["^build"],

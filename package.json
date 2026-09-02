@@ -162,7 +162,8 @@
         "jspdf": "4.2.1",
         "swiper": "12.1.2",
         "@opentelemetry/core": "2.8.0",
-        "esbuild@>=0.27.3 <0.28.1": "0.28.1"
+        "esbuild@>=0.27.3 <0.28.1": "0.28.1",
+        "webpack": "5.105.4"
     },
     "packageManager": "bun@1.3.14",
     "lint-staged": {

@@ -25,7 +25,7 @@ describe('LearnCard App build environment', () => {
     });
 
     it('defines application build constants under Vitest', () => {
-        expect(buildEnvironment).toMatchObject({ MODE: 'test', DEV: false, PROD: false });
+        expect(buildEnvironment).toMatchObject({ MODE: 'test', DEV: true, PROD: false });
         expect(__APP_VERSION__).toBe('0.0.0-test');
     });
 });

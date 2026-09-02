@@ -3,6 +3,7 @@ import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'path';
 import { createVitestConfig, happyDomPreset } from '../../vitest.shared';
+import type { LearnCardAppEnvironment } from './src/config/buildEnvironment';
 
 const TEST_BUILD_ENVIRONMENT = {
     MODE: 'test',
@@ -11,9 +12,9 @@ const TEST_BUILD_ENVIRONMENT = {
     ANALYZE: false,
     CHOKIDAR_USEPOLLING: false,
     CHOKIDAR_INTERVAL: 1000,
-    DEV: false,
+    DEV: true,
     PROD: false,
-};
+} satisfies LearnCardAppEnvironment;
 
 export default createVitestConfig(happyDomPreset, {
     define: {

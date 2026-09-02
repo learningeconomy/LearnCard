@@ -13,7 +13,13 @@ import { setAnalyticsProvider as setSendCredentialFlowProvider } from '../helper
  * Lazily load and instantiate the analytics provider from the already validated TenantConfig.
  */
 async function loadProvider(): Promise<AnalyticsProvider> {
-    const config = getResolvedTenantConfig();
+    let config;
+
+    try {
+        config = getResolvedTenantConfig();
+    } catch {
+        return new NoopProvider();
+    }
     const providerName: AnalyticsProviderName = config.observability.analyticsProvider ?? 'noop';
     const posthogKey = config.observability.posthogKey;
     const posthogHost = config.observability.posthogHost;
