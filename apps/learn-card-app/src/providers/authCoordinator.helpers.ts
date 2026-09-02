@@ -27,6 +27,22 @@ export const shouldResetWalletOnStatus = (status: AuthStatus): boolean =>
     status !== 'ready' && !TRANSITIONAL_AUTH_STATUSES.has(status);
 
 /**
+ * Counts recovery methods deliberately configured by the user. The SSS strategy
+ * can synthesize an email entry for the primary sign-in address; only a verified
+ * secondary recovery email (identified by its masked value) counts here.
+ */
+export const countUserConfiguredRecoveryMethods = (
+    methods: Array<{ type: string }>,
+    maskedRecoveryEmail?: string | null
+): number => {
+    const nonEmailMethods = methods.filter(method => method.type !== 'email').length;
+    const hasExplicitRecoveryEmail =
+        !!maskedRecoveryEmail && methods.some(method => method.type === 'email');
+
+    return nonEmailMethods + (hasExplicitRecoveryEmail ? 1 : 0);
+};
+
+/**
  * Backfill auth-session identity into the stored current user.
  *
  * On a hard refresh the wallet is built via the private-key-first path before

@@ -31,6 +31,8 @@ interface RecoverySetupModalProps {
     onSetupEmailRecovery: () => Promise<void>;
     existingMethods: { type: string; createdAt: string }[];
     maskedRecoveryEmail?: string | null;
+    initialMethod?: RecoverySetupType;
+    onCompleted?: (method: RecoverySetupType) => void;
     onClose: () => void;
 }
 
@@ -43,6 +45,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onSetupEmailRecovery,
     existingMethods,
     maskedRecoveryEmail,
+    initialMethod,
+    onCompleted,
     onClose,
 }) => {
     const webAuthnSupported = isWebAuthnSupported();
@@ -62,6 +66,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     // Default to the first unconfigured method in priority order:
     // email > phrase > backup > passkey
     const [activeTab, setActiveTab] = useState<RecoverySetupType>(() => {
+        if (initialMethod && !isConfigured(initialMethod)) return initialMethod;
         if (!isConfigured('email')) return 'email';
         if (!isConfigured('phrase')) return 'phrase';
         if (!isConfigured('backup')) return 'backup';
@@ -118,6 +123,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             markConfigured('passkey');
             setSuccess(m['recovery.success.passkeySetup']());
             setShowUpdateForm(false);
+            onCompleted?.('passkey');
         } catch (e) {
             log.error('handlePasskeySetup error', e);
             setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
@@ -153,6 +159,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         setPhraseConfirmed(true);
         markConfigured('phrase');
         setSuccess(m['recovery.success.phraseSaved']());
+        onCompleted?.('phrase');
     };
 
     const handleBackupSetup = async () => {
@@ -228,6 +235,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         setBackupPassword('');
         setConfirmBackupPassword('');
         setShowUpdateForm(false);
+        onCompleted?.('backup');
     };
 
     const handleSendEmailCode = async () => {
@@ -281,6 +289,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             markConfigured('email');
             setSuccess(m['recovery.success.recoveryKeySent']());
             setShowUpdateForm(false);
+            onCompleted?.('email');
         } catch (e) {
             log.error('handleSetupEmailRecovery error', e);
             setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
