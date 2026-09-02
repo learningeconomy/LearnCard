@@ -1,9 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockCapacitor, mockGetResolvedTenantConfig } = vi.hoisted(() => ({
+const { mockCapacitor, mockEnvironment, mockGetResolvedTenantConfig } = vi.hoisted(() => ({
     mockCapacitor: {
         isNativePlatform: vi.fn(() => false),
         getPlatform: vi.fn(() => 'web'),
+    },
+    mockEnvironment: {
+        MODE: 'test',
+        DEV: false,
+        PROD: false,
+        VITE_APP_VERSION: undefined as string | undefined,
     },
     mockGetResolvedTenantConfig: vi.fn(),
 }));
@@ -12,8 +18,12 @@ vi.mock('@capacitor/core', () => ({ Capacitor: mockCapacitor }));
 vi.mock('../config/bootstrapTenantConfig', () => ({
     getResolvedTenantConfig: mockGetResolvedTenantConfig,
 }));
+vi.mock('../config/environment', () => ({ environment: mockEnvironment }));
 vi.mock('learn-card-base', () => ({
-    getLogger: () => (globalThis as any).mockLearnCardBaseLogger(),
+    getLogger: () =>
+        (
+            globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown }
+        ).mockLearnCardBaseLogger(),
 }));
 
 import { detectAnalyticsEnvironment, getSharedEventContext, newFlowId } from './sharedContext';
@@ -41,10 +51,8 @@ const setWebdriver = (value: boolean) => {
 
 describe('detectAnalyticsEnvironment', () => {
     beforeEach(() => {
-        // Vitest itself runs with MODE === 'test', which the detector
-        // (correctly) classifies as automation. Stub it to exercise the
-        // other branches.
-        vi.stubEnv('MODE', 'development');
+        mockEnvironment.MODE = 'development';
+        mockEnvironment.PROD = false;
         setWebdriver(false);
         mockCapacitor.isNativePlatform.mockReturnValue(false);
         mockGetResolvedTenantConfig.mockReturnValue({
@@ -54,12 +62,9 @@ describe('detectAnalyticsEnvironment', () => {
         });
     });
 
-    afterEach(() => {
-        vi.unstubAllEnvs();
-    });
-
     it('classifies the vitest runtime itself as test', () => {
-        vi.unstubAllEnvs();
+        mockEnvironment.MODE = 'test';
+
         expect(detectAnalyticsEnvironment()).toBe('test');
     });
 
@@ -71,7 +76,7 @@ describe('detectAnalyticsEnvironment', () => {
     it('classifies native production builds as production even on localhost', () => {
         setHostname('localhost');
         mockCapacitor.isNativePlatform.mockReturnValue(true);
-        vi.stubEnv('PROD', true);
+        mockEnvironment.PROD = true;
 
         expect(detectAnalyticsEnvironment()).toBe('production');
     });
@@ -104,11 +109,25 @@ describe('detectAnalyticsEnvironment', () => {
 
         expect(detectAnalyticsEnvironment()).toBe('development');
     });
+
+    it('builds shared context before tenant config resolves', () => {
+        mockGetResolvedTenantConfig.mockImplementation(() => {
+            throw new Error('not resolved');
+        });
+        setHostname('localhost');
+
+        expect(getSharedEventContext()).toMatchObject({
+            environment: 'development',
+            tenant_id: undefined,
+            platform: 'web',
+        });
+    });
 });
 
 describe('applyPostHogHygiene', () => {
     beforeEach(() => {
-        vi.stubEnv('MODE', 'development');
+        mockEnvironment.MODE = 'development';
+        mockEnvironment.PROD = false;
         setWebdriver(false);
         setHostname('learncard.app');
         mockCapacitor.isNativePlatform.mockReturnValue(false);
@@ -116,10 +135,6 @@ describe('applyPostHogHygiene', () => {
             tenantId: 'learncard',
             domain: 'learncard.app',
         });
-    });
-
-    afterEach(() => {
-        vi.unstubAllEnvs();
     });
 
     it('passes null through', () => {

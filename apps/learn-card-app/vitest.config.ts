@@ -4,7 +4,22 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'path';
 import { createVitestConfig, happyDomPreset } from '../../vitest.shared';
 
+const TEST_BUILD_ENVIRONMENT = {
+    MODE: 'test',
+    VITE_ENABLE_AUTH_DEBUG_WIDGET: false,
+    VITE_DOCKER_SOURCE: false,
+    ANALYZE: false,
+    CHOKIDAR_USEPOLLING: false,
+    CHOKIDAR_INTERVAL: 1000,
+    DEV: false,
+    PROD: false,
+};
+
 export default createVitestConfig(happyDomPreset, {
+    define: {
+        __APP_BUILD_ENV__: JSON.stringify(TEST_BUILD_ENVIRONMENT),
+        __APP_VERSION__: JSON.stringify('0.0.0-test'),
+    },
     plugins: [
         react(),
         tsconfigPaths({ root: '../../' }),

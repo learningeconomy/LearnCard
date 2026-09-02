@@ -13,6 +13,7 @@
  */
 
 import { Capacitor } from '@capacitor/core';
+import type { TenantConfig } from 'learn-card-base';
 
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { environment } from '../config/environment';
@@ -27,6 +28,14 @@ export interface SharedEventContext {
     platform: 'web' | 'ios' | 'android';
     [key: string]: unknown;
 }
+
+const getTenantConfig = (): TenantConfig | undefined => {
+    try {
+        return getResolvedTenantConfig();
+    } catch {
+        return undefined;
+    }
+};
 
 const isAutomatedAgent = (): boolean => {
     if (typeof navigator === 'undefined') return false;
@@ -51,9 +60,9 @@ export const detectAnalyticsEnvironment = (): AnalyticsEnvironment => {
 
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
-    const config = getResolvedTenantConfig();
-    const prodDomain = config.domain;
-    const devDomain = config.devDomain;
+    const config = getTenantConfig();
+    const prodDomain = config?.domain;
+    const devDomain = config?.devDomain;
 
     if (prodDomain && (hostname === prodDomain || hostname === `www.${prodDomain}`)) {
         return 'production';
@@ -104,7 +113,7 @@ const getPlatform = (): SharedEventContext['platform'] => {
  * cached so late TenantConfig resolution self-heals.
  */
 export const getSharedEventContext = (): SharedEventContext => {
-    const tenantId = getResolvedTenantConfig().tenantId;
+    const tenantId = getTenantConfig()?.tenantId;
     const version = environment.VITE_APP_VERSION ?? __APP_VERSION__;
 
     return {
