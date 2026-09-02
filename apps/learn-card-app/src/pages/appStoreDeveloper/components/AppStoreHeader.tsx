@@ -71,14 +71,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                         <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-0.5">
                             <button
                                 onClick={() => {
-                                    // Retain integration context when switching to Apps
-                                    if (currentIntegrationId) {
-                                        history.push(
-                                            `/app-store/developer/integrations/${currentIntegrationId}/apps`
-                                        );
-                                    } else {
-                                        history.push('/app-store/developer');
-                                    }
+                                    history.push('/app-store/developer');
                                 }}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                     isOnAppsPage
@@ -87,19 +80,18 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                                 }`}
                             >
                                 <Code2 className="w-4 h-4" />
-                                {m['developerPortal.components.appStoreHeader.apps']()}
+                                Your Apps
                             </button>
 
                             <button
-                                onClick={goToIntegrationHub}
+                                onClick={() => history.push('/app-store/developer/guides')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                     isOnBuildPage
                                         ? 'bg-white text-gray-800 shadow-sm'
                                         : 'text-gray-500 hover:text-gray-700'
                                 }`}
                             >
-                                <Hammer className="w-4 h-4" />
-                                {m['developerPortal.components.appStoreHeader.build']()}
+                                <Hammer className="w-4 h-4" />+ New
                             </button>
                         </div>
 
@@ -107,16 +99,9 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                         <button
                             onClick={() => {
                                 if (isOnBuildPage) {
-                                    // Retain integration context when switching to Apps
-                                    if (currentIntegrationId) {
-                                        history.push(
-                                            `/app-store/developer/integrations/${currentIntegrationId}/apps`
-                                        );
-                                    } else {
-                                        history.push('/app-store/developer');
-                                    }
+                                    history.push('/app-store/developer');
                                 } else {
-                                    goToIntegrationHub();
+                                    history.push('/app-store/developer/guides');
                                 }
                             }}
                             className="sm:hidden flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"

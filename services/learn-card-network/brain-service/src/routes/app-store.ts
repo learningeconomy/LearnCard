@@ -192,6 +192,9 @@ const ALLOWED_IMAGE_DOMAINS = [
     'example.com', // Used in tests
 ];
 
+// Max serialized size for a submitted app manifest, to bound storage/compute cost (DoS guard)
+const MAX_APP_MANIFEST_JSON_LENGTH = 256_000;
+
 // JSON validation helper
 const isValidJson = (str: string): boolean => {
     try {
@@ -851,16 +854,6 @@ export const handleSendCredentialEvent = async (
 
     try {
         const ownerDidOverride = listing.slug ? getAppDidWeb(ctx.domain, listing.slug) : undefined;
-        console.log('[appEvent] Issuing credential via SA', {
-            integrationOwner: integrationOwner.profileId,
-            saName: sa.relationship.name,
-            saDid: sa.relationship.did,
-            saEndpoint: sa.signingAuthority.endpoint,
-            ownerDidOverride,
-            domain: ctx.domain,
-            boostUri,
-            templateAlias,
-        });
         credential = await issueCredentialWithSigningAuthority(
             issuer,
             unsignedVc,
@@ -871,12 +864,10 @@ export const handleSendCredentialEvent = async (
         );
     } catch (e) {
         const errMsg = e instanceof Error ? e.message : String(e);
-        console.error('[appEvent] Failed to issue VC with signing authority:', {
+        console.error('[appEvent] Failed to issue VC with signing authority', {
+            listingId,
+            hasAppDid: Boolean(listing.slug),
             error: errMsg,
-            stack: e instanceof Error ? e.stack : undefined,
-            integrationOwner: integrationOwner.profileId,
-            saName: sa.relationship.name,
-            saEndpoint: sa.signingAuthority.endpoint,
         });
         perf.done({ listingId, boostUri, error: errMsg });
         throw new TRPCError({
@@ -2100,6 +2091,13 @@ export const appStoreRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             await verifyIntegrationOwnership(input.integrationId, ctx.user.profile.profileId);
 
+            if (JSON.stringify(input.manifest).length > MAX_APP_MANIFEST_JSON_LENGTH) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: `App manifest exceeds maximum size of ${MAX_APP_MANIFEST_JSON_LENGTH} bytes`,
+                });
+            }
+
             const latestManifestVersion = await getLatestManifestVersionForIntegration(
                 input.integrationId
             );
@@ -2117,9 +2115,11 @@ export const appStoreRouter = t.router({
                 };
             }
 
+            // Version is computed atomically inside createAppManifestVersion (single Cypher
+            // statement: coalesce(max(existing.version), 0) + 1 + CREATE), so concurrent
+            // submits for the same integration cannot race to the same version number.
             const createdManifestVersion = await createAppManifestVersion({
                 integrationId: input.integrationId,
-                version: (latestManifestVersion?.version ?? 0) + 1,
                 manifestHash,
                 manifest: input.manifest,
                 status: 'draft',
@@ -2271,7 +2271,7 @@ export const appStoreRouter = t.router({
                 tags: ['App Store'],
                 summary: 'Apply App Manifest Version',
                 description:
-                    'Mark an app manifest version active and idempotently reconcile derived listing entities.',
+                    'Mark an app manifest version active and idempotently reconcile derived listing entities. Note: requiresReview on the manifest diff is advisory only (surfaced to clients for review UX); this route does not currently gate on it.',
             },
             requiredScope: 'app-store:write',
         })

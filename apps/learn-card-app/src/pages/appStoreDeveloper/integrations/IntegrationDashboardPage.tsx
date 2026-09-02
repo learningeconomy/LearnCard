@@ -8,7 +8,7 @@ import * as m from '../../../paraglide/messages.js';
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
 import { useDeveloperPortalContext } from '../DeveloperPortalContext';
-import { UnifiedIntegrationDashboard } from '../dashboards';
+import { DashboardRouter } from '../dashboards/DashboardRouter';
 
 const IntegrationDashboardPage: React.FC = () => {
     const history = useHistory();
@@ -47,9 +47,7 @@ const IntegrationDashboardPage: React.FC = () => {
                         <div className="flex items-center justify-center min-h-[400px]">
                             <div className="text-center">
                                 <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                                <p className="text-sm text-gray-500 mt-3">
-                                    {m['developerPortal.shell.loadingIntegration']()}
-                                </p>
+                                <p className="text-sm text-gray-500 mt-3">Loading app...</p>
                             </div>
                         </div>
                     </div>
@@ -71,11 +69,12 @@ const IntegrationDashboardPage: React.FC = () => {
                         <div className="flex items-center justify-center min-h-[400px]">
                             <div className="text-center max-w-md">
                                 <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                                    {m['developerPortal.shell.integrationNotFound']()}
+                                    App not found
                                 </h2>
 
                                 <p className="text-gray-500 mb-6">
-                                    {m['developerPortal.shell.integrationNotFoundDescription']()}
+                                    The app you are looking for does not exist or you do not have
+                                    access to it.
                                 </p>
 
                                 <button
@@ -107,12 +106,10 @@ const IntegrationDashboardPage: React.FC = () => {
                         className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        <span className="text-sm font-medium">
-                            {m['developerPortal.shell.backToProjects']()}
-                        </span>
+                        <span className="text-sm font-medium">Back to Apps</span>
                     </button>
 
-                    <UnifiedIntegrationDashboard integration={currentIntegration} />
+                    <DashboardRouter integration={currentIntegration} />
                 </div>
             </IonContent>
         </IonPage>

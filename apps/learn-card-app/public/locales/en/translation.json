@@ -4027,8 +4027,8 @@
             "title": "Developer Portal",
             "loading": "Loading...",
             "loadingProjects": "Loading projects...",
-            "loadingIntegration": "Loading integration...",
-            "loadingIntegrations": "Loading integrations...",
+            "loadingIntegration": "Loading project...",
+            "loadingIntegrations": "Loading projects...",
             "betaTitle": "Developer Portal Beta",
             "betaDescription": "Early access — features may change",
             "betaBadge": "Beta",
@@ -4045,11 +4045,11 @@
             "noGuideSelected": "No guide selected",
             "newProjectPlaceholder": "New project name...",
             "createProject": "Create Project",
-            "integrationNotFound": "Integration Not Found",
+            "integrationNotFound": "Project Not Found",
             "integrationNotFoundDescription": "The integration you're looking for doesn't exist or you don't have access to it.",
             "backToApps": "Back to Apps",
             "backToProjects": "Back to Projects",
-            "integrationNotFoundSimple": "Integration not found",
+            "integrationNotFoundSimple": "Project not found",
             "statusSetupRequired": "Setup Required",
             "statusActive": "Active",
             "statusPaused": "Paused",
@@ -4060,18 +4060,18 @@
             "continueSetup": "Continue Setup",
             "openDashboard": "Open Dashboard",
             "idLabel": "ID:",
-            "myIntegrations": "My Integrations",
-            "newIntegration": "New Integration",
-            "createFirstIntegration": "Create Your First Integration",
-            "emptyIntegrationsDescription": "Set up an integration to start issuing verifiable credentials from your platform. We'll guide you through every step.",
-            "createIntegration": "Create Integration",
-            "integrationName": "Integration Name",
+            "myIntegrations": "My Projects",
+            "newIntegration": "New Project",
+            "createFirstIntegration": "Create Your First Project",
+            "emptyIntegrationsDescription": "Set up a project to start issuing verifiable credentials from your platform. We'll guide you through every step.",
+            "createIntegration": "Create Project",
+            "integrationName": "Project Name",
             "integrationNamePlaceholder": "e.g., AARP Skills Builder",
             "creating": "Creating...",
-            "yourIntegrations": "Your Integrations",
+            "yourIntegrations": "Your Projects",
             "integrationCount": "{{count}} integration",
             "quickActions": "Quick Actions",
-            "integrationGuides": "Integration Guides",
+            "integrationGuides": "Project Guides",
             "stepByStepTutorials": "Step-by-step tutorials",
             "apiDocumentation": "API Documentation",
             "fullReferenceDocs": "Full reference docs",
@@ -4216,9 +4216,9 @@
                 "betaPreviewNotice": "Beta Preview Notice",
                 "betaPreviewDesc": "This is pre-release functionality. Features may change, and you may encounter bugs. Your feedback is valuable!",
                 "yourAccessIncludes": "Your access includes:",
-                "integrationDashboard": "Integration dashboard",
+                "integrationDashboard": "Project dashboard",
                 "apiTokenManagement": "API token management",
-                "allIntegrationGuides": "All integration guides",
+                "allIntegrationGuides": "All project guides",
                 "otherGuidesLocked": "Other guides (locked)",
                 "letsGo": "Let's Go!",
                 "feedbackContact": "support@learncard.com",
@@ -4309,7 +4309,7 @@
                 "loading": "Loading...",
                 "newProject": "New Project",
                 "add": "Add",
-                "integrationNamePlaceholder": "Integration name...",
+                "integrationNamePlaceholder": "Project name...",
                 "selectProject": "Select Project"
             },
             "imageUpload": {
@@ -4318,17 +4318,17 @@
                 "uploaded": "Uploaded"
             },
             "integrationSelector": {
-                "selectIntegration": "Select Integration",
+                "selectIntegration": "Select Project",
                 "noProjectsYet": "No projects yet. Create one to get started.",
-                "createNewIntegration": "Create New Integration",
-                "integrationNamePlaceholder": "Integration name...",
+                "createNewIntegration": "Create New Project",
+                "integrationNamePlaceholder": "Project name...",
                 "cancel": "Cancel",
                 "create": "Create"
             },
             "launchConfigStep": {
                 "title": "Launch Configuration",
                 "description": "Configure the technical details for your integration",
-                "viewIntegrationGuide": "View integration guide",
+                "viewIntegrationGuide": "View project guide",
                 "needHelpIntegrating": "Need help integrating?",
                 "needHelpIntegratingDesc": "View step-by-step developer guide with code examples",
                 "embedUrl": "Embed URL",
@@ -4355,9 +4355,9 @@
                 "writeAccess": "Write Access",
                 "noWritePermissions": "No write permissions requested",
                 "selectContractToView": "Select a contract to view its permissions",
-                "serverToServer": "Server-to-Server Integration",
+                "serverToServer": "Server-to-Server Project",
                 "serverToServerDesc": "Use the Universal Inbox API to issue credentials directly from your server. No additional configuration needed — see the integration guide for setup steps.",
-                "aiTutorIntegration": "AI Tutor Integration",
+                "aiTutorIntegration": "AI Tutor Project",
                 "aiTutorIntegrationDesc": "AI Tutor apps let users select or create learning topics, then launch your tutor app with the topic and user DID for personalized sessions.",
                 "aiTutorUrl": "AI Tutor URL",
                 "aiTutorUrlPlaceholder": "https://yourtutor.com",
@@ -4368,7 +4368,7 @@
                 "aiTutorStep3": "User enters or selects a learning topic",
                 "aiTutorStep4": "App opens with ?did=...&topic=...",
                 "configPreview": "Configuration Preview",
-                "testYourIntegration": "Test Your Integration",
+                "testYourIntegration": "Test Your Project",
                 "testYourIntegrationDesc": "Preview your app and validate partner-connect API calls",
                 "previewApp": "Preview App"
             },
@@ -4509,14 +4509,14 @@
         },
         "integrationGuide": {
             "panel": {
-                "title": "Integration Guide",
+                "title": "Project Guide",
                 "subtitle": "Step-by-step developer guide",
-                "iframeTitle": "Embedded Iframe Integration",
-                "consentTitle": "Consent Flow Integration",
-                "serverTitle": "Server Headless Integration",
-                "directLinkTitle": "Direct Link Integration",
-                "aiTutorTitle": "AI Tutor Integration",
-                "comingSoon": "Integration guide coming soon for this launch type."
+                "iframeTitle": "Embedded Iframe Project",
+                "consentTitle": "Consent Flow Project",
+                "serverTitle": "Server Headless Project",
+                "directLinkTitle": "Direct Link Project",
+                "aiTutorTitle": "AI Tutor Project",
+                "comingSoon": "Project guide coming soon for this launch type."
             },
             "common": {
                 "step": "Step",
@@ -4553,7 +4553,7 @@
                 "scopePermissions": "Scope / Permissions",
                 "createToken": "Create Token",
                 "creating": "Creating...",
-                "createdFromGuide": "Created from Integration Guide",
+                "createdFromGuide": "Created from Project Guide",
                 "createdSuccess": "API Token created successfully",
                 "createdFailed": "Failed to create API Token",
                 "copied": "API Token copied to clipboard",
@@ -4701,7 +4701,7 @@
             "wizard": {
                 "title": "Course Catalog Setup",
                 "allGuides": "All Guides",
-                "loadingIntegration": "Loading integration...",
+                "loadingIntegration": "Loading project...",
                 "failedToLoad": "Failed to load integration",
                 "failedToGoLive": "Failed to go live. Please try again."
             },
@@ -4723,7 +4723,7 @@
                     "description": "Define your credential schemas"
                 },
                 "step5": {
-                    "title": "Integration",
+                    "title": "Project",
                     "description": "Choose how to connect"
                 },
                 "step6": {
@@ -4891,7 +4891,7 @@
                 "csvDynamicFieldsCount": "+ {count} dynamic fields"
             },
             "integrationMethod": {
-                "title": "Choose Your Integration Method",
+                "title": "Choose Your Project Method",
                 "description": "How will your system communicate with LearnCard? We recommend the REST API for full programmatic control over credential issuance.",
                 "restApi": "REST API",
                 "fullControl": "Full control",
@@ -4906,7 +4906,7 @@
                 "featureNoIntegration": "No technical integration needed",
                 "featureMigration": "Great for initial migration",
                 "featureTemplateDownload": "Template download available",
-                "webhook": "Webhook Integration",
+                "webhook": "Webhook Project",
                 "realtimeAutomated": "Real-time, automated",
                 "webhookDesc": "Your external system sends events to LearnCard when courses are completed. Credentials are issued automatically.",
                 "featureRealtime": "Real-time credential issuance",
@@ -5072,7 +5072,7 @@
                 "configSummary": "Configuration Summary",
                 "project": "Project",
                 "issuer": "Issuer",
-                "integration": "Integration",
+                "integration": "Project",
                 "templates": "Templates",
                 "issuable": "{{count}} issuable",
                 "master": "{{count}} master",
@@ -5102,7 +5102,7 @@
                 "back": "Back",
                 "continueToGoLive": "Continue to Go Live",
                 "logo": "Logo",
-                "apiIntegration": "API Integration",
+                "apiIntegration": "API Project",
                 "csvUpload": "CSV Upload"
             },
             "production": {
@@ -5112,7 +5112,7 @@
                 "checklistSigning": "Signing authority configured",
                 "checklistBranding": "Branding & profile set up",
                 "checklistTemplates": "Credential templates created",
-                "checklistIntegration": "Integration code configured",
+                "checklistIntegration": "Project code configured",
                 "whatHappens": "What happens when you go live?",
                 "whatHappens1": "Your integration status changes from \"setup\" to \"active\"",
                 "whatHappens2": "API calls will issue real credentials that recipients can store in their wallets",
@@ -5594,7 +5594,7 @@
                         "peerBadgesDesc": "Peer Badges: Templates users can send to each other via initiateTemplateIssue()"
                     },
                     "integrationCode": {
-                        "title": "Your Integration Code",
+                        "title": "Your Project Code",
                         "templatesConfigured": "template(s) configured",
                         "llmReady": "LLM-Ready: Copy this code and paste it into an AI assistant (like ChatGPT or Claude) along with your requirements. The @llm-config section contains all your template URIs and settings.",
                         "copied": "Copied!",
@@ -5718,7 +5718,7 @@
                     }
                 },
                 "integrationCode": {
-                    "title": "Integration Code",
+                    "title": "Project Code",
                     "description": "Copy boost URIs and generate integration code",
                     "noTemplatesTitle": "No templates yet",
                     "noTemplatesDesc": "Create templates first to get integration code",
@@ -5864,7 +5864,7 @@
                     "saveConfiguration": "Save Configuration"
                 },
                 "consentFlowCode": {
-                    "title": "Integration Code",
+                    "title": "Project Code",
                     "description": "Code snippets and configuration for your consent flow integration",
                     "consentUrl": {
                         "title": "Consent Redirect URL",
@@ -5890,7 +5890,7 @@
                     "settings": {
                         "title": "Settings",
                         "desc": "View and edit your integration configuration",
-                        "integrationId": "Integration ID",
+                        "integrationId": "Project ID",
                         "contractUri": "Contract URI",
                         "callbackUrl": "Callback URL (returnTo)",
                         "templates": "Templates",
@@ -6263,7 +6263,7 @@
                     "createdDate": "Created {{date}}",
                     "revokedTokens": "Revoked Tokens",
                     "revoked": "Revoked",
-                    "tokenCreatedFrom": "Created from Integration Dashboard"
+                    "tokenCreatedFrom": "Created from Project Dashboard"
                 },
                 "analytics": {
                     "title": "Analytics",
@@ -6306,7 +6306,7 @@
                     "noContracts": "No contracts configured",
                     "noContractsDesc": "Contracts are configured when you enable features like \"Request Data Consent\" or \"Issue Credentials (Sync Mode)\" in the setup wizard.",
                     "howToAddTitle": "How to add a contract:",
-                    "howToAddStep1": "Go to the Integration Hub",
+                    "howToAddStep1": "Go to the Project Hub",
                     "howToAddStep2": "Select \"Request Data Consent\" feature",
                     "howToAddStep3": "Configure a ConsentFlow contract",
                     "contractUri": "Contract URI:",
@@ -6341,7 +6341,7 @@
                 },
                 "templates": {
                     "footnote": "See the Code tab for send examples using your template URIs.",
-                    "projectName": "Integration"
+                    "projectName": "Project"
                 }
             },
             "loading": "Loading...",
@@ -6369,10 +6369,10 @@
             },
             "subtitle": {
                 "issueCredentials": "Issue Credentials Dashboard",
-                "embed": "Embed Integration Dashboard",
+                "embed": "Embed Project Dashboard",
                 "consentFlow": "Consent Flow Dashboard",
                 "courseCatalog": "Course Catalog Dashboard",
-                "default": "Integration Dashboard"
+                "default": "Project Dashboard"
             },
             "stats": {
                 "connections": "Connections",
@@ -6507,8 +6507,8 @@
                     "nameLabel": "Name your project",
                     "namePlaceholder": "e.g. My Awesome App"
                 },
-                "badge": "Integration Guides",
-                "heading": "Build Your Integration",
+                "badge": "Project Guides",
+                "heading": "Build Your Project",
                 "selectDescription": "Select a project to get started, or browse the available guides below.",
                 "projectCount": "You have {{count}} projects",
                 "projectsChoose": "Choose a project to continue building.",
@@ -6539,8 +6539,8 @@
                 "readyToActivate": "Ready to activate",
                 "goLive": "Go Live",
                 "activating": "Activating...",
-                "noIntegration": "Please select an integration from the header dropdown to continue.",
-                "noIntegrationToast": "No integration selected",
+                "noIntegration": "Please select a project from the header dropdown to continue.",
+                "noIntegrationToast": "No project selected",
                 "failedToast": "Failed to activate integration. Please try again."
             },
             "stepProgress": {
@@ -6669,7 +6669,7 @@
                     "designYourCredential": "Design Your Credential",
                     "credentialReady": "Credential Ready",
                     "edit": "Edit",
-                    "integrationCode": "Integration Code",
+                    "integrationCode": "Project Code",
                     "signingAuthority": "Signing Authority",
                     "consentFlowContract": "Consent Flow Contract",
                     "consentFlowDescription": "Create a consent contract that requests 'write' permission to sync credentials to the user's wallet.",
@@ -6704,7 +6704,7 @@
                     "appListingRequired": "App Listing Required",
                     "appListingRequiredDesc": "To create and manage boost templates, select an integration and app listing above.",
                     "useInYourApp": "Use in your app:",
-                    "advancedServerTitle": "Advanced: Server-Side Integration",
+                    "advancedServerTitle": "Advanced: Server-Side Project",
                     "advancedServerDesc": "Retrieve templates programmatically from your backend",
                     "advancedServerInfo": "Use this server-side function to dynamically retrieve all boost templates for your app listing. This is useful for building template pickers or syncing templates to your database.",
                     "serverSideCode": "Server-side code (Node.js/TypeScript):",
@@ -6884,15 +6884,15 @@
                     "templateBuilderDesc": "Create and manage credential templates for your embedded app",
                     "hideBuilder": "Hide Builder",
                     "openBuilder": "Open Builder",
-                    "selectIntegration": "1. Select Integration",
+                    "selectIntegration": "1. Select Project",
                     "selectAppListing": "2. Select App Listing",
-                    "noIntegrations": "No integrations found",
+                    "noIntegrations": "No projects found",
                     "noAppListings": "No app listings for this integration",
-                    "loadingIntegrations": "Loading integrations...",
+                    "loadingIntegrations": "Loading projects...",
                     "loadingAppListings": "Loading app listings...",
-                    "newIntegration": "New Integration",
+                    "newIntegration": "New Project",
                     "newAppListing": "New App Listing",
-                    "integrationName": "Integration name",
+                    "integrationName": "Project name",
                     "appName": "App name",
                     "create": "Create",
                     "cancel": "Cancel",
@@ -6918,7 +6918,7 @@
                     "reasonLabel": "Why do you need it? (shown to user)",
                     "reasonPlaceholder": "e.g., To verify your qualifications for this role",
                     "reasonHint": "A clear reason builds trust and improves sharing rates",
-                    "integrationCode": "Integration Code",
+                    "integrationCode": "Project Code",
                     "howItWorks": "How it works",
                     "howItWorksStep1": "Your app requests credentials matching the title",
                     "howItWorksStep2": "User sees which credentials match and selects which to share",
@@ -6968,7 +6968,7 @@
                     "description": "Navigate users to any LearnCard screen directly from your app. Select a category and feature to configure.",
                     "selectFeatures": "Select Features",
                     "configureParameters": "Configure Parameters",
-                    "integrationCode": "Integration Code",
+                    "integrationCode": "Project Code",
                     "tips": "Tips",
                     "tip1": "launchFeature navigates users to any LearnCard screen",
                     "tip2": "Parameters are passed as URL params or path segments",
@@ -7008,7 +7008,7 @@
                     "seeYourCode": "See Your Code"
                 },
                 "yourApp": {
-                    "title": "Your Integration Code",
+                    "title": "Your Project Code",
                     "description": "Here's your complete integration code with {{count}} feature configured.",
                     "description_plural": "Here's your complete integration code with {{count}} features configured.",
                     "appSummary": "App Summary",
@@ -7029,13 +7029,13 @@
                     "consentFlowAutoFilled": "Auto-filled from your Request Data Consent setup.",
                     "saveConfig": "Save Configuration",
                     "configSaved": "Changes will be saved to your app listing",
-                    "testIntegration": "Test Your Integration",
+                    "testIntegration": "Test Your Project",
                     "testIntegrationDesc": "Preview your app and validate partner-connect API calls",
                     "previewApp": "Preview App",
-                    "completeIntegrationCode": "Complete Integration Code",
+                    "completeIntegrationCode": "Complete Project Code",
                     "copyAll": "Copy All",
                     "copied": "Copied!",
-                    "integrationTips": "Integration Tips",
+                    "integrationTips": "Project Tips",
                     "tip1": "Replace all TODO placeholders with your actual values",
                     "tip2": "Server-side code (in comments) should run on YOUR server, not in the embedded app",
                     "tip3": "Store sensitive values (seeds, API keys) in environment variables",
@@ -7056,7 +7056,7 @@
                     "source": "Source",
                     "optional": "(Optional)",
                     "updateConfigModalDesc": "Your selected features require different permissions than your app currently has configured.",
-                    "integrationTipsHeading": "Integration {{tips}}",
+                    "integrationTipsHeading": "Project {{tips}}",
                     "tipReplaceTodos": "Replace all TODO placeholders with your actual values",
                     "tipServerSideCode": "Server-side code (in comments) should run on YOUR server, not in the embedded app"
                 },
@@ -7067,7 +7067,7 @@
                         "appListingCreated": "App listing created",
                         "featuresConfigured": "{{count}} feature configured",
                         "featuresConfigured_plural": "{{count}} features configured",
-                        "codeGenerated": "Integration code generated"
+                        "codeGenerated": "Project code generated"
                     },
                     "title": "Ready to Go Live!",
                     "description": "Your embedded app integration is complete. Activate it to start using it in production."
@@ -7171,7 +7171,7 @@
                     "optionOnSuccessDesc": "Handle post-claim actions"
                 },
                 "testStep": {
-                    "title": "Test Your Integration",
+                    "title": "Test Your Project",
                     "description": "Verify your configuration and preview the claim button your users will see.",
                     "preflightChecklist": "Pre-flight checklist",
                     "selectTemplate": "Select template to preview",
@@ -7205,7 +7205,7 @@
                     "completedItems3": "Configured claim settings",
                     "completedItems4": "Tested the embed flow"
                 },
-                "noIntegration": "Please select an integration from the header dropdown to continue.",
+                "noIntegration": "Please select a project from the header dropdown to continue.",
                 "genericFailedToast": "Failed to copy key."
             },
             "issueCredentials": {
@@ -7243,7 +7243,7 @@
                     "securityWarning": "Never expose your API token in client-side code or commit it to version control.",
                     "continueButton": "Continue",
                     "deleteConfirm": "Delete \"{{name}}\"?",
-                    "createdFromGuide": "Created from Integration Guide"
+                    "createdFromGuide": "Created from Project Guide"
                 },
                 "signingAuthorityStep": {
                     "title": "Set Up Signing Authority",
@@ -7316,7 +7316,7 @@
                     "completedItems2": "Created credential templates",
                     "completedItems3": "Tested issuing and verification"
                 },
-                "noIntegration": "Please select an integration from the header dropdown to continue."
+                "noIntegration": "Please select a project from the header dropdown to continue."
             },
             "consentFlow": {
                 "steps": {
@@ -7405,7 +7405,7 @@
                     "step3Desc": "As the contract owner, you can query consent data and transactions:",
                     "step3Sub1": "Get all consented data for your contract:",
                     "step3Sub2": "Get consent data for a specific user:",
-                    "tipsTitle": "Integration Tips",
+                    "tipsTitle": "Project Tips",
                     "tip1": "Store API keys in environment variables, never in code",
                     "tip2": "Use <0>templateUri</0> to reference saved templates instead of inline credentials",
                     "tip3": "Store user DIDs securely with their account data",
@@ -7413,7 +7413,7 @@
                     "continueButton": "Continue to Testing"
                 },
                 "testStep": {
-                    "title": "Test Your Integration",
+                    "title": "Test Your Project",
                     "description": "Verify your consent flow works end-to-end before going live.",
                     "step1Title": "Test the Consent Redirect",
                     "step1Desc": "Click the button below to test the consent redirect with your actual contract and callback URL. You should be redirected to LearnCard to grant consent, then back to your callback URL.",
@@ -7441,7 +7441,7 @@
                     "completedItems3": "Created credential templates",
                     "completedItems4": "Tested consent flow integration"
                 },
-                "noIntegration": "Please select an integration from the header dropdown to continue."
+                "noIntegration": "Please select a project from the header dropdown to continue."
             },
             "serverWebhooks": {
                 "steps": {
@@ -7564,12 +7564,12 @@
                 }
             },
             "courseCatalog": {
-                "noIntegration": "Please select an integration from the header dropdown to continue."
+                "noIntegration": "Please select a project from the header dropdown to continue."
             },
             "useCases": {
                 "issueCredentials": {
-                    "title": "Issue Credentials",
-                    "subtitle": "Give badges to users",
+                    "title": "API Integration",
+                    "subtitle": "Headless credential issuing",
                     "description": "Issue verifiable credentials like badges, certificates, or achievements to your users."
                 },
                 "embedClaim": {
@@ -7578,8 +7578,8 @@
                     "description": "Add a \"Claim Credential\" button to your website so users can claim badges without leaving your page."
                 },
                 "embedApp": {
-                    "title": "Embed Your App",
-                    "subtitle": "Run inside LearnCard",
+                    "title": "Embedded App",
+                    "subtitle": "Runs inside LearnCard",
                     "description": "Build an app that runs inside the LearnCard wallet with access to user identity and credentials."
                 },
                 "consentFlow": {

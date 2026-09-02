@@ -154,6 +154,34 @@ describe('app manifest routes', () => {
         expect(versions.records.map(record => record.version)).toEqual([2, 1]);
     });
 
+    // Regression guard for the version-assignment race: createAppManifestVersion computes
+    // `coalesce(max(existing.version), 0) + 1` and creates the node/relationship in a single
+    // Cypher statement, so sequential submits for the same integration must always land on
+    // strictly increasing, unique version numbers (this doesn't exercise true concurrency,
+    // but pins the sequential-correctness contract that the atomic query relies on).
+    it('assigns strictly increasing unique versions across sequential submits', async () => {
+        const { integration } = await seedListedApp('owner-user');
+
+        const permissionSets = [
+            ['send_credential'],
+            ['send_credential', 'request_consent'],
+            ['send_credential', 'request_consent', 'request_identity'],
+        ];
+
+        const versions: number[] = [];
+
+        for (const permissions of permissionSets) {
+            const result = await ownerUser.clients.fullAuth.appStore.submitAppManifest({
+                integrationId: integration.id,
+                manifest: makeManifest({ permissions }),
+            });
+            versions.push(result.version);
+        }
+
+        expect(versions).toEqual([1, 2, 3]);
+        expect(new Set(versions).size).toBe(versions.length);
+    });
+
     it('applies manifest reconciliation idempotently', async () => {
         const { integration, listing } = await seedListedApp('owner-user');
         const signingAuthority = await createSigningAuthority('https://sa.example.com');

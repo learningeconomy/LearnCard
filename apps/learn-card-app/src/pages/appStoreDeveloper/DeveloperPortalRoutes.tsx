@@ -42,6 +42,11 @@ const DeveloperPortalRoutes: React.FC = () => {
                 {/* Apps routes with integration ID */}
                 <Route
                     exact
+                    path="/app-store/developer/apps/:integrationId/publish"
+                    component={SubmitFromManifestPage}
+                />
+                <Route
+                    exact
                     path="/app-store/developer/integrations/:integrationId/apps"
                     component={DeveloperPortal}
                 />

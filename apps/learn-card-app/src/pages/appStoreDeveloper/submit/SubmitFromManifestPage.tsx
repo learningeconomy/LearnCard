@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { IonPage, IonContent, IonSpinner, IonIcon } from '@ionic/react';
 import {
     alertCircleOutline,
@@ -122,6 +122,23 @@ const isAllowedIconUrl = (url: string | undefined): url is string => {
     }
 };
 
+// CodeQL: enforce https to prevent javascript: / data: URL injection
+const isSafeEmbedUrl = (url: string): boolean => {
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol === 'https:') return true;
+        return (
+            parsed.protocol === 'http:' &&
+            (parsed.hostname === 'localhost' ||
+                parsed.hostname === '127.0.0.1' ||
+                parsed.hostname === '[::1]' ||
+                parsed.hostname.endsWith('.localhost'))
+        );
+    } catch {
+        return false;
+    }
+};
+
 // Backend validation failures arrive as raw Zod issue arrays — map to friendly text.
 const toFriendlyError = (err: unknown, fallback: string): string => {
     const message = err instanceof Error ? err.message : '';
@@ -157,6 +174,7 @@ import { ManifestDiffPanel } from '../dashboards/components/ManifestDiffPanel';
 import { AppManifestDiff } from '@learncard/types';
 
 export const SubmitFromManifestPage: React.FC = () => {
+    const { integrationId: routeIntegrationId } = useParams<{ integrationId?: string }>();
     const history = useHistory();
     const location = useLocation();
     const [manifest, setManifest] = useState<CapturedAppManifest | null>(null);
@@ -168,7 +186,13 @@ export const SubmitFromManifestPage: React.FC = () => {
     const [tagline, setTagline] = useState('');
     const [isPreparing, setIsPreparing] = useState(false);
 
-    const { useIntegrations, useCreateIntegration, useCreateListing } = useDeveloperPortal();
+    const {
+        useIntegrations,
+        useCreateIntegration,
+        useCreateListing,
+        useManifestVersions,
+        useManifestVersion,
+    } = useDeveloperPortal();
     const { newModal } = useModal();
     const { isDesktop } = useDeviceTypeByWidth();
     const [previewListingId, setPreviewListingId] = useState<string | null>(null);
@@ -234,7 +258,23 @@ export const SubmitFromManifestPage: React.FC = () => {
         },
     });
     const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrations();
+    const {
+        data: manifestVersionsData,
+        isFetched: isManifestVersionsFetched,
+        error: manifestVersionsError,
+    } = useManifestVersions(routeIntegrationId || null);
+    const latestVersion = manifestVersionsData?.records?.[0]?.version || null;
+    const { data: serverManifestData } = useManifestVersion(
+        routeIntegrationId || null,
+        latestVersion
+    );
+    const isServerSourced = !!routeIntegrationId;
     const createIntegration = useCreateIntegration();
+    const manifestNotFound =
+        isServerSourced &&
+        !manifest &&
+        isManifestVersionsFetched &&
+        (!!manifestVersionsError || (manifestVersionsData?.records?.length ?? 0) === 0);
 
     useEffect(() => {
         if (!manifest || diffApplied) return;
@@ -311,8 +351,29 @@ export const SubmitFromManifestPage: React.FC = () => {
     }, [manifest, integrations, diffApplied]);
 
     useEffect(() => {
+        if (isServerSourced) {
+            if (serverManifestData) {
+                setManifest(serverManifestData.manifest);
+                setAppName(serverManifestData.manifest.suggestedName || '');
+                setManifestVersion(serverManifestData.version);
+                setPreviewIntegrationId(routeIntegrationId || null);
+
+                const suggestedIcon = serverManifestData.manifest.suggestedIconUrl;
+                if (isAllowedIconUrl(suggestedIcon)) {
+                    setUploadedIconUrl(suggestedIcon);
+                    setDisplayIconUrl(suggestedIcon);
+                } else if (suggestedIcon) {
+                    setDisplayIconUrl(suggestedIcon);
+                }
+            }
+            return;
+        }
         const params = new URLSearchParams(location.search);
         const manifestParam = params.get('manifest');
+        if (!manifestParam && !isServerSourced) {
+            // Handled by render
+            return;
+        }
         if (!manifestParam) {
             setError('No manifest provided in URL.');
             return;
@@ -391,7 +452,7 @@ export const SubmitFromManifestPage: React.FC = () => {
         } catch (err) {
             setError('This publish link is invalid or expired.');
         }
-    }, [location.search]);
+    }, [location.search, isServerSourced, serverManifestData, routeIntegrationId]);
 
     useEffect(() => {
         if (
@@ -560,6 +621,11 @@ export const SubmitFromManifestPage: React.FC = () => {
 
     const handlePreview = async () => {
         if (!manifest) return;
+        // CodeQL: enforce https to prevent javascript: / data: URL injection
+        if (!isSafeEmbedUrl(manifest.appUrl)) {
+            setFormError('This app URL is not allowed. It must use HTTPS.');
+            return;
+        }
         setIsPreviewing(true);
         setFormError(null);
         try {
@@ -660,6 +726,7 @@ export const SubmitFromManifestPage: React.FC = () => {
             sessionStorage.setItem('lc-submit-designer-key', newKey);
             sessionStorage.setItem('lc-submit-designer-scopes', JSON.stringify(scopes));
         } catch (err) {
+            log.error('manifest.enable-consent.failed', err);
             throw err;
         }
     };
@@ -966,6 +1033,90 @@ export const SubmitFromManifestPage: React.FC = () => {
         );
     }
 
+    const hasManifestParam = new URLSearchParams(location.search).has('manifest');
+    if (!hasManifestParam && !isServerSourced) {
+        return (
+            <IonPage>
+                <AppStoreHeader title="Publish your app" />
+                <IonContent className="ion-padding">
+                    <div className="max-w-2xl mx-auto mt-12">
+                        <div className="text-center mb-8">
+                            <h1 className="text-2xl font-semibold text-grayscale-900 mb-2">
+                                Open one of your apps
+                            </h1>
+                            <p className="text-sm text-grayscale-600">
+                                Or open the publish link from your app's dev HUD
+                            </p>
+                        </div>
+                        {isLoadingIntegrations ? (
+                            <div className="flex justify-center p-8">
+                                <IonSpinner name="crescent" />
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {integrations?.map(integration => (
+                                    <button
+                                        key={integration.id}
+                                        onClick={() =>
+                                            history.push(
+                                                `/app-store/developer/apps/${integration.id}/publish`
+                                            )
+                                        }
+                                        className="w-full p-4 bg-white border border-grayscale-200 rounded-xl hover:border-emerald-300 hover:bg-emerald-50/50 transition-all flex items-center gap-4 text-left group"
+                                    >
+                                        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-grayscale-100 text-grayscale-600">
+                                            <IonIcon icon={rocketOutline} className="w-6 h-6" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-medium text-grayscale-900 group-hover:text-emerald-700 transition-colors">
+                                                {integration.name}
+                                            </h3>
+                                        </div>
+                                        <IonIcon
+                                            icon={arrowForwardOutline}
+                                            className="w-5 h-5 text-grayscale-400 group-hover:text-emerald-500 transition-colors"
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </IonContent>
+            </IonPage>
+        );
+    }
+
+    if (manifestNotFound) {
+        return (
+            <IonPage>
+                <AppStoreHeader title="Publish your app" />
+                <IonContent className="ion-padding">
+                    <div className="max-w-2xl mx-auto mt-12">
+                        <div className="p-6 bg-grayscale-50 border border-grayscale-200 border-dashed rounded-2xl flex flex-col items-center text-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-grayscale-100 flex items-center justify-center text-grayscale-400">
+                                <IonIcon icon={alertCircleOutline} className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-grayscale-900 mb-1">
+                                    Nothing captured yet
+                                </h2>
+                                <p className="text-sm text-grayscale-600">
+                                    Open the publish link from your app to capture what it does.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => history.push('/app-store/developer')}
+                                className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                            >
+                                Back to your apps
+                            </button>
+                        </div>
+                    </div>
+                </IonContent>
+            </IonPage>
+        );
+    }
+
     if (!manifest || isLoadingIntegrations) {
         return (
             <IonPage>
@@ -1096,120 +1247,125 @@ export const SubmitFromManifestPage: React.FC = () => {
                 </div>
             )}
 
-            <div className="bg-white rounded-2xl border border-grayscale-300 p-6 mb-6 shadow-sm">
-                <div className="flex items-start gap-5 mb-6">
-                    <div className="flex flex-col items-center gap-1.5 w-20 shrink-0">
-                        <div
-                            className="relative group cursor-pointer w-16 h-16"
-                            onClick={handleIconUpload}
-                        >
-                            {isIconUploading ? (
-                                <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center">
-                                    <IonSpinner
-                                        name="crescent"
-                                        className="w-6 h-6 text-grayscale-500"
-                                    />
-                                </div>
-                            ) : displayIconUrl ? (
-                                <img
-                                    src={displayIconUrl}
-                                    alt="App Icon"
-                                    className="w-16 h-16 rounded-2xl object-cover border border-grayscale-200"
-                                />
-                            ) : (
-                                <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center text-2xl font-semibold text-grayscale-700">
-                                    {appName.charAt(0).toUpperCase() || '?'}
-                                </div>
-                            )}
-                            <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-                                <IonIcon icon={cameraOutline} className="w-5 h-5 mb-0.5" />
-                                <span className="text-[10px] font-medium">Change</span>
-                            </div>
-                            {isIconImported && (
-                                <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm animate-fade-in-up">
-                                    <IonIcon icon={checkmarkOutline} className="w-3 h-3 block" />
-                                </div>
-                            )}
-                        </div>
-                        {!uploadedIconUrl && !isIconImported && (
-                            <span className="text-[10px] text-grayscale-500 text-center leading-tight">
-                                Tap to upload your icon
-                            </span>
-                        )}
-                        {isIconImported && (
-                            <span className="text-[10px] text-emerald-600 font-medium animate-fade-in-up text-center leading-tight">
-                                Icon imported
-                            </span>
-                        )}
-                    </div>
-                    <div className="flex-1">
-                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                            App Name
-                        </label>
-                        <input
-                            type="text"
-                            value={appName}
-                            onChange={e => setAppName(e.target.value)}
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                            placeholder="My Awesome App"
-                        />
-                        {isLocalhost ? (
-                            <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                                <div className="flex items-center gap-1.5 text-amber-800 text-xs font-medium mb-2">
-                                    <IonIcon icon={globeOutline} className="w-4 h-4" />
-                                    You're testing from{' '}
-                                    <strong>{new URL(manifest.appUrl).host}</strong>
-                                </div>
-                                <label className="block text-xs font-medium text-amber-900 mb-1">
-                                    Where will your app live?
-                                </label>
-                                <input
-                                    ref={prodUrlInputRef}
-                                    type="text"
-                                    value={productionUrl}
-                                    onChange={e => {
-                                        setProductionUrl(e.target.value);
-                                        if (prodUrlError) setProdUrlError(null);
-                                    }}
-                                    className={`w-full py-2 px-3 border rounded-lg text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:border-transparent bg-white ${
-                                        prodUrlError
-                                            ? 'border-red-300 focus:ring-red-500'
-                                            : 'border-amber-200 focus:ring-amber-500'
-                                    }`}
-                                    placeholder="https://myapp.com"
-                                />
-                                {prodUrlError && (
-                                    <div className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1">
-                                        <IonIcon
-                                            icon={alertCircleOutline}
-                                            className="w-3.5 h-3.5"
+            {!isServerSourced && (
+                <div className="bg-white rounded-2xl border border-grayscale-300 p-6 mb-6 shadow-sm">
+                    <div className="flex items-start gap-5 mb-6">
+                        <div className="flex flex-col items-center gap-1.5 w-20 shrink-0">
+                            <div
+                                className="relative group cursor-pointer w-16 h-16"
+                                onClick={handleIconUpload}
+                            >
+                                {isIconUploading ? (
+                                    <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center">
+                                        <IonSpinner
+                                            name="crescent"
+                                            className="w-6 h-6 text-grayscale-500"
                                         />
-                                        {prodUrlError}
+                                    </div>
+                                ) : displayIconUrl ? (
+                                    <img
+                                        src={displayIconUrl}
+                                        alt="App Icon"
+                                        className="w-16 h-16 rounded-2xl object-cover border border-grayscale-200"
+                                    />
+                                ) : (
+                                    <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center text-2xl font-semibold text-grayscale-700">
+                                        {appName.charAt(0).toUpperCase() || '?'}
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                                    <IonIcon icon={cameraOutline} className="w-5 h-5 mb-0.5" />
+                                    <span className="text-[10px] font-medium">Change</span>
+                                </div>
+                                {isIconImported && (
+                                    <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm animate-fade-in-up">
+                                        <IonIcon
+                                            icon={checkmarkOutline}
+                                            className="w-3 h-3 block"
+                                        />
                                     </div>
                                 )}
                             </div>
-                        ) : (
-                            <div className="mt-2 text-xs text-grayscale-500 flex items-center gap-1">
-                                <IonIcon icon={globeOutline} className="w-3.5 h-3.5" />
-                                {manifest.appUrl}
-                            </div>
-                        )}
+                            {!uploadedIconUrl && !isIconImported && (
+                                <span className="text-[10px] text-grayscale-500 text-center leading-tight">
+                                    Tap to upload your icon
+                                </span>
+                            )}
+                            {isIconImported && (
+                                <span className="text-[10px] text-emerald-600 font-medium animate-fade-in-up text-center leading-tight">
+                                    Icon imported
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex-1">
+                            <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                App Name
+                            </label>
+                            <input
+                                type="text"
+                                value={appName}
+                                onChange={e => setAppName(e.target.value)}
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                placeholder="My Awesome App"
+                            />
+                            {isLocalhost ? (
+                                <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                                    <div className="flex items-center gap-1.5 text-amber-800 text-xs font-medium mb-2">
+                                        <IonIcon icon={globeOutline} className="w-4 h-4" />
+                                        You're testing from{' '}
+                                        <strong>{new URL(manifest.appUrl).host}</strong>
+                                    </div>
+                                    <label className="block text-xs font-medium text-amber-900 mb-1">
+                                        Where will your app live?
+                                    </label>
+                                    <input
+                                        ref={prodUrlInputRef}
+                                        type="text"
+                                        value={productionUrl}
+                                        onChange={e => {
+                                            setProductionUrl(e.target.value);
+                                            if (prodUrlError) setProdUrlError(null);
+                                        }}
+                                        className={`w-full py-2 px-3 border rounded-lg text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:border-transparent bg-white ${
+                                            prodUrlError
+                                                ? 'border-red-300 focus:ring-red-500'
+                                                : 'border-amber-200 focus:ring-amber-500'
+                                        }`}
+                                        placeholder="https://myapp.com"
+                                    />
+                                    {prodUrlError && (
+                                        <div className="mt-1.5 text-xs text-red-600 font-medium flex items-center gap-1">
+                                            <IonIcon
+                                                icon={alertCircleOutline}
+                                                className="w-3.5 h-3.5"
+                                            />
+                                            {prodUrlError}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="mt-2 text-xs text-grayscale-500 flex items-center gap-1">
+                                    <IonIcon icon={globeOutline} className="w-3.5 h-3.5" />
+                                    {manifest.appUrl}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                            Tagline
+                        </label>
+                        <input
+                            type="text"
+                            value={tagline}
+                            onChange={e => setTagline(e.target.value)}
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            placeholder="One sentence about your app"
+                        />
                     </div>
                 </div>
-
-                <div>
-                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                        Tagline
-                    </label>
-                    <input
-                        type="text"
-                        value={tagline}
-                        onChange={e => setTagline(e.target.value)}
-                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                        placeholder="One sentence about your app"
-                    />
-                </div>
-            </div>
+            )}
 
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1437,7 +1593,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                                             {c.scopes.read.personalFields.map(f => (
                                                 <span
                                                     key={`read-pf-${f}`}
-                                                    className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs flex items-center gap-1"
+                                                    className="px-2 py-0.5 bg-grayscale-100 text-grayscale-700 rounded text-xs flex items-center gap-1"
                                                 >
                                                     <IonIcon
                                                         icon={shieldCheckmarkOutline}
@@ -1504,29 +1660,31 @@ export const SubmitFromManifestPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex justify-end">
-                <button
-                    onClick={handleContinue}
-                    disabled={isPreparing || !appName || !tagline}
-                    className="flex items-center gap-2 py-3 px-6 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    {isPreparing ? (
-                        <>
-                            <IonSpinner name="crescent" className="w-4 h-4" />
-                            Preparing...
-                        </>
-                    ) : (
-                        <>
-                            Continue
-                            <IonIcon icon={arrowForwardOutline} className="w-4 h-4" />
-                        </>
-                    )}
-                </button>
-            </div>
+            {!isServerSourced && (
+                <div className="flex justify-end">
+                    <button
+                        onClick={handleContinue}
+                        disabled={isPreparing || !appName || !tagline}
+                        className="flex items-center gap-2 py-3 px-6 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        {isPreparing ? (
+                            <>
+                                <IonSpinner name="crescent" className="w-4 h-4" />
+                                Preparing...
+                            </>
+                        ) : (
+                            <>
+                                Continue
+                                <IonIcon icon={arrowForwardOutline} className="w-4 h-4" />
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
         </div>
     );
 
-    const rightPaneContent = isDesktop && (
+    const rightPaneContent = !isServerSourced && isDesktop && (
         <div className="sticky top-0 h-[calc(100vh-80px)] py-6 pr-6 pl-2 flex flex-col">
             <div className="flex-1 rounded-2xl border border-grayscale-300 bg-white shadow-sm overflow-hidden flex flex-col">
                 <div className="h-12 border-b border-grayscale-200 bg-grayscale-10 flex items-center justify-between px-4 shrink-0">
@@ -1577,10 +1735,10 @@ export const SubmitFromManifestPage: React.FC = () => {
                         </div>
                     ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                            <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
                                 <IonIcon
                                     icon={playOutline}
-                                    className="w-8 h-8 text-indigo-500 ml-1"
+                                    className="w-8 h-8 text-emerald-500 ml-1"
                                 />
                             </div>
                             <h3 className="text-lg font-semibold text-grayscale-900 mb-2">

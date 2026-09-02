@@ -193,13 +193,18 @@ const config = {
                 if (manifest) {
                     manifestJson.textContent = JSON.stringify(manifest, null, 2);
                     
-                    // Stats
+                    // Stats. `templates` and `consentRequests` are arrays on
+                    // the real CapturedAppManifest shape (not the singular
+                    // `credentialTemplates`/`consentScopes` keys used below).
                     const perms = manifest.permissions?.length || 0;
-                    const tmpls = manifest.credentialTemplates ? Object.keys(manifest.credentialTemplates).length : 0;
-                    const scopes = manifest.consentScopes ? 
-                        ((manifest.consentScopes.read?.credentialCategories?.length || 0) + 
-                         (manifest.consentScopes.read?.personalFields?.length || 0) +
-                         (manifest.consentScopes.write?.credentialCategories?.length || 0)) : 0;
+                    const tmpls = manifest.templates?.length || 0;
+                    const scopes = (manifest.consentRequests || []).reduce((total, request) => {
+                        const requestScopes = request.scopes || {};
+                        return total
+                            + (requestScopes.read?.credentialCategories?.length || 0)
+                            + (requestScopes.read?.personalFields?.length || 0)
+                            + (requestScopes.write?.credentialCategories?.length || 0);
+                    }, 0);
 
                     statsContainer.innerHTML = `
                         <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded">Perms: ${perms}</span>
@@ -265,7 +270,9 @@ const config = {
             async function runV1() {
                 try {
                     await learnCard.requestIdentity();
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('[dev-cycle] SDK call failed', e);
+                }
                 
                 try {
                     await learnCard.sendCredential({
@@ -273,7 +280,9 @@ const config = {
                         template: templates['course-complete'].template,
                         templateData: templates['course-complete'].templateData
                     });
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('[dev-cycle] SDK call failed', e);
+                }
             }
 
             async function runV2() {
@@ -285,18 +294,24 @@ const config = {
                         template: templates['quiz-master'].template,
                         templateData: templates['quiz-master'].templateData
                     });
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('[dev-cycle] SDK call failed', e);
+                }
                 
                 try {
                     await learnCard.requestConsent({
                         read: { personalFields: ['name'] },
                         reason: 'Personalize your experience'
                     });
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('[dev-cycle] SDK call failed', e);
+                }
                 
                 try {
                     await learnCard.incrementCounter('lessons-completed', 1);
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('[dev-cycle] SDK call failed', e);
+                }
             }
 
             async function runV3() {
@@ -308,7 +323,9 @@ const config = {
                         write: { credentialCategories: ['Achievement'] },
                         reason: 'Personalize your experience and save achievements'
                     });
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('[dev-cycle] SDK call failed', e);
+                }
             }
 
             async function setVersion(v) {
@@ -348,9 +365,35 @@ const config = {
 
             // Initial run
             setVersion(currentVersion);
-            
-            // Poll for manifest updates (in case of async changes)
-            setInterval(refreshManifestPanel, 1000);
+
+            // Poll for manifest updates (in case of async changes). Paused
+            // while the tab is hidden and torn down on pagehide so it never
+            // keeps ticking against a backgrounded or discarded page.
+            let manifestPollId = null;
+
+            function startManifestPoll() {
+                if (manifestPollId !== null) return;
+                manifestPollId = setInterval(refreshManifestPanel, 1000);
+            }
+
+            function stopManifestPoll() {
+                if (manifestPollId === null) return;
+                clearInterval(manifestPollId);
+                manifestPollId = null;
+            }
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    stopManifestPoll();
+                } else {
+                    refreshManifestPanel();
+                    startManifestPoll();
+                }
+            });
+
+            window.addEventListener('pagehide', stopManifestPoll);
+
+            startManifestPoll();
         </script>
     </body>
 </html>

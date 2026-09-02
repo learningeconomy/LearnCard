@@ -2,11 +2,27 @@ import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline, chevronForwardOutline } from 'ionicons/icons';
-import type { LCNIntegration, AppStoreListing } from '@learncard/types';
+import type {
+    LCNIntegration,
+    AppStoreListing,
+    CapturedTemplateRecord,
+    CapturedConsentRecord,
+} from '@learncard/types';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { ManifestDiffPanel } from './components/ManifestDiffPanel';
 import { AppPreviewModal } from '../components/AppPreviewModal';
-import { useModal, ModalTypes } from 'learn-card-base';
+import { useModal, ModalTypes, getLogger } from 'learn-card-base';
+
+const log = getLogger('app-home');
+
+const PERSONAL_FIELD_LABELS: Record<string, string> = {
+    name: 'Name',
+    email: 'Email',
+    phone: 'Phone',
+    birthDate: 'Birth date',
+    country: 'Country',
+    avatar: 'Profile photo',
+};
 
 interface AppHomeProps {
     integration: LCNIntegration;
@@ -41,6 +57,7 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
 
     const [isDiffExpanded, setIsDiffExpanded] = useState(false);
     const [isShipping, setIsShipping] = useState(false);
+    const [shipError, setShipError] = useState<string | null>(null);
     const { newModal } = useModal();
 
     const latestListing = listings?.[0]; // Assuming the first one is the latest/only one for embed-app
@@ -118,6 +135,7 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
     const handleShip = async () => {
         if (!latestVersionRecord || !latestListing) return;
         setIsShipping(true);
+        setShipError(null);
         try {
             if (hasDraft) {
                 await applyManifestMutation.mutateAsync({
@@ -130,7 +148,8 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                 await submitForReviewMutation.mutateAsync(latestListing.listing_id);
             }
         } catch (e) {
-            console.error(e);
+            log.error('app-home.ship-failed', e);
+            setShipError('Failed to ship your app. Please try again.');
         } finally {
             setIsShipping(false);
         }
@@ -156,15 +175,30 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                       ).toLocaleDateString()}`
                     : 'No builds yet',
                 isDone: !!latestVersionRecord,
-                action:
-                    hasDraft && diffData ? (
-                        <button
-                            onClick={() => setIsDiffExpanded(!isDiffExpanded)}
-                            className="py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
-                        >
-                            {isDiffExpanded ? 'Hide changes' : 'View changes'}
-                        </button>
-                    ) : null,
+                action: (
+                    <div className="flex items-center gap-2">
+                        {latestVersionRecord && (
+                            <button
+                                onClick={() =>
+                                    history.push(
+                                        `/app-store/developer/apps/${integration.id}/publish`
+                                    )
+                                }
+                                className="py-2 px-4 rounded-[20px] text-grayscale-600 font-medium text-sm hover:text-grayscale-900 transition-colors"
+                            >
+                                View capabilities →
+                            </button>
+                        )}
+                        {hasDraft && diffData && (
+                            <button
+                                onClick={() => setIsDiffExpanded(!isDiffExpanded)}
+                                className="py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                            >
+                                {isDiffExpanded ? 'Hide changes' : 'View changes'}
+                            </button>
+                        )}
+                    </div>
+                ),
                 expandedContent:
                     isDiffExpanded && diffData ? (
                         <div className="mt-4 p-4 bg-white rounded-[20px] border border-grayscale-200">
@@ -279,7 +313,7 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
 
     return (
         <div className="max-w-3xl mx-auto p-6 font-poppins relative">
-            <div className="absolute top-6 right-6 z-10">
+            <div className="absolute top-6 right-6 z-10 flex items-center gap-4">
                 <button
                     onClick={onToggleAdvanced}
                     className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
@@ -297,6 +331,16 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                     <span className="text-sm text-red-700 leading-relaxed">
                         Failed to load app data. Please try again.
                     </span>
+                </div>
+            )}
+
+            {shipError && (
+                <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
+                    <IonIcon
+                        icon={alertCircleOutline}
+                        className="text-red-400 text-lg mt-0.5 shrink-0"
+                    />
+                    <span className="text-sm text-red-700 leading-relaxed">{shipError}</span>
                 </div>
             )}
 
@@ -337,19 +381,21 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                     {latestManifestData?.manifest?.templates &&
                     latestManifestData.manifest.templates.length > 0 ? (
                         <div className="space-y-2">
-                            {latestManifestData.manifest.templates.map((t: any, i: number) => (
-                                <div
-                                    key={i}
-                                    className="flex items-center justify-between p-2.5 bg-grayscale-10 rounded-xl"
-                                >
-                                    <span className="text-sm text-grayscale-700 font-medium">
-                                        {t.alias}
-                                    </span>
-                                    <span className="bg-grayscale-100 text-grayscale-700 text-xs rounded-full px-2 py-0.5">
-                                        v{t.version}
-                                    </span>
-                                </div>
-                            ))}
+                            {latestManifestData.manifest.templates.map(
+                                (t: CapturedTemplateRecord, i: number) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-center justify-between p-2.5 bg-grayscale-10 rounded-xl"
+                                    >
+                                        <span className="text-sm text-grayscale-700 font-medium">
+                                            {t.alias}
+                                        </span>
+                                        <span className="bg-grayscale-100 text-grayscale-700 text-xs rounded-full px-2 py-0.5">
+                                            v{t.version}
+                                        </span>
+                                    </div>
+                                )
+                            )}
                         </div>
                     ) : (
                         <div className="text-sm text-grayscale-500 italic">
@@ -370,13 +416,33 @@ export const AppHome: React.FC<AppHomeProps> = ({ integration, onBack, onToggleA
                     latestManifestData.manifest.consentRequests.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                             {latestManifestData.manifest.consentRequests.map(
-                                (scope: string, i: number) => (
-                                    <span
-                                        key={i}
-                                        className="bg-grayscale-100 text-grayscale-700 text-xs rounded-full px-3 py-1.5"
-                                    >
-                                        {scope}
-                                    </span>
+                                (c: CapturedConsentRecord, i: number) => (
+                                    <React.Fragment key={i}>
+                                        {(c.scopes.read?.personalFields ?? []).map(field => (
+                                            <span
+                                                key={`read-pf-${i}-${field}`}
+                                                className="bg-grayscale-100 text-grayscale-700 text-xs rounded-full px-3 py-1.5"
+                                            >
+                                                Read: {PERSONAL_FIELD_LABELS[field] || field}
+                                            </span>
+                                        ))}
+                                        {(c.scopes.read?.credentialCategories ?? []).map(cat => (
+                                            <span
+                                                key={`read-cat-${i}-${cat}`}
+                                                className="bg-grayscale-100 text-grayscale-700 text-xs rounded-full px-3 py-1.5"
+                                            >
+                                                Read: {cat}
+                                            </span>
+                                        ))}
+                                        {(c.scopes.write?.credentialCategories ?? []).map(cat => (
+                                            <span
+                                                key={`write-cat-${i}-${cat}`}
+                                                className="bg-grayscale-100 text-grayscale-700 text-xs rounded-full px-3 py-1.5"
+                                            >
+                                                Write: {cat}
+                                            </span>
+                                        ))}
+                                    </React.Fragment>
                                 )
                             )}
                         </div>

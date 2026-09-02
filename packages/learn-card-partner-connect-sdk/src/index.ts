@@ -92,10 +92,66 @@ const DEFAULT_HOST_PROBE_TIMEOUT_MS = 1500;
 const joinInlineTemplateErrors = (errors: InlineTemplateValidationError[]): string =>
     errors.map(error => `${error.path}: ${error.message}`).join('\n');
 
+/**
+ * Re-quotes bare `{{variable}}` tokens so compiled-but-unrendered template
+ * JSON becomes parseable. `compileInlineTemplate` (partner-connect-core)
+ * intentionally emits these unquoted for `TemplateNumber` fields (e.g.
+ * `credits.earned`) so a real render substitutes an actual JSON number
+ * instead of a quoted string — see `NUMERIC_SENTINEL_PREFIX` in
+ * partner-connect-core's `compile.ts`.
+ *
+ * This walks the string tracking JSON-string state (with escape handling)
+ * rather than anchoring on a preceding `:`, so it re-quotes a bare token
+ * wherever JSON syntax allows a value — object properties AND array
+ * elements — instead of only `"key": {{var}}` positions.
+ */
+const quoteUnquotedTemplateVariables = (json: string): string => {
+    let result = '';
+    let inString = false;
+
+    for (let index = 0; index < json.length; index += 1) {
+        const char = json[index];
+
+        if (inString) {
+            result += char;
+
+            if (char === '\\' && index + 1 < json.length) {
+                index += 1;
+                result += json[index];
+            } else if (char === '"') {
+                inString = false;
+            }
+
+            continue;
+        }
+
+        if (char === '"') {
+            inString = true;
+            result += char;
+            continue;
+        }
+
+        if (char === '{' && json[index + 1] === '{') {
+            const match = /^\{\{(\w+)\}\}/.exec(json.slice(index));
+
+            if (match) {
+                result += `"${match[0]}"`;
+                index += match[0].length - 1;
+                continue;
+            }
+        }
+
+        result += char;
+    }
+
+    return result;
+};
+
 const parseCompiledTemplateObject = (credentialTemplateJson: string): Record<string, unknown> => {
-    return JSON.parse(
-        credentialTemplateJson.replace(/:(\s*)(\{\{\w+\}\})(?=\s*[,}\]])/g, ':$1"$2"')
-    ) as Record<string, unknown>;
+    return JSON.parse(quoteUnquotedTemplateVariables(credentialTemplateJson)) as Record<
+        string,
+        unknown
+    >;
 };
 
 /**
@@ -1535,6 +1591,10 @@ export class PartnerConnect {
 
         if (!this.syncStatusPollId) {
             const pollStartedAt = Date.now();
+            // Scoped to this polling cycle so a failing GET_SYNC_STATUS call
+            // logs once instead of spamming the console every tick, while a
+            // later, fresh polling cycle (after this one stops) can still warn.
+            let hasWarnedAboutPollFailure = false;
 
             const stopPolling = () => {
                 if (this.syncStatusPollId) {
@@ -1567,7 +1627,16 @@ export class PartnerConnect {
                         stopPolling();
                         this.syncCompleteCallbacks.forEach(cb => cb(status));
                     })
-                    .catch(() => undefined);
+                    .catch(error => {
+                        if (hasWarnedAboutPollFailure) return;
+
+                        hasWarnedAboutPollFailure = true;
+                        console.warn(
+                            '[LearnCard SDK] onSyncComplete: getSyncStatus() failed while polling; ' +
+                                'will keep retrying silently until it succeeds or the poll times out.',
+                            error
+                        );
+                    });
             }, 1000);
         }
 

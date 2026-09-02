@@ -180,6 +180,9 @@ export const diffManifests = (current: AppManifest, next: AppManifest): AppManif
         consentScopes: consentScopeDiff,
         featurePaths: buildStringDiff(current.featuresLaunched, next.featuresLaunched),
         counterKeys: buildStringDiff(current.counterKeys, next.counterKeys),
+        // Advisory flag only: surfaced to clients for review UX. The server does not
+        // currently gate applyManifestVersion on it (enforcement is a deferred product
+        // decision).
         requiresReview: permissionDiff.added.length > 0 || isConsentExpanded(current, next),
     };
 };

@@ -511,240 +511,11 @@ log.info('User:', identity.profile.displayName);`;
                 </p>
             </div>
 
-            {/* Section 1: Select/Create App */}
+            {/* Section 1: Install SDK */}
             <div className="space-y-4">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-semibold text-sm">
                         {1}
-                    </div>
-
-                    <h4 className="font-semibold text-gray-800">
-                        {m['developerPortal.guides.embedApp.gettingStarted.selectOrCreateApp']()}
-                    </h4>
-                </div>
-
-                <div className="ml-11 space-y-3">
-                    <p className="text-sm text-gray-500">
-                        {m['developerPortal.guides.embedApp.gettingStarted.listingDescription']()}
-                    </p>
-
-                    {!selectedIntegration ? (
-                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                            <p className="text-sm text-amber-700">
-                                {m[
-                                    'developerPortal.guides.embedApp.gettingStarted.selectProjectFirst'
-                                ]()}
-                            </p>
-                        </div>
-                    ) : isLoadingListings ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {/* App Listings */}
-                            {listings && listings.length > 0 && (
-                                <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
-                                    {listings.map(listing => {
-                                        const isSelected =
-                                            selectedListing?.listing_id === listing.listing_id;
-
-                                        return (
-                                            <button
-                                                key={listing.listing_id}
-                                                onClick={() => setSelectedListing(listing)}
-                                                className={`w-full flex items-center gap-4 p-4 text-left transition-all ${
-                                                    isSelected ? 'bg-cyan-50' : 'hover:bg-gray-50'
-                                                }`}
-                                            >
-                                                {/* App Icon */}
-                                                <div
-                                                    className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                        isSelected ? 'bg-cyan-100' : 'bg-gray-100'
-                                                    }`}
-                                                >
-                                                    {listing.icon_url ? (
-                                                        <img
-                                                            src={listing.icon_url}
-                                                            alt={listing.display_name}
-                                                            className="w-10 h-10 rounded-lg object-cover"
-                                                        />
-                                                    ) : (
-                                                        <Layout
-                                                            className={`w-6 h-6 ${
-                                                                isSelected
-                                                                    ? 'text-cyan-600'
-                                                                    : 'text-gray-400'
-                                                            }`}
-                                                        />
-                                                    )}
-                                                </div>
-
-                                                {/* App Details */}
-                                                <div className="flex-1 min-w-0">
-                                                    <p
-                                                        className={`font-semibold truncate ${
-                                                            isSelected
-                                                                ? 'text-cyan-700'
-                                                                : 'text-gray-800'
-                                                        }`}
-                                                    >
-                                                        {listing.display_name}
-                                                    </p>
-
-                                                    <p className="text-xs text-gray-500 truncate">
-                                                        {listing.tagline ||
-                                                            m[
-                                                                'developerPortal.guides.embedApp.gettingStarted.noTagline'
-                                                            ]()}
-                                                    </p>
-
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span
-                                                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                                                listing.app_listing_status ===
-                                                                'LISTED'
-                                                                    ? 'bg-emerald-100 text-emerald-700'
-                                                                    : listing.app_listing_status ===
-                                                                      'PENDING_REVIEW'
-                                                                    ? 'bg-amber-100 text-amber-700'
-                                                                    : 'bg-gray-100 text-gray-600'
-                                                            }`}
-                                                        >
-                                                            {listing.app_listing_status === 'LISTED'
-                                                                ? m[
-                                                                      'developerPortal.guides.embedApp.gettingStarted.live'
-                                                                  ]()
-                                                                : listing.app_listing_status ===
-                                                                  'PENDING_REVIEW'
-                                                                ? m[
-                                                                      'developerPortal.guides.embedApp.gettingStarted.inReview'
-                                                                  ]()
-                                                                : m[
-                                                                      'developerPortal.guides.embedApp.gettingStarted.draft'
-                                                                  ]()}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Selection Indicator */}
-                                                <div
-                                                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                                                        isSelected
-                                                            ? 'border-cyan-500 bg-cyan-500'
-                                                            : 'border-gray-300'
-                                                    }`}
-                                                >
-                                                    {isSelected && (
-                                                        <Check className="w-4 h-4 text-white" />
-                                                    )}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {/* Empty State */}
-                            {(!listings || listings.length === 0) && !isCreatingListing && (
-                                <div className="p-6 bg-gray-50 border border-gray-200 rounded-xl text-center">
-                                    <Layout className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-
-                                    <p className="text-gray-600 font-medium mb-1">
-                                        {m[
-                                            'developerPortal.guides.embedApp.gettingStarted.noApps'
-                                        ]()}
-                                    </p>
-
-                                    <p className="text-sm text-gray-500">
-                                        {m[
-                                            'developerPortal.guides.embedApp.gettingStarted.createFirstApp'
-                                        ]()}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Create New App Form */}
-                            {isCreatingListing ? (
-                                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-3">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            {m[
-                                                'developerPortal.guides.embedApp.gettingStarted.appName'
-                                            ]()}
-                                        </label>
-
-                                        <input
-                                            type="text"
-                                            value={newListingName}
-                                            onChange={e => setNewListingName(e.target.value)}
-                                            placeholder={m[
-                                                'developerPortal.guides.embedApp.gettingStarted.appNamePlaceholder'
-                                            ]()}
-                                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                            autoFocus
-                                            onKeyDown={e => {
-                                                if (e.key === 'Enter') handleCreateListing();
-                                                if (e.key === 'Escape') setIsCreatingListing(false);
-                                            }}
-                                        />
-                                    </div>
-
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={handleCreateListing}
-                                            disabled={
-                                                !newListingName.trim() ||
-                                                createListingMutation.isPending
-                                            }
-                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-                                        >
-                                            {createListingMutation.isPending ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                <>
-                                                    <Plus className="w-4 h-4" />
-                                                    {m[
-                                                        'developerPortal.guides.embedApp.gettingStarted.createApp'
-                                                    ]()}
-                                                </>
-                                            )}
-                                        </button>
-
-                                        <button
-                                            onClick={() => {
-                                                setIsCreatingListing(false);
-                                                setNewListingName('');
-                                            }}
-                                            className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
-                                        >
-                                            {m[
-                                                'developerPortal.guides.embedApp.gettingStarted.cancel'
-                                            ]()}
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => setIsCreatingListing(true)}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 text-gray-600 rounded-xl hover:border-cyan-400 hover:text-cyan-600 hover:bg-cyan-50/50 transition-colors font-medium"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    {m[
-                                        'developerPortal.guides.embedApp.gettingStarted.createNewApp'
-                                    ]()}
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Section 2: Install SDK */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-semibold text-sm">
-                        {2}
                     </div>
 
                     <h4 className="font-semibold text-gray-800">
@@ -759,6 +530,26 @@ log.info('User:', identity.profile.displayName);`;
                         Also works with{' '}
                         <code className="bg-gray-100 px-1 rounded">npm install</code> or{' '}
                         <code className="bg-gray-100 px-1 rounded">yarn add</code>
+                    </p>
+                </div>
+            </div>
+
+            {/* Section 2: Initialize */}
+            <div className="space-y-4 mb-8">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-semibold text-sm">
+                        {2}
+                    </div>
+
+                    <h4 className="font-semibold text-gray-800">
+                        Open the publish link from your app
+                    </h4>
+                </div>
+
+                <div className="ml-11 space-y-3">
+                    <p className="text-sm text-gray-600">
+                        Once you've installed the SDK, you can open the publish link from your app
+                        to start issuing credentials.
                     </p>
                 </div>
             </div>
@@ -801,7 +592,7 @@ log.info('User:', identity.profile.displayName);`;
                         <ArrowRight className="w-4 h-4" />
                     </>
                 ) : (
-                    m['developerPortal.guides.embedApp.gettingStarted.selectAppToContinue']()
+                    'Loading...'
                 )}
             </button>
         </div>
@@ -1330,11 +1121,11 @@ const SetupWebsiteStep: React.FC<{
                 {selectedFramework && (
                     <div className="space-y-4">
                         <CodeOutputPanel
-                            title="1. Create your project"
+                            title="1. Create your app"
                             snippets={{
                                 typescript: `# Create a new ${
                                     frameworks.find(f => f.id === selectedFramework)?.name
-                                } project
+                                } app
 ${frameworks.find(f => f.id === selectedFramework)?.cmd}
 
 cd my-learncard-app`,

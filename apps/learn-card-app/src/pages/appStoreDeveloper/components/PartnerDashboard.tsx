@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 
 import { useModal, ModalTypes } from 'learn-card-base';
+import { useDeveloperPortalContext } from '../DeveloperPortalContext';
+import { useHistory } from 'react-router-dom';
 
 import type { ExtendedAppStoreListing, AppListingStatus } from '../types';
 import { StatusBadge } from './StatusBadge';
@@ -52,6 +54,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
     const [activeTab, setActiveTab] = useState<Tab>('DRAFT');
     const [selectedListing, setSelectedListing] = useState<ExtendedAppStoreListing | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    const { currentIntegrationId } = useDeveloperPortalContext();
+    const history = useHistory();
 
     const handlePreview = (listing: ExtendedAppStoreListing) => {
         newModal(
@@ -505,6 +510,19 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
 
                         {/* Actions */}
                         <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
+                            {currentIntegrationId && (
+                                <button
+                                    onClick={() =>
+                                        history.push(
+                                            `/app-store/developer/apps/${currentIntegrationId}/publish`
+                                        )
+                                    }
+                                    className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors"
+                                >
+                                    <Sparkles className="w-4 h-4" />
+                                    Capabilities
+                                </button>
+                            )}
                             {selectedListing.app_listing_status === 'DRAFT' && (
                                 <>
                                     <button

@@ -22,7 +22,7 @@ When the SDK is not embedded in a LearnCard host, no host answers its `postMessa
 -   Activation: `mock` option — `'auto'` (default) mocks only when **no LearnCard host is present AND the page is on a local dev host** (`localhost`, `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`); `'standalone'` mocks whenever no host is present, on **any** origin (remote previews like Lovable/Netlify), but goes real when embedded in LearnCard; `true` always mocks, even embedded (CI/tests); `false` never mocks. `mockOptions` tunes UI/logging/persistence/DID/namespace.
 -   Parent trust: an embedding parent counts as LearnCard only when `ancestorOrigins[0]` matches a configured host origin **pattern** (the any-localhost native-app heuristic is not sufficient). A known foreign parent (e.g. a cross-origin Storybook manager) is treated like standalone — mock on local dev, fast `LC_NOT_EMBEDDED` otherwise. When the parent is ambiguous (Firefox, or a localhost parent) on a local dev host, a one-time side-effect-free `GET_SYNC_STATUS` probe (`hostProbeTimeout`, default 1500 ms) decides between real host and mock; requests queue behind the decision.
 -   Never widen auto-mock activation to non-local origins: a standalone production partner app must never receive fabricated identity or auto-granted consent.
--   `MockHost` is browser-oriented but SSR-safe (never touches `document` at import) and dependency-free. Counters persist to `localStorage`; UI is injected DOM cleaned up on `destroy()`.
+-   `MockHost` is browser-oriented but SSR-safe (never touches `document` at import) and has no dependencies beyond `@learncard/partner-connect-core`. Counters persist to `localStorage`; UI is injected DOM cleaned up on `destroy()`.
 -   Response shapes MUST match the real host handlers in `apps/learn-card-app/src/hooks/post-message/useLearnCardPostMessage.handlers.ts`. Update both together.
 
 ### Security Model
@@ -187,7 +187,7 @@ The package builds to multiple formats (paths come from `package.json` `main`/`m
 
 ### Relationship to Other Packages
 
--   **Independent**: No dependencies on other LearnCard packages
+-   **First-party only**: Depends on `@learncard/partner-connect-core` and `@learncard/types` (both workspace packages); no third-party runtime dependencies
 -   **Consumed By**: Example apps in `examples/app-store-apps/`
 -   **Communicates With**: LearnCard host application via postMessage
 -   **Backend Integration**: Example apps use `@learncard/init` for credential issuance
@@ -205,7 +205,7 @@ When creating new example apps:
 ### Deployment Considerations
 
 -   **CDN Distribution**: Package is suitable for CDN distribution
--   **Bundle Size**: Keep dependencies minimal (currently zero)
+-   **Bundle Size**: Keep dependencies minimal — only first-party workspace packages (`@learncard/partner-connect-core`, `@learncard/types`), no third-party runtime dependencies
 -   **Security**: Never expose private keys in browser code
 -   **Environment Variables**: Backend credentials only, never in frontend
 

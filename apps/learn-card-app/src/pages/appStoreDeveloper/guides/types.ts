@@ -125,9 +125,9 @@ export interface LLMIntegrationMetadata {
 export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
     'issue-credentials': {
         id: 'issue-credentials',
-        title: 'Issue Credentials',
+        title: 'API Integration',
         titleKey: 'developerPortal.guides.useCases.issueCredentials.title',
-        subtitle: 'Give badges to users',
+        subtitle: 'Headless credential issuing',
         subtitleKey: 'developerPortal.guides.useCases.issueCredentials.subtitle',
         description:
             'Issue verifiable credentials like badges, certificates, or achievements to your users.',
@@ -151,9 +151,9 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
     },
     'embed-app': {
         id: 'embed-app',
-        title: 'Embed Your App',
+        title: 'Embedded App',
         titleKey: 'developerPortal.guides.useCases.embedApp.title',
-        subtitle: 'Run inside LearnCard',
+        subtitle: 'Runs inside LearnCard',
         subtitleKey: 'developerPortal.guides.useCases.embedApp.subtitle',
         description:
             'Build an app that runs inside the LearnCard wallet with access to user identity and credentials.',

@@ -10,7 +10,7 @@ The LearnCard Partner Connect SDK transforms complex `postMessage` communication
 -   🎯 **Type-safe**: Full TypeScript support with comprehensive types
 -   ⚡ **Promise-based**: Modern async/await API
 -   🧹 **Clean**: Abstracts away all postMessage complexity
--   📦 **Lightweight**: Zero runtime dependencies
+-   📦 **Lightweight**: First-party only — depends solely on `@learncard/partner-connect-core` and `@learncard/types`, no third-party runtime dependencies
 -   🛡️ **Robust**: Built-in timeout handling and error management
 
 ## Installation

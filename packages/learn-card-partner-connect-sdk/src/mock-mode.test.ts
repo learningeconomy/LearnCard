@@ -37,6 +37,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    jest.useRealTimers();
     jest.restoreAllMocks();
     document
         .querySelectorAll('.lc-mock-toast, .lc-mock-stack, .lc-mock-hud')
@@ -303,6 +304,31 @@ describe('mock responses', () => {
     it('reports a ready sync status so onSyncComplete resolves', async () => {
         const lc = createPartnerConnect({ mockOptions: { ui: false } });
         await expect(lc.getSyncStatus()).resolves.toMatchObject({ status: 'ready' });
+    });
+
+    it('warns once (not per-tick) when the onSyncComplete poll fails, and keeps retrying silently', async () => {
+        jest.useFakeTimers();
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        const lc = createPartnerConnect({ mockOptions: { ui: false } });
+        const getSyncStatusSpy = jest
+            .spyOn(lc, 'getSyncStatus')
+            .mockRejectedValue(new Error('network blip'));
+        const callback = jest.fn();
+
+        lc.onSyncComplete(callback);
+
+        await jest.advanceTimersByTimeAsync(3000);
+
+        expect(getSyncStatusSpy.mock.calls.length).toBeGreaterThanOrEqual(3);
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(warnSpy).toHaveBeenCalledWith(
+            expect.stringContaining('onSyncComplete'),
+            expect.any(Error)
+        );
+        expect(callback).not.toHaveBeenCalled();
+
+        lc.destroy();
     });
 
     it('validates inline credential templates offline', () => {

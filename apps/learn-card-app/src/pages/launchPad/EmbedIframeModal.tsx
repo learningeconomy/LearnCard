@@ -202,6 +202,13 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         <div className="w-full h-full flex-1 relative">
             {isOffline || hasLoadFailed ? (
                 <AppEmbedOfflineState appName={appName} onRetry={handleRetry} />
+            ) : !embedOrigin ? (
+                // CodeQL: enforce https to prevent javascript: / data: URL injection
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-50 z-10 p-6 text-center gap-2">
+                    <span className="text-sm text-red-700 leading-relaxed">
+                        {errorMessage || 'This app cannot be loaded because its URL is not secure.'}
+                    </span>
+                </div>
             ) : (
                 <>
                     {isLoading && (
