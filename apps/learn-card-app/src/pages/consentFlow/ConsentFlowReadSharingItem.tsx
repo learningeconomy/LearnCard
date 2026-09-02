@@ -7,6 +7,8 @@ import { useGetCredentialCount, CredentialCategory, ModalTypes, useModal } from 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConsentFlowReadSharingModal from './ConsentFlowReadSharingModal';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
+import * as m from '../../paraglide/messages.js';
+import { localizeCategoryTitle } from '../../i18n/categoryTitle';
 
 type ConsentFlowReadSharingItemProps = {
     term: ConsentFlowTerms['read']['credentials']['categories'][string];
@@ -84,7 +86,7 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
                 <div className="flex flex-col flex-1 items-start">
                     <h4 className="text-[17px] text-grayscale-900 font-notoSans font-[600] leading-[24px] tracking-[0.25px] line-clamp-1 grow text-left">
                         {/* TODO pluralize for everything except Work History */}
-                        {titleOverride ?? title}
+                        {titleOverride ?? localizeCategoryTitle(title)}
                     </h4>
 
                     {required && (
@@ -105,7 +107,7 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
                         <>
                             {term.shareAll && (
                                 <span className="text-emerald-700 font-notoSans text-[14px] font-[600]">
-                                    Live Sync
+                                    {m['consentFlow.sync.liveSyncing']()}
                                 </span>
                             )}
                             {!term.shareAll && (
@@ -117,7 +119,7 @@ const ConsentFlowReadSharingItem: React.FC<ConsentFlowReadSharingItemProps> = ({
                     )}
                     {!term.sharing && (
                         <span className="text-grayscale-500 font-notoSans text-[14px] font-[600]">
-                            Deny
+                            {m['consentFlow.deny']()}
                         </span>
                     )}
 

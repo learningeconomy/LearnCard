@@ -24,7 +24,7 @@ import {
     categoryMetadata,
 } from 'learn-card-base';
 import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import IdDisplayContainer from 'apps/learn-card-app/src/pages/ids/IdDisplayContainer';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import CredentialSubjectDisplay from 'learn-card-base/components/CredentialSubjectDisplay/CredentialSubjectDisplay';
@@ -247,7 +247,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                     {...mappedInputs}
                 />
             ) : (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={cred?.credentialSubject?.achievement?.achievementType}
                     boostType={categoryType}
                     badgeThumbnail={badgeThumbnail}
@@ -317,7 +317,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
                     dateDisplay={issueDate}
                     issuerName={issuerName}
                     customThumbComponent={
-                        <CredentialBadge
+                        <CredentialBadgeNew
                             achievementType={cred?.credentialSubject?.achievement?.achievementType}
                             boostType={categoryType}
                             badgeThumbnail={badgeThumbnail}

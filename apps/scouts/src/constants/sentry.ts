@@ -15,6 +15,7 @@ const isSentryEnabled = SENTRY_ENV && SENTRY_ENV !== 'development';
 
 export const initSentry = () => {
     if (!SENTRY_DSN || !SENTRY_ENV) return;
+    if (Sentry.getClient()) return;
 
     Sentry.init({
         dsn: SENTRY_DSN,
@@ -86,6 +87,10 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
                 if (options.debug) log.debug('Identify user! 🎸', { uid: currentUser.uid });
                 getDID()
                     .then(did => {
+                        if (typeof did !== 'string' || did.trim() === '') {
+                            return;
+                        }
+
                         const user = {
                             id: did,
                         };

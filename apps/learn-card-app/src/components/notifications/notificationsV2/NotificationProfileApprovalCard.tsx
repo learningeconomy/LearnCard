@@ -3,6 +3,7 @@ import moment from 'moment';
 import { ErrorBoundary } from '@sentry/react';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { UserProfilePicture } from 'learn-card-base';
+import { notificationCardStyles } from './types';
 
 type NotificationProfileApprovalCardProps = {
     notification: NotificationType;
@@ -23,14 +24,14 @@ const NotificationProfileApprovalCard: React.FC<NotificationProfileApprovalCardP
     return (
         <ErrorBoundary
             fallback={
-                <div className="flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full rounded-3xl py-[10px] px-[10px] bg-blue-50 my-[15px]">
+                <div className={notificationCardStyles.fallbackShell}>
                     Unable to load notification
                 </div>
             }
         >
             <div
                 onClick={handleMarkRead}
-                className="flex gap-3 min-h-[120px] justify-start items-center max-w-[600px] relative w-full rounded-3xl py-[10px] px-[10px] bg-blue-50 my-[15px]"
+                className={`${notificationCardStyles.shell} min-h-[120px] gap-3 !items-center`}
             >
                 <div className="notification-card-left-side px-[0px] flex cursor-pointer shrink-0">
                     <UserProfilePicture
@@ -43,26 +44,26 @@ const NotificationProfileApprovalCard: React.FC<NotificationProfileApprovalCardP
 
                 <div className="text-left flex flex-col gap-[10px] items-start justify-start w-full">
                     <h4
-                        className="cursor-pointer font-bold tracking-wide line-clamp-2 text-black text-[14px] pr-[20px] notification-card-title"
+                        className={`cursor-pointer ${notificationCardStyles.title}`}
                         data-testid="notification-title"
                     >
                         {notification.message?.title}
                     </h4>
                     <p
-                        className="font-semibold p-0 leading-none tracking-wide line-clamp-1 text-[12px] text-grayscale-500"
+                        className={`${notificationCardStyles.meta} text-indigo-600`}
                         data-testid="notification-type"
                     >
                         Account Approval{' '}
                         {transactionDate && (
                             <span
-                                className="text-grayscale-600 normal-case font-normal text-[12px] notification-card-type-issue-date"
+                                className={notificationCardStyles.date}
                                 data-testid="notification-cred-issue-date"
                             >
                                 • {formattedDate}
                             </span>
                         )}
                     </p>
-                    <p>{notification.message?.body}</p>
+                    <p className={notificationCardStyles.body}>{notification.message?.body}</p>
                 </div>
             </div>
         </ErrorBoundary>

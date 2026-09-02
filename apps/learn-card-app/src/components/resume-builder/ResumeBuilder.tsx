@@ -34,8 +34,10 @@ import {
 } from '../../stores/resumeBuilderStore';
 import type { ExistingResume } from '../../hooks/useExistingResumes';
 import { buildResumeHydrationState } from './resume-builder-history.helpers';
+import type { ResumeSectionKey } from './resume-builder.helpers';
 
 import { VC } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 export const ResumeBuilder: React.FC = () => {
     useResumePreselection();
@@ -47,6 +49,10 @@ export const ResumeBuilder: React.FC = () => {
 
     const [panelOpen, setPanelOpen] = useState<boolean>(true); // Desktop side panel
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false); // Mobile drawer
+    const [credentialFocusRequest, setCredentialFocusRequest] = useState<{
+        sectionKey: ResumeSectionKey;
+        requestId: number;
+    } | null>(null);
 
     const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
     const [inlinePreview, setInlinePreview] = useState<ResumePdfPreviewData | null>(null);
@@ -167,7 +173,7 @@ export const ResumeBuilder: React.FC = () => {
         async ({
             requireShareLinkForQr = false,
             openShareModalAfterSave = true,
-            successToastTitle = 'Published',
+            successToastTitle = m['passport.resumeBuilder.toastTitle.published'](),
         }: {
             requireShareLinkForQr?: boolean;
             openShareModalAfterSave?: boolean;
@@ -180,7 +186,7 @@ export const ResumeBuilder: React.FC = () => {
 
             const includedCredentials = Object.entries(credentialEntries).flatMap(
                 ([category, entries]) =>
-                    (hiddenSections?.[category as CredentialCategoryEnum] ? [] : entries ?? []).map(
+                    (hiddenSections?.[category as ResumeSectionKey] ? [] : entries ?? []).map(
                         entry => ({
                             uri: entry.uri,
                             category: category || CredentialCategoryEnum.workHistory,
@@ -212,9 +218,8 @@ export const ResumeBuilder: React.FC = () => {
                 });
             }
 
-            presentToast('LER-RS resume credential published successfully.', {
+            presentToast(m['toasts.resume.publishedSuccess'](), {
                 title: successToastTitle,
-                details: lerVc?.id || undefined,
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
                 duration: 6000,
@@ -264,7 +269,7 @@ export const ResumeBuilder: React.FC = () => {
                 const publishResult = await publishCurrentResume({
                     requireShareLinkForQr: true,
                     openShareModalAfterSave: false,
-                    successToastTitle: 'Saved',
+                    successToastTitle: m['passport.resumeBuilder.toastTitle.saved'](),
                 });
                 savedResumeForShare = {
                     lerVc: publishResult.lerVc,
@@ -276,13 +281,13 @@ export const ResumeBuilder: React.FC = () => {
             if (savedResumeForShare) {
                 openResumeShareModal(savedResumeForShare.lerVc, savedResumeForShare.lerUri);
             }
-            presentToast('Resume downloaded successfully.', {
-                title: 'Downloaded',
+            presentToast(m['toasts.resume.downloadSuccess'](), {
+                title: m['passport.resumeBuilder.toastTitle.downloaded'](),
                 type: ToastTypeEnum.Success,
             });
         } catch (error: any) {
-            presentToast(error?.message ?? 'Failed to save and download resume.', {
-                title: 'Download Failed',
+            presentToast(error?.message ?? m['toasts.resume.downloadFailed'](), {
+                title: m['passport.resumeBuilder.toastTitle.downloadFailed'](),
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -305,11 +310,13 @@ export const ResumeBuilder: React.FC = () => {
             await publishCurrentResume({
                 requireShareLinkForQr: false,
                 openShareModalAfterSave: true,
-                successToastTitle: activeResume?.recordId ? 'Saved' : 'Published',
+                successToastTitle: activeResume?.recordId
+                    ? m['passport.resumeBuilder.toastTitle.saved']()
+                    : m['passport.resumeBuilder.toastTitle.published'](),
             });
         } catch (error: any) {
-            presentToast(error?.message ?? 'Failed to publish LER-RS resume credential.', {
-                title: 'Publish Failed',
+            presentToast(error?.message ?? m['toasts.resume.publishFailed'](), {
+                title: m['passport.resumeBuilder.toastTitle.publishFailed'](),
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -318,13 +325,25 @@ export const ResumeBuilder: React.FC = () => {
         }
     }, [loadingAction, presentToast, publishCurrentResume, activeResume?.recordId]);
 
-    const openResumeConfigPanel = () => {
+    const openResumeConfigPanel = (focusSectionKey?: ResumeSectionKey) => {
+        const focusRequestId = focusSectionKey ? Date.now() : undefined;
+
         if (isMobile) {
             newModal(
-                <ResumeConfigOverlayPanel drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen} />
+                <ResumeConfigOverlayPanel
+                    drawerOpen={drawerOpen}
+                    setDrawerOpen={setDrawerOpen}
+                    focusSectionKey={focusSectionKey}
+                    focusRequestId={focusRequestId}
+                />
             );
         } else {
             setPanelOpen(true);
+            setCredentialFocusRequest(
+                focusSectionKey && focusRequestId
+                    ? { sectionKey: focusSectionKey, requestId: focusRequestId }
+                    : null
+            );
         }
     };
 
@@ -381,11 +400,11 @@ export const ResumeBuilder: React.FC = () => {
                 });
                 closeInlinePreview();
                 setResumeQrCodeLink('');
-                presentToast('Loaded resume into edit mode.', {
+                presentToast(m['toasts.resume.loadedEditMode'](), {
                     type: ToastTypeEnum.Success,
                 });
             } catch (error: any) {
-                presentToast(error?.message ?? 'Failed to load selected resume.', {
+                presentToast(error?.message ?? m['toasts.resume.loadFailed'](), {
                     type: ToastTypeEnum.Error,
                 });
             } finally {
@@ -400,14 +419,14 @@ export const ResumeBuilder: React.FC = () => {
         closeInlinePreview();
         setResumeQrCodeLink('');
         setBaselineSnapshotByResume(null);
-        presentToast('Started a new resume draft.', {
+        presentToast(m['toasts.resume.newDraft'](), {
             type: ToastTypeEnum.Success,
         });
     }, [closeInlinePreview, presentToast]);
 
     const handleShareCurrentResume = useCallback(() => {
         if (!activeResumeVc || !activeResume?.uri) {
-            presentToast('This resume is not available to share yet.', {
+            presentToast(m['toasts.resume.notAvailableToShare'](), {
                 type: ToastTypeEnum.Error,
             });
             return;
@@ -448,6 +467,7 @@ export const ResumeBuilder: React.FC = () => {
                         isMobile={isMobile}
                         isPreviewing={isPreviewing}
                         qrCodeValue={resumeQrCodeLink}
+                        onOpenCredentialPanel={openResumeConfigPanel}
                     />
                 </div>
             </div>
@@ -461,6 +481,8 @@ export const ResumeBuilder: React.FC = () => {
                     setPanelOpen={setPanelOpen}
                     isPreviewing={isPreviewing}
                     setIsPreviewing={setIsPreviewing}
+                    focusSectionKey={credentialFocusRequest?.sectionKey}
+                    focusRequestId={credentialFocusRequest?.requestId}
                 />
             )}
 

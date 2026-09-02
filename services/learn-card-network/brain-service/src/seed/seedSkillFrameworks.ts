@@ -107,7 +107,7 @@ const loadStagingNeo4jEnv = (): Record<string, string> => {
         hasWarnedMissingBrainServiceStagingEnv = true;
 
         console.warn(
-            '\x1b[33mWARNING: services/learn-card-network/brain-service/.env.staging is missing. Run `pnpm env:pull --env=staging` from the repo root to generate it.\x1b[0m'
+            '\x1b[33mWARNING: services/learn-card-network/brain-service/.env.staging is missing. Run `bun run env:pull --env=staging` from the repo root to generate it.\x1b[0m'
         );
     }
 
@@ -306,7 +306,7 @@ export const resolveSkillFrameworkNeo4jConnection = async (
                       `- Confirm the URI in ${BRAIN_SERVICE_STAGING_ENV_DISPLAY_PATH} points to the current staging Neo4j instance.`,
                   ]
                 : [
-                      `- Re-pull the staging env file from the repo root: \`pnpm env:pull --env=staging\`.`,
+                      `- Re-pull the staging env file from the repo root: \`bun run env:pull --env=staging\`.`,
                       `- If you are overriding the database in your shell, export \`NEO4J_URI\`, \`NEO4J_USERNAME\`, and \`NEO4J_PASSWORD\` before running the command again.`,
                       `- After the file is generated, confirm the URI in ${BRAIN_SERVICE_STAGING_ENV_DISPLAY_PATH} points to the current staging Neo4j instance.`,
                   ]
@@ -438,7 +438,7 @@ const describeEmbeddingBackfillFailure = (error: unknown): string => {
         return 'Google embedding requests were rate-limited. The frameworks were seeded, but some semantic search embeddings were skipped for now.';
     }
 
-    return `${message}\nUse \`pnpm skill-frameworks add-admin\` to add admins.`;
+    return `${message}\nUse \`bun run skill-frameworks add-admin\` to add admins.`;
 };
 
 const upsertSkillNode = async (
@@ -617,7 +617,7 @@ export const seedSkillFrameworkFixtures = async (
             `Embedding backfill was skipped after the first framework because Google rejected the request: ${embeddingBackfillFailureSummary}`
         );
         options.log?.warn?.(
-            'The frameworks were still seeded. Use `pnpm skill-frameworks add-admin` to add admins. Semantic search will keep using whichever embeddings already exist.'
+            'The frameworks were still seeded. Use `bun run skill-frameworks add-admin` to add admins. Semantic search will keep using whichever embeddings already exist.'
         );
     }
 

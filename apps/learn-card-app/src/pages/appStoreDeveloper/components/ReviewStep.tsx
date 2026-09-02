@@ -1,4 +1,6 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import { CheckCircle2, FileText, Settings, Link2, ExternalLink, Smartphone } from 'lucide-react';
 
 import type { AppStoreListingCreate } from '../types';
@@ -10,7 +12,10 @@ interface ReviewStepProps {
 
 export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
     const getCategoryLabel = (value?: string) => {
-        return CATEGORY_OPTIONS.find(c => c.value === value)?.label || value || 'Not specified';
+        const cat = CATEGORY_OPTIONS.find(c => c.value === value);
+        return cat
+            ? mDynamic(cat.labelKey)
+            : value || m['developerPortal.components.reviewStep.notSpecified']();
     };
 
     const launchTypeInfo = data.launch_type ? LAUNCH_TYPE_INFO[data.launch_type] : null;
@@ -30,10 +35,12 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                     <CheckCircle2 className="w-7 h-7 text-emerald-600" />
                 </div>
 
-                <h2 className="text-xl font-semibold text-gray-700">Review Your Submission</h2>
+                <h2 className="text-xl font-semibold text-gray-700">
+                    {m['developerPortal.components.reviewStep.title']()}
+                </h2>
 
                 <p className="text-sm text-gray-500 mt-1">
-                    Please review all details before submitting for approval
+                    {m['developerPortal.components.reviewStep.description']()}
                 </p>
             </div>
 
@@ -56,11 +63,12 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
 
                     <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-semibold text-gray-700 truncate">
-                            {data.display_name || 'Untitled App'}
+                            {data.display_name ||
+                                m['developerPortal.components.reviewStep.untitledApp']()}
                         </h3>
 
                         <p className="text-gray-500 text-sm mt-0.5 line-clamp-2">
-                            {data.tagline || 'No tagline provided'}
+                            {data.tagline || m['developerPortal.components.reviewStep.noTagline']()}
                         </p>
 
                         <div className="flex items-center gap-2 mt-2">
@@ -70,12 +78,12 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
 
                             {launchTypeInfo && (
                                 <span className="px-2 py-0.5 bg-cyan-100 rounded-full text-xs font-medium text-cyan-700">
-                                    {launchTypeInfo.label}
+                                    {mDynamic(launchTypeInfo.labelKey)}
                                 </span>
                             )}
                             {data.age_rating && (
                                 <span className="inline-block px-2 py-0.5 bg-grayscale-100 text-grayscale-700 text-xs font-medium rounded-full">
-                                    Age {data.age_rating}
+                                    {m['appStoreAdmin.listing.age']({ rating: data.age_rating })}
                                 </span>
                             )}
                         </div>
@@ -90,18 +98,23 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                     <div className="flex items-center gap-2 mb-2">
                         <FileText className="w-4 h-4 text-gray-400" />
 
-                        <h4 className="font-medium text-gray-600 text-sm">Description</h4>
+                        <h4 className="font-medium text-gray-600 text-sm">
+                            {m['developerPortal.components.reviewStep.description']()}
+                        </h4>
                     </div>
 
                     <p className="text-sm text-gray-500 whitespace-pre-wrap">
-                        {data.full_description || 'No description provided'}
+                        {data.full_description ||
+                            m['developerPortal.components.reviewStep.noDescription']()}
                     </p>
                 </div>
 
                 {/* Highlights */}
                 {data.highlights && data.highlights.length > 0 && (
                     <div className="bg-white rounded-xl border border-gray-200 p-4">
-                        <h4 className="font-medium text-gray-600 text-sm mb-2">Highlights</h4>
+                        <h4 className="font-medium text-gray-600 text-sm mb-2">
+                            {m['developerPortal.components.reviewStep.highlights']()}
+                        </h4>
 
                         <ul className="space-y-1">
                             {data.highlights
@@ -124,15 +137,21 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                     <div className="flex items-center gap-2 mb-2">
                         <Settings className="w-4 h-4 text-gray-400" />
 
-                        <h4 className="font-medium text-gray-600 text-sm">Launch Configuration</h4>
+                        <h4 className="font-medium text-gray-600 text-sm">
+                            {m['developerPortal.components.reviewStep.launchConfiguration']()}
+                        </h4>
                     </div>
 
                     <div className="space-y-2">
                         <div className="flex justify-between py-1.5 border-b border-gray-100">
-                            <span className="text-sm text-gray-500">Launch Type</span>
+                            <span className="text-sm text-gray-500">
+                                {m['developerPortal.components.reviewStep.launchType']()}
+                            </span>
 
                             <span className="text-sm font-medium text-gray-600">
-                                {launchTypeInfo?.label || 'Not selected'}
+                                {launchTypeInfo
+                                    ? mDynamic(launchTypeInfo.labelKey)
+                                    : m['developerPortal.components.reviewStep.notSelected']()}
                             </span>
                         </div>
 
@@ -156,11 +175,15 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         <div className="flex items-center gap-2 mb-2">
                             {/* <Link2 className="w-4 h-4 text-gray-400" /> */}
 
-                            <h4 className="font-medium text-gray-600 text-sm">Minimum Age</h4>
+                            <h4 className="font-medium text-gray-600 text-sm">
+                                {m['developerPortal.components.reviewStep.minimumAge']()}
+                            </h4>
                         </div>
 
                         <p className="text-sm text-gray-500 whitespace-pre-wrap">
-                            {data.min_age} years - the app will be hidden from users under this age
+                            {m['developerPortal.components.reviewStep.minimumAgeDesc']({
+                                age: data.min_age,
+                            })}
                         </p>
                     </div>
                 )}
@@ -171,7 +194,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         <div className="flex items-center gap-2 mb-2">
                             <Link2 className="w-4 h-4 text-gray-400" />
 
-                            <h4 className="font-medium text-gray-600 text-sm">Additional Links</h4>
+                            <h4 className="font-medium text-gray-600 text-sm">
+                                {m['developerPortal.components.reviewStep.additionalLinks']()}
+                            </h4>
                         </div>
 
                         <div className="space-y-1.5">
@@ -182,7 +207,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                                     rel="noopener noreferrer"
                                     className="block text-sm text-cyan-600 hover:underline"
                                 >
-                                    Privacy Policy
+                                    {m['developerPortal.components.reviewStep.privacyPolicy']()}
                                 </a>
                             )}
 
@@ -193,7 +218,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                                     rel="noopener noreferrer"
                                     className="block text-sm text-cyan-600 hover:underline"
                                 >
-                                    Terms of Service
+                                    {m['developerPortal.components.reviewStep.termsOfService']()}
                                 </a>
                             )}
                         </div>
@@ -206,7 +231,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         <div className="flex items-center gap-2 mb-2">
                             <Smartphone className="w-4 h-4 text-gray-400" />
 
-                            <h4 className="font-medium text-gray-600 text-sm">Native App Links</h4>
+                            <h4 className="font-medium text-gray-600 text-sm">
+                                {m['developerPortal.components.reviewStep.nativeAppLinks']()}
+                            </h4>
                         </div>
 
                         <div className="space-y-2">
@@ -218,7 +245,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                                     className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    iOS App Store ({data.ios_app_store_id})
+                                    {m['appStoreAdmin.listing.iosAppStore']({
+                                        id: data.ios_app_store_id,
+                                    })}
                                 </a>
                             )}
 
@@ -230,7 +259,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                                     className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    Google Play Store ({data.android_app_store_id})
+                                    {m['appStoreAdmin.listing.googlePlayStore']({
+                                        id: data.android_app_store_id,
+                                    })}
                                 </a>
                             )}
                         </div>
@@ -240,8 +271,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
 
             {/* Submission Notice */}
             <div className="p-4 bg-gray-100 rounded-xl text-sm text-gray-500 text-center">
-                By submitting, your app will be sent for review. You'll be notified once it's
-                approved or if changes are required.
+                {m['developerPortal.components.reviewStep.submissionNotice']()}
             </div>
         </div>
     );

@@ -10,8 +10,8 @@ const log = getLogger('pathways-dev-globals');
  *
  * Typical demo flow from a fresh clone:
  *
- *   1. `pnpm lc dev ... full`                             — bring up services
- *   2. `pnpm lc` → Seed Test Data → Pathways demo bundle  — seed 3 listings
+ *   1. `bun run lc dev ... full`                         — bring up services
+ *   2. `bun run lc` → Seed Test Data → Pathways demo bundle — seed 3 listings
  *   3. In the browser console on `/pathways`:
  *        __pathwaysDev.seedAws('did:key:...')             — author the pathway
  *        __pathwaysDev.dropVc()                           — drop a matching VC

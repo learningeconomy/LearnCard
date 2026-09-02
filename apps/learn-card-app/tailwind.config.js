@@ -7,6 +7,10 @@ module.exports = {
         '../../packages/learn-card-base/src/**/*.{js,jsx,ts,tsx}',
     ],
     safelist: [
+        // @learncard/react is not in `content`, but this stylesheet overrides its
+        // bundled palette. Keep the accessible verifier-badge orange generated
+        // here so the app does not fall back to an unstyled badge.
+        'text-orange-800',
         'text-[var(--sdm-c,inherit)]',
         'dark:text-[var(--shiki-dark,var(--sdm-c,inherit))]',
         'bg-[var(--sdm-tbg)]',
@@ -20,6 +24,30 @@ module.exports = {
         'bg-sand-50',
         'bg-vp-red-50',
         'bg-baltic-blue-500',
+        // `defaults.primaryButtonColor` comes from theme JSON; the 600 steps are
+        // the AA-passing white-on-button values (the 500s fall below 4.5:1).
+        'bg-baltic-blue-600',
+        'bg-indigo-600',
+        // LC-1921 side-menu Build-My-LearnCard card + theme toggle: tints built
+        // via `bg-${family}-{50,200,500}` from the active theme primary color.
+        'bg-indigo-50',
+        'bg-indigo-200',
+        'bg-indigo-200/50',
+        'bg-indigo-500',
+        'bg-blue-50',
+        'bg-blue-200',
+        'bg-blue-200/50',
+        'bg-blue-500',
+        // VetPass default family is multi-word (`baltic-blue-500`).
+        'bg-baltic-blue-50',
+        'bg-baltic-blue-200',
+        'bg-baltic-blue-200/50',
+        // Build-My-LearnCard side-menu spinner tint built via `text-${primaryColor}`
+        // (LC-1924). One entry per theme `defaults.primaryColor`; without these the
+        // interpolated class silently produces no styling.
+        'text-indigo-500',
+        'text-blue-500',
+        'text-baltic-blue-500',
     ],
     theme: {
         fontFamily: {
@@ -47,6 +75,11 @@ module.exports = {
                 'chat-in': 'chat-in 250ms ease-out forwards',
                 'chat-in-mine': 'chat-in-mine 250ms ease-out forwards',
                 'spin-custom': 'spin-custom 1s linear infinite',
+                'card-pop': 'card-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                'glow-pulse': 'glow-pulse 900ms ease-out',
+                'image-drop': 'image-drop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                'confetti-fall': 'confetti-fall 1600ms ease-in forwards',
+                'reveal-card': 'reveal-card 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards',
                 'pop-in': 'pop-in 0.4s ease-out forwards',
                 'shimmer': 'shimmer 1.2s ease-in-out forwards',
             },
@@ -103,6 +136,30 @@ module.exports = {
                 'sdk-bar': {
                     '0%': { transform: 'translateX(-100%)' },
                     '100%': { transform: 'translateX(300%)' },
+                },
+                'card-pop': {
+                    '0%': { transform: 'scale(1)' },
+                    '40%': { transform: 'scale(0.985)' },
+                    '100%': { transform: 'scale(1)' },
+                },
+                'glow-pulse': {
+                    '0%': { boxShadow: '0 0 0 0 rgba(16, 185, 129, 0)' },
+                    '30%': { boxShadow: '0 0 0 6px rgba(16, 185, 129, 0.18)' },
+                    '100%': { boxShadow: '0 0 0 0 rgba(16, 185, 129, 0)' },
+                },
+                'image-drop': {
+                    '0%': { opacity: '0', transform: 'translateY(-8px) scale(0.92)' },
+                    '60%': { opacity: '1', transform: 'translateY(2px) scale(1.02)' },
+                    '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                },
+                'confetti-fall': {
+                    '0%': { opacity: '1', transform: 'translateY(-10px) rotate(0deg)' },
+                    '100%': { opacity: '0', transform: 'translateY(70vh) rotate(720deg)' },
+                },
+                'reveal-card': {
+                    '0%': { opacity: '0', transform: 'translateY(16px) scale(0.86) rotate(-4deg)' },
+                    '55%': { opacity: '1', transform: 'translateY(0) scale(1.03) rotate(1.5deg)' },
+                    '100%': { opacity: '1', transform: 'translateY(0) scale(1) rotate(0deg)' },
                 },
                 'pop-in': {
                     '0%': { opacity: '0', transform: 'translateY(6px) scale(0.96)' },

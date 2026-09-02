@@ -1,16 +1,13 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('context');
 
 import type { AnalyticsProvider, AnalyticsProviderName } from './types';
-import type { AnalyticsEventName, EventPayload } from './events';
+import type { AnalyticsEventName, EventPayload, FeedbackIdeaPayload } from './events';
 import { NoopProvider } from './providers/noop';
+import { getSharedEventContext, shouldDropEvents } from './sharedContext';
 import { getResolvedTenantConfig } from '../config/tenantConfigState';
-import {
-    setAnalyticsProvider as setSendCredentialFlowProvider,
-    setSendCredentialTelemetryEnabled,
-} from '../helpers/sendCredentialFlow.helpers';
+import { setAnalyticsProvider as setSendCredentialFlowProvider } from '../helpers/sendCredentialFlow.helpers';
 
 /**
  * Lazily load and instantiate the appropriate analytics provider.
@@ -64,6 +61,50 @@ async function loadProvider(): Promise<AnalyticsProvider> {
     }
 }
 
+/**
+ * Wrap a provider so every `track`/`page` call carries the enforced
+ * shared context (`environment`, `app_version`, `tenant_id`,
+ * `platform`) and automation/e2e traffic is dropped client-side.
+ * Enforced context wins key conflicts — call sites cannot override
+ * `environment`. PostHog additionally applies this at the SDK level
+ * (see `applyPostHogHygiene`) so `$exception`/`$rageclick`/`$pageleave`
+ * are covered too.
+ */
+function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
+    return {
+        name: provider.name,
+        init: () => provider.init(),
+        identify: (userId, traits) => {
+            // Drop automation/e2e identify calls provider-agnostically —
+            // PostHog also catches $identify in before_send, but other
+            // providers have no SDK-level hook.
+            if (shouldDropEvents()) return Promise.resolve();
+            return provider.identify(userId, traits);
+        },
+        reset: () => provider.reset(),
+        setEnabled: enabled => provider.setEnabled(enabled),
+        track: async (event, properties) => {
+            if (shouldDropEvents()) return;
+            await provider.track(event, { ...properties, ...getSharedEventContext() });
+        },
+        submitFeedbackIdea: async properties => {
+            if (shouldDropEvents()) return;
+            await provider.submitFeedbackIdea({
+                source: properties.source,
+                message: properties.message,
+                currentRoute: properties.currentRoute,
+                ...(typeof properties.appVersion === 'string'
+                    ? { appVersion: properties.appVersion }
+                    : {}),
+            });
+        },
+        page: async (name, properties) => {
+            if (shouldDropEvents()) return;
+            await provider.page(name, { ...properties, ...getSharedEventContext() });
+        },
+    };
+}
+
 interface AnalyticsContextValue {
     provider: AnalyticsProvider;
     isReady: boolean;
@@ -97,19 +138,19 @@ interface AnalyticsProviderProps {
 export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
     const [provider, setProvider] = useState<AnalyticsProvider>(() => new NoopProvider());
     const [isReady, setIsReady] = useState(false);
-    const flags = useFlags();
-    const sendCredentialTelemetryFlag = !!flags.enableSendCredentialPosthogTelemetry;
 
     useEffect(() => {
         let mounted = true;
 
         loadProvider()
-            .then(async loadedProvider => {
+            .then(async rawProvider => {
                 if (!mounted) return;
 
-                await loadedProvider.init();
+                await rawProvider.init();
 
                 if (!mounted) return;
+
+                const loadedProvider = withSharedContext(rawProvider);
 
                 setProvider(loadedProvider);
                 setIsReady(true);
@@ -128,12 +169,6 @@ export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
             mounted = false;
         };
     }, []);
-
-    // LC-1644: gate natural send-credential telemetry on the LD flag.
-    // Bench-triggered events bypass the gate inside sendCredentialFlow.helpers.
-    useEffect(() => {
-        setSendCredentialTelemetryEnabled(sendCredentialTelemetryFlag);
-    }, [sendCredentialTelemetryFlag]);
 
     const value = useMemo(() => ({ provider, isReady }), [provider, isReady]);
 
@@ -175,6 +210,13 @@ export function useAnalytics() {
         [provider]
     );
 
+    const submitFeedbackIdea = useCallback(
+        async (properties: FeedbackIdeaPayload) => {
+            await provider.submitFeedbackIdea(properties);
+        },
+        [provider]
+    );
+
     const page = useCallback(
         async (name: string, properties?: Record<string, unknown>) => {
             await provider.page(name, properties);
@@ -195,6 +237,7 @@ export function useAnalytics() {
 
     return {
         track,
+        submitFeedbackIdea,
         identify,
         page,
         reset,

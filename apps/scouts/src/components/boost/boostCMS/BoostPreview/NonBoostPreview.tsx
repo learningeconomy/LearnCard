@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
 
+import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import { IonContent, IonFooter, IonPage, IonRow, IonToolbar } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
 import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 import { useHighlightedCredentials } from '../../../../hooks/useHighlightedCredentials';
 import { getRoleFromCred, getScoutsNounForRole } from '../../../../helpers/troop.helpers';
 import X from 'learn-card-base/svgs/X';
@@ -103,6 +105,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
+    const shouldUseHostCardPadding = getVCDisplayCardVariant(credential, categoryType) !== 'ribbon';
 
     const bgImage = credential?.display?.backgroundImager;
     const showBackground = bgImage && isCertificate;
@@ -114,11 +117,13 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-90`}
             >
                 <IonRow
-                    className={`flex flex-col items-center justify-center px-1 overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
-                        isCertificate ? 'pt-14 md:pt-20' : ''
-                    } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
+                    className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
+                        shouldUseHostCardPadding ? 'px-1' : ''
+                    } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
+                        isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''
+                    }`}
                 >
-                    <section className="px-6 w-full">
+                    <section className={`w-full ${shouldUseHostCardPadding ? 'px-6' : ''}`}>
                         <div className="flex items-center justify-center mb-2 vc-preview-modal-safe-area" />
                         <VCDisplayCardWrapper2
                             credential={credential}
@@ -162,11 +167,11 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         >
                             {isFront ? (
                                 <>
-                                    Details <FatArrow direction="right" />
+                                    {m['common.details']()} <FatArrow direction="right" />
                                 </>
                             ) : (
                                 <>
-                                    <FatArrow direction="left" /> Back
+                                    <FatArrow direction="left" /> {m['common.back']()}
                                 </>
                             )}
                         </button>

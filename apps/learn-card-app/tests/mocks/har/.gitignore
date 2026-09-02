@@ -1,0 +1,5 @@
+# Commit only the bundled .zip HAR. Ignore attach-mode leftovers (a plain .har
+# manifest plus hash-named response-body .json files).
+*.har
+*.json
+!.gitkeep

@@ -3,7 +3,6 @@ import { useCallback } from 'react';
 import {
     ToastTypeEnum,
     useUpdatePreferences,
-    useGetCurrentLCNUser,
     useToast,
     switchedProfileStore,
 } from 'learn-card-base';
@@ -25,7 +24,6 @@ import { useGuardianGate } from './useGuardianGate';
  */
 export const useAiConsentToggle = () => {
     const { mutateAsync: updatePreferencesAsync } = useUpdatePreferences();
-    const { currentLCNUser } = useGetCurrentLCNUser();
     const { presentToast } = useToast();
     const { guardedAction } = useGuardianGate();
     const { autoConsentLearnCardAi, withdrawLearnCardAiConsent } = useAutoConsentLearnCardAi();
@@ -33,23 +31,23 @@ export const useAiConsentToggle = () => {
     const isChildProfile = profileType === 'child';
 
     const handleAiToggle = useCallback(
-        async (enabled: boolean) => {
-            // ---- Case 1: Turning OFF for a child profile ----
-            // Withdraw consent first, then update preferences.
-            // If preference update fails, we re-consent to restore the contract.
-            if (!enabled && isChildProfile) {
+        async (enabled: boolean): Promise<boolean> => {
+            // ---- Case 1: Turning OFF ----
+            // Update preferences first, then withdraw consent.
+            // If withdrawal fails, restore preferences so state stays consistent.
+            if (!enabled) {
                 try {
                     await updatePreferencesAsync({ aiEnabled: false });
                 } catch {
                     presentToast('Something went wrong. Please try again.', {
                         type: ToastTypeEnum.Error,
                     });
-                    return;
+                    return false;
                 }
 
                 const withdrawn = await withdrawLearnCardAiConsent();
                 if (!withdrawn) {
-                    // Rollback: restore preferences to enabled since we couldn't withdraw consent
+                    // Rollback: restore preferences to enabled since we couldn't withdraw consent.
                     try {
                         await updatePreferencesAsync({ aiEnabled: true });
                     } catch {
@@ -58,62 +56,58 @@ export const useAiConsentToggle = () => {
                     presentToast('Something went wrong. Please try again.', {
                         type: ToastTypeEnum.Error,
                     });
+                    return false;
                 }
-                return;
+                return true;
             }
 
-            // ---- Case 2: Simple toggle (adult or turning off non-child) ----
-            if (!enabled || !isChildProfile) {
+            const syncConsent = async (): Promise<boolean> => {
                 try {
-                    await updatePreferencesAsync({ aiEnabled: enabled });
+                    await updatePreferencesAsync({ aiEnabled: true });
                 } catch {
                     presentToast('Something went wrong. Please try again.', {
                         type: ToastTypeEnum.Error,
                     });
+                    return false;
                 }
-                return;
+
+                const consented = await autoConsentLearnCardAi({ enabled: true });
+
+                if (!consented) {
+                    // Rollback: undo the preference update since consent failed.
+                    try {
+                        await updatePreferencesAsync({ aiEnabled: false });
+                    } catch {
+                        // Best effort rollback
+                    }
+                    presentToast('Something went wrong. Please try again.', {
+                        type: ToastTypeEnum.Error,
+                    });
+                    return false;
+                }
+
+                return true;
+            };
+
+            // ---- Case 2: Turning ON ----
+            // Update preferences first, then consent. Roll back if consent fails.
+            if (isChildProfile) {
+                let synced = false;
+
+                await guardedAction(
+                    async () => {
+                        synced = await syncConsent();
+                    },
+                    { ignorePriorVerification: true }
+                );
+
+                return synced;
             }
 
-            // ---- Case 3: Turning ON for a child profile (guardian-gated) ----
-            // Update preferences first, then consent. Roll back if consent fails.
-            await guardedAction(
-                async () => {
-                    try {
-                        await updatePreferencesAsync({ aiEnabled: true });
-                    } catch {
-                        presentToast('Something went wrong. Please try again.', {
-                            type: ToastTypeEnum.Error,
-                        });
-                        return;
-                    }
-
-                    const consented = await autoConsentLearnCardAi({
-                        enabled: true,
-                        userOverrides: {
-                            displayName: currentLCNUser?.displayName ?? '',
-                            image: currentLCNUser?.image ?? '',
-                        },
-                    });
-
-                    if (!consented) {
-                        // Rollback: undo the preference update since consent failed
-                        try {
-                            await updatePreferencesAsync({ aiEnabled: false });
-                        } catch {
-                            // Best effort rollback
-                        }
-                        presentToast('Something went wrong. Please try again.', {
-                            type: ToastTypeEnum.Error,
-                        });
-                    }
-                },
-                { ignorePriorVerification: true }
-            );
+            return syncConsent();
         },
         [
             autoConsentLearnCardAi,
-            currentLCNUser?.displayName,
-            currentLCNUser?.image,
             guardedAction,
             presentToast,
             updatePreferencesAsync,

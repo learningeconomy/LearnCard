@@ -2,6 +2,7 @@ import React from 'react';
 import { Capacitor } from '@capacitor/core';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 const UserProfileSetupHeader: React.FC<{
     showNetworkSettings?: boolean;
@@ -16,7 +17,7 @@ const UserProfileSetupHeader: React.FC<{
     const primaryColor = colors?.defaults?.primaryColor;
 
     return (
-        <div className="ion-no-border bg-white pt-5">
+        <div className="ion-no-border">
             {showNetworkSettings && (
                 <div className="w-full flex items-center justify-center">
                     {Capacitor?.isNativePlatform?.() && (
@@ -24,7 +25,7 @@ const UserProfileSetupHeader: React.FC<{
                             onClick={() => handleNotificationsPrompt?.()}
                             className={`mr-1 text-${primaryColor} font-semibold text-lg text-center`}
                         >
-                            Notifications
+                            {m['profile.notifications']()}
                         </button>
                     )}
                     {/* {!currentLCNUser && (

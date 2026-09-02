@@ -6,9 +6,14 @@ import {
     createReceivedPresentationRelationship,
     createSentPresentationRelationship,
 } from '@accesslayer/presentation/relationships/create';
-import { getPresentationSentToProfile, getPresentationReceivedByProfile } from '@accesslayer/presentation/relationships/read';
+import {
+    getPresentationSentToProfile,
+    getPresentationReceivedByProfile,
+} from '@accesslayer/presentation/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
+import { getNotificationMessage } from './notificationMessages';
+import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { ProfileType } from 'types/profile';
 
 export const getPresentationUri = (id: string, domain: string): string =>
@@ -30,10 +35,9 @@ export const sendPresentation = async (
         type: LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED,
         to,
         from,
-        message: {
-            title: 'Presentation Received',
-            body: `${from.displayName} has sent you a presentation!`,
-        },
+        message: getNotificationMessage('presentationReceived', resolveRecipientLocale(to), {
+            from: from.displayName,
+        }),
         data: { vpUris: [uri] },
     });
 

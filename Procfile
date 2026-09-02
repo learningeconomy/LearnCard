@@ -1,1 +1,0 @@
-worker: cd services/learn-card-discord-bot && pnpm start

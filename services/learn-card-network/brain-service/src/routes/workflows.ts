@@ -45,7 +45,10 @@ import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-pro
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 import {
     EXHAUSTED,
     exhaustExchangeChallengeForToken,
@@ -705,6 +708,18 @@ async function handleInboxClaimPresentation(
             const integrationId = inboxCredential.integrationId;
             const issuerProfileForActivity = await getProfileByDid(inboxCredential.issuerDid);
             if (issuerProfileForActivity) {
+                if (
+                    holderProfile &&
+                    !(inboxCredential.signingAuthority as { listingSlug?: string } | undefined)
+                        ?.listingSlug
+                ) {
+                    await handleConnectionPromptsForCredentialClaim({
+                        claimer: holderProfile,
+                        sender: issuerProfileForActivity,
+                        triggerId: `inbox:${inboxCredential.id}`,
+                    });
+                }
+
                 await logCredentialClaimed({
                     activityId,
                     actorProfileId: issuerProfileForActivity.profileId,
@@ -725,10 +740,14 @@ async function handleInboxClaimPresentation(
                     type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
                     from: { did: learnCard.id.did() },
                     to: { did: inboxCredential.issuerDid },
-                    message: {
-                        title: 'Credential Claimed from Inbox',
-                        body: `${contactMethod.value} claimed a credential from their inbox.`,
-                    },
+                    message: getNotificationMessage(
+                        'issuanceClaimed',
+                        // issuerProfileForActivity is the issuer (the webhook recipient),
+                        // loaded just above; falls back to 'en' when the issuer has no
+                        // LearnCard profile.
+                        resolveRecipientLocale(issuerProfileForActivity),
+                        { value: contactMethod.value }
+                    ),
                     data: {
                         inbox: {
                             issuanceId: inboxCredential.id,
@@ -779,17 +798,22 @@ async function handleInboxClaimPresentation(
                 // Trigger webhook for error if configured
                 if (inboxCredential.webhookUrl) {
                     const learnCard = await getLearnCard();
+                    const issuanceErrorMsg = getNotificationMessage(
+                        'issuanceError',
+                        // failedIssuerProfile is the issuer (the webhook recipient),
+                        // loaded above; falls back to 'en' when the issuer has no
+                        // LearnCard profile.
+                        resolveRecipientLocale(failedIssuerProfile),
+                        { value: contactMethod.value }
+                    );
                     await addNotificationToQueue({
                         webhookUrl: inboxCredential.webhookUrl,
                         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_ERROR,
                         from: { did: learnCard.id.did() },
                         to: { did: inboxCredential.issuerDid },
                         message: {
-                            title: 'Credential Issuance Error from Inbox',
-                            body:
-                                error instanceof Error
-                                    ? error.message
-                                    : `${contactMethod.value} failed to claim a credential from their inbox.`,
+                            title: issuanceErrorMsg.title,
+                            body: error instanceof Error ? error.message : issuanceErrorMsg.body,
                         },
                         data: {
                             inbox: {

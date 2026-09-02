@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 // Helper to extract flags and pattern from regex string
 const parseRegexString = (regexStr: string) => {
@@ -34,16 +34,19 @@ const RegExpStringValidator = z
     })
     .meta({ override: { type: 'string' } });
 
-export const RegExpValidator = z
-    .instanceof(RegExp)
-    .meta({ override: { type: 'string' } })
-    .or(RegExpStringValidator)
-    .meta({ override: { type: 'string' } });
+// Do not use z.instanceof(RegExp) here: it is a `custom` Zod type that crashes
+// zod-openapi document generation at service boot, and `.meta({ override })` is
+// not honored for custom types. Coercing a RegExp to its `/source/flags` string
+// keeps the OpenAPI schema a plain string while still accepting RegExp inputs.
+export const RegExpValidator = z.preprocess(
+    value => (value instanceof RegExp ? `/${value.source}/${value.flags}` : value),
+    RegExpStringValidator
+);
 
 const BaseStringQuery = z
     .string()
     .or(z.object({ $in: z.string().array() }))
-    .or(z.object({ $regex: RegExpValidator.meta({ override: { type: 'string' } }) }));
+    .or(z.object({ $regex: RegExpValidator }));
 
 export const StringQuery = z.union([
     BaseStringQuery,

@@ -2,6 +2,7 @@ import React from 'react';
 import { IonIcon } from '@ionic/react';
 import { shieldCheckmarkOutline } from 'ionicons/icons';
 import { formatDistanceToNow } from 'date-fns';
+import { ChevronRight } from 'lucide-react';
 
 import type {
     DashboardLearningProfileViewModel,
@@ -9,6 +10,9 @@ import type {
 } from '../DashboardView.types';
 import Trophy from 'learn-card-base/svgs/Trophy';
 import SkillsIcon from 'learn-card-base/svgs/wallet/SkillsIcon';
+
+import * as m from '../../../paraglide/messages.js';
+import TransP from '../../../i18n/TransP';
 
 type LearningProfileCardProps = {
     vm: DashboardLearningProfileViewModel;
@@ -19,18 +23,18 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
 
     const renderSkillPill = (skill: DashboardProfileSkill, index: number) => {
         let tierClasses = 'bg-grayscale-100 text-grayscale-600';
-        let tierLabel = 'Growing';
+        let tierLabel = m['dashboard.learningProfile.tierGrowing']();
         let filledBars = 1;
         let barColor = 'bg-grayscale-400';
 
         if (skill.strengthTier === 'strongest') {
             tierClasses = 'bg-emerald-600 text-white';
-            tierLabel = 'Strongest';
+            tierLabel = m['dashboard.learningProfile.tierStrongest']();
             filledBars = 3;
             barColor = 'bg-emerald-600';
         } else if (skill.strengthTier === 'strong') {
             tierClasses = 'bg-emerald-50 text-emerald-700';
-            tierLabel = 'Strong';
+            tierLabel = m['dashboard.learningProfile.tierStrong']();
             filledBars = 2;
             barColor = 'bg-emerald-500';
         }
@@ -41,8 +45,8 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                 className="inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border border-grayscale-200 bg-white animate-pop-in opacity-0"
                 style={{ animationDelay: `${index * 100}ms` }}
             >
-                <SkillsIcon className="w-4 h-4 shrink-0" />
-                <span className="text-xs font-medium text-grayscale-900">{skill.title}</span>
+                <SkillsIcon className="w-[25px] h-[25px] shrink-0" />
+                <span className="text-base font-medium text-grayscale-900">{skill.title}</span>
 
                 <div className="flex items-center gap-1.5 ml-1">
                     <div className="flex items-end gap-0.5 h-2.5">
@@ -57,7 +61,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                         ))}
                     </div>
                     <span
-                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${tierClasses}`}
+                        className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${tierClasses}`}
                     >
                         {tierLabel}
                     </span>
@@ -69,12 +73,14 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
     return (
         <section className="bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up font-poppins w-full flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
-                    Your Insights
+                <h2 className="text-xs font-medium tracking-wider text-grayscale-600 uppercase">
+                    {m['dashboard.learningProfile.title']()}
                 </h2>
                 {updatedAt && state !== 'empty' && (
-                    <span className="text-[11px] text-grayscale-400">
-                        Updated {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}
+                    <span className="text-[11px] text-grayscale-600">
+                        {m['dashboard.learningProfile.updated']({
+                            time: formatDistanceToNow(new Date(updatedAt), { addSuffix: true }),
+                        })}
                     </span>
                 )}
             </div>
@@ -87,28 +93,21 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                         </div>
                         <div className="flex-1 min-w-0 pt-1">
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Add a course to reveal your strengths.
+                                {m['dashboard.learningProfile.emptyAddCourse']()}
                             </p>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        {[1, 2, 3].map(i => (
-                            <div
-                                key={i}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-dashed border-grayscale-200 bg-grayscale-10 animate-pulse-opacity"
-                                style={{ animationDelay: `${i * 150}ms` }}
-                            >
-                                <div className="w-3 h-3 rounded-full bg-grayscale-200" />
-                                <div className="w-12 h-2 rounded-full bg-grayscale-200" />
-                            </div>
-                        ))}
+                        <p className="text-sm text-grayscale-600 leading-relaxed">
+                            {m['dashboard.learningProfile.noInsightsYet']()}
+                        </p>
                     </div>
                 </div>
             ) : (
                 <div className="flex flex-col gap-4 mt-1">
                     {state === 'early' && (
                         <div className="self-start bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase rounded-full px-2 py-0.5">
-                            Early read
+                            {m['dashboard.learningProfile.earlyRead']()}
                         </div>
                     )}
 
@@ -121,8 +120,16 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                                 </div>
                                 <div className="flex-1 min-w-0 pt-0.5">
                                     <p className="text-base text-grayscale-900 font-semibold leading-snug">
-                                        You're strongest in{' '}
-                                        <span className="text-emerald-700">{strength.title}</span>.
+                                        <TransP
+                                            m={m['dashboard.learningProfile.strongestIn']}
+                                            values={{ title: strength.title }}
+                                            components={[
+                                                <span
+                                                    key="skill-title"
+                                                    className="text-emerald-700"
+                                                />,
+                                            ]}
+                                        />
                                     </p>
                                     {strength.summary && (
                                         <p className="text-sm text-grayscale-600 truncate mt-0.5">
@@ -134,8 +141,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                         </div>
                     ) : (
                         <p className="text-sm text-grayscale-600">
-                            Your learning profile takes shape as you add courses, achievements, and
-                            experiences.
+                            {m['dashboard.learningProfile.buildingProfile']()}
                         </p>
                     )}
 
@@ -152,11 +158,17 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                     <div className="flex items-center gap-1.5">
                         <IonIcon
                             icon={shieldCheckmarkOutline}
+                            aria-hidden="true"
                             className="text-grayscale-400 text-sm"
                         />
-                        <span className="text-[11px] font-medium text-grayscale-500">
-                            Grounded in {verifiedRecords} verified{' '}
-                            {verifiedRecords === 1 ? 'record' : 'records'}
+                        <span className="text-xs font-medium text-grayscale-600">
+                            {verifiedRecords === 1
+                                ? m['dashboard.learningProfile.groundedInOne']({
+                                      count: verifiedRecords,
+                                  })
+                                : m['dashboard.learningProfile.groundedInMany']({
+                                      count: verifiedRecords,
+                                  })}
                         </span>
                     </div>
                 ) : (
@@ -164,10 +176,12 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
                 )}
 
                 <button
+                    type="button"
                     onClick={onViewInsights}
-                    className="text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ml-auto"
+                    className="flex items-center justify-center gap-1 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors ml-auto rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
-                    View insights &rarr;
+                    {m['dashboard.learningProfile.viewInsights']()}
+                    <ChevronRight className="w-5 h-5 text-grayscale-400 rtl:rotate-180" />
                 </button>
             </div>
         </section>

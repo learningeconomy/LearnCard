@@ -21,7 +21,8 @@ import TroopActionMenu from './TroopActionMenu';
 import ScoutConnectModal from './ScoutConnectModal';
 import InviteSelectionModal from './InviteSelectionModal';
 
-import { getScoutsRole } from '../../helpers/troop.helpers';
+import * as m from '../../paraglide/messages.js';
+import { getScoutsRole, getScoutsRoleLabelForCred } from '../../helpers/troop.helpers';
 import { VC, Boost } from '@learncard/types';
 
 type TroopPageFooterProps = {
@@ -64,6 +65,8 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
         scoutBoostUri,
         troopBoostUri,
         troopPermissionsData,
+        scoutId,
+        troopId,
     } = useCanInviteTroop({ credential, boostUri: uri });
 
     const { openEditTroopOrNetworkModal } = useEditTroopId(credential, uri);
@@ -102,15 +105,19 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
     const handleDelete = async () => {
         const wallet = await initWallet();
         await confirm({
-            text: `Are you sure you want to delete ${credential?.name}?`,
+            text: m['troops.options.deleteConfirm']({ credential: credential?.name ?? '' }),
             onConfirm: async () => {
                 try {
                     const walletDid = wallet.id.did();
                     await wallet.invoke.deleteBoost(uri);
-                    queryClient.invalidateQueries(['useGetIDs', walletDid ?? '']);
+                    queryClient.invalidateQueries({ queryKey: ['useGetIDs', walletDid ?? ''] });
                     closeAllModals();
-                } catch (error) {
-                    if (error) presentAlert(error?.message);
+                } catch (error: unknown) {
+                    if (error) {
+                        presentAlert(
+                            error instanceof Error ? error.message : m['boost.somethingWentWrong']()
+                        );
+                    }
                     closeAllModals();
                 }
             },
@@ -123,15 +130,25 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
     const handleInvite = showInviteButton
         ? () => {
               const canInviteScout = scoutPermissionsData?.canIssue;
-              const canInviteLeader = troopPermissionsData?.canIssue || boostPermissionsData?.canIssue;
+              const canInviteLeader =
+                  troopPermissionsData?.canIssue || boostPermissionsData?.canIssue;
+              const leaderImage = troopId?.boostID?.idThumbnail;
+              const scoutImage = scoutId?.boostID?.idThumbnail;
 
               if (canInviteScout && canInviteLeader) {
                   newModal(
                       <InviteSelectionModal
-                          onInviteLeader={() => openScoutConnectModal(troopBoostUri, 'Troop Leader')}
+                          onInviteLeader={() =>
+                              openScoutConnectModal(
+                                  troopBoostUri,
+                                  getScoutsRoleLabelForCred(credential)
+                              )
+                          }
                           onInviteScout={() => openScoutConnectModal(scoutBoostUri, 'Scout')}
                           handleCloseModal={closeModal}
                           scoutNoun={scoutNoun}
+                          leaderImage={leaderImage}
+                          scoutImage={scoutImage}
                       />,
                       { sectionClassName: '!max-w-[450px]' },
                       { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
@@ -139,7 +156,10 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
               } else if (canInviteScout) {
                   openScoutConnectModal(scoutBoostUri, 'Scout');
               } else if (canInviteLeader) {
-                  openScoutConnectModal(troopBoostUri || currentBoostUri, 'Troop Leader');
+                  openScoutConnectModal(
+                      troopBoostUri || currentBoostUri,
+                      getScoutsRoleLabelForCred(credential)
+                  );
               }
           }
         : undefined;
@@ -175,14 +195,14 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                             onClick={showIdDetails ? handleDetails : closeTroopPage}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         <button
                             onClick={openEditTroopOrNetworkModal}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Edit
+                            {m['common.edit']()}
                         </button>
 
                         <button
@@ -206,7 +226,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                             onClick={closeTroopPage}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         {!isRevoked && (
@@ -227,7 +247,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                             }}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         {!isRevoked && (

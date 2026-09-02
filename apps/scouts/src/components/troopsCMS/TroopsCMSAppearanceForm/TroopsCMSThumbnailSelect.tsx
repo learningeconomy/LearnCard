@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import Pencil from '../../svgs/Pencil';
 import TrashBin from '../../svgs/TrashBin';
 
-import { UploadRes, useFilestack } from 'learn-card-base';
+import { UploadRes, useImageUpload } from 'learn-card-base';
 import { TroopsCMSState, TroopsCMSViewModeEnum } from '../troopCMSState';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { getDefaultBadgeThumbForViewMode } from '../../../helpers/troop.helpers';
@@ -85,7 +86,7 @@ export const TroopCMSThumbnailSelect: React.FC<{
         handleStateChange('badgeThumbnail', data?.url);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -112,7 +113,7 @@ export const TroopCMSThumbnailSelect: React.FC<{
                                 getDefaultBadgeThumbForViewMode(viewMode)
                             ) : (
                                 <img
-                                    alt="badge thumbnail"
+                                    alt=""
                                     src={
                                         state?.inheritNetworkStyles && !isInIDMode
                                             ? insertParamsToFilestackUrl(
@@ -140,7 +141,7 @@ export const TroopCMSThumbnailSelect: React.FC<{
                         {(!thumbnail && !state?.inheritNetworkStyles && !isInIDMode) ||
                             (!thumbnail && isInIDMode && (
                                 <p className="ml-[10px] font-notoSans text-sm font-bold text-grayscale-500">
-                                    None
+                                    {m['scoutsId.none']()}
                                 </p>
                             ))}
                     </div>

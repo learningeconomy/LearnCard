@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import Pencil from '../../svgs/Pencil';
 import TrashBin from '../../svgs/TrashBin';
 import WallpaperEmptyState from '../../../assets/images/wallpaper-empty-state.png';
 
-import { UploadRes, useFilestack } from 'learn-card-base';
+import { UploadRes, useImageUpload } from 'learn-card-base';
 import { TroopsCMSState, TroopsCMSViewModeEnum } from '../troopCMSState';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -86,7 +87,7 @@ export const TroopCMSWallpaperSelect: React.FC<{
         handleStateChange('backgroundImage', data?.url);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -104,14 +105,14 @@ export const TroopCMSWallpaperSelect: React.FC<{
                     (!wallpaper && isInIDMode) ? (
                         <div className="p-[6px]">
                             <img
-                                alt="wallpaper empty state"
+                                alt=""
                                 src={WallpaperEmptyState}
                                 className="w-full h-full object-contain"
                             />
                         </div>
                     ) : (
                         <img
-                            alt="badge thumbnail"
+                            alt=""
                             src={
                                 state?.inheritNetworkStyles && !isInIDMode
                                     ? parentAppearance?.backgroundImage
@@ -129,7 +130,7 @@ export const TroopCMSWallpaperSelect: React.FC<{
                 {(!wallpaper && !state?.inheritNetworkStyles && !isInIDMode) ||
                     (!wallpaper && isInIDMode && (
                         <p className="ml-[10px] font-notoSans text-sm font-bold text-grayscale-500">
-                            None
+                            {m['scoutsId.none']()}
                         </p>
                     ))}
             </div>

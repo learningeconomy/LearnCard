@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../../../../paraglide/messages.js';
+
 import {
-    useFilestack,
+    useImageUpload,
     UploadRes,
     BoostCategoryOptionsEnum,
     isCustomBoostType,
@@ -55,14 +57,10 @@ const BoostCMSAppearanceForm: React.FC<{
 }) => {
     const flags = useFlags();
     const { credentials } = useHighlightedCredentials();
-
-    // Check if user is Global Admin or National Admin
     const isAdmin = credentials.some(cred => {
         const subject = cred?.credentialSubject;
         if (!subject || Array.isArray(subject)) return false;
-        return ['ext:GlobalID', 'ext:NetworkID'].includes(
-            subject?.achievement?.achievementType
-        );
+        return ['ext:GlobalID', 'ext:NetworkID'].includes(subject?.achievement?.achievementType);
     });
 
     const categoryMetadata = boostCategoryOptions[activeCategoryType];
@@ -140,7 +138,7 @@ const BoostCMSAppearanceForm: React.FC<{
         handleStateChange('backgroundImage', data?.url);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -162,9 +160,8 @@ const BoostCMSAppearanceForm: React.FC<{
 
     let formBackgroundColor: string = '';
 
-    const {
-        subColor: _subColor,
-    } = boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
+    const { subColor: _subColor } =
+        boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     formBackgroundColor = state?.appearance?.backgroundColor
         ? state?.appearance?.backgroundColor
         : '#353E64';
@@ -195,19 +192,20 @@ const BoostCMSAppearanceForm: React.FC<{
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
-                        <h3 className="text-grayscale-700 text-left w-full">Badge Thumbnail</h3>
+                        <h3 className="text-grayscale-700 text-left w-full">
+                            {m['boostCMS.badgeThumbnail']()}
+                        </h3>
                         <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-full mt-4">
                             <div className="flex items-center justify-start w-[70%] px-[6px] py-[6px] overflow-hidden">
                                 <div
                                     className={`flex items-center justify-center rounded-full object-contain overflow-hidden w-[72px] h-[72px] bg-${_subColor}`}
                                 >
-                                    <img
-                                        alt="badge thumbnail"
-                                        src={state?.appearance?.badgeThumbnail}
-                                    />
+                                    <img alt="" src={state?.appearance?.badgeThumbnail} />
                                 </div>
                                 {isDefaultImage && (
-                                    <p className="ml-[10px] text-grayscale-700">Default</p>
+                                    <p className="ml-[10px] text-grayscale-700">
+                                        {m['boostCMS.default']()}
+                                    </p>
                                 )}
                             </div>
 
@@ -226,13 +224,12 @@ const BoostCMSAppearanceForm: React.FC<{
                     </div>
                 )}
 
-                {/* Allow admins to upload background images even when CMS customization is disabled */}
                 {(!flags?.disableCmsCustomization || isAdmin) && (
                     <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
                         <h3 className="text-grayscale-700 text-left w-full">
                             {isID || isMembership
-                                ? 'Container Background Image'
-                                : 'Background Image'}
+                                ? m['boostCMS.containerBgImage']()
+                                : m['boostCMS.bgImage']()}
                         </h3>
 
                         <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-tl-[10px] rounded-bl-[10px] rounded-tr-[50px] rounded-br-[50px] mt-4">
@@ -242,13 +239,13 @@ const BoostCMSAppearanceForm: React.FC<{
                                 >
                                     {!state?.appearance?.backgroundImage ? (
                                         <img
-                                            alt="badge thumbnail"
+                                            alt=""
                                             src={EmptyImage}
                                             className="w-[43px] h-[47px]"
                                         />
                                     ) : (
                                         <img
-                                            alt="badge thumbnail"
+                                            alt=""
                                             src={state?.appearance?.backgroundImage}
                                             className="w-full h-full object-cover"
                                         />
@@ -273,7 +270,9 @@ const BoostCMSAppearanceForm: React.FC<{
                                     )}
                                 </div>
                                 {!state?.appearance?.backgroundImage && (
-                                    <p className="ml-[10px] text-grayscale-700">Empty</p>
+                                    <p className="ml-[10px] text-grayscale-700">
+                                        {m['boostCMS.empty']()}
+                                    </p>
                                 )}
                             </div>
 
@@ -292,7 +291,7 @@ const BoostCMSAppearanceForm: React.FC<{
 
                 <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
                     <h3 className="text-grayscale-700 text-left w-full">
-                        {isID ? 'Container Background Color' : 'Background Color'}
+                        {isID ? m['boostCMS.containerBgColor']() : m['boostCMS.bgColorLabel']()}
                     </h3>
 
                     <div className="w-full flex items-center justify-center p-0 m-0 mt-4">
@@ -301,7 +300,7 @@ const BoostCMSAppearanceForm: React.FC<{
                                 value={state?.appearance?.backgroundColor}
                                 onChange={e => handleColorInputOnChange(e.target.value)}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base w-full pr-10"
-                                placeholder="Color Hex Code"
+                                placeholder={m['boostCMS.colorHex']()}
                                 type="text"
                                 disabled={disabled}
                             />
@@ -330,13 +329,13 @@ const BoostCMSAppearanceForm: React.FC<{
                         }}
                         className="flex items-center justify-center bg-emerald-700 rounded-full mb-4 px-[12px] py-[8px] text-white text-2xl w-full max-w-[320px] shadow-lg font-notoSans"
                     >
-                        Save
+                        {m['common.save']()}
                     </button>
                     <button
                         onClick={() => handleCloseModal()}
                         className="text-white text-center text-sm"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </IonRow>

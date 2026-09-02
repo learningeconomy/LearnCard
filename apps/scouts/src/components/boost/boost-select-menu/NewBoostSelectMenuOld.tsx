@@ -22,6 +22,10 @@ import { useLoadingLine } from '../../../stores/loadingStore';
 import { boostCategoryOptions, CATEGORY_TO_SUBCATEGORY_LIST } from '../boost-options/boostOptions';
 import { BrandingEnum, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { LCNBoostStatusEnum } from '../boost';
+import * as m from '../../../paraglide/messages.js';
+import TransP from '../../../i18n/TransP';
+import { useLocale } from '../../../i18n';
+import { useLocalizedBoostFilter } from './useLocalizedBoostFilter';
 import {
     BadgePackOption,
     badgePackOptions,
@@ -33,6 +37,7 @@ interface NewBoostSelectMenuProps {
     handleCloseModal: () => void;
     parentUri?: string;
     useCMSModal?: boolean;
+    returnToParentAfterSave?: boolean;
     category?: BoostCategoryOptionsEnum;
 }
 
@@ -41,7 +46,9 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     category = BoostCategoryOptionsEnum.socialBadge,
     parentUri,
     useCMSModal,
+    returnToParentAfterSave = false,
 }) => {
+    const locale = useLocale();
     const flags = useFlags();
     const { data: stylePack, isLoading: stylePackLoading } = useScoutPassStylesPackRegistry();
     const { data: myBoosts } = useGetPaginatedManagedBoostsQuery();
@@ -63,22 +70,21 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     );
 
     // Derived values
-    const filteredBoostPack = useMemo(
-        () => boostPack?.filter(item => item.title?.toLowerCase().includes(search.toLowerCase())),
-        [boostPack, search]
-    );
+    const filteredBoostPack = useLocalizedBoostFilter(boostPack, search);
 
     const filteredBoosts = useMemo(() => {
         return (
             myBoosts?.pages?.flatMap(page =>
                 page?.records?.filter(
                     boost =>
-                        boost?.title?.toLowerCase().includes(search.toLowerCase()) &&
+                        boost?.title
+                            ?.toLocaleLowerCase(locale)
+                            .includes(search.toLocaleLowerCase(locale)) &&
                         boost?.status === LCNBoostStatusEnum.live
                 )
             ) ?? []
         );
-    }, [myBoosts, search]);
+    }, [myBoosts, search, locale]);
 
     // Effects
     useEffect(() => {
@@ -98,7 +104,11 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
             return (
                 <div className="w-full flex items-center justify-start px-2 mt-2 border-b-2 border-solid border-grayscale-200 pb-2">
                     <p className="text-grayscale-700">
-                        0 {title}s found for <em className="font-medium">{search}</em>
+                        <TransP
+                            m={m['boost.noResultsFoundFor']}
+                            values={{ search }}
+                            components={[<em key="em" className="font-medium" />]}
+                        />
                     </p>
                 </div>
             );
@@ -116,6 +126,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                         useCMSModal={useCMSModal}
                         overrideCustomize
                         parentUri={parentUri}
+                        returnToParentAfterSave={returnToParentAfterSave}
                     />
 
                     {(filteredBoostPack?.length > 0 ? filteredBoostPack : boostPack)?.map(item => (
@@ -124,6 +135,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                             category={category}
                             parentUri={parentUri}
                             useCMSModal={useCMSModal}
+                            returnToParentAfterSave={returnToParentAfterSave}
                             boostPackItem={item}
                             handleCloseModal={handleCloseModal}
                             stylePack={stylePack}
@@ -153,6 +165,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                         useCMSModal={useCMSModal}
                         overrideCustomize
                         parentUri={parentUri}
+                        returnToParentAfterSave={returnToParentAfterSave}
                         handleCloseModal={handleCloseModal}
                     />
                 )}
@@ -167,12 +180,13 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                     <div className="w-full flex flex-col items-center justify-center ion-padding">
                         <div className="flex items-center justify-between w-full max-w-[600px]">
                             <h3 className="text-[22px] text-grayscale-900 font-notoSans">
-                                Create a{' '}
-                                <span className={`text-${color} font-semi-bold`}>
-                                    {subTitle ?? title}
-                                </span>
+                                {m['boost.createTitle']({ title: subTitle ?? title })}
                             </h3>
-                            <button type="button" onClick={handleCloseModal} aria-label="Close">
+                            <button
+                                type="button"
+                                onClick={handleCloseModal}
+                                aria-label={m['common.close']()}
+                            >
                                 <X className="text-grayscale-900 h-auto w-[30px]" />
                             </button>
                         </div>
@@ -194,7 +208,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                         <div className="w-full max-w-[600px] mt-6">
                             <IonInput
                                 value={search}
-                                placeholder="Search..."
+                                placeholder={m['boost.searchPlaceholder']()}
                                 autocapitalize="on"
                                 className="bg-grayscale-100 text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
                                 onIonInput={e => setSearch(e.detail.value?.trim() || '')}

@@ -1,8 +1,9 @@
 import { expect } from '@playwright/test';
 import { test } from './fixtures/test';
 import {
-    issueCredentialToSelf,
-    openAddToLearnCardMenu,
+    issueBadgeToSelf,
+    openBoostAFriendBadgePicker,
+    personalizeTestBadge,
     TEST_CREDENTIAL_TITLE,
     waitForAuthenticatedState,
 } from './test.helpers';
@@ -14,43 +15,20 @@ const log = getLogger('wallet-credentials.spec');
 
 test.describe('Wallet Credentials', () => {
     test.beforeEach(async ({ page }) => {
-        // Create a network profile so the LCN gate lets `Add to LearnCard`
-        // open AddToLearnCardMenu instead of OnboardingContainer.
+        // Create a network profile so the LCN gate lets the boost flow open
+        // instead of OnboardingContainer.
         await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
     });
 
-    test('Issue credential to yourself', async ({ page }) => {
-        // waitForAuthenticatedState lands on /wallet — issue credential from here
-        await issueCredentialToSelf(page);
+    test('Issue a badge to yourself', async ({ page }) => {
+        await issueBadgeToSelf(page);
 
-        // history.goBack() returns to /wallet
-        await page.waitForURL(/\/wallet/, { timeout: 60_000 });
-
-        // Verify the Boosts category exists on wallet page
-        const boostsCategory = page.locator('[role="button"]').filter({ hasText: 'Boosts' });
-        await expect(boostsCategory).toBeVisible({ timeout: 30_000 });
-
-        // Click the Boosts category to navigate to credential list
-        await boostsCategory.click();
-        await page.waitForURL(/\/socialBadges/, { timeout: 30_000 });
-
-        // Verify credential appears in the list
         await expect(page.getByText(TEST_CREDENTIAL_TITLE).first()).toBeVisible({
             timeout: 30_000,
         });
-
-        // Click credential to open detail view
-        await page.getByText(TEST_CREDENTIAL_TITLE).first().click();
-
-        // Verify detail view elements (front + back face both have the title, use first())
-        await expect(page.locator('.vc-card-header-main-title').first()).toContainText(
-            TEST_CREDENTIAL_TITLE,
-            { timeout: 30_000 }
-        );
-        await expect(page.locator('.issued-by').first()).toBeVisible({ timeout: 30_000 });
     });
 
-    test('Issue credential to someone else', async ({ page, browser }) => {
+    test('Issue a badge to someone else', async ({ page, browser }) => {
         // Capture console errors for debugging
         const consoleErrors: string[] = [];
         page.on('console', msg => {
@@ -69,100 +47,96 @@ test.describe('Wallet Credentials', () => {
             profileId: TEST_USER_2_PROFILE_ID,
         });
 
-        // User 1: Start from /wallet so history.goBack() returns here after issuing
-        // (waitForAuthenticatedState already lands on /wallet)
+        // User 1: Create a peer badge and send it to user 2.
+        await openBoostAFriendBadgePicker(page);
+        await personalizeTestBadge(page);
 
-        // User 1: Create a credential and send to user 2
-        await openAddToLearnCardMenu(page);
-        await page.getByRole('button', { name: 'Boost Someone' }).click({ timeout: 30_000 });
+        await page.getByPlaceholder('Search people...').fill(TEST_USER_2_PROFILE_ID);
+        const recipientResult = page
+            .getByRole('button')
+            .filter({ hasText: TEST_USER_2_PROFILE_ID })
+            .first();
+        await expect(recipientResult).toBeVisible({ timeout: 30_000 });
+        await recipientResult.click();
 
-        // Select the first available template
-        await page.getByText('LearnCard Template').first().click({ timeout: 30_000 });
-
-        // Fill in credential title
-        await page.getByRole('textbox', { name: /0\// }).fill(TEST_CREDENTIAL_TITLE);
-
-        // Click Next to proceed to publish
-        await page.getByRole('button', { name: 'Next' }).click({ timeout: 30_000 });
-
-        // Click Publish & Issue
-        await page.getByRole('button', { name: /publish & issue/i }).click({ timeout: 30_000 });
-
-        // Click Plus to open recipient selection
-        await page.getByRole('button', { name: 'Plus' }).click({ timeout: 30_000 });
-
-        // Click "Boost Others" to open the search
-        await page.getByRole('button', { name: /boost others/i }).click({ timeout: 30_000 });
-
-        // Search for user 2 by profileId
-        await page
-            .locator('input[placeholder="Search LearnCard Network..."]')
-            .fill(TEST_USER_2_PROFILE_ID);
-
-        // Wait for search results to load (500ms debounce + network request)
-        await page.getByText(TEST_USER_2_PROFILE_ID).waitFor({ timeout: 30_000 });
-
-        // Select user 2 from search results (click Plus next to their name)
-        // Use last() since the header also has a Plus button
-        await page.getByRole('button', { name: 'Plus' }).last().click({ timeout: 30_000 });
-
-        // Click Save in the address book modal to confirm recipient selection
-        await page.getByRole('button', { name: 'Save' }).click({ timeout: 30_000 });
-
-        // Click Save in the header to issue the credential.
-        // useIonModal elements set aria-hidden and create overlays that intercept mouse events,
-        // so we dispatch the click directly on the DOM element to bypass hit-testing.
-        await page.locator('[data-testid="boost-cms-save"]').dispatchEvent('click');
-
-        // history.goBack() returns to /wallet
-        await page.waitForURL(/\/wallet/, { timeout: 60_000 });
+        const sendBadgeButton = page.getByRole('button', { name: 'Send Badge', exact: true });
+        await expect(sendBadgeButton).toBeEnabled();
+        await sendBadgeButton.click();
+        await expect(page.getByRole('heading', { name: 'Badge sent!' })).toBeVisible({
+            timeout: 60_000,
+        });
 
         // Log any console errors for debugging if the test fails later
         if (consoleErrors.length > 0) {
-            log.info('Console errors during credential issuance:', consoleErrors);
+            log.info('Console errors during badge issuance:', consoleErrors);
         }
 
-        // User 2: Navigate to alerts and accept the credential
-        await page2.getByRole('link', { name: 'Alerts', exact: true }).click({ timeout: 30_000 });
+        // User 2: Navigate to notifications and claim the peer badge. The LC-1921
+        // nav redesign removed the "Alerts" nav link — notifications now live at
+        // the /notifications route (reached via the NotificationButton icon).
+        await page2.goto('/notifications');
 
-        // Claim the credential
+        // Claim the badge
         await page2.getByRole('button', { name: /claim/i }).click({ timeout: 30_000 });
 
-        // Click the credential card to open details
-        await page2
-            .getByRole('button', { name: new RegExp(TEST_CREDENTIAL_TITLE) })
-            .click({ timeout: 30_000 });
-
-        // Accept the credential
-        // exact: true — avoids substring collision with sidemenu's "View version details" button
-        await page2
-            .getByRole('button', { name: 'Details', exact: true })
-            .click({ timeout: 30_000 });
-        await page2.getByRole('button', { name: 'Accept' }).click({ timeout: 30_000 });
-
-        // Assert credential was accepted
-        await expect(page2.getByText(/successfully claimed/i)).toBeVisible({
-            timeout: 30_000,
+        // The claim modal opens with the credential card, the details sidebar and
+        // the Close/Accept footer all rendered, so assert the right credential is
+        // on screen and then accept it — which is what a recipient actually does.
+        //
+        // LC-2071 exposes the card as a labeled group rather than a role="button":
+        // a clickable card must not also contain focusable controls (the issuer
+        // badge), which axe reports as a serious `nested-interactive` violation.
+        //
+        // Deliberately no card click and no "Details" click before accepting.
+        // Both were no-ops that only introduced flake:
+        //   - the card's centre point is the "Unknown Issuer" badge, so clicking
+        //     the card opens CredentialIssuerPopover — an aria-modal overlay that
+        //     then intercepts every later click;
+        //   - the "Details" tab is already aria-selected, and it sits directly
+        //     under the "Boost Received" toast that fires as the badge arrives.
+        const credentialCard = page2.getByRole('group', {
+            name: new RegExp(TEST_CREDENTIAL_TITLE),
         });
+        await expect(credentialCard).toBeVisible({ timeout: 30_000 });
 
-        // User 2: Navigate to wallet and verify credential via category
+        const acceptButton = page2.getByRole('button', { name: 'Accept' });
+        await expect(acceptButton).toBeEnabled({ timeout: 30_000 });
+        await acceptButton.click({ timeout: 30_000 });
+
+        // LC-2088 presents the recipient's connection nudge immediately after the claim modal
+        // closes. It supersedes the short-lived success toast and must be resolved before the
+        // recipient can continue interacting with the wallet.
+        const connectionPromptHeading = page2.getByRole('heading', {
+            name: /^Connect with .+\?$/i,
+        });
+        await expect(connectionPromptHeading).toBeVisible({ timeout: 30_000 });
+
+        await page2.getByRole('button', { name: 'Skip for Now', exact: true }).click();
+        await expect(connectionPromptHeading).toBeHidden({ timeout: 30_000 });
+
+        // User 2: Navigate to wallet and verify the badge via category
         await page2.goto('/wallet');
         await page2.waitForURL(/\/wallet/, { timeout: 30_000 });
 
-        // Verify the Boosts category exists on User 2's wallet
-        const boostsCategory = page2.locator('[role="button"]').filter({ hasText: 'Boosts' });
-        await expect(boostsCategory).toBeVisible({ timeout: 30_000 });
+        // Verify the Badges (social badge) category exists on User 2's wallet
+        // (the LC-1919 Passport reorg renamed "Boosts" → "Badges").
+        //
+        // Resolve by role, not by a '[role="button"]' attribute selector: LC-2071
+        // turned the category tile into a native <button>, which carries the
+        // button role implicitly and so matches no such attribute.
+        const badgesCategory = page2.getByRole('button', { name: /Badges/i });
+        await expect(badgesCategory).toBeVisible({ timeout: 30_000 });
 
-        // Click into the Boosts category
-        await boostsCategory.click();
+        // Click into the Badges category
+        await badgesCategory.click();
         await page2.waitForURL(/\/socialBadges/, { timeout: 30_000 });
 
-        // Verify credential appears in User 2's credential list
+        // Verify the badge appears in User 2's Badges list
         await expect(page2.getByText(TEST_CREDENTIAL_TITLE).first()).toBeVisible({
             timeout: 30_000,
         });
 
-        // Click credential to open detail view
+        // Click the badge to open its detail view
         await page2.getByText(TEST_CREDENTIAL_TITLE).first().click();
 
         // Verify detail view elements (front + back face both have the title, use first())

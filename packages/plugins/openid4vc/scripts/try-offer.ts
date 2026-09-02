@@ -8,11 +8,11 @@
  * a self-contained signer.
  *
  * Usage:
- *   pnpm try-offer <offer-uri> [--tx-code <code>] [--client-id <id>] \
+ *   bun run try-offer <offer-uri> [--tx-code <code>] [--client-id <id>] \
  *                              [--only <id1,id2>] [--verbose]
  *
  * Example:
- *   pnpm try-offer "openid-credential-offer://?credential_offer_uri=https://..."
+ *   bun run try-offer "openid-credential-offer://?credential_offer_uri=https://..."
  */
 
 /* eslint-disable no-console */
@@ -23,10 +23,7 @@ import { dirname, resolve as resolvePath } from 'node:path';
 import { exportJWK, generateKeyPair } from 'jose';
 import type { JWKWithPrivateKey } from '@learncard/types';
 
-import {
-    parseCredentialOfferUri,
-    resolveCredentialOfferByReference,
-} from '../src/offer/parse';
+import { parseCredentialOfferUri, resolveCredentialOfferByReference } from '../src/offer/parse';
 import type { CredentialOffer } from '../src/offer/types';
 import { acceptCredentialOffer } from '../src/vci/accept';
 import { createJoseEd25519Signer } from '../src/vci/proof';
@@ -46,7 +43,7 @@ const printUsage = (): void => {
         [
             '',
             'Usage:',
-            '  pnpm try-offer <offer-uri> [--tx-code <code>] [--client-id <id>] [--only <id1,id2>]',
+            '  bun run try-offer <offer-uri> [--tx-code <code>] [--client-id <id>] [--only <id1,id2>]',
             '                              [--save <path>] [--verbose]',
             '',
             'Arguments:',
@@ -58,14 +55,14 @@ const printUsage = (): void => {
             '  --only <ids>       Comma-separated subset of credential_configuration_ids to request',
             '  --save <path>      Write the issued credential(s) as a JSON file at <path>. Single VC is',
             '                     saved as an object; multiple VCs as an array. Feed it straight into',
-            '                     `pnpm try-verify ... --credentials <path>`.',
+            '                     `bun run try-verify ... --credentials <path>`.',
             '  --verbose, -v      Log the full resolved offer and issuer metadata',
             '  --help, -h         Show this message',
             '',
             'Examples:',
-            '  pnpm try-offer "openid-credential-offer://?credential_offer_uri=https://dev.issuer.eudiw.dev/credential_offer/..."',
-            '  pnpm try-offer --tx-code 1234 "openid-credential-offer://..."',
-            '  pnpm try-offer --save ./my-vc.json "openid-credential-offer://..."',
+            '  bun run try-offer "openid-credential-offer://?credential_offer_uri=https://dev.issuer.eudiw.dev/credential_offer/..."',
+            '  bun run try-offer --tx-code 1234 "openid-credential-offer://..."',
+            '  bun run try-offer --save ./my-vc.json "openid-credential-offer://..."',
             '',
         ].join('\n')
     );
@@ -260,7 +257,9 @@ const main = async (): Promise<void> => {
             savableVcs.push(vc);
         } catch (decodeErr) {
             console.error(
-                `(decode failed: ${decodeErr instanceof Error ? decodeErr.message : String(decodeErr)})`
+                `(decode failed: ${
+                    decodeErr instanceof Error ? decodeErr.message : String(decodeErr)
+                })`
             );
             console.log('Raw credential payload:');
             console.log(pretty(entry.credential));
@@ -288,12 +287,15 @@ const main = async (): Promise<void> => {
             writeFileSync(absolute, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
         } catch (writeErr) {
             console.error(
-                `\n✗ --save: failed to write ${absolute}: ${writeErr instanceof Error ? writeErr.message : String(writeErr)}`
+                `\n✗ --save: failed to write ${absolute}: ${
+                    writeErr instanceof Error ? writeErr.message : String(writeErr)
+                }`
             );
             process.exit(1);
         }
 
-        const shape = savableVcs.length === 1 ? 'single VC object' : `array of ${savableVcs.length} VCs`;
+        const shape =
+            savableVcs.length === 1 ? 'single VC object' : `array of ${savableVcs.length} VCs`;
         console.log(`\n💾 Saved ${shape} to ${absolute}`);
 
         if (skippedOnSave > 0) {
@@ -330,7 +332,7 @@ const main = async (): Promise<void> => {
         }
 
         console.log(
-            `\n   Next: pnpm try-verify "<oid4vp-uri>" --credentials ${args.savePath} --submit`
+            `\n   Next: bun run try-verify "<oid4vp-uri>" --credentials ${args.savePath} --submit`
         );
     }
 

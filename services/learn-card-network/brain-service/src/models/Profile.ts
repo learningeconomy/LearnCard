@@ -1,4 +1,5 @@
 import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import type { LCNConnectionPromptStatus, LCNConnectionPromptSurface } from '@learncard/types';
 
 import { neogma } from '@instance';
 
@@ -34,6 +35,21 @@ type CredentialRelationshipProps = {
     unsuspendedAt?: string;
 } & Record<string, unknown>;
 
+type ConnectionPromptRelationshipProps = {
+    promptId: string;
+    status: LCNConnectionPromptStatus;
+    suppressed?: boolean;
+    triggerId: string;
+    coveredTriggerIds?: string[];
+    surface: LCNConnectionPromptSurface;
+    triggeredAt: string;
+    updatedAt: string;
+    notificationDelivered?: boolean;
+    notificationDeliveryAttemptToken?: string;
+    notificationDeliveryAttemptedAt?: string;
+    notificationDeliveryMayHaveSucceeded?: boolean;
+};
+
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     connectedWith: ModelRelatedNodesI<
@@ -43,6 +59,12 @@ export type ProfileRelationships = {
         { sources?: string[] }
     >;
     blocked: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    connectionPrompt: ModelRelatedNodesI<
+        typeof Profile,
+        ProfileInstance,
+        ConnectionPromptRelationshipProps,
+        ConnectionPromptRelationshipProps
+    >;
     managedBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
@@ -110,6 +132,12 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 enum: Object.values(LearnCardRolesEnum),
             },
             approved: { type: 'boolean', required: false },
+            // Per-user UI locale (BCP-47 primary subtag: en/es/fr/ar) used to
+            // localize server-sent notifications. Must be declared here or
+            // neogma model reads (e.g. Profile.findRelationships) strip it from
+            // `.dataValues`, silently falling back to 'en' — only raw
+            // QueryBuilder reads would carry it. See getRecipientLocale.helpers.
+            locale: { type: 'string', required: false },
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },
@@ -125,6 +153,61 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 },
             },
             blocked: { model: 'self', direction: 'out', name: 'BLOCKED' },
+            connectionPrompt: {
+                model: 'self',
+                direction: 'out',
+                name: 'CONNECTION_PROMPT',
+                properties: {
+                    promptId: {
+                        property: 'promptId',
+                        schema: { type: 'string', required: true },
+                    },
+                    status: {
+                        property: 'status',
+                        schema: { type: 'string', required: true },
+                    },
+                    suppressed: {
+                        property: 'suppressed',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    triggerId: {
+                        property: 'triggerId',
+                        schema: { type: 'string', required: true },
+                    },
+                    coveredTriggerIds: {
+                        property: 'coveredTriggerIds',
+                        schema: { type: 'array', items: { type: 'string' }, required: false },
+                    },
+                    surface: {
+                        property: 'surface',
+                        schema: { type: 'string', required: true },
+                    },
+                    triggeredAt: {
+                        property: 'triggeredAt',
+                        schema: { type: 'string', required: true },
+                    },
+                    updatedAt: {
+                        property: 'updatedAt',
+                        schema: { type: 'string', required: true },
+                    },
+                    notificationDelivered: {
+                        property: 'notificationDelivered',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    notificationDeliveryAttemptToken: {
+                        property: 'notificationDeliveryAttemptToken',
+                        schema: { type: 'string', required: false },
+                    },
+                    notificationDeliveryAttemptedAt: {
+                        property: 'notificationDeliveryAttemptedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    notificationDeliveryMayHaveSucceeded: {
+                        property: 'notificationDeliveryMayHaveSucceeded',
+                        schema: { type: 'boolean', required: false },
+                    },
+                },
+            },
             managedBy: { model: 'self', direction: 'out', name: 'MANAGED_BY' },
             credentialSent: {
                 model: Credential,

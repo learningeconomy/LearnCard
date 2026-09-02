@@ -30,11 +30,11 @@ You may be invoked in one of two modes, determined by the trigger phrase:
 
 ### Monorepo Context
 
-This is a pnpm + Nx monorepo. Key areas:
+This is a Bun + Nx monorepo. Key areas:
 
 **High risk (never auto-approve):**
 
--   `services/` route definitions, auth/signing helpers, models, lambda entry points — Production backend services (brain-service, lca-api, learn-cloud-service, simple-signing-service). Auth, credentials, signing, Neo4j/MongoDB, serverless deployment.
+-   `services/` route definitions, auth/signing helpers, models, lambda entry points — Production backend services (brain-service, lca-api, learn-cloud-service). Auth, credentials, signing, Neo4j/MongoDB, serverless deployment.
 -   `packages/learn-card-types/` — Shared Zod validators and types used across the entire stack.
 -   `packages/learn-card-core/` — Core wallet/plugin system.
 -   `packages/learn-card-init/` — Assembles the plugin stack.
@@ -90,8 +90,7 @@ This is a pnpm + Nx monorepo. Key areas:
 -   Auth, permission, or role enforcement code being changed
 -   `Dockerfile*`, `serverless*.yml`, `compose*.yaml`, `lambda.ts` changes
 -   `.github/workflows/` changes
--   Root monorepo config changes: `nx.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, root `package.json`
--   `heroku.yml`, `Procfile` changes
+-   Root monorepo config changes: `nx.json`, `bun.lock`, root `package.json`
 -   Removal or weakening of existing tests (deleting assertions, `.skip`, commenting out tests)
 
 **Always-blocked paths (never auto-approve if touched):**

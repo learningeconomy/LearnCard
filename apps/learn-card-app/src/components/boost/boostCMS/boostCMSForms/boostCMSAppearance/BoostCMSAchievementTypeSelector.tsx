@@ -15,6 +15,7 @@ import {
 } from 'learn-card-base';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
+import * as m from '../../../../../paraglide/messages.js';
 
 export enum BoostCMSActiveAppearanceForm {
     appearanceForm = 'appearanceForm',
@@ -142,7 +143,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
                             setSearch(e.detail.value!);
                             setErrors({});
                         }}
-                        placeholder="Search..."
+                        placeholder={m['boost.cms.appearance.search']()}
                         type="text"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
                             errors?.customType ? 'border-red-500 border-2' : ''
@@ -161,14 +162,14 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
                     {filteredAchievementTypes.length === 0 && (
                         <div className="w-full text-left flex flex-col items-start justify-center">
                             <p className="text-grayscale-600 text-base font-normal">
-                                No results found for{' '}
+                                {m['boost.cms.appearance.noResultsFor']()}{' '}
                                 <span className="text-black italic">{search}</span>
                             </p>
                             <button
                                 onClick={handleCustomType}
                                 className={`text-${primaryColor} text-base font-bold text-left`}
                             >
-                                Create "{search}" Boost!
+                                {m['boost.cms.appearance.createBoost']({ search })}
                             </button>
                         </div>
                     )}
@@ -197,7 +198,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
                                     <div className="flex-1 flex flex-col items-center justify-start pl-4">
                                         {isCustomType && (
                                             <p className="w-full text-gray-800 text-xs normal font-bold text-left">
-                                                Custom Type
+                                                {m['boost.cms.appearance.customType']()}
                                             </p>
                                         )}
                                         <p className="w-full text-grayscale-700 font-medium text-lg text-left capitalize">
@@ -235,7 +236,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
 
                                     <div className="flex-1 flex flex-col items-center justify-start pl-4">
                                         <p className="w-full text-gray-800 text-xs normal font-bold text-left">
-                                            Custom Type
+                                            {m['boost.cms.appearance.customType']()}
                                         </p>
                                         <p className="w-full text-grayscale-700 font-medium text-lg text-left capitalize">
                                             {title}

@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import BulkBoostParentSelector from './BulkBoostParentSelector';
 
@@ -10,13 +11,13 @@ export const AdminToolsBulkBoostImportAssignParent: React.FC<{
         <section className="bg-white max-w-[800px] w-full rounded-[20px]">
             <div className="flex flex-col items-start justify-center w-full ion-padding">
                 <h4 className="text-indigo-500 font-notoSans text-left mb-2 text-sm font-semibold">
-                    Optional
+                    {m['adminTools.bulkImport.optional']()}
                 </h4>
                 <p className="text-xl text-grayscale-900 text-left mb-4">
-                    Assign a Parent Credential
+                    {m['adminTools.bulkImport.assignParentTitle']()}
                 </p>
                 <p className="text-left text-grayscale-700 text-sm mb-4">
-                    Select the credential that these credentials will be created under.
+                    {m['adminTools.bulkImport.assignParentDesc']()}
                 </p>
 
                 <BulkBoostParentSelector parentUri={parentUri} setParentUri={setParentUri} />

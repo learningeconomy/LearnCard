@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
-import { Capacitor } from '@capacitor/core';
-import { Share } from '@capacitor/share';
-import { Clipboard } from '@capacitor/clipboard';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum, useDeviceTypeByWidth } from 'learn-card-base';
 
-import { IonCol, IonRow, IonPage } from '@ionic/react';
+import { IonCol, IonRow, IonPage, IonSpinner } from '@ionic/react';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
 import { getAppBaseUrl } from 'apps/learn-card-app/src/config/bootstrapTenantConfig';
 
+import { shareOrCopy } from '../../../helpers/shareHelpers';
+
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;
 }> = ({ handleCloseModal }) => {
-    const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
+    const { initWallet } = useWallet();
     const { presentToast } = useToast();
+    const { isMobile } = useDeviceTypeByWidth();
 
     const [walletDid, setWalletDid] = useState<string>('');
 
@@ -28,42 +29,36 @@ const AddressBookQRCode: React.FC<{
             setWalletDid(wallet?.id?.did());
         };
 
-        if (!walletDid) {
-            getWalletDid();
-        }
+        if (!walletDid) getWalletDid();
     }, [walletDid]);
 
-    const copyToClipBoard = async () => {
-        const wallet = await initWallet();
+    /*
+      This is a connection *request* link, deliberately — the recipient acts on
+      it. It is NOT the unlimited-use auto-connect invite from `useInviteLink`:
+      this modal is also mounted from the Boost CMS issue flow
+      (BoostAddressBookContactOptions), where minting a 30-day auto-connect
+      invite just to show a QR would be the wrong trust model. The bug fixed
+      here was only the hardcoded `pass.scout.org` host; the semantics are
+      unchanged.
+    */
+    const connectUrl = walletDid ? `${getAppBaseUrl()}/connect?connect=true&did=${walletDid}` : '';
 
-        try {
-            await Clipboard.write({
-                string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
-            });
-            presentToast('Contact link copied to clipboard', {
+    const handleShare = async () => {
+        if (!connectUrl) return;
+
+        // Desktop copies rather than opening the macOS share sheet — see
+        // InviteLinkModal for why feature detection alone is not enough.
+        const result = await shareOrCopy({
+            url: connectUrl,
+            title: m['contacts.addContactDesc'](),
+            allowWebShare: isMobile,
+        });
+
+        if (result.method === 'clipboard') {
+            presentToast(m['contacts.invite.linkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
-        } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
-        }
-    };
-
-    const handleShare = async () => {
-        const wallet = await initWallet();
-
-        if (Capacitor.isNativePlatform()) {
-            await Share.share({
-                title: 'Add contact',
-                text: '',
-                url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
-                dialogTitle: '',
-            });
-        } else {
-            copyToClipBoard();
         }
     };
 
@@ -94,12 +89,20 @@ const AddressBookQRCode: React.FC<{
                 </IonRow>
                 <div className="flex justify-center items-center w-full relative px-10 mb-5 mt-5">
                     <div className="max-w-[90%] w-full h-auto relative user-qr-code-modal-qr-wrap">
-                        <QRCodeSVG
-                            className="h-full w-full"
-                            value={`https://pass.scout.org/connect?connect=true&did=${walletDid}`}
-                            data-testid="qrcode-card"
-                            bgColor="transparent"
-                        />
+                        {connectUrl ? (
+                            <QRCodeSVG
+                                className="h-full w-full"
+                                value={connectUrl}
+                                data-testid="qrcode-card"
+                                bgColor="transparent"
+                            />
+                        ) : (
+                            // Never render a QR for the empty string — it scans
+                            // fine and leads nowhere.
+                            <div className="flex items-center justify-center py-10">
+                                <IonSpinner color="black" />
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center justify-center w-full mt-3">

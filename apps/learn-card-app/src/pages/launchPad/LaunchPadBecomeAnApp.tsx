@@ -1,20 +1,14 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import { Sparkles, ArrowRight, Code2, Rocket } from 'lucide-react';
+import * as m from '../../paraglide/messages.js';
 
 export const LaunchPadBecomeAnApp: React.FC = () => {
     const history = useHistory();
-    const flags = useFlags();
 
     const handleClick = () => {
         history.push('/app-store/developer');
     };
-
-    // Only show if the feature flag is enabled
-    if (!flags.joinOurDeveloperCommunityAd) {
-        return null;
-    }
 
     return (
         <div className="w-full max-w-[600px] mt-4 px-2">
@@ -27,7 +21,7 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
                     {/* Decorative background elements */}
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-cyan-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-                    
+
                     {/* Floating icons */}
                     <div className="absolute top-3 right-4 opacity-20">
                         <Code2 className="w-8 h-8 text-white" />
@@ -46,13 +40,13 @@ export const LaunchPadBecomeAnApp: React.FC = () => {
                         {/* Text content */}
                         <div className="flex-1 text-left">
                             <p className="text-white/70 text-xs font-medium uppercase tracking-wider mb-0.5">
-                                Developer Program
+                                {m['launchpad.becomeAnApp.developerProgram']()}
                             </p>
                             <h3 className="text-white text-lg font-bold leading-tight">
-                                Build Your Own App
+                                {m['launchpad.becomeAnApp.buildYourOwnApp']()}
                             </h3>
                             <p className="text-white/80 text-sm mt-0.5">
-                                Join our developer community today
+                                {m['launchpad.becomeAnApp.joinDeveloperCommunity']()}
                             </p>
                         </div>
 

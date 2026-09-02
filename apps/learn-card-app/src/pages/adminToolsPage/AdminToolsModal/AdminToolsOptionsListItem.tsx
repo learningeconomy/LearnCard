@@ -3,7 +3,12 @@ import React, { useEffect, useState } from 'react';
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import AdminToolsOptionsContainer from './AdminToolsOptionsContainer';
 
-import { AdminToolOption, AdminToolOptionsEnum } from './admin-tools.helpers';
+import {
+    AdminToolOption,
+    AdminToolOptionsEnum,
+    getAdminToolLabel,
+    getAdminToolDescription,
+} from './admin-tools.helpers';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 
 export const AdminToolOptionsListItem: React.FC<{
@@ -15,7 +20,7 @@ export const AdminToolOptionsListItem: React.FC<{
 
     const [count, setCount] = useState<number>(0);
 
-    const { label } = option;
+    const label = getAdminToolLabel(option);
 
     const getDevToolCount = async () => {
         const wallet = await initWallet();
@@ -77,7 +82,7 @@ export const AdminToolOptionsListItem: React.FC<{
                     {label}
                 </p>
                 <p className="text-grayscale-600 text-[14px] font-notoSans font-[400] leading-[21px] tracking-[0.25px]">
-                    {option.description}
+                    {getAdminToolDescription(option)}
                 </p>
             </div>
 

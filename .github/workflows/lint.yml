@@ -13,7 +13,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
                   fetch-depth: 0
@@ -45,8 +45,179 @@ jobs:
               if: steps.changed.outputs.has_files == 'true'
               run: |
                   # Respects .prettierignore; fails the job if any changed file is mis-formatted.
-                  echo "${{ steps.changed.outputs.files }}" | xargs -d '\n' pnpm exec prettier --check
+                  echo "${{ steps.changed.outputs.files }}" | xargs -d '\n' bunx prettier --check
 
             - name: No files to check
               if: steps.changed.outputs.has_files != 'true'
               run: echo "No lintable files changed in this PR — skipping."
+
+    Accessibility:
+        name: Run accessibility lint
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Run jsx-a11y lint
+              run: bun run lint
+
+    RepositoryContracts:
+        name: Repository shell contracts
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Setup Ruby
+              uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: '3.3'
+
+            - name: Run repository shell contracts
+              run: |
+                  for contract in .github/tests/*.test.sh; do
+                    echo "Running $contract"
+                    bash "$contract"
+                  done
+
+    NoJest:
+        name: Reject active Jest usage
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Test no-Jest guard
+              run: node --test scripts/check-no-jest.test.mjs
+
+            - name: Check test-runner contract
+              run: node scripts/check-no-jest.mjs
+
+    I18nKeys:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            # Pure-Node static scan (no install/build): every `m['…']` reference must
+            # exist in en/translation.json. Catches missing Paraglide keys repo-wide on
+            # every PR — including components no story/build bundles. See
+            # apps/learn-card-app/scripts/check-i18n-keys.mjs.
+            - name: Check for missing i18n message keys
+              run: node apps/learn-card-app/scripts/check-i18n-keys.mjs
+
+            - name: Check ScoutPass i18n keys, imports, and parity
+              run: |
+                  node apps/scouts/scripts/check-i18n-keys.mjs
+                  node apps/scouts/scripts/check-i18n-imports.mjs
+                  node apps/scouts/scripts/check-i18n-parity.mjs
+
+            # Interpolation integrity: every es/fr/ar value must carry the same
+            # {{vars}} and <n> markup as its en source. Renamed/hallucinated vars
+            # and markup drift fail hard; correct linguistic drops are allowlisted
+            # in scripts/i18n-marker-allowlist.json.
+            - name: Check i18n interpolation markers
+              run: node apps/learn-card-app/scripts/check-i18n-markers.mjs --strict
+
+            - name: Check ScoutPass i18n interpolation markers
+              run: node apps/scouts/scripts/check-i18n-markers.mjs --strict
+
+            # English-fallback guard: no es/fr/ar value may be a verbatim copy of
+            # the English source (renders English under a non-English UI). Verified
+            # legitimate cognates/brand/code are baselined in
+            # scripts/i18n-untranslated-allowlist.json.
+            - name: Check for untranslated (English-fallback) i18n values
+              run: node apps/learn-card-app/scripts/check-i18n-untranslated.mjs --strict
+
+            - name: Check ScoutPass untranslated i18n values
+              run: node apps/scouts/scripts/check-i18n-untranslated.mjs --strict
+
+    # Separate job: unlike I18nKeys (pure-Node, no install), this one needs eslint
+    # + @typescript-eslint/parser, so it pays for the dependency install.
+    I18nMemos:
+        name: Check for locale-frozen i18n memos
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            # `m['key']()` resolved eagerly inside a useMemo with no locale dep
+            # sticks in the mount-time locale after a language switch. AST-based
+            # (eslint-rules/no-frozen-i18n-memo.js) because regex can't tell an
+            # eager call from one deferred inside an event handler.
+            - name: Run frozen-memo guard
+              working-directory: apps/learn-card-app
+              run: bun run i18n:check-memos
+
+            - name: Run ScoutPass i18n AST guards
+              working-directory: apps/scouts
+              run: |
+                  bun run i18n:check-memos
+                  bun run i18n:check-ast
+                  bun run test:i18n
+
+    # Exercise behavior from the checked-in generated glue and binary directly. Native Rust
+    # tests do not prove that a source change was included in the committed WASM payload.
+    DidkitWasmPayload:
+        name: Check DIDKit WASM payload behavior
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Verify numeric Bitstring Status List compatibility
+              run: node packages/plugins/didkit/scripts/check-wasm-numeric-status.mjs
+
+    # Pure-Node static scan (no install/build): the wasm-bindgen glue checked into
+    # packages/plugins/didkit/src/didkit/pkg is version-locked to the binary beside it,
+    # so the content-addressed URL that init() falls back to must name that same binary.
+    # A mismatch fails instantiation with a LinkError for every SDK consumer that does
+    # not pass its own `didkit` argument. Runs standalone rather than as a jest test so a
+    # stale URL does not bail the nx test graph for everything depending on didkit-plugin.
+    DidkitWasmUrl:
+        name: Check DIDKit WASM matches its published URL
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Verify checked-in WASM matches the default init() URL
+              run: node packages/plugins/didkit/scripts/check-wasm-url.mjs
+
+    # Pure-Node grep gate (no install): safe-area primitives (env(safe-area-*),
+    # --ion-safe-area-*, --lc-safe-*, useSafeArea, …) may only be referenced
+    # inside the surface layer. Legacy call sites are allowlisted shrink-only in
+    # scripts/safe-area-allowlist.json — see LC-1962 design doc.
+    SafeAreaGate:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Safe-area ownership gate
+              run: node scripts/check-safe-area.mjs

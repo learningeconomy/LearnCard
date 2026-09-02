@@ -20,6 +20,8 @@ import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { reconsentTerms, upsertRequestedForRelationship } from './update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { sendBoost } from '@helpers/boost.helpers';
 import { getBoostUri } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -307,33 +309,30 @@ export const consentToContract = async (
     }
 
     // TODO: Improve notification handling for consent flow contracts
-    let notificationData = {
-        title: 'New Consent Transaction',
-        body: `${consenter.displayName} has just consented to ${contract.name}!`,
-        metadata: {},
-    };
-
     // TODO: Replace hardcoded string matching with contract type identification
     // This should check a contract.type field instead of contract.name
-    if (contract.name === 'AI Insights') {
-        notificationData.title = `AI Insights`;
-        notificationData.body = `${consenter?.displayName} has shared their insights with you.`;
-        notificationData.metadata = {
-            type: 'AI Insight',
-            contractId: contract?.id,
-            contractUri: constructUri('contract', contract.id, domain),
-        };
-    }
+    const isAiInsights = contract.name === 'AI Insights';
+
+    const notificationMessage = getNotificationMessage(
+        isAiInsights ? 'consentFlowInsightsShared' : 'consentFlowTransactionCreated',
+        resolveRecipientLocale(contractOwner),
+        { consenter: consenter.displayName, contractName: contract.name }
+    );
+
+    const notificationMetadata = isAiInsights
+        ? {
+              type: 'AI Insight',
+              contractId: contract?.id,
+              contractUri: constructUri('contract', contract.id, domain),
+          }
+        : {};
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: consenter,
         to: contractOwner,
-        message: {
-            title: notificationData.title,
-            body: notificationData.body,
-        },
-        data: { transaction, metadata: notificationData.metadata },
+        message: notificationMessage,
+        data: { transaction, metadata: notificationMetadata },
     });
 
     try {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import Lottie from 'react-lottie-player';
+
 import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -10,8 +10,8 @@ import { IonList, IonItem } from '@ionic/react';
 import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../../boost/boostCMS/BoostPreview/BoostPreviewFooter';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
-const HourGlass = '/lotties/hourglass.json';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import IdDisplayContainer from 'apps/learn-card-app/src/pages/ids/IdDisplayContainer';
 import { BoostIssuanceLoading } from '../boostLoader/BoostLoader';
@@ -46,6 +46,7 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 
 type BoostManagedIDCardProps = {
     boost: Boost;
@@ -248,7 +249,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                         cred={cred}
                     />
                 ) : (
-                    <CredentialBadge
+                    <CredentialBadgeNew
                         achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
                         boostType={categoryType}
                         badgeThumbnail={badgeThumbnail}
@@ -309,7 +310,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
             customBody = (
                 <div className="w-full text-center">
                     <p className="text-grayscale-600 font-semibold text-center text-[14px] leading-none">
-                        No Boosts Yet
+                        {m['skills.boostsBySkill.noBoosts']()}
                     </p>
                     <button
                         className={`text-${primaryColor}-600 font-semibold text-base leading-snug`}
@@ -328,12 +329,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
             customBody = (
                 <div className="relative w-full text-center flex flex-col items-center justify-center">
                     <div className="max-w-[50px]">
-                        <Lottie
-                            loop
-                            path={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                        <LoadingSpinner />
                     </div>
                 </div>
             );

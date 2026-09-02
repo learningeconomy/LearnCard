@@ -6,7 +6,7 @@
 # file and its matching .env.backup file.
 #
 # Usage:
-#   pnpm env:compare-backup
+#   bun run env:compare-backup
 # ============================================================================
 
 set -euo pipefail
@@ -18,7 +18,6 @@ ENV_FILES=(
   "services/learn-card-network/learn-cloud-service/.env"
   "apps/learn-card-app/.env"
   "services/learn-card-network/lca-api/.env"
-  "services/learn-card-network/simple-signing-service/.env"
 )
 
 echo "Comparing current .env files against .env.backup copies..."

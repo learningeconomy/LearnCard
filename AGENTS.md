@@ -2,11 +2,11 @@
 
 ## Build & Test Commands
 
--   Build project: `pnpm build` or `pnpm exec nx build <package-name>`
--   Test all packages: `pnpm test` or `pnpm exec nx test`
--   (Vitest packages) Run tests once (non-watch): `pnpm test -- run` (equivalent to `vitest run`)
--   Run single test: `pnpm exec nx test <package-name> --testFile=path/to/test.spec.ts`
--   Run e2e tests: `pnpm exec nx test:e2e e2e`
+-   Build project: `bun run build` or `bunx nx build <package-name>`
+-   Test all packages: `bun run test` or `bunx nx test`
+-   (Vitest packages) Run tests once (non-watch): `bun run test -- run` (equivalent to `vitest run`)
+-   Run single test: `bunx nx test <package-name> --testFile=path/to/test.spec.ts`
+-   Run e2e tests: `bunx nx test:e2e e2e`
 
 ## Code Style Guidelines
 
@@ -109,6 +109,20 @@ Use the shared `Overlay` component from `packages/learn-card-base/src/auth-coord
 ```
 
 Overlay renders a fixed fullscreen backdrop with a white `rounded-[20px]` card, max-width 480px, with `font-poppins` and `animate-fade-in-up` entrance animation.
+
+### Safe-Area Insets (LC-1962 surface contract)
+
+**Rule: inside a modal, never mention safe area.** The shared `AppModal` surface layer (`packages/learn-card-base/src/components/modals/surfaces/`) owns device insets for every modal variant (fullscreen / right / center / cancel / select / bottom-sheet / freeform). Enforced by CI: `node scripts/check-safe-area.mjs` fails on `env(safe-area-*)`, `useSafeArea`, `safe-area-top-margin`, or raw `--ion-safe-area-*` outside the surface layer (`scripts/safe-area-allowlist.json` is shrink-only legacy debt).
+
+Sanctioned patterns for the two exceptions:
+
+-   **Dual-host content** (renders in modals AND on routes): `var(--ion-safe-area-top, 0px)` / `-bottom` — resolves to `0` inside surfaces, real inset on routes.
+-   **Absolutely-positioned overlay elements** (frosted footers, floating headers/close buttons — surface padding cannot protect them): compose the surface-published inset with the route fallback:
+    `calc(<offset> + var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px)))`
+
+Dev verification: append `?insets` (47/34) or `?insets=<top>,<bottom>` to any dev URL to simulate device insets in a desktop browser.
+
+Do not add new raw `<IonModal>` usages — present modals via `useModal`/`newModal` (the raw JSX count is currently zero; keep it there). Existing `useIonModal(...)` callers are legacy exceptions: do not add new ones, and migrate them through `AppModal` when touched.
 
 ### Loading States
 
@@ -222,7 +236,7 @@ Before shipping any new modal, overlay, or form:
 
 ## Monorepo Structure
 
-The project uses pnpm workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory
+The project uses Bun workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory
 
 ## Documentation (`docs/`)
 
@@ -318,6 +332,23 @@ const lc = await initLearnCard({ seed: '...', network: true });
 
 For repo-wide environment setup and Infisical-managed `.env` generation, see [environment-variables.md](./environment-variables.md). It covers the pull, backup, and compare scripts used across the monorepo.
 
+### Rebuilding DIDKit WASM
+
+Run this from the repository root. This is the standard local workflow: build the Web
+target, optimize the generated binary with Binaryen's `wasm-opt`, copy the package into
+the DIDKit plugin, and return from `pkg` with `cd ..` (compatible with fish):
+
+```bash
+cd lib/didkit/lib/web
+wasm-pack build --target=web && cd pkg && wasm-opt -Oz -o tmp.wasm didkit_wasm_bg.wasm && mv tmp.wasm didkit_wasm_bg.wasm && cp didkit* ../../../../../packages/plugins/didkit/src/didkit/pkg/ && cd ..
+bun --cwd ../../../../packages/plugins/didkit run build
+```
+
+The bridge and LearnCard CLI load
+`@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm`, so the final plugin build is
+required after copying the optimized WASM. Restart any running bridge or CLI process
+afterward because it loads the WASM during initialization.
+
 ## Adding a New Network Route
 
 Types flow: `@learncard/types` → brain-service tRPC router → brain-client → network plugin → `learnCard.invoke.*`
@@ -326,7 +357,7 @@ Types flow: `@learncard/types` → brain-service tRPC router → brain-client �
 2. **Implement route** in `services/learn-card-network/brain-service/src/routes/` — add to `AppRouter`
 3. **Brain client auto-types** — it imports `AppRouter` type, new route is typed automatically
 4. **Expose in network plugin** — add method in `packages/plugins/learn-card-network/src/plugin.ts`
-5. **Test** in `tests/e2e/` — `pnpm test:e2e`
+5. **Test** in `tests/e2e/` — `bun run test:e2e`
 
 ## Credential Storage Architecture
 
@@ -517,7 +548,7 @@ const signed = await wallet.invoke.issueCredential(unsigned);
 
 1. Create `src/fixtures/<folder>/<name>.ts` exporting a `CredentialFixture`
 2. Import + add to `ALL_FIXTURES` array in `src/fixtures/index.ts`
-3. Run `pnpm test` — both the Zod validation and issuance tests auto-discover it
+3. Run `bun run test` — both the Zod validation and issuance tests auto-discover it
 
 Alternatively, the `examples/credential-viewer` app has a **New Fixture** UI that writes the file and updates the index automatically via a Vite dev server plugin.
 
@@ -546,7 +577,7 @@ Interactive React + Tailwind UI for browsing, issuing, and sending fixtures. Fea
 -   Bulk issue and send credentials
 -   Create new fixtures with auto-inferred metadata
 
-Run with `pnpm dev` from the `examples/credential-viewer/` directory.
+Run with `bun run dev` from the `examples/credential-viewer/` directory.
 
 ## Frontend Query Hooks
 
@@ -1083,7 +1114,7 @@ Environment files live in `apps/learn-card-app/environments/<tenant>.json`. They
 2. Set `tenantId` and `domain` (required)
 3. Override only the sections that differ from defaults
 4. Add Firebase credentials, API endpoints, branding, etc.
-5. Run `npx tsx scripts/prepare-native-config.ts <tenant>` to validate
+5. Run `bun scripts/prepare-native-config.ts <tenant>` to validate
 
 **Minimal example** (`learncard.json`):
 
@@ -1172,13 +1203,13 @@ Generates `public/tenant-config.json` for native (Capacitor) builds and copies t
 
 ```bash
 # Default LearnCard
-npx tsx scripts/prepare-native-config.ts
+bun scripts/prepare-native-config.ts
 
 # Specific tenant
-npx tsx scripts/prepare-native-config.ts vetpass
+bun scripts/prepare-native-config.ts vetpass
 
 # Local dev
-npx tsx scripts/prepare-native-config.ts local
+bun scripts/prepare-native-config.ts local
 ```
 
 **Steps:**
@@ -1200,10 +1231,10 @@ npx tsx scripts/prepare-native-config.ts local
 Generates all native image assets from a single source logo using `sharp`.
 
 ```bash
-npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
+bun scripts/generate-tenant-assets.ts <tenant> <logo-path> [options]
 
 # Example
-npx tsx scripts/generate-tenant-assets.ts vetpass ~/vetpass-logo.png --bg "#1A3C5E" --splash-bg "#0D1F30"
+bun scripts/generate-tenant-assets.ts vetpass ~/vetpass-logo.png --bg "#1A3C5E" --splash-bg "#0D1F30"
 ```
 
 **Options:**
@@ -1233,13 +1264,13 @@ npx tsx scripts/generate-tenant-assets.ts vetpass ~/vetpass-logo.png --bg "#1A3C
 # environments/mytenant.json  (only overrides)
 
 # 2. Generate image assets from a logo
-pnpm generate-assets mytenant ~/path/to/logo.png --bg "#123456"
+bun run generate-assets mytenant ~/path/to/logo.png --bg "#123456"
 
 # 3. Build config + copy assets into Capacitor project
-pnpm prepare-config mytenant
+bun run prepare-config mytenant
 
 # 4. Build the app
-pnpm build
+bun run build
 ```
 
 ### Important Rules for AI Assistants

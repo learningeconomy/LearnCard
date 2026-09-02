@@ -28,7 +28,7 @@ This plugin is ideal for **server-side applications** where performance is criti
 ## Installation
 
 ```bash
-pnpm i @learncard/didkit-plugin-node
+bun add @learncard/didkit-plugin-node
 ```
 
 {% hint style="warning" %}
@@ -203,7 +203,7 @@ Once initialized, native is still faster for most operations:
 {% hint style="info" %}
 **When to use native:** Server environments where cold start matters (serverless, CLI tools, worker threads).
 
-Run benchmarks yourself: `cd tests/benchmarking && pnpm benchmark`
+Run benchmarks yourself: `cd tests/benchmarking && bun run benchmark`
 {% endhint %}
 
 ## Supported Platforms
@@ -230,7 +230,7 @@ If you see an error like "No .node binary found":
 ```bash
 # Rebuild the native module
 cd node_modules/@learncard/didkit-plugin-node
-pnpm build
+bun run build
 ```
 
 ### Compilation Errors
@@ -242,7 +242,7 @@ If compilation fails, ensure you have the Rust toolchain installed:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Then reinstall the package
-pnpm install
+bun install
 ```
 
 ### Memory Issues in Serverless

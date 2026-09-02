@@ -4,7 +4,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 
 import { initLearnCard } from '@learncard/init';
 
-import { getAllFixtures, prepareFixture } from '../index';
+import { getAllFixtures, getFixture, isCredentialFixture, prepareFixture } from '../index';
 
 import type { CredentialFixture } from '../types';
 
@@ -31,21 +31,42 @@ beforeAll(async () => {
 
 describe('Credential issuance', () => {
     const validFixtures = (): CredentialFixture[] =>
-        getAllFixtures().filter(f => f.validity === 'valid');
+        getAllFixtures().filter(
+            (fixture): fixture is CredentialFixture =>
+                fixture.validity === 'valid' && isCredentialFixture(fixture)
+        );
 
     describe('issueCredential succeeds for all valid fixtures', () => {
-        it.each(
-            validFixtures().map(f => [f.id, f] as const)
-        )('%s', async (_id, fixture) => {
-            const prepared = prepareFixture(fixture, {
-                issuerDid,
-                subjectDid: 'did:example:test-subject-123',
-            });
+        it.each(validFixtures().map(f => [f.id, f] as const))(
+            '%s',
+            async (_id, fixture) => {
+                const prepared = prepareFixture(fixture, {
+                    issuerDid,
+                    subjectDid: 'did:example:test-subject-123',
+                });
 
-            const signed = await wallet.invoke.issueCredential(prepared);
+                const signed = await wallet.invoke.issueCredential(prepared);
 
-            expect(signed).toBeDefined();
-            expect((signed as Record<string, unknown>).proof).toBeDefined();
-        }, 15_000);
+                expect(signed).toBeDefined();
+                expect((signed as Record<string, unknown>).proof).toBeDefined();
+            },
+            15_000
+        );
     });
+
+    it('issues the full CLR fixture without remote contexts', async () => {
+        const offlineWallet = await initLearnCard({
+            seed: 'b'.repeat(64),
+            didkit,
+            allowRemoteContexts: false,
+        });
+        const fixture = getFixture('clr/westbridge-full');
+        const prepared = prepareFixture(fixture, {
+            issuerDid: offlineWallet.id.did(),
+            subjectDid: 'did:example:test-subject-123',
+        });
+        const signed = await offlineWallet.invoke.issueCredential(prepared);
+
+        expect(signed.proof).toBeDefined();
+    }, 30_000);
 });

@@ -7,6 +7,7 @@ import ConsentFlowErrorFooter from './ConsentFlowErrorFooter';
 
 import { useHistory } from 'react-router-dom';
 import { useModal } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowErrorProps = {
     errorType: number;
@@ -30,15 +31,15 @@ const ConsentFlowError: React.FC<ConsentFlowErrorProps> = ({ errorType, uri }) =
             case 404:
                 return {
                     Icon: SadCloud,
-                    title: 'Nothing Found',
-                    message: 'This Consent Flow does not or no longer exists.',
+                    title: m['consentFlow.nothingFound'](),
+                    message: m['consentFlow.notExists'](),
                     hideRetry: true,
                 };
             case 500:
                 return {
                     Icon: CloudWarning,
-                    title: 'Network Error',
-                    message: 'There was a problem loading this Consent Flow.',
+                    title: m['consentFlow.networkError'](),
+                    message: m['consentFlow.errorLoading'](),
                     hideRetry: false,
                 };
             default:

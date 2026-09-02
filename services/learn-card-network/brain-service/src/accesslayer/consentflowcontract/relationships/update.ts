@@ -12,6 +12,8 @@ import { ConsentFlowTerms, ConsentFlowTransaction, ConsentFlowContract } from '@
 import { neogma } from '@instance';
 import { flattenObject } from '@helpers/objects.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { DbContractType, DbTermsType } from 'types/consentflowcontract';
 import { getBoostUri, sendBoost } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -217,10 +219,14 @@ export const reconsentTerms = async (
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: relationship.consenter,
         to: relationship.contractOwner,
-        message: {
-            title: 'New Consent Transaction',
-            body: `${relationship.consenter.displayName} has just reconsented to ${relationship.contract.name}!`,
-        },
+        message: getNotificationMessage(
+            'consentFlowTransactionReconsented',
+            resolveRecipientLocale(relationship.contractOwner),
+            {
+                consenter: relationship.consenter.displayName,
+                contractName: relationship.contract.name,
+            }
+        ),
         data: { transaction },
     });
 
@@ -428,10 +434,14 @@ export const updateTerms = async (
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: relationship.consenter,
         to: relationship.contractOwner,
-        message: {
-            title: 'New Consent Transaction',
-            body: `${relationship.consenter.displayName} has just updated their terms to ${relationship.contract.name}!`,
-        },
+        message: getNotificationMessage(
+            'consentFlowTransactionUpdatedTerms',
+            resolveRecipientLocale(relationship.contractOwner),
+            {
+                consenter: relationship.consenter.displayName,
+                contractName: relationship.contract.name,
+            }
+        ),
         data: { transaction },
     });
 
@@ -475,10 +485,14 @@ export const withdrawTerms = async (relationship: {
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: relationship.consenter,
         to: relationship.contractOwner,
-        message: {
-            title: 'New Consent Transaction',
-            body: `${relationship.consenter.displayName} has just withdrawn their terms to ${relationship.contract.name}!`,
-        },
+        message: getNotificationMessage(
+            'consentFlowTransactionWithdrawn',
+            resolveRecipientLocale(relationship.contractOwner),
+            {
+                consenter: relationship.consenter.displayName,
+                contractName: relationship.contract.name,
+            }
+        ),
         data: { transaction },
     });
 
@@ -602,14 +616,18 @@ export const syncCredentialsToContract = async (
         type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
         from: relationship.consenter,
         to: relationship.contractOwner,
-        message: {
-            title: 'New Consent Transaction',
-            body: `${
-                relationship.consenter.displayName
-            } has synced ${totalCredentials} credential(s) across ${categoryCount} ${
-                categoryCount === 1 ? 'category' : 'categories'
-            } to ${relationship.contract.name}!`,
-        },
+        message: getNotificationMessage(
+            categoryCount === 1
+                ? 'consentFlowTransactionSyncedSingle'
+                : 'consentFlowTransactionSyncedPlural',
+            resolveRecipientLocale(relationship.contractOwner),
+            {
+                consenter: relationship.consenter.displayName,
+                totalCredentials: String(totalCredentials),
+                categoryCount: String(categoryCount),
+                contractName: relationship.contract.name,
+            }
+        ),
         data: { transaction },
     });
 

@@ -1,3 +1,4 @@
+import * as m from '../../paraglide/messages.js';
 import React from 'react';
 import moment from 'moment';
 
@@ -44,7 +45,7 @@ export const AiAssessmentPreviewHeader: React.FC<{
     const thingsLearned = summaryInfo?.learned;
 
     return (
-        <div className="w-full rounded-t-[24px] rounded-b-[24px] overflow-hidden flex flex-col border-solid border-white border-[3px] safe-area-top-margin">
+        <div className="w-full rounded-t-[24px] rounded-b-[24px] overflow-hidden flex flex-col border-solid border-white border-[3px] mt-[var(--ion-safe-area-top,0px)]">
             <div className="w-full flex items-center justify-center flex-col bg-opacity-70 rounded-t-[20px] backdrop-blur-[5px] bg-white">
                 {!hideApp && (
                     <div className="w-full relative flex items-center justify-center flex-col pt-[25px] bg-white">
@@ -90,7 +91,7 @@ export const AiAssessmentPreviewHeader: React.FC<{
                                 <br />
                                 {isCompleted && (
                                     <span className="text-grayscale-700 text-[14px] font-notoSans ml-2">
-                                        has successfully completed
+                                        {m['aiSession.hasCompleted']()}
                                     </span>
                                 )}
                             </p>
@@ -98,7 +99,7 @@ export const AiAssessmentPreviewHeader: React.FC<{
                     )}
 
                     <p className="text-grayscale-600 text-[17px] font-semibold mb-2 tracking-[0.25px]">
-                        AI Session Summary
+                        {m['aiSession.summary']()}
                     </p>
 
                     <p className="text-center font-semibold text-xl text-grayscale-900 pb-[10px] capitalize">
@@ -106,14 +107,14 @@ export const AiAssessmentPreviewHeader: React.FC<{
                     </p>
 
                     <p className="text-grayscale-700 text-[14px] font-notoSans">
-                        Started on {startDate}
+                        {m['aiSession.startedOn']({ date: startDate })}
                     </p>
 
                     {!isCompleted && (
                         <>
                             <p className="text-rose-500 text-[14px] font-semibold font-notoSans flex items-center justify-center bg-rose-50 py-2 px-4 rounded-[12px] mt-4">
                                 <span className="bg-rose-500 w-[10px] h-[10px] rounded-full mr-2" />
-                                Unfinished
+                                {m['aiSession.unfinished']()}
                             </p>
                         </>
                     )}
@@ -138,7 +139,7 @@ export const AiAssessmentPreviewHeader: React.FC<{
                     {isCompleted && (
                         <div className="rounded-[20px] bg-white w-full ion-padding px-6">
                             <h3 className="text-xl text-gray-900 font-notoSans">
-                                Learning Overview
+                                {m['aiSession.learningOverview']()}
                             </h3>
                             <div className="flex flex-col items-start justify-start mt-2">
                                 {thingsLearned?.map((thing: string, index: number) => (

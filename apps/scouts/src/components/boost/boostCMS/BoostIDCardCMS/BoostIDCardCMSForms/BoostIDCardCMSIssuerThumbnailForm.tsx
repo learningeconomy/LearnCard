@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { IonRow, IonSpinner, IonToggle } from '@ionic/react';
@@ -10,6 +10,7 @@ import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import TrashBin from '../../../../svgs/TrashBin';
 
 import { BoostCMSState } from '../../../boost';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
     state: BoostCMSState;
@@ -42,7 +43,7 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
         handleStateChange('idIssuerThumbnail', data?.url);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -51,7 +52,9 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-2 mb-4 rounded-[20px]">
             <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                <p className="text-grayscale-900 font-medium w-10/12">Show Issuer Thumbnail</p>
+                <p className="text-grayscale-900 font-medium w-10/12">
+                    {m['boostCMS.showIssuer']()}
+                </p>
                 <IonToggle
                     mode="ios"
                     color="emerald-700"
@@ -70,14 +73,10 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
                             className={`relative flex items-center justify-center object-contain overflow-hidden w-[72px] h-[72px] bg-grayscale-800 rounded-full`}
                         >
                             {!state?.appearance?.idIssuerThumbnail ? (
-                                <img
-                                    alt="badge thumbnail"
-                                    src={EmptyImage}
-                                    className="w-[43px] h-[47px]"
-                                />
+                                <img alt="" src={EmptyImage} className="w-[43px] h-[47px]" />
                             ) : (
                                 <img
-                                    alt="badge thumbnail"
+                                    alt=""
                                     src={state?.appearance?.idIssuerThumbnail}
                                     className="w-full h-full object-cover"
                                 />
@@ -102,7 +101,7 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
                             )}
                         </div>
                         {!state?.appearance?.idIssuerThumbnail && (
-                            <p className="ml-[10px] text-grayscale-700">Empty</p>
+                            <p className="ml-[10px] text-grayscale-700">{m['boostCMS.empty']()}</p>
                         )}
                     </div>
 

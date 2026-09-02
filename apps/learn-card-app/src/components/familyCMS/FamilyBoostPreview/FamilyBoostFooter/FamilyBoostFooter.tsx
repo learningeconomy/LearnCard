@@ -8,6 +8,7 @@ import FamilyActionMenu from '../../FamilyActionMenu/FamilyActionMenu';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 import { VC } from '@learncard/types';
+import { m } from '../../../../paraglide/messages.js';
 
 export const FamilyBoostFooter: React.FC<{
     credential: VC;
@@ -47,14 +48,14 @@ export const FamilyBoostFooter: React.FC<{
                                 onClick={() => setIsFront?.(!isFront)}
                                 className="bg-white font-poppins text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                             >
-                                Details
+                                {m['family.preview.details']()}
                             </button>
                         ) : (
                             <button
                                 onClick={() => setIsFront?.(!isFront)}
                                 className="bg-white font-poppins text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                             >
-                                Back
+                                {m['common.back']()}
                             </button>
                         )}
 
@@ -62,7 +63,7 @@ export const FamilyBoostFooter: React.FC<{
                             onClick={handleShareBoostLink}
                             className="text-white font-poppins text-lg font-semibold rounded-full py-[12px] w-full bg-grayscale-900 mr-2 flex items-center justify-center"
                         >
-                            Share <ReplyIcon className="ml-1" />
+                            {m['common.share']()} <ReplyIcon className="ml-1" />
                         </button>
                         <button
                             onClick={() => {

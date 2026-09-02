@@ -12,7 +12,7 @@ To interact with the LearnCloud Storage API, you can choose one of two ways to a
 To authenticate using the LearnCloud Storage Plugin (`@learncard/learn-cloud-plugin`), first install the package:
 
 ```bash
-pnpm install @learncard/learn-cloud-plugin
+bun add @learncard/learn-cloud-plugin
 ```
 
 Then, either instantiate a LearnCloud STorage enabled LearnCard, or add the Storage Plugin to an existing LearnCard:
@@ -20,6 +20,7 @@ Then, either instantiate a LearnCloud STorage enabled LearnCard, or add the Stor
 {% tabs %}
 {% tab title="Direct Instantiation" %}
 {% code lineNumbers="true" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
@@ -30,10 +31,12 @@ const storageLearnCard = await initLearnCard({
     didkit,
 });
 ```
+
 {% endcode %}
 {% endtab %}
 
 {% tab title="Add Plugin" %}
+
 ```typescript
 import { initLearnCard } from '@learncard/init';
 import { getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
@@ -50,6 +53,7 @@ const storageLearnCard = await learnCard.addPlugin(
     await getLearnCloudPlugin(learnCard, storageAPI)
 );
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -62,14 +66,14 @@ Storage API uses DID-based authentication with a challenge-response mechanism an
 **Simple High-Level Auth Flow:**
 
 ```mermaid
-sequenceDiagram  
-    participant Client as Client  
-    participant Network as Storage API  
-          Client->>Network: Request access  
-          Network->>Client: Provide challenge  
-          Client->>Client: Sign challenge with DID  
-          Client->>Network: Submit signed challenge  
-          Network->>Network: Verify signature  
+sequenceDiagram
+    participant Client as Client
+    participant Network as Storage API
+          Client->>Network: Request access
+          Network->>Client: Provide challenge
+          Client->>Client: Sign challenge with DID
+          Client->>Network: Submit signed challenge
+          Network->>Network: Verify signature
           Network->>Client: Grant authenticated access
 ```
 
@@ -103,7 +107,7 @@ sequenceDiagram
 If you choose to use the API endpoints directly, you'll need to manage challenge-based DID Authentication for each request. Here's a simplified TypeScript example to help you implement this authentication method:
 
 ```typescript
- 
+
 async function getClient(
   url = 'https://cloud.learncard.com/api': string,
   didAuthFunction: (challenge?: string) => Promise<string>

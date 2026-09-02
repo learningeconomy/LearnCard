@@ -4,8 +4,8 @@
  * Lightweight, dependency-free accessors for the resolved TenantConfig.
  *
  * Deliberately imports nothing at runtime (type-only `learn-card-base` import)
- * so modules that only need to *read* the resolved config — e.g. the analytics
- * context — can do so without pulling in the heavy bootstrap graph (Firebase,
+ * so modules that only need to *read* the resolved config — e.g. analytics
+ * runtime modules — can do so without pulling in the heavy bootstrap graph (Firebase,
  * Sentry, Userflow, theme store, debug events). Keeping these reads off the
  * heavy graph avoids a circular dependency between the analytics barrel and
  * `context.tsx`. See `bootstrapTenantConfig.ts` for the actual bootstrap logic.

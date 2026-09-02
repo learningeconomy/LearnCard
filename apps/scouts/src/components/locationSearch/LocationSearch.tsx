@@ -1,3 +1,4 @@
+import * as m from '../../paraglide/messages.js';
 import React, { useState } from 'react';
 import Lottie from 'react-lottie-player';
 
@@ -17,11 +18,9 @@ import GoogleLogo from 'learn-card-base/assets/images/google-logo.png';
 import X from 'learn-card-base/svgs/X';
 
 import PurpGhost from '../../assets/lotties/purpghost.json';
-import HourGlass from '../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 import { AddressSpec, formatLocationObject } from './location.helpers';
-
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 const LocationSearch: React.FC<{
     showCloseButton?: boolean;
@@ -76,7 +75,7 @@ const LocationSearch: React.FC<{
                                 <div className="flex items-center justify-start w-full mt-4">
                                     <IonInput
                                         autocapitalize="on"
-                                        placeholder="Enter your location..."
+                                        placeholder={m['auth.locPlace']()}
                                         value={locationSearch}
                                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
                                         onIonInput={e => {
@@ -97,12 +96,7 @@ const LocationSearch: React.FC<{
                         {isPlacePredictionsLoading && (
                             <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                                 <div className="max-w-[150px]">
-                                    <Lottie
-                                        loop
-                                        animationData={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
+                                    <LoadingSpinner />
                                 </div>
                             </section>
                         )}
@@ -133,14 +127,14 @@ const LocationSearch: React.FC<{
                                     />
                                 </div>
                                 <p className="font-bold text-grayscale-800 mt-[20px]">
-                                    No search results yet
+                                    {m['auth.noResults']()}
                                 </p>
                             </section>
                         )}
                     </ul>
                 </section>
                 <div className="absolute bottom-[5px] right-[15px] flex items-center justify-center text-grayscale-500">
-                    powered by <img src={GoogleLogo} className="ml-1 h-[20px]" />
+                    {m['auth.poweredBy']()} <img src={GoogleLogo} className="ml-1 h-[20px]" />
                 </div>
             </IonContent>
         </IonPage>

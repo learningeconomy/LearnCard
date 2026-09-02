@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
+
 import {
     LaunchPadAppListItem as LaunchPadAppListItemType,
     LaunchPadAppType,
@@ -18,7 +21,10 @@ import LaunchPadAppListItem from './LaunchPadAppListItem';
 import LaunchPadContractListItem from './LaunchPadContractListItem';
 import MainHeader from '../../components/main-header/MainHeader';
 import LaunchPadSearch from './LaunchPadSearch/LaunchPadSearch';
-import LaunchPadAppTabs, { LaunchPadTabEnum } from './LaunchPadHeader/LaunchPadAppTabs';
+import LaunchPadAppTabs, {
+    LaunchPadTabEnum,
+    getTabTranslationKey,
+} from './LaunchPadHeader/LaunchPadAppTabs';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import { RecoveryBanner } from '../../components/recovery/RecoveryBanner';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
@@ -29,6 +35,7 @@ import {
 } from './LaunchPadSearch/launchpad-search.helpers';
 
 import useAppStore, { mapTabToCategory } from './useAppStore';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
 import AppStoreListItem from './AppStoreListItem';
 import { AppStoreListSkeleton } from './AppStoreListItemSkeleton';
 import FeaturedCarousel from './FeaturedCarousel';
@@ -36,6 +43,24 @@ import { NavBarLaunchPadIcon } from '../../components/svgs/NavBarLaunchPadIcon';
 
 const LaunchPad: React.FC = () => {
     const flags = useFlags();
+
+    // Local tab→message map. Duplicated from LaunchPadAppTabs.tsx to
+    // avoid coupling to that module's internals now that getTabTranslationKey
+    // has been replaced by Paraglide's direct message functions.
+    const tabLabel = (tab: LaunchPadTabEnum): string =>
+        ({
+            [LaunchPadTabEnum.myApps]: m['launchpad.tabs.myApps'],
+            [LaunchPadTabEnum.ai]: m['launchpad.tabs.ai'],
+            [LaunchPadTabEnum.learning]: m['launchpad.tabs.learning'],
+            [LaunchPadTabEnum.games]: m['launchpad.tabs.games'],
+            [LaunchPadTabEnum.tools]: m['launchpad.tabs.tools'],
+            [LaunchPadTabEnum.employment]: m['launchpad.tabs.employment'],
+            [LaunchPadTabEnum.credentials]: m['launchpad.tabs.credentials'],
+            [LaunchPadTabEnum.other]: m['launchpad.tabs.other'],
+            [LaunchPadTabEnum.plugins]: m['launchpad.tabs.plugins'],
+            [LaunchPadTabEnum.all]: m['launchpad.tabs.all'],
+        }[tab]());
+
     const { recoveryMethodCount, openRecoverySetup, capabilities } = useAppAuth();
     const { isAiEnabled, reason } = useAiFeatureGate();
     const history = useHistory();
@@ -160,6 +185,8 @@ const LaunchPad: React.FC = () => {
         }
     }, [contractDetails, suppressContractModal, consentedContractLoading]);
 
+    const onHeaderScroll = useHeaderScrollSync();
+
     // Filter app store apps based on search and category
     const filteredInstalledApps = useMemo(() => {
         const lowerSearch = searchInput?.toLowerCase() || '';
@@ -263,7 +290,13 @@ const LaunchPad: React.FC = () => {
         <IonPage className="bg-white">
             <MainHeader customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none" />
             <GenericErrorBoundary>
-                <IonContent fullscreen scrollY={true} color="grayscale-100">
+                <IonContent
+                    fullscreen
+                    scrollY={true}
+                    color="grayscale-100"
+                    scrollEvents
+                    onIonScroll={onHeaderScroll}
+                >
                     <div className="flex flex-col items-center w-full">
                         <LaunchPadHeader>
                             <div className="flex flex-col gap-3 w-full max-w-[600px] pl-3">
@@ -375,10 +408,17 @@ const LaunchPad: React.FC = () => {
                                             <div className="w-full flex items-center justify-center z-10">
                                                 <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
                                                     <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                                        No results found for{' '}
-                                                        <span className="text-black italic">
-                                                            {searchInput}
-                                                        </span>
+                                                        <TransP
+                                                            m={
+                                                                m[
+                                                                    'common.searchResults.noResultsFor'
+                                                                ]
+                                                            }
+                                                            values={{ query: searchInput }}
+                                                            components={[
+                                                                <span className="text-black italic" />,
+                                                            ]}
+                                                        />
                                                     </p>
                                                 </div>
                                             </div>
@@ -408,7 +448,7 @@ const LaunchPad: React.FC = () => {
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Installed Apps
+                                                    {m['launchpad.sections.installedApps']()}
                                                 </p>
                                             </div>
                                             {filteredInstalledApps.map(app => (
@@ -439,7 +479,7 @@ const LaunchPad: React.FC = () => {
                                         <>
                                             <div className="px-2 pt-4 pb-2">
                                                 <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                    Suggested Apps
+                                                    {m['launchpad.sections.suggestedApps']()}
                                                 </p>
                                             </div>
                                             {filteredCuratedApps.map(app => (
@@ -475,7 +515,11 @@ const LaunchPad: React.FC = () => {
                                             <>
                                                 <div className="px-2 pt-4 pb-2">
                                                     <p className="text-sm font-semibold text-grayscale-600 uppercase tracking-wide">
-                                                        {isAll ? 'All Apps' : `All ${tab}`}
+                                                        {isAll
+                                                            ? m['launchpad.sections.allApps']()
+                                                            : m['launchpad.sections.allCategory']({
+                                                                  category: tabLabel(tab),
+                                                              })}
                                                     </p>
                                                 </div>
                                                 {nonPromotedAvailableApps.map(app => (
@@ -534,17 +578,20 @@ const LaunchPad: React.FC = () => {
 
                                         if (!isEmpty) return null;
 
+                                        const tabLabelStr = tabLabel(tab);
                                         const title = isMyApps
-                                            ? 'Your apps will live here'
+                                            ? m['launchpad.emptyStates.noInstalledApps']()
                                             : isAll
-                                            ? 'No apps available right now'
-                                            : `Nothing in ${tab} yet`;
+                                            ? m['launchpad.emptyStates.noAppsAvailable']()
+                                            : m['launchpad.emptyStates.nothingInCategory']({
+                                                  category: tabLabelStr,
+                                              });
 
                                         const subtitle = isMyApps
-                                            ? 'Install something from the App Store to get started.'
+                                            ? m['launchpad.emptyStates.installSomething']()
                                             : isAll
-                                            ? 'Check back later — new apps are added all the time.'
-                                            : 'Check back soon, or browse all apps.';
+                                            ? m['launchpad.emptyStates.checkBackLater']()
+                                            : m['launchpad.emptyStates.checkBackSoon']();
 
                                         const showCta = !isAll;
 

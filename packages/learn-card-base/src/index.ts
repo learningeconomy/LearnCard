@@ -12,6 +12,7 @@ export * from './components/learnCard/learn-card-activity-list/LearnCardActivity
 export * from './components/learnCard/LearnCardActivity';
 export * from './components/learnCard/learn-card/LearnCard';
 export * from './components/profilePicture/ProfilePicture';
+export * from './components/connection-prompts';
 export * from './components/social-logins/SocialLogins';
 export * from './components/sidemenu/SideMenu';
 export * from './components/Background/CurvedBackdrop';
@@ -24,16 +25,19 @@ export * from './components/QRCodeScannerOverlay/QRCodeScannerOverlay';
 export * from './components/QRCodeScannerOverlay/QRCodeScannerFooter';
 export * from './components/ErrorBoundary';
 export * from './components/push-notifications/PushNotificationListener';
+export * from './components/push-notifications/PushNotificationToast';
 export * from './components/earned-and-managed-tabs/EarnedAndManagedTabs';
 export * from './components/sharecreds/ShareCredentialsModal';
 export * from './components/boost/boostOptions/boostOptions';
 export * from './components/boost/boost';
 export * from './components/boost/BoostRecipients';
 export * from './components/boost/boostFooter/BoostFooter';
+export * from './components/boost/boostFooter/BoostFooterLayout';
 export * from './components/CredentialBadge/CredentialBadge';
 export * from './components/CredentialBadge/CredentialBadgeNew';
 export * from './components/CredentialBadge/CredentialCLRBadge';
 export * from './components/headerBranding/headerBrandingHelpers';
+export * from './components/headerBranding/HeaderBranding';
 export * from './components/CredentialSubjectDisplay/CredentialSubjectDisplay';
 export * from './components/RadioButton';
 export * from './components/launchpad-app-list/LaunchPadAppList';
@@ -41,6 +45,7 @@ export * from './components/launchpad-app-list/LaunchPadBecomeAnApp';
 export * from './components/wrappers/BoostGenericCardWrapper';
 export * from './components/modals/useModal';
 export * from './components/modals/ModalsContext';
+export * from './components/modals/ModalAccessibilityManager';
 export * from './components/modals/modals.helpers';
 export * from './components/modals/Modals';
 export * from './components/modals/CancelModal';
@@ -59,12 +64,16 @@ export * from './components/shadcn/lib/utils';
 export * from './components/generic/Select';
 export * from './components/form-inputs';
 export * from './components/toast/Toast';
+export * from './components/loaders/LoadingSpinner';
+export * from './components/loaders/CredentialListSkeleton';
+export * from './components/SkillCompetencyCard';
 
 export * from './utils/regexes';
 export * from './utils/pushUtilities';
 export * from './constants/redirects';
 export * from './constants/LCNWebhookEndpoints';
 export * from './constants/Networks';
+export * from './i18n';
 
 export * from './hooks/useWallet';
 export * from './hooks/useContract';
@@ -80,6 +89,18 @@ export * from './hooks/useTermsTransactions';
 export * from './auth-coordinator';
 export * from './auth-providers';
 export * from './auth-adapters';
+
+// Auth Status - canonical race-safe auth-gate selector for all gating decisions
+export * from './auth-status/authStatus';
+export * from './auth-status/useAuthStatus';
+export * from './auth-status/useAuthGateState';
+
+// Offline resilience - connectivity model + boot-time deadline utility
+export * from './stores/connectivityStore';
+export * from './stores/walletModeStore';
+export * from './hooks/useConnectivity';
+export * from './helpers/withDeadline';
+export * from './helpers/networkFault';
 export * from './key-derivation';
 export * from './config/authConfig';
 export * from './config/providerRegistry';
@@ -88,11 +109,12 @@ export * from './config/tenantDefaults';
 export * from './config/resolveTenantConfig';
 export * from './config/TenantConfigProvider';
 export * from './config/brandingHelpers';
+export * from './storage/image-upload';
 export { SignInAdapterProvider, useSignInAdapter } from './providers/SignInAdapterProvider';
 export type { SignInAdapterProviderProps } from './providers/SignInAdapterProvider';
 export * from './hooks/useSocialLogins';
 export * from './hooks/useSQLiteStorage';
-export * from './hooks/useGetCurrentUser';
+export { useCurrentUser } from './hooks/useGetCurrentUser';
 export * from './hooks/useGetCurrentLCNUser';
 export * from './hooks/useScreenWidth';
 export * from './hooks/useOnScreen';
@@ -126,6 +148,10 @@ export * from './hooks/useVerifiableData';
 export * from './hooks/useSkillIconAnnotation';
 export * from './helpers/skillIconHelpers';
 export * from './hooks/useSharedUrisInTerms';
+export * from './hooks/usePendingContractSync';
+export * from './hooks/useConsentedContracts';
+export * from './hooks/useLaunchDarklyIdentify';
+export * from './in-app-messages';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
@@ -156,6 +182,7 @@ export * from './stores/newCredsStore';
 export * from './stores/aiLoadingStore';
 export * from './stores/aiInsightRefreshStore';
 export * from './stores/syncProgressStore';
+export * from './stores/pendingContractSyncStore';
 export * from './stores/boostPreviewStore';
 export {
     messages,
@@ -169,6 +196,7 @@ export {
     suggestedTopics,
     topicCredentials,
     sessionEnded,
+    hasThreadEnded,
     planReady,
     planReadyThread,
     resetChatStores,
@@ -186,7 +214,10 @@ export {
     updateArtifactClaimedStatus,
 } from './stores/nanoStores/chatStore';
 
+export * from './helpers/aiErrors';
+export * from './helpers/aiPassportAuth';
 export * from './helpers/credentialHelpers';
+export * from './helpers/credentialIngestion';
 export * from './helpers/credentials/queries';
 export * from './helpers/openid4vcErrors';
 export * from './helpers/faviconHelpers';
@@ -195,6 +226,7 @@ export * from './components/openid4vc/ExchangeErrorDisplay';
 export * from './components/openid4vc/IssuerHeader';
 export * from './components/openid4vc/VerifierHeader';
 export * from './helpers/web3AuthHelpers';
+export * from './helpers/networkHelpers';
 export * from './helpers/statusBarHelpers';
 export * from './helpers/platformHelpers';
 export * from './helpers/navBarHelpers';
@@ -211,6 +243,7 @@ export * from './helpers/searchHelpers';
 export * from './helpers/urlHelpers';
 export * from './helpers/openAttachmentUrl';
 export * from './helpers/display.helpers';
+export * from './helpers/displayTags.helpers';
 export * from './helpers/youtube.helpers';
 export * from './helpers/vimeo.helpers';
 export * from './helpers/video.helpers';
@@ -224,7 +257,7 @@ export * from './types/boostAndCredentialMetadata';
 export * from './constants/gdprAgeLimits';
 export * from './constants/aiPassport';
 
-export * from './filestack/useFilestack';
+export * from './filestack/constants/filestack';
 export * from './filestack/images/filestack.helpers';
 export * from './types/sync-my-school';
 export * from './types/careerOneStop';
@@ -233,6 +266,7 @@ export * from './react-query/queries/queries';
 export * from './react-query/queries/vcQueries';
 export * from './react-query/queries/notifications';
 export * from './react-query/queries/aiPassport-queries';
+export * from './react-query/connectionPrompts';
 export * from './react-query/mutations/mutations';
 export * from './react-query/mutations/notifications';
 export * from './react-query/mutations/boosts';
@@ -240,6 +274,7 @@ export * from './react-query/mutations/mutation.helpers';
 export * from './react-query/queries/pins';
 export * from './react-query/mutations/pins';
 export * from './react-query/mutations/ai-passport';
+export * from './react-query/mutations/pruneConsentFlowDeletedCredentials';
 export * from './react-query/mutations/checklist';
 export * from './react-query/mutations/user-contact';
 export * from './react-query/mutations/firebase';
@@ -272,3 +307,4 @@ export * from './svgs/ScoutsLogo';
 export * from './svgs/ScoutLogoAndText';
 export * from './svgs/Compass';
 export * from './logging/logger';
+export * from './logging/diagnosticLogBuffer';

@@ -117,7 +117,7 @@ await Promise.all(configurations.map(config => esbuild.build(config))).catch(err
     console.error('❌ Build failed');
     process.exit(1);
 });
-await fs.copyFile('./scripts/nodeEsmEntrypoint.mjs', './dist/node-esm.mjs');
+
 
 console.log('✔ Build successful');
 process.exit(0);

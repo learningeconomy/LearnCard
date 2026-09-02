@@ -46,7 +46,7 @@ export const getLearnCardHeaderBrandingColors = (path: string = '/') => {
         path === '/home' ||
         path === '/passport' ||
         path === '/' ||
-        path === '/passport' ||
+        path === '/dashboard' ||
         path === '/wallet' ||
         path === '/notifications' ||
         path === '/lc-preview' ||
@@ -55,10 +55,12 @@ export const getLearnCardHeaderBrandingColors = (path: string = '/') => {
         path === '/claim/boost' ||
         path.includes('/share-boost') ||
         path.includes('/verify/resume') ||
-        path === '/launchpad' ||
+        path.startsWith('/launchpad') ||
+        path === '/issue' ||
         path.includes('/contacts') ||
         path.includes('/skills') ||
-        path === '/ai/insights'
+        path === '/ai/insights' ||
+        path.startsWith('/pathways')
     ) {
         return 'text-grayscale-900';
     }

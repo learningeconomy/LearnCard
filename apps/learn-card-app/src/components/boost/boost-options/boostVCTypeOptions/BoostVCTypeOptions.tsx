@@ -169,7 +169,7 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
                                 className="bg-cyan-100 text-grayscale-900 text-[17px] py-1.5 rounded-[20px] font-poppins font-semibold w-full h-[50px] flex justify-center items-center shadow-[0px_2px_3px_rgba(0,0,0,0.25)]"
                             >
                                 <BoostWizardIcon className="w-[45px]" />
-                                AI Boost Wizard
+                                AI Badge Wizard
                             </button>
                         )}
                         <button

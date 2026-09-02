@@ -1,3 +1,4 @@
+import { formatLocaleDate } from '../i18n/formatters';
 /** A directly mapped CLR/OB value with provenance metadata for traceable rendering. */
 export type SourceMappedField<T> = {
     value: T;
@@ -187,6 +188,7 @@ export type ClrTranscriptDisplayModel = {
         title: SourceMappedField<string>;
         description?: SourceMappedField<string>;
         image?: SourceMappedField<string>;
+        issuerImage?: SourceMappedField<string>;
         issuerName?: SourceMappedField<string>;
         issuerId?: SourceMappedField<string>;
         issuerAddress?: IssuerAddressDisplayModel;
@@ -252,7 +254,7 @@ export const formatClrDate = (value: string): string => {
     if (!ISO_DATE_RE.test(value)) return value;
     const date = new Date(value);
     if (isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return formatLocaleDate(date, { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
 // Creates a fully traced value so UI and debug views can link rendered data back to source fields.
@@ -272,6 +274,54 @@ const asMapped = <T>(
 const asArray = <T>(value: T | T[] | undefined): T[] => {
     if (value === undefined) return [];
     return Array.isArray(value) ? value : [value];
+};
+
+/**
+ * Returns the sole credential subject whether it is encoded as an object or a
+ * single-element array. Multi-subject credentials remain ambiguous and are not
+ * reduced by silently selecting the first subject.
+ */
+const getSingleCredentialSubject = (
+    rawCredential: Record<string, unknown>
+): Record<string, unknown> | undefined => {
+    const subjects = asArray<Record<string, unknown>>(
+        rawCredential.credentialSubject as
+            | Record<string, unknown>
+            | Record<string, unknown>[]
+            | undefined
+    );
+
+    return subjects.length === 1 ? subjects[0] : undefined;
+};
+
+/**
+ * Selects the CLR course presentation only for an unambiguous standalone OBv3 Course.
+ * The explicit achievement type is authoritative; names are never keyword-matched.
+ */
+export const isStandaloneCourseCredential = (rawCredential: Record<string, unknown>): boolean => {
+    const credentialTypes = asArray<string>(rawCredential.type as string | string[] | undefined);
+    if (credentialTypes.includes('ClrCredential')) return false;
+
+    const subject = getSingleCredentialSubject(rawCredential);
+    if (!subject) return false;
+
+    // A Course that wraps other credentials is still a transcript/container. Rendering it as a
+    // standalone course would hide its top-level evidence and present one of its children instead.
+    if (asArray(subject.verifiableCredential as unknown[]).length > 0) return false;
+
+    const achievement = subject.achievement as Record<string, unknown> | undefined;
+    const courseName = achievement?.name;
+    const issuer = rawCredential.issuer;
+    const issuerName =
+        issuer && typeof issuer === 'object' ? (issuer as Record<string, unknown>).name : undefined;
+
+    return (
+        achievement?.achievementType === 'Course' &&
+        typeof courseName === 'string' &&
+        courseName.trim().length > 0 &&
+        typeof issuerName === 'string' &&
+        issuerName.trim().length > 0
+    );
 };
 
 // Extracts the raw string value from either IdentityObject (identityHash) or IdentifierEntry (identifier).
@@ -318,6 +368,27 @@ const getLearnerName = (
     return subjectId;
 };
 
+const getEvidenceMimeType = (id?: string): string | undefined => {
+    if (!id) return undefined;
+
+    if (id.startsWith('data:')) {
+        const parameterStart = id.indexOf(';');
+        const payloadStart = id.indexOf(',');
+        if (payloadStart === -1) return undefined;
+
+        return id.slice(
+            5,
+            parameterStart === -1 ? payloadStart : Math.min(parameterStart, payloadStart)
+        );
+    }
+
+    if (/\.pdf$/i.test(id)) return 'application/pdf';
+
+    const imageExtension = id.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i)?.[1]?.toLowerCase();
+
+    return imageExtension ? `image/${imageExtension}` : undefined;
+};
+
 const collectEvidence = (
     rawEvidence: unknown,
     sourceCredentialId: string,
@@ -331,15 +402,7 @@ const collectEvidence = (
             const isInlineDataUri = typeof id === 'string' && id.startsWith('data:');
             const isLargeInlineDataUri =
                 isInlineDataUri && id.length > LARGE_INLINE_EVIDENCE_THRESHOLD;
-            const mimeType = isInlineDataUri
-                ? id!.slice(5, id!.indexOf(';'))
-                : typeof id === 'string'
-                ? /\.pdf$/i.test(id)
-                    ? 'application/pdf'
-                    : /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(id)
-                    ? `image/${id.match(/\.(\w+)$/)?.[1]?.toLowerCase()}`
-                    : undefined
-                : undefined;
+            const mimeType = getEvidenceMimeType(id);
 
             if (isLargeInlineDataUri) {
                 warnings.push({
@@ -495,7 +558,8 @@ const mapResults = (
     // ResultDescription drives semantic meaning (for example GPA), so we resolve by explicit IDs only.
     return asArray<Record<string, unknown>>(result as Record<string, unknown>[]).flatMap(
         (entry, index) => {
-            if (entry.value === undefined) return [];
+            const value = entry.value ?? entry.status;
+            if (value === undefined) return [];
 
             const resultDescriptionId =
                 typeof entry.resultDescription === 'string' ? entry.resultDescription : undefined;
@@ -506,8 +570,8 @@ const mapResults = (
 
             const mapped: ResultDisplayModel = {
                 value: asMapped(
-                    entry.value as string | number | boolean,
-                    `${basePath}[${index}].value`,
+                    value as string | number | boolean,
+                    `${basePath}[${index}].${entry.value === undefined ? 'status' : 'value'}`,
                     'result.value',
                     sourceCredentialId
                 ),
@@ -587,7 +651,7 @@ const classifyRecord = (
     // Strict no-guessing path: classification is based only on explicit CLR/OB fields.
     const nestedId =
         typeof nestedCredential.id === 'string' ? nestedCredential.id : 'nested-unknown';
-    const nestedSubject = (nestedCredential.credentialSubject ?? {}) as Record<string, unknown>;
+    const nestedSubject = getSingleCredentialSubject(nestedCredential) ?? {};
     const achievement = (nestedSubject.achievement ?? {}) as Record<string, unknown>;
     const achievementType =
         typeof achievement.achievementType === 'string' ? achievement.achievementType : undefined;
@@ -681,11 +745,23 @@ const classifyRecord = (
               )
             : undefined;
 
-    // earnedAt and validUntil come from the nested VC envelope, not the achievement.
-    const earnedAt =
-        typeof nestedCredential.validFrom === 'string'
-            ? asMapped(nestedCredential.validFrom, 'validFrom', 'credential.validFrom', nestedId)
-            : undefined;
+    // A completed course's activityEndDate is more specific than the VC issuance date.
+    let earnedAt: SourceMappedField<string> | undefined;
+    if (typeof nestedSubject.activityEndDate === 'string') {
+        earnedAt = asMapped(
+            nestedSubject.activityEndDate,
+            'credentialSubject.activityEndDate',
+            'achievementSubject.activityEndDate',
+            nestedId
+        );
+    } else if (typeof nestedCredential.validFrom === 'string') {
+        earnedAt = asMapped(
+            nestedCredential.validFrom,
+            'validFrom',
+            'credential.validFrom',
+            nestedId
+        );
+    }
     const validUntil =
         typeof nestedCredential.validUntil === 'string'
             ? asMapped(nestedCredential.validUntil, 'validUntil', 'credential.validUntil', nestedId)
@@ -808,10 +884,15 @@ export const normalizeClrTranscriptDisplayModel = (
     // Normalization is the single source of truth for render decisions across all surfaces/views.
     const warnings: DisplayWarning[] = [];
 
-    const credentialSubject = (rawCredential.credentialSubject ?? {}) as Record<string, unknown>;
+    const credentialSubject = getSingleCredentialSubject(rawCredential) ?? {};
     const nestedCredentials = asArray<Record<string, unknown>>(
         credentialSubject.verifiableCredential as Record<string, unknown>[]
     );
+    const isStandaloneCourse = isStandaloneCourseCredential(rawCredential);
+    let academicRecords = nestedCredentials;
+    if (academicRecords.length === 0 && isStandaloneCourse) {
+        academicRecords = [rawCredential];
+    }
 
     const credentialId =
         typeof rawCredential.id === 'string' ? rawCredential.id : 'unknown-credential-id';
@@ -832,7 +913,7 @@ export const normalizeClrTranscriptDisplayModel = (
 
     // Build id → display name map for association resolution.
     const credentialNameById = new Map<string, string>();
-    for (const nc of nestedCredentials) {
+    for (const nc of academicRecords) {
         const ncId = typeof nc.id === 'string' ? nc.id : undefined;
         if (!ncId) continue;
         const ncSubject = (nc.credentialSubject ?? {}) as Record<string, unknown>;
@@ -847,17 +928,19 @@ export const normalizeClrTranscriptDisplayModel = (
     // Top-level CLR evidence belongs to the transcript as a whole (e.g. the sealed
     // transcript PDF, diploma scan). It is collected into the flat list so the summary
     // count and "all evidence" panel include it, with the parent CLR as its source.
-    evidence.push(
-        ...collectEvidence(rawCredential.evidence, credentialId, 'evidence', warnings),
-        ...collectEvidence(
-            credentialSubject.evidence,
-            credentialId,
-            'credentialSubject.evidence',
-            warnings
-        )
-    );
+    if (!isStandaloneCourse) {
+        evidence.push(
+            ...collectEvidence(rawCredential.evidence, credentialId, 'evidence', warnings),
+            ...collectEvidence(
+                credentialSubject.evidence,
+                credentialId,
+                'credentialSubject.evidence',
+                warnings
+            )
+        );
+    }
 
-    for (const nestedCredential of nestedCredentials) {
+    for (const nestedCredential of academicRecords) {
         const normalized = classifyRecord(nestedCredential, warnings);
         if (normalized.course) courses.push(normalized.course);
         if (normalized.program) programs.push(normalized.program);
@@ -999,16 +1082,33 @@ export const normalizeClrTranscriptDisplayModel = (
                     : undefined,
             image: (() => {
                 const img = rawCredential.image as Record<string, unknown> | string | undefined;
-                if (typeof img === 'string')
+                if (typeof img === 'string') {
                     return asMapped(img, 'image', 'credential.image', credentialId);
-                if (img && typeof img.id === 'string')
+                }
+                if (img && typeof img.id === 'string') {
                     return asMapped(img.id, 'image.id', 'credential.image.id', credentialId);
+                }
                 return undefined;
             })(),
             issuerName:
                 typeof issuer.name === 'string'
                     ? asMapped(issuer.name, 'issuer.name', 'credential.issuer.name', credentialId)
                     : undefined,
+            issuerImage: (() => {
+                const img = issuer.image as Record<string, unknown> | string | undefined;
+                if (typeof img === 'string') {
+                    return asMapped(img, 'issuer.image', 'credential.issuer.image', credentialId);
+                }
+                if (img && typeof img.id === 'string') {
+                    return asMapped(
+                        img.id,
+                        'issuer.image.id',
+                        'credential.issuer.image.id',
+                        credentialId
+                    );
+                }
+                return undefined;
+            })(),
             issuerId:
                 typeof issuer.id === 'string'
                     ? asMapped(issuer.id, 'issuer.id', 'credential.issuer.id', credentialId)
@@ -1032,8 +1132,9 @@ export const normalizeClrTranscriptDisplayModel = (
                     !addressRegion &&
                     !postalCode &&
                     !addressCountry
-                )
+                ) {
                     return undefined;
+                }
                 return {
                     streetAddress,
                     addressLocality,

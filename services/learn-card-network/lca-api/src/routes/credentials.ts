@@ -70,14 +70,36 @@ export const credentialsRouter = t.router({
                     ? `${saDid}#${signingAuthority.name}`
                     : undefined;
 
-                console.log('[LCA /credentials/issue] Issuing credential...', {
-                    verificationMethod,
-                    issuer: credential.issuer,
-                });
-                const issuedCredential = await learnCard.invoke.issueCredential(credential, {
-                    ...options,
-                    verificationMethod,
-                });
+                const issuedCredential = await learnCard.invoke
+                    .issueCredential(credential, {
+                        ...options,
+                        verificationMethod,
+                    })
+                    .catch(async (error: unknown) => {
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+
+                        // DIDKit does not expose a structured code for this resolver failure,
+                        // so this targeted retry is coupled to its current error message.
+                        if (
+                            !verificationMethod ||
+                            !errorMessage.includes('Missing verification relationship.')
+                        ) {
+                            throw error;
+                        }
+
+                        console.warn(
+                            '[LCA /credentials/issue] Refreshing stale did:web document and retrying',
+                            { issuer: saDid }
+                        );
+
+                        await learnCard.invoke.resolveDid(saDid, { noCache: true });
+
+                        return learnCard.invoke.issueCredential(credential, {
+                            ...options,
+                            verificationMethod,
+                        });
+                    });
+
                 console.log('[LCA /credentials/issue] Credential issued successfully');
 
                 if (encryption) {

@@ -1,10 +1,12 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { useHistory } from 'react-router-dom';
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 
 import { ModalTypes, QRCodeScannerStore, useModal, getLogger } from 'learn-card-base';
 
-import IssueManagedBoostSelector from '../../launchPad/LaunchPadHeader/IssueManagedBoostSelector';
+import useBoostRecoveryCheck from '../../../hooks/useBoostRecoveryCheck';
+import * as m from '../../../paraglide/messages.js';
 
 const log = getLogger('dashboard');
 
@@ -17,7 +19,12 @@ const PasteOrUploadClaimModalFallback: React.FC = () => (
     <IonPage>
         <IonContent>
             <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
-                <IonSpinner name="crescent" className="text-grayscale-700" />
+                <IonSpinner
+                    name="crescent"
+                    role="status"
+                    aria-label={m['common.loading']()}
+                    className="text-grayscale-700"
+                />
             </div>
         </IonContent>
     </IonPage>
@@ -30,10 +37,12 @@ type AddToLearnCardActions = {
 };
 
 const useAddToLearnCardActions = (): AddToLearnCardActions => {
-    const { newModal: openRightModal } = useModal({
+    const history = useHistory();
+    const { newModal: openRightModal, closeAllModals } = useModal({
         mobile: ModalTypes.Right,
         desktop: ModalTypes.Right,
     });
+    const { checkAndPromptRecovery } = useBoostRecoveryCheck();
 
     useEffect(() => {
         void importPasteOrUploadClaimModal().catch(err => {
@@ -51,11 +60,10 @@ const useAddToLearnCardActions = (): AddToLearnCardActions => {
     };
 
     const openIssueCredential = () => {
-        openRightModal(
-            <IssueManagedBoostSelector />,
-            { hideButton: true, sectionClassName: '!max-w-[500px]' },
-            { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
-        );
+        checkAndPromptRecovery(() => {
+            closeAllModals();
+            history.push('/issue', { entryPoint: 'dashboard' });
+        });
     };
 
     const openScanQr = Capacitor.isNativePlatform()

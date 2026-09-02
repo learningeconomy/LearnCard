@@ -11,6 +11,7 @@ import {
 } from 'learn-card-base';
 import BoostCMS from '../boostCMS/BoostCMS';
 import { BoostUserTypeEnum, boostCategoryOptions } from '../boost-options/boostOptions';
+import * as m from '../../../paraglide/messages.js';
 
 const MAX_TYPE_LENGTH = 100;
 const StateValidator = z.object({
@@ -21,11 +22,12 @@ const StateValidator = z.object({
 });
 
 type ComponentProps = {
-    handleCloseModal: () => void;
+    handleCloseModal?: () => void;
     category?: BoostCategoryOptionsEnum;
     useCMSModal?: boolean;
     parentUri?: string;
     overrideCustomize?: boolean;
+    returnToParentAfterSave?: boolean;
 };
 
 const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
@@ -34,6 +36,7 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
     useCMSModal,
     parentUri,
     overrideCustomize,
+    returnToParentAfterSave = false,
 }) => {
     const history = useHistory();
     const { newModal, closeModal } = useModal({
@@ -76,9 +79,11 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
         });
 
         if (useCMSModal) {
+            if (returnToParentAfterSave) handleCloseModal?.();
             newModal(
                 <BoostCMS
                     handleCloseModal={closeModal}
+                    returnToParentAfterSave={returnToParentAfterSave}
                     showCustomTypeInput={category === BoostCategoryOptionsEnum.socialBadge}
                     parentUri={parentUri}
                     overrideCustomize={overrideCustomize}
@@ -88,12 +93,23 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
                 />
             );
         } else {
-            handleCloseModal();
+            handleCloseModal?.();
             history.push(`/boost?${queryParams}`);
         }
 
         setCustomType('');
-    }, [validationResult, customType, parentUri, useCMSModal, category]);
+    }, [
+        validationResult,
+        customType,
+        parentUri,
+        useCMSModal,
+        category,
+        handleCloseModal,
+        newModal,
+        closeModal,
+        overrideCustomize,
+        returnToParentAfterSave,
+    ]);
 
     return (
         <IonCol
@@ -108,9 +124,9 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
             >
                 <div className="relative w-full flex items-center justify-center p-2 h-[72%]">
                     <IonTextarea
-                        aria-label={`Create new ${title}`}
+                        aria-label={m['boost.createTitleNew']({ title: title ?? '' })}
                         onIonInput={e => handleInputChange(e.detail.value?.trim() || '')}
-                        placeholder={`New ${title}`}
+                        placeholder={m['boost.newTitle']({ title })}
                         className="bg-white rounded-lg px-2 h-full"
                         maxlength={MAX_TYPE_LENGTH}
                         autoGrow
@@ -119,7 +135,7 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
 
                     <div className="absolute bottom-4 right-4 flex flex-col items-end z-[9]">
                         <span className="text-xs text-grayscale-800">
-                            {charCount}/{MAX_TYPE_LENGTH}
+                            {m['boost.charCount']({ count: charCount, max: MAX_TYPE_LENGTH })}
                         </span>
                         {validationError && (
                             <span className="text-xs text-red-500 mt-1 ml-4">

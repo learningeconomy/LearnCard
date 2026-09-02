@@ -83,12 +83,12 @@ export const seedAppListing = async (): Promise<SeededListing> => {
  * Intercepts the embed URL so the iframe loads a simple test page
  * instead of making a real network request.
  */
-export const mockEmbedRoute = async (page: Page) => {
+export const mockEmbedRoute = async (page: Page, body = MOCK_EMBED_HTML) => {
     await page.route(`${EMBED_URL}/**`, async route => {
         await route.fulfill({
             status: 200,
             contentType: 'text/html',
-            body: MOCK_EMBED_HTML,
+            body,
         });
     });
 };

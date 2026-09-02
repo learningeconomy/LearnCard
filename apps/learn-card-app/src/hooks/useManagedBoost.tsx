@@ -8,11 +8,12 @@ import {
     useModal,
     useGetProfile,
     useCurrentUser,
+    useGetVCInfo,
     useResolveBoost,
     useGetBoostRecipients,
     useCountBoostRecipients,
     ModalTypes,
-    CredentialBadge,
+    CredentialBadgeNew,
     CredentialCategory,
     UserProfilePicture,
 } from 'learn-card-base';
@@ -69,6 +70,10 @@ export const useManagedBoost = (
         isFetching: resolvedBoostFetching,
     } = useResolveBoost(boost?.uri, !_boostVC);
     const boostVC = _boostVC || resolvedBoost;
+    const { idDisplayBackgroundImage, idDisplayDimBackgroundImage } = useGetVCInfo(
+        boostVC as VC,
+        categoryType
+    );
 
     const isDraft = boost?.status === 'DRAFT';
     const isLive = boost?.status === 'LIVE';
@@ -83,7 +88,7 @@ export const useManagedBoost = (
 
     const cred = unwrapBoostCredential(boostVC);
     const credImg = cred?.credentialSubject?.image;
-    const thumbImage = (cred && getImageUrlFromCredential(cred)) || defaultImg;
+    const thumbImage = (cred && getImageUrlFromCredential(cred, categoryType)) || defaultImg;
     const badgeThumbnail = credImg && credImg?.trim() !== '' ? credImg : thumbImage;
 
     const credentialBackgroundFetching = resolvedBoostFetching && !resolvedBoostLoading;
@@ -207,15 +212,15 @@ export const useManagedBoost = (
                 location={cred?.address?.streetAddress}
                 issuerThumbnail={cred?.boostID?.issuerThumbnail}
                 showIssuerImage={cred?.boostID?.showIssuerThumbnail}
-                backgroundImage={cred?.boostID?.backgroundImage}
-                dimBackgroundImage={cred?.boostID?.dimBackgroundImage}
+                backgroundImage={idDisplayBackgroundImage}
+                dimBackgroundImage={idDisplayDimBackgroundImage}
                 fontColor={cred?.boostID?.fontColor}
                 accentColor={cred?.boostID?.accentColor}
                 idIssuerName={cred?.boostID?.IDIssuerName}
                 cred={cred}
             />
         ) : (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
                 boostType={categoryType}
                 badgeThumbnail={badgeThumbnail}
@@ -269,7 +274,7 @@ export const useManagedBoost = (
             />
         ),
         customThumbComponent: isCertificate ? undefined : (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
                 boostType={categoryType}
                 badgeThumbnail={badgeThumbnail}

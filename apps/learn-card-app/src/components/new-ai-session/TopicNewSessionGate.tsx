@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { IonSpinner } from '@ionic/react';
 import {
+    getAiPassportLaunchUrl,
+    useDeviceTypeByWidth,
     useGetCurrentLCNUser,
     useGetEnrichedSession,
     useModal,
-    useDeviceTypeByWidth,
 } from 'learn-card-base';
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
@@ -79,9 +82,10 @@ const TopicNewSessionGate: React.FC<Props> = ({
             if (app && app.type !== AiPassportAppsEnum.learncardapp && app.url) {
                 closeAllModals?.();
                 const uri = topicBoostUri ?? topicUri;
-                window.location.href = `${app.url}/chats?topicUri=${encodeURIComponent(
-                    uri
-                )}&did=${encodeURIComponent(currentLCNUser?.did ?? '')}`;
+                window.location.href = getAiPassportLaunchUrl(
+                    `${app.url}/chats?topicUri=${encodeURIComponent(uri)}`,
+                    currentLCNUser?.did
+                );
                 return;
             }
             setPhase('chat');
@@ -178,7 +182,7 @@ const TopicNewSessionGate: React.FC<Props> = ({
                 />
             </div>
             <p className="text-grayscale-800 font-poppins font-semibold text-[16px] m-0">
-                Spinning up your session...
+                {m['ai.spinningUpSession']()}
             </p>
         </div>
     );

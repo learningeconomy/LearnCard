@@ -26,6 +26,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { IonIcon } from '@ionic/react';
 import {
     chevronDownOutline,
@@ -40,10 +41,7 @@ import {
     warningOutline,
 } from 'ionicons/icons';
 import { Capacitor } from '@capacitor/core';
-import { App, type AppInfo } from '@capacitor/app';
 import { Clipboard } from '@capacitor/clipboard';
-import { Network } from '@capacitor/network';
-import { Device, type DeviceInfo } from '@capacitor/device';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -58,73 +56,14 @@ import {
 
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
-type Platform = 'ios' | 'android' | 'web';
+import {
+    collectVersionInfo,
+    formatBuildDate,
+    formatRelative,
+    PLATFORM_LABELS,
+    type VersionInfo,
+} from './versionInfo.helpers';
 
-interface NetworkSummary {
-    connected: boolean;
-    label: string;
-}
-
-/**
- * Shape returned by our `summarizeDevice()` helper — a thinned-down,
- * display-ready projection of `@capacitor/device`'s `DeviceInfo`. We
- * deliberately drop noisy or privacy-adjacent fields (`name`, `memUsed`,
- * `realDiskFree`, `realDiskTotal`) since they're rarely actionable for
- * support and add churn to screenshots.
- */
-interface DeviceSummary {
-    /** Internal model identifier (e.g. `iPhone14,5`, `SM-S928U`). */
-    model?: string;
-    /** `Apple`, `samsung`, `Google`, etc. Raw vendor string from the OS. */
-    manufacturer?: string;
-    /** Pre-formatted OS string, e.g. `iOS 17.5.1` or `Android 14 (SDK 34)`. */
-    osLabel?: string;
-    /** WebKit (iOS) / Android System WebView version. Useful for rendering bugs. */
-    webViewVersion?: string;
-    /** True when running in a simulator / emulator. Only rendered when true. */
-    isVirtual?: boolean;
-}
-
-interface VersionInfo {
-    platform: Platform;
-    isNative: boolean;
-    /** Resolved app version — Capgo bundle on native (if live-updated), else package.json. */
-    displayVersion: string;
-    /** Native binary version (from Info.plist / build.gradle). */
-    nativeVersion?: string;
-    /** Native build number (iOS CFBundleVersion, Android versionCode). */
-    nativeBuild?: string;
-    /** Native app bundle id (com.learncard.app, etc.). */
-    bundleId?: string;
-    /** Capgo OTA bundle version — 'builtin' if running the embedded bundle. */
-    bundleVersion?: string;
-    /** Capgo bundle ID (internal). */
-    bundleInternalId?: string;
-    /** Capgo bundle checksum (first chars only). */
-    bundleChecksum?: string;
-    /** Capgo channel currently assigned to this device. */
-    channel?: string;
-    /** Capgo-assigned device id (for support). */
-    deviceId?: string;
-    /** Version of the Capgo updater plugin. */
-    pluginVersion?: string;
-    /** Version of the JS bundle that shipped in the native binary. */
-    builtinVersion?: string;
-    /** ISO timestamp of when the current OTA bundle was downloaded. Empty for builtin. */
-    lastUpdateApplied?: string;
-    /** Connectivity summary (works on web + native). */
-    network?: NetworkSummary;
-    /** Hardware / OS summary (`@capacitor/device`). Native only. */
-    device?: DeviceSummary;
-}
-
-const PLATFORM_LABELS: Record<Platform, string> = {
-    ios: 'iOS',
-    android: 'Android',
-    web: 'Web',
-};
-
-const STAGING_CHANNEL = 'staging';
 const SEMVER_RE = /^\d+\.\d+\.\d+$/;
 const PR_RE = /^pr-(\d+)$/;
 const CHANNELS_CACHE_TTL_MS = 60_000;
@@ -205,7 +144,8 @@ const compareSemverDesc = (a: string, b: string): number => {
  * into the four UI buckets. The production stream is semver-named (e.g. `1.0.7`),
  * so the channel matching the build-time `__CAPGO_DEFAULT_CHANNEL__` define is the
  * "Latest" production row; any other semver channels are older production versions
- * (newest first). `staging` and `pr-<n>` channels get their own sections.
+ * (newest first). The staging stream shares the native compatibility prefix
+ * (`<productionChannel>-staging`), and `pr-<n>` channels get their own sections.
  */
 const groupChannels = (
     channels: { name: string }[],
@@ -215,6 +155,7 @@ const groupChannels = (
     const prPreviews: ChannelOption[] = [];
     let productionLatest: ChannelOption | undefined;
     let staging: ChannelOption | undefined;
+    const stagingChannel = productionChannel ? `${productionChannel}-staging` : undefined;
 
     const semverChannels = channels
         .map(c => c.name)
@@ -251,7 +192,7 @@ const groupChannels = (
     }
 
     for (const { name } of channels) {
-        if (name === STAGING_CHANNEL) {
+        if (name === stagingChannel) {
             staging = {
                 value: name,
                 label: 'Staging',
@@ -282,204 +223,6 @@ const shorten = (value: string | undefined, head = 6, tail = 4): string => {
     if (value.length <= head + tail + 1) return value;
 
     return `${value.slice(0, head)}…${value.slice(-tail)}`;
-};
-
-/**
- * Anything older than this is almost certainly a sentinel — Capgo occasionally
- * returns epoch 0 / `1970-01-01T00:00:00.000Z` for bundles it hasn't actually
- * delivered OTA (e.g. the builtin bundle, or when the field isn't populated).
- * Treat those as "unset" rather than rendering "Last updated: 12/31/1969".
- */
-const MIN_MEANINGFUL_TS = new Date('2020-01-01T00:00:00Z').getTime();
-
-/**
- * Render an ISO timestamp as a friendly relative string ("3 hours ago").
- * Falls back to a locale date string for anything older than a week so the
- * exact day is still visible — useful in support screenshots.
- */
-const formatRelative = (iso: string | undefined): string | undefined => {
-    if (!iso) return undefined;
-
-    const ts = new Date(iso).getTime();
-
-    if (Number.isNaN(ts) || ts < MIN_MEANINGFUL_TS) return undefined;
-
-    const ms = Date.now() - ts;
-    const sec = Math.floor(ms / 1000);
-
-    if (sec < 60) return 'Just now';
-
-    const min = Math.floor(sec / 60);
-
-    if (min < 60) return `${min} minute${min === 1 ? '' : 's'} ago`;
-
-    const hr = Math.floor(min / 60);
-
-    if (hr < 24) return `${hr} hour${hr === 1 ? '' : 's'} ago`;
-
-    const day = Math.floor(hr / 24);
-
-    if (day < 7) return `${day} day${day === 1 ? '' : 's'} ago`;
-
-    return new Date(iso).toLocaleDateString();
-};
-
-const formatNetwork = (
-    status: { connected: boolean; connectionType: string } | null
-): NetworkSummary | undefined => {
-    if (!status) return undefined;
-
-    if (!status.connected) return { connected: false, label: 'Offline' };
-
-    switch (status.connectionType) {
-        case 'wifi':
-            return { connected: true, label: 'Wi-Fi · Connected' };
-        case 'cellular':
-            return { connected: true, label: 'Cellular · Connected' };
-        case 'none':
-            return { connected: false, label: 'Offline' };
-        default:
-            return { connected: true, label: 'Connected' };
-    }
-};
-
-/**
- * Friendly capitalisation for the lowercase `operatingSystem` string returned
- * by `@capacitor/device`. Falls back to the raw value if we see something
- * unexpected — better to show support a slightly off-brand "windows" than to
- * drop the row entirely.
- */
-const OS_LABELS: Record<string, string> = {
-    ios: 'iOS',
-    android: 'Android',
-    mac: 'macOS',
-    windows: 'Windows',
-    unknown: 'Unknown',
-};
-
-/**
- * Distil `DeviceInfo` into the subset of fields we actually surface. Returns
- * `undefined` when no useful field is present (e.g. a web build where
- * `@capacitor/device` degrades to a no-op shim).
- */
-const summarizeDevice = (info: DeviceInfo | null): DeviceSummary | undefined => {
-    if (!info) return undefined;
-
-    const osName = OS_LABELS[info.operatingSystem] ?? info.operatingSystem;
-    const osVersion = info.osVersion?.trim();
-
-    // Android reports osVersion as a friendly "14" and also exposes the SDK
-    // level separately — both are useful so we surface them together.
-    let osLabel: string | undefined;
-
-    if (osName && osVersion) {
-        osLabel =
-            info.operatingSystem === 'android' && info.androidSDKVersion
-                ? `${osName} ${osVersion} (SDK ${info.androidSDKVersion})`
-                : `${osName} ${osVersion}`;
-    } else if (osName && osName !== 'Unknown') {
-        osLabel = osName;
-    }
-
-    const webViewVersion = info.webViewVersion?.trim() || undefined;
-
-    const summary: DeviceSummary = {
-        model: info.model?.trim() || undefined,
-        manufacturer: info.manufacturer?.trim() || undefined,
-        osLabel,
-        webViewVersion,
-        isVirtual: info.isVirtual || undefined,
-    };
-
-    const hasAnyField = Object.values(summary).some(v => v !== undefined);
-
-    return hasAnyField ? summary : undefined;
-};
-
-const formatBuildDate = (iso: string | undefined): string | undefined => {
-    if (!iso) return undefined;
-
-    const ts = new Date(iso).getTime();
-
-    if (Number.isNaN(ts)) return undefined;
-
-    return new Date(iso).toLocaleString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-};
-
-const collectVersionInfo = async (fallbackVersion: string): Promise<VersionInfo> => {
-    const platform = Capacitor.getPlatform() as Platform;
-    const isNative = Capacitor.isNativePlatform();
-
-    // Network status works on both web and native, so collect it unconditionally.
-    const networkStatus = await Network.getStatus().catch(() => null);
-    const network = formatNetwork(networkStatus);
-
-    if (!isNative) {
-        return {
-            platform,
-            isNative,
-            displayVersion: fallbackVersion,
-            network,
-        };
-    }
-
-    // Each of these is wrapped individually so one failing plugin call
-    // doesn't blank the whole modal.
-    const appInfo = await App.getInfo().catch((): AppInfo | null => null);
-    const bundle = await CapacitorUpdater.current().catch(() => null);
-    const channelResult = await CapacitorUpdater.getChannel().catch(() => null);
-    const deviceIdResult = await CapacitorUpdater.getDeviceId().catch(() => null);
-    const pluginVersionResult = await CapacitorUpdater.getPluginVersion().catch(() => null);
-    const builtinResult = await CapacitorUpdater.getBuiltinVersion().catch(() => null);
-    const deviceInfo = await Device.getInfo().catch((): DeviceInfo | null => null);
-
-    const bundleVersion = bundle?.bundle?.version;
-    const displayVersion =
-        bundleVersion && bundleVersion !== 'builtin' && bundleVersion.trim() !== ''
-            ? bundleVersion
-            : appInfo?.version ?? fallbackVersion;
-
-    // The current bundle's `downloaded` field is the timestamp the OTA bundle
-    // was applied to this device. Capgo returns one of several "unset" values
-    // when the bundle hasn't actually been delivered OTA (empty string, epoch
-    // 0, or '1970-01-01T00:00:00.000Z'), so we also reject anything before the
-    // MIN_MEANINGFUL_TS sentinel rather than rendering "12/31/1969".
-    const downloaded = bundle?.bundle?.downloaded;
-    const downloadedTs = downloaded ? new Date(downloaded).getTime() : NaN;
-    const lastUpdateApplied =
-        bundleVersion &&
-        bundleVersion !== 'builtin' &&
-        downloaded &&
-        downloaded.trim() !== '' &&
-        !Number.isNaN(downloadedTs) &&
-        downloadedTs >= MIN_MEANINGFUL_TS
-            ? downloaded
-            : undefined;
-
-    return {
-        platform,
-        isNative,
-        displayVersion,
-        nativeVersion: appInfo?.version,
-        nativeBuild: appInfo?.build,
-        bundleId: appInfo?.id,
-        bundleVersion,
-        bundleInternalId: bundle?.bundle?.id,
-        bundleChecksum: bundle?.bundle?.checksum,
-        channel: (channelResult as { channel?: string } | null)?.channel,
-        deviceId: (deviceIdResult as { deviceId?: string } | null)?.deviceId,
-        pluginVersion: (pluginVersionResult as { version?: string } | null)?.version,
-        builtinVersion: (builtinResult as { version?: string } | null)?.version,
-        lastUpdateApplied,
-        network,
-        device: summarizeDevice(deviceInfo),
-    };
 };
 
 interface CopyPayloadContext {
@@ -886,7 +629,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
         return (
             <div className="font-poppins py-10 px-8 flex flex-col items-center gap-3">
                 <span className="w-6 h-6 border-2 border-grayscale-200 border-t-grayscale-700 rounded-full animate-spin" />
-                <span className="text-sm text-grayscale-500">Gathering version info…</span>
+                <span className="text-sm text-grayscale-500">{m['versionInfo.gathering']()}</span>
             </div>
         );
     }
@@ -900,7 +643,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 // Match the app-wide pattern (AppStoreDetailModal, ShareCredentialModal
                 // etc.): respect the iOS notch/dynamic-island inset when the modal is
                 // rendered as a fullscreen cancel sheet, fall back to 1.5rem elsewhere.
-                paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+                paddingTop: '1.5rem',
             }}
         >
             {/* ---- Hero ---------------------------------------------------------- */}
@@ -913,7 +656,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
             <h2 className="mt-4 text-lg font-semibold text-grayscale-900 text-center">{appName}</h2>
 
             <p className="mt-1 text-sm text-grayscale-500 text-center">
-                Version{' '}
+                {m['versionInfo.version']()}{' '}
                 <span className="font-medium text-grayscale-700">{info.displayVersion}</span>
                 <span className="mx-1.5 text-grayscale-300">·</span>
                 {platformLabel}
@@ -926,22 +669,21 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                     className="text-emerald-500 text-base mt-0.5 shrink-0"
                 />
                 <p className="text-xs text-emerald-900 leading-relaxed">
-                    These details help support identify exactly which build you&rsquo;re running if
-                    you ever need to report an issue.
+                    {m['versionInfo.supportBlurb']()}
                 </p>
             </div>
 
             {/* ---- Core info list ------------------------------------------------ */}
             <div className="mt-4 w-full bg-white border border-grayscale-200 rounded-2xl px-4 py-1">
-                <VersionInfoRow label="Platform" value={platformLabel} />
+                <VersionInfoRow label={m['versionInfo.platform']()} value={platformLabel} />
                 <VersionInfoRow
-                    label="App version"
+                    label={m['versionInfo.appVersion']()}
                     value={info.displayVersion}
                     onCopy={copyString}
                 />
                 {info.nativeVersion ? (
                     <VersionInfoRow
-                        label="Native version"
+                        label={m['versionInfo.nativeVersion']()}
                         value={
                             info.nativeBuild
                                 ? `${info.nativeVersion} (${info.nativeBuild})`
@@ -957,21 +699,21 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 ) : null}
                 {info.bundleVersion ? (
                     <VersionInfoRow
-                        label="Content version"
+                        label={m['versionInfo.contentVersion']()}
                         value={info.bundleVersion}
                         onCopy={copyString}
                     />
                 ) : null}
                 {info.channel ? (
                     <VersionInfoRow
-                        label="Update channel"
+                        label={m['versionInfo.updateChannel']()}
                         value={info.channel}
                         onCopy={copyString}
                     />
                 ) : null}
                 {info.lastUpdateApplied ? (
                     <VersionInfoRow
-                        label="Last updated"
+                        label={m['versionInfo.lastUpdated']()}
                         value={formatRelative(info.lastUpdateApplied)}
                         copyValue={info.lastUpdateApplied}
                         onCopy={copyString}
@@ -988,12 +730,12 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 {copyState === 'copied' ? (
                     <>
                         <IonIcon icon={checkmarkCircleOutline} className="text-base" />
-                        Copied to clipboard
+                        {m['versionInfo.copiedToClipboard']()}
                     </>
                 ) : (
                     <>
                         <IonIcon icon={copyOutline} className="text-base" />
-                        Copy details
+                        {m['versionInfo.copyDetails']()}
                     </>
                 )}
             </button>
@@ -1009,7 +751,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                     aria-expanded={advancedOpen}
                     className="w-full flex items-center justify-between py-2 px-1 text-xs font-medium text-grayscale-500 hover:text-grayscale-700 transition-colors"
                 >
-                    <span className="uppercase tracking-wide">Advanced</span>
+                    <span className="uppercase tracking-wide">{m['versionInfo.advanced']()}</span>
                     <IonIcon
                         icon={advancedOpen ? chevronUpOutline : chevronDownOutline}
                         className="text-base"
@@ -1129,7 +871,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                 {checkingForUpdate ? (
                                     <>
                                         <span className="w-4 h-4 border-2 border-grayscale-300 border-t-grayscale-700 rounded-full animate-spin" />
-                                        Checking…
+                                        {m['versionInfo.checking']()}
                                     </>
                                 ) : (
                                     <>
@@ -1137,7 +879,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                             icon={cloudDownloadOutline}
                                             className="text-base"
                                         />
-                                        Check for updates
+                                        {m['versionInfo.checkForUpdates']()}
                                     </>
                                 )}
                             </button>

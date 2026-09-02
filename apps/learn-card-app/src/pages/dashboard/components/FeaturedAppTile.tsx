@@ -2,6 +2,8 @@ import React from 'react';
 
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
+import * as m from '../../../paraglide/messages.js';
+
 import { useAppLaunch } from '../hooks/useAppLaunch';
 
 const FALLBACK_ICON = 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
@@ -35,18 +37,22 @@ const FeaturedAppTile: React.FC<FeaturedAppTileProps> = ({
         <button
             type="button"
             onClick={() => launch()}
-            className="group flex items-center gap-3 p-3 rounded-2xl border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-left min-w-0 active:scale-[0.99] animate-fade-in-up"
+            className="group flex items-center gap-3 py-3 rounded-2xl border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-left min-w-0 active:scale-[0.99] animate-fade-in-up focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             style={{ animationDelay: `${animationDelayMs}ms` }}
             aria-label={
                 suggested
-                    ? `Open ${listing.display_name} — suggested app`
-                    : `Open ${listing.display_name}${
-                          unreadCount > 0
-                              ? `, ${unreadCount} unread notification${
-                                    unreadCount === 1 ? '' : 's'
-                                }`
-                              : ''
-                      }`
+                    ? m['dashboard.appTile.openSuggested']({ name: listing.display_name })
+                    : unreadCount > 0
+                    ? unreadCount === 1
+                        ? m['dashboard.appTile.openUnreadOne']({
+                              name: listing.display_name,
+                              count: unreadCount,
+                          })
+                        : m['dashboard.appTile.openUnreadMany']({
+                              name: listing.display_name,
+                              count: unreadCount,
+                          })
+                    : m['dashboard.appTile.open']({ name: listing.display_name })
             }
         >
             <span className="relative shrink-0">
@@ -74,12 +80,12 @@ const FeaturedAppTile: React.FC<FeaturedAppTileProps> = ({
                     </span>
                     {suggested && (
                         <span className="shrink-0 px-1.5 py-px rounded-full bg-indigo-50 text-indigo-700 text-[9px] font-semibold tracking-wide uppercase">
-                            New
+                            {m['dashboard.appTile.new']()}
                         </span>
                     )}
                 </span>
                 {tagline && (
-                    <span className="text-xs text-grayscale-500 leading-snug line-clamp-2 mt-0.5">
+                    <span className="text-xs text-grayscale-600 leading-snug line-clamp-2 mt-0.5">
                         {tagline}
                     </span>
                 )}

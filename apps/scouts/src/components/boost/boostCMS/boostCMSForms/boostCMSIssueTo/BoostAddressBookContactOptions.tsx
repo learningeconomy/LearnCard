@@ -20,6 +20,7 @@ import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import Camera from 'learn-card-base/svgs/Camera';
 import AddressBookQRCode from '../../../../../pages/addressBook/addressBook-qrcode/AddressBookQRCode';
 import ScannerPermissionsPrompt from '../../../../../components/scanner-permissions-prompt/ScannerPermissionsPrompt';
+import { getAppBaseUrl } from '../../../../../config/bootstrapTenantConfig';
 
 import {
     BoostAddressBook,
@@ -37,6 +38,7 @@ import { useGetCurrentLCNUser } from 'learn-card-base';
 import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
 const log = getLogger('boost-address-book-contact-options');
 
 const BoostAddressBookContactOptions: React.FC<{
@@ -178,14 +180,14 @@ const BoostAddressBookContactOptions: React.FC<{
     const copyToClipBoard = async () => {
         try {
             await Clipboard.write({
-                string: `https://pass.scout.org/connect?did=${walletDid}`,
+                string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(m['boostCMS.toasts.contactLinkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(m['boostCMS.toasts.copyContactLinkFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -195,9 +197,9 @@ const BoostAddressBookContactOptions: React.FC<{
     const handleShare = async () => {
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['share.addContact'](),
                 text: '',
-                url: `https://pass.scout.org/connect?did=${walletDid}`,
+                url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',
             });
         } else {
@@ -267,7 +269,8 @@ const BoostAddressBookContactOptions: React.FC<{
                         onClick={() => handleAddYoself()}
                         className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-medium"
                     >
-                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Boost Myself
+                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['boostCMS.boostMyself']()}
                     </button>
                 </IonRow>
                 <IonRow className="w-full flex items-center justify-center mt-4">
@@ -276,7 +279,8 @@ const BoostAddressBookContactOptions: React.FC<{
                         onClick={() => handleAddSomeoneElse()}
                         className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-medium"
                     >
-                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Boost Others
+                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['boostCMS.boostOthers']()}
                     </button>
                 </IonRow>
                 {/* <IonCol className="w-full flex items-center justify-center">
@@ -312,7 +316,8 @@ const BoostAddressBookContactOptions: React.FC<{
                             onClick={handleScan}
                             className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-medium text-2xl w-full shadow-lg modal-btn-mobile"
                         >
-                            <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> Scan User Code
+                            <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                            {m['boostCMS.scanUserCode']()}
                         </button>
                     </IonCol>
                 )}

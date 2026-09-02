@@ -73,22 +73,22 @@ const smsBody = renderSms('inbox-claim', tenantBranding, {
 
 ## Template IDs
 
-| Template ID                       | Service       | Purpose                              |
-| --------------------------------- | ------------- | ------------------------------------ |
-| `login-verification-code`         | lca-api       | Login OTP code                       |
-| `recovery-email-code`             | lca-api       | Recovery email verification          |
-| `embed-email-verification`        | brain-service | Embed SDK email verification         |
-| `contact-method-verification`     | brain-service | Link-based email verification        |
-| `inbox-claim`                     | brain-service | Credential claim notification        |
-| `endorsement-request`             | lca-api       | Endorsement request                  |
-| `guardian-approval`               | brain-service | Guardian approval for minor accounts |
-| `account-approved`                | brain-service | Account approved notification        |
-| `recovery-key`                    | lca-api       | Recovery key delivery                |
-| `credential-awaiting-guardian`    | brain-service | Student: credential pending guardian |
-| `guardian-credential-approval`    | brain-service | Guardian: approve/decline credential |
-| `guardian-approved-claim`         | brain-service | Student: guardian approved credential|
-| `guardian-rejected-credential`    | brain-service | Student: guardian rejected credential|
-| `guardian-email-otp`              | brain-service | Guardian OTP verification            |
+| Template ID                    | Service       | Purpose                               |
+| ------------------------------ | ------------- | ------------------------------------- |
+| `login-verification-code`      | lca-api       | Login OTP code                        |
+| `recovery-email-code`          | lca-api       | Recovery email verification           |
+| `embed-email-verification`     | brain-service | Embed SDK email verification          |
+| `contact-method-verification`  | brain-service | Link-based email verification         |
+| `inbox-claim`                  | brain-service | Credential claim notification         |
+| `endorsement-request`          | lca-api       | Endorsement request                   |
+| `guardian-approval`            | brain-service | Guardian approval for minor accounts  |
+| `account-approved`             | brain-service | Account approved notification         |
+| `recovery-key`                 | lca-api       | Recovery key delivery                 |
+| `credential-awaiting-guardian` | brain-service | Student: credential pending guardian  |
+| `guardian-credential-approval` | brain-service | Guardian: approve/decline credential  |
+| `guardian-approved-claim`      | brain-service | Student: guardian approved credential |
+| `guardian-rejected-credential` | brain-service | Student: guardian rejected credential |
+| `guardian-email-otp`           | brain-service | Guardian OTP verification             |
 
 Legacy Postmark aliases (`universal-inbox-claim`, `contact-method-verification-1`, `account-approved-email`, `recovery-key-backup`, `recovery-email-verification`, `universal-inbox-claim-1`) are also supported and map to the corresponding template above.
 
@@ -98,16 +98,16 @@ Every field in `TenantBranding` is optional when calling `renderEmail` / `render
 
 ```typescript
 interface TenantBranding {
-    brandName: string;        // e.g. "VetPass"
-    logoUrl: string;          // hosted logo image URL
-    logoAlt: string;          // logo alt text
-    primaryColor: string;     // hex, e.g. "#1B5E20"
+    brandName: string; // e.g. "VetPass"
+    logoUrl: string; // hosted logo image URL
+    logoAlt: string; // logo alt text
+    primaryColor: string; // hex, e.g. "#1B5E20"
     primaryTextColor: string; // hex, e.g. "#ffffff"
-    supportEmail: string;     // footer support email
-    websiteUrl: string;       // footer website link
-    appUrl: string;           // base app URL for CTA links
-    fromDomain: string;       // email from domain
-    copyrightHolder: string;  // footer copyright name
+    supportEmail: string; // footer support email
+    websiteUrl: string; // footer website link
+    appUrl: string; // base app URL for CTA links
+    fromDomain: string; // email from domain
+    copyrightHolder: string; // footer copyright name
 }
 ```
 
@@ -147,22 +147,22 @@ This makes migration gradual and backward-compatible. Call sites that don't pass
 4. Export from `src/templates/index.ts` and `src/index.ts`
 5. Map the old template ID to the new one in the service's PostmarkAdapter (`LOCAL_TEMPLATE_MAP`)
 6. Add test fixtures and assertions to `src/__tests__/render.test.ts`
-7. Run `pnpm --filter @learncard/email-templates test` and `typecheck` to verify
+7. Run `bun --filter @learncard/email-templates run test` and `bun --filter @learncard/email-templates run typecheck` to verify
 
 ## Previewing Templates
 
 The package includes a built-in dev server powered by [react-email](https://react.email/):
 
 ```bash
-pnpm --filter @learncard/email-templates dev
+bun --filter @learncard/email-templates run dev
 ```
 
 This starts a hot-reloading UI at **http://localhost:3333** where you can:
 
-- Browse all templates in a sidebar
-- See a live preview with sample data
-- Toggle between HTML, plain text, and source views
-- Copy the rendered HTML for testing in email clients
+-   Browse all templates in a sidebar
+-   See a live preview with sample data
+-   Toggle between HTML, plain text, and source views
+-   Copy the rendered HTML for testing in email clients
 
 Each template file has a `default` export with realistic sample data used for previews. Multi-scenario previews in `src/previews/` show templates with different branding and data combinations.
 
@@ -170,20 +170,20 @@ Each template file has a `default` export with realistic sample data used for pr
 
 Tests use [Vitest](https://vitest.dev/) and cover:
 
-- **Smoke tests** — every template ID renders without throwing (default, custom, and empty branding)
-- **Content assertions** — dynamic values (URLs, codes, names) appear in rendered HTML
-- **Branding tests** — custom branding flows through to output (colors, brand name, URLs)
-- **Subject line tests** — correct subjects, alias parity
-- **Plain text tests** — no HTML tags in plain text output
-- **Edge cases** — minimal data, missing optional fields
-- **SMS tests** — `renderSms` output strings with branding
-- **Tenant resolution** — header priority, origin mapping, env fallback, registration helpers
+-   **Smoke tests** — every template ID renders without throwing (default, custom, and empty branding)
+-   **Content assertions** — dynamic values (URLs, codes, names) appear in rendered HTML
+-   **Branding tests** — custom branding flows through to output (colors, brand name, URLs)
+-   **Subject line tests** — correct subjects, alias parity
+-   **Plain text tests** — no HTML tags in plain text output
+-   **Edge cases** — minimal data, missing optional fields
+-   **SMS tests** — `renderSms` output strings with branding
+-   **Tenant resolution** — header priority, origin mapping, env fallback, registration helpers
 
 ## Scripts
 
 ```bash
-pnpm --filter @learncard/email-templates dev          # Preview templates in browser
-pnpm --filter @learncard/email-templates typecheck    # Type check
-pnpm --filter @learncard/email-templates test         # Run tests (vitest run)
-pnpm --filter @learncard/email-templates test:watch   # Run tests in watch mode
+bun --filter @learncard/email-templates run dev          # Preview templates in browser
+bun --filter @learncard/email-templates run typecheck    # Type check
+bun --filter @learncard/email-templates run test         # Run tests (vitest run)
+bun --filter @learncard/email-templates run test:watch   # Run tests in watch mode
 ```

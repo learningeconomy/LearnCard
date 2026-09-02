@@ -1,12 +1,13 @@
 {
     "name": "@learncard/didkit-plugin-node",
-    "version": "0.2.20",
+    "version": "0.2.29",
     "description": "Node-native DIDKit plugin for LearnCard (N-API addon wrapper)",
     "type": "commonjs",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "files": [
         "dist",
+        "src",
         "native/Cargo.lock",
         "native/Cargo.toml",
         "native/build.rs",
@@ -27,10 +28,12 @@
     "scripts": {
         "build": "node scripts/build.js",
         "build:debug": "napi build --platform --cargo-cwd native && tsc -p tsconfig.json",
-        "test": "jest --passWithNoTests",
+        "test": "vitest run",
         "artifacts": "napi artifacts",
         "create-npm-dir": "napi create-npm-dir -t .",
-        "prepublishOnly": "napi prepublish -t npm --skip-gh-release"
+        "prepublishOnly": "napi prepublish -t npm --skip-gh-release",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
@@ -53,5 +56,15 @@
         "@napi-rs/cli": "^2.18.0",
         "typescript": "^5.3.3"
     },
-    "sideEffects": false
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.js",
+            "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+    }
 }

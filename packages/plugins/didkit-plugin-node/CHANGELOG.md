@@ -1,5 +1,88 @@
 # @learncard/didkit-plugin-node
 
+## 0.2.29
+
+### Patch Changes
+
+-   Updated dependencies [[`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e)]:
+    -   @learncard/types@5.18.2
+    -   @learncard/core@9.4.31
+    -   @learncard/didkit-plugin@1.9.11
+
+## 0.2.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.30
+    -   @learncard/didkit-plugin@1.9.10
+
+## 0.2.27
+
+### Patch Changes
+
+-   [#1444](https://github.com/learningeconomy/LearnCard/pull/1444) [`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-1958] Fix W3C EdDSA Data Integrity interoperability and ship rebuilt native and WASM DIDKit artifacts.
+
+-   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4), [`6796b321354ca870e4dfa3606719f9882221bc1b`](https://github.com/learningeconomy/LearnCard/commit/6796b321354ca870e4dfa3606719f9882221bc1b)]:
+    -   @learncard/didkit-plugin@1.9.9
+    -   @learncard/types@5.18.1
+    -   @learncard/core@9.4.29
+
+## 0.2.26
+
+### Patch Changes
+
+-   Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24), [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158)]:
+    -   @learncard/types@5.18.0
+    -   @learncard/core@9.4.28
+    -   @learncard/didkit-plugin@1.9.8
+
+## 0.2.25
+
+### Patch Changes
+
+-   Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    -   @learncard/types@5.17.6
+    -   @learncard/core@9.4.27
+    -   @learncard/didkit-plugin@1.9.7
+
+## 0.2.24
+
+### Patch Changes
+
+-   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/core@9.4.26
+    -   @learncard/didkit-plugin@1.9.6
+
+## 0.2.23
+
+### Patch Changes
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    -   @learncard/core@9.4.25
+    -   @learncard/types@5.17.5
+    -   @learncard/didkit-plugin@1.9.5
+
+## 0.2.22
+
+### Patch Changes
+
+-   Updated dependencies [[`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/types@5.17.4
+    -   @learncard/core@9.4.24
+    -   @learncard/didkit-plugin@1.9.4
+
+## 0.2.21
+
+### Patch Changes
+
+-   Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
+    -   @learncard/types@5.17.3
+    -   @learncard/core@9.4.23
+    -   @learncard/didkit-plugin@1.9.3
+
 ## 0.2.20
 
 ### Patch Changes

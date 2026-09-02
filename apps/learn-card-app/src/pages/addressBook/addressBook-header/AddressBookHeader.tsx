@@ -14,6 +14,7 @@ import { useIsCurrentUserLCNUser } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
+import * as m from '../../../paraglide/messages.js';
 
 export const AddressBookHeader: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -41,12 +42,12 @@ export const AddressBookHeader: React.FC<{
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
     const { gate } = useLCNGatedAction();
 
-    let headerTitle = 'Contacts';
+    let headerTitle = m['contacts.title']();
 
     if (activeTab === AddressBookTabsEnum.Search) {
-        headerTitle = connectionCount === 1 ? 'Result' : 'Results';
+        headerTitle = connectionCount === 1 ? m['contacts.result']() : m['contacts.results']();
     } else {
-        headerTitle = connectionCount === 1 ? 'Contact' : 'Contacts';
+        headerTitle = connectionCount === 1 ? m['contacts.contact']() : m['contacts.title']();
     }
 
     const [presentCenterModal, dismissCenterModal] = useIonModal(AddressBookContactOptions, {
@@ -65,11 +66,11 @@ export const AddressBookHeader: React.FC<{
                             onClick={() => {
                                 history.goBack();
                             }}
-                            aria-label="Back button"
+                            aria-label={m['common.back']()}
                         >
                             <LeftArrow className="w-[30px] mr-[10px] h-auto text-grayscale-600 desktop:hidden" />
                             <span className="text-grayscale-900 font-poppins font-semibold text-[25px] tracking-[0.01rem]">
-                                Contacts
+                                {m['contacts.title']()}
                             </span>
                         </button>
                     </IonCol>
@@ -88,7 +89,7 @@ export const AddressBookHeader: React.FC<{
                         }}
                         className={`text-${colorSet.primaryColor} flex rounded-[40px] bg-white py-[6px] px-[16px] text-[17px] font-semibold font-poppins`}
                     >
-                        New
+                        {m['contacts.new']()}
                         <Plus
                             className={`ml-[5px] w-[24px] h-[24px] text-${colorSet.primaryColor}`}
                         />

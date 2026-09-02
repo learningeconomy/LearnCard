@@ -1,5 +1,124 @@
 # learn-card-core
 
+## 2.13.15
+
+### Patch Changes
+
+-   [#1491](https://github.com/learningeconomy/LearnCard/pull/1491) [`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e) Thanks [@goblincore](https://github.com/goblincore)! - Prompt credential claimers and senders to create an explicit LearnCard connection, with durable and idempotent actionable notification delivery.
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.31
+    -   @learncard/helpers@1.3.13
+    -   @learncard/network-brain-client@2.5.52
+
+## 2.13.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.51
+
+## 2.13.13
+
+### Patch Changes
+
+-   Updated dependencies [[`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417)]:
+    -   @learncard/helpers@1.3.12
+    -   @learncard/network-brain-client@2.5.50
+    -   @learncard/core@9.4.30
+
+## 2.13.12
+
+### Patch Changes
+
+-   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4)]:
+    -   @learncard/helpers@1.3.11
+    -   @learncard/network-brain-client@2.5.49
+    -   @learncard/core@9.4.29
+
+## 2.13.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.48
+    -   @learncard/core@9.4.28
+    -   @learncard/helpers@1.3.10
+
+## 2.13.10
+
+### Patch Changes
+
+-   Updated dependencies [[`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05)]:
+    -   @learncard/network-brain-client@2.5.47
+
+## 2.13.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.46
+
+## 2.13.8
+
+### Patch Changes
+
+-   [#1367](https://github.com/learningeconomy/LearnCard/pull/1367) [`f1e7b459a4650cf2fb9236369950efcaea935c3f`](https://github.com/learningeconomy/LearnCard/commit/f1e7b459a4650cf2fb9236369950efcaea935c3f) Thanks [@smurflo2](https://github.com/smurflo2)! - Revive Scouts, fix various bugs
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.45
+    -   @learncard/core@9.4.27
+    -   @learncard/helpers@1.3.9
+
+## 2.13.7
+
+### Patch Changes
+
+-   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/core@9.4.26
+    -   @learncard/helpers@1.3.8
+    -   @learncard/network-brain-client@2.5.44
+
+## 2.13.6
+
+### Patch Changes
+
+-   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    -   @learncard/core@9.4.25
+    -   @learncard/helpers@1.3.7
+    -   @learncard/network-brain-client@2.5.43
+
+## 2.13.5
+
+### Patch Changes
+
+-   Updated dependencies [[`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/helpers@1.3.6
+    -   @learncard/network-brain-client@2.5.42
+    -   @learncard/core@9.4.24
+
+## 2.13.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.23
+    -   @learncard/helpers@1.3.5
+    -   @learncard/network-brain-client@2.5.41
+
+## 2.13.3
+
+### Patch Changes
+
+-   [#1302](https://github.com/learningeconomy/LearnCard/pull/1302) [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095) Thanks [@smurflo2](https://github.com/smurflo2)! - Privacy & Data onboarding step
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.5.40
+
 ## 2.13.2
 
 ### Patch Changes
@@ -29,7 +148,7 @@
 
     This change is verified by two new CI surfaces:
 
-    -   `pnpm validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
+    -   `bun run validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
     -   `.github/workflows/smoketest-npm-packages.yml` now also probes every published plugin's ESM + CJS export surface directly (not just `@learncard/init` transitively) and bundles a trivial consumer with esbuild to catch bundler-resolution-only regressions.
 
     Follow-up work tracked as advisory failures in both surfaces (not gating CI until fixed): `@learncard/ceramic-plugin`, `@learncard/didkey-plugin`, `@learncard/helpers`, `@learncard/idx-plugin`, `@learncard/lca-api-plugin`, `@learncard/learn-cloud-plugin`, `@learncard/network-plugin`, `@learncard/simple-signing-plugin` each have pre-existing publish-time bugs (CJS-only transitive deps imported via named ESM, dynamic `require()` in ESM bundles, or unmigrated upstream packages).
@@ -540,7 +659,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

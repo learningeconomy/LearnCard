@@ -172,6 +172,34 @@ import type {
     PlaceholdersIcons,
 } from './index';
 
+// ─── Color Wrapper Helpers ───────────────────────────────────────────────
+
+import React from 'react';
+
+/**
+ * Creates a colored variant of a Formal icon by passing palette colors.
+ * The Formal icons accept a `palette` prop with `primary` and `secondary` colors.
+ */
+const withPaletteColors = (
+    Icon: React.FC<{ className?: string; palette?: { primary?: string; secondary?: string } }>,
+    primary: string,
+    secondary?: string
+): React.FC<{ className?: string }> => {
+    const ColoredIcon: React.FC<{ className?: string }> = ({ className }) =>
+        React.createElement(Icon, { className, palette: { primary, secondary } });
+    ColoredIcon.displayName = `${Icon.displayName ?? 'Icon'}Colored`;
+    return ColoredIcon;
+};
+
+/** grayscale-700 (#52597A) variant for inactive filter states */
+const withDark = (
+    Icon: React.FC<{ className?: string; palette?: { primary?: string; secondary?: string } }>
+) => withPaletteColors(Icon, '#52597A');
+/** White primary with dark secondary for selected state - inner details contrast against white shape */
+const withWhite = (
+    Icon: React.FC<{ className?: string; palette?: { primary?: string; secondary?: string } }>
+) => withPaletteColors(Icon, '#FFFFFF', '#1C2444');
+
 // ─── Icon Sets ───────────────────────────────────────────────────────────
 
 /**
@@ -180,63 +208,94 @@ import type {
  */
 export const ICON_SETS: Record<string, ThemeIconTable> = {
     colorful: {
+        // `IconSolid` intentionally reuses the *Formal glyphs: they are the
+        // flat, single-colour version of each category mark that design
+        // specced for the activity feed (LC-1969), and they are identical
+        // across themes by design. The `formal` set needs no `IconSolid`
+        // because its `Icon` already *is* that glyph.
         [CredentialCategoryEnum.aiTopic]: {
             Icon: AiSessionsIcon,
             IconWithShape: AiSessionsIconWithShape,
+            IconSolid: AiSessionsIconFormal,
         },
         [CredentialCategoryEnum.aiPathway]: {
             Icon: AiPathwaysIconWithShape,
             IconWithShape: AiPathwaysIconWithShape,
+            IconSolid: AiPathwaysIconFormal,
         },
         [CredentialCategoryEnum.aiInsight]: {
             Icon: AiInsightsIconWithShape,
             IconWithShape: AiInsightsIconWithShape,
             IconWithLightShape: AiInsightsIconWithLightShape,
+            IconSolid: AiInsightsIconFormal,
         },
         [CredentialCategoryEnum.skill]: {
             Icon: SkillsIconWithShape,
             IconWithShape: SkillsIconWithShape,
             IconWithLightShape: SkillsIconWithLightShape,
+            IconSolid: SkillsIconFormal,
         },
         [CredentialCategoryEnum.socialBadge]: {
             Icon: BoostsIcon,
             IconWithShape: BoostsIconWithShape,
             IconWithLightShape: BoostsIconWithLightShape,
+            IconSolid: BoostsIconFormal,
+            IconDark: withDark(BoostsIconFormal),
+            IconWhite: withWhite(BoostsIconFormal),
         },
         [CredentialCategoryEnum.achievement]: {
             Icon: AchievementsIcon,
             IconWithShape: AchievementsIconWithShape,
             IconWithLightShape: AchievementsIconWithLightShape,
+            IconSolid: AchievementsIconFormal,
+            IconDark: withDark(AchievementsIconFormal),
+            IconWhite: withWhite(AchievementsIconFormal),
         },
         [CredentialCategoryEnum.learningHistory]: {
             Icon: StudiesIcon,
             IconWithShape: StudiesIconWithShape,
             IconWithLightShape: StudiesIconWithLightShape,
+            IconSolid: StudiesIconFormal,
+            IconDark: withDark(StudiesIconFormal),
+            IconWhite: withWhite(StudiesIconFormal),
         },
         [CredentialCategoryEnum.accomplishment]: {
             Icon: PortfolioIcon,
             IconWithShape: PortfolioIconWithShape,
             IconWithLightShape: PortfolioIconWithLightShape,
+            IconSolid: PortfolioIconFormal,
+            IconDark: withDark(PortfolioIconFormal),
+            IconWhite: withWhite(PortfolioIconFormal),
         },
         [CredentialCategoryEnum.accommodation]: {
             Icon: AssistanceIcon,
             IconWithShape: AssistanceIconWithShape,
             IconWithLightShape: AssistanceIconWithLightShape,
+            IconSolid: AssistanceIconFormal,
+            IconDark: withDark(AssistanceIconFormal),
+            IconWhite: withWhite(AssistanceIconFormal),
         },
         [CredentialCategoryEnum.workHistory]: {
             Icon: ExperiencesIcon,
             IconWithShape: ExperiencesIconWithShape,
             IconWithLightShape: ExperiencesIconWithLightShape,
+            IconSolid: ExperiencesIconFormal,
+            IconDark: withDark(ExperiencesIconFormal),
+            IconWhite: withWhite(ExperiencesIconFormal),
         },
         [CredentialCategoryEnum.family]: {
             Icon: FamiliesIcon,
             IconWithShape: FamiliesIconWithShape,
             IconWithLightShape: FamiliesIconWithLightShape,
+            IconSolid: FamiliesIconFormal,
         },
         [CredentialCategoryEnum.id]: {
             Icon: IDsIcon,
             IconWithShape: IDsIconWithShape,
             IconWithLightShape: IDsIconWithLightShape,
+            IconSolid: IDsIconFormal,
+            IconDark: withDark(IDsIconFormal),
+            IconWhite: withWhite(IDsIconFormal),
         },
 
         launchPad: {
@@ -274,6 +333,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
         },
 
         navbar: {
+            dashboard: DashboardColorfulIcon,
             wallet: NavBarPassportIcon,
             plus: ColorFulPlus,
             launchPad: NavBarLaunchPadIcon,
@@ -291,14 +351,42 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
         [CredentialCategoryEnum.aiPathway]: { Icon: AiPathwaysIconFormal },
         [CredentialCategoryEnum.aiInsight]: { Icon: AiInsightsIconFormal },
         [CredentialCategoryEnum.skill]: { Icon: SkillsIconFormal },
-        [CredentialCategoryEnum.socialBadge]: { Icon: BoostsIconFormal },
-        [CredentialCategoryEnum.achievement]: { Icon: AchievementsIconFormal },
-        [CredentialCategoryEnum.learningHistory]: { Icon: StudiesIconFormal },
-        [CredentialCategoryEnum.accomplishment]: { Icon: PortfolioIconFormal },
-        [CredentialCategoryEnum.accommodation]: { Icon: AssistanceIconFormal },
-        [CredentialCategoryEnum.workHistory]: { Icon: ExperiencesIconFormal },
+        [CredentialCategoryEnum.socialBadge]: {
+            Icon: BoostsIconFormal,
+            IconDark: withDark(BoostsIconFormal),
+            IconWhite: withWhite(BoostsIconFormal),
+        },
+        [CredentialCategoryEnum.achievement]: {
+            Icon: AchievementsIconFormal,
+            IconDark: withDark(AchievementsIconFormal),
+            IconWhite: withWhite(AchievementsIconFormal),
+        },
+        [CredentialCategoryEnum.learningHistory]: {
+            Icon: StudiesIconFormal,
+            IconDark: withDark(StudiesIconFormal),
+            IconWhite: withWhite(StudiesIconFormal),
+        },
+        [CredentialCategoryEnum.accomplishment]: {
+            Icon: PortfolioIconFormal,
+            IconDark: withDark(PortfolioIconFormal),
+            IconWhite: withWhite(PortfolioIconFormal),
+        },
+        [CredentialCategoryEnum.accommodation]: {
+            Icon: AssistanceIconFormal,
+            IconDark: withDark(AssistanceIconFormal),
+            IconWhite: withWhite(AssistanceIconFormal),
+        },
+        [CredentialCategoryEnum.workHistory]: {
+            Icon: ExperiencesIconFormal,
+            IconDark: withDark(ExperiencesIconFormal),
+            IconWhite: withWhite(ExperiencesIconFormal),
+        },
         [CredentialCategoryEnum.family]: { Icon: FamiliesIconFormal },
-        [CredentialCategoryEnum.id]: { Icon: IDsIconFormal },
+        [CredentialCategoryEnum.id]: {
+            Icon: IDsIconFormal,
+            IconDark: withDark(IDsIconFormal),
+            IconWhite: withWhite(IDsIconFormal),
+        },
 
         launchPad: {
             contacts: SkyBlueGlobeStand,
@@ -334,6 +422,7 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
         },
 
         navbar: {
+            dashboard: DashboardFormalIcon,
             wallet: NavBarPassportIconFormal,
             plus: FormalPlus,
             launchPad: NavBarLaunchPadIconFormal,
@@ -431,6 +520,7 @@ export const PARTIAL_ICON_SETS: Record<string, PartialIconSetDef> = {
             },
 
             navbar: {
+                dashboard: DashboardColorfulIcon,
                 wallet: VetpassPassportNavbar,
                 launchPad: VetpassAppsNavbar,
                 notification: VetpassAlertsNavbar,

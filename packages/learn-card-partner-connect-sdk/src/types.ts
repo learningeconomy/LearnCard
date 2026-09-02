@@ -100,6 +100,163 @@ export interface PartnerConnectOptions {
      * Request timeout in milliseconds (default: 30000)
      */
     requestTimeout?: number;
+
+    /**
+     * Controls automatic **standalone mock mode**.
+     *
+     * When the SDK runs outside of a LearnCard host (i.e. as a top-level page,
+     * not embedded in an iframe), there is no host to answer `postMessage`
+     * requests, so every call would hang until it times out. Mock mode makes
+     * the SDK simulate the host locally so your app is fully buildable,
+     * demo-able, and testable without being embedded — and then behaves
+     * identically (real host) once embedded, with no code changes.
+     *
+     * - `'auto'` **(default)**: mock only when **no LearnCard host is present
+     *    AND the app is running on a local dev host** (`localhost`,
+     *    `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`). This covers local
+     *    dev and local Storybook, but deliberately never fabricates identity
+     *    or consent on a production or preview origin. Each mocked call
+     *    surfaces a labeled toast plus a console log so it's clear the host
+     *    is simulated.
+     * - `'standalone'`: mock whenever **no LearnCard host is present**, on
+     *    any origin — including remote deploy previews (Netlify, Lovable,
+     *    Vercel, …) — and use the real host when embedded in LearnCard. The
+     *    one-flag setting for apps that must demo standalone anywhere. Only
+     *    choose it when a user opening your app's URL directly should see
+     *    simulated data.
+     * - `true`: always mock, **even when embedded in a real LearnCard host**.
+     *    Use this for CI and tests; for previews that should go real once
+     *    embedded, prefer `'standalone'`.
+     * - `false`: never mock. Standalone calls reject immediately with
+     *    `LC_NOT_EMBEDDED`. Set this in production builds meant to run only
+     *    inside LearnCard.
+     *
+     * @default 'auto'
+     */
+    mock?: boolean | 'auto' | 'standalone';
+
+    /**
+     * Fine-grained configuration for standalone mock mode. Ignored when mock
+     * mode is not active. See {@link MockHostOptions}.
+     */
+    mockOptions?: MockHostOptions;
+
+    /**
+     * How long (ms) to wait for the host to answer the one-time presence
+     * probe used when the SDK is embedded in an iframe whose parent cannot
+     * be confirmed as LearnCard (e.g. a same-origin Storybook canvas on
+     * localhost). Only used with `mock: 'auto'` on local dev hosts.
+     *
+     * @default 1500
+     */
+    hostProbeTimeout?: number;
+}
+
+/**
+ * Options controlling the behavior of standalone mock mode.
+ *
+ * All fields are optional; mock mode works out-of-the-box with sensible
+ * defaults (visible UI, console logging, and localStorage-backed counters).
+ */
+export interface MockHostOptions {
+    /**
+     * Render lightweight visual feedback in the page: a fake credential-claim
+     * modal / toast for `sendCredential`, and a "mock consent" banner for
+     * `requestConsent`. Set to `false` for a headless mock (logs only).
+     *
+     * @default true
+     */
+    ui?: boolean;
+
+    /**
+     * Log every simulated host interaction to the console with a clear
+     * `[LearnCard SDK · MOCK]` prefix.
+     *
+     * @default true
+     */
+    log?: boolean;
+
+    /**
+     * Persist counters (`incrementCounter` / `getCounter` / `getCounters`) to
+     * `localStorage` so values survive page reloads, mirroring the real host's
+     * durable per-user counters. Falls back to in-memory storage when
+     * `localStorage` is unavailable.
+     *
+     * @default true
+     */
+    persist?: boolean;
+
+    /**
+     * The fake DID returned by `requestIdentity()` (and used as the mock
+     * user's identity) while in mock mode.
+     *
+     * @default 'did:web:mock.learncard.app:user'
+     */
+    did?: string;
+
+    /**
+     * Namespace used to scope persisted mock data (counters, claimed
+     * credentials) in `localStorage`. Change this if you run multiple mock
+     * apps on the same origin and want isolated state.
+     *
+     * @default 'lc-mock'
+     */
+    namespace?: string;
+
+    /**
+     * Seed the mock user's identity. Superseded per-field over the legacy
+     * `did` option. Extra fields are returned as-is from `requestIdentity()`.
+     */
+    identity?: MockIdentitySeed;
+
+    /**
+     * Pre-populate the mock with credentials the user already holds (or has
+     * issued to others). This lets you demo "happy path" states — e.g. a
+     * "you already earned this" banner — without performing an action first.
+     * Reads like `checkUserHasCredential`, `getTemplateRecipients`,
+     * `requestLearnerContext`, and `askCredentialSearch` reflect these.
+     */
+    credentials?: MockCredentialSeed[];
+
+    /**
+     * Initial counter values, applied only when a counter has no persisted
+     * value yet (so incremented values survive reloads).
+     */
+    counters?: Record<string, number>;
+}
+
+/**
+ * Seed shape for the mock user's identity (see {@link MockHostOptions.identity}).
+ */
+export interface MockIdentitySeed {
+    did?: string;
+    name?: string;
+    [key: string]: unknown;
+}
+
+/**
+ * Seed shape for a pre-populated mock credential (see
+ * {@link MockHostOptions.credentials}).
+ */
+export interface MockCredentialSeed {
+    /** Template alias this credential was issued from. */
+    templateAlias?: string;
+
+    /** Boost URI this credential was issued from. */
+    boostUri?: string;
+
+    /** Human-readable credential name (used in toasts and mock VC data). */
+    name?: string;
+
+    /**
+     * Recipient identifier (profileId or DID). Defaults to the mock user
+     * (i.e. a credential the user holds). Set this to model credentials the
+     * user has issued to other people.
+     */
+    recipient?: string;
+
+    /** Claim status. @default 'claimed' */
+    status?: 'pending' | 'claimed' | 'revoked';
 }
 
 /**
@@ -343,6 +500,13 @@ export interface RequestLearnerContextOptions {
      * @default 'compact'
      */
     detailLevel?: 'compact' | 'expanded';
+
+    /**
+     * Wait for LearnCard to finish background ConsentFlow data sync before returning context.
+     * Apps that need a complete learner snapshot should set this to true.
+     * @default false
+     */
+    waitForSync?: boolean;
 }
 
 /**
@@ -356,10 +520,33 @@ export interface LearnerContextRawData {
     personalData?: Record<string, unknown>;
 }
 
+export type LearnerContextCacheStatus =
+    | 'browser-hit'
+    | 'browser-miss'
+    | 'backend-hit'
+    | 'backend-miss'
+    | 'structured';
+
+export interface LearnerContextTimingBreakdown {
+    totalMs: number;
+    sdkRoundTripMs?: number;
+    appEventMs?: number;
+    credentialReadMs?: number;
+    promptizerMs?: number;
+    cacheLookupMs?: number;
+    prewarmAgeMs?: number;
+}
+
 /**
  * Response from REQUEST_LEARNER_CONTEXT action
  */
 export interface LearnerContextResponse {
+    /** Whether the response used immediately available data or waited for a complete sync */
+    status?: 'ready' | 'syncing';
+
+    /** Current sync progress when available */
+    progress?: SyncProgress;
+
     /** LLM-ready formatted prompt text */
     prompt: string;
 
@@ -371,6 +558,27 @@ export interface LearnerContextResponse {
 
     /** User's display name if available */
     displayName?: string;
+
+    /** Optional metadata for cache and timing diagnostics */
+    metadata?: {
+        cacheStatus?: LearnerContextCacheStatus;
+        timings?: LearnerContextTimingBreakdown;
+        backendMetadata?: Record<string, unknown>;
+    };
+}
+
+export interface SyncProgress {
+    totalCredentials: number;
+    completedCredentials: number;
+    failedCredentials: number;
+    retryCount: number;
+}
+
+export interface SyncStatus {
+    status: 'ready' | 'syncing' | 'error';
+    progress: SyncProgress;
+    eta?: number;
+    lastError?: string;
 }
 
 /**
@@ -517,6 +725,7 @@ export interface GetCountersResponse {
  */
 export type ErrorCode =
     | 'LC_TIMEOUT'
+    | 'LC_NOT_EMBEDDED'
     | 'LC_UNAUTHENTICATED'
     | 'CREDENTIAL_NOT_FOUND'
     | 'USER_REJECTED'

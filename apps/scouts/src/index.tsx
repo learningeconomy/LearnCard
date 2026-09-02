@@ -3,20 +3,38 @@ import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { asyncWithLDProvider } from 'launchdarkly-react-client-sdk';
-import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
+import { ANONYMOUS_CONTEXT } from './constants/launchDarkly';
+import { TenantConfigProvider } from 'learn-card-base';
+import { LocaleProvider } from './i18n';
+import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
 
 import App from './App';
+import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
+import { installInsetSimulator } from 'learn-card-base/dev/simulateInsets';
 import * as Sentry from '@sentry/browser';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('index');
 
 (window as any).Buffer = Buffer;
 
+// Dev-only: simulate device safe-area insets via ?insets so band bugs are
+// visible on desktop. Must run before React renders (sets CSS vars on <html>).
+installInsetSimulator();
+
 (async () => {
+    const tenantConfig = await bootstrapTenantConfig();
+
+    // Seed the locale-detection cache so LocaleProvider's sync initializer can
+    // fall through to the tenant default when there's no persisted choice and
+    // navigator.language isn't a supported locale. Must run BEFORE React mounts
+    // (resolveInitialLocale runs in the LocaleProvider useState initializer).
+    setTenantDefaultLocaleCache((tenantConfig as any)?.i18n?.defaultLanguage);
+    setTenantSupportedLanguagesCache((tenantConfig as any)?.i18n?.supportedLanguages);
+
     // notifyAppReady
     const capGoApp = await CapacitorUpdater.notifyAppReady();
     const capGoBundle = capGoApp.bundle;
@@ -31,14 +49,21 @@ const log = getLogger('index');
     // initialize & hide splash screen
     SplashScreen.hide();
 
-    const LDProvider = await asyncWithLDProvider(LAUNCH_DARKLY_CONFIG);
+    const LDProvider = await asyncWithLDProvider({
+        clientSideID: tenantConfig.observability.launchDarklyClientId,
+        context: ANONYMOUS_CONTEXT,
+    });
     const container = document.getElementById('root');
     if (container) {
         const root = createRoot(container);
         root.render(
-            <LDProvider>
-                <App />
-            </LDProvider>
+            <TenantConfigProvider config={tenantConfig}>
+                <LocaleProvider>
+                    <LDProvider>
+                        <App />
+                    </LDProvider>
+                </LocaleProvider>
+            </TenantConfigProvider>
         );
     }
     // If you want your app to work offline and load faster, you can change

@@ -17,13 +17,13 @@ import {
 import { createJoseEd25519Signer } from './vci/proof';
 import { importJWK, SignJWT, type JWK } from 'jose';
 import { storeAcceptedCredentials, StoreAcceptedCredentialsOptions } from './vci/store';
-import { AcceptCredentialOfferOptions } from './vci/types';
+import { AcceptCredentialOfferOptions, DiVpProofSigner } from './vci/types';
 import {
     parseAuthorizationRequestUri,
     resolveAuthorizationRequest as resolveAuthorizationRequestFn,
     ResolveAuthorizationRequestOptions,
 } from './vp/parse';
-import { AuthorizationRequest } from './vp/types';
+import { AuthorizationRequest, VpError } from './vp/types';
 import { selectCredentials, type SdJwtParser } from './vp/select';
 import {
     buildPresentation as buildPresentationFn,
@@ -111,6 +111,7 @@ export const getOpenID4VCPlugin = (
                 return acceptCredentialOfferFn({
                     offer,
                     signer,
+                    diVpSigner: buildDiVpSigner(learnCard),
                     options,
                     fetchImpl,
                 });
@@ -137,6 +138,7 @@ export const getOpenID4VCPlugin = (
                     offer,
                     tokenResponse: requestOptions.tokenResponse,
                     signer,
+                    diVpSigner: buildDiVpSigner(learnCard),
                     options: requestOptions.options,
                     fetchImpl,
                 });
@@ -153,6 +155,7 @@ export const getOpenID4VCPlugin = (
                     return acceptCredentialOfferFn({
                         offer,
                         signer,
+                        diVpSigner: buildDiVpSigner(learnCard),
                         options,
                         fetchImpl,
                     });
@@ -193,6 +196,7 @@ export const getOpenID4VCPlugin = (
                     code: completionOptions.code,
                     state: completionOptions.state,
                     signer,
+                    diVpSigner: buildDiVpSigner(learnCard),
                     fetchImpl,
                 });
             },
@@ -213,6 +217,7 @@ export const getOpenID4VCPlugin = (
                     flowHandle: requestOptions.flowHandle,
                     tokenResponse: requestOptions.tokenResponse,
                     signer,
+                    diVpSigner: buildDiVpSigner(learnCard),
                     fetchImpl,
                 });
             },
@@ -321,7 +326,7 @@ export const getOpenID4VCPlugin = (
                         nonce: request.nonce,
                         holder,
                     },
-                    { ldpVpSigner: buildLdpVpSigner(learnCard) }
+                    { ldpVpSigner: buildLdpVpSigner(learnCard, request) }
                 );
             },
 
@@ -333,6 +338,7 @@ export const getOpenID4VCPlugin = (
                 submitOptions = {}
             ) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
+                assertTransactionDataUnsupported(request);
                 const responseUri = request.response_uri ?? request.redirect_uri;
 
                 if (!responseUri) {
@@ -372,6 +378,7 @@ export const getOpenID4VCPlugin = (
 
             presentCredentials: async (learnCard, input, chosen, options = {}) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
+                assertTransactionDataUnsupported(request);
 
                 const holder = options.holder ?? learnCard.id.did();
 
@@ -422,7 +429,7 @@ export const getOpenID4VCPlugin = (
                     const needsSdJwt = dcqlBuilt.some(b => b.kind === 'sd-jwt-vc');
                     const dcqlHelpers = {
                         ...(needsJwt ? { jwtSigner: await ensureSharedJwtSigner() } : {}),
-                        ...(needsLdp ? { ldpVpSigner: buildLdpVpSigner(learnCard) } : {}),
+                        ...(needsLdp ? { ldpVpSigner: buildLdpVpSigner(learnCard, request) } : {}),
                         ...(needsSdJwt ? { sdJwtPresenter: buildSdJwtPresenter(learnCard) } : {}),
                     };
 
@@ -473,7 +480,7 @@ export const getOpenID4VCPlugin = (
                     prepared.vpFormat === 'jwt_vp_json'
                         ? { jwtSigner: await ensureSharedJwtSigner() }
                         : prepared.vpFormat === 'ldp_vp'
-                        ? { ldpVpSigner: buildLdpVpSigner(learnCard) }
+                        ? { ldpVpSigner: buildLdpVpSigner(learnCard, request) }
                         : { sdJwtPresenter: buildSdJwtPresenter(learnCard) };
 
                 const signed = await signPresentationFn(
@@ -524,6 +531,23 @@ const resolveRequestInput = async (
     typeof input === 'string'
         ? await resolveAuthorizationRequestFn(input, fetchImpl, resolveOptions)
         : input;
+
+/**
+ * OID4VP 1.0 §8.4: a Wallet that cannot honor `transaction_data` MUST return an
+ * error rather than present without binding it. The plugin does not yet bind
+ * any transaction data type, so any request carrying it is rejected. Called
+ * from every entry point that actually emits a presentation
+ * (`presentCredentials`, `submitPresentation`) so the rejection can't be
+ * bypassed by driving the granular flow.
+ */
+const assertTransactionDataUnsupported = (request: AuthorizationRequest): void => {
+    if (request.transaction_data && request.transaction_data.length > 0) {
+        throw new VpError(
+            'invalid_transaction_data',
+            'Authorization Request includes transaction_data, which this Wallet does not support'
+        );
+    }
+};
 
 const requirePresentationDefinition = (request: AuthorizationRequest) => {
     if (!request.presentation_definition) {
@@ -649,10 +673,74 @@ const ensureVpJwtSigner = async (
  * contract expected by the VP sign layer. OID4VP replay-binding
  * (domain/challenge) is passed through verbatim.
  */
-const buildLdpVpSigner = (learnCard: OpenID4VCDependentLearnCard): LdpVpSigner => ({
-    sign: async (unsignedVp, { domain, challenge }) =>
-        learnCard.invoke.issuePresentation(unsignedVp, { domain, challenge }),
+/**
+ * Wrap `learnCard.invoke.issuePresentation` into the {@link DiVpProofSigner}
+ * contract for OID4VCI `di_vp` key proofs: a Data Integrity proof with
+ * `proofPurpose: authentication`, bound to the issuer identifier (domain)
+ * and c_nonce (challenge).
+ */
+const buildDiVpSigner = (learnCard: OpenID4VCDependentLearnCard): DiVpProofSigner => ({
+    holder: learnCard.id.did(),
+    signPresentation: async (unsignedVp, { domain, challenge, cryptosuite }) =>
+        learnCard.invoke.issuePresentation(unsignedVp as import('@learncard/types').UnsignedVP, {
+            proofPurpose: 'authentication',
+            domain,
+            challenge,
+            ...(cryptosuite
+                ? {
+                      type: 'DataIntegrityProof',
+                      cryptosuite:
+                          cryptosuite as import('@learncard/didkit-plugin').DataIntegrityCryptosuite,
+                  }
+                : {}),
+        }) as Promise<Record<string, unknown>>,
 });
+
+const buildLdpVpSigner = (
+    learnCard: OpenID4VCDependentLearnCard,
+    request?: AuthorizationRequest
+): LdpVpSigner => ({
+    sign: async (unsignedVp, { domain, challenge }) =>
+        learnCard.invoke.issuePresentation(unsignedVp, {
+            domain,
+            challenge,
+            ...ldpVpProofOptionsFromClientMetadata(request?.client_metadata),
+        }),
+});
+
+/**
+ * Derive Data Integrity proof options for `ldp_vp` signing from the
+ * verifier's `client_metadata.vp_formats_supported` (OID4VP 1.0 §5.1 /
+ * B.1.2). Verifiers that only accept `DataIntegrityProof` (e.g. the
+ * VC-API `data-integrity-cryptosuites` profile) reject the historical
+ * `Ed25519Signature2020` default, so when the metadata restricts
+ * `ldp_vp` proofs to Data Integrity we sign with a mutually supported
+ * cryptosuite and `proofPurpose: authentication`. Verifiers without
+ * that restriction keep the previous default behavior.
+ */
+const ldpVpProofOptionsFromClientMetadata = (
+    clientMetadata: Record<string, unknown> | undefined
+): Record<string, unknown> => {
+    const formats =
+        (clientMetadata?.vp_formats_supported as Record<string, unknown> | undefined) ??
+        (clientMetadata?.vp_formats as Record<string, unknown> | undefined);
+
+    const ldpVp = formats?.ldp_vp as Record<string, unknown> | undefined;
+    if (!ldpVp) return {};
+
+    const proofTypes = ldpVp.proof_type_values ?? ldpVp.proof_type;
+    if (!Array.isArray(proofTypes) || !proofTypes.includes('DataIntegrityProof')) return {};
+
+    const advertised = Array.isArray(ldpVp.cryptosuite_values) ? ldpVp.cryptosuite_values : [];
+    const supported = ['eddsa-rdfc-2022', 'eddsa-2022', 'json-eddsa-2022'];
+    const cryptosuite =
+        supported.find(suite => advertised.includes(suite)) ??
+        (advertised.length === 0 ? 'eddsa-rdfc-2022' : undefined);
+
+    if (!cryptosuite) return {};
+
+    return { type: 'DataIntegrityProof', cryptosuite, proofPurpose: 'authentication' };
+};
 
 /**
  * Build an SD-JWT-VC parser callback for the matcher layer. Wired to

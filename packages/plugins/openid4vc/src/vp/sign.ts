@@ -55,14 +55,14 @@ import { VpFormat } from './present';
  * - `string` — PEX `jwt_vp_json` compact JWS, OR a single DCQL entry
  *   that's a `jwt_vc_json` presentation.
  * - `VP`    — PEX `ldp_vp` signed VP object.
- * - `Record<string, string | VP>` — DCQL response object keyed by
- *   `credential_query_id` (OID4VP 1.0 §6.4); values are
- *   per-query signed presentations.
+ * - `Record<string, Array<string | VP>>` — DCQL response object keyed
+ *   by `credential_query_id` (OID4VP 1.0 §8.1); each value is an array
+ *   of one or more per-query signed presentations.
  *
  * The submit layer JSON-encodes whichever non-string variant arrives
  * before form-urlencoding it.
  */
-export type VpToken = string | VP | Record<string, string | VP>;
+export type VpToken = string | VP | Record<string, Array<string | VP>>;
 
 /**
  * Linked-Data VP signer contract. The plugin binds this to

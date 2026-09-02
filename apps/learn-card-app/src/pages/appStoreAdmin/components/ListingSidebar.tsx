@@ -3,15 +3,16 @@ import { Search, Inbox, Loader2, RefreshCw } from 'lucide-react';
 
 import { StatusBadge } from '../../appStoreDeveloper/components/StatusBadge';
 import type { AppListingStatus, ExtendedAppStoreListing } from '../../appStoreDeveloper/types';
+import * as m from '../../../paraglide/messages.js';
 
 type FilterStatus = AppListingStatus | 'ALL';
 
-const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
-    { value: 'PENDING_REVIEW', label: 'Pending' },
-    { value: 'ALL', label: 'All' },
-    { value: 'LISTED', label: 'Listed' },
-    { value: 'DRAFT', label: 'Draft' },
-    { value: 'ARCHIVED', label: 'Archived' },
+const FILTER_OPTIONS: { value: FilterStatus; label: () => string }[] = [
+    { value: 'PENDING_REVIEW', label: () => m['appStoreAdmin.sidebar.filterPending']() },
+    { value: 'ALL', label: () => m['appStoreAdmin.sidebar.filterAll']() },
+    { value: 'LISTED', label: () => m['appStoreAdmin.sidebar.filterListed']() },
+    { value: 'DRAFT', label: () => m['appStoreAdmin.sidebar.filterDraft']() },
+    { value: 'ARCHIVED', label: () => m['appStoreAdmin.sidebar.filterArchived']() },
 ];
 
 interface ListingSidebarProps {
@@ -61,7 +62,7 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
 
                     <input
                         type="text"
-                        placeholder="Search apps..."
+                        placeholder={m['appStoreAdmin.sidebar.searchPlaceholder']()}
                         value={searchQuery}
                         onChange={e => onSearchChange(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
@@ -79,7 +80,7 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
                                     : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                             }`}
                         >
-                            {f.label}
+                            {f.label()}
                             {f.value === 'PENDING_REVIEW' && pendingCount > 0 && (
                                 <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full">
                                     {pendingCount}
@@ -98,7 +99,7 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
                     className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-600 transition-colors"
                 >
                     <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                    {isLoading ? 'Loading...' : 'Refresh'}
+                    {isLoading ? m['common.loading']() : m['appStoreAdmin.sidebar.refresh']()}
                 </button>
             </div>
 
@@ -107,12 +108,14 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
                 {isLoading ? (
                     <div className="text-center py-12">
                         <Loader2 className="w-8 h-8 text-cyan-500 mx-auto mb-3 animate-spin" />
-                        <p className="text-gray-500 text-sm">Loading...</p>
+                        <p className="text-gray-500 text-sm">{m['common.loading']()}</p>
                     </div>
                 ) : filteredListings.length === 0 ? (
                     <div className="text-center py-12">
                         <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500 text-sm">No listings found</p>
+                        <p className="text-gray-500 text-sm">
+                            {m['appStoreAdmin.sidebar.noListingsFound']()}
+                        </p>
                     </div>
                 ) : (
                     filteredListings.map(listing => (
@@ -141,7 +144,9 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
                                         <h4 className="font-medium text-gray-700 text-sm truncate">
                                             {listing.display_name}
                                         </h4>
-                                        <StatusBadge status={listing.app_listing_status as AppListingStatus} />
+                                        <StatusBadge
+                                            status={listing.app_listing_status as AppListingStatus}
+                                        />
                                     </div>
 
                                     <p className="text-xs text-gray-400 truncate mt-0.5">

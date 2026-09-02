@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -11,14 +11,14 @@ const log = getLogger();
  * merge layers are applied.
  *
  * Usage:
- *   npx tsx scripts/resolve-tenant-config.ts [tenant] [--stage <stage>]
- *   pnpm lc resolve [tenant] [stage]
+ *   bun scripts/resolve-tenant-config.ts [tenant] [--stage <stage>]
+ *   bun run lc resolve [tenant] [stage]
  *
  * Examples:
- *   pnpm lc resolve                        # learncard production
- *   pnpm lc resolve vetpass                 # vetpass production
- *   pnpm lc resolve vetpass alpha           # vetpass alpha stage
- *   pnpm lc resolve learncard local         # learncard local stage
+ *   bun run lc resolve                        # learncard production
+ *   bun run lc resolve vetpass                 # vetpass production
+ *   bun run lc resolve vetpass alpha           # vetpass alpha stage
+ *   bun run lc resolve learncard local         # learncard local stage
  *
  * Merge order:
  *   tenantDefaults → config.json → config.<stage>.json → final

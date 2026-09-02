@@ -10,6 +10,8 @@ import {
 
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
+import * as m from '../../../paraglide/messages.js';
+
 import AppStoreDetailModal from '../../launchPad/AppStoreDetailModal';
 import { EmbedIframeModal } from '../../launchPad/EmbedIframeModal';
 import AiTutorConnectedView from '../../launchPad/AiTutorConnectedView';
@@ -169,7 +171,7 @@ export const useAppLaunch = ({ listing, isInstalled, onInstallSuccess }: UseAppL
             await runLaunch();
         } catch (err) {
             log.error('App launch failed', err);
-            presentToast('Couldn\u2019t open this app. Please try again.', {
+            presentToast(m['dashboard.appLaunch.error'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

@@ -27,12 +27,14 @@ interface ExchangePresentationRequestProps {
     verifiablePresentationRequest: any; // Contains the verifiablePresentationRequest from the server
     strategy?: VCAPIRequestStrategy;
     onSubmit: (body: { verifiablePresentation: VP } | VP) => void;
+    onCancel?: () => void;
 }
 
 const ExchangePresentationRequest: React.FC<ExchangePresentationRequestProps> = ({
     verifiablePresentationRequest,
     onSubmit,
     strategy,
+    onCancel,
 }) => {
     const currentUser = useCurrentUser();
 
@@ -48,6 +50,7 @@ const ExchangePresentationRequest: React.FC<ExchangePresentationRequestProps> = 
 
     const handleReject = () => {
         log.info('reject');
+        onCancel?.();
     };
 
     return (

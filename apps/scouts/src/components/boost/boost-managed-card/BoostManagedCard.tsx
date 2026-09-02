@@ -8,6 +8,7 @@ import CredentialBadge from 'learn-card-base/components/CredentialBadge/Credenti
 import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
 import { ErrorBoundary } from 'react-error-boundary';
 import Plus from '../../svgs/Plus';
+import * as m from '../../../paraglide/messages.js';
 import {
     BrandingEnum,
     BoostPageViewModeType,
@@ -22,8 +23,7 @@ import {
 
 import { closeAll } from '../../../helpers/uiHelpers';
 
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import BoostListItem from 'learn-card-base/components/boost/BoostListItem';
 import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
 import BoostTextSkeleton, {
@@ -52,6 +52,96 @@ type BoostManagedCardProps = {
     refetchQuery?: () => void;
     overrideCustomize?: boolean;
 };
+type BoostManagedCardSkeletonProps = Pick<
+    BoostManagedCardProps,
+    'categoryType' | 'boostPageViewMode' | 'branding' | 'sizeLg' | 'sizeMd' | 'sizeSm'
+>;
+
+export const BoostManagedCardSkeleton: React.FC<BoostManagedCardSkeletonProps> = ({
+    categoryType,
+    boostPageViewMode = BoostPageViewMode.Card,
+    branding,
+    sizeLg = 4,
+    sizeMd = 4,
+    sizeSm = 4,
+}) => {
+    const isCardView = boostPageViewMode === BoostPageViewMode.Card;
+    const isMeritBadge = categoryType === CredentialCategoryEnum.meritBadge;
+    const { credentialType = CredentialCategoryEnum.achievement } =
+        getBoostMetadata(categoryType as BoostCategoryOptionsEnum | CredentialCategoryEnum) || {};
+    const type = categoryMetadata[credentialType].walletSubtype;
+
+    return (
+        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            {isCardView ? (
+                <IonCol
+                    size="6"
+                    size-sm={sizeSm}
+                    size-md={sizeMd}
+                    size-lg={sizeLg}
+                    className="flex justify-center items-center relative"
+                    aria-hidden="true"
+                    inert
+                >
+                    <BoostSmallCard
+                        className={`bg-white text-grayscale-900 z-[1000] mt-[15px] ${
+                            isMeritBadge ? '!h-[298px]' : ''
+                        }`}
+                        customHeaderClass="boost-managed-card"
+                        customButtonComponent={
+                            <BoostSkeleton
+                                containerClassName="small-boost-boost-btn-2 flex boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center"
+                                skeletonStyles={{
+                                    width: '100%',
+                                    height: '100%',
+                                    borderRadius: '100px',
+                                }}
+                            />
+                        }
+                        customBodyComponent={
+                            <div className="w-full flex items-center justify-center">
+                                <BoostSkeleton
+                                    containerClassName="w-[40px] h-[40px] rounded-full"
+                                    skeletonStyles={{
+                                        width: '100%',
+                                        height: '100%',
+                                        borderRadius: '100px',
+                                    }}
+                                />
+                            </div>
+                        }
+                        customThumbComponent={
+                            <BadgeSkeleton
+                                badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                                badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
+                            />
+                        }
+                        customTitle={
+                            <div className="w-full flex flex-col items-center justify-center pt-2">
+                                <BoostTextSkeleton
+                                    containerClassName="w-full flex items-center justify-center"
+                                    skeletonStyles={{ width: '80%' }}
+                                />
+                                <BoostTextSkeleton
+                                    containerClassName="w-full flex items-center justify-center"
+                                    skeletonStyles={{ width: '60%' }}
+                                />
+                            </div>
+                        }
+                        type={type}
+                    />
+                </IonCol>
+            ) : (
+                <BoostListItem
+                    categoryType={categoryType}
+                    branding={branding}
+                    loading
+                    managedBoost
+                />
+            )}
+        </ErrorBoundary>
+    );
+};
 
 export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     boost,
@@ -66,7 +156,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     boostPageViewMode = BoostPageViewMode.Card,
     showSelectMenuPlusButton = false,
     useCmsModal = false,
-    handleCloseModal = () => { },
+    handleCloseModal = () => {},
     loading,
     parentUri,
     refetchQuery,
@@ -134,12 +224,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
             customBody = (
                 <div className="relative w-full text-center flex flex-col items-center justify-center">
                     <div className="max-w-[50px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                        <LoadingSpinner />
                     </div>
                 </div>
             );
@@ -188,7 +273,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                     {cardTitle}
                 </span>
                 <span className="text-sp-purple-base text-[12px] font-[600] uppercase font-notoSans">
-                    Merit Badge
+                    {m['boost.meritBadge']()}
                 </span>
                 <span className="px-[10px] text-[11px] line-clamp-1">{parentSourceTitle}</span>
             </div>
@@ -222,13 +307,13 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
             <div className="flex w-full flex-col items-center justify-center">
                 {isDraft && (
                     <button
-                        className="flex rounded-[40px] w-[140px] h-[32px] justify-center items-center text-grayscale-900 bg-grayscale-200 shadow-bottom text-base font-medium"
+                        className="flex rounded-[40px] w-fit min-w-[140px] max-w-full h-[32px] px-3 justify-center items-center whitespace-nowrap text-grayscale-900 bg-grayscale-200 shadow-bottom text-sm leading-none font-medium"
                         onClick={e => {
                             e.stopPropagation();
                             handleEditOnClick();
                         }}
                     >
-                        Edit Draft
+                        {m['boost.editDraft']()}
                     </button>
                 )}
             </div>
@@ -254,7 +339,9 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                     )}
                     {isMeritBadge && (
                         <>
-                            <span className="font-notoSans text-[17px] font-[700]">Award</span>
+                            <span className="font-notoSans text-[17px] font-[700]">
+                                {m['boost.award']()}
+                            </span>
                             <PurpleMeritBadgesIcon className="w-[25px] h-[25px]" />
                         </>
                     )}
@@ -277,13 +364,19 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                 </button>
                 {
                     <p
-                        className={`text-xs font-notoSans text-grayscale-600 font-semibold   ${(recipientCount ?? 0) > 0
+                        className={`text-xs font-notoSans text-grayscale-600 font-semibold   ${
+                            (recipientCount ?? 0) > 0
                                 ? 'text-grayscale-600 mt-[6px]'
                                 : 'text-white mt-[6px]'
-                            }`}
+                        }`}
                     >
-                        Issued to {recipientCount ?? 0}{' '}
-                        {(recipientCount ?? 0) === 1 ? 'person' : 'people'}
+                        {m['boost.issuedTo']({
+                            count: recipientCount ?? 0,
+                            person:
+                                (recipientCount ?? 0) === 1
+                                    ? m['boost.personOne']()
+                                    : m['boost.personOther'](),
+                        })}
                     </p>
                 }
             </div>
@@ -291,7 +384,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     }
 
     return (
-        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
             {isCardView && (
                 <IonCol
                     size="6"
@@ -304,8 +397,9 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                         innerOnClick={
                             boostVC && !showSkeleton ? () => presentManagedBoostModal() : undefined
                         }
-                        className={`bg-white text-black z-[1000] mt-[15px] ${isMeritBadge ? '!h-[298px]' : ''
-                            }`}
+                        className={`bg-white text-black z-[1000] mt-[15px] ${
+                            isMeritBadge ? '!h-[298px]' : ''
+                        }`}
                         customHeaderClass="boost-managed-card"
                         buttonOnClick={
                             boostVC && !showSkeleton
@@ -350,8 +444,9 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                                     backgroundImage={boostVC?.display?.backgroundImage}
                                     backgroundColor={cred?.display?.backgroundColor}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                    badgeCircleCustomClass={`w-[117px] h-[117px] mt-1 ${isMeritBadge ? 'mt-[20px]' : 'shadow-3xl'
-                                        }`}
+                                    badgeCircleCustomClass={`w-[117px] h-[117px] mt-1 ${
+                                        isMeritBadge ? 'mt-[20px]' : 'shadow-3xl'
+                                    }`}
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                                     badgeRibbonCustomClass="w-[26px]"
                                     badgeRibbonIconCustomClass="w-[90%] mt-[4px]"

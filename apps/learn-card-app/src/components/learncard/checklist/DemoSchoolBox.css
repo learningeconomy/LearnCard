@@ -1,4 +1,4 @@
-@keyframes spin {
+@keyframes spin-ccw {
     from {
         transform: rotate(360deg);
     }
@@ -7,6 +7,6 @@
     }
 }
 
-.animate-spin {
-    animation: spin 1s linear infinite;
+.animate-spin-ccw {
+    animation: spin-ccw 1s linear infinite;
 }

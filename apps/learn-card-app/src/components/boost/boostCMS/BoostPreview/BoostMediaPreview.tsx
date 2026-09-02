@@ -9,9 +9,9 @@ import SpilledCup from 'learn-card-base/svgs/SpilledCup';
 import SlimCaretLeft from '../../../svgs/SlimCaretLeft';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
-import { IonContent, IonFooter, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import MediaCollapseButton from './helpers/MediaCollapseButton';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 
 import {
     useModal,
@@ -22,24 +22,15 @@ import {
 } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import { VideoMetadata } from 'learn-card-base';
+import { canEmbedVideoIframe, ExternalVideoFallback, getExternalVideoUrl } from '@learncard/react';
 import {
-    convertEvidenceToAttachments,
+    getCredentialName,
     getExistingAttachmentsOrEvidence,
 } from 'learn-card-base/helpers/credentialHelpers';
-
-export function getFilestackPreviewUrl(fileUrl: string): string {
-    try {
-        const url = new URL(fileUrl);
-        const handle = url.pathname.split('/').filter(Boolean).pop();
-
-        if (!handle) throw new Error('Invalid Filestack URL: No file handle found');
-
-        return `https://cdn.filestackcontent.com/preview/${handle}`;
-    } catch (e) {
-        log.error('Failed to generate Filestack preview URL:', e);
-        return '';
-    }
-}
+import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers';
+import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.helpers';
+import { resolvePdfDocumentResource } from '../../../../pages/ids/view-id/IdDetails/helpers/pdfDocumentResource.helpers';
+import * as m from '../../../../paraglide/messages.js';
 
 export const BoostMediaPreview: React.FC<{
     credential: VC;
@@ -68,10 +59,12 @@ export const BoostMediaPreview: React.FC<{
 
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
 
+    const rawArtifact = (credential as VC & { rawArtifact?: unknown }).rawArtifact;
     const attachments = getExistingAttachmentsOrEvidence(
         credential?.attachments || [],
-        credential?.evidence || []
-    );
+        credential?.evidence || [],
+        rawArtifact
+    ).map(item => ({ ...item, url: getAttachmentSource(item) }));
     const attachment = attachments?.[0];
 
     useEffect(() => {
@@ -95,27 +88,65 @@ export const BoostMediaPreview: React.FC<{
         }
     };
 
-    const handleGetDocumentUrl = async () => {
-        try {
-            setIsMediaLoading(true);
-            const url = getFilestackPreviewUrl(attachment?.url || '');
-            setDocumentUrl(url);
-        } catch (error) {
-            log.error('Failed to get document metadata:', error);
-        } finally {
-            setIsMediaLoading(false);
-        }
-    };
+    useEffect(() => {
+        if (attachment?.type !== 'video') return;
+
+        handleGetVideoMetadata();
+    }, [attachment?.type, attachment?.url]);
 
     useEffect(() => {
-        if (attachment?.type === 'video') {
-            handleGetVideoMetadata();
-        } else if (attachment?.type === 'document') {
-            handleGetDocumentUrl();
+        if (attachment?.type !== 'document') {
+            setDocumentUrl(null);
+            return;
         }
-    }, [attachment?.url]);
+
+        const source = attachment.url;
+        if (!source) {
+            setDocumentUrl(null);
+            return;
+        }
+
+        let active = true;
+        let revokeDocumentUrl: (() => void) | undefined;
+
+        setDocumentUrl(null);
+        setIsMediaLoading(true);
+
+        const resolveDocumentUrl = async (): Promise<void> => {
+            try {
+                const resolvedPdf = await resolvePdfDocumentResource(
+                    source,
+                    attachment.fileName || attachment.title
+                );
+                const nextDocumentUrl =
+                    resolvedPdf?.resource.previewUrl ?? getFilestackPreviewUrl(source);
+
+                revokeDocumentUrl = resolvedPdf?.resource.revokeUrls;
+
+                if (active) {
+                    setDocumentUrl(nextDocumentUrl);
+                } else {
+                    revokeDocumentUrl?.();
+                }
+            } catch (error) {
+                log.error('Failed to get document metadata:', error);
+            } finally {
+                if (active) setIsMediaLoading(false);
+            }
+        };
+
+        void resolveDocumentUrl();
+
+        return () => {
+            active = false;
+            revokeDocumentUrl?.();
+        };
+    }, [attachment?.fileName, attachment?.title, attachment?.type, attachment?.url]);
 
     let mediaContent = null;
+    // Video that has to open in an external browser — there is nothing inline to
+    // expand, so the full-screen control is suppressed for it below.
+    let playsExternally = false;
 
     if (attachment?.type === 'document') {
         if (isMediaLoading) {
@@ -124,6 +155,7 @@ export const BoostMediaPreview: React.FC<{
             mediaContent = (
                 <>
                     <iframe
+                        title={attachment.title || attachment.fileName || 'Credential document'}
                         src={documentUrl}
                         style={{
                             width: '100%',
@@ -151,6 +183,16 @@ export const BoostMediaPreview: React.FC<{
 
         if (isMediaLoading) {
             mediaContent = <MediaLoader text="Video" />;
+        } else if (iframeSrc && !canEmbedVideoIframe(videoMetaData?.type)) {
+            playsExternally = true;
+            mediaContent = (
+                <div style={{ width: '100%', height: '100vh', backgroundColor: '#353E64' }}>
+                    <ExternalVideoFallback
+                        url={getExternalVideoUrl(videoMetaData, attachment?.url ?? '')}
+                        thumbnailUrl={videoMetaData?.thumbnailUrl}
+                    />
+                </div>
+            );
         } else if (iframeSrc) {
             mediaContent = (
                 <>
@@ -200,7 +242,11 @@ export const BoostMediaPreview: React.FC<{
                             <SwiperSlide key={index}>
                                 <img
                                     src={img.url}
-                                    alt={`Image ${index + 1}`}
+                                    alt={
+                                        img.title ||
+                                        img.fileName ||
+                                        `Credential attachment ${index + 1}`
+                                    }
                                     className="object-contain w-full h-full"
                                 />
                             </SwiperSlide>
@@ -209,19 +255,27 @@ export const BoostMediaPreview: React.FC<{
 
                     {!isFirstSlide && (
                         <button
+                            type="button"
+                            aria-label="Previous image"
                             onClick={() => swiperRef.current?.slidePrev()}
                             className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-20 shadow-md hover:bg-gray-200 opacity-50"
                         >
-                            <SlimCaretLeft className="w-5 h-auto" />
+                            <span aria-hidden="true">
+                                <SlimCaretLeft className="w-5 h-auto" />
+                            </span>
                         </button>
                     )}
 
                     {!isLastSlide && (
                         <button
+                            type="button"
+                            aria-label="Next image"
                             onClick={() => swiperRef.current?.slideNext()}
                             className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-20 shadow-md hover:bg-gray-200 opacity-50"
                         >
-                            <SlimCaretRight className="w-5 h-auto" />
+                            <span aria-hidden="true">
+                                <SlimCaretRight className="w-5 h-auto" />
+                            </span>
                         </button>
                     )}
                 </>
@@ -238,39 +292,36 @@ export const BoostMediaPreview: React.FC<{
         );
     }
 
+    const footerProps = !isFullScreen
+        ? {
+              showFullScreen: !playsExternally,
+              handleFullScreen: () => setIsFullScreen(true),
+              showShareButton: false,
+              handleClose: () => {
+                  if (handleCloseModal) handleCloseModal();
+                  closeModal();
+              },
+              handleDetails: isMobile ? () => openDetailsSideModal() : undefined,
+              handleShare: handleShareBoost,
+              handleDotMenu: onDotsClick,
+              useFullCloseButton: !isMobile || !handleShareBoost,
+          }
+        : undefined;
+
     return (
         <IonPage className="grayscale-800 h-full">
-            {/* Mobile */}
-            {isMobile && (
-                <>
-                    <IonContent fullscreen>{mediaContent}</IonContent>
-                    {isFullScreen && <MediaCollapseButton onClick={() => setIsFullScreen(false)} />}
-                    {!isFullScreen && (
-                        <IonFooter>
-                            <BoostFooter
-                                showFullScreen
-                                handleFullScreen={() => setIsFullScreen(!isFullScreen)}
-                                showShareButton={false}
-                                handleClose={() => {
-                                    if (handleCloseModal) handleCloseModal?.();
-                                    closeModal();
-                                }}
-                                handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
-                                handleShare={handleShareBoost}
-                                handleDotMenu={onDotsClick}
-                                useFullCloseButton={!isMobile || !handleShareBoost}
-                            />
-                        </IonFooter>
-                    )}
-                </>
-            )}
-
-            {/* Desktop */}
-            {!isMobile && (
-                <>
+            <h1 className="sr-only">
+                {getCredentialName(credential) || m['claim.modal.credentialFallback']()}
+            </h1>
+            <BoostFooterLayout contentOwnsScroll footerClassName="z-50" footerProps={footerProps}>
+                {isMobile ? (
+                    <IonContent fullscreen className="h-full">
+                        {mediaContent}
+                    </IonContent>
+                ) : (
                     <section className="grayscale-800 h-full flex flex-row overflow-hidden">
                         <div className="flex-1 h-full overflow-hidden relative">{mediaContent}</div>
-                        {!isMobile && !isFullScreen && (
+                        {!isFullScreen && (
                             <BoostDetailsSideBar
                                 credential={credential}
                                 categoryType={BoostCategoryOptionsEnum.accomplishment}
@@ -283,25 +334,12 @@ export const BoostMediaPreview: React.FC<{
                             <MediaCollapseButton onClick={() => setIsFullScreen(false)} />
                         )}
                     </section>
-                    {!isFullScreen && (
-                        <footer className="w-full flex justify-center items-center ion-no-border z-50">
-                            <BoostFooter
-                                handleClose={() => {
-                                    if (handleCloseModal) handleCloseModal?.();
-                                    closeModal();
-                                }}
-                                handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
-                                handleShare={handleShareBoost}
-                                handleDotMenu={onDotsClick}
-                                useFullCloseButton={!isMobile || !handleShareBoost}
-                                showFullScreen
-                                showShareButton={false}
-                                handleFullScreen={() => setIsFullScreen(!isFullScreen)}
-                            />
-                        </footer>
-                    )}
-                </>
-            )}
+                )}
+
+                {isMobile && isFullScreen && (
+                    <MediaCollapseButton onClick={() => setIsFullScreen(false)} />
+                )}
+            </BoostFooterLayout>
         </IonPage>
     );
 };

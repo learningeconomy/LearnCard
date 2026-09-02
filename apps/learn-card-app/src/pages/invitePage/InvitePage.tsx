@@ -10,6 +10,7 @@ import { useWallet, usePathQuery, useIsLoggedIn } from 'learn-card-base';
 import { generatePK } from '../../helpers/privateKeyHelpers';
 
 import { AddressBookContact } from '../addressBook/addressBookHelpers';
+import * as m from '../../paraglide/messages.js';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
 
 const InvitePage: React.FC = () => {
@@ -73,14 +74,16 @@ const InvitePage: React.FC = () => {
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <IonSpinner color="black" />
-                        <p className="mt-2 font-bold text-lg">Loading...</p>
+                        <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}
                 {!loading && !lcNetworkProfile && (
                     <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                        <h1 className="text-center text-xl font-bold text-grayscale-800">Eeek!</h1>
+                        <h1 className="text-center text-xl font-bold text-grayscale-800">
+                            {m['contacts.invite.notFoundTitle']()}
+                        </h1>
                         <strong className="text-center font-medium text-grayscale-600">
-                            Unable to find user
+                            {m['contacts.invite.notFoundBody']()}
                         </strong>
                     </section>
                 )}

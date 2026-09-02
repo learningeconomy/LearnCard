@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 
 import TrashBin from '../../../svgs/TrashBin';
 import { IonInput } from '@ionic/react';
+import * as m from '../../../../paraglide/messages.js';
 
-import { BoostCMSIssueTo, conditionalPluralize, UserProfilePicture } from 'learn-card-base';
+import { BoostCMSIssueTo, UserProfilePicture } from 'learn-card-base';
+import { formatLocaleCount } from '../../../../i18n/formatters';
 import { TroopsCMSState } from '../../troopCMSState';
 
 export enum TroopIDUserListTabsEnum {
@@ -110,50 +112,61 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
             {scoutsAndLeadersListCount > 0 && (
                 <div className="w-full flex items-start justify-center flex-col">
                     <h3 className="font-notoSans text-xl font-normal mb-2 text-grayscale-900">
-                        {conditionalPluralize(scoutsAndLeadersListCount, 'Member')}
+                        {formatLocaleCount(scoutsAndLeadersListCount, {
+                            one: m['troops.memberOne'](),
+                            other: m['troops.memberOther'](),
+                        })}
                     </h3>
                     {isInTroopViewMode && scoutsListCount > 0 && leadersListCount > 0 && (
                         <div className="flex mb-2">
                             <button
                                 onClick={() => setActiveTab(TroopIDUserListTabsEnum.all)}
-                                className={`text-sm font-notoSans font-semibold mr-2 ${activeTab === TroopIDUserListTabsEnum.all
+                                className={`text-sm font-notoSans font-semibold mr-2 ${
+                                    activeTab === TroopIDUserListTabsEnum.all
                                         ? 'text-sp-blue-ocean'
                                         : 'text-grayscale-700'
-                                    }`}
+                                }`}
                             >
-                                All
+                                {m['boostCMS.all']()}
                             </button>
                             {scoutsListCount > 0 && (
                                 <button
                                     onClick={() => setActiveTab(TroopIDUserListTabsEnum.scouts)}
-                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${activeTab === TroopIDUserListTabsEnum.scouts
+                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${
+                                        activeTab === TroopIDUserListTabsEnum.scouts
                                             ? 'text-sp-blue-ocean'
                                             : 'text-grayscale-700'
-                                        }`}
+                                    }`}
                                 >
-                                    {scoutsListCount} {scoutsListCount === 1 ? 'Scout' : 'Scouts'}
+                                    {formatLocaleCount(scoutsListCount, {
+                                        one: m['troops.scoutOne'](),
+                                        other: m['troops.scoutOther'](),
+                                    })}
                                 </button>
                             )}
 
                             {leadersListCount > 0 && (
                                 <button
                                     onClick={() => setActiveTab(TroopIDUserListTabsEnum.leaders)}
-                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${activeTab === TroopIDUserListTabsEnum.leaders
+                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${
+                                        activeTab === TroopIDUserListTabsEnum.leaders
                                             ? 'text-sp-blue-ocean'
                                             : 'text-grayscale-700'
-                                        }`}
+                                    }`}
                                 >
-                                    {leadersListCount}{' '}
-                                    {leadersListCount === 1 ? 'Leader' : 'Leaders'}
+                                    {formatLocaleCount(leadersListCount, {
+                                        one: m['troops.leaderOne'](),
+                                        other: m['troops.leaderOther'](),
+                                    })}
                                 </button>
                             )}
                         </div>
                     )}
                     <IonInput
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-notoSans text-[17px] w-full troops-cms-placeholder"
-                        placeholder="Search..."
+                        placeholder={m['boost.searchPlaceholder']()}
                         value={search}
-                        onIonInput={e => setSearch(e.detail.value)}
+                        onIonInput={e => setSearch(e.detail.value ?? '')}
                     />
                 </div>
             )}
@@ -162,7 +175,8 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
 
             {filteredList?.length > 0 &&
                 filteredList.map((user, index) => {
-                    const typeTitle = user?.type === 'scout' ? 'Scout' : 'Leader';
+                    const typeTitle =
+                        user?.type === 'scout' ? m['troops.scoutOne']() : m['troops.leaderOne']();
                     const deleteKey = user?.type === 'scout' ? 'issueTo' : 'admins';
 
                     return (

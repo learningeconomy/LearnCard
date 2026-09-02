@@ -15,6 +15,8 @@ import {
 } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { walletStore } from 'learn-card-base/stores/walletStore';
+import { useAuthGateState } from 'learn-card-base/auth-status/useAuthGateState';
+import { hasNetworkProfile, isAuthSettled } from 'learn-card-base/auth-status/authStatus';
 import {
     Boost,
     BoostRecipientInfo,
@@ -740,12 +742,15 @@ export const useGenerateInvite = () => {
 
 /**
  * Query: Search profiles by profileId.
+ *
+ * @param options.enabled Whether the profile search query should run.
  */
-export const useGetSearchProfiles = (profileId: string) => {
+export const useGetSearchProfiles = (profileId: string, options: { enabled?: boolean } = {}) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
     return useQuery<(LCNVisibleProfile & { connectionStatus?: LCNProfileConnectionStatusEnum })[]>({
         queryKey: ['getSearchProfiles', switchedDid ?? '', profileId],
+        enabled: options.enabled ?? true,
         queryFn: async () => {
             const wallet = await initWallet();
             const data = await wallet.invoke.searchProfiles(profileId, {
@@ -759,17 +764,22 @@ export const useGetSearchProfiles = (profileId: string) => {
 
 /**
  * Hook: Determine if the current user is an LCN user.
+ *
+ * Re-rooted on the canonical auth-gate selector: `data` is true ONLY for a
+ * confirmed network profile, and `isLoading` stays true until auth is settled —
+ * the profile is definitively resolved (present or absent) or the user is
+ * definitively unauthenticated. A transient wallet/network failure
+ * resolves to "still resolving", never "no profile", so the Complete Profile /
+ * age gate / JoinNetworkModal prompts can't fire during the resume race.
  */
-type ResultStatus = 'pending' | 'success' | 'error';
 export const useIsCurrentUserLCNUser = () => {
     const result = useGetProfile();
+    const authStatus = useAuthGateState(result.status, Boolean(result.data));
+
     return {
         ...result,
-        data: Boolean(result.data),
-        // `error` is treated as "still resolving", NOT "no profile": a transient
-        // wallet-init/network failure on resume must not falsely trigger the
-        // Complete Profile / age gate / JoinNetworkModal onboarding prompts.
-        isLoading: result.status === 'pending' || result.status === 'error',
+        data: hasNetworkProfile(authStatus),
+        isLoading: !isAuthSettled(authStatus),
     };
 };
 

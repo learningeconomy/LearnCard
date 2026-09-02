@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
-import { useFilestack, UploadRes } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 import { VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { IonCol, IonRow, IonInput } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { Updater } from 'use-immer';
-import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
+import { boostMediaOptions, BoostMediaOptionsEnum, mediaTypeTitle } from '../../../boost';
 import FileIcon from 'learn-card-base/svgs/FileIcon';
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 
@@ -29,7 +30,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
     handleSave,
     hideBackButton,
 }) => {
-    const { id, type, title, color, Icon } = boostMediaOptions.find(
+    const { id, type, titleKey, color, Icon } = boostMediaOptions.find(
         ({ type }) => type === activeMediaType
     );
 
@@ -46,7 +47,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
             })
         );
     };
-    const { handleFileSelect: handleDocumentSelect, isLoading: uploadLoading } = useFilestack({
+    const { handleFileSelect: handleDocumentSelect, isLoading: uploadLoading } = useImageUpload({
         fileType: VIEWER_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -64,10 +65,10 @@ const BoostCMSMediaDocumentUpload: React.FC<{
                                 className="text-grayscale-50 p-0 mr-[10px]"
                                 onClick={() => setActiveMediaType(null)}
                             >
-                                <CaretLeft className="h-auto w-3 text-grayscale-800" />
+                                <CaretLeft className="rtl-mirror h-auto w-3 text-grayscale-800" />
                             </button>
                         )}
-                        {title}
+                        {mediaTypeTitle(titleKey)}
                     </h6>
                     <Icon className={`text-${color} h-[40px] max-h-[40px] max-w-[40px]`} />
                 </IonCol>
@@ -76,7 +77,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base font-notoSans`}
-                    placeholder="Title"
+                    placeholder={m['boostCMS.titleField']()}
                     type="text"
                     value={state?.documents?.[currentIndex]?.title}
                     onIonInput={e => {
@@ -110,7 +111,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
 
                     {uploadProgress !== false && (
                         <p className="font-medium text-[#FF3636]">
-                            {uploadProgress?.toString?.()}% uploaded
+                            {m['boostCMS.uploadProgress']({ progress: uploadProgress as number })}
                         </p>
                     )}
                 </div>
@@ -129,7 +130,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
                 }}
                 className={`flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-notoSans`}
             >
-                Save
+                {m['common.save']()}
             </button>
 
             {documentSrc && (
@@ -137,7 +138,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
                     onClick={handleDocumentSelect}
                     className="flex items-center mt-[20px] justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-notoSans"
                 >
-                    Change Document
+                    {m['boostCMS.changeDocument']()}
                 </button>
             )}
 
@@ -152,7 +153,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
                     }}
                     className="text-grayscale-900 text-center text-sm font-notoSans"
                 >
-                    Cancel
+                    {m['common.cancel']()}
                 </button>
             </div>
         </>

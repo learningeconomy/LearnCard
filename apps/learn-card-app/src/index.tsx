@@ -1,4 +1,6 @@
 import './constants/sentry';
+import { LocaleProvider } from './i18n';
+import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
 import { createRoot } from 'react-dom/client';
 import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -6,6 +8,7 @@ import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { TenantConfigProvider } from 'learn-card-base';
+import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOpener';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
 import App from './App';
@@ -13,14 +16,29 @@ import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
+import { installInsetSimulator } from 'learn-card-base/dev/simulateInsets';
 import * as Sentry from '@sentry/browser';
 
 (window as any).Buffer = Buffer;
 
+// Dev-only: simulate device safe-area insets via ?insets so band bugs are
+// visible on desktop. Must run before React renders (sets CSS vars on <html>).
+installInsetSimulator();
+
 (async () => {
+    // Route external links through Capacitor's in-app browser when running natively.
+    registerExternalUrlOpener();
+
     // Resolve and bootstrap TenantConfig before anything else.
     // This sets up Firebase, auth config, network store, Sentry, and Userflow.
     const tenantConfig = await bootstrapTenantConfig();
+
+    // Seed the locale-detection cache so the LocaleProvider's sync initializer
+    // can fall through to the tenant default when no localStorage entry exists
+    // and `navigator.language` isn't a supported locale. Must run BEFORE the
+    // React tree mounts (resolveInitialLocale runs in useState init).
+    setTenantDefaultLocaleCache(tenantConfig?.i18n?.defaultLanguage);
+    setTenantSupportedLanguagesCache(tenantConfig?.i18n?.supportedLanguages);
 
     if (Capacitor.isNativePlatform()) {
         try {
@@ -64,9 +82,11 @@ import * as Sentry from '@sentry/browser';
         const root = createRoot(container);
         root.render(
             <TenantConfigProvider config={tenantConfig}>
-                <LDProvider>
-                    <App />
-                </LDProvider>
+                <LocaleProvider>
+                    <LDProvider>
+                        <App />
+                    </LDProvider>
+                </LocaleProvider>
             </TenantConfigProvider>
         );
     }

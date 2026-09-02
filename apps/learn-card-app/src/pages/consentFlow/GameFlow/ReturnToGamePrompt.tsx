@@ -1,13 +1,15 @@
 import React from 'react';
 import queryString from 'query-string';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 
 import GamePromptHeader from './GamePromptHeader';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
-import { useWallet } from 'learn-card-base';
+import { ToastTypeEnum, useToast, useWallet } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../../paraglide/messages.js';
+import { getConsentFlowDidAuthRedirect } from '../issueConsentFlowDidAuth';
 
 type ReturnToGamePromptProps = {
     contractDetails?: ConsentFlowContractDetails;
@@ -19,8 +21,9 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
     returnToPrevStep,
 }) => {
     const history = useHistory();
+    const location = useLocation();
     const brandingConfig = useBrandingConfig();
-    const { returnTo: urlReturnTo } = queryString.parse(location.search);
+    const { challenge, domain, returnTo: urlReturnTo } = queryString.parse(location.search);
 
     const { data: consentedContracts } = useConsentedContracts();
     const consentedContract = consentedContracts?.find(
@@ -28,6 +31,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
     );
 
     const { initWallet } = useWallet();
+    const { presentToast } = useToast();
 
     const returnTo = urlReturnTo || contractDetails?.redirectUrl; // prefer url param
 
@@ -36,35 +40,35 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
     const gameImage = image ?? '';
 
     const handleBackToGameRdirect = async () => {
-        if (returnTo && !Array.isArray(returnTo)) {
-            if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
-                const urlObj = new URL(returnTo);
+        try {
+            if (returnTo && !Array.isArray(returnTo)) {
+                if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
+                    const ownerDid = contractDetails?.owner?.did;
 
-                if (contractDetails?.owner?.did && consentedContract?.status === 'live') {
+                    if (
+                        !ownerDid ||
+                        !contractDetails?.uri ||
+                        consentedContract?.status !== 'live'
+                    ) {
+                        throw new Error('Invalid consent request');
+                    }
+
                     const wallet = await initWallet();
 
-                    const unsignedDelegateCredential = wallet.invoke.newCredential({
-                        type: 'delegate',
-                        subject: contractDetails.owner.did,
-                        access: ['read', 'write'],
+                    window.location.href = await getConsentFlowDidAuthRedirect({
+                        challenge,
+                        contractUri: contractDetails.uri,
+                        domain,
+                        ownerDid,
+                        returnTo,
+                        wallet,
                     });
-
-                    const delegateCredential = await wallet.invoke.issueCredential(
-                        unsignedDelegateCredential
-                    );
-
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
-                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
-                        proofPurpose: 'authentication',
-                        proofFormat: 'jwt',
-                    })) as any as string;
-
-                    urlObj.searchParams.set('vp', vp);
-                }
-                window.location.href = urlObj.toString();
-            } else history.push(returnTo);
+                } else history.push(returnTo);
+            }
+        } catch {
+            presentToast('Unable to complete sign in. Please try again.', {
+                type: ToastTypeEnum.Error,
+            });
         }
     };
 
@@ -89,7 +93,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom"
             >
-                Return to Game
+                {m['consentFlow.continueToGame']()}
             </button>
             <button
                 onClick={() => history.push('/wallet')}
@@ -103,7 +107,7 @@ export const ReturnToGamePrompt: React.FC<ReturnToGamePromptProps> = ({
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
             >
-                Back
+                {m['common.back']()}
             </button>
         </div>
     );

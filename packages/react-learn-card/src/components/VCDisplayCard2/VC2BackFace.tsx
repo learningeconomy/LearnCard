@@ -1,6 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Flipper, Flipped } from 'react-flip-toolkit';
+import { Flipped as UntypedFlipped } from 'react-flip-toolkit';
 
 import MediaAttachmentsBox from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
@@ -16,6 +16,15 @@ import {
     VideoMetadata,
 } from '../../types';
 import LeftArrow from '../svgs/LeftArrow';
+import { useT } from '../../i18n';
+
+type FlippedComponentProps = React.PropsWithChildren<{
+    flipId?: string;
+    inverseFlipId?: string;
+    scale?: boolean;
+}>;
+
+const Flipped = UntypedFlipped as unknown as React.FC<FlippedComponentProps>;
 
 /*
 const defaultTagsToSkills = (tags: string[]) => {
@@ -61,6 +70,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     enableLightbox,
     customLinkedCredentialsComponent,
 }) => {
+    const t = useT();
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
         : undefined;
@@ -99,7 +109,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
 
                 {customDescription && (
                     <TruncateTextBox
-                        headerText="About"
+                        headerText={t('credential.about')}
                         text={description}
                         className="description-box"
                     >
@@ -108,7 +118,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 )}
                 {!customDescription && (description || expiration) && (
                     <TruncateTextBox
-                        headerText="About"
+                        headerText={t('credential.about')}
                         text={description}
                         className="description-box"
                     >
@@ -122,7 +132,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
 
                 {customCriteria && (
                     <TruncateTextBox
-                        headerText="Criteria"
+                        headerText={t('credential.criteria')}
                         text={description}
                         className="description-box"
                     >
@@ -131,7 +141,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 )}
                 {!customCriteria && criteria && (
                     <TruncateTextBox
-                        headerText="Criteria"
+                        headerText={t('credential.criteria')}
                         text={criteria}
                         className="criteria-box"
                     />

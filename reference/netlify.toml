@@ -4,8 +4,10 @@
 
 # Global Context Default
 [build]
-command = "npm run build"
+command = "bun run build"
 publish = "build/"
 
 [build.environment]
-NPM_FLAGS="--version"
+BUN_VERSION = "1.3.14"
+BUN_FLAGS = "--ignore-scripts"
+NODE_VERSION = "20"

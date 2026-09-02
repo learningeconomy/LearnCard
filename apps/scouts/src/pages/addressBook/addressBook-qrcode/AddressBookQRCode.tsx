@@ -6,11 +6,13 @@ import { Clipboard } from '@capacitor/clipboard';
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
 
 import { IonCol, IonRow, IonPage } from '@ionic/react';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from '../../../layout/ModalLayout';
+import * as m from '../../../paraglide/messages.js';
 
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;
@@ -37,14 +39,14 @@ const AddressBookQRCode: React.FC<{
 
         try {
             await Clipboard.write({
-                string: `https://pass.scout.org/connect?did=${wallet?.id?.did()}`,
+                string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(m['addressBook.toasts.contactLinkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(m['addressBook.toasts.unableToCopyContactLink'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -56,9 +58,9 @@ const AddressBookQRCode: React.FC<{
 
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['addressBook.addContact'](),
                 text: '',
-                url: `https://pass.scout.org/connect?did=${wallet?.id?.did()}`,
+                url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
                 dialogTitle: '',
             });
         } else {
@@ -71,8 +73,10 @@ const AddressBookQRCode: React.FC<{
             <ModalLayout handleOnClick={handleCloseModal} allowScroll>
                 <div className="flex w-full flex-col items-center justify-center">
                     <div className="flex flex-col w-full items-center justify-center">
-                        <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>Add Contact</h6>
-                        <p className="m-0 p-0">Have your contact scan this code.</p>
+                        <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>
+                            {m['addressBook.addContact']()}
+                        </h6>
+                        <p className="m-0 p-0">{m['addressBook.scanCodeDesc']()}</p>
                     </div>
                 </div>
                 <IonRow className="flex items-center justify-center w-full">
@@ -95,7 +99,7 @@ const AddressBookQRCode: React.FC<{
                     <div className="max-w-[90%] w-full h-auto relative user-qr-code-modal-qr-wrap">
                         <QRCodeSVG
                             className="h-full w-full"
-                            value={`https://pass.scout.org/connect?connect=true&did=${walletDid}`}
+                            value={`${getAppBaseUrl()}/connect?connect=true&did=${walletDid}`}
                             data-testid="qrcode-card"
                             bgColor="transparent"
                         />
@@ -104,7 +108,7 @@ const AddressBookQRCode: React.FC<{
                 <div className="flex items-center justify-center w-full mt-3">
                     <div className="flex items-center justify-center w-full px-5">
                         <h2 className="divider-with-text">
-                            <span>or</span>
+                            <span>{m['addressBook.orDivider']()}</span>
                         </h2>
                     </div>
                 </div>
@@ -114,7 +118,7 @@ const AddressBookQRCode: React.FC<{
                         className="flex items-center font-medium justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-[90%] shadow-lg max-w-[320px] font-rubik"
                     >
                         <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" />
-                        Share Code
+                        {m['addressBook.shareCode']()}
                     </button>
                 </IonCol>
             </ModalLayout>

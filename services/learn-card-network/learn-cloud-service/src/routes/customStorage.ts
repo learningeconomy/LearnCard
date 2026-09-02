@@ -1,5 +1,5 @@
 import { calculateObjectSize } from 'bson';
-import { Filter, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
@@ -23,6 +23,7 @@ import { updateCustomDocumentsByQuery } from '@accesslayer/custom-document/updat
 import { deleteCustomDocumentsByQuery } from '@accesslayer/custom-document/delete';
 import { PaginationOptionsValidator } from 'types/mongo';
 import { decryptObject, encryptObject } from '@helpers/encryption.helpers';
+import { assertSafeMongoQuery } from '@helpers/query.helpers';
 import { MAX_CUSTOM_STORAGE_SIZE } from 'src/constants/limits';
 
 export const customStorageRouter = t.router({
@@ -142,6 +143,8 @@ export const customStorageRouter = t.router({
 
             if (isEncrypted(query)) query = await decryptObject(query as JWE);
 
+            assertSafeMongoQuery(query);
+
             const rawResults = await getCustomDocumentsByQuery(
                 ctx.user.did,
                 query,
@@ -188,13 +191,7 @@ export const customStorageRouter = t.router({
         .input(
             z
                 .object({
-                    query: z
-                        .custom<Filter<MongoCustomDocumentType>>(
-                            z.record(z.string(), z.any()).parse
-                        )
-                        .meta({ override: { type: 'object' } })
-                        .or(JWEValidator)
-                        .optional(),
+                    query: z.record(z.string(), z.any()).or(JWEValidator).optional(),
                     includeAssociatedDids: z.boolean().default(true),
                 })
                 .default({ includeAssociatedDids: true })
@@ -206,6 +203,8 @@ export const customStorageRouter = t.router({
             let query: MongoCustomDocumentType = (_query as any) || {};
 
             if (isEncrypted(query)) query = await decryptObject(query as any);
+
+            assertSafeMongoQuery(query);
 
             return countCustomDocumentsByQuery(ctx.user.did, query, includeAssociatedDids);
         }),
@@ -225,13 +224,7 @@ export const customStorageRouter = t.router({
         .input(
             z
                 .object({
-                    query: z
-                        .custom<Filter<MongoCustomDocumentType>>(
-                            z.record(z.string(), z.any()).parse
-                        )
-                        .meta({ override: { type: 'object' } })
-                        .or(JWEValidator)
-                        .optional(),
+                    query: z.record(z.string(), z.any()).or(JWEValidator).optional(),
                     update: EncryptedRecordValidator.partial().or(JWEValidator),
                     includeAssociatedDids: z.boolean().default(true),
                 })
@@ -245,7 +238,11 @@ export const customStorageRouter = t.router({
             let update: Partial<EncryptedRecord> = (_update as any) || {};
 
             if (isEncrypted(query)) query = await decryptObject(query as any);
+
+            assertSafeMongoQuery(query);
             if (isEncrypted(update)) update = await decryptObject(update as JWE);
+
+            assertSafeMongoQuery(update);
 
             const recordsToUpdate = await getCustomDocumentsByQuery(
                 ctx.user.did,
@@ -284,13 +281,7 @@ export const customStorageRouter = t.router({
         .input(
             z
                 .object({
-                    query: z
-                        .custom<Filter<MongoCustomDocumentType>>(
-                            z.record(z.string(), z.any()).parse
-                        )
-                        .meta({ override: { type: 'object' } })
-                        .or(JWEValidator)
-                        .optional(),
+                    query: z.record(z.string(), z.any()).or(JWEValidator).optional(),
                     includeAssociatedDids: z.boolean().default(true),
                 })
                 .default({ query: {}, includeAssociatedDids: true })
@@ -302,6 +293,8 @@ export const customStorageRouter = t.router({
             let query: MongoCustomDocumentType = (_query as any) || {};
 
             if (isEncrypted(query)) query = await decryptObject(query as any);
+
+            assertSafeMongoQuery(query);
 
             return deleteCustomDocumentsByQuery(ctx.user.did, query, includeAssociatedDids);
         }),

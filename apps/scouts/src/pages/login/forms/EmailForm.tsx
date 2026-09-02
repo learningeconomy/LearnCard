@@ -5,7 +5,7 @@ import ReactCodeInput from 'react-code-input';
 import Countdown from 'react-countdown';
 import { z } from 'zod';
 
-import { IonCheckbox, IonCol, IonInput, IonToggle, IonRouterLink } from '@ionic/react';
+import { IonCheckbox, IonCol, IonToggle, IonRouterLink } from '@ionic/react';
 
 import { useFirebase } from '../../../hooks/useFirebase';
 
@@ -24,6 +24,10 @@ import {
     useVerifyLoginVerificationCode,
 } from 'learn-card-base';
 import { generatePK } from '../../../helpers/privateKeyHelpers';
+import * as m from '../../../paraglide/messages.js';
+import { useLocale } from '../../../i18n';
+import { createPreAuthEmailPayload } from '../../../i18n/preAuthEmail';
+import { TransP } from '../../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('email-form');
 
@@ -42,13 +46,14 @@ const EmailForm: React.FC = () => {
     const { initWallet } = useWallet();
     const { setCurrentUser, getCurrentUser } = useSQLiteStorage();
     const { sendSignInLink, signInWithCustomFirebaseToken } = useFirebase();
+    const locale = useLocale();
 
     const enableMagicLinkLogin = flags?.enableMagicLinkLogin ?? false;
 
     const verificationEmail = redirectStore.get.email();
     const shouldVerifyCode = Boolean(query.get('verifyCode') || verificationEmail);
 
-    const [email, setEmail] = useState<string | null | undefined>('');
+    const [email, setEmail] = useState<string>('');
     const [code, setCode] = useState<string>('');
     const [password, setPassword] = useState<string | null | undefined>('');
     const [currentStep, setCurrentStep] = useState<EmailFormStepsEnum>(EmailFormStepsEnum.email);
@@ -106,6 +111,37 @@ const EmailForm: React.FC = () => {
 
         return false;
     };
+
+    const handleVerifyCode = async () => {
+        if (validateCode()) {
+            try {
+                setCodeError('');
+                setIsLoading(true);
+
+                const response = await verifyLoginVerificationCode({
+                    email: verificationEmail as string,
+                    code,
+                });
+
+                if (response?.token) {
+                    redirectStore.set.email(null);
+                    await signInWithCustomFirebaseToken(response?.token);
+                }
+
+                setIsLoading(false);
+            } catch (e) {
+                setIsLoading(false);
+                setCodeError('Unable to verify code. Please try again.');
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (currentStep === EmailFormStepsEnum.verification && code.length === 6 && !isLoading) {
+            // auto verify code when 6 digits are entered
+            handleVerifyCode();
+        }
+    }, [code, currentStep]);
 
     const handleDemoLogin = async () => {
         try {
@@ -176,7 +212,9 @@ const EmailForm: React.FC = () => {
                     } else {
                         try {
                             setIsLoading(true);
-                            await sendLoginVerificationCode({ email: email as string });
+                            await sendLoginVerificationCode(
+                                createPreAuthEmailPayload(email as string, locale)
+                            );
                             redirectStore.set.email(email as string);
                             setCurrentStep(EmailFormStepsEnum.verification);
                             setIsLoading(false);
@@ -190,25 +228,7 @@ const EmailForm: React.FC = () => {
                 }
             }
         } else if (currentStep === EmailFormStepsEnum.verification) {
-            if (validateCode()) {
-                try {
-                    setCodeError('');
-                    setIsLoading(true);
-
-                    const response = await verifyLoginVerificationCode({
-                        email: verificationEmail as string,
-                        code: code as string,
-                    });
-                    if (response?.token) {
-                        redirectStore.set.email(null);
-                        await signInWithCustomFirebaseToken(response?.token);
-                    }
-                    setIsLoading(false);
-                } catch (e) {
-                    setIsLoading(false);
-                    setCodeError('Unable to verify code. Please try again.');
-                }
-            }
+            await handleVerifyCode();
         } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
             // todo: trigger login to existing account
         } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
@@ -219,7 +239,9 @@ const EmailForm: React.FC = () => {
     const handleResendCode = async () => {
         setIsResendCodeLoading(true);
         try {
-            await sendLoginVerificationCode({ email: verificationEmail as string });
+            await sendLoginVerificationCode(
+                createPreAuthEmailPayload(verificationEmail as string, locale)
+            );
             setIsResendCodeLoading(false);
         } catch (e) {
             setIsResendCodeLoading(false);
@@ -235,46 +257,54 @@ const EmailForm: React.FC = () => {
         setPassword('');
     };
 
-    const resendCodeButtonText: string = isResendCodeLoading ? 'Sending Code...' : 'Resend Code';
+    const resendCodeButtonText = isResendCodeLoading
+        ? m['common.sendingCode']()
+        : m['common.resendCode']();
 
     let disabled = isLoading;
     if (currentStep === EmailFormStepsEnum.email) {
         formTitle = (
-            <p className="font-medium text-sm text-grayscale-600 uppercase">Login with Email</p>
+            <p className="font-medium text-sm text-grayscale-600 uppercase">
+                {m['login.loginWithEmail']()}
+            </p>
         );
+        const emailError = errors.email?.[0];
         activeStep = (
-            <IonCol size="12">
-                <IonInput
-                    autocapitalize="on"
-                    className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !py-2 font-medium font-notoSans tracking-wide text-base ${
-                        errors.email ? 'login-input-email-error' : ''
-                    }`}
-                    placeholder="Email address"
-                    onIonInput={e => setEmail(e.detail.value)}
+            <div className="w-full flex items-center justify-center">
+                <input
+                    aria-label={m['login.emailPlaceholder']()}
+                    autoCapitalize="on"
+                    className={`w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium font-notoSans tracking-widest text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        emailError ? 'border-red-300' : 'border-grayscale-200'
+                    } ${emailError ? 'login-input-email-error' : ''}`}
+                    placeholder={m['login.emailPlaceholder']()}
+                    onChange={e => setEmail(e.target.value)}
                     value={email}
                     type="text"
                 />
-                {errors.email && <p className="login-input-error-msg">{errors.email}</p>}
-            </IonCol>
+                {emailError && <p className="login-input-error-msg">{emailError}</p>}
+            </div>
         );
-        // buttonTitle = 'Continue';
-        buttonTitle = 'Send Login Code';
-        if (isLoading) buttonTitle = 'Sending Code...';
+        buttonTitle = m['login.sendLoginCode']();
+        if (isLoading) buttonTitle = m['common.sendingCode']();
         disabled = !email || isLoading;
     } else if (currentStep === EmailFormStepsEnum.verification) {
         formTitle = (
             <p className={`w-full text-grayscale-800 text-lg text-center`}>
-                Enter verification code or{' '}
-                <span className="text-sp-purple-base underline font-bold" onClick={resetForm}>
-                    start over
-                </span>
+                <TransP
+                    m={m['common.enterVerificationCode']}
+                    components={[
+                        <span
+                            className="text-sp-purple-base underline font-bold"
+                            onClick={resetForm}
+                            key="reset"
+                        />,
+                    ]}
+                />
             </p>
         );
         activeStep = (
-            <IonCol
-                size="12"
-                className="w-full flex flex-col items-center justify-center ion-no-padding ion-no-margin mb-[20px]"
-            >
+            <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <ReactCodeInput
                     name="phoneVerification"
                     inputMode="numeric"
@@ -285,9 +315,9 @@ const EmailForm: React.FC = () => {
                         errors.code || codeError ? 'react-code-input-error' : ''
                     }`}
                 />
-                {errors?.code && (
+                {errors?.code?.[0] && (
                     <p className="w-full text-center mt-2 text-red-500 font-medium">
-                        {errors?.code}
+                        {errors?.code?.[0]}
                     </p>
                 )}
                 {codeError && (
@@ -295,36 +325,16 @@ const EmailForm: React.FC = () => {
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? 'Verifying...' : 'Verify';
+        buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
         disabled = code?.length < 6 || isLoading;
     } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
-        formTitle = 'Password';
+        formTitle = m['common.password']();
         activeStep = (
             <IonCol size="12">
                 <IonInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium font-notoSans text-base"
-                    placeholder="Password"
-                    // todo: add view password toggle
-                    onIonInput={e => setPassword(e.detail.value)}
-                    value={password}
-                    type="password"
-                />
-                <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">Stay Signed In</p>{' '}
-                    <IonToggle />
-                </IonCol>
-            </IonCol>
-        );
-        buttonTitle = 'Login';
-    } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
-        formTitle = 'Password';
-        activeStep = (
-            <IonCol size="12">
-                <IonInput
-                    autocapitalize="on"
-                    className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium font-notoSans text-base"
-                    placeholder="Password"
+                    placeholder={m['common.password']()}
                     // todo: add view password toggle
                     onIonInput={e => setPassword(e.detail.value)}
                     value={password}
@@ -332,31 +342,59 @@ const EmailForm: React.FC = () => {
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
-                        Agree to{' '}
-                        <IonRouterLink href="#" className="font-semibold login-terms-span">
-                            Terms
-                        </IonRouterLink>
+                        {m['common.staySignedIn']()}
+                    </p>{' '}
+                    <IonToggle />
+                </IonCol>
+            </IonCol>
+        );
+        buttonTitle = m['common.login']();
+    } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
+        formTitle = m['common.password']();
+        activeStep = (
+            <IonCol size="12">
+                <IonInput
+                    autocapitalize="on"
+                    className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium font-notoSans text-base"
+                    placeholder={m['common.password']()}
+                    // todo: add view password toggle
+                    onIonInput={e => setPassword(e.detail.value)}
+                    value={password}
+                    type="password"
+                />
+                <IonCol size="12" className="flex items-center justify-end mt-3">
+                    <p className="mr-3 text-gray-700 font-medium text-lg">
+                        <TransP
+                            m={m['common.agreeToTerms']}
+                            components={[
+                                <IonRouterLink
+                                    href="#"
+                                    className="font-semibold login-terms-span"
+                                    key="terms"
+                                />,
+                            ]}
+                        />
                     </p>{' '}
                     <IonCheckbox />
                 </IonCol>
             </IonCol>
         );
-        buttonTitle = 'Create Account';
+        buttonTitle = m['common.createAccount']();
     }
 
     return (
         <form onSubmit={handleOnClick} className="w-full">
             <IonCol size="12">{formTitle}</IonCol>
             {activeStep}
-            <IonCol size="12" className="flex items-center justify-center">
+            <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
-                    className="bg-sp-purple-base text-white ion-padding w-full font-bold rounded-[30px]"
+                    className="bg-sp-purple-base text-white ion-padding w-full font-bold rounded-[30px] disabled:opacity-50"
                     onClick={handleOnClick}
                     disabled={disabled}
                 >
                     {buttonTitle}
                 </button>
-            </IonCol>
+            </div>
             {currentStep === EmailFormStepsEnum.verification && verificationEmail && (
                 <div className="flex items-center justify-center w-full">
                     <Countdown
@@ -378,7 +416,7 @@ const EmailForm: React.FC = () => {
                                     disabled
                                     className="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px] font-notoSans"
                                 >
-                                    Resend in {seconds}s
+                                    {m['common.resendIn']({ seconds })}
                                 </button>
                             )
                         }
@@ -390,12 +428,12 @@ const EmailForm: React.FC = () => {
                     size="12"
                     className="text-center mt-4 text-gray-700 font-medium text-lg login-existing-account"
                 >
-                    <p>Already have an account?</p>
+                    <p>{m['common.alreadyHaveAccount']()}</p>
                     <button
                         onClick={resetForm}
                         className="w-full text-center font-bold text-lg login-reset-btn"
                     >
-                        Use a different email address
+                        {m['common.differentEmail']()}
                     </button>
                 </IonCol>
             )}

@@ -29,8 +29,7 @@ const getPlugin = (mock: MockLearnCardHandle) => {
     const plugin = getOpenID4VCPlugin(mock.learnCard, {});
     const bound: Record<string, (...args: any[]) => any> = {};
     for (const [name, fn] of Object.entries(plugin.methods)) {
-        bound[name] = (...args: any[]) =>
-            (fn as (...a: any[]) => any)(mock.learnCard, ...args);
+        bound[name] = (...args: any[]) => (fn as (...a: any[]) => any)(mock.learnCard, ...args);
     }
     return bound as any;
 };
@@ -47,7 +46,7 @@ describe('e2e: SIOPv2 combined flow (vp_token id_token)', () => {
         const accepted = await plugin.acceptCredentialOffer(offerUri);
 
         // Create a verifier session that *requires* the combined flow.
-        const session = createSession(server.verifier, {
+        const session = await createSession(server.verifier, {
             presentationDefinition: {
                 id: 'pd-siop',
                 input_descriptors: [
@@ -119,7 +118,7 @@ describe('e2e: SIOPv2 combined flow (vp_token id_token)', () => {
         });
         const accepted = await plugin.acceptCredentialOffer(offerUri);
 
-        const session = createSession(server.verifier, {
+        const session = await createSession(server.verifier, {
             presentationDefinition: {
                 id: 'pd-siop-reject',
                 input_descriptors: [

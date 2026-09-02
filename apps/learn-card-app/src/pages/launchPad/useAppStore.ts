@@ -59,6 +59,7 @@ export const useAppStore = () => {
         limit?: number;
         cursor?: string;
         promotionLevel?: string;
+        enabled?: boolean;
     }) => {
         return useQuery({
             queryKey: [
@@ -79,6 +80,7 @@ export const useAppStore = () => {
                     cursor: options?.cursor,
                 });
             },
+            enabled: options?.enabled ?? true,
             staleTime: 1000 * 60 * 5, // 5 minutes
         });
     };

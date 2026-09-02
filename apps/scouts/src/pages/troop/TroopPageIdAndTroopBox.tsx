@@ -13,6 +13,7 @@ import CredentialVerificationDisplay from 'learn-card-base/components/Credential
 import { VC } from '@learncard/types';
 import { getDefaultBadgeThumbForCredential } from '../../helpers/troop.helpers';
 import { insertParamsToFilestackUrl } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 type TroopPageIdAndTroopBoxProps = {
     credential: VC;
@@ -42,10 +43,10 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
     const credentialStatus = useTroopIDStatus(credentialNoEdits, undefined, boostUri);
     const isRevokedOrPending = credentialStatus === 'revoked' || credentialStatus === 'pending';
 
-    const network = useGetTroopNetwork(credential);
+    const { network: networkData } = useGetTroopNetwork({ credential });
 
     const description = credential?.credentialSubject?.achievement?.description;
-    const networkName = network?.name;
+    const networkName = networkData?.name;
 
     const MAX_DESCRIPTION_LENGTH = 168; // 4 lines = 91 @'s = roughtly 168 regular characters
     const isLongDescription = description?.length > MAX_DESCRIPTION_LENGTH;
@@ -111,7 +112,7 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
                                 credential?.boostID?.issuerThumbnail,
                                 'resize=width:100/quality=value:75/'
                             )}
-                            alt="logo"
+                            alt=""
                             className="h-[60px] w-[60px] rounded-full object-cover"
                         />
                     ) : (
@@ -139,8 +140,8 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
                             }}
                             className="font-notoSans text-[14px] font-[600] text-indigo-500 w-fit"
                         >
-                            {!expandDescription && 'Read more'}
-                            {expandDescription && 'Show less'}
+                            {!expandDescription && m['troops.showMore']()}
+                            {expandDescription && m['troops.showLess']()}
                         </button>
                     )}
                     {/* <a

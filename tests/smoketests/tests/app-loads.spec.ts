@@ -1,6 +1,21 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Tier 2: Browser Smoke Checks', () => {
+    test('tenant config edge function returns JSON', async ({ request }) => {
+        test.skip(
+            process.env.SMOKETEST_ENV === 'scouts',
+            'ScoutPass has no tenant config edge function'
+        );
+
+        const response = await request.get('/__tenant-config');
+
+        expect(response.status()).toBe(200);
+        expect(response.headers()['content-type']).toContain('application/json');
+
+        const config = (await response.json()) as { tenantId?: string };
+        expect(config.tenantId).toBe('learncard');
+    });
+
     test('app returns 200 and renders', async ({ page }) => {
         const response = await page.goto('/');
         expect(response?.status()).toBe(200);
@@ -42,7 +57,12 @@ test.describe('Tier 2: Browser Smoke Checks', () => {
                 !e.includes('favicon') &&
                 !e.includes('403') &&
                 !e.includes('net::ERR_BLOCKED_BY_CLIENT') &&
-                !e.includes('Failed to load resource')
+                !e.includes('Failed to load resource') &&
+                // The smoketest loads the app logged-out, so there is no wallet private key.
+                // Load-time sync queries (syncProgressStore / consent-flow) legitimately log
+                // "no valid private key found" in that state — it's expected here, not a
+                // regression. Tracked separately to stop the app logging it on logged-out load.
+                !e.includes('no valid private key found')
         );
         expect(criticalErrors).toEqual([]);
     });

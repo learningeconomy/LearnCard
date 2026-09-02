@@ -1,8 +1,32 @@
+const path = require('path');
+
 const colors = require('tailwindcss/colors');
 const plugin = require('tailwindcss/plugin');
 
+const lineClampPlugin = plugin(({ addUtilities }) => {
+    const utilities = {
+        '.line-clamp-none': {
+            overflow: 'visible',
+            display: 'block',
+            WebkitBoxOrient: 'horizontal',
+            WebkitLineClamp: 'unset',
+        },
+    };
+
+    for (let lineCount = 1; lineCount <= 6; lineCount += 1) {
+        utilities[`.line-clamp-${lineCount}`] = {
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+            WebkitLineClamp: `${lineCount}`,
+        };
+    }
+
+    addUtilities(utilities);
+});
+
 module.exports = {
-    content: ['./src/**/*.{js,jsx,ts,tsx}'],
+    content: [path.join(__dirname, 'src/**/*.{js,jsx,ts,tsx}')],
     theme: {
         extend: {
             boxShadow: {
@@ -91,6 +115,9 @@ module.exports = {
                 },
                 orange: {
                     500: '#EF5D35',
+                    // Accessible on white at the 12px badge size (WCAG AA 4.5:1);
+                    // matches the app palette so both stylesheets agree.
+                    800: '#9A3412',
                 },
                 red: {
                     mastercard: '#EB001B',
@@ -106,7 +133,7 @@ module.exports = {
         },
     },
     plugins: [
-        require('@tailwindcss/line-clamp'),
+        lineClampPlugin,
         plugin(function ({ matchUtilities, theme }) {
             matchUtilities(
                 {

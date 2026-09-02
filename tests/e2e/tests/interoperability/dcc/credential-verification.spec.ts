@@ -1,8 +1,6 @@
-import { beforeAll, afterAll, expect, test } from 'vitest';
-import { execa } from 'execa';
+import { expect, test } from 'vitest';
 import { taggedDescribe } from '../../helpers/tags';
 import { verifyCredential, verifyPresentation } from '@digitalcredentials/verifier-core';
-import { getLearnCardForUser } from '../../helpers/learncard.helpers';
 import { UnsignedVC } from '@learncard/types';
 import { initLearnCard } from '@learncard/init';
 
@@ -157,7 +155,7 @@ taggedDescribe('DCC Interoperability: credential verification', ['@interop', '@d
         };
         const signedVc = await learnCard.invoke.issueCredential(unsignedVc);
         let vp = await learnCard.invoke.getTestVp();
-        vp.verifiableCredential = [signedVc]
+        vp.verifiableCredential = [signedVc];
         const presentation = await learnCard.invoke.issuePresentation(vp);
 
         const registries = [
@@ -208,8 +206,8 @@ taggedDescribe('DCC Interoperability: credential verification', ['@interop', '@d
         if (verification.errors) {
             expect(verification.errors).toHaveLength(0);
         }
-        expect(verification.presentationResult?.signature).toBe("valid")
-        const credentialInPresentationVerification = verification?.credentialResults?.[0]
+        expect(verification.presentationResult?.signature).toBe('valid');
+        const credentialInPresentationVerification = verification?.credentialResults?.[0];
         if (!credentialInPresentationVerification) {
             throw new Error('No credential in presentation verification');
         }

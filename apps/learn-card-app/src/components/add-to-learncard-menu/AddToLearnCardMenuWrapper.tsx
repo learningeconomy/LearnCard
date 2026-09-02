@@ -4,6 +4,8 @@ import { useModal } from 'learn-card-base';
 import CaretLeft from '../svgs/CaretLeft';
 import { X } from 'lucide-react';
 
+import * as m from '../../paraglide/messages.js';
+
 const AddToLearnCardMenuWrapper = () => {
     const { closeModal } = useModal();
 
@@ -22,18 +24,18 @@ const AddToLearnCardMenuWrapper = () => {
                         type="button"
                         onClick={closeModal}
                         className="flex items-center justify-center h-[32px] w-[32px] rounded-full"
-                        aria-label="Close"
+                        aria-label={m['common.close']()}
                     >
                         <CaretLeft className="h-[18px] w-[18px] text-grayscale-900" />
                     </button>
                     <h2 className="text-[18px] font-poppins font-semibold text-grayscale-900">
-                        What would you like to do?
+                        {m['launchpad.modal.whatWouldYouLikeToDo']()}
                     </h2>
                     <button
                         type="button"
                         onClick={closeModal}
                         className="flex items-center justify-center absolute right-2 h-[32px] w-[32px] rounded-full"
-                        aria-label="Close"
+                        aria-label={m['common.close']()}
                     >
                         <X className="h-[32px] w-[32px] text-grayscale-600" />
                     </button>

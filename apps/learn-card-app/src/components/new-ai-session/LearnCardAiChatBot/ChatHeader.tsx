@@ -1,4 +1,7 @@
 import React from 'react';
+
+import { m } from '../../../paraglide/messages.js';
+
 import { useHistory } from 'react-router-dom';
 import { useStore } from '@nanostores/react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -182,7 +185,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
     const showEndSessionHint = !isInsights && !!currentThread;
 
     return (
-        <div className="sticky top-0 z-[100] w-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] pt-[calc(12px+env(safe-area-inset-top))] sm:pt-3 pb-3 px-4">
+        <div className="sticky top-0 z-[100] w-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] pt-[12px] sm:pt-3 pb-3 px-4">
             <div className="w-full max-w-[829px] mx-auto flex items-start gap-3">
                 <div className="flex-shrink-0 mt-[2px]">
                     {isInsights ? (
@@ -201,7 +204,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
                     {isTitleLoading ? (
                         <div
                             className="h-[20px] w-[60%] max-w-[280px] rounded-[6px] bg-grayscale-100 animate-pulse"
-                            aria-label="Loading title"
+                            aria-label={m['aiSession.loadingTitle']()}
                             role="status"
                         />
                     ) : (
@@ -211,7 +214,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
                     )}
                     {showEndSessionHint && !isTitleLoading && (
                         <p className="text-[13px] font-poppins text-grayscale-600 mt-[2px] leading-tight">
-                            Close to End Session
+                            {m['ai.closeToEndSession']()}
                         </p>
                     )}
                 </div>
@@ -219,7 +222,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
                     type="button"
                     onClick={handleFinishSession}
                     className="flex-shrink-0 p-1 -mr-1 text-grayscale-600"
-                    aria-label="Close"
+                    aria-label={m['common.close']()}
                 >
                     <X className="text-grayscale-800 w-[24px] h-[24px]" strokeWidth="3" />
                 </button>

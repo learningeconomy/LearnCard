@@ -35,6 +35,7 @@ export type ConfigDebugEventType =
     | 'bootstrap:start'
     | 'bootstrap:firebase_init'
     | 'bootstrap:auth_config_set'
+    | 'bootstrap:image_upload_config_set'
     | 'bootstrap:network_store_init'
     | 'bootstrap:sentry_init'
     | 'bootstrap:userflow_init'

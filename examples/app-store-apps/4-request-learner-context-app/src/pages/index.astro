@@ -210,6 +210,13 @@ const config = {
                             Get Learner Context
                         </button>
 
+                        <button
+                            id="warm-calls-btn"
+                            class="btn-secondary w-full text-white font-bold py-4 rounded-2xl text-base shadow-xl"
+                        >
+                            Run 20 Warm Calls
+                        </button>
+
                         <!-- AI Session Test Section -->
                         <div
                             class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200"
@@ -402,6 +409,16 @@ Reflection 2: Takeaway"
                                     id="prompt-display"
                                     class="prompt-display text-green-300 text-sm whitespace-pre-wrap">
                                 </pre>
+                            </div>
+
+                            <div id="timing-section" class="glass-panel rounded-2xl p-6 space-y-3">
+                                <h4 class="text-lg font-semibold text-gray-800">Timing</h4>
+                                <div
+                                    id="timing-display"
+                                    class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-700"
+                                >
+                                </div>
+                                <div id="warm-benchmark-display" class="text-sm text-gray-700"></div>
                             </div>
 
                             <div id="structured-section" class="hidden space-y-4">
@@ -1042,7 +1059,7 @@ Reflection 2: Takeaway"
                     }
                 }
 
-                async function handleRequest() {
+                function getLearnerContextOptions() {
                     const credsToggle = document.getElementById(
                         'include-credentials'
                     ) as HTMLInputElement | null;
@@ -1055,16 +1072,114 @@ Reflection 2: Takeaway"
                     const detailSelect = document.getElementById(
                         'detail-level'
                     ) as HTMLSelectElement | null;
-                    const isStructured = formatSelect?.value === 'structured';
+
+                    return {
+                        includeCredentials: credsToggle?.checked ?? true,
+                        includePersonalData: personalDataToggle?.checked ?? false,
+                        format: formatSelect?.value === 'structured' ? 'structured' : 'prompt',
+                        detailLevel: detailSelect?.value === 'expanded' ? 'expanded' : 'compact',
+                    } as const;
+                }
+
+                function formatMs(value: number | undefined) {
+                    return typeof value === 'number' ? `${value.toFixed(1)}ms` : 'n/a';
+                }
+
+                function renderTiming(context: {
+                    prompt?: string;
+                    raw?: { credentials?: unknown[] };
+                    metadata?: {
+                        cacheStatus?: string;
+                        timings?: Record<string, number | undefined>;
+                        backendMetadata?: Record<string, unknown>;
+                    };
+                }) {
+                    const timingDisplay = document.getElementById('timing-display');
+                    if (!timingDisplay) return;
+
+                    const timings = context.metadata?.timings ?? {};
+                    const backendMetadata = context.metadata?.backendMetadata ?? {};
+                    const credentialCount = context.raw?.credentials?.length;
+                    const promptLength = context.prompt?.length ?? 0;
+                    const rows: Array<[string, string]> = [
+                        ['SDK wall-clock', formatMs(timings.sdkRoundTripMs)],
+                        ['cacheStatus', context.metadata?.cacheStatus ?? 'n/a'],
+                        ['appEventMs', formatMs(timings.appEventMs)],
+                        ['credentialReadMs', formatMs(timings.credentialReadMs)],
+                        ['promptizerMs', formatMs(timings.promptizerMs)],
+                        ['promptCacheHit', String(backendMetadata.promptCacheHit ?? 'n/a')],
+                        [
+                            'credential count',
+                            String(credentialCount ?? backendMetadata.usedCredentialCount ?? 'n/a'),
+                        ],
+                        ['prompt length', String(promptLength)],
+                    ];
+
+                    timingDisplay.innerHTML = rows
+                        .map(
+                            ([label, value]) =>
+                                `<div class="flex justify-between gap-4"><span class="font-medium">${label}</span><span>${value}</span></div>`
+                        )
+                        .join('');
+                }
+
+                function percentile(values: number[], percent: number) {
+                    if (values.length === 0) return 0;
+
+                    const sorted = [...values].sort((a, b) => a - b);
+                    const index = Math.min(
+                        sorted.length - 1,
+                        Math.ceil((percent / 100) * sorted.length) - 1
+                    );
+
+                    return sorted[index];
+                }
+
+                async function runWarmCalls() {
+                    const target = document.getElementById(
+                        'warm-calls-btn'
+                    ) as HTMLButtonElement | null;
+                    const display = document.getElementById('warm-benchmark-display');
+                    if (!target || !display) return;
+
+                    const originalText = target.textContent || '';
+                    target.disabled = true;
+                    target.textContent = 'Running 20 calls...';
 
                     try {
-                        const context = await learnCard.requestLearnerContext({
-                            includeCredentials: credsToggle?.checked ?? true,
-                            includePersonalData: personalDataToggle?.checked ?? false,
-                            format: (formatSelect?.value as 'prompt' | 'structured') ?? 'prompt',
-                            detailLevel:
-                                (detailSelect?.value as 'compact' | 'expanded') ?? 'expanded',
-                        });
+                        const durations: number[] = [];
+                        let lastCacheStatus = 'n/a';
+
+                        for (let i = 0; i < 20; i += 1) {
+                            const startedAt = performance.now();
+                            const context = await learnCard.requestLearnerContext(
+                                getLearnerContextOptions()
+                            );
+                            durations.push(performance.now() - startedAt);
+                            lastCacheStatus = context.metadata?.cacheStatus ?? 'n/a';
+                        }
+
+                        display.textContent = `20 warm calls: p50 ${formatMs(
+                            percentile(durations, 50)
+                        )}, p95 ${formatMs(percentile(durations, 95))}, p99 ${formatMs(
+                            percentile(durations, 99)
+                        )}, last cache ${lastCacheStatus}`;
+                    } finally {
+                        target.disabled = false;
+                        target.textContent = originalText;
+                    }
+                }
+
+                async function handleRequest() {
+                    const options = getLearnerContextOptions();
+                    const isStructured = options.format === 'structured';
+
+                    try {
+                        const startedAt = performance.now();
+                        const context = await learnCard.requestLearnerContext(options);
+                        context.metadata ??= {};
+                        context.metadata.timings ??= { totalMs: 0 };
+                        context.metadata.timings.sdkRoundTripMs ??= performance.now() - startedAt;
 
                         const promptSection = document.getElementById('prompt-section');
                         const structuredSection = document.getElementById('structured-section');
@@ -1073,17 +1188,11 @@ Reflection 2: Takeaway"
                         const nameDisplay = document.getElementById('name-display');
                         const results = document.getElementById('results');
                         const authStatus = document.getElementById('auth-status');
+                        renderTiming(context);
 
                         if (isStructured) {
                             if (promptSection) promptSection.classList.add('hidden');
-                            renderStructuredData(
-                                context.raw as
-                                    | {
-                                          credentials?: unknown[];
-                                          personalData?: Record<string, unknown>;
-                                      }
-                                    | undefined
-                            );
+                            renderStructuredData(context.raw);
                         } else {
                             if (promptSection) promptSection.classList.remove('hidden');
                             if (structuredSection) structuredSection.classList.add('hidden');
@@ -1129,11 +1238,13 @@ Reflection 2: Takeaway"
                 const requestConsentBtn = document.getElementById('request-consent-btn');
                 const requestBtn = document.getElementById('request-btn');
                 const customSessionBtn = document.getElementById('create-custom-session-btn');
+                const warmCallsBtn = document.getElementById('warm-calls-btn');
 
                 if (connectBtn) connectBtn.addEventListener('click', handleConnect);
                 if (requestConsentBtn)
                     requestConsentBtn.addEventListener('click', handleRequestConsent);
                 if (requestBtn) requestBtn.addEventListener('click', handleRequest);
+                if (warmCallsBtn) warmCallsBtn.addEventListener('click', runWarmCalls);
                 if (customSessionBtn)
                     customSessionBtn.addEventListener('click', handleCustomSession);
 

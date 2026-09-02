@@ -12,18 +12,16 @@
 #      LearnCard project ID), OR pass --projectId=<id> to this script.
 #
 # Usage:
-#   pnpm env:pull                      # Pull dev env for all services
-#   pnpm env:pull --env=staging        # Pull staging env overlays (*.env.staging)
-#   pnpm env:pull -- --only=brain      # Pull dev env for brain-service only
-#   pnpm env:pull -- --list            # Show available service targets
+#   bun run env:pull                      # Pull dev env for all services
+#   bun run env:pull --env=staging        # Pull staging env overlays (*.env.staging)
+#   bun run env:pull -- --only=brain      # Pull dev env for brain-service only
+#   bun run env:pull -- --list            # Show available service targets
 #
 # Infisical folder structure (LearnCard project):
 #   /LearnCard/brain-service       → brain-service secrets
 #   /LearnCard/cloud-service       → learn-cloud-service secrets
 #   /learn-card-app                → learn-card-app secrets
 #   /LearnCard/lca-api             → lca-api secrets
-#   /                              → root-level shared vars (currently only used
-#                                     for simple-signing-service)
 # ==============================================================================
 
 set -euo pipefail
@@ -38,7 +36,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # conflicts). Use this when a service needs root-level vars combined with its
 # own folder.
 #
-# To add a new service, add an entry to ALL three arrays below.
+# To add a new service, add an entry to all four arrays below.
 # ---------------------------------------------------------------------------
 
 SERVICE_KEYS=(
@@ -46,7 +44,7 @@ SERVICE_KEYS=(
   cloud
   app
   lca-api
-  signing
+  vc-api
 )
 
 # Infisical folder paths — use "|" to merge multiple paths into one export.
@@ -56,7 +54,7 @@ INFISICAL_PATHS=(
   "/LearnCard/cloud-service"                  # cloud
   "/learn-card-app"                           # app
   "/LearnCard/lca-api"                        # lca-api
-  "/LearnCard/simple-signing-service"         # signing
+  "/LearnCard/vc-api-service"                 # vc-api
 )
 
 # Local .env file paths (relative to repo root). Staging/prod pulls write
@@ -66,7 +64,7 @@ LOCAL_ENV_FILES=(
   "services/learn-card-network/learn-cloud-service/.env"    # cloud
   "apps/learn-card-app/.env"                                # app
   "services/learn-card-network/lca-api/.env"                # lca-api
-  "services/learn-card-network/simple-signing-service/.env" # signing
+  "services/learn-card-network/vc-api-service/.env"         # vc-api
 )
 
 # Human-readable labels for --list output
@@ -75,7 +73,7 @@ SERVICE_LABELS=(
   "LearnCloud Service"
   "LearnCard App"
   "LCA API"
-  "Simple Signing Service"
+  "VC-API Service"
 )
 
 # ---------------------------------------------------------------------------

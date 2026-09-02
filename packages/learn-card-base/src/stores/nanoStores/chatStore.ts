@@ -8,7 +8,24 @@ import { showToast } from './toastStore';
 import { showErrorModal } from './ErrorModalStore';
 
 import { networkStore } from '../NetworkStore';
-import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
+import { walletStore } from '../walletStore';
+import { addActiveLocaleToPayload, addActiveLocaleToUrl } from '../../i18n';
+import type {
+    ChatMessage,
+    Thread,
+    ThreadCredentialContext,
+    LearningPathway,
+    ActiveSessionStatus,
+} from '../../types/ai-chat';
+import { parseAiErrorPayload, type AiClientError } from '../../helpers/aiErrors';
+import {
+    aiPassportFetch,
+    ensureAiPassportSession,
+    getAiPassportAuthMode,
+    getAiPassportWebSocketProtocols,
+    getAiPassportUrl,
+    waitForAiPassportAuthMode,
+} from '../../helpers/aiPassportAuth';
 
 export const messages = atom<ChatMessage[]>([]);
 export const streamingMessage = atom<ChatMessage | null>(null);
@@ -20,11 +37,31 @@ export const isEndingSession = atom(false);
 export const showEndingSessionLoader = atom(false);
 export const activeQuestions = atom<string[]>([]);
 export const suggestedTopics = atom<string[]>([]);
-export const topicCredentials = atom<TopicCredential[]>([]);
+export const topicCredentials = atom<ThreadCredentialContext[]>([]);
 export const sessionEnded = atom(false);
 export const planReady = atom(false);
 export const planReadyThread = atom<string | null>(null);
+export type CredentialContextReadiness = {
+    status: 'idle' | 'pending' | 'ready' | 'empty' | 'error';
+    count: number;
+    ingestionPhase?: 'queued' | 'active' | 'ready' | 'error';
+};
+export const credentialContextReadiness = atom<CredentialContextReadiness>({
+    status: 'idle',
+    count: 0,
+});
 export const chatInputText = atom('');
+
+/**
+ * Set whenever an in-flight AI response fails (server `data.error`
+ * payload or a WebSocket error while a response was pending).
+ * Consumers (e.g. analytics in `LearnCardAiChatBot`) subscribe to
+ * this to emit failure telemetry. `at` makes each failure a distinct
+ * value so repeated failures re-trigger subscribers.
+ */
+export const lastAiError = atom<
+    AiClientError | { at: number; code?: string; event?: undefined; presented?: boolean } | null
+>(null);
 import { getLogger } from '../../logging/logger';
 const log = getLogger('chat-store');
 
@@ -79,6 +116,22 @@ export const planSections = atom({
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
+const ensureChatAiPassportAuth = async (did: string, refreshLegacy = false) => {
+    const mode = getAiPassportAuthMode(did);
+
+    if (mode && (!refreshLegacy || mode === 'session')) return mode;
+
+    const wallet = walletStore.get.wallet();
+
+    if (wallet) return ensureAiPassportSession(wallet);
+
+    const pendingMode = await waitForAiPassportAuthMode(did);
+
+    if (pendingMode) return pendingMode;
+
+    throw new Error('AI Passport authentication requires an initialized wallet');
+};
+
 /** @deprecated Use getBackendUrl() for dynamic tenant-aware URL */
 export const BACKEND_URL = 'https://api.learncloud.ai';
 
@@ -98,6 +151,22 @@ const EMPTY_PLAN_SECTIONS = {
     skills: [] as string[],
     roadmap: [] as any[],
 };
+const CREDENTIAL_CONTEXT_STATUSES = {
+    pending: true,
+    ready: true,
+    empty: true,
+    error: true,
+} satisfies Record<Exclude<CredentialContextReadiness['status'], 'idle'>, true>;
+const CREDENTIAL_INGESTION_PHASES = {
+    queued: true,
+    active: true,
+    ready: true,
+    error: true,
+} satisfies Record<NonNullable<CredentialContextReadiness['ingestionPhase']>, true>;
+
+/** Returns whether a thread has explicit lifecycle or legacy summary evidence of ending. */
+export const hasThreadEnded = (thread: Thread | undefined): boolean =>
+    Boolean(thread?.ended_at || thread?.active === false || thread?.summaries?.length);
 
 /**
  * Clear everything that represents a single AI session's in-flight state.
@@ -106,6 +175,8 @@ const EMPTY_PLAN_SECTIONS = {
  * plan/messages/streaming state don't bleed into the new one.
  */
 export function resetChatSessionStores() {
+    clearSessionStartWatchdog();
+    currentSessionStartRequestId = null;
     messages.set([]);
     streamingMessage.set(null);
     if (streamRaf != null) {
@@ -125,9 +196,11 @@ export function resetChatSessionStores() {
     sessionEnded.set(false);
     planReady.set(false);
     planReadyThread.set(null);
+    credentialContextReadiness.set({ status: 'idle', count: 0 });
     currentTopicUri.set(null);
     currentAiPathwayUri.set(null);
     sessionStartedAt.set(null);
+    lastAiError.set(null);
     planStreamActive.set(false);
     planMetadata.set(EMPTY_PLAN_METADATA);
     planSections.set(EMPTY_PLAN_SECTIONS);
@@ -144,14 +217,6 @@ export function resetChatStores() {
     chatInputText.set('');
 }
 
-interface TopicCredential {
-    uri: string;
-    type: string;
-    context: string;
-    score: number;
-    title: string;
-}
-
 export enum AiSessionMode {
     tutor = 'ai-tutor',
     insights = 'ai-insights',
@@ -163,6 +228,80 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 let messageListeners: ((message: any) => void)[] = [];
 let readyListeners: (() => void)[] = [];
 let shouldReconnect = true;
+let reconnectTimer: number | undefined;
+let socketConnection: Promise<WebSocket | null> | null = null;
+let connectionGeneration = 0;
+
+const clearReconnectTimer = () => {
+    if (reconnectTimer === undefined) return;
+
+    clearTimeout(reconnectTimer);
+    reconnectTimer = undefined;
+};
+
+const clearTerminalConnectionState = () => {
+    isTyping.set(false);
+    isLoading.set(false);
+};
+
+const scheduleReconnect = () => {
+    if (!shouldReconnect || reconnectTimer !== undefined || socketConnection) return;
+
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        clearTerminalConnectionState();
+        return;
+    }
+
+    reconnectTimer = window.setTimeout(() => {
+        reconnectTimer = undefined;
+        void reconnectWebSocket();
+    }, 1000);
+};
+
+const SESSION_START_WATCHDOG_MS = 32_000;
+let startupWatchdog: number | undefined;
+let currentSessionStartRequestId: string | null = null;
+type PendingResponseKind = 'startup' | 'continuation';
+
+const isCurrentSessionStartFrame = (requestId: unknown) =>
+    (requestId === undefined && currentSessionStartRequestId === null) ||
+    (typeof requestId === 'string' && requestId === currentSessionStartRequestId);
+const isCurrentThreadFrame = (threadId: unknown) =>
+    typeof threadId !== 'string' || threadId === currentThreadId.get();
+
+const clearSessionStartWatchdog = () => {
+    if (startupWatchdog === undefined) return;
+
+    window.clearTimeout(startupWatchdog);
+    startupWatchdog = undefined;
+};
+
+const beginSessionStartWatchdog = (kind: PendingResponseKind = 'startup') => {
+    clearSessionStartWatchdog();
+    if (kind === 'startup') currentSessionStartRequestId = null;
+
+    startupWatchdog = window.setTimeout(() => {
+        startupWatchdog = undefined;
+        currentSessionStartRequestId = null;
+        isLoading.set(false);
+        isTyping.set(false);
+        planStreamActive.set(false);
+
+        const isContinuation = kind === 'continuation';
+
+        lastAiError.set({
+            at: Date.now(),
+            code: isContinuation ? 'response_timeout' : 'startup_timeout',
+            presented: true,
+        });
+        showErrorModal(
+            'Something went wrong',
+            isContinuation
+                ? 'Please try starting the session response again.'
+                : 'Please try starting the session again.'
+        );
+    }, SESSION_START_WATCHDOG_MS);
+};
 
 // RAF-coalesced streaming state
 let streamBuffer = '';
@@ -187,14 +326,41 @@ const scheduleFlush = () => {
     if (streamRaf != null) return;
     streamRaf = requestAnimationFrame(flushStream);
 };
+const preservePartialStreamingMessage = () => {
+    if (streamRaf != null) {
+        cancelAnimationFrame(streamRaf);
+        flushStream();
+    }
+
+    const pending = streamingMessage.get();
+
+    if (pending) {
+        messages.set([...messages.get(), pending]);
+        streamingMessage.set(null);
+    }
+
+    streamingId = null;
+};
+
+const stopPendingAiResponse = () => {
+    clearSessionStartWatchdog();
+    currentSessionStartRequestId = null;
+    preservePartialStreamingMessage();
+    isLoading.set(false);
+    isTyping.set(false);
+    isEndingSession.set(false);
+    showEndingSessionLoader.set(false);
+    planStreamActive.set(false);
+};
 
 // Load user's threads
 export async function loadThreads() {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/threads?did=${did}`);
+        const response = await aiPassportFetch('/threads', {}, did);
         if (!response.ok) throw new Error('Failed to load threads');
 
         const threadList = await response.json();
@@ -204,48 +370,70 @@ export async function loadThreads() {
     }
 }
 
+/** Returns the learner's unfinished AI session, if one exists. */
+export async function getActiveSessionStatus(): Promise<ActiveSessionStatus> {
+    const { did } = auth.get();
+
+    if (!did) return { isActive: false, activeThreadId: null };
+    await ensureChatAiPassportAuth(did);
+
+    const response = await aiPassportFetch('/api/chat/active-session-status', {}, did);
+
+    if (!response.ok) throw new Error('Failed to check active AI session');
+
+    return response.json();
+}
+
 // Load messages for a specific thread
 export async function loadThread(threadId: string) {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/messages?did=${did}&threadId=${threadId}`);
+        const response = await aiPassportFetch(
+            `/messages?threadId=${encodeURIComponent(threadId)}`,
+            {},
+            did
+        );
         if (!response.ok) throw new Error('Failed to load messages');
 
-        const threadMessages = await response.json();
+        const threadMessages: ChatMessage[] = await response.json();
         messages.set(threadMessages);
         currentThreadId.set(threadId);
 
         // Reset active questions when loading a thread
         activeQuestions.set([]);
 
-        // Determine lock state based on presence of summaries
-        // First check the current threads store, then reload if needed
+        // First check the current threads store, then reload if needed.
         let loadedThread = threads.get().find(t => t.id === threadId);
         if (!loadedThread) {
-            // If thread not found in store, reload threads to get latest data
             await loadThreads();
             loadedThread = threads.get().find(t => t.id === threadId);
         }
 
-        const hasSessionEnded = !!loadedThread?.summaries?.length;
-        sessionEnded.set(hasSessionEnded);
+        const hasSessionEnded = hasThreadEnded(loadedThread);
 
-        log.debug(
-            `Thread ${threadId} session ended: ${hasSessionEnded}, summaries:`,
-            loadedThread?.summaries?.length
-        );
+        sessionEnded.set(hasSessionEnded);
+        const hasPendingPlan =
+            !hasSessionEnded &&
+            Boolean(loadedThread?.plans?.length) &&
+            !loadedThread?.plan_started_at;
+
+        planReady.set(hasPendingPlan);
+        planReadyThread.set(hasPendingPlan ? threadId : null);
 
         // Load thread credentials
-        const credsResponse = await fetch(
-            `${getBackendUrl()}/thread_credentials?did=${did}&threadId=${threadId}`
+        const credsResponse = await aiPassportFetch(
+            `/thread_credentials?threadId=${encodeURIComponent(threadId)}`,
+            {},
+            did
         );
         if (!credsResponse.ok) {
             log.error('Failed to load thread credentials');
             topicCredentials.set([]);
         } else {
-            const credsData: TopicCredential[] = await credsResponse.json();
+            const credsData: ThreadCredentialContext[] = await credsResponse.json();
             topicCredentials.set(credsData);
         }
     } catch (error) {
@@ -253,15 +441,34 @@ export async function loadThread(threadId: string) {
     }
 }
 
+/** Loads an unfinished thread and subscribes this tab to future thread updates. */
+export async function resumeThread(threadId: string): Promise<boolean> {
+    disconnectWebSocket();
+    resetChatSessionStores();
+
+    await loadThread(threadId);
+
+    if (currentThreadId.get() !== threadId) return false;
+
+    await connectWebSocket();
+
+    return true;
+}
+
 // Create a new thread
 export async function createThread() {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/threads?did=${did}`, {
-            method: 'POST',
-        });
+        const response = await aiPassportFetch(
+            '/threads',
+            {
+                method: 'POST',
+            },
+            did
+        );
 
         if (!response.ok) throw new Error('Failed to create thread');
 
@@ -282,11 +489,14 @@ export async function createThread() {
 export async function deleteThread(threadId: string) {
     const { did } = auth.get();
     if (!did) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(`${getBackendUrl()}/threads?did=${did}&threadId=${threadId}`, {
-            method: 'DELETE',
-        });
+        const response = await aiPassportFetch(
+            `/threads?threadId=${encodeURIComponent(threadId)}`,
+            { method: 'DELETE' },
+            did
+        );
 
         if (!response.ok) throw new Error('Failed to delete thread');
 
@@ -309,12 +519,13 @@ export async function fetchLearningPathways(threadId: string): Promise<LearningP
         log.error('Authentication required to fetch learning pathways');
         return [];
     }
+    await ensureChatAiPassportAuth(did);
 
     try {
-        const response = await fetch(
-            `${getBackendUrl()}/learning-pathways?did=${encodeURIComponent(
-                did
-            )}&threadId=${encodeURIComponent(threadId)}`
+        const response = await aiPassportFetch(
+            `/learning-pathways?threadId=${encodeURIComponent(threadId)}`,
+            {},
+            did
         );
 
         if (response.ok) {
@@ -330,19 +541,73 @@ export async function fetchLearningPathways(threadId: string): Promise<LearningP
     }
 }
 
-export function connectWebSocket() {
-    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING))
-        return ws;
+const reconnectWebSocket = async (): Promise<void> => {
+    const { did } = auth.get();
 
+    if (!did || !shouldReconnect) {
+        clearTerminalConnectionState();
+        return;
+    }
+
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        clearTerminalConnectionState();
+        return;
+    }
+
+    reconnectAttempts += 1;
+
+    try {
+        await ensureChatAiPassportAuth(did, true);
+
+        if (!shouldReconnect) return;
+
+        await connectWebSocket();
+    } catch (error) {
+        log.error('WebSocket reconnect failed:', error);
+        scheduleReconnect();
+    }
+};
+
+export function connectWebSocket(): Promise<WebSocket | null> {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        return Promise.resolve(ws);
+    }
+
+    if (socketConnection) return socketConnection;
+
+    shouldReconnect = true;
+    const generation = connectionGeneration;
+    const request = createWebSocket(generation);
+
+    socketConnection = request;
+    void request.then(
+        () => {
+            if (socketConnection === request) socketConnection = null;
+        },
+        () => {
+            if (socketConnection === request) socketConnection = null;
+        }
+    );
+
+    return request;
+}
+
+const createWebSocket = async (generation: number): Promise<WebSocket | null> => {
     const { did } = auth.get();
     if (!did) throw new Error('Authentication required');
 
-    shouldReconnect = true;
+    const wsUrl = getAiPassportUrl('/', did);
 
-    const wsUrl = getBackendUrl().replace(/^http/, 'ws');
-    const threadIdQuery = currentThreadId.get() ? `&threadId=${currentThreadId.get()}` : '';
+    wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+    if (currentThreadId.get()) wsUrl.searchParams.set('threadId', currentThreadId.get() ?? '');
 
-    ws = new WebSocket(`${wsUrl}?did=${did}${threadIdQuery}`);
+    const protocols = await getAiPassportWebSocketProtocols(did);
+
+    if (!shouldReconnect || generation !== connectionGeneration) return null;
+
+    ws = protocols
+        ? new WebSocket(addActiveLocaleToUrl(wsUrl.toString()), protocols)
+        : new WebSocket(addActiveLocaleToUrl(wsUrl.toString()));
     const socket = ws;
 
     ws.onmessage = event => {
@@ -350,19 +615,67 @@ export function connectWebSocket() {
 
         try {
             const data = JSON.parse(event.data);
+            if (data.event === 'session_start_accepted') {
+                if (typeof data.requestId === 'string') {
+                    currentSessionStartRequestId = data.requestId;
+                }
+
+                return;
+            }
 
             if (data.event === 'no_conversation_summary') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
                 isTyping.set(false);
                 sessionEnded.set(true);
                 return;
             }
 
             if (data.event === 'credentials_for_topic' && Array.isArray(data.credentials)) {
+                if (!isCurrentSessionStartFrame(data.requestId)) return;
                 topicCredentials.set(data.credentials);
+                return;
+            }
+            if (data.event === 'credential_context_status') {
+                if (!isCurrentSessionStartFrame(data.requestId)) return;
+
+                if (
+                    typeof data.status !== 'string' ||
+                    !Object.hasOwn(CREDENTIAL_CONTEXT_STATUSES, data.status)
+                )
+                    return;
+
+                const status = data.status as keyof typeof CREDENTIAL_CONTEXT_STATUSES;
+                const ingestionPhase =
+                    typeof data.ingestionPhase === 'string' &&
+                    Object.hasOwn(CREDENTIAL_INGESTION_PHASES, data.ingestionPhase)
+                        ? (data.ingestionPhase as keyof typeof CREDENTIAL_INGESTION_PHASES)
+                        : undefined;
+
+                credentialContextReadiness.set({
+                    status,
+                    count: typeof data.count === 'number' ? data.count : 0,
+                    ingestionPhase,
+                });
+
+                if (typeof data.threadId === 'string') {
+                    const list = threads.get();
+                    const index = list.findIndex(thread => thread.id === data.threadId);
+
+                    if (index > -1) {
+                        const copy = [...list];
+                        copy[index] = {
+                            ...copy[index],
+                            credentialContextStatus: status,
+                        };
+                        threads.set(copy);
+                    }
+                }
+
                 return;
             }
 
             if (data.event === 'credentials_ready') {
+                if (!isCurrentSessionStartFrame(data.requestId)) return;
                 if (Array.isArray(data.suggestedTopics)) {
                     suggestedTopics.set(data.suggestedTopics);
                 }
@@ -380,6 +693,7 @@ export function connectWebSocket() {
             /* -------------------------------------------------- */
 
             if (data.event === 'plan_structured_delta') {
+                if (!isCurrentSessionStartFrame(data.requestId)) return;
                 planStreamActive.set(true);
 
                 const p = data.planData;
@@ -396,6 +710,7 @@ export function connectWebSocket() {
             }
 
             if (data.event === 'plan_structured') {
+                if (!isCurrentSessionStartFrame(data.requestId)) return;
                 planMetadata.set({
                     sections: {
                         title: data.title,
@@ -422,6 +737,8 @@ export function connectWebSocket() {
             /* -------------------------------------------------- */
 
             if (data.event === 'plan_intro') {
+                if (!isCurrentSessionStartFrame(data.requestId)) return;
+                // The backend sends plan_ready immediately after plan_intro; readiness owns teardown.
                 planStreamActive.set(false);
                 isTyping.set(false);
                 isLoading.set(false);
@@ -429,11 +746,14 @@ export function connectWebSocket() {
             }
 
             if (data.event === 'plan_ready') {
+                if (!isCurrentSessionStartFrame(data.requestId)) return;
+                clearSessionStartWatchdog();
                 isTyping.set(false);
                 isLoading.set(false);
                 planReady.set(true);
                 planReadyThread.set(data.threadId);
                 currentThreadId.set(data.threadId);
+                const credentialContextStatus = credentialContextReadiness.get().status;
 
                 if (data.title) {
                     const list = threads.get();
@@ -441,7 +761,13 @@ export function connectWebSocket() {
 
                     if (idx > -1) {
                         const copy = [...list];
-                        copy[idx].title = data.title;
+                        copy[idx] = {
+                            ...copy[idx],
+                            title: data.title,
+                            ...(credentialContextStatus === 'idle'
+                                ? {}
+                                : { credentialContextStatus }),
+                        };
                         threads.set(copy);
                     } else {
                         threads.set([
@@ -451,6 +777,9 @@ export function connectWebSocket() {
                                 title: data.title,
                                 created_at: new Date().toISOString(),
                                 last_message_at: new Date().toISOString(),
+                                ...(credentialContextStatus === 'idle'
+                                    ? {}
+                                    : { credentialContextStatus }),
                             },
                             ...list,
                         ]);
@@ -460,6 +789,7 @@ export function connectWebSocket() {
             }
 
             if (data.event === 'insights_ready') {
+                // Insights sessions neither arm the startup watchdog nor use request-ID correlation.
                 planReady.set(true);
                 planReadyThread.set(data.threadId);
                 currentThreadId.set(data.threadId);
@@ -475,6 +805,7 @@ export function connectWebSocket() {
             /* -------------------------------------------------- */
 
             if (data.event === 'conversation_summary') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
                 isTyping.set(false);
                 sessionEnded.set(true);
 
@@ -507,23 +838,140 @@ export function connectWebSocket() {
                 return;
             }
 
+            if (data.event === 'topic_publication_status') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
+
+                if (data.status === 'error') {
+                    showErrorModal(
+                        'Progress may not be saved',
+                        'You can keep learning, but progress from this session may not be saved. Check your AI access settings and try again.'
+                    );
+                }
+
+                return;
+            }
+
+            if (data.event === 'thread_updated') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
+
+                if (data.phase === 'responding' && !lastAiError.get()) isTyping.set(true);
+
+                void loadThread(data.threadId).finally(() => {
+                    if (data.phase !== 'responding') isTyping.set(false);
+                });
+                return;
+            }
+
+            if (data.event === 'thread_busy') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
+
+                void loadThread(data.threadId);
+                showErrorModal(
+                    'Session is busy',
+                    'Another tab is already waiting for a response. This session will update when it is ready.'
+                );
+                return;
+            }
+
+            if (data.event === 'session_replaced') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
+
+                clearSessionStartWatchdog();
+                disconnectWebSocket();
+                isLoading.set(false);
+                isTyping.set(false);
+                planStreamActive.set(false);
+                sessionEnded.set(true);
+                threads.set(
+                    threads.get().map(thread =>
+                        thread.id === data.threadId
+                            ? {
+                                  ...thread,
+                                  active: false,
+                                  ended_at: new Date().toISOString(),
+                              }
+                            : thread
+                    )
+                );
+                showErrorModal(
+                    'Session opened elsewhere',
+                    'This session ended because a new AI session was started in another tab or device.'
+                );
+                return;
+            }
+
             // Handle session completed event
             if (data.event === 'session_completed') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
                 log.debug('Session already completed for this thread');
-                sessionEnded.set(true);
+                isLoading.set(false);
                 isTyping.set(false);
+                sessionEnded.set(true);
+                return;
+            }
+
+            const aiServiceError = parseAiErrorPayload(data);
+
+            if (aiServiceError) {
+                if (
+                    typeof aiServiceError.requestId === 'string' &&
+                    !isCurrentSessionStartFrame(aiServiceError.requestId)
+                )
+                    return;
+                if (
+                    typeof aiServiceError.threadId === 'string' &&
+                    !isCurrentThreadFrame(aiServiceError.threadId)
+                )
+                    return;
+
+                stopPendingAiResponse();
+                lastAiError.set({ ...aiServiceError, at: Date.now() });
+
+                return;
+            }
+
+            if (data.event === 'session_start_error') {
+                if (!isCurrentSessionStartFrame(data.requestId)) return;
+
+                stopPendingAiResponse();
+                lastAiError.set({
+                    at: Date.now(),
+                    code: typeof data.code === 'string' ? data.code : 'session_start_error',
+                    presented: true,
+                });
+                showErrorModal('Something went wrong', 'Please try starting the session again.');
                 return;
             }
 
             if (data.error) {
+                if (
+                    typeof data.requestId === 'string' &&
+                    !isCurrentSessionStartFrame(data.requestId)
+                )
+                    return;
+                const isResponsePending = startupWatchdog !== undefined;
+                const presented = isResponsePending || typeof data.requestId === 'string';
+
                 log.error('Error:', data.error);
-                isTyping.set(false);
+                stopPendingAiResponse();
+                lastAiError.set({
+                    at: Date.now(),
+                    code: typeof data.error === 'string' ? data.error : 'server_error',
+                    presented,
+                });
+                if (presented) {
+                    showErrorModal(
+                        'Something went wrong',
+                        'Please try starting the session again.'
+                    );
+                }
                 return;
             }
 
             if (data.event === 'assistant_typing') {
+                if (data.threadId && !isCurrentThreadFrame(data.threadId)) return;
                 isLoading.set(false);
-                isTyping.set(true);
+                if (!lastAiError.get()) isTyping.set(true);
                 return;
             }
 
@@ -533,6 +981,7 @@ export function connectWebSocket() {
             /* -------------------------------------------------- */
 
             if (data.assistantMessage) {
+                clearSessionStartWatchdog();
                 const { questions } = JSON.parse(
                     data.assistantMessage.tool_calls?.[0]?.function?.arguments
                 );
@@ -578,17 +1027,8 @@ export function connectWebSocket() {
             }
 
             if (data.done) {
-                // Flush any pending streaming tokens before committing
-                if (streamRaf != null) {
-                    cancelAnimationFrame(streamRaf);
-                    flushStream();
-                }
-                const pending = streamingMessage.get();
-                if (pending) {
-                    messages.set([...messages.get(), pending]);
-                    streamingMessage.set(null);
-                }
-                streamingId = null;
+                clearSessionStartWatchdog();
+                preservePartialStreamingMessage();
 
                 isTyping.set(false);
 
@@ -630,6 +1070,7 @@ export function connectWebSocket() {
             /* -------------------------------------------------- */
 
             if (typeof data === 'string') {
+                clearSessionStartWatchdog();
                 streamBuffer += data;
                 scheduleFlush();
                 isLoading.set(false);
@@ -662,6 +1103,7 @@ export function connectWebSocket() {
     ws.onopen = () => {
         if (ws !== socket) return;
         reconnectAttempts = 0;
+        clearReconnectTimer();
         readyListeners.forEach(fn => fn());
         readyListeners = [];
     };
@@ -669,37 +1111,28 @@ export function connectWebSocket() {
     ws.onclose = () => {
         if (ws !== socket) return;
 
-        // Flush any partial streaming message so interrupted streams aren't lost
-        if (streamRaf != null) {
-            cancelAnimationFrame(streamRaf);
-            flushStream();
-        }
-        const pending = streamingMessage.get();
-        if (pending) {
-            messages.set([...messages.get(), pending]);
-            streamingMessage.set(null);
-        }
-        streamingId = null;
+        preservePartialStreamingMessage();
 
-        isTyping.set(false);
-        isLoading.set(false);
         ws = null;
+        scheduleReconnect();
 
-        const shouldTryReconnect = shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS;
-
-        if (shouldTryReconnect) {
-            reconnectAttempts++;
-            setTimeout(connectWebSocket, 1000);
+        if (!shouldReconnect || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            clearTerminalConnectionState();
         }
     };
 
     ws.onerror = err => {
         if (ws !== socket) return;
         log.error('WebSocket error:', err);
+        const responsePending = isTyping.get() || isLoading.get() || !!streamingMessage.get();
+        if (!responsePending) return;
+
+        stopPendingAiResponse();
+        lastAiError.set({ at: Date.now(), code: 'websocket_error' });
     };
 
     return ws;
-}
+};
 
 // Function to update artifact claimed status by artifact ID
 export function updateArtifactClaimedStatus(artifactId: string, claimed: boolean) {
@@ -724,19 +1157,25 @@ export function updateArtifactClaimedStatus(artifactId: string, claimed: boolean
 export function sendMessageWithQuestion(content: string, selectedQuestion?: string) {
     if (!content.trim()) return;
 
-    // Check if session has ended before sending message
     const thread = threads.get().find(t => t.id === currentThreadId.get());
-    if (thread?.summaries?.length) {
+    if (hasThreadEnded(thread)) {
         log.warn('Cannot send message: session has already ended');
         sessionEnded.set(true);
         return;
     }
 
-    const socket = connectWebSocket();
+    const socket = ws;
+
     if (!socket || socket.readyState !== WebSocket.OPEN) {
+        void connectWebSocket().catch(error => {
+            log.error('WebSocket connection failed while sending a message:', error);
+            clearTerminalConnectionState();
+        });
         onReady(() => sendMessageWithQuestion(content, selectedQuestion));
         return;
     }
+
+    lastAiError.set(null);
 
     const currentMessages = messages.get();
     let newMessage: ChatMessage;
@@ -809,17 +1248,19 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
     }
 
     socket.send(
-        JSON.stringify({
-            message: newMessage,
-            threadId,
-            selectedQuestion,
-        })
+        JSON.stringify(
+            addActiveLocaleToPayload({
+                message: newMessage,
+                threadId,
+                selectedQuestion,
+            })
+        )
     );
 }
 
 // Maintain backward compatibility
 export function sendMessage(content: string) {
-    sendMessageWithQuestion(content);
+    void sendMessageWithQuestion(content);
 }
 
 // Function to start a new topic using a topic URI
@@ -843,19 +1284,17 @@ export async function startTopicWithUri(topicUri: string) {
         showErrorModal('Authentication Required', 'Please sign in to start a topic with a URI.');
         return;
     }
-
-    // Reset WebSocket and clear current thread to avoid restoring old session
+    // Cancel the previous socket before auth so it cannot invalidate a newer
+    // in-flight connection generation when negotiation completes.
     disconnectWebSocket();
     currentThreadId.set(null);
+    await ensureChatAiPassportAuth(did, true);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            await new Promise<void>((resolve, reject) => {
-                connectWebSocket(); // Attempt to connect or reconnect
-                onReady(resolve);
-                setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
-            });
+            await connectWebSocket();
+            await waitForSocketConnection();
         } catch (error) {
             log.error('WebSocket connection failed, cannot start topic with URI:', error);
             isTyping.set(false);
@@ -873,11 +1312,38 @@ export async function startTopicWithUri(topicUri: string) {
         action: 'start_topic_uri',
         topicUri,
         introStreamMode: 'structured',
-        did,
     };
 
+    beginSessionStartWatchdog();
     sendWhenReady(messageToSend);
 }
+
+const waitForSocketConnection = (): Promise<void> => {
+    if (ws?.readyState === WebSocket.OPEN) return Promise.resolve();
+
+    // A deliberate disconnect can cancel an in-flight connect (createWebSocket
+    // returns null on generation mismatch). With no socket, no pending connect,
+    // and no scheduled reconnect, nothing will ever fire onReady — fail fast
+    // instead of stalling for the full timeout.
+    if (!ws && !socketConnection && reconnectTimer === undefined) {
+        return Promise.reject(new Error('WebSocket connection cancelled'));
+    }
+
+    const { promise, reject, resolve } = Promise.withResolvers<void>();
+    let unsubscribe = () => {};
+    const timeout = window.setTimeout(() => {
+        unsubscribe();
+        reject(new Error('WebSocket connection timeout'));
+    }, 5000);
+
+    unsubscribe = onReady(() => {
+        window.clearTimeout(timeout);
+        unsubscribe();
+        resolve();
+    });
+
+    return promise;
+};
 
 // Function to start a new learning pathway with topic and pathway URIs
 export async function startLearningPathway(topicUri: string, pathwayUri: string) {
@@ -900,19 +1366,16 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         showErrorModal('Authentication Required', 'Please sign in to start a learning pathway.');
         return;
     }
-
-    // Reset WebSocket and clear current thread to avoid restoring old session
+    // Cancel the previous socket before auth negotiation begins.
     disconnectWebSocket();
     currentThreadId.set(null);
+    await ensureChatAiPassportAuth(did, true);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            await new Promise<void>((resolve, reject) => {
-                connectWebSocket(); // Attempt to connect or reconnect
-                onReady(resolve);
-                setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
-            });
+            await connectWebSocket();
+            await waitForSocketConnection();
         } catch (error) {
             log.error('WebSocket connection failed, cannot start learning pathway:', error);
             isTyping.set(false);
@@ -931,9 +1394,9 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
         topicUri,
         pathwayUri,
         introStreamMode: 'structured',
-        did,
     };
 
+    beginSessionStartWatchdog();
     sendWhenReady(messageToSend);
 }
 
@@ -952,112 +1415,33 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
         return;
     }
 
-    try {
-        const activeSessionRes = await fetch(
-            `${getBackendUrl()}/api/chat/active-session-status?did=${did}`
-        );
-        if (!activeSessionRes.ok) {
-            log.error('Failed to check active session status:', activeSessionRes.statusText);
-            // Potentially allow proceeding, or show a more specific error to the user.
-            // For now, we'll log and proceed cautiously.
-        } else {
-            const activeSessionData = await activeSessionRes.json();
-            const _currentKnownThreadId = currentThreadId.get();
-
-            // ! bypass confirmation modal for now
-            // if (
-            //     activeSessionData.isActive &&
-            //     activeSessionData.activeThreadId &&
-            //     activeSessionData.activeThreadId !== currentKnownThreadId
-            // ) {
-            //     const userConfirmation = await showConfirmationModal(
-            //         `You have an active chat session titled "${
-            //             activeSessionData.activeThreadTitle || 'Untitled'
-            //         }".\n\nStarting a new topic will end this session. Do you want to proceed?`
-            //     );
-
-            //     if (!userConfirmation) {
-            //         isTyping.set(false);
-            //         isLoading.set(false);
-            //         if (activeSessionData.activeThreadId) {
-            //             log.debug(
-            //                 `User cancelled. Redirecting to active session: ${activeSessionData.activeThreadId}`
-            //             );
-            //             currentThreadId.set(activeSessionData.activeThreadId);
-            //             // Explicitly load the thread data for the active session
-            //             await loadThread(activeSessionData.activeThreadId);
-            //             // Potentially clear any UI input for the new topic here
-            //         }
-            //         return;
-            //     } else {
-            //         // User confirmed to end the old session and start a new one
-            //         fetch(`${getBackendUrl()}/threads/finish?did=${did}`, {
-            //             method: 'POST',
-            //             headers: {
-            //                 'Content-Type': 'application/json',
-            //             },
-            //             body: JSON.stringify({
-            //                 did: did,
-            //                 threadId: activeSessionData.activeThreadId,
-            //                 sendSummary: false,
-            //             }),
-            //         });
-            //     }
-            // }
-
-            fetch(`${getBackendUrl()}/threads/finish?did=${did}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    did: did,
-                    threadId: activeSessionData.activeThreadId,
-                    sendSummary: false,
-                }),
-            });
-        }
-    } catch (error) {
-        log.error('Error checking active session status:', error);
-        // Decide if to proceed or block. For now, log and proceed.
-    }
-
-    // Reset WebSocket to avoid overlapping streams when starting a new topic
     disconnectWebSocket();
+    await ensureChatAiPassportAuth(did, true);
 
-    // Ensure WebSocket is connected before sending message
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            connectWebSocket(); // Attempt to connect or reconnect
-            await new Promise<void>((resolve, reject) => {
-                onReady(resolve); // Wait for WebSocket to be ready
-                // Add a timeout in case connection fails indefinitely
-                setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
-            });
+            await connectWebSocket();
+            await waitForSocketConnection();
         } catch (error) {
             log.error('WebSocket connection failed, cannot start topic:', error);
             isTyping.set(false);
             isLoading.set(false);
-            // Optionally, show an error message to the user
-            alert('Could not connect to the chat service. Please try again later.');
+            showErrorModal(
+                'Connection Error',
+                'Could not connect to the chat service. Please try again later.'
+            );
             return;
         }
     }
-
-    // Clear current thread ID before starting a new topic, backend will assign a new one.
-    // However, the backend handles creating/assigning threadId upon 'start_topic' or first message.
-    // Let's ensure frontend state reflects expectation of a new session, if not already handled.
-    // currentThreadId.set(null); // This might be too aggressive if backend reuses thread for a new plan on same ID.
-    // The backend should handle thread finalization if a new 'start_topic' arrives for a DID with an existing active thread.
 
     const messageToSend = {
         action: 'start_topic',
         topic,
         introStreamMode: 'structured',
-        did, // Include DID for backend processing
         mode,
     };
 
+    beginSessionStartWatchdog();
     sendWhenReady(messageToSend);
 }
 
@@ -1069,11 +1453,12 @@ export async function startInsightsSession(topic: string, initialText?: string) 
     messages.set([
         {
             role: 'assistant',
-            content: '', // placeholder for streaming
+            content: '',
         },
     ]);
 
     const { did } = auth.get();
+
     if (!did) {
         isTyping.set(false);
         isLoading.set(false);
@@ -1084,24 +1469,21 @@ export async function startInsightsSession(topic: string, initialText?: string) 
     disconnectWebSocket();
     currentThreadId.set(null);
 
-    // Ensure WS connected
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-        try {
-            await new Promise<void>((resolve, reject) => {
-                connectWebSocket();
-                onReady(resolve);
-                setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
-            });
-        } catch (err) {
-            log.error('WS connect failed:', err);
-            isTyping.set(false);
-            isLoading.set(false);
-            showErrorModal('Connection Error', 'Could not connect to chat service.');
-            return;
-        }
+    try {
+        await ensureChatAiPassportAuth(did, true);
+        await connectWebSocket();
+        await waitForSocketConnection();
+    } catch (error) {
+        log.error('WS connect failed:', error);
+        isTyping.set(false);
+        isLoading.set(false);
+        showErrorModal('Connection Error', 'Could not connect to chat service.');
+        return;
     }
 
     const firstMessage = (initialText?.trim() || `Let's do insights on: ${topic}`).trim();
+
+    beginSessionStartWatchdog();
 
     ws!.send(
         JSON.stringify({
@@ -1116,16 +1498,25 @@ export async function startInsightsSession(topic: string, initialText?: string) 
 export function continuePlan() {
     const threadId = planReadyThread.get();
     if (!threadId) return;
+
+    const socket = ws;
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        void connectWebSocket().catch(error => {
+            log.error('WebSocket connection failed while continuing a plan:', error);
+            clearTerminalConnectionState();
+        });
+        onReady(continuePlan);
+        return;
+    }
+
     // Add placeholder for continuation streaming to a new assistant message
     const currentMsgs = messages.get();
     messages.set([...currentMsgs, { role: 'assistant', content: '' }]);
-    const socket = connectWebSocket();
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        onReady(() => continuePlan());
-        return;
-    }
+    lastAiError.set(null);
     isTyping.set(true);
-    socket.send(JSON.stringify({ action: 'continue_plan', threadId }));
+    beginSessionStartWatchdog('continuation');
+    socket.send(JSON.stringify(addActiveLocaleToPayload({ action: 'continue_plan', threadId })));
     planReady.set(false);
     planReadyThread.set(null);
 }
@@ -1135,6 +1526,7 @@ export async function finishSession(onSuccess?: () => void) {
     const { did } = auth.get();
     const threadId = currentThreadId.get();
     if (!did || !threadId) return;
+    await ensureChatAiPassportAuth(did);
 
     try {
         isEndingSession.set(true);
@@ -1146,10 +1538,15 @@ export async function finishSession(onSuccess?: () => void) {
         ]);
         sessionEnded.set(true);
 
-        const res = await fetch(`${getBackendUrl()}/threads/finish?did=${did}`, {
-            method: 'POST',
-            body: JSON.stringify({ threadId, did }),
-        });
+        const res = await aiPassportFetch(
+            addActiveLocaleToUrl(`${getBackendUrl()}/threads/finish`),
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ threadId }),
+            },
+            did
+        );
 
         // In most cases the summary will come through the existing WebSocket
         // listener as a `conversation_summary` event. However, if the WS is not
@@ -1209,13 +1606,20 @@ export function getWebSocket() {
 
 // Gracefully close the WebSocket and prevent auto-reconnect
 export function disconnectWebSocket() {
+    clearSessionStartWatchdog();
     shouldReconnect = false;
+    connectionGeneration += 1;
+    clearReconnectTimer();
+    socketConnection = null;
+    readyListeners = [];
+
     if (ws) {
         try {
             ws.close();
         } catch (e) {
             log.error('WebSocket close error:', e);
         }
+
         ws = null;
     }
 }
@@ -1223,8 +1627,12 @@ export function disconnectWebSocket() {
 // Send a payload as soon as the socket is open. Avoids polling setTimeout loops
 // for the "send right after connect" race that can otherwise add up to 100ms of
 // idle wait per first message.
-function sendWhenReady(payload: unknown) {
-    const json = JSON.stringify(payload);
+// `Record<string, unknown>` rather than `unknown`: the old runtime `typeof
+// payload === 'object'` guard also accepted arrays, which would have spread into
+// `{0: …, 1: …}`. Every caller passes an object literal, so the type makes that
+// structurally impossible instead of relying on the check.
+function sendWhenReady(payload: Record<string, unknown>) {
+    const json = JSON.stringify(addActiveLocaleToPayload(payload));
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(json);
         return;
@@ -1261,17 +1669,17 @@ export async function closeInsightsSession(threadId?: string) {
 
     if (!activeThreadId) return;
 
-    const socket = connectWebSocket();
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        onReady(() => closeInsightsSession(activeThreadId));
-        return;
-    }
+    const socket = ws;
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
     socket.send(
-        JSON.stringify({
-            action: 'close_insights_session',
-            threadId: activeThreadId,
-        })
+        JSON.stringify(
+            addActiveLocaleToPayload({
+                action: 'close_insights_session',
+                threadId: activeThreadId,
+            })
+        )
     );
 
     // Optimistically reset state

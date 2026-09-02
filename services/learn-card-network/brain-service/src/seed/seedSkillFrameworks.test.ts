@@ -125,7 +125,7 @@ describe('seedSkillFrameworks staging env resolution', () => {
         const { resolveSkillFrameworkNeo4jConnection } = await import('./seedSkillFrameworks');
 
         await expect(resolveSkillFrameworkNeo4jConnection('staging')).rejects.toThrow(
-            /\.env\.staging|pnpm env:pull --env=staging|staging Neo4j instance/i
+            /\.env\.staging|bun run env:pull --env=staging|staging Neo4j instance/i
         );
     });
 
@@ -167,7 +167,7 @@ describe('seedSkillFrameworks staging env resolution', () => {
         );
 
         await expect(resolveSkillFrameworkNeo4jConnection('staging')).rejects.toThrow(
-            /your shell environment or package \.env files|pnpm env:pull --env=staging/i
+            /your shell environment or package \.env files|bun run env:pull --env=staging/i
         );
     });
 

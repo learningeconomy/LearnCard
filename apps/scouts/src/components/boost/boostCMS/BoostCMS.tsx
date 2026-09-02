@@ -1,5 +1,6 @@
+import * as m from '../../../paraglide/messages.js';
 // oxlint-disable-next-line no-unused-vars
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
@@ -53,6 +54,7 @@ import {
     sendBoostCredential,
     addFallbackNameToCMSState,
 } from '../boostHelpers';
+import { getBoostPresetLocalization, refreshLocalizedPresetFields } from '../localizedPresetFields';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
 import {
     BrandingEnum,
@@ -84,6 +86,7 @@ import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import boostSearchStore from 'apps/scouts/src/stores/boostSearchStore';
 import { getLogger } from 'learn-card-base';
+import { useLocale } from '../../../i18n';
 const log = getLogger('boost-cms');
 
 const BoostCMS: React.FC<{
@@ -94,6 +97,7 @@ const BoostCMS: React.FC<{
     handleCloseModal?: () => void;
     parentUri?: string;
     overrideCustomize?: boolean;
+    returnToParentAfterSave?: boolean;
 }> = ({
     category,
     achievementType,
@@ -101,8 +105,15 @@ const BoostCMS: React.FC<{
     handleCloseModal,
     parentUri,
     showCustomTypeInput,
+    returnToParentAfterSave = false,
 }) => {
     const flags = useFlags();
+    // Snapshot the rollout policy when the editor opens so a streaming flag update cannot
+    // change preset content language in the middle of an in-progress draft.
+    const presetLocalization = useRef(
+        getBoostPresetLocalization(flags?.localizeBoostTemplateContent)
+    ).current;
+    const locale = useLocale();
     const history = useHistory();
     const location = useLocation();
     const query = usePathQuery();
@@ -129,7 +140,9 @@ const BoostCMS: React.FC<{
     const [search, setSearch] = useState<string>('');
     const { data: boostAppearanceBadgeList, isLoading: stylePackLoading } =
         useScoutPassStylesPackRegistry();
-    const { data: searchResults, isLoading: loading } = useGetSearchProfiles(search ?? '');
+    const { data: searchResults, isLoading: loading } = useGetSearchProfiles(search ?? '', {
+        enabled: false,
+    });
     const { mutate: addCredentialToWallet } = useAddCredentialToWallet();
     const { newModal } = useModal({
         desktop: ModalTypes.Cancel,
@@ -148,9 +161,21 @@ const BoostCMS: React.FC<{
         ...initialBoostCMSState,
         basicInfo: {
             ...initialBoostCMSState.basicInfo,
-            name: getDefaultBoostTitle(_boostCategoryType, _boostSubCategoryType),
-            description: getDefaultBoostDescription(_boostCategoryType, _boostSubCategoryType),
-            narrative: getDefaultBoostCriteria(_boostCategoryType, _boostSubCategoryType),
+            name: getDefaultBoostTitle(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            description: getDefaultBoostDescription(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            narrative: getDefaultBoostCriteria(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
             type: _boostCategoryType, // main category
             achievementType: _boostSubCategoryType, // sub category type
         },
@@ -165,6 +190,23 @@ const BoostCMS: React.FC<{
             idBackgroundImage: getDefaultIDBackgroundImage(_boostCategoryType),
             idIssuerThumbnail: getDefaultIssuerImage(_boostCategoryType),
         },
+    });
+    const previousLocalizedPresetDefaults = useRef({
+        name: getDefaultBoostTitle(
+            _boostCategoryType,
+            _boostSubCategoryType,
+            presetLocalization.contentOptions
+        ),
+        description: getDefaultBoostDescription(
+            _boostCategoryType,
+            _boostSubCategoryType,
+            presetLocalization.contentOptions
+        ),
+        narrative: getDefaultBoostCriteria(
+            _boostCategoryType,
+            _boostSubCategoryType,
+            presetLocalization.contentOptions
+        ),
     });
 
     const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
@@ -181,6 +223,47 @@ const BoostCMS: React.FC<{
     const isMeritBadge = _boostCategoryType === BoostCategoryOptionsEnum.meritBadge;
 
     const issueToLength = state?.issueTo?.length || 0;
+
+    useEffect(() => {
+        const nextLocalizedPresetDefaults = {
+            name: getDefaultBoostTitle(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            description: getDefaultBoostDescription(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+            narrative: getDefaultBoostCriteria(
+                _boostCategoryType,
+                _boostSubCategoryType,
+                presetLocalization.contentOptions
+            ),
+        };
+
+        setState(previousState => {
+            const refreshedPresetFields = refreshLocalizedPresetFields(
+                previousState.basicInfo,
+                previousLocalizedPresetDefaults.current,
+                nextLocalizedPresetDefaults,
+                presetLocalization.enabled
+            );
+
+            if (refreshedPresetFields === previousState.basicInfo) return previousState;
+
+            return {
+                ...previousState,
+                basicInfo: {
+                    ...previousState.basicInfo,
+                    ...refreshedPresetFields,
+                },
+            };
+        });
+
+        previousLocalizedPresetDefaults.current = nextLocalizedPresetDefaults;
+    }, [locale, _boostCategoryType, _boostSubCategoryType]);
 
     useEffect(() => {
         const loadOtherUser = async () => {
@@ -273,9 +356,21 @@ const BoostCMS: React.FC<{
             categoryType === BoostCategoryOptionsEnum.meritBadge
         ) {
             // default ID title to selected achievementType
-            boostTitle = getDefaultBoostTitle(categoryType, achievementType);
-            description = getDefaultBoostDescription(categoryType, achievementType);
-            criteria = getDefaultBoostCriteria(categoryType, achievementType);
+            boostTitle = getDefaultBoostTitle(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
+            description = getDefaultBoostDescription(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
+            criteria = getDefaultBoostCriteria(
+                categoryType,
+                achievementType,
+                presetLocalization.contentOptions
+            );
         } else if (
             (_boostCategoryType === BoostCategoryOptionsEnum.id &&
                 categoryType !== BoostCategoryOptionsEnum.id) ||
@@ -390,13 +485,15 @@ const BoostCMS: React.FC<{
                 queryKey: ['useCountFamilialBoosts'],
             });
 
-            if (boostUri && state?.admins?.length > 0) {
-                if (wallet) handleAddAdmin(wallet, boostUri);
+            if (boostUri && state?.admins?.length > 0 && wallet) {
+                void handleAddAdmin(wallet, boostUri).catch(error => {
+                    log.error('boost.admin.assignment.failed', error);
+                });
             }
 
             if (boostUri) {
                 setIsSaveLoading(false);
-                presentToast('Boost saved successfully', {
+                presentToast(m['boostCMS.draftSaved'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -419,7 +516,7 @@ const BoostCMS: React.FC<{
         } catch (e) {
             setIsSaveLoading(false);
             log.debug('error::savingBoost', e);
-            presentToast('Unable to save boost', {
+            presentToast(m['boostCMS.boostFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -440,11 +537,23 @@ const BoostCMS: React.FC<{
                 status: LCNBoostStatusEnum.live,
                 skillIds,
             });
+            queryClient.invalidateQueries({ queryKey: ['boosts', state.basicInfo.type] });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetPaginatedBoostChildren', parentUri],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useCountBoostChildren', parentUri],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetPaginatedFamilialBoosts', parentUri],
+            });
             queryClient.invalidateQueries({
                 queryKey: ['useCountFamilialBoosts', parentUri],
             });
+            queryClient.invalidateQueries({
+                queryKey: ['useCountFamilialBoosts'],
+            });
 
-            setIsPublishLoading(false);
             if (boostUri) {
                 logAnalyticsEvent('boostCMS_publish_live', {
                     timestamp: Date.now(),
@@ -452,6 +561,22 @@ const BoostCMS: React.FC<{
                     boostType: state?.basicInfo?.achievementType,
                     category: state?.basicInfo?.type,
                 });
+
+                if (state?.admins?.length > 0 && wallet) {
+                    void handleAddAdmin(wallet, boostUri).catch(error => {
+                        log.error('boost.admin.assignment.failed', error);
+                    });
+                }
+
+                if (returnToParentAfterSave && handleCloseModal) {
+                    setIsPublishLoading(false);
+                    presentToast(m['boostCMS.publishedOk'](), {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
+                    });
+                    handleCloseModal();
+                    return;
+                }
 
                 setPublishedBoostUri(boostUri);
 
@@ -462,13 +587,11 @@ const BoostCMS: React.FC<{
                     handleNextStep();
                 }
             }
-            if (boostUri && state?.admins?.length > 0) {
-                if (wallet) handleAddAdmin(wallet, boostUri);
-            }
+            setIsPublishLoading(false);
         } catch (e) {
             setIsPublishLoading(false);
-            log.debug('error::boosting::someone', e);
-            presentToast('Error issuing boost', {
+            log.debug('error::publishingBoost', e);
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -538,7 +661,7 @@ const BoostCMS: React.FC<{
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast('Boost issued successfully', {
+                    presentToast(m['boostCMS.issuedOk'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -552,7 +675,7 @@ const BoostCMS: React.FC<{
 
                 if (boostUri) {
                     setIsSaveLoading(false);
-                    presentToast('Boost saved successfully', {
+                    presentToast(m['boostCMS.boostSaved'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
@@ -565,7 +688,7 @@ const BoostCMS: React.FC<{
         } catch (e) {
             setIsLoading(false);
             log.debug('error::boosting::someone', e);
-            presentToast('Error issuing boost', {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -649,7 +772,9 @@ const BoostCMS: React.FC<{
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? 'Continue Issuing' : 'Continue Editing';
+            currentStep === BoostCMSStepsEnum.issueTo
+                ? m['boostCMS.continueIssue']()
+                : m['boostCMS.continueEdit']();
         newModal(
             <BoostCMSConfirmationPrompt
                 state={state}
@@ -732,7 +857,7 @@ const BoostCMS: React.FC<{
                     boostUri={publishedBoostUri}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m['boostCMS.assignAdmins']()}
                     hideBoostShareableCode
                 />
             </>
@@ -742,7 +867,7 @@ const BoostCMS: React.FC<{
             <BoostCMSPublish
                 state={state}
                 handlePreview={handlePreview}
-                handleSaveAndQuit={handleSaveAndQuit}
+                handleSaveAndQuit={() => handleSaveAndQuit()}
                 handlePublishBoost={handlePublishBoost}
                 showSaveAsDraftButton
                 isSaveLoading={isSaveLoading}
@@ -771,13 +896,13 @@ const BoostCMS: React.FC<{
 
     let loadingText = '';
     if (isLoading) {
-        loadingText = 'Sending...';
+        loadingText = m['boost.sending']();
     } else if (isPublishLoading) {
-        loadingText = 'Sending...';
+        loadingText = m['boostCMS.publishing']();
     } else if (isSaveLoading) {
-        loadingText = 'Saving...';
+        loadingText = m['common.saving']();
     } else if (stylePackLoading) {
-        loadingText = 'Loading...';
+        loadingText = m['common.loading']();
     }
 
     return (
@@ -791,12 +916,17 @@ const BoostCMS: React.FC<{
                 selectedVCType={state.basicInfo.type}
                 currentStep={currentStep}
                 handleNextStep={handleNextStep}
+                handleSaveAsDraft={handleSaveAndQuit}
+                handlePublish={handlePublishBoost}
                 handlePrevStep={handlePrevStep}
                 handleConfirmationModal={handleConfirmationModal}
                 publishedBoostUri={publishedBoostUri}
                 handleSaveAndIssue={handleSaveAndIssue}
                 isLoading={isLoading}
+                isSaveLoading={isSaveLoading}
+                isPublishLoading={isPublishLoading}
                 issueToLength={issueToLength}
+                returnToParentAfterSave={returnToParentAfterSave}
             />
 
             <IonContent fullscreen color="grayscale-800">
@@ -807,7 +937,7 @@ const BoostCMS: React.FC<{
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m['boostCMS.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>

@@ -1,11 +1,19 @@
 /**
  * AuthCoordinatorProvider
- * 
+ *
  * Shared React provider for the unified auth + key derivation orchestration layer.
  * Can be used by any app (LearnCard, Scouts, etc.) with minimal configuration.
  */
 
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, {
+    createContext,
+    useContext,
+    useState,
+    useEffect,
+    useRef,
+    useCallback,
+    useMemo,
+} from 'react';
 
 import { AuthCoordinator, createAuthCoordinator } from './AuthCoordinator';
 
@@ -80,6 +88,14 @@ export const useAuthCoordinator = (): AuthCoordinatorContextValue => {
 /** @deprecated Use `useAuthCoordinator` instead. */
 export const useAuthCoordinatorContext = useAuthCoordinator;
 
+/**
+ * Null-safe variant: returns the coordinator context, or `null` when rendered
+ * outside an `AuthCoordinatorProvider`. Use this when a hook must degrade
+ * gracefully rather than throw (e.g. shared selectors, tests).
+ */
+export const useOptionalAuthCoordinator = (): AuthCoordinatorContextValue | null =>
+    useContext(AuthCoordinatorContext);
+
 export interface AuthCoordinatorProviderProps {
     children: React.ReactNode;
 
@@ -102,7 +118,12 @@ export interface AuthCoordinatorProviderProps {
     onLogout?: () => Promise<void>;
 
     /** Debug event callback for logging/debugging */
-    onDebugEvent?: (type: string, message: string, level: DebugEventLevel, data?: Record<string, unknown>) => void;
+    onDebugEvent?: (
+        type: string,
+        message: string,
+        level: DebugEventLevel,
+        data?: Record<string, unknown>
+    ) => void;
 
     /**
      * Kill-switch: when false the coordinator stays in `idle` and never initializes.
@@ -119,18 +140,18 @@ export interface AuthCoordinatorProviderProps {
 
 /**
  * Shared AuthCoordinatorProvider.
- * 
+ *
  * @example
  * ```tsx
  * import { createSSSStrategy } from '@learncard/sss-key-manager';
  * import { createFirebaseAuthProvider } from 'learn-card-base';
- * 
+ *
  * const sssStrategy = createSSSStrategy({ serverUrl: 'https://api.learncard.com' });
  * const authProvider = createFirebaseAuthProvider({
  *     getAuth: () => auth(),
  *     user: firebaseUser,
  * });
- * 
+ *
  * <AuthCoordinatorProvider
  *     keyDerivation={sssStrategy}
  *     authProvider={authProvider}
@@ -155,6 +176,12 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     const [state, setState] = useState<UnifiedAuthState>({ status: 'idle' });
     const coordinatorRef = useRef<AuthCoordinator | null>(null);
 
+    // Mirror of `state` readable inside the (re)creation effect without adding
+    // `state` to its deps (which would recreate the coordinator on every
+    // state transition).
+    const stateRef = useRef(state);
+    stateRef.current = state;
+
     // Helper to determine event level from state
     const getStateEventLevel = useCallback((newState: UnifiedAuthState): DebugEventLevel => {
         if (newState.status === 'error') return 'error';
@@ -164,30 +191,42 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     }, []);
 
     // Helper to extract state details for debug
-    const extractStateDetails = useCallback((newState: UnifiedAuthState): Record<string, unknown> => {
-        const details: Record<string, unknown> = { status: newState.status };
+    const extractStateDetails = useCallback(
+        (newState: UnifiedAuthState): Record<string, unknown> => {
+            const details: Record<string, unknown> = { status: newState.status };
 
-        if (newState.status === 'error') {
-            details.error = newState.error;
-            details.canRetry = newState.canRetry;
-        } else if (newState.status === 'ready') {
-            details.did = newState.did;
-        } else if (newState.status === 'needs_recovery') {
-            details.recoveryMethods = newState.recoveryMethods.map(m => m.type);
-        }
+            if (newState.status === 'error') {
+                details.error = newState.error;
+                details.canRetry = newState.canRetry;
+            } else if (newState.status === 'ready') {
+                details.did = newState.did;
+            } else if (newState.status === 'needs_recovery') {
+                details.recoveryMethods = newState.recoveryMethods.map(m => m.type);
+            }
 
-        return details;
-    }, []);
+            return details;
+        },
+        []
+    );
 
     // No-op auth provider stub — used when no real auth provider is available yet.
     // Allows the coordinator to run the private-key-first path on page reload
     // before Firebase restores the session.
-    const noOpAuthProvider = useMemo<AuthProvider>(() => ({
-        async getIdToken() { throw new Error('No auth provider available'); },
-        async getCurrentUser() { return null; },
-        getProviderType(): AuthProviderType { return 'firebase'; },
-        async signOut() {},
-    }), []);
+    const noOpAuthProvider = useMemo<AuthProvider>(
+        () => ({
+            async getIdToken() {
+                throw new Error('No auth provider available');
+            },
+            async getCurrentUser() {
+                return null;
+            },
+            getProviderType(): AuthProviderType {
+                return 'firebase';
+            },
+            async signOut() {},
+        }),
+        []
+    );
 
     // Use the real auth provider if available, otherwise the no-op stub
     const effectiveAuthProvider = authProvider ?? noOpAuthProvider;
@@ -231,13 +270,40 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
 
         coordinatorRef.current = coordinator;
 
+        // Bridge the async gap until initialize() emits its first state. When
+        // a real auth provider arrives while the previous coordinator instance
+        // had settled in 'idle' (interactive login, or Firebase restoring the
+        // session), initialize() awaits the cached-key read before any
+        // setState — leaving consumers on the stale 'idle' long enough to
+        // paint the logged-out UI between two loading screens.
+        //
+        // The condition is intentionally broad: ANY recreation of the
+        // coordinator from 'idle' with a real provider (not just the
+        // noOp→real swap) is about to re-run initialize(), and a loader is
+        // always a better paint for that window than the logged-out UI.
+        if (authProvider && stateRef.current.status === 'idle') {
+            handleStateChange({ status: 'authenticating' });
+        }
+
         coordinator.initialize();
 
         return () => {
             stale = true;
             coordinatorRef.current = null;
         };
-    }, [enabled, effectiveAuthProvider, keyDerivation, didFromPrivateKey, signDidAuthVp, getCachedPrivateKey, onLogout, onDebugEvent, getStateEventLevel, extractStateDetails]);
+    }, [
+        enabled,
+        effectiveAuthProvider,
+        authProvider,
+        keyDerivation,
+        didFromPrivateKey,
+        signDidAuthVp,
+        getCachedPrivateKey,
+        onLogout,
+        onDebugEvent,
+        getStateEventLevel,
+        extractStateDetails,
+    ]);
 
     const initialize = useCallback(async () => {
         if (coordinatorRef.current) {
@@ -307,7 +373,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
 
     // Derived state
     const isReady = state.status === 'ready';
-    const isLoading = ['authenticating', 'checking_key_status', 'deriving_key'].includes(state.status);
+    const isLoading = ['authenticating', 'checking_key_status', 'deriving_key'].includes(
+        state.status
+    );
     const needsSetup = state.status === 'needs_setup';
     const needsMigration = state.status === 'needs_migration';
     const needsRecovery = state.status === 'needs_recovery';
@@ -318,59 +386,60 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     const did = state.status === 'ready' ? state.did : null;
     const authSessionValid = state.status === 'ready' ? state.authSessionValid : false;
 
-    const value: AuthCoordinatorContextValue = useMemo(() => ({
-        state,
-        isReady,
-        isLoading,
-        needsSetup,
-        needsMigration,
-        needsRecovery,
-        hasError,
-        error,
-        privateKey,
-        did,
-        authSessionValid,
-        capabilities: keyDerivation.capabilities,
-        keyDerivation,
-        initialize,
-        setupNewKey,
-        migrate,
-        setMigrationData,
-        recover,
-        logout,
-        forgetDevice,
-        retry,
-        verifyKeyIntegrity,
-        refreshAuthSession,
-    }), [
-        state,
-        isReady,
-        isLoading,
-        needsSetup,
-        needsMigration,
-        needsRecovery,
-        hasError,
-        error,
-        privateKey,
-        did,
-        authSessionValid,
-        keyDerivation,
-        initialize,
-        setupNewKey,
-        migrate,
-        setMigrationData,
-        recover,
-        logout,
-        forgetDevice,
-        retry,
-        verifyKeyIntegrity,
-        refreshAuthSession,
-    ]);
+    const value: AuthCoordinatorContextValue = useMemo(
+        () => ({
+            state,
+            isReady,
+            isLoading,
+            needsSetup,
+            needsMigration,
+            needsRecovery,
+            hasError,
+            error,
+            privateKey,
+            did,
+            authSessionValid,
+            capabilities: keyDerivation.capabilities,
+            keyDerivation,
+            initialize,
+            setupNewKey,
+            migrate,
+            setMigrationData,
+            recover,
+            logout,
+            forgetDevice,
+            retry,
+            verifyKeyIntegrity,
+            refreshAuthSession,
+        }),
+        [
+            state,
+            isReady,
+            isLoading,
+            needsSetup,
+            needsMigration,
+            needsRecovery,
+            hasError,
+            error,
+            privateKey,
+            did,
+            authSessionValid,
+            keyDerivation,
+            initialize,
+            setupNewKey,
+            migrate,
+            setMigrationData,
+            recover,
+            logout,
+            forgetDevice,
+            retry,
+            verifyKeyIntegrity,
+            refreshAuthSession,
+        ]
+    );
 
     return (
-        <AuthCoordinatorContext.Provider value={value}>
-            {children}
-        </AuthCoordinatorContext.Provider>
+        <AuthCoordinatorContext.Provider value={value}>{children}</AuthCoordinatorContext.Provider>
     );
 };
 

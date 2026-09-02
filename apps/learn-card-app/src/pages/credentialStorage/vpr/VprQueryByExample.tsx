@@ -10,13 +10,19 @@ import {
     CredentialCategoryEnum,
     CurrentUser,
     categoryMetadata,
+    isVerifiableDataRecord,
     useGetCredentialList,
     useGetResolvedCredentials,
 } from 'learn-card-base';
 
+import {
+    isAiContractCategory,
+    isVerifiableDataContractCategory,
+} from '../../../helpers/contract.helpers';
+
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
-import Lottie from 'react-lottie-player';
-const HourGlass = '/lotties/hourglass.json';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 import { chapiStore, redirectStore } from 'learn-card-base';
 
@@ -36,6 +42,7 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import { filterMaybes } from '@learncard/helpers';
 import type { CredentialRequestEvent } from '@learncard/chapi-plugin';
 import type { VP } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 export type VprQueryByExampleProps = {
     event?: CredentialRequestEvent;
@@ -98,6 +105,11 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
 
     const vcsToDisplay = allCredentials.filter(credential => {
         if (credential.category === 'Hidden') return false;
+        // Internal "My Skills Profile" data is self-issued verifiable data, not shareable credentials — exclude it like the wallet does.
+        if (isVerifiableDataRecord(credential.record)) return false;
+        if (isVerifiableDataContractCategory(credential.category)) return false;
+        // AI session/pathway metadata isn't a real credential and isn't shown in the wallet grid.
+        if (isAiContractCategory(credential.category)) return false;
         if (!credential.loading && !credential.vc) return false;
 
         if (!searchInput) return true;
@@ -140,8 +152,12 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
     const renderCredentialList = vcsToDisplay?.map(credential => {
         if (!credential.record?.uri) return <></>;
 
-        const categoryImgUrl =
-            categoryMetadata[credential.category as CredentialCategoryEnum].defaultImageSrc;
+        // record.category can be an arbitrary string (e.g. custom contract categories),
+        // so fall back to Achievement metadata when it isn't a known category.
+        const categoryImgUrl = (
+            categoryMetadata[credential.category as CredentialCategoryEnum] ??
+            categoryMetadata[CredentialCategoryEnum.achievement]
+        ).defaultImageSrc;
         const uniqueId = credential.vc ? getUniqueId(credential.vc) : credential.record.uri;
 
         return (
@@ -201,7 +217,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
         <IonPage>
             <IonContent fullscreen>
                 <IonRow className="bg-grayscale-100 w-full flex items-center justify-center h-full">
-                    <IonCol className="text-center p-0 h-full">
+                    <IonCol className="text-center p-0 h-full pt-[env(safe-area-inset-top)]">
                         {!credentialsLoading && (
                             <h1 className="md:text-5xl mobile:text-4xl text-left m-5 md:ml-[5%] min-[1400px]:ml-[100px] text-grayscale-900 font-poppins font-bold">
                                 Select Credentials
@@ -215,18 +231,13 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                             }
                         >
                             {credentialsLoading
-                                ? 'Loading verifiable credentials...'
+                                ? m['common.loadingVerifiableCredentials']()
                                 : 'Select the verifiable credentials you would like to share.'}
                         </h2>
                         {credentialsLoading && (
                             <div className="relative w-full text-center flex flex-col items-center justify-center">
                                 <div className="max-w-[500px]">
-                                    <Lottie
-                                        loop
-                                        path={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
+                                    <LoadingSpinner />
                                 </div>
                             </div>
                         )}
@@ -240,42 +251,43 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                                     }
                                 />
                                 <IonGrid className="max-w-[1000px] min-[1400px]:ml-[65px]">
-                                    <IonRow className="p-0 flex flex-row items-center flex-wrap w-full mobile:mb-60 xl:mb-64 achievements-list-container">
+                                    <IonRow className="p-0 flex flex-row items-center flex-wrap w-full mb-60 xl:mb-64 achievements-list-container">
                                         {renderCredentialList}
                                         <div role="presentation" ref={infiniteScrollRef} />
                                     </IonRow>
                                 </IonGrid>
-                                <footer className="fixed mobile:bottom-0 mobile:w-full lg:bottom-5 lg:right-10 lg:w-[500px] z-9999 bg-white border-t border-grayscale-200 mobile:p-2.5 lg:p-5 lg:rounded-[20px] mobile:shadow-footer lg:shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)]">
-                                    <h1 className="text-left text-base text-grayscale-900 font-bold font-poppins mobile:pt-[5px] mobile:pl-[20px]">
-                                        {selectedVcs?.length > 1
-                                            ? selectedVcs?.length + ' Credentials'
-                                            : selectedVcs?.length + ' Credential'}{' '}
-                                        Selected
-                                    </h1>
-                                    {credentialQuery.length === 0 || hasSuggested ? (
-                                        <></>
-                                    ) : (
-                                        <span>Loading credential suggestions...</span>
-                                    )}
-                                    <section className="flex items-center justify-evenly flex-wrap mt-5">
-                                        <button
-                                            className={
-                                                selectedVcs?.length === 0
-                                                    ? 'bg-indigo-700 opacity-50 rounded-[40px] text-white font-poppins h-12 mobile:w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]'
-                                                    : 'bg-indigo-700 rounded-[40px] text-white font-poppins h-12 mobile:w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]'
-                                            }
-                                            onClick={() => presentModal()}
-                                            disabled={selectedVcs?.length === 0 ? true : false}
-                                        >
-                                            REVIEW
-                                        </button>
-                                        <button
-                                            className="bg-grayscale-700 rounded-[40px] text-white font-poppins h-12 mobile:w-[300px] lg:w-[200px] text-xl m-1.5 shadow-[0px_4px_0px_0px_rgba(0,0,0,0.25)]"
-                                            onClick={reject}
-                                        >
-                                            QUIT
-                                        </button>
-                                    </section>
+                                <footer className="fixed bottom-0 w-full desktop:bottom-5 desktop:right-10 desktop:w-[520px] z-9999 bg-white border-t border-grayscale-200 desktop:border desktop:rounded-[20px] shadow-footer desktop:shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)] font-poppins">
+                                    <div className="mx-auto w-full max-w-[720px] px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] desktop:py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="text-center sm:text-left shrink-0">
+                                            <p className="text-sm font-medium text-grayscale-700 whitespace-nowrap">
+                                                {selectedVcs?.length}{' '}
+                                                {selectedVcs?.length === 1
+                                                    ? 'credential'
+                                                    : 'credentials'}{' '}
+                                                selected
+                                            </p>
+                                            {credentialQuery.length > 0 && !hasSuggested && (
+                                                <p className="text-xs text-grayscale-500 mt-0.5 whitespace-nowrap">
+                                                    Loading suggestions...
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                                            <button
+                                                className="flex-1 sm:flex-none sm:w-[104px] h-12 rounded-[20px] bg-white border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                                                onClick={reject}
+                                            >
+                                                Quit
+                                            </button>
+                                            <button
+                                                className="flex-1 sm:flex-none sm:w-[150px] h-12 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                                onClick={() => presentModal()}
+                                                disabled={selectedVcs?.length === 0 ? true : false}
+                                            >
+                                                Review
+                                            </button>
+                                        </div>
+                                    </div>
                                 </footer>
                             </div>
                         )}
@@ -286,7 +298,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                         )}
                         {!credentialsLoading && allRecords.length === 0 && (
                             <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                                <strong>No credentials to share.</strong>
+                                <strong>{m['share.noCredentialsToShare']()}</strong>
                                 <button
                                     type="button"
                                     className="bg-rose-600 rounded-full text-white font-bold border px-4 py-2 w-full max-w-[200px]"

@@ -5,6 +5,7 @@ import { IonRippleEffect } from '@ionic/react';
 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowWriteSharingItemProps = {
     term: ConsentFlowTerms['write']['credentials']['categories'][string];
@@ -44,7 +45,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
                             term ? 'text-emerald-800' : 'text-grayscale-600'
                         }`}
                     >
-                        {term ? 'Allow Access' : 'Deny Access'}
+                        {m['consentFlow.' + (term ? 'allowAccess' : 'denyAccess')]()}
                     </output>
 
                     <h4 className="text-lg text-grayscale-900 font-poppins leading-none">
@@ -52,7 +53,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
                     </h4>
                 </section>
 
-                <SkinnyCaretRight className="h-[20px] w-[20px] text-grayscale-500" />
+                <SkinnyCaretRight className="rtl-mirror h-[20px] w-[20px] text-grayscale-500" />
 
                 <IonRippleEffect />
             </button>

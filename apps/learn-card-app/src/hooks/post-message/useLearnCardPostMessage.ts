@@ -23,7 +23,8 @@ export type LearnCardAction =
     | 'LAUNCH_FEATURE'
     | 'INITIATE_TEMPLATE_ISSUE'
     | 'APP_EVENT'
-    | 'REQUEST_LEARNER_CONTEXT';
+    | 'REQUEST_LEARNER_CONTEXT'
+    | 'GET_SYNC_STATUS';
 
 export type ResponseType = 'SUCCESS' | 'ERROR';
 
@@ -113,7 +114,10 @@ export interface RequestLearnerContextPayload {
     format?: 'prompt' | 'structured';
     instructions?: string;
     detailLevel?: 'compact' | 'expanded';
+    waitForSync?: boolean;
 }
+
+export interface GetSyncStatusPayload {}
 
 // AppEvent and SendCredentialEvent are imported from @learncard/types above
 
@@ -132,6 +136,7 @@ export interface ActionPayloadMap {
     INITIATE_TEMPLATE_ISSUE: InitiateTemplateIssuePayload;
     APP_EVENT: AppEventPayload;
     REQUEST_LEARNER_CONTEXT: RequestLearnerContextPayload;
+    GET_SYNC_STATUS: GetSyncStatusPayload;
 }
 
 // ============================================================================
@@ -160,6 +165,7 @@ export interface ActionHandlers {
     INITIATE_TEMPLATE_ISSUE?: ActionHandler<'INITIATE_TEMPLATE_ISSUE'>;
     APP_EVENT?: ActionHandler<'APP_EVENT'>;
     REQUEST_LEARNER_CONTEXT?: ActionHandler<'REQUEST_LEARNER_CONTEXT'>;
+    GET_SYNC_STATUS?: ActionHandler<'GET_SYNC_STATUS'>;
 }
 
 // ============================================================================

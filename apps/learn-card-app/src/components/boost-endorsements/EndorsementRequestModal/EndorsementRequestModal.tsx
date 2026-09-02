@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import EndorsementForm from '../EndorsementForm/EndorsementForm';
 import EndorsementBadge from '../../../assets/images/endorsement-badge.png';
@@ -19,12 +19,18 @@ import {
     UserProfilePicture,
     useWallet,
     useGetCurrentLCNUser,
+    getLogger,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { endorsementsRequestStore } from '../../../stores/endorsementsRequestStore';
 import { EndorsementState } from '../EndorsementForm/endorsement-state.helpers';
 import { BoostEndorsement, BoostEndorsementStatusEnum } from '../boost-endorsement.helpers';
 import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
+import { findEndorsementForRequest } from '../EndorsementRequestForm/endorsement-request.helpers';
+
+const log = getLogger('endorsement-request-modal');
 
 export const EndorsementRequestModal: React.FC<{
     credential: VC;
@@ -42,6 +48,13 @@ export const EndorsementRequestModal: React.FC<{
 
     const [showSuccess, setShowSuccess] = useState<boolean>(false);
     const [pendingEndorsement, setPendingEndorsement] = useState<BoostEndorsement | null>(null);
+    const initWalletRef = useRef(initWallet);
+    const currentLCNUserRef = useRef(currentLCNUser);
+
+    useEffect(() => {
+        initWalletRef.current = initWallet;
+        currentLCNUserRef.current = currentLCNUser;
+    });
 
     let {
         issuerProfile,
@@ -54,45 +67,58 @@ export const EndorsementRequestModal: React.FC<{
     } = useGetVCInfo(credential, categoryType);
 
     useEffect(() => {
-        getPendingEndorsement();
-    }, [issueeProfile]);
+        let cancelled = false;
+        const profileId = issueeProfile?.profileId;
 
-    const getPendingEndorsement = async () => {
-        const wallet = await initWallet();
-        // fetch sent credentials / notifications
-        const sentCredentials = await wallet.invoke.getSentCredentials(
-            issueeProfile?.profileId || ''
-        );
+        setPendingEndorsement(null);
 
-        // filter for the specific credential
-        const [pendingEndorsement] = await sentCredentials?.filter(
-            c => c?.metadata?.credentialId === credential?.id
-        );
-
-        if (!pendingEndorsement) {
-            return;
+        if (!profileId || !shareLinkInfo) {
+            return () => {
+                cancelled = true;
+            };
         }
 
-        // get the endorsement request
-        const pendingEndorsementRequest = await wallet.read.get(pendingEndorsement?.uri);
+        const getPendingEndorsement = async () => {
+            try {
+                const wallet = await initWalletRef.current();
+                const sentCredentials = await wallet.invoke.getSentCredentials(profileId);
+                const matchingEndorsement = findEndorsementForRequest(
+                    sentCredentials,
+                    shareLinkInfo
+                );
 
-        const pendingEndorsementState = {
-            user: {
-                name: currentLCNUser?.displayName || pendingEndorsement?.from,
-                image: currentLCNUser?.image,
-            },
-            description: pendingEndorsementRequest?.description,
-            qualification: pendingEndorsementRequest?.credentialSubject?.endorsementComment,
-            mediaAttachments: pendingEndorsementRequest?.credentialSubject?.evidence,
-            relationship: pendingEndorsement?.metadata?.relationship,
-            status: pendingEndorsement?.received
-                ? BoostEndorsementStatusEnum.Approved
-                : BoostEndorsementStatusEnum.Pending,
-            date: pendingEndorsement?.sent,
-            deleted: false,
+                if (!matchingEndorsement || cancelled) return;
+
+                const pendingEndorsementRequest = await wallet.read.get(matchingEndorsement.uri);
+
+                if (cancelled) return;
+
+                setPendingEndorsement({
+                    user: {
+                        name: currentLCNUserRef.current?.displayName || matchingEndorsement.from,
+                        image: currentLCNUserRef.current?.image,
+                    },
+                    description: pendingEndorsementRequest?.description,
+                    qualification: pendingEndorsementRequest?.credentialSubject?.endorsementComment,
+                    mediaAttachments: pendingEndorsementRequest?.credentialSubject?.evidence,
+                    relationship: matchingEndorsement.metadata?.relationship,
+                    status: matchingEndorsement.received
+                        ? BoostEndorsementStatusEnum.Approved
+                        : BoostEndorsementStatusEnum.Pending,
+                    date: matchingEndorsement.sent,
+                    deleted: false,
+                });
+            } catch (error) {
+                if (!cancelled) log.warn('Unable to load an existing endorsement', error);
+            }
         };
-        setPendingEndorsement(pendingEndorsementState);
-    };
+
+        void getPendingEndorsement();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [credential?.id, issueeProfile?.profileId, shareLinkInfo]);
 
     const handleOnSuccess = (endorsementRequest: EndorsementState) => {
         endorsementRequestStore.set.setEndorsementRequest(endorsementRequest);
@@ -153,7 +179,7 @@ export const EndorsementRequestModal: React.FC<{
 
     return (
         <div
-            className="flex h-full w-full flex-col items-center justify-center px-4"
+            className="relative flex h-full w-full flex-col items-center justify-center px-4"
             style={loggedOutBGStyles}
         >
             {credential ? (
@@ -184,11 +210,17 @@ export const EndorsementRequestModal: React.FC<{
                         </div>
                         <div className="w-full flex flex-col items-center justify-center border-b-[2px] border-grayscale-100 pb-4 px-[16px]">
                             <p className="text-center w-full text-grayscale-900 text-base">
-                                <span className="font-semibold">
-                                    {issueeProfile?.displayName || issueeName}
-                                </span>{' '}
-                                has requested your endorsement for{' '}
-                                <span className="font-semibold">{title}</span>
+                                <TransP
+                                    m={m['endorsement.modal.requestedEndorsement']}
+                                    values={{
+                                        name: issueeProfile?.displayName || issueeName,
+                                        title,
+                                    }}
+                                    components={[
+                                        <span className="font-semibold" />,
+                                        <span className="font-semibold" />,
+                                    ]}
+                                />
                             </p>
                         </div>
                     </div>
@@ -217,7 +249,7 @@ export const EndorsementRequestModal: React.FC<{
                         className={`w-8 h-8 text-grayscale-700`}
                         fill="#E2E3E9"
                     />
-                    Endorse{' '}
+                    {m['endorsement.modal.footer.endorse']()}{' '}
                 </button>
             )}
 

@@ -1,5 +1,6 @@
 import React from 'react';
-import { IonInput, IonSpinner } from '@ionic/react';
+import * as m from '../../../../paraglide/messages.js';
+import { IonSpinner } from '@ionic/react';
 import { ToastTypeEnum, useToast } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
@@ -39,7 +40,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
             if (schoolCodes.includes(code.trim().toUpperCase())) {
                 void onBypass(code.trim().toUpperCase());
             } else {
-                setError('Invalid school code. Please try again.');
+                setError(m['onboarding.consent.underage.schoolCode.error']());
             }
             setIsValidating(false);
         }, 800);
@@ -60,19 +61,20 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                     </div>
                 </div>
                 <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                    {isSchoolView ? 'Enter School Code' : 'Get an Adult'}
+                    {isSchoolView
+                        ? m['onboarding.consent.underage.schoolCode.heading']()
+                        : m['onboarding.consent.underage.heading']()}
                 </h2>
                 <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
                     {isSchoolView
-                        ? 'To join without a parent account, please enter the special code provided by your school.'
-                        : "You'll need a parent or guardian to add you to a family account before you can join."}
+                        ? m['onboarding.consent.underage.schoolCode.description']()
+                        : m['onboarding.consent.underage.description']()}
                 </p>
 
                 {!isSchoolView && familyInviteUrl && (
                     <div className="mt-5 p-4 rounded-[20px] bg-grayscale-10 border border-grayscale-200 flex flex-col items-center gap-3">
                         <p className="text-sm text-grayscale-700 leading-relaxed">
-                            Share this link with your parent so they can finish setting up the
-                            family.
+                            {m['onboarding.consent.underage.shareLink']()}
                         </p>
                         <button
                             type="button"
@@ -83,7 +85,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                                     window.setTimeout(() => setCopied(false), 2000);
                                 } catch {
                                     setCopied(false);
-                                    presentToast('Failed to copy to clipboard.', {
+                                    presentToast(m['onboarding.consent.underage.copyFailed'](), {
                                         type: ToastTypeEnum.Error,
                                         hasDismissButton: true,
                                     });
@@ -91,7 +93,9 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                             }}
                             className="w-full max-w-[320px] py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            {copied ? 'Link copied' : 'Copy family link'}
+                            {copied
+                                ? m['onboarding.consent.underage.linkCopied']()
+                                : m['onboarding.consent.underage.copyLink']()}
                         </button>
                     </div>
                 )}
@@ -99,39 +103,68 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                 {!isSchoolView ? (
                     schoolCodes.length > 0 && (
                         <div className="mt-6 pt-6 border-t border-grayscale-100 w-full flex flex-col items-center gap-3">
-                            <p className="text-grayscale-400 text-xs font-semibold uppercase tracking-widest">
-                                Or
+                            <p className="text-grayscale-600 text-xs font-semibold uppercase tracking-widest">
+                                {m['onboarding.consent.underage.or']()}
                             </p>
                             <button
                                 type="button"
                                 onClick={() => setView('school')}
                                 className="text-emerald-700 font-semibold text-[15px] flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
                             >
-                                <span className="text-[18px]">🎓</span> Have a school code?
+                                <span className="text-[18px]">🎓</span>{' '}
+                                {m['onboarding.consent.underage.schoolCode.cta']()}
                             </button>
                         </div>
                     )
                 ) : (
                     <div className="flex flex-col gap-3 mt-6">
                         <div className="relative w-full">
-                            <IonInput
+                            <label htmlFor="underage-school-code" className="sr-only">
+                                {m['onboarding.consent.underage.schoolCode.placeholder']()}
+                            </label>
+                            <input
+                                id="underage-school-code"
+                                type="text"
                                 value={code}
-                                onIonInput={e => {
-                                    setCode(e.detail.value ?? '');
+                                onChange={event => {
+                                    setCode(event.target.value);
                                     setError('');
                                 }}
-                                placeholder="Enter Code"
-                                className={`bg-grayscale-100 rounded-[12px] px-4 py-2 text-grayscale-900 font-medium tracking-widest text-center ${
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter' && code && !isValidating) {
+                                        event.preventDefault();
+                                        handleVerifyCode();
+                                    }
+                                }}
+                                placeholder={m[
+                                    'onboarding.consent.underage.schoolCode.placeholder'
+                                ]()}
+                                autoComplete="off"
+                                spellCheck={false}
+                                aria-invalid={Boolean(error)}
+                                aria-describedby={error ? 'underage-school-code-error' : undefined}
+                                className={`w-full bg-grayscale-100 rounded-[12px] px-4 py-2 text-grayscale-900 placeholder:text-grayscale-400 font-medium tracking-widest text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
                                     error ? 'border-red-500 border' : ''
                                 }`}
                             />
                             {code && !isValidating && error && (
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <div
+                                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                                    aria-hidden="true"
+                                >
                                     <X className="w-5 h-5 text-red-500" />
                                 </div>
                             )}
                         </div>
-                        {error && <p className="text-red-600 text-[13px] mt-1">{error}</p>}
+                        {error && (
+                            <p
+                                id="underage-school-code-error"
+                                role="alert"
+                                className="text-red-700 text-[13px] mt-1"
+                            >
+                                {error}
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
@@ -143,22 +176,27 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                         onClick={isSchoolView ? () => setView('adult') : onBack}
                         className=" shadow-button-bottom flex-1 py-[10px] text-[17px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
                     >
-                        Back
+                        {m['onboarding.back']()}
                     </button>
                     <button
                         type="button"
                         onClick={isSchoolView ? handleVerifyCode : onAdult}
                         disabled={isSchoolView && (!code || isValidating)}
+                        aria-busy={isSchoolView && isValidating}
                         className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom flex items-center justify-center min-h-[46px]"
                     >
                         {isSchoolView ? (
                             isValidating ? (
-                                <IonSpinner name="crescent" className="h-5 w-5" />
+                                <IonSpinner
+                                    name="crescent"
+                                    className="h-5 w-5"
+                                    aria-hidden="true"
+                                />
                             ) : (
-                                'Verify'
+                                m['common.verify']()
                             )
                         ) : (
-                            "I'm an Adult"
+                            m['onboarding.consent.underage.adultButton']()
                         )}
                     </button>
                 </div>

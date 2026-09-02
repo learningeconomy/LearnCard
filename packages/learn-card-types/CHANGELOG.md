@@ -1,5 +1,92 @@
 # learn-card-types
 
+## 5.18.2
+
+### Patch Changes
+
+-   [#1491](https://github.com/learningeconomy/LearnCard/pull/1491) [`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e) Thanks [@goblincore](https://github.com/goblincore)! - Prompt credential claimers and senders to create an explicit LearnCard connection, with durable and idempotent actionable notification delivery.
+
+## 5.18.1
+
+### Patch Changes
+
+-   [#1444](https://github.com/learningeconomy/LearnCard/pull/1444) [`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-1958] Fix W3C EdDSA Data Integrity interoperability and ship rebuilt native and WASM DIDKit artifacts.
+
+## 5.18.0
+
+### Minor Changes
+
+-   [#1366](https://github.com/learningeconomy/LearnCard/pull/1366) [`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a) Thanks [@goblincore](https://github.com/goblincore)! - Revocation/suspension follow-ups (LC-1894, LC-1913)
+
+    -   Issuance now allocates a `suspension` bitstring status entry by default, so suspended credentials are externally verifiable (LC-1894).
+    -   `getActivityStats` returns `revoked`/`suspended` counts, surfaced in the issuer Issuances summary (LC-1894).
+    -   Credential-lifecycle mutations (revoke/suspend/unsuspend) now emit a holder notification, and the activity views migrated to react-query so they auto-refresh without manual callbacks (LC-1894 / LC-1913).
+    -   Holder wallet cards show a revoked/suspended treatment: a red/orange X seal badge (replacing the verified seal), a colored corner pill, and a desaturated card, driven by a lazy per-card status check; revoked/suspended credentials remain in the Earned tab (LC-1913).
+
+### Patch Changes
+
+-   [#1400](https://github.com/learningeconomy/LearnCard/pull/1400) [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24) Thanks [@Custard7](https://github.com/Custard7)! - feat: inAppMessage Nudge
+
+-   [#1309](https://github.com/learningeconomy/LearnCard/pull/1309) [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1900] Translate notifications (per-user locale + localized server-side copy)
+
+## 5.17.6
+
+### Patch Changes
+
+-   [#1295](https://github.com/learningeconomy/LearnCard/pull/1295) [`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba) Thanks [@Custard7](https://github.com/Custard7)! - Add a streamlined "Create Credential" flow (simple send), gated behind the `enableSimpleSend` flag.
+
+    A new `/issue` page lets users issue a standards-pure OBv3 credential from one screen — from scratch, from an imported source (link, file, JSON, or Credential Engine ID), or by resending a credential they already manage — with a live card preview and self / specific-people / claim-link recipients.
+
+    Also includes shared credential-card fixes used across the wallet: achievement-type-aware subtitles and display types, corrected category mapping, redesigned "verified source" alignments, and image/placeholder fallbacks. `@learncard/types` gains an optional `created` field on the boost validator.
+
+## 5.17.5
+
+### Patch Changes
+
+-   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+
+-   [#1335](https://github.com/learningeconomy/LearnCard/pull/1335) [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930) Thanks [@goblincore](https://github.com/goblincore)! - fix: repair published-packages smoketest (zod v4 hoist break + pnpm pin)
+
+-   [#1335](https://github.com/learningeconomy/LearnCard/pull/1335) [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930) Thanks [@goblincore](https://github.com/goblincore)! - fix(types): import zod via the `zod/v4` subpath instead of the bare `zod` specifier
+
+    The published ESM build externalizes `import { z } from 'zod'`, so when a consumer's dependency tree hoists the zod **3.25 bridge** release (whose default export is still v3, e.g. when `expo` is present transitively), `z.iso` resolves to `undefined` and the package throws `Cannot read properties of undefined (reading 'datetime')` at import time. Importing from `zod/v4` pins the v4 API regardless of which zod major the consumer hoists (the `./v4` subpath exists in both 3.25.x and 4.x), making the ESM build resolution-stable.
+
+## 5.17.4
+
+### Patch Changes
+
+-   [#1331](https://github.com/learningeconomy/LearnCard/pull/1331) [`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354) Thanks [@goblincore](https://github.com/goblincore)! - Fix OpenAPI document generation under Zod 4.4 so the brain and cloud services boot.
+
+    Zod 4.3 tightened two behaviors that broke `generateOpenApiDocument` (which runs
+    eagerly at service startup, so a failure crashed every Lambda at cold start):
+
+    -   `.omit()` is no longer allowed on object schemas containing refinements, which
+        `trpc-to-openapi` calls internally on every route's input. Bumping the
+        `trpc-to-openapi` override to `3.3.0` resolves this for all refined route inputs.
+    -   `z.custom()` (and `z.instanceof()`) can no longer be represented in OpenAPI,
+        and the `.meta({ override })` escape hatch is not honored for these types. Two
+        schemas are affected:
+        -   The custom-storage `count`/`update`/`delete` query schemas now use
+            `z.record(z.string(), z.any())`, matching the already-working `read` route.
+        -   `RegExpValidator` in `@learncard/types` (used by the brain-service skill /
+            skill-framework search routes via `$regex`) no longer relies on
+            `z.instanceof(RegExp)`. It now `z.preprocess`es a `RegExp` instance into its
+            `/source/flags` string, so the OpenAPI schema is a plain string while still
+            accepting both `RegExp` and string inputs at runtime.
+
+    Also hardens the custom-storage query routes (`read`/`count`/`update`/`delete`)
+    by rejecting MongoDB server-side-JavaScript operators (`$where`, `$function`,
+    `$accumulator`) in caller-supplied queries, closing a denial-of-service vector.
+    (did-scoping was already enforced in the access layer; this is orthogonal.)
+
+-   [#1325](https://github.com/learningeconomy/LearnCard/pull/1325) [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e) Thanks [@smurflo2](https://github.com/smurflo2)! - Zod v4
+
+## 5.17.3
+
+### Patch Changes
+
+-   [#1321](https://github.com/learningeconomy/LearnCard/pull/1321) [`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix smoketest GH actions
+
 ## 5.17.2
 
 ### Patch Changes
@@ -28,7 +115,7 @@
 
     This change is verified by two new CI surfaces:
 
-    -   `pnpm validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
+    -   `bun run validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
     -   `.github/workflows/smoketest-npm-packages.yml` now also probes every published plugin's ESM + CJS export surface directly (not just `@learncard/init` transitively) and bundles a trivial consumer with esbuild to catch bundler-resolution-only regressions.
 
     Follow-up work tracked as advisory failures in both surfaces (not gating CI until fixed): `@learncard/ceramic-plugin`, `@learncard/didkey-plugin`, `@learncard/helpers`, `@learncard/idx-plugin`, `@learncard/lca-api-plugin`, `@learncard/learn-cloud-plugin`, `@learncard/network-plugin`, `@learncard/simple-signing-plugin` each have pre-existing publish-time bugs (CJS-only transitive deps imported via named ESM, dynamic `require()` in ESM bundles, or unmigrated upstream packages).
@@ -370,7 +457,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

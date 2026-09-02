@@ -10,11 +10,24 @@
 }
 
 .main-header-notifications-btn {
-    display: none;
-    margin-right: 10px;
+    // LC-1921: the Alerts icon now shows in the header on mobile too (it was
+    // previously desktop-only). Desktop "island" styling lives on the
+    // surrounding `.main-header-profile-island` wrapper.
+    display: block;
 
     & > svg {
         color: currentColor;
+    }
+}
+
+// Profile + Alerts cluster — bare on mobile, a white rounded "island" pill on
+// desktop (LC-1921).
+.main-header-profile-island {
+    @media (min-width: 992px) {
+        padding: 6px 12px;
+        background-color: #ffffff;
+        border-radius: 9999px;
+        box-shadow: 0 4px 14px rgba(24, 34, 78, 0.1);
     }
 }
 

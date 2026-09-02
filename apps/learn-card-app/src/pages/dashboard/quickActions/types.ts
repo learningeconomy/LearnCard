@@ -14,11 +14,12 @@ export type DashboardState = {
     hasSkillProfile: boolean;
     nextNodeTitle?: string;
     pathwaysEnabled: boolean;
-    showAiInsights: boolean;
+    aiInsightsEnabled: boolean;
 };
 
 export type ActionHandlers = {
     goToAddCredential: () => void;
+    openAddToPassport: () => void;
     openClaimLink: () => void;
     goToWallet: () => void;
     goToSkills: () => void;
@@ -33,6 +34,7 @@ export type ActionHandlers = {
 export type SlotIcons = {
     collect: QuickActionIcon;
     understand: QuickActionIcon;
+    skills: QuickActionIcon;
     navigate: QuickActionIcon;
 };
 

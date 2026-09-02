@@ -10,6 +10,7 @@ import SkillsFrameworkIcon from 'apps/learn-card-app/src/components/svgs/SkillsF
 import TiersAndCompetencies from './TiersAndCompetencies';
 import FrameworkImage from './FrameworkImage';
 import SlimCaretLeft from 'apps/learn-card-app/src/components/svgs/SlimCaretLeft';
+import * as m from '../../paraglide/messages.js';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import Pencil from 'apps/learn-card-app/src/components/svgs/Pencil';
@@ -145,8 +146,8 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
     const navPathTitle = navigationPath.map(n => n.targetName).join(' > ');
 
     return (
-        <div className="h-full relative bg-grayscale-50 overflow-hidden">
-            <div className="px-[15px] py-[10px] bg-white safe-area-top-margin flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid">
+        <div className="lc-content-owns-bottom h-full relative bg-grayscale-50 overflow-hidden">
+            <div className="px-[15px] py-[10px] bg-white mt-[var(--ion-safe-area-top,0px)] flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid">
                 <div className="flex items-center gap-[10px]">
                     {isTopLevel ? (
                         <FrameworkImage
@@ -246,7 +247,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
             <section className="h-full flex flex-col gap-[10px] pt-[15px] px-[20px] pb-[170px] overflow-y-auto z-0">
                 <IonInput
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
-                    placeholder="Search framework..."
+                    placeholder={m['skills.framework.searchPlaceholder']()}
                     value={search}
                     onIonInput={e => setSearch(e.detail.value)}
                 />

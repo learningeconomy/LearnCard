@@ -14,7 +14,8 @@ import BoostPreview from 'apps/learn-card-app/src/components/boost/boostCMS/Boos
 import {
     useModal,
     useToast,
-    useFilestack,
+    useImageUpload,
+    isKnownImageUploadUrl,
     useGetProfile,
     useCreateBoost,
     useConfirmation,
@@ -23,7 +24,7 @@ import {
     ModalTypes,
     BoostCMSState,
     ToastTypeEnum,
-    CredentialBadge,
+    CredentialBadgeNew,
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
@@ -155,7 +156,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
     //   row index -> image status
     const [imageTracking, setImageTracking] = useState<ImageTrackingType>(new Map());
 
-    const { uploadImageFromUrl, singleImageUpload } = useFilestack({
+    const { uploadImageFromUrl, singleImageUpload } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (url, _file, data) => {},
     });
@@ -494,14 +495,14 @@ const AdminToolsBulkBoostImportOption: React.FC<{
             // Process batch using Promise.all for parallel processing
             await Promise.all(
                 csvData.map(async (data, index) => {
-                    // upload images if they're not already in filestack
+                    // upload images if they're not already in configured image storage
                     let badgeThumb = data[DataKeys.image];
-                    if (badgeThumb && !badgeThumb.includes('filestack')) {
+                    if (badgeThumb && !isKnownImageUploadUrl(badgeThumb)) {
                         badgeThumb = await uploadImageFromUrl(badgeThumb);
                     }
 
                     let bgImage = data[DataKeys.backgroundImage];
-                    if (bgImage && !bgImage.includes('filestack')) {
+                    if (bgImage && !isKnownImageUploadUrl(bgImage)) {
                         bgImage = await uploadImageFromUrl(bgImage);
                     }
 
@@ -557,7 +558,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
                 idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
             />
         ) : (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={state?.basicInfo?.achievementType}
                 boostType={state?.basicInfo?.type}
                 badgeThumbnail={state?.appearance?.badgeThumbnail}

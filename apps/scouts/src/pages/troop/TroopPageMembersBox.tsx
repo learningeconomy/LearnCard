@@ -10,12 +10,13 @@ import Search from 'learn-card-base/svgs/Search';
 import {
     useModal,
     useGetBoostPermissions,
-    conditionalPluralize,
     ModalTypes,
     ProfilePicture,
     useGetCurrentUserTroopIds,
 } from 'learn-card-base';
-import { getScoutsRole, getScoutsNounForRole } from '../../helpers/troop.helpers';
+import * as m from '../../paraglide/messages.js';
+import { formatLocaleCount } from '../../i18n/formatters';
+import { getScoutsRole, getScoutsRoleLabelForCred } from '../../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { useCanInviteTroop } from './useCanInviteTroop';
 import InviteSelectionModal from './InviteSelectionModal';
@@ -24,7 +25,7 @@ import { VC } from '@learncard/types';
 export enum MemberTabsEnum {
     All = 'All',
     Scouts = 'Scout',
-    Leaders = 'Leader',
+    Leaders = 'Troop Leader',
 }
 
 type TroopPageMembersBoxProps = {
@@ -40,7 +41,10 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
     credential,
     userRole,
 }) => {
-    const { newModal, closeModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.Cancel,
+    });
     const inputRef = useRef<HTMLIonInputElement>(null);
 
     const [tab, setTab] = useState<MemberTabsEnum>(MemberTabsEnum.All);
@@ -58,13 +62,15 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
         scoutBoostUri,
         troopBoostUri,
         boostPermissionsData,
-    } = useCanInviteTroop({ credential, boostUri });
+        scoutId,
+        troopId,
+    } = useCanInviteTroop({ credential, boostUri: boostUri ?? credential.boostId ?? '' });
 
     // Derived state
     const isScout = role === ScoutsRoleEnum.scout;
     const isLeader = role === ScoutsRoleEnum.leader;
     const isScoutOrLeader = isScout || isLeader;
-    let showInviteButton = (!!_showInviteButton) && !myTroopIds?.isScout;
+    let showInviteButton = !!_showInviteButton && !myTroopIds?.isScout;
 
     // temp fix until permissions are more sorted out
     if (
@@ -108,14 +114,23 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
     const handleInviteClick = useCallback(() => {
         const canInviteScout = myTroopIds?.isTroopLeader || scoutPermissionsData?.canIssue;
         const canInviteLeader = boostPermissionsData?.canIssue;
+        const leaderImage = troopId?.boostID?.idThumbnail;
+        const scoutImage = scoutId?.boostID?.idThumbnail;
 
         if (canInviteScout && canInviteLeader) {
             newModal(
                 <InviteSelectionModal
-                    onInviteLeader={() => handleOpenScoutConnectModal(currentBoostUri, 'Troop Leader')}
+                    onInviteLeader={() =>
+                        handleOpenScoutConnectModal(
+                            currentBoostUri,
+                            getScoutsRoleLabelForCred(credential)
+                        )
+                    }
                     onInviteScout={() => handleOpenScoutConnectModal(scoutBoostUri, 'Scout')}
                     handleCloseModal={closeModal}
                     scoutNoun={scoutNoun}
+                    leaderImage={leaderImage}
+                    scoutImage={scoutImage}
                 />,
                 { sectionClassName: '!max-w-[450px]' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
@@ -123,7 +138,7 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
         } else if (canInviteScout) {
             handleOpenScoutConnectModal(scoutBoostUri, 'Scout');
         } else if (canInviteLeader) {
-            handleOpenScoutConnectModal(currentBoostUri, 'Troop Leader');
+            handleOpenScoutConnectModal(currentBoostUri, getScoutsRoleLabelForCred(credential));
         }
     }, [
         myTroopIds?.isTroopLeader,
@@ -132,6 +147,7 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
         scoutBoostUri,
         currentBoostUri,
         scoutNoun,
+        credential,
         handleOpenScoutConnectModal,
         newModal,
         closeModal,
@@ -184,16 +200,16 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
         <div className={containerClasses}>
             <header className="flex items-center">
                 <h2 className="text-gray-900 font-notoSans text-xl">
-                    {conditionalPluralize(totalCount, 'Member')}
+                    {m['troops.members.heading']({ count: totalCount ?? 0 })}
                 </h2>
 
                 {showInviteButton && (
                     <button
                         className="ml-auto pl-5 pr-2 py-1.5 bg-sp-green-forest rounded-[40px] text-white text-[17px] font-notoSans font-semibold leading-6 tracking-0.25 flex gap-2.5 items-center"
                         onClick={handleInviteClick}
-                        aria-label="Invite new member"
+                        aria-label={m['troops.members.inviteLabel']()}
                     >
-                        Invite
+                        {m['troops.members.inviteBtn']()}
                         <BulkyAddUser aria-hidden="true" />
                     </button>
                 )}
@@ -217,8 +233,19 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
                                         aria-current={isActive ? 'true' : undefined}
                                     >
                                         {tabOption === MemberTabsEnum.All
-                                            ? 'All'
-                                            : conditionalPluralize(count, tabOption)}
+                                            ? m['troops.members.allTab']()
+                                            : formatLocaleCount(
+                                                  count,
+                                                  tabOption === MemberTabsEnum.Scouts
+                                                      ? {
+                                                            one: m['troops.scoutOne'](),
+                                                            other: m['troops.scoutOther'](),
+                                                        }
+                                                      : {
+                                                            one: m['troops.leaderOne'](),
+                                                            other: m['troops.leaderOther'](),
+                                                        }
+                                              )}
                                     </button>
                                 );
                             })}
@@ -227,14 +254,14 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
 
                     <div className="relative bg-gray-100 rounded-[15px] mt-2.5 cursor-pointer">
                         <label htmlFor="member-search" className="sr-only">
-                            Search members
+                            {m['troops.members.searchLabel']()}
                         </label>
                         <Search className="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-900" />
                         <IonInput
                             id="member-search"
                             ref={inputRef}
                             autocapitalize="on"
-                            placeholder="Search..."
+                            placeholder={m['troops.members.searchPlh']()}
                             value={searchQuery}
                             className="!pl-10 text-gray-800 text-[17px] font-notoSans !py-1 w-full"
                             onIonInput={e => handleSearch(e.detail.value ?? '')}

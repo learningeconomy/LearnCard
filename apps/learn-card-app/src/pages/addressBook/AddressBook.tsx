@@ -16,6 +16,7 @@ import AddressBookPendingConnections from './addressBookPendingConnections/Addre
 import AddressBookConnectionRequests from './addressBookConnectionRequests/AddressBookConnectionRequests';
 import AddressBookBlockedContacts from './addressBookBlockedContacts/AddressBookBlockedContacts';
 import AddressBookTabs from './addressBookTabs/AddressBookTabs';
+import * as m from '../../paraglide/messages.js';
 
 import {
     useGetSearchProfiles,
@@ -28,6 +29,8 @@ import {
 } from 'learn-card-base';
 
 import useTheme from '../../theme/hooks/useTheme';
+import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
+import useDebounce from '../../hooks/useDebounce';
 import { IconSetEnum } from '../../theme/icons';
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
@@ -54,14 +57,28 @@ const AddressBook: React.FC = () => {
 
     const { url } = useRouteMatch();
     const { presentToast } = useToast();
-    const searchInputRef = useRef<HTMLIonInputElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Block profile mutation
     const { mutate: blockProfile } = useBlockProfileMutation();
 
-    // Search state and query
+    // Search state and query. The input is fully controlled by `search` (updated
+    // immediately per keystroke), while the network query runs off a debounced
+    // copy so we don't fire a request on every character.
     const [search, setSearch] = useState<string>('');
-    const { data: connections, isLoading: loading, refetch } = useGetSearchProfiles(search);
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+    const {
+        data: connections,
+        isLoading: loading,
+        refetch,
+    } = useGetSearchProfiles(debouncedSearch);
+
+    const updateDebouncedSearch = useDebounce(() => setDebouncedSearch(search), 350);
+
+    useEffect(() => {
+        updateDebouncedSearch();
+        return () => (updateDebouncedSearch as any).cancel?.();
+    }, [search, updateDebouncedSearch]);
 
     // Active tab (derived from the route URL) and connection count state
     const initialTab = getActiveRouteTab(url) || AddressBookTabsEnum.Connections;
@@ -114,10 +131,12 @@ const AddressBook: React.FC = () => {
     // Search input handlers
     const handleSearch = useCallback((value: string) => setSearch(value), []);
     const handleSearchFocus = useCallback(() => {
-        searchInputRef.current?.blur();
-        searchInputRef.current?.setFocus();
+        searchInputRef.current?.focus();
     }, []);
-    const clearSearch = useCallback(() => setSearch(''), []);
+    const clearSearch = useCallback(() => {
+        setSearch('');
+        setDebouncedSearch('');
+    }, []);
 
     // Derived booleans for search result rendering
     const isSearching = search.length > 0;
@@ -149,6 +168,8 @@ const AddressBook: React.FC = () => {
             setRequestCount(requestContacts?.length ?? 0);
     }, [requestCount, requestContacts, activeTab, url]);
 
+    const onHeaderScroll = useHeaderScrollSync();
+
     return (
         <IonPage className="bg-grayscale-100">
             <MainHeader
@@ -157,7 +178,12 @@ const AddressBook: React.FC = () => {
                 customHeaderClass="px-0"
             />
 
-            <IonContent fullscreen style={{ '--background': '#EFF0F5' }}>
+            <IonContent
+                fullscreen
+                style={{ '--background': '#EFF0F5' }}
+                scrollEvents
+                onIonScroll={onHeaderScroll}
+            >
                 <GenericErrorBoundary>
                     <AddressBookHeader
                         activeTab={activeTab}
@@ -189,7 +215,9 @@ const AddressBook: React.FC = () => {
                                     {showLoadingSpinner && (
                                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
                                             <IonSpinner color="black" />
-                                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                                            <p className="mt-2 font-bold text-lg">
+                                                {m['common.loading']()}
+                                            </p>
                                         </section>
                                     )}
 

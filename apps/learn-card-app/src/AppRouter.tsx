@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -15,6 +15,7 @@ import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 import { ShareInsightsWithUserWrapper } from './pages/ai-insights/share-insights/ShareInsightsWithUser';
 import AiSessionAssessmentPreviewContainer from './components/ai-assessment/AiSessionAssessmentPreviewContainer';
 import { RequestInsightsFromUserModalWrapper } from './pages/ai-insights/request-insights/RequestInsightsFromUserModal';
+import useAutoConsentLearnCardAi from './hooks/useAutoConsentLearnCardAi';
 
 import {
     useIsLoggedIn,
@@ -29,34 +30,40 @@ import {
     useCurrentUser,
     useIsCurrentUserLCNUser,
     useContract,
+    usePendingContractSync,
     switchedProfileStore,
     usePrivacyGate,
     useAiFeatureGate,
+    useNetworkConsentMutation,
+    BrandingEnum,
+    useLaunchDarklyIdentify,
+    useIsChapiInteraction,
+    redirectStore,
 } from 'learn-card-base';
 import { useAppAuth } from './providers/AuthCoordinatorProvider';
-import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
+import { useAuthStatus } from 'learn-card-base';
+import { OfflineBootGate } from './components/network-listener/OfflineBootGate';
+import { connectivityStore } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
-
-import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 
 import endorsementsRequestStore from './stores/endorsementsRequestStore';
 import { useFirebase } from './hooks/useFirebase';
-import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyIdentify';
-import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
-import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
+import { SharedI18nProvider } from './i18n/SharedI18nProvider';
+import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';
+import { useSetAnalyticsUserId, useAnalytics, useScreenView } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
+import { useRecordFeedbackSession } from './feedback/useRecordFeedbackSession';
 import { useDeviceTypeByWidth } from 'learn-card-base';
-import { redirectStore } from 'learn-card-base/stores/redirectStore';
+import { AI_ROUTES } from './constants/aiRoutes';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
+import ReducedMotionManager from './components/accessibility/ReducedMotionManager';
 
 const log = getLogger('app-router');
-
-export const aiRoutes = ['/ai/topics', '/ai/sessions', '/chats'];
 
 const AppRouter: React.FC = () => {
     const { state: coordinatorState, walletReady } = useAppAuth();
@@ -80,6 +87,16 @@ const AppRouter: React.FC = () => {
     // Everything else (`authenticating`, `authenticated`, `checking_key_status`,
     // `needs_migration`, `deriving_key`, and the brief
     // `ready`-without-wallet window) is a transition we bridge with the loader.
+
+    const authStatus = useAuthStatus();
+    const isOffline = connectivityStore.use.status() === 'offline';
+
+    // If offline and auth is not settled into a usable state (no wallet and unauthenticated/resolving)
+    const showOfflineBootGate =
+        isOffline &&
+        !walletReady &&
+        (authStatus.tag === 'unauthenticated' || authStatus.tag === 'resolving');
+
     const initLoading = !(
         walletReady ||
         coordinatorState.status === 'idle' ||
@@ -120,17 +137,49 @@ const AppRouter: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
+    const isOnboardingOpen = redirectStore.use.isOnboardingOpen();
     const collapsed = useIsCollapsed();
     const { isMobile } = useDeviceTypeByWidth();
     const isChapiInteraction = useIsChapiInteraction();
     const networkConsentMutation = useNetworkConsentMutation();
-    const { setEnabled: setAnalyticsEnabled } = useAnalytics();
+    const analytics = useAnalytics();
+    const { setEnabled: setAnalyticsEnabled } = analytics;
     const { isAiEnabled } = useAiFeatureGate();
+    const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     usePrivacyGate({ onAnalyticsChange: setAnalyticsEnabled });
 
     const currentUser = useCurrentUser();
     const queryClient = useQueryClient();
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+
+    useEffect(() => {
+        if (
+            !isLoggedIn ||
+            !currentUser ||
+            !isAiEnabled ||
+            isOnboardingOpen ||
+            currentLCNUserLoading ||
+            !currentLCNUser
+        )
+            return;
+
+        void autoConsentLearnCardAi({
+            enabled: true,
+            userOverrides: {
+                name: currentUser.name ?? '',
+                profileImage: currentUser.profileImage ?? '',
+            },
+        });
+    }, [
+        autoConsentLearnCardAi,
+        currentUser?.name,
+        currentUser?.profileImage,
+        isAiEnabled,
+        isOnboardingOpen,
+        isLoggedIn,
+        currentLCNUser,
+        currentLCNUserLoading,
+    ]);
 
     const params = queryString.parse(location.search);
 
@@ -143,7 +192,7 @@ const AppRouter: React.FC = () => {
     // Insights Consent
     const insightsConsent = params.insightsConsent;
     const shareInsightsRequest = params.shareInsights;
-    const contractUri = params.contractUri;
+    const contractUri = typeof params.contractUri === 'string' ? params.contractUri : undefined;
     const teacherProfileId = params.teacherProfileId;
     const learnerProfileId = params.learnerProfileId;
 
@@ -164,7 +213,9 @@ const AppRouter: React.FC = () => {
             '/chats',
             '/cli',
         ].includes(location.pathname) ||
-        (collapsed && aiRoutes.includes(location.pathname) && !isMobile) ||
+        (collapsed &&
+            AI_ROUTES.includes(location.pathname as (typeof AI_ROUTES)[number]) &&
+            !isMobile) ||
         location.pathname.includes('/app-store');
 
     const { newModal } = useModal();
@@ -248,12 +299,15 @@ const AppRouter: React.FC = () => {
                 pin: pin as string,
             });
             newModal(
-                <ViewSharedBoost showEndorsementRequest />,
+                <ViewSharedBoost
+                    key={`${String(boostUri)}:${String(seed)}:${String(pin)}`}
+                    showEndorsementRequest
+                />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
-    }, [boostUri, endorsementRequest]);
+    }, [boostUri, seed, pin, endorsementRequest, newModal]);
 
     useEffect(() => {
         // Skip entirely if this is a fresh endorsement link click - the first useEffect handles it
@@ -292,6 +346,7 @@ const AppRouter: React.FC = () => {
     usePrefetchCredentials(undefined, enablePrefetch);
     usePrefetchBoosts(enablePrefetch);
     useSyncConsentFlow(enablePrefetch);
+    usePendingContractSync(enablePrefetch);
 
     // Idle-prefetch route chunks once logged in so navigation from any page
     // (side menu, mobile nav, wallet squares, deep link) lands on a warm cache
@@ -305,12 +360,32 @@ const AppRouter: React.FC = () => {
             .catch(() => undefined);
     }, [enablePrefetch, isAiEnabled]);
 
+    // Warm the landing chunks immediately — while the boot loader or login
+    // form is still up, before auth resolves. The post-login redirect
+    // (→ /dashboard) and the post-boot mount of the refreshed route would
+    // otherwise only START downloading their chunk after navigation, leaving
+    // a white Suspense gap between the loader and the app on a cold cache.
+    // The full prefetch above stays gated on login; this is just the entry
+    // routes: the default landing pages plus wherever the URL already points.
+    const initialPathRef = useRef(window.location.pathname);
+    useEffect(() => {
+        import('./Routes')
+            .then(m => {
+                void m.ROUTE_PRELOAD['/dashboard']?.();
+                void m.ROUTE_PRELOAD['/wallet']?.();
+                void m.ROUTE_PRELOAD[initialPathRef.current]?.();
+            })
+            .catch(() => undefined);
+    }, []);
+
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
     useLaunchDarklyIdentify({ debug: false });
     useSentryIdentify({ debug: false });
 
     useSetAnalyticsUserId({ debug: false });
     useAccountCreatedAndReturningSession(currentUser);
+    useRecordFeedbackSession();
+    useScreenView();
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();
 
@@ -363,7 +438,13 @@ const AppRouter: React.FC = () => {
     // Backfill consent logic for existing users — skipped for minors (AI disabled)
     useEffect(() => {
         const handleBackfillConsent = async () => {
-            if (!currentLCNUserLoading && currentLCNUser && currentUser && isAiEnabled) {
+            if (
+                !isOnboardingOpen &&
+                !currentLCNUserLoading &&
+                currentLCNUser &&
+                currentUser &&
+                isAiEnabled
+            ) {
                 try {
                     // Use the reusable network consent mutation with backfill check
                     await networkConsentMutation.mutateAsync({
@@ -377,43 +458,69 @@ const AppRouter: React.FC = () => {
         };
 
         handleBackfillConsent();
-    }, [currentLCNUser, currentLCNUserLoading, currentUser, isAiEnabled]);
+    }, [currentLCNUser, currentLCNUserLoading, currentUser, isAiEnabled, isOnboardingOpen]);
 
-    // NOTE: <Modals /> must stay mounted across the `initLoading` splash. During
-    // new-user key setup the coordinator transitions needs_setup → deriving_key →
-    // ready, flipping `initLoading` true for a moment. If <Modals /> were torn down
-    // (e.g. behind an early `return <LoginLoadingPage />`), any open modal — like the
-    // onboarding flow — would have its component instance destroyed and recreated,
-    // resetting its internal step state (bouncing the user back to the age gate).
-    // Keeping it as a persistent sibling of the loader/app content preserves the
-    // live modal instance across the transition.
+    // NOTE: <Modals /> must stay mounted across the `initLoading` splash AND
+    // outside the root <GenericErrorBoundary>. During new-user key setup the
+    // coordinator transitions needs_setup → deriving_key → ready, flipping
+    // `initLoading` true for a moment. If <Modals /> were torn down (e.g.
+    // behind an early `return <LoginLoadingPage />`), any open modal — like the
+    // onboarding flow — would have its component instance destroyed and
+    // recreated, resetting its internal step state (bouncing the user back to
+    // the age gate). Keeping it as a persistent sibling of the loader/app
+    // content preserves the live modal instance across the transition. It
+    // must also survive error fallbacks: the LC-2086 feedback flow lets an
+    // error boundary open a feedback composer through the modal host, so the
+    // host cannot unmount when the guarded surface swaps to its fallback.
     return (
-        <GenericErrorBoundary>
-            {initLoading ? (
-                <LoginLoadingPage />
-            ) : (
+        <SharedI18nProvider>
+            {/* Best-effort mirror of the active locale to the LCN profile
+                so the backend can localize server-sent notifications/emails.
+                Render-less; mounted here (inside the root LocaleProvider + the
+                authenticated subtree) so useLocale()/useGetProfile() work. */}
+            <LocaleProfileSync />
+            <GenericErrorBoundary>
                 <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
-                    <IonSplitPane
-                        contentId="main"
-                        className={
-                            collapsed
-                                ? 'side-menu-split-pane-container-collapsed'
-                                : 'side-menu-split-pane-container-visible'
-                        }
-                    >
-                        <GenericErrorBoundary>
-                            {isLoggedIn && !hideSideMenu && (
-                                <SideMenu branding={BrandingEnum.learncard} />
-                            )}
-                            <div id="main" className="w-full">
-                                <MobileNavBar />
-                            </div>
-                        </GenericErrorBoundary>
-                    </IonSplitPane>
+                    {showOfflineBootGate ? (
+                        <OfflineBootGate />
+                    ) : initLoading ? (
+                        <LoginLoadingPage />
+                    ) : (
+                        <>
+                            <a
+                                href="#main"
+                                onClick={event => {
+                                    event.preventDefault();
+                                    document.getElementById('main')?.focus();
+                                }}
+                                className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[10000] focus-visible:rounded-[20px] focus-visible:bg-white focus-visible:px-4 focus-visible:py-3 focus-visible:text-sm focus-visible:font-medium focus-visible:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            >
+                                Skip to main content
+                            </a>
+                            <IonSplitPane
+                                contentId="main"
+                                className={
+                                    collapsed
+                                        ? 'side-menu-split-pane-container-collapsed'
+                                        : 'side-menu-split-pane-container-visible'
+                                }
+                            >
+                                <GenericErrorBoundary>
+                                    {isLoggedIn && !hideSideMenu && (
+                                        <SideMenu branding={BrandingEnum.learncard} />
+                                    )}
+                                    <main id="main" tabIndex={-1} className="w-full">
+                                        <MobileNavBar />
+                                    </main>
+                                </GenericErrorBoundary>
+                            </IonSplitPane>
+                        </>
+                    )}
                 </div>
-            )}
+            </GenericErrorBoundary>
             <Modals />
-        </GenericErrorBoundary>
+            <ReducedMotionManager />
+        </SharedI18nProvider>
     );
 };
 

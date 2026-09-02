@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
+import { m } from '../../../paraglide/messages.js';
+
 import AiInsightsPromptBoxInput from './AiInsightsPromptBoxInput';
 
 import {
@@ -49,16 +51,20 @@ export const AiInsightsPromptBox: React.FC = () => {
             {
                 id: 1,
                 question: 'What would you like to learn about?',
+                questionKey: 'aiSession.chat.topicSelectionQuestion',
                 answer: prompt,
                 type: ChatBotQuestionsEnum.TopicSelection,
                 phraseToEmphasize: 'learn',
+                emphasisKey: 'aiSession.chat.topicSelectionEmphasis',
             },
             {
                 id: 2,
                 question: 'What app do you want to use?',
+                questionKey: 'aiSession.chat.appSelectionQuestion',
                 answer: 1,
                 type: ChatBotQuestionsEnum.AppSelection,
                 phraseToEmphasize: 'What app',
+                emphasisKey: 'aiSession.chat.appSelectionEmphasis',
             },
         ]);
         setInternalAiChatBot(true);
@@ -81,7 +87,7 @@ export const AiInsightsPromptBox: React.FC = () => {
                     promptIsEmpty ? 'bg-grayscale-600 opacity-50' : 'bg-indigo-600'
                 }`}
             >
-                Let's Go!
+                {m['aiInsights.letsGo']()}
             </button>
         </form>
     );

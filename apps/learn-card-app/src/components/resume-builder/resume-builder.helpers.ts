@@ -1,4 +1,7 @@
+import type { VC } from '@learncard/types';
 import { CredentialCategoryEnum } from 'learn-card-base';
+import type { CredentialCategory } from 'learn-card-base/types/credentials';
+import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 export const RESUME_SECTIONS = [
     {
@@ -34,6 +37,66 @@ export const RESUME_SECTIONS = [
 ] as const;
 
 export type ResumeSectionKey = (typeof RESUME_SECTIONS)[number]['key'];
+
+export type ResumeCredentialRecord = {
+    vc?: VC | null;
+    uri: string;
+    category?: CredentialCategory;
+    title?: string;
+};
+
+const RESUME_SECTION_FALLBACK_CATEGORY_ALIASES: Partial<Record<ResumeSectionKey, string[]>> = {
+    [CredentialCategoryEnum.workHistory]: [
+        CredentialCategoryEnum.workHistory,
+        'Job',
+        CredentialCategoryEnum.experience,
+        CredentialCategoryEnum.workExperience,
+    ],
+    [CredentialCategoryEnum.learningHistory]: [
+        CredentialCategoryEnum.learningHistory,
+        CredentialCategoryEnum.course,
+    ],
+};
+
+const isResumeCredentialRecord = (
+    record:
+        | { vc?: VC | null; uri?: string; category?: CredentialCategory; title?: string }
+        | null
+        | undefined
+): record is ResumeCredentialRecord => Boolean(record?.uri);
+
+export const toResumeCredentialRecords = (
+    records:
+        | Array<{ vc?: VC | null; uri?: string; category?: CredentialCategory; title?: string }>
+        | undefined
+): ResumeCredentialRecord[] => (records ?? []).filter(isResumeCredentialRecord);
+
+export const getResumeCredentialRecordsForSection = (
+    sectionKey: ResumeSectionKey,
+    exactRecords: ResumeCredentialRecord[],
+    allRecords: ResumeCredentialRecord[]
+): ResumeCredentialRecord[] => {
+    const fallbackAliases = RESUME_SECTION_FALLBACK_CATEGORY_ALIASES[sectionKey];
+    const aliases = new Set([sectionKey, ...(fallbackAliases ?? [])]);
+    const recordsByUri = new Map<string, ResumeCredentialRecord>();
+
+    allRecords.forEach(record => {
+        if (record.category && aliases.has(record.category)) recordsByUri.set(record.uri, record);
+
+        if (!fallbackAliases) return;
+
+        if (!record.vc) return;
+
+        const category = getDefaultCategoryForCredential(record.vc, { skipValidation: true });
+
+        if (aliases.has(category)) recordsByUri.set(record.uri, record);
+    });
+    exactRecords.forEach(record => {
+        if (!recordsByUri.has(record.uri)) recordsByUri.set(record.uri, record);
+    });
+
+    return [...recordsByUri.values()];
+};
 
 export enum UserInfoEnum {
     Name = 'name',

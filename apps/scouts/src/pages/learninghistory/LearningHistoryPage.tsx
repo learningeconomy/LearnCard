@@ -8,7 +8,6 @@ import BoostManagedCard from '../../components/boost/boost-managed-card/BoostMan
 
 import {
     CurvedBackdropEl,
-    EarnedAndManagedTabs,
     CredentialListTabEnum,
     CredentialCategoryEnum,
     useGetCredentials,
@@ -17,14 +16,14 @@ import {
     BrandingEnum,
     useGetBoosts,
     categoryMetadata,
+    CredentialListSkeleton,
 } from 'learn-card-base';
+import EarnedAndManagedTabs from '../../components/earned-and-managed-tabs/ScoutPassEarnedAndManagedTabs';
 
 import { usePathQuery } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
-
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../assets/lotties/hourglass.json';
 
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
@@ -122,18 +121,7 @@ const LearningHistoryPage: React.FC = () => {
                     <CurvedBackdropEl className="bg-emerald-300" />
                     {loading &&
                         activeTab === CredentialListTabEnum.Earned &&
-                        !earnedBoostsError && (
-                            <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                                <div className="max-w-[280px] mt-[-40px]">
-                                    <Lottie
-                                        loop
-                                        animationData={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
-                                </div>
-                            </section>
-                        )}
+                        !earnedBoostsError && <CredentialListSkeleton cardSize="credential" />}
                     {!loading &&
                         vcs?.length > 0 &&
                         activeTab === CredentialListTabEnum.Earned &&
@@ -150,29 +138,14 @@ const LearningHistoryPage: React.FC = () => {
                         activeTab === CredentialListTabEnum.Earned &&
                         !earnedBoostsError && (
                             <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                                <img
-                                    src={imgSrc}
-                                    alt="learning history"
-                                    className="w-[250px] h-[250px] m-auto"
-                                />
-                                <strong>No learning history yet</strong>
+                                <img src={imgSrc} alt="" className="w-[250px] h-[250px] m-auto" />
+                                <strong>{m['learningHistory.noHistory']()}</strong>
                             </section>
                         )}
 
                     {boostsLoading &&
                         activeTab === CredentialListTabEnum.Managed &&
-                        !managedBoostsError && (
-                            <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                                <div className="max-w-[280px] mt-[-40px]">
-                                    <Lottie
-                                        loop
-                                        animationData={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
-                                </div>
-                            </section>
-                        )}
+                        !managedBoostsError && <CredentialListSkeleton cardSize="credential" />}
                     {!boostsLoading &&
                         !managedBoostsError &&
                         boosts?.length > 0 &&
@@ -191,12 +164,8 @@ const LearningHistoryPage: React.FC = () => {
                         boosts?.length === 0 &&
                         activeTab === CredentialListTabEnum.Managed && (
                             <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                                <img
-                                    src={imgSrc}
-                                    alt="learning history"
-                                    className="w-[250px] h-[250px] m-auto"
-                                />
-                                <strong>No boosts to manage yet</strong>
+                                <img src={imgSrc} alt="" className="w-[250px] h-[250px] m-auto" />
+                                <strong>{m['achievements.noBoosts']()}</strong>
                             </section>
                         )}
 

@@ -10,10 +10,14 @@ import TopicInput from './helpers/TopicInput';
 import { aiAppQAInitState, ChatBotQA, ChatBotQuestionsEnum } from './newAiSessionChatbot.helpers';
 
 import { useModal } from 'learn-card-base';
-import { LaunchPadAppListItem, useDeviceTypeByWidth } from 'learn-card-base';
+import {
+    getAiPassportLaunchUrl,
+    LaunchPadAppListItem,
+    useDeviceTypeByWidth,
+} from 'learn-card-base';
 import { aiPassportApps } from '../../ai-passport-apps/aiPassport-apps.helpers';
 import { useGetCurrentLCNUser } from 'learn-card-base';
-import { sessionLoadingText } from '../newAiSession.helpers';
+import { getSessionLoadingText } from '../newAiSession.helpers';
 import useAppStore from '../../../pages/launchPad/useAppStore';
 
 // Extended type to include url for launching
@@ -185,9 +189,10 @@ export const NewAiAppSessionChatBotContainer: React.FC<{}> = () => {
                 // App store listings use /chats path, hardcoded apps use /chat
                 const path = selectedApp.isAppStoreListing ? '/chats' : '/chat';
 
-                window.location.href = `${selectedApp.url}${path}?topic=${encodeURIComponent(
-                    topicAnswer || ''
-                )}&did=${currentLCNUser?.did}`;
+                window.location.href = getAiPassportLaunchUrl(
+                    `${selectedApp.url}${path}?topic=${encodeURIComponent(topicAnswer || '')}`,
+                    currentLCNUser?.did
+                );
             }
         }, 3000);
     };
@@ -195,7 +200,7 @@ export const NewAiAppSessionChatBotContainer: React.FC<{}> = () => {
     return (
         <div className={`w-full flex flex-col ${isDesktop ? 'max-w-[800px]' : ''}`}>
             {showLoader && (
-                <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
+                <AiSessionLoader chatBotQA={chatBotQA} overrideText={getSessionLoadingText()} />
             )}
             {chatBotQA.map((qa, index) => {
                 const isVisible = visibleIndexes.includes(index);

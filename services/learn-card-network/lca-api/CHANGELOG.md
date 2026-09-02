@@ -1,5 +1,167 @@
 # @welibraryos/lca-api-service
 
+## 1.2.25
+
+### Patch Changes
+
+-   [#1501](https://github.com/learningeconomy/LearnCard/pull/1501) [`059d0869c2831deafa03244b1800aa65b46f3561`](https://github.com/learningeconomy/LearnCard/commit/059d0869c2831deafa03244b1800aa65b46f3561) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump axios to ^0.33.0 to resolve Dependabot alerts (formToJSON DoS, NO_PROXY bypass, prototype pollution)
+
+-   [#1491](https://github.com/learningeconomy/LearnCard/pull/1491) [`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e) Thanks [@goblincore](https://github.com/goblincore)! - Prompt credential claimers and senders to create an explicit LearnCard connection, with durable and idempotent actionable notification delivery.
+
+-   [#1496](https://github.com/learningeconomy/LearnCard/pull/1496) [`93ad0e53137d9bd86d7154d68a259d6424e60d79`](https://github.com/learningeconomy/LearnCard/commit/93ad0e53137d9bd86d7154d68a259d6424e60d79) Thanks [@Custard7](https://github.com/Custard7)! - fix: move serverless-offline + @sentry/esbuild-plugin to devDependencies
+
+-   Updated dependencies [[`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e)]:
+    -   @learncard/types@5.18.2
+    -   @learncard/core@9.4.31
+    -   @learncard/init@2.4.12
+    -   @learncard/did-web-plugin@1.1.31
+    -   @learncard/didkit-plugin@1.9.11
+    -   @learncard/didkit-plugin-node@0.2.29
+
+## 1.2.24
+
+### Patch Changes
+
+-   [#1453](https://github.com/learningeconomy/LearnCard/pull/1453) [`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Retire the legacy CHAPI example, MetaMask Snap projects, Discord bot, and Simple Signing service, client, and plugin.
+
+    Managed signing authority consumers now use `@learncard/lca-api-plugin`. Replace `getSimpleSigningPlugin(learnCard, endpoint)` with `getLCAPlugin(learnCard, endpoint)`. Historical implementations remain available through Git history.
+
+-   [#1473](https://github.com/learningeconomy/LearnCard/pull/1473) [`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump @trpc/server, fastify, @fastify/static (7 high Dependabot alerts)
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.30
+    -   @learncard/init@2.4.11
+    -   @learncard/did-web-plugin@1.1.30
+    -   @learncard/didkit-plugin@1.9.10
+    -   @learncard/didkit-plugin-node@0.2.28
+
+## 1.2.23
+
+### Patch Changes
+
+-   [#1460](https://github.com/learningeconomy/LearnCard/pull/1460) [`36cc19241aa3bbe6c82a1664f967992d09176d4a`](https://github.com/learningeconomy/LearnCard/commit/36cc19241aa3bbe6c82a1664f967992d09176d4a) Thanks [@goblincore](https://github.com/goblincore)! - [LC-2073] fix(e2e): fix failing E2E tests, reduce LearnCard App Docker build memory, fix OOM error for e2e test runner
+
+-   [#1448](https://github.com/learningeconomy/LearnCard/pull/1448) [`540434989e3b0e15b9d3ca76388ca4de6730a56b`](https://github.com/learningeconomy/LearnCard/commit/540434989e3b0e15b9d3ca76388ca4de6730a56b) Thanks [@Custard7](https://github.com/Custard7)! - fix: OpenAPI base URL
+
+-   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4), [`6796b321354ca870e4dfa3606719f9882221bc1b`](https://github.com/learningeconomy/LearnCard/commit/6796b321354ca870e4dfa3606719f9882221bc1b)]:
+    -   @learncard/didkit-plugin@1.9.9
+    -   @learncard/didkit-plugin-node@0.2.27
+    -   @learncard/types@5.18.1
+    -   @learncard/init@2.4.10
+    -   @learncard/core@9.4.29
+    -   @learncard/did-web-plugin@1.1.29
+
+## 1.2.22
+
+### Patch Changes
+
+-   [#1312](https://github.com/learningeconomy/LearnCard/pull/1312) [`0f93889aeebd38203ec57c44ed888d25f8d75f4f`](https://github.com/learningeconomy/LearnCard/commit/0f93889aeebd38203ec57c44ed888d25f8d75f4f) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1902] Localize transactional emails + SMS (en/es/fr/ar)
+
+-   Updated dependencies [[`0f93889aeebd38203ec57c44ed888d25f8d75f4f`](https://github.com/learningeconomy/LearnCard/commit/0f93889aeebd38203ec57c44ed888d25f8d75f4f), [`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24), [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158), [`0f93889aeebd38203ec57c44ed888d25f8d75f4f`](https://github.com/learningeconomy/LearnCard/commit/0f93889aeebd38203ec57c44ed888d25f8d75f4f)]:
+    -   @learncard/email-templates@1.0.5
+    -   @learncard/types@5.18.0
+    -   @learncard/core@9.4.28
+    -   @learncard/init@2.4.9
+    -   @learncard/did-web-plugin@1.1.28
+    -   @learncard/didkit-plugin@1.9.8
+    -   @learncard/didkit-plugin-node@0.2.26
+
+## 1.2.21
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.8
+
+## 1.2.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.7
+
+## 1.2.19
+
+### Patch Changes
+
+-   [#1367](https://github.com/learningeconomy/LearnCard/pull/1367) [`f1e7b459a4650cf2fb9236369950efcaea935c3f`](https://github.com/learningeconomy/LearnCard/commit/f1e7b459a4650cf2fb9236369950efcaea935c3f) Thanks [@smurflo2](https://github.com/smurflo2)! - Revive Scouts, fix various bugs
+
+-   Updated dependencies [[`f1e7b459a4650cf2fb9236369950efcaea935c3f`](https://github.com/learningeconomy/LearnCard/commit/f1e7b459a4650cf2fb9236369950efcaea935c3f), [`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    -   @learncard/email-templates@1.0.4
+    -   @learncard/types@5.17.6
+    -   @learncard/core@9.4.27
+    -   @learncard/init@2.4.6
+    -   @learncard/did-web-plugin@1.1.27
+    -   @learncard/didkit-plugin@1.9.7
+    -   @learncard/didkit-plugin-node@0.2.25
+
+## 1.2.18
+
+### Patch Changes
+
+-   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/core@9.4.26
+    -   @learncard/init@2.4.5
+    -   @learncard/did-web-plugin@1.1.26
+    -   @learncard/didkit-plugin@1.9.6
+    -   @learncard/didkit-plugin-node@0.2.24
+
+## 1.2.17
+
+### Patch Changes
+
+-   [#1347](https://github.com/learningeconomy/LearnCard/pull/1347) [`e24c3e69e4550529d1957189ae8a4a7e0edc0b17`](https://github.com/learningeconomy/LearnCard/commit/e24c3e69e4550529d1957189ae8a4a7e0edc0b17) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add /health-check/deep: issues and verifies a test credential + presentation in-process, proving the full DIDKit crypto path (plugin load, signing, and the native plugin runtime delegation) works, and reports which DIDKit engine (native/wasm) loaded. Shallow health checks stayed green through two DIDKit outages on 2026-07-02; this endpoint makes those failure modes observable from a plain HTTP probe.
+
+-   [#1341](https://github.com/learningeconomy/LearnCard/pull/1341) [`69ef21bda3e003e83f4d842c52e037acf528af09`](https://github.com/learningeconomy/LearnCard/commit/69ef21bda3e003e83f4d842c52e037acf528af09) Thanks [@goblincore](https://github.com/goblincore)! - 🐛 Bundle DIDKit WASM into Lambda artifacts (fix staging 500s)
+
+-   [#1343](https://github.com/learningeconomy/LearnCard/pull/1343) [`8a5cd1fa2b4996ea6e3e0fafab3cec64a704b99b`](https://github.com/learningeconomy/LearnCard/commit/8a5cd1fa2b4996ea6e3e0fafab3cec64a704b99b) Thanks [@goblincore](https://github.com/goblincore)! - ✨ Ship native DIDKit to Lambda via a Layer, include its runtime DIDKit dependency, and surface DID auth VPs in service health checks.
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    -   @learncard/email-templates@1.0.3
+    -   @learncard/core@9.4.25
+    -   @learncard/init@2.4.4
+    -   @learncard/types@5.17.5
+    -   @learncard/did-web-plugin@1.1.25
+    -   @learncard/didkit-plugin@1.9.5
+    -   @learncard/didkit-plugin-node@0.2.23
+
+## 1.2.16
+
+### Patch Changes
+
+-   Updated dependencies [[`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/types@5.17.4
+    -   @learncard/core@9.4.24
+    -   @learncard/init@2.4.3
+    -   @learncard/did-web-plugin@1.1.24
+    -   @learncard/didkit-plugin@1.9.4
+    -   @learncard/didkit-plugin-node@0.2.22
+
+## 1.2.15
+
+### Patch Changes
+
+-   Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
+    -   @learncard/types@5.17.3
+    -   @learncard/core@9.4.23
+    -   @learncard/init@2.4.2
+    -   @learncard/did-web-plugin@1.1.23
+    -   @learncard/didkit-plugin@1.9.3
+    -   @learncard/didkit-plugin-node@0.2.21
+
+## 1.2.14
+
+### Patch Changes
+
+-   [#1317](https://github.com/learningeconomy/LearnCard/pull/1317) [`49c3f178b72adc423f10d5362af4d74dbe04f521`](https://github.com/learningeconomy/LearnCard/commit/49c3f178b72adc423f10d5362af4d74dbe04f521) Thanks [@goblincore](https://github.com/goblincore)! - fix(lca-api): bundle @learncard/init from its ESM build in Lambda esbuild (staging 500s)
+
+-   [#1310](https://github.com/learningeconomy/LearnCard/pull/1310) [`d4d0a9e8a188a64c3d9e1ebbf63cbb698888813d`](https://github.com/learningeconomy/LearnCard/commit/d4d0a9e8a188a64c3d9e1ebbf63cbb698888813d) Thanks [@smurflo2](https://github.com/smurflo2)! - New LearnCard AI contract that includes goals, skills, professional title, and work experience. Also seperate network consent contract from LearnCard AI contract
+
+-   Updated dependencies [[`ee40d1ed82a153c30425c2c2e836c56da781b1c6`](https://github.com/learningeconomy/LearnCard/commit/ee40d1ed82a153c30425c2c2e836c56da781b1c6), [`49c3f178b72adc423f10d5362af4d74dbe04f521`](https://github.com/learningeconomy/LearnCard/commit/49c3f178b72adc423f10d5362af4d74dbe04f521)]:
+    -   @learncard/init@2.4.1
+
 ## 1.2.13
 
 ### Patch Changes
@@ -106,7 +268,7 @@
 
     ### What's new
 
-    -   **`@learncard/email-templates` (new package)** — React Email templates for every transactional email the platform sends (login OTP, recovery email code, recovery key, inbox claim, endorsement request, guardian approval, account approved, guardian credential approval, etc.). Includes an SMS renderer, a tenant registry with per-tenant branding overrides, and a local preview server (`pnpm --filter @learncard/email-templates dev`).
+    -   **`@learncard/email-templates` (new package)** — React Email templates for every transactional email the platform sends (login OTP, recovery email code, recovery key, inbox claim, endorsement request, guardian approval, account approved, guardian credential approval, etc.). Includes an SMS renderer, a tenant registry with per-tenant branding overrides, and a local preview server (`bun --filter @learncard/email-templates run dev`).
     -   **`lca-api` + `brain-service`** — PostmarkAdapter now renders templates locally with tenant branding and delivers the result as raw HTML via Postmark's `sendEmail` API. Tenant is resolved from the request in `createContext` via `resolveTenantFromRequest()` and attached as `ctx.tenant` for every route.
     -   **`@learncard/sss-key-manager`** — `createSSSStrategy({ tenantId })` now forwards an `X-Tenant-Id` header on every call to `lca-api` so recovery / OTP emails are branded for the tenant the user is signed into.
     -   **`learn-card-app`** — Resolves the active tenant at SSS factory time and passes it into `createSSSStrategy`, so VetPass (and any future tenant) gets branded recovery emails out of the box.
@@ -450,7 +612,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

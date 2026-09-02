@@ -1,5 +1,5 @@
 {
-    "_defaults": "Fallback defaults live in packages/learn-card-base/src/config/tenantDefaults.ts — run `pnpm lc resolve learncard` to see the final merged config.",
+    "_defaults": "Fallback defaults live in packages/learn-card-base/src/config/tenantDefaults.ts — run `bun run lc resolve learncard` to see the final merged config.",
 
     "tenantId": "learncard",
     "domain": "learncard.app",
@@ -53,7 +53,7 @@
         "textLogoDarkUrl": "/branding/text-logo-dark.svg",
         "brandMarkUrl": "/branding/brand-mark.png",
         "appIconUrl": "/branding/app-icon.png",
-        "desktopLoginBgUrl": "/branding/desktop-login-bg.png",
+        "desktopLoginBgUrl": "https://cdn.filestackcontent.com/kFZcMGbPTkSYLVY4aoR1",
         "desktopLoginBgAltUrl": "/branding/desktop-login-bg-alt.png",
         "categoryLabels": {
             "learningHistory": "Study",
@@ -98,6 +98,11 @@
         "privacyPolicyUrl": "https://www.learncard.com/learncard-privacy-policy",
         "contactUrl": "https://www.learningeconomy.io/contact",
         "websiteUrl": "https://www.learncard.com/"
+    },
+
+    "i18n": {
+        "defaultLanguage": "en",
+        "supportedLanguages": ["en", "es", "fr", "ar"]
     },
 
     "native": {

@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import X from 'learn-card-base/svgs/X';
 import { IonFooter } from '@ionic/react';
@@ -36,7 +37,7 @@ export const AiAssessmentPreviewFooter: React.FC<{
                             }}
                             className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] max-h-[42px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2 font-semibold"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
                     </div>
                 </div>
@@ -56,7 +57,7 @@ export const AiAssessmentPreviewFooter: React.FC<{
                             onClick={handleStartAssessment}
                             className={`bg-${primaryColor} py-[12px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center font-semibold mr-4`}
                         >
-                            Finish Session <NewAiSessionIcon />
+                            {m['aiSession.finishSession']()} <NewAiSessionIcon />
                         </button>
                         {/* <button
                             onClick={closeModal}
@@ -95,13 +96,13 @@ export const AiAssessmentPreviewFooter: React.FC<{
                                 onClick={() => setIsFront?.(!isFront)}
                                 className="bg-white text-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] w-full shadow-button-bottom flex gap-[5px] items-center justify-center mr-2"
                             >
-                                Details
+                                {m['common.details']()}
                             </button>
                             <button
                                 onClick={() => handleShare?.()}
                                 className={`bg-${primaryColor} py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center mr-2`}
                             >
-                                Share
+                                {m['common.share']()}
                             </button>
                             <button
                                 onClick={() => handleOptions?.()}
@@ -116,14 +117,14 @@ export const AiAssessmentPreviewFooter: React.FC<{
                                 onClick={closeModal}
                                 className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] max-h-[42px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2 font-semibold"
                             >
-                                Close
+                                {m['common.close']()}
                             </button>
 
                             <button
                                 onClick={handleStartAssessment}
                                 className={`bg-${primaryColor} py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] leading-[24px] max-h-[42px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center font-semibold`}
                             >
-                                Finish <NewAiSessionIcon />
+                                {m['aiSession.finish']()} <NewAiSessionIcon />
                             </button>
                         </>
                     )}

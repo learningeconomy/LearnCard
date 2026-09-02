@@ -4,7 +4,10 @@ import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('add-to-learn-card-menu');
 
-import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useHistory } from 'react-router-dom';
+
+import * as m from '../../paraglide/messages.js';
+
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
@@ -33,7 +36,6 @@ import BoostTemplateSelector from '../boost/boost-template/BoostTemplateSelector
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 import BoostsTwoTonedIcon from 'learn-card-base/svgs/SideNav/BoostsTwoTonedIcon';
 import BoostSelectMenu from '../boost/boost-select-menu/BoostSelectMenu';
-import useBoostModal from '../boost/hooks/useBoostModal';
 import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
 import IssueManagedBoostSelector from '../../pages/launchPad/LaunchPadHeader/IssueManagedBoostSelector';
 import { NewAiSessionIconShaded } from 'learn-card-base/svgs/NewAiSessionIcon';
@@ -66,10 +68,11 @@ export type AddToLearnCardMenuItem = {
 };
 
 export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className }) => {
-    const flags = useFlags();
+    const history = useHistory();
     const { isDesktop } = useDeviceTypeByWidth();
-    const { newModal, closeModal } = useModal();
+    const { newModal, closeModal, closeAllModals } = useModal();
     const { gate } = useLCNGatedAction();
+    const { checkAndPromptRecovery } = useBoostRecoveryCheck();
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
     const existingTopics = topics?.pages?.[0]?.records || [];
@@ -103,12 +106,11 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         );
     };
 
-    const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
-    const { checkAndPromptRecovery } = useBoostRecoveryCheck();
-
-    const handleNewBoostModal = () => {
-        closeModal();
-        handlePresentBoostModal();
+    const handleSimpleSend = () => {
+        checkAndPromptRecovery(() => {
+            closeAllModals();
+            history.push('/issue');
+        });
     };
 
     const handleIssueManagedBoost = () => {
@@ -160,7 +162,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     addToLearnCardMenuItems.push({
         type: AddToLearnCardMenuEnum.boostSomeone,
         Icon: BoostsTwoTonedIcon,
-        label: 'Boost Someone',
+        label: m['launchpad.actions.boostSomeone'](),
         onClick: () => {
             closeModal();
             checkAndPromptRecovery(() => {
@@ -179,37 +181,30 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         },
     });
 
-    if (flags?.enableLaunchPadUpdates) {
-        addToLearnCardMenuItems.push({
-            type: AddToLearnCardMenuEnum.newAiSession,
-            Icon: AiWandIcon,
-            label: 'New AI Session',
-            onClick: () => handleNewSession(),
-        });
-    }
+    addToLearnCardMenuItems.push({
+        type: AddToLearnCardMenuEnum.newAiSession,
+        Icon: AiWandIcon,
+        label: m['sidemenu.newAiSession'](),
+        onClick: () => handleNewSession(),
+    });
 
     addToLearnCardMenuItems.push(
         {
             type: AddToLearnCardMenuEnum.issueCredential,
             Icon: AddCredentialIcon,
-            label: 'Issue Credential',
+            label: m['launchpad.actions.issueCredential'](),
             onClick: () => handleIssueManagedBoost(),
         },
         {
             type: AddToLearnCardMenuEnum.createCredential,
             Icon: AddCredentialIcon,
-            label: 'Create Credential',
-            onClick: () => {
-                closeModal();
-                checkAndPromptRecovery(() => {
-                    handlePresentBoostModal();
-                });
-            },
+            label: m['launchpad.actions.createCredential'](),
+            onClick: handleSimpleSend,
         },
         {
             type: AddToLearnCardMenuEnum.uploadCredential,
             Icon: UploadIcon,
-            label: 'Upload Credential',
+            label: m['launchpad.actions.uploadCredential'](),
             onClick: () => handleCheckListButton(),
         }
     );
@@ -218,7 +213,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         addToLearnCardMenuItems.push({
             type: AddToLearnCardMenuEnum.claimCredential,
             Icon: ScanIcon,
-            label: 'Scan a QR Code',
+            label: m['launchpad.actions.scanQrCode'](),
             onClick: () => handleClaimCredentialButton(),
         });
     }
@@ -226,7 +221,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     addToLearnCardMenuItems.push({
         type: AddToLearnCardMenuEnum.useClaimLink,
         Icon: LinkOutlinedIcon,
-        label: 'Use a Claim Link',
+        label: m['launchpad.actions.useClaimLink'](),
         onClick: () => handleUseClaimLinkButton(),
     });
 

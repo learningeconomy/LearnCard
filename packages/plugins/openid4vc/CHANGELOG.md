@@ -1,5 +1,114 @@
 # @learncard/openid4vc-plugin
 
+## 0.3.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.31
+    -   @learncard/didkit-plugin@1.9.11
+    -   @learncard/vc-plugin@1.5.11
+
+## 0.3.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.30
+    -   @learncard/didkit-plugin@1.9.10
+    -   @learncard/vc-plugin@1.5.10
+
+## 0.3.2
+
+### Patch Changes
+
+-   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4), [`6796b321354ca870e4dfa3606719f9882221bc1b`](https://github.com/learningeconomy/LearnCard/commit/6796b321354ca870e4dfa3606719f9882221bc1b)]:
+    -   @learncard/didkit-plugin@1.9.9
+    -   @learncard/core@9.4.29
+    -   @learncard/vc-plugin@1.5.9
+
+## 0.3.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.28
+    -   @learncard/didkit-plugin@1.9.8
+    -   @learncard/vc-plugin@1.5.8
+
+## 0.3.0
+
+### Minor Changes
+
+-   [#1416](https://github.com/learningeconomy/LearnCard/pull/1416) [`4d08fc205de61058235707cfd6d2db4465f8ec9e`](https://github.com/learningeconomy/LearnCard/commit/4d08fc205de61058235707cfd6d2db4465f8ec9e) Thanks [@Custard7](https://github.com/Custard7)! - Bring the OID4VP (presentation) holder flow in line with OpenID4VP 1.0 final.
+
+    -   Reject requests carrying `transaction_data` we can't honor with a typed `invalid_transaction_data` error, instead of silently presenting without binding it (§8.4/§8.5).
+    -   Negotiate encrypted (JARM) responses per 1.0: content-encryption from `encrypted_response_enc_values_supported` with the `A128GCM` default, and the JWE key-wrap `alg` taken from the chosen verifier JWK (§8.3). The pre-1.0 `authorization_encrypted_response_alg`/`_enc` fields are still honored as a `[jarm-compat]` fallback.
+    -   Require the `nonce` claim in signed Request Objects (§5.2) rather than defaulting it to empty.
+    -   Accept the canonical `decentralized_identifier:` client-id prefix (§5.9.3), normalized to the internal `did` prefix; the bare `did:` form still works.
+    -   Parse `verifier_info` (§5.11) and `request_uri_method` (§5.10) from both query-param and signed Request Object forms.
+    -   Support the `x509_hash` client-id prefix (§5.9.3): the leaf certificate's base64url SHA-256 must equal the `client_id`.
+    -   Support `request_uri_method=post` (§5.10): the wallet POSTs a fresh `wallet_nonce` to the request URI and requires the signed Request Object to echo it.
+
+    DCQL remains the 1.0 query path; PEX (`presentation_definition`) is retained as `[pex-compat]` backward support for pre-1.0 verifiers.
+
+    Still not implemented (verifiers using these are cleanly rejected): the `openid_federation` and `verifier_attestation` client-id prefixes, actually binding `transaction_data` into a presentation (we reject requests that carry it), and the Digital Credentials API response modes (`dc_api`/`dc_api.jwt`).
+
+-   [#1416](https://github.com/learningeconomy/LearnCard/pull/1416) [`4d08fc205de61058235707cfd6d2db4465f8ec9e`](https://github.com/learningeconomy/LearnCard/commit/4d08fc205de61058235707cfd6d2db4465f8ec9e) Thanks [@Custard7](https://github.com/Custard7)! - Update the OID4VCI holder flow to OID4VCI 1.0 (final), keeping Draft 13 support.
+
+    -   Issuer and `oauth-authorization-server` metadata are now discovered by inserting the well-known segment between the host and path (§12.2.2 / RFC 8414). This fixes discovery against issuers whose identifier carries a path.
+    -   The credential request sends the 1.0 shape (`credential_configuration_id` + a `proofs` array) by default.
+    -   Draft 13 issuers remain supported: metadata discovery falls back to the legacy append-style well-known URL, and when that fallback fires the plugin sends the Draft 13 credential request shape (`format` + `credential_definition` + singular `proof`). The spec revision is detected once during discovery. All Draft-13-specific code is isolated in `vci/draft13-compat.ts` for easy removal once the ecosystem migrates.
+
+## 0.2.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.27
+    -   @learncard/didkit-plugin@1.9.7
+    -   @learncard/vc-plugin@1.5.7
+
+## 0.2.4
+
+### Patch Changes
+
+-   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/core@9.4.26
+    -   @learncard/didkit-plugin@1.9.6
+    -   @learncard/vc-plugin@1.5.6
+
+## 0.2.3
+
+### Patch Changes
+
+-   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299)]:
+    -   @learncard/core@9.4.25
+    -   @learncard/didkit-plugin@1.9.5
+    -   @learncard/vc-plugin@1.5.5
+
+## 0.2.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.24
+    -   @learncard/didkit-plugin@1.9.4
+    -   @learncard/vc-plugin@1.5.4
+
+## 0.2.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.23
+    -   @learncard/didkit-plugin@1.9.3
+    -   @learncard/vc-plugin@1.5.3
+
 ## 0.2.0
 
 ### Minor Changes
@@ -112,7 +221,7 @@
 
     This change is verified by two new CI surfaces:
 
-    -   `pnpm validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
+    -   `bun run validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
     -   `.github/workflows/smoketest-npm-packages.yml` now also probes every published plugin's ESM + CJS export surface directly (not just `@learncard/init` transitively) and bundles a trivial consumer with esbuild to catch bundler-resolution-only regressions.
 
     Follow-up work tracked as advisory failures in both surfaces (not gating CI until fixed): `@learncard/ceramic-plugin`, `@learncard/didkey-plugin`, `@learncard/helpers`, `@learncard/idx-plugin`, `@learncard/lca-api-plugin`, `@learncard/learn-cloud-plugin`, `@learncard/network-plugin`, `@learncard/simple-signing-plugin` each have pre-existing publish-time bugs (CJS-only transitive deps imported via named ESM, dynamic `require()` in ESM bundles, or unmigrated upstream packages).

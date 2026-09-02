@@ -1,8 +1,9 @@
 import React, { Suspense } from 'react';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { connectivityStore } from 'learn-card-base';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
@@ -17,15 +18,22 @@ import {
     sqliteStore,
     ensureReactQueryTableExists,
     getLogger,
+    InAppMessageHost,
+    ConnectionPromptCoordinator,
 } from 'learn-card-base';
+import * as m from './paraglide/messages.js';
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
+import CredentialSyncListener from './components/credential-sync-listener/CredentialSyncListener';
+import NotificationToastListener from './components/notification-toast-listener/NotificationToastListener';
 import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgressReactorMount';
 import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGlobals';
 import { QRCodeScannerStore } from 'learn-card-base';
 import Toast from 'learn-card-base/components/toast/Toast';
+import ModalAccessibilityManager from 'learn-card-base/components/modals/ModalAccessibilityManager';
+import { getConnectionPromptCopy } from './helpers/connectionPromptCopy';
 
 // Install `window.__pathwaysDev` at the app-root level rather than
 // waiting for the /pathways shell to mount. The dev-panel inspector
@@ -45,6 +53,7 @@ import SdkActivityIndicator from './components/sdk-activity/SdkActivityIndicator
 import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServiceProvider';
 import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
+import { FeedbackProvider } from './feedback/reporting';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
 
@@ -55,6 +64,21 @@ const history = createBrowserHistory();
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
+
+// Drive React Query's online state from our connectivity model (fed by
+// Capacitor Network on native) instead of the default `navigator.onLine`, which
+// is unreliable in the Android webview. This makes every query refetch on
+// reconnect and mutations resume — so data that went stale offline (feature
+// flags, notifications, etc.) reloads automatically when connectivity returns.
+onlineManager.setEventListener(setOnline => {
+    setOnline(connectivityStore.get.status() !== 'offline');
+
+    const unsubscribe = connectivityStore.store.subscribe(({ status }) => {
+        setOnline(status !== 'offline');
+    });
+
+    return unsubscribe;
+});
 
 const persister = createAsyncStoragePersister({
     storage: {
@@ -169,7 +193,9 @@ const ThemeInitializer: React.FC = () => {
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web
     sqliteInit(); // initializes SQLite on native
-    const showScannerOverlay = QRCodeScannerStore?.use?.showScanner();
+    const showScannerOverlay = QRCodeScannerStore.useTracked.showScanner();
+    const scannerMode = QRCodeScannerStore.useTracked.mode();
+    const isRecipientScanner = scannerMode === 'recipient';
 
     return (
         <PersistQueryClientProvider
@@ -187,22 +213,52 @@ const FullApp: React.FC = () => {
                                 <ModalsProvider>
                                     <IonApp>
                                         <div id="modal-mid-root"></div>
+                                        <ModalAccessibilityManager />
                                         <Toast />
                                         <SdkActivityIndicator />
                                         <NetworkListener />
                                         <AppUrlListener />
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
+                                        <CredentialSyncListener />
+                                        <NotificationToastListener />
+                                        <ConnectionPromptCoordinator
+                                            copy={getConnectionPromptCopy()}
+                                        />
                                         {/* Subscribes the pathway-progress reactor to
                                             the wallet event bus. Placed alongside the
                                             other app-level listeners so every claim
                                             and session-end event — wherever it's
                                             published — flows through one reactor. */}
                                         <PathwayProgressReactorMount />
-                                        <AppRouter />
+                                        <FeedbackProvider>
+                                            <AppRouter />
+                                        </FeedbackProvider>
+                                        <InAppMessageHost />
                                         <QRCodeScannerListener />
 
-                                        {showScannerOverlay && <QRCodeScannerOverlay />}
+                                        {showScannerOverlay && (
+                                            <QRCodeScannerOverlay
+                                                title={
+                                                    isRecipientScanner
+                                                        ? m['scanner.profileTitle']()
+                                                        : m['scanner.title']()
+                                                }
+                                                description={
+                                                    isRecipientScanner
+                                                        ? m['scanner.profileDescription']()
+                                                        : m['scanner.description']()
+                                                }
+                                                frameLabel={m['scanner.frameLabel']()}
+                                                searchingLabel={m['scanner.lookingForQr']()}
+                                                helperLabel={
+                                                    isRecipientScanner
+                                                        ? m['scanner.recipientAutoAdd']()
+                                                        : undefined
+                                                }
+                                                closeLabel={m['scanner.closeAria']()}
+                                            />
+                                        )}
 
                                         <DevDebugPanel />
                                     </IonApp>

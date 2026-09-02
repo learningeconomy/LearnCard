@@ -15,7 +15,10 @@ import {
     SkillProfileRoleExperienceData,
     SKILL_PROFILE_ROLE_EXPERIENCE_KEY,
 } from './SkillProfileStep1';
-import { SkillProfileWorkHistoryData, SKILL_PROFILE_WORK_HISTORY_KEY } from './SkillProfileStep2';
+import {
+    SkillProfileWorkHistoryData,
+    SKILL_PROFILE_WORK_HISTORY_KEY,
+} from './SkillProfileStep2.constants';
 import { SkillProfileSalaryData, SKILL_PROFILE_SALARY_KEY } from './SkillProfileStep3';
 import {
     SkillProfileWorkLifeBalanceData,
@@ -34,26 +37,47 @@ type SkillProfileProgressBarProps = {
 
 export const useSkillProfileCompletion = () => {
     // Step 1: Goals + Professional Title + Role Experience
-    const { data: goalsData, issuanceDate: goalsIssuanceDate } =
-        useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
-    const { data: professionalTitleData, issuanceDate: professionalTitleIssuanceDate } =
-        useVerifiableData<SkillProfileProfessionalTitleData>(SKILL_PROFILE_PROFESSIONAL_TITLE_KEY);
-    const { data: roleExperienceData, issuanceDate: roleExperienceIssuanceDate } =
-        useVerifiableData<SkillProfileRoleExperienceData>(SKILL_PROFILE_ROLE_EXPERIENCE_KEY);
+    const {
+        data: goalsData,
+        issuanceDate: goalsIssuanceDate,
+        isFetched: goalsFetched,
+    } = useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
+    const {
+        data: professionalTitleData,
+        issuanceDate: professionalTitleIssuanceDate,
+        isFetched: professionalTitleFetched,
+    } = useVerifiableData<SkillProfileProfessionalTitleData>(SKILL_PROFILE_PROFESSIONAL_TITLE_KEY);
+    const {
+        data: roleExperienceData,
+        issuanceDate: roleExperienceIssuanceDate,
+        isFetched: roleExperienceFetched,
+    } = useVerifiableData<SkillProfileRoleExperienceData>(SKILL_PROFILE_ROLE_EXPERIENCE_KEY);
 
     // Step 2: Work History
-    const { data: workHistoryData, issuanceDate: workHistoryIssuanceDate } =
-        useVerifiableData<SkillProfileWorkHistoryData>(SKILL_PROFILE_WORK_HISTORY_KEY);
+    const {
+        data: workHistoryData,
+        issuanceDate: workHistoryIssuanceDate,
+        isFetched: workHistoryFetched,
+    } = useVerifiableData<SkillProfileWorkHistoryData>(SKILL_PROFILE_WORK_HISTORY_KEY);
 
     // Step 3: Salary
-    const { data: salaryData, issuanceDate: salaryIssuanceDate } =
-        useVerifiableData<SkillProfileSalaryData>(SKILL_PROFILE_SALARY_KEY);
+    const {
+        data: salaryData,
+        issuanceDate: salaryIssuanceDate,
+        isFetched: salaryFetched,
+    } = useVerifiableData<SkillProfileSalaryData>(SKILL_PROFILE_SALARY_KEY);
 
     // Step 4: Work Life Balance + Job Stability
-    const { data: workLifeBalanceData, issuanceDate: workLifeBalanceIssuanceDate } =
-        useVerifiableData<SkillProfileWorkLifeBalanceData>(SKILL_PROFILE_WORK_LIFE_BALANCE_KEY);
-    const { data: jobStabilityData, issuanceDate: jobStabilityIssuanceDate } =
-        useVerifiableData<SkillProfileJobStabilityData>(SKILL_PROFILE_JOB_STABILITY_KEY);
+    const {
+        data: workLifeBalanceData,
+        issuanceDate: workLifeBalanceIssuanceDate,
+        isFetched: workLifeBalanceFetched,
+    } = useVerifiableData<SkillProfileWorkLifeBalanceData>(SKILL_PROFILE_WORK_LIFE_BALANCE_KEY);
+    const {
+        data: jobStabilityData,
+        issuanceDate: jobStabilityIssuanceDate,
+        isFetched: jobStabilityFetched,
+    } = useVerifiableData<SkillProfileJobStabilityData>(SKILL_PROFILE_JOB_STABILITY_KEY);
 
     // Step 5: Self-assigned skills
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
@@ -86,6 +110,18 @@ export const useSkillProfileCompletion = () => {
 
     const percentage = Math.round((completedCount / TOTAL_METRICS) * 100);
 
+    // Until this is true, `percentage` reads 0 because the async data hasn't
+    // loaded yet — not because the profile is empty. Auto-open-on-0% consumers
+    // must gate on this to avoid firing for users with complete profiles.
+    const isFetched =
+        goalsFetched &&
+        professionalTitleFetched &&
+        roleExperienceFetched &&
+        workHistoryFetched &&
+        salaryFetched &&
+        workLifeBalanceFetched &&
+        jobStabilityFetched;
+
     // Step completion for expanded view
     const step1Complete = hasGoals && hasTitle && hasExperience;
     const step2Complete = hasWorkHistory;
@@ -117,6 +153,7 @@ export const useSkillProfileCompletion = () => {
         totalMetrics: TOTAL_METRICS,
         stepCompletion: [step1Complete, step2Complete, step3Complete, step4Complete, step5Complete],
         lastEditedDate,
+        isFetched,
     };
 };
 

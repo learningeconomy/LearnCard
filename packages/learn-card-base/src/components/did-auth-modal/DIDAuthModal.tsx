@@ -28,7 +28,6 @@ export const DIDAuthModal = () => {
     const { search } = useLocation();
     const { domain } = queryString.parse(search);
 
-
     const history = useHistory();
     const [authInitiated, setAuthInitiated] = useState(false);
 
@@ -81,17 +80,17 @@ export const DIDAuthModal = () => {
 
     const displayVC = vp?.verifiableCredential
         ? {
-            ...vp.verifiableCredential,
-            credentialSubject: {
-                id: domain,
-                achievement: {
-                    name: `DID Auth`,
-                    description: 'DID Verification Request.',
-                    image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/JYHtMu1wTZuNv1j5T6xh',
-                    criteria: { narrative: 'You agree to share your DID address.' },
-                },
-            },
-        }
+              ...vp.verifiableCredential,
+              credentialSubject: {
+                  id: domain,
+                  achievement: {
+                      name: `DID Auth`,
+                      description: 'DID Verification Request.',
+                      image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/JYHtMu1wTZuNv1j5T6xh',
+                      criteria: { narrative: 'You agree to share your DID address.' },
+                  },
+              },
+          }
         : null;
 
     const displayVerificationCode = verificationCode
@@ -119,7 +118,7 @@ export const DIDAuthModal = () => {
                             <DIDAuthMessage
                                 title={'Verification Code'}
                                 subtitle={
-                                    'Copy and paste this verification code in the app you are verifying your identity with, e.g. run the /finish-connect-id command if interacting with the Discord bot.'
+                                    'Copy and paste this verification code in the app you are verifying your identity with.'
                                 }
                                 text={`${displayVerificationCode}`}
                                 image={

@@ -1,14 +1,12 @@
 import React, { useEffect, useRef, useMemo } from 'react';
-import Lottie from 'react-lottie-player';
 
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 import { searchCredentialsFromCache } from 'learn-card-base';
 import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
-import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
+import BoostEarnedCard, { BoostEarnedCardSkeleton } from './BoostEarnedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
-import HourGlass from '../../../assets/lotties/hourglass.json';
 
 import {
     CredentialCategoryEnum,
@@ -16,8 +14,8 @@ import {
     BoostPageViewMode,
     BoostPageViewModeType,
     BrandingEnum,
-    pluralize,
 } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 import {
     credentialCategoryToSubheaderType,
     SubheaderContentType,
@@ -33,6 +31,7 @@ type BoostEarnedListProps = {
     emptyMessage?: string;
     emptyMessageStyle?: string;
 };
+const INITIAL_SKELETON_COUNT = 4;
 
 const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     category,
@@ -53,6 +52,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         data: records,
         isLoading: credentialsLoading,
         isFetching: credentialsFetching,
+        isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
         refetch: earnedBoostsRefetch,
@@ -75,12 +75,18 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     const searchString = credentialSearchStore.use.searchString() || '';
     const searchResults = searchCredentialsFromCache(records);
     const noSearchResults = searchResults?.length === 0;
-    const searchResultsCount = searchResults?.length;
+    const searchResultsCount = searchResults?.length ?? 0;
 
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
 
-    const credentialsBackgroundFetching = credentialsFetching && !credentialsLoading;
+    const hasCredentialRecords =
+        records?.pages?.some(page => (page?.records?.length ?? 0) > 0) ?? false;
+    const showSkeleton =
+        !earnedBoostsError &&
+        (credentialsLoading || (credentialsFetching && !hasCredentialRecords));
+    const credentialsBackgroundFetching =
+        credentialsFetching && !credentialsLoading && !isFetchingNextPage && hasCredentialRecords;
 
     useLoadingLine(credentialsBackgroundFetching);
 
@@ -105,6 +111,14 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
             ) ?? [],
         [records, searchResults]
     );
+    const loadingCredentials = Array.from({ length: INITIAL_SKELETON_COUNT }, (_, index) => (
+        <BoostEarnedCardSkeleton
+            key={`earned-skeleton-${category}-${index}`}
+            categoryType={category}
+            boostPageViewMode={viewMode}
+            branding={BrandingEnum.scoutPass}
+        />
+    ));
 
     const handleRefetch = async () => {
         try {
@@ -115,18 +129,27 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     };
 
     const isCardView = viewMode === BoostPageViewMode.Card;
+    const searchResultsText =
+        searchString.trim() === ''
+            ? searchResultsCount === 1
+                ? m['common.searchResults.earnedCountOne']({ count: searchResultsCount })
+                : m['common.searchResults.earnedCountOther']({ count: searchResultsCount })
+            : noSearchResults
+            ? m['common.searchResults.noEarned']({ query: searchString })
+            : searchResultsCount === 1
+            ? m['common.searchResults.foundOne']({
+                  count: searchResultsCount,
+                  query: searchString,
+              })
+            : m['common.searchResults.foundOther']({
+                  count: searchResultsCount,
+                  query: searchString,
+              });
 
     const searchResultsElement = (
         <div className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[15px]' : ''}`}>
             <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
-                {searchString?.trim?.() === '' && `Search ${searchResultsCount} earned boosts`}
-                {noSearchResults && `No earned ${category} titled "${searchString}"`}
-                {searchResultsCount > 0 &&
-                    searchString?.trim?.() !== '' &&
-                    `Found ${searchResultsCount} ${pluralize(
-                        'result',
-                        searchResultsCount
-                    )} for "${searchString}" `}
+                {searchResultsText}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>
@@ -134,19 +157,24 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     return (
         <>
-            {credentialsLoading && !earnedBoostsError && (
-                <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                    <div className="max-w-[280px] mt-[-40px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                    </div>
-                </section>
+            {showSkeleton && (
+                <IonCol
+                    className="flex m-auto items-center flex-wrap w-full achievements-list-container"
+                    role="status"
+                    aria-label={m['common.searchResults.loadingEarned']()}
+                >
+                    {isCardView ? (
+                        <IonGrid className="max-w-[600px] pt-[25px]">
+                            <IonRow>{loadingCredentials}</IonRow>
+                        </IonGrid>
+                    ) : (
+                        <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px] pt-[25px]">
+                            {loadingCredentials}
+                        </div>
+                    )}
+                </IonCol>
             )}
-            {!credentialsLoading &&
+            {!showSkeleton &&
                 credentials &&
                 credentials?.length === 0 &&
                 !earnedBoostsError &&
@@ -164,7 +192,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                         </p>
                     </section>
                 )}
-            {!credentialsLoading && !boostError && records && (
+            {!showSkeleton && !boostError && records && (
                 <>
                     <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
                         {isCardView && (
@@ -183,7 +211,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                                 <div role="presentation" ref={infiniteScrollRef} />
                             </>
                         )}
-                        {credentialsFetching && (
+                        {isFetchingNextPage && (
                             <div className="w-full flex items-center justify-center">
                                 <IonSpinner
                                     name="crescent"

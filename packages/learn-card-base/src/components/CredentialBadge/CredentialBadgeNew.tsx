@@ -19,11 +19,12 @@ import {
     isClrCredential,
 } from 'learn-card-base';
 
-import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
+import { BoostCategoryOptionsEnum, boostCategoryMetadata, getBoostMetadata } from 'learn-card-base';
 
 type CredentialBadgeProps = {
     boostType?: BoostCategoryOptionsEnum;
     achievementType: string;
+    accentColor?: string;
     fallbackCircleText?: string;
     badgeThumbnail: string;
     showBackgroundImage: boolean;
@@ -41,6 +42,7 @@ type CredentialBadgeProps = {
     branding?: BrandingEnum;
     credential: VC;
     borderStyle?: string;
+    hideMediaBadge?: boolean;
     clrBadgeKind?: ClrBadgeKind;
     clrIssuerName?: string;
     clrLogoSrc?: string;
@@ -49,6 +51,7 @@ type CredentialBadgeProps = {
 export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
     boostType,
     achievementType,
+    accentColor,
     fallbackCircleText,
     badgeThumbnail,
     showBackgroundImage = false,
@@ -66,13 +69,15 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
     branding,
     credential,
     borderStyle,
+    hideMediaBadge,
     clrBadgeKind,
     clrIssuerName,
     clrLogoSrc,
 }) => {
     const defaultBoostType = BoostCategoryOptionsEnum.socialBadge;
+    // boostType may be a CredentialCategoryEnum with no boostCategoryMetadata entry; getBoostMetadata resolves both enums and falls back to default to avoid a destructuring crash.
     const { subColor, IconComponent, SolidIconComponent, badgeBackgroundColor } =
-        boostCategoryMetadata[boostType ?? defaultBoostType];
+        getBoostMetadata(boostType ?? defaultBoostType) ?? boostCategoryMetadata[defaultBoostType];
 
     let _colorOverride = badgeBackgroundColor ?? 'gray-500';
     let _subColorOverride = subColor ?? 'gray-300';
@@ -144,7 +149,7 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                         className={`z-10 h-full w-fit text-${badgeBackgroundColor}`}
                         image={badgeThumbnail}
                     />
-                    <div className="absolute bottom-[-8%] right-[50%] translate-x-1/2 bg-white rounded-full p-1 h-[28px] w-[28px] flex items-center justify-center z-[9999]">
+                    <div className="absolute bottom-[-8%] right-[50%] z-20 flex h-[28px] w-[28px] translate-x-1/2 items-center justify-center rounded-full bg-white p-1">
                         <IconComponentOverride className={`text-${_colorOverride} h-[18px]`} />
                     </div>
                 </div>
@@ -177,10 +182,10 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                         </div>
                         {isCertDisplayType && (
                             <CertRibbon
-                                className={`absolute top-[-6%] z-[9999] w-[120px] h-[120px] text-${_colorOverride} ${certRibbonCustomClass}`}
+                                className={`absolute top-[-6%] z-10 w-[120px] h-[120px] text-${_colorOverride} ${certRibbonCustomClass}`}
                             />
                         )}
-                        <div className="absolute bottom-[1%] right-[50%] translate-x-1/2 bg-white rounded-full p-1 h-[28px] w-[28px] flex items-center justify-center z-[9999]">
+                        <div className="absolute bottom-[1%] right-[50%] z-20 flex h-[28px] w-[28px] translate-x-1/2 items-center justify-center rounded-full bg-white p-1">
                             <IconComponentOverride className={`text-${_colorOverride} h-[18px]`} />
                         </div>
                     </div>
@@ -189,7 +194,7 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
         );
     }
 
-    if (isMediaDisplayType) {
+    if (isMediaDisplayType && !hideMediaBadge) {
         return (
             <CredentialMediaBadge
                 credential={credential}
@@ -227,16 +232,18 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
             ) : (
                 <div
                     className={`relative z-50 flex items-center justify-center rounded-full border-white border-solid border-4 ${borderStyle} ${displayTypeStyles}`}
+                    style={accentColor ? { backgroundColor: accentColor } : undefined}
                 >
                     <div
                         className={`relative flex items-center justify-center w-[60%] h-[60%] rounded-full border-white border-solid border-4 ${borderStyle} ${_subColorOverride} overflow-hidden object-contain bg-${subColor} ${badgeThumbnailContainerClass}`}
                     >
-                        <img
-                            src={insertParamsToFilestackUrl(
-                                badgeThumbnail,
-                                'resize=width:200/quality=value:75/'
-                            )}
-                            alt="badge thumbnail"
+                        <BadgeThumbnailImg
+                            src={
+                                insertParamsToFilestackUrl(
+                                    badgeThumbnail,
+                                    'resize=width:200/quality=value:75/'
+                                ) ?? ''
+                            }
                             className={`h-full w-full object-cover ${badgeThumbnailCustomClass}`}
                         />
                     </div>
@@ -251,9 +258,20 @@ export const CredentialBadgeNew: React.FC<CredentialBadgeProps> = ({
                         className={`absolute flex items-center justify-center left-[37%] bottom-[-12%] ${badgeRibbonContainerCustomClass}`}
                     >
                         <Ribbon className={badgeRibbonCustomClass} />
-                        <IconComponentOverride
-                            className={`absolute text-${_colorOverride} h-[18px] mb-3 ${badgeRibbonIconCustomClass}`}
-                        />
+                        {accentColor ? (
+                            <span
+                                className="absolute mb-3 flex items-center justify-center"
+                                style={{ color: accentColor }}
+                            >
+                                <IconComponentOverride
+                                    className={`h-[18px] ${badgeRibbonIconCustomClass}`}
+                                />
+                            </span>
+                        ) : (
+                            <IconComponentOverride
+                                className={`absolute text-${_colorOverride} h-[18px] mb-3 ${badgeRibbonIconCustomClass}`}
+                            />
+                        )}
                     </div>
                 </div>
             )}

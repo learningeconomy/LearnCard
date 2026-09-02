@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IonInput } from '@ionic/react';
+import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
 import { useWallet } from 'learn-card-base';
 import WarningCircle from '../../../svgs/WarningCircle';
 import { getLogger } from 'learn-card-base';
@@ -37,7 +38,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
 
     const handleSend = async () => {
         if (!EMAIL_REGEX.test(email.trim())) {
-            setError(' Please enter a valid email.');
+            setError(m['onboarding.consent.eu.error.invalidEmail']());
             return;
         }
 
@@ -56,7 +57,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
             setSent(true);
         } catch (e) {
             log.error('Failed to send guardian approval email:', e);
-            setError(' Failed to send consent request. Please try again.');
+            setError(m['onboarding.consent.eu.error.sendFailed']());
         } finally {
             setLoading(false);
         }
@@ -73,27 +74,43 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                 {!sent ? (
                     <>
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Parental Consent Required
+                            {m['onboarding.consent.eu.heading']()}
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                            Please enter your parent's email so we can send them a consent request.
+                            {m['onboarding.consent.eu.description']()}
                         </p>
                         <div className="mt-3">
-                            <IonInput
+                            <label htmlFor="eu-guardian-email" className="sr-only">
+                                {m['onboarding.consent.eu.placeholder']()}
+                            </label>
+                            <input
+                                id="eu-guardian-email"
                                 type="email"
-                                placeholder="Parent's email"
+                                placeholder={m['onboarding.consent.eu.placeholder']()}
                                 value={email}
-                                onIonInput={e => {
+                                onChange={event => {
                                     setError('');
-                                    setEmail(e.detail.value ?? '');
+                                    setEmail(event.target.value);
                                 }}
-                                className={`bg-grayscale-100 text-grayscale-800 rounded-[12px] ion-padding font-medium tracking-wider text-base ${
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter' && !loading) {
+                                        event.preventDefault();
+                                        void handleSend();
+                                    }
+                                }}
+                                autoComplete="email"
+                                aria-invalid={Boolean(error)}
+                                aria-describedby={error ? 'eu-guardian-email-error' : undefined}
+                                className={`w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[12px] ion-padding font-medium tracking-wider text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
                                     error ? 'login-input-email-error' : ''
                                 }`}
-                                aria-label="Parent Email"
                             />
                             {error && (
-                                <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
+                                <p
+                                    id="eu-guardian-email-error"
+                                    role="alert"
+                                    className="p-0 m-0 w-full text-left mt-1 text-red-700 text-xs"
+                                >
                                     {error}
                                 </p>
                             )}
@@ -102,12 +119,14 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                 ) : (
                     <>
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Request Sent
+                            {m['onboarding.consent.eu.sent.heading']()}
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                            We sent a consent request to{' '}
-                            <span className="font-semibold">{email}</span>. We'll notify you once
-                            it's approved.
+                            <TransP
+                                m={m['onboarding.consent.eu.sent.description']}
+                                values={{ email }}
+                                components={[<span className="font-semibold" key="e" />]}
+                            />
                         </p>
                     </>
                 )}
@@ -119,16 +138,19 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                         onClick={onClose}
                         className=" shadow-button-bottom flex-1 py-[10px] text-[17px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
                     >
-                        Back
+                        {m['onboarding.back']()}
                     </button>
                     {!sent ? (
                         <button
                             type="button"
                             onClick={handleSend}
                             disabled={loading}
+                            aria-busy={loading}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
-                            {loading ? 'Sending...' : 'Send Request'}
+                            {loading
+                                ? m['onboarding.consent.eu.sending']()
+                                : m['onboarding.consent.eu.sendRequest']()}
                         </button>
                     ) : (
                         <button
@@ -143,7 +165,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                             }}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
-                            Done
+                            {m['common.done']()}
                         </button>
                     )}
                 </div>

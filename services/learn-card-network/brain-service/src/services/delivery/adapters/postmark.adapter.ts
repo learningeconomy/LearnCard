@@ -70,18 +70,19 @@ export class PostmarkAdapter implements DeliveryService {
 
                 const templateData = this.mapTemplateModel(
                     localTemplateId,
-                    notification.templateModel,
+                    notification.templateModel
                 );
 
                 rendered = await renderEmail(
                     localTemplateId,
                     branding,
                     templateData,
+                    notification.locale
                 );
             } catch (renderError) {
                 console.error(
                     `[PostmarkAdapter] Local render failed for "${notification.templateId}":`,
-                    renderError,
+                    renderError
                 );
             }
 
@@ -100,7 +101,7 @@ export class PostmarkAdapter implements DeliveryService {
                 } catch (sendError) {
                     console.error(
                         `[PostmarkAdapter] sendEmail API failed for "${notification.templateId}":`,
-                        sendError,
+                        sendError
                     );
                 }
             }
@@ -118,7 +119,10 @@ export class PostmarkAdapter implements DeliveryService {
         } catch (error) {
             const detail = error instanceof Error ? error.message : String(error);
 
-            console.error(`[PostmarkAdapter] Fallback sendEmailWithTemplate also failed for "${notification.templateId}":`, error);
+            console.error(
+                `[PostmarkAdapter] Fallback sendEmailWithTemplate also failed for "${notification.templateId}":`,
+                error
+            );
 
             throw new Error(`Failed to send email via Postmark: ${detail}`);
         }
@@ -130,7 +134,7 @@ export class PostmarkAdapter implements DeliveryService {
      */
     private mapTemplateModel(
         templateId: TemplateId,
-        model: Record<string, any>,
+        model: Record<string, any>
     ): TemplateDataMap[TemplateId] {
         switch (templateId) {
             case 'inbox-claim':

@@ -3,12 +3,16 @@ import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { UploadTypesEnum } from 'learn-card-base';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { createAiInsightCredential } from '../../hooks/useAiInsightCredential';
 import { networkStore } from '../../stores/NetworkStore';
 import {
+    clearAiInsightRefreshState,
     setAiInsightRefreshError,
     setAiInsightRefreshPending,
 } from '../../stores/aiInsightRefreshStore';
 import { getLogger } from '../../logging/logger';
+import { addActiveLocaleToUrl } from '../../i18n';
+import { aiPassportFetch } from '../../helpers/aiPassportAuth';
 const log = getLogger('ai-passport');
 
 const aiInsightCredentialQueryKey = ['useAiInsightCredential'];
@@ -44,41 +48,6 @@ const logAiInsightRefreshError = (
     }
 };
 
-export const requestAiPassportCredentialRefresh = async (
-    wallet: BespokeLearnCard
-): Promise<void> => {
-    const did = wallet.id.did();
-
-    logAiInsightRefresh('Requesting backend refresh', {
-        did,
-        aiServiceUrl: networkStore.get.aiServiceUrl(),
-    });
-
-    const response = await fetch(`${networkStore.get.aiServiceUrl()}/credentials?did=${did}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (!response.ok) {
-        logAiInsightRefreshError(
-            'Backend refresh request failed',
-            new Error(`HTTP ${response.status} ${response.statusText}`),
-            {
-                did,
-                status: response.status,
-                statusText: response.statusText,
-            }
-        );
-        throw new Error('Failed to request AI Insight credential refresh');
-    }
-
-    logAiInsightRefresh('Backend refresh request accepted', {
-        did,
-        status: response.status,
-        statusText: response.statusText,
-    });
-};
-
 export const queueAiInsightCredentialRefresh = async ({
     wallet,
     queryClient,
@@ -93,38 +62,49 @@ export const queueAiInsightCredentialRefresh = async ({
 
     const currentAiInsightCredential = queryClient.getQueryData<VC>(aiInsightCredentialQueryKey);
 
+    const baselineCredentialId = currentAiInsightCredential?.id ?? null;
+
     logAiInsightRefresh('Queueing refresh', {
         walletDid: wallet.id.did(),
-        currentCredentialId: currentAiInsightCredential?.id ?? null,
+        currentCredentialId: baselineCredentialId,
         currentCredentialIssuanceDate: currentAiInsightCredential?.issuanceDate ?? null,
         debounceMs: AI_INSIGHT_REFRESH_DEBOUNCE_MS,
     });
 
     setAiInsightRefreshPending({
         requestedAt: Date.now(),
-        baselineCredentialId: currentAiInsightCredential?.id ?? null,
+        baselineCredentialId,
     });
 
     aiPassportRefreshPromise = (async () => {
         try {
             await new Promise(resolve => setTimeout(resolve, AI_INSIGHT_REFRESH_DEBOUNCE_MS));
-            await requestAiPassportCredentialRefresh(wallet);
+            const aiInsightCredential = await createAiInsightCredential(wallet);
+
+            queryClient.setQueryData(aiInsightCredentialQueryKey, aiInsightCredential);
+            queryClient.setQueryData(['useExistingAiInsightCredential'], aiInsightCredential);
+
             logAiInsightRefresh('Invalidating cached AI insight credential', {
                 queryKey: aiInsightCredentialQueryKey,
             });
             await queryClient.invalidateQueries({ queryKey: aiInsightCredentialQueryKey });
+            await queryClient.invalidateQueries({ queryKey: ['useExistingAiInsightCredential'] });
+            await queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
+            await queryClient.invalidateQueries({ queryKey: ['training-programs'] });
             logAiInsightRefresh('Invalidated cached AI insight credential', {
                 queryKey: aiInsightCredentialQueryKey,
             });
+
+            clearAiInsightRefreshState();
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            setAiInsightRefreshError(message);
             logAiInsightRefreshError('Failed to request AI Insight credential refresh', error);
+            setAiInsightRefreshError(error instanceof Error ? error.message : String(error));
+            throw error;
+        } finally {
+            logAiInsightRefresh('Refresh promise cleared');
+            aiPassportRefreshPromise = null;
         }
-    })().finally(() => {
-        logAiInsightRefresh('Refresh promise cleared');
-        aiPassportRefreshPromise = null;
-    });
+    })();
 
     return aiPassportRefreshPromise;
 };
@@ -134,11 +114,15 @@ export const usePreloadAssessment = () => {
 
     return useMutation({
         mutationFn: async ({ did, summaryCredential }: { did: string; summaryCredential: any }) => {
-            const res = await fetch(`${networkStore.get.aiServiceUrl()}/assessment?did=${did}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ summaryCredential }),
-            });
+            const res = await aiPassportFetch(
+                addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/assessment`),
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ summaryCredential }),
+                },
+                did
+            );
 
             if (!res.ok) throw new Error('Failed to preload assessment');
             const assessment = await res.json();
@@ -164,13 +148,14 @@ type FinishAssessmentPayload = {
 export const useFinishAssessmentMutation = () => {
     return useMutation({
         mutationFn: async ({ did, assessmentQA, session, sessionUri }: FinishAssessmentPayload) => {
-            const response = await fetch(
-                `${networkStore.get.aiServiceUrl()}/finish-assessment?did=${did}`,
+            const response = await aiPassportFetch(
+                addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/finish-assessment`),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ assessmentQA, session, sessionUri }),
-                }
+                },
+                did
             );
 
             if (!response.ok) {
@@ -194,13 +179,16 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
             fileType: UploadTypesEnum;
         }) => {
             try {
-                const response = await fetch(
-                    `${networkStore.get.aiServiceUrl()}/credentials/parse-file?did=${did}`,
+                const response = await aiPassportFetch(
+                    addActiveLocaleToUrl(
+                        `${networkStore.get.aiServiceUrl()}/credentials/parse-file`
+                    ),
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ file, fileType }),
-                    }
+                    },
+                    did
                 );
 
                 const responseJson: {

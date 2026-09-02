@@ -1,22 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 
 import { IonPage } from '@ionic/react';
-import { VCDisplayCard2 } from '@learncard/react';
+import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
+import * as m from '../../../../paraglide/messages.js';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
+import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
 import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
-import CredentialIssuerPopover, {
-    useCredentialIssuerPopover,
-} from 'learn-card-base/components/CredentialBadge/CredentialIssuerPopover';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../../accessibility/AccessibleCredentialCard';
+import ReactCredentialIssuerPopover, {
+    useReactCredentialIssuerPopover,
+} from 'learn-card-base/components/CredentialBadge/ReactCredentialIssuerPopover';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
@@ -31,9 +33,14 @@ import {
 } from 'learn-card-base';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 
-import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getAchievementType,
+    getCredentialName,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import { AnalyticsEvents, useAnalytics } from '@analytics';
 
 export type IssueHistory = {
     id?: string | number;
@@ -45,6 +52,7 @@ export type IssueHistory = {
 export type BoostPreviewProps = {
     credential: VC;
     verificationItems: VerificationItem[];
+    lifecycleStatus?: 'active' | 'revoked' | 'suspended';
     categoryType: BoostCategoryOptionsEnum;
     customThumbComponent: React.ReactNode;
     customBodyCardComponent: React.ReactNode;
@@ -77,6 +85,7 @@ export type BoostPreviewProps = {
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
     issuancesSummaryComponent?: React.ReactNode;
+    isPreview?: boolean;
 };
 
 export const useVerification = (credential: VC) => {
@@ -96,17 +105,41 @@ export const useVerification = (credential: VC) => {
 const RibbonCategory: React.FC<{ categoryType: BoostCategoryOptionsEnum }> = ({ categoryType }) => {
     switch (categoryType) {
         case BoostCategoryOptionsEnum.socialBadge:
-            return <span className="text-[12px] font-semibold text-blue-500">Boost</span>;
+            return (
+                <span className="text-[12px] font-semibold text-blue-500">
+                    {m['wallet.categoriesSingular.socialBadges']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.achievement:
-            return <span className="text-[12px] font-semibold text-pink-400">Achievement</span>;
+            return (
+                <span className="text-[12px] font-semibold text-pink-400">
+                    {m['wallet.categoriesSingular.achievements']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.learningHistory:
-            return <span className="text-[12px] font-semibold text-emerald-600">Study</span>;
+            return (
+                <span className="text-[12px] font-semibold text-emerald-600">
+                    {m['wallet.categoriesSingular.studies']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.workHistory:
-            return <span className="text-[12px] font-semibold text-cyan-500">Experience</span>;
+            return (
+                <span className="text-[12px] font-semibold text-cyan-500">
+                    {m['wallet.categoriesSingular.experiences']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.accommodation:
-            return <span className="text-[12px] font-semibold text-violet-500">Assistance</span>;
+            return (
+                <span className="text-[12px] font-semibold text-violet-500">
+                    {m['wallet.categoriesSingular.assistance']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.accomplishment:
-            return <span className="text-[12px] font-semibold text-yellow-500">Portfolio</span>;
+            return (
+                <span className="text-[12px] font-semibold text-yellow-500">
+                    {m['wallet.categoriesSingular.portfolio']()}
+                </span>
+            );
         default:
             return;
     }
@@ -115,6 +148,7 @@ const RibbonCategory: React.FC<{ categoryType: BoostCategoryOptionsEnum }> = ({ 
 const BoostPreview: React.FC<BoostPreviewProps> = ({
     credential: _credential,
     verificationItems,
+    lifecycleStatus,
     categoryType,
     issueHistory,
     issueeOverride,
@@ -147,11 +181,12 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
     issuancesSummaryComponent,
+    isPreview = false,
 }) => {
-    const enableRenderMethod = useRenderMethodEnabled();
+    const { track } = useAnalytics();
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
-    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(_credential as VC) : null;
+    const renderMethod = getSvgMustacheRenderMethod(_credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
     useEffect(() => {
@@ -160,15 +195,13 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     }, [credentialWithEdits?.id]);
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            enableRenderMethod && renderMethod
-                ? BoostPreviewDisplayViewEnum.Issuer
-                : BoostPreviewDisplayViewEnum.Default
+            renderMethod ? BoostPreviewDisplayViewEnum.Issuer : BoostPreviewDisplayViewEnum.Default
         );
-    }, [credentialWithEdits?.id, renderMethod?.template, enableRenderMethod]);
+    }, [credentialWithEdits?.id, renderMethod?.template]);
     const credential = credentialWithEdits ?? unwrappedCredential;
     const { newModal, closeModal } = useModal();
     const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
-        useCredentialIssuerPopover();
+        useReactCredentialIssuerPopover();
 
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
@@ -176,6 +209,21 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
 
     const vcVerifications = useVerification(credential);
     const [isFront, setIsFront] = useState(true);
+    const viewedCredentialIdRef = useRef<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (!isEarnedBoost || isPreview) return;
+
+        const viewedCredentialId = credential?.id;
+        if (!viewedCredentialId || viewedCredentialIdRef.current === viewedCredentialId) return;
+
+        viewedCredentialIdRef.current = viewedCredentialId;
+        track(AnalyticsEvents.CREDENTIAL_VIEWED, {
+            credential_type: getAchievementType(_credential),
+            category: categoryType,
+            surface: 'wallet',
+        });
+    }, [categoryType, credential?.id, isEarnedBoost, isPreview, track, _credential]);
 
     let verifications: VerificationItem[] = [];
     if (isClrChildCredential) {
@@ -186,15 +234,25 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         verifications = vcVerifications;
     }
 
+    // Reflect the authoritative revoked/suspended status in the side-panel verifications
+    // list (the client status check can't see a set suspension bit).
+    verifications = applyLifecycleStatusToVerifications(verifications, lifecycleStatus);
+
     const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
 
     const selectedCredential = credential;
-    const isCertificate = credential?.display?.displayType === 'certificate';
-    const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
+    const isCertificate =
+        displayType === DisplayTypeEnum.Certificate ||
+        credential?.display?.displayType === 'certificate';
+    const isID =
+        displayType === DisplayTypeEnum.ID ||
+        credential?.display?.displayType === 'id' ||
+        categoryType === 'ID';
     const isIssuerViewSelected =
-        enableRenderMethod &&
-        Boolean(renderMethod) &&
-        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+    const shouldUseHostCardPadding =
+        isIssuerViewSelected ||
+        getVCDisplayCardVariant(credential, categoryType, formattedDisplayType) !== 'ribbon';
 
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -226,6 +284,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 isClrChildCredential={isClrChildCredential}
                 renderMethodCredential={_credential as VC | UnsignedVC}
                 issuancesSummaryComponent={issuancesSummaryComponent}
+                isPreview={isPreview}
             />,
             {
                 className: '!bg-transparent',
@@ -261,93 +320,109 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     }
 
     const credentialDisplay = (
-        <VCDisplayCard2
-            credential={credential}
-            issueeOverride={issueeOverride}
-            issuerOverride={issuerOverride}
-            issueHistory={issueHistory}
-            categoryType={categoryType}
-            verificationItems={verifications}
-            customThumbComponent={customThumbComponent}
-            customBodyCardComponent={customBodyCardComponent}
-            customFooterComponent={
-                isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+        <AccessibleCredentialCard
+            label={
+                titleOverride ||
+                getCredentialName(credential) ||
+                m['claim.modal.credentialFallback']()
             }
-            subjectDID={subjectDID}
-            subjectImageComponent={subjectImageComponent}
-            issuerImageComponent={issuerImageComponent}
-            customDescription={customDescription}
-            customCriteria={customCriteria}
-            customIssueHistoryComponent={customIssueHistoryComponent}
-            enableLightbox
-            titleOverride={titleOverride}
-            knownDIDRegistry={knownDIDRegistry}
-            handleXClick={isCertificate ? closeModal : undefined}
-            hideIssueDate={hideIssueDate}
-            customRibbonCategoryComponent={<RibbonCategory categoryType={categoryType} />}
-            hideNavButtons
-            setIsFrontOverride={setIsFront}
-            qrCodeOnClick={qrCodeOnClick}
-            hideQRCode={hideQRCode}
-            formattedDisplayType={formattedDisplayType}
-            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-            customBodyContentSlot={endorsementBadge}
-            onVerifierClick={openCredentialIssuerPopover}
-        />
+        >
+            <VCDisplayCard2
+                credential={credential}
+                issueeOverride={issueeOverride}
+                issuerOverride={issuerOverride}
+                issueHistory={issueHistory}
+                categoryType={categoryType}
+                verificationItems={verifications}
+                customThumbComponent={customThumbComponent}
+                customBodyCardComponent={customBodyCardComponent}
+                customFooterComponent={
+                    isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+                }
+                subjectDID={subjectDID}
+                subjectImageComponent={subjectImageComponent}
+                issuerImageComponent={issuerImageComponent}
+                customDescription={customDescription}
+                customCriteria={customCriteria}
+                customIssueHistoryComponent={customIssueHistoryComponent}
+                enableLightbox
+                titleOverride={titleOverride}
+                knownDIDRegistry={knownDIDRegistry}
+                handleXClick={isCertificate ? closeModal : undefined}
+                hideIssueDate={hideIssueDate}
+                customRibbonCategoryComponent={<RibbonCategory categoryType={categoryType} />}
+                hideNavButtons
+                setIsFrontOverride={setIsFront}
+                qrCodeOnClick={qrCodeOnClick}
+                hideQRCode={hideQRCode}
+                formattedDisplayType={formattedDisplayType}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                customBodyContentSlot={endorsementBadge}
+                onVerifierClick={openCredentialIssuerPopover}
+            />
+        </AccessibleCredentialCard>
     );
 
     return (
         <IonPage>
-            <div className="flex h-full">
-                <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
-                    <div
-                        className={`w-full px-2 flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
-                            isCertificate ? 'certificate-display-zoom' : ''
-                        } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
-                    >
-                        <section
-                            className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
-                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                            }`}
+            <h1 className="sr-only">
+                {titleOverride ||
+                    getCredentialName(credential) ||
+                    m['claim.modal.credentialFallback']()}
+            </h1>
+            <BoostFooterLayout
+                contentOwnsScroll
+                footerProps={{
+                    handleClose: handleCloseModal,
+                    handleDetails: isMobile ? () => openDetailsSideModal() : undefined,
+                    handleShare: handleShareBoost,
+                    handleDotMenu: onDotsClick,
+                    useFullCloseButton: !isMobile || !handleShareBoost,
+                }}
+            >
+                <div className="flex h-full">
+                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
+                        <div
+                            className={`w-full flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
+                                isCertificate ? 'certificate-display-zoom' : ''
+                            } ${isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
                         >
-                            {isIssuerViewSelected && renderMethod ? (
-                                <RenderMethodDisplay
-                                    vc={credential}
-                                    renderMethod={renderMethod}
-                                    fallback={credentialDisplay}
-                                    className="w-full"
-                                />
-                            ) : (
-                                credentialDisplay
-                            )}
-                        </section>
-                    </div>
-                </section>
-                <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
-                    <BoostFooter
-                        handleClose={handleCloseModal}
-                        handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
-                        handleShare={handleShareBoost}
-                        handleDotMenu={onDotsClick}
-                        useFullCloseButton={!isMobile || !handleShareBoost}
-                    />
-                </footer>
-                {!isMobile && (
-                    <BoostDetailsSideBar
-                        credential={selectedCredential}
-                        categoryType={categoryType}
-                        verificationItems={detailVerificationItems}
-                        customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-                        displayType={displayType}
-                        existingEndorsements={existingEndorsements}
-                        isEarnedBoost={isEarnedBoost}
-                        isClrChildCredential={isClrChildCredential}
-                        renderMethodCredential={_credential as VC | UnsignedVC}
-                        issuancesSummaryComponent={issuancesSummaryComponent}
-                    />
-                )}
-                <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
-            </div>
+                            <section
+                                className={`w-full mt-[var(--ion-safe-area-top,0px)] overflow-y-auto max-h-full disable-scrollbars ${
+                                    shouldUseHostCardPadding ? 'px-6' : ''
+                                } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
+                            >
+                                {isIssuerViewSelected && renderMethod ? (
+                                    <RenderMethodDisplay
+                                        vc={credential}
+                                        renderMethod={renderMethod}
+                                        fallback={credentialDisplay}
+                                        className="w-full"
+                                    />
+                                ) : (
+                                    credentialDisplay
+                                )}
+                            </section>
+                        </div>
+                    </section>
+                    {!isMobile && (
+                        <BoostDetailsSideBar
+                            credential={selectedCredential}
+                            categoryType={categoryType}
+                            verificationItems={detailVerificationItems}
+                            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                            displayType={displayType}
+                            existingEndorsements={existingEndorsements}
+                            isEarnedBoost={isEarnedBoost}
+                            isClrChildCredential={isClrChildCredential}
+                            renderMethodCredential={_credential as VC | UnsignedVC}
+                            issuancesSummaryComponent={issuancesSummaryComponent}
+                            isPreview={isPreview}
+                        />
+                    )}
+                    <ReactCredentialIssuerPopover {...credentialIssuerPopoverProps} />
+                </div>
+            </BoostFooterLayout>
         </IonPage>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
     Send,
     CheckCircle2,
@@ -15,6 +15,7 @@ import {
 import type { AppStoreListing } from '@learncard/types';
 
 import { useModal, ModalTypes } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import type { CredentialTemplate } from 'src/pages/appStoreDeveloper/dashboards/types';
 import {
@@ -27,7 +28,7 @@ import {
     isAutoDelivery,
     getRecipientDisplayName,
     getActivityName,
-    EVENT_TYPE_FILTER_OPTIONS,
+    getEventTypeFilterOptions,
 } from 'src/pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
 import { ExportDialog } from 'src/pages/appStoreDeveloper/dashboards/components/ExportDialog';
 import { IssuanceDetailModal } from 'src/components/issuances/IssuanceDetailModal';
@@ -45,7 +46,6 @@ export interface IssuanceListProps {
     title?: string;
     showFilter?: boolean;
     showExport?: boolean;
-    refreshKey?: number;
     /** Which issuer surface this list lives on — forwarded to the detail modal for analytics. */
     surface?: 'managed-boosts' | 'issuer-dashboard';
 }
@@ -60,7 +60,6 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
     title,
     showFilter,
     showExport,
-    refreshKey,
     surface = 'issuer-dashboard',
 }) => {
     const [eventTypeFilter, setEventTypeFilter] = useState<CredentialEventType | 'ALL'>('ALL');
@@ -71,7 +70,6 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
         isLoading: activityLoading,
         isLoadingMore,
         hasMore,
-        refetch,
         loadMore,
         stats: activityStats,
     } = useIntegrationActivity(templates, {
@@ -82,17 +80,10 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
         eventType: eventTypeFilter === 'ALL' ? undefined : eventTypeFilter,
     });
 
-    // Refetch when refreshKey changes
-    useEffect(() => {
-        if (refreshKey && refreshKey > 0) {
-            refetch();
-        }
-    }, [refreshKey, refetch]);
-
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
 
     const handleActivityItemClick = (item: CredentialActivityRecord) => {
-        newModal(<IssuanceDetailModal item={item} surface={surface} onActionComplete={refetch} />, {
+        newModal(<IssuanceDetailModal item={item} surface={surface} />, {
             sectionClassName: '!max-w-[450px]',
         });
     };
@@ -146,7 +137,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                            text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-cyan-500
                                            focus:border-transparent cursor-pointer transition-colors"
                             >
-                                {EVENT_TYPE_FILTER_OPTIONS.map(option => (
+                                {getEventTypeFilterOptions().map(option => (
                                     <option key={option.value} value={option.value}>
                                         {option.label}
                                     </option>
@@ -268,8 +259,8 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                                     }`}
                                                 >
                                                     {rowStatus === 'revoked'
-                                                        ? 'Revoked'
-                                                        : 'Suspended'}
+                                                        ? m['issue.revoked']()
+                                                        : m['issue.suspended']()}
                                                 </span>
                                             )}
 
@@ -304,7 +295,7 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
                                 {isLoadingMore ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Loading...
+                                        {m['common.loading']()}
                                     </>
                                 ) : (
                                     getActivityStat(eventTypeFilter, activityStats)

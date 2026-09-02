@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 
 import X from '../../../svgs/X';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
-import { IonFooter, IonPage } from '@ionic/react';
-import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
+import { IonPage } from '@ionic/react';
+
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import EndorsementThumb from 'learn-card-base/svgs/EndorsmentThumb';
@@ -12,7 +12,7 @@ import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 import SkillsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/SkillsBox';
 import BoostEndorsementDetails from '../../../boost-endorsements/BoostEndorsementDetails';
 import EndorsementsList from '../../../boost-endorsements/EndorsementsList/EndorsementsList';
@@ -20,6 +20,7 @@ import AlignmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/A
 import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/TruncateTextBox';
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
+import PreviewVerificationBox from './PreviewVerificationBox';
 
 import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
@@ -44,6 +45,7 @@ type BoostDetailsSideMenuProps = {
     isClrChildCredential?: boolean;
     renderMethodCredential?: VC | UnsignedVC;
     issuancesSummaryComponent?: React.ReactNode;
+    isPreview?: boolean;
 };
 const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     credential,
@@ -58,8 +60,8 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     isClrChildCredential = false,
     renderMethodCredential,
     issuancesSummaryComponent,
+    isPreview = false,
 }) => {
-    const enableRenderMethod = useRenderMethodEnabled();
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -134,7 +136,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                         {isMediaDisplay && <BoostSideMenuMediaDetails credential={credential} />}
 
                         {!isMediaDisplay && dateRangeText && (
-                            <span className="text-grayscale-500 font-poppins text-[12px] font-[500] w-full">
+                            <span className="text-grayscale-600 font-poppins text-[12px] font-[500] w-full">
                                 {dateRangeText}
                             </span>
                         )}
@@ -161,11 +163,8 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                         </div>
                     )}
 
-                    {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
-                        <BoostDisplayStyleSelector
-                            credential={renderMethodCredential}
-                            enableRenderMethod={enableRenderMethod}
-                        />
+                    {!isMediaDisplay && renderMethodCredential && (
+                        <BoostDisplayStyleSelector credential={renderMethodCredential} />
                     )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
@@ -213,8 +212,13 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
 
                     {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
 
-                    {verificationItems && verificationItems.length > 0 && (
-                        <VerificationsBox verificationItems={verificationItems} />
+                    {isPreview ? (
+                        <PreviewVerificationBox />
+                    ) : (
+                        verificationItems &&
+                        verificationItems.length > 0 && (
+                            <VerificationsBox verificationItems={verificationItems} />
+                        )
                     )}
                 </>
             );
@@ -242,19 +246,26 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
 
     return (
         <IonPage className="max-w-full !bg-white/80 !backdrop-blur-sm !overflow-y-auto">
-            <div className="h-full max-h-full overflow-y-auto pb-[80px] pt-[30px] safe-area-top-margin">
-                <div className="mx-auto px-[2px]">
+            <h1 className="sr-only">{title || 'Credential details'}</h1>
+            <BoostFooterLayout
+                footerProps={isMobile ? { handleBack: handleClose } : undefined}
+                contentClassName="pt-[30px] mt-[var(--ion-safe-area-top,0px)]"
+            >
+                <div className="min-h-full mx-auto px-[2px]">
                     {!isMobile && (
                         <button
+                            type="button"
                             className="text-grayscale-900 flex items-center justify-center gap-[5px] px-[10px] py-[5px] rounded-[10px] bg-white/90 shadow-md mb-[20px]"
                             onClick={handleClose}
                         >
-                            <X className="w-[20px]" />
+                            <span aria-hidden="true">
+                                <X className="w-[20px]" />
+                            </span>
                             Close
                         </button>
                     )}
 
-                    <section className="flex flex-col gap-[10px] w-[335px] pb-[30%] sm:pb-[20px] mx-auto">
+                    <section className="flex flex-col gap-[10px] w-[335px] pb-[20px] mx-auto">
                         <BoostPreviewTabs
                             selectedTab={selectedTab}
                             setSelectedTab={boostPreviewStore.set.updateSelectedTab}
@@ -263,15 +274,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                         {activeTabDetails}
                     </section>
                 </div>
-            </div>
-            {isMobile && (
-                <IonFooter
-                    mode="ios"
-                    className="flex justify-center items-center ion-no-border absolute bottom-0"
-                >
-                    <BoostFooter handleBack={handleClose} />
-                </IonFooter>
-            )}
+            </BoostFooterLayout>
         </IonPage>
     );
 };

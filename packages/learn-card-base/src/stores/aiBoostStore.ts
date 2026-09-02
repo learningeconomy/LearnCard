@@ -1,5 +1,5 @@
 import { createStore } from '@udecode/zustood';
-import { CredentialCategoryEnum } from 'learn-card-base';
+import { CredentialCategoryEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
 
 export type AIBoostStore = {
     title: string;

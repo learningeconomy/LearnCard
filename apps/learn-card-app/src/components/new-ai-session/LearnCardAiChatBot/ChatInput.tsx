@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+
+import { m } from '../../../paraglide/messages.js';
+
 import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
@@ -17,6 +20,7 @@ import { ArrowUp } from 'lucide-react';
 import {
     currentThreadId,
     threads,
+    hasThreadEnded,
     sendMessage,
     planReady,
     continuePlan,
@@ -29,7 +33,6 @@ import {
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 import type { LearningPathway } from 'learn-card-base/types/ai-chat';
-import { IonSpinner } from '@ionic/react';
 import CustomSpinner from '../../svgs/CustomSpinner';
 import AiSessionLoader from '../AiSessionLoader';
 import {
@@ -37,7 +40,7 @@ import {
     aiPassportApps,
     AiPassportAppsEnum,
 } from '../../ai-passport-apps/aiPassport-apps.helpers';
-import { AiSessionMode, NewAiSessionStepEnum, sessionWrapUpText } from '../newAiSession.helpers';
+import { AiSessionMode, NewAiSessionStepEnum } from '../newAiSession.helpers';
 
 import { chatBotStore } from '../../../stores/chatBotStore';
 
@@ -49,9 +52,11 @@ interface ChatInputProps {
     showUserAvatar?: boolean;
 }
 
+// Resolved per call (not hoisted to a module constant) so the placeholder
+// follows the active locale — Paraglide resolves at call time.
 const getDefaultPlaceholder = (mode: AiSessionMode): string => {
-    if (mode === AiSessionMode.insights) return 'Ask anything...';
-    return 'Say anything...';
+    if (mode === AiSessionMode.insights) return m['aiSession.chat.placeholderInsights']();
+    return m['aiSession.chat.placeholderTutor']();
 };
 
 const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = true }) => {
@@ -115,20 +120,20 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
     if (showContinue && mode === AiSessionMode.tutor) {
         return (
-            <div className="flex justify-center p-5">
+            <div className="flex flex-col items-center gap-2 p-5">
                 <button
                     onClick={continuePlan}
                     className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px] mr-2`}
                 >
-                    Start Session
+                    {m['aiSession.chat.startSession']()}
                 </button>
             </div>
         );
     }
 
-    // Check if session has ended - either via atom or by checking for summary credentials
+    // Keep the reactive atom fast while honoring persisted lifecycle state for loaded threads.
     const thread = $threads.find(t => t.id === $currentThreadId);
-    const hasSessionEnded = $sessionEnded || (thread?.summaries && thread.summaries.length > 0);
+    const hasSessionEnded = $sessionEnded || hasThreadEnded(thread);
 
     if (hasSessionEnded) {
         return (
@@ -140,7 +145,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                         </div>
                     ) : (
                         <p className="text-grayscale-600 mb-4 text-center font-semibold text-[17px]">
-                            Nice work! Now what?
+                            {m['aiSession.chat.niceWork']()}
                         </p>
                     )}
 
@@ -156,7 +161,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                     }}
                                     className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                                 >
-                                    Return Home
+                                    {m['aiSession.chat.returnHome']()}
                                 </button>
                             </>
                         )}
@@ -184,7 +189,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 }}
                                 className={`bg-${primaryColor} text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-${primaryColor} transition-colors`}
                             >
-                                Session Summary
+                                {m['aiSession.chat.sessionSummary']()}
                             </button>
                         )}
 
@@ -193,7 +198,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 onClick={handleKeepGoing}
                                 className="bg-emerald-700 text-white font-semibold text-[17px] px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                             >
-                                Keep Going
+                                {m['aiSession.chat.keepGoing']()}
                             </button>
                         )}
                     </div>
@@ -208,7 +213,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 <button
                                     onClick={() => setShowPathwaySelection(false)}
                                     className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-                                    aria-label="Close"
+                                    aria-label={m['common.close']()}
                                 >
                                     ×
                                 </button>
@@ -216,10 +221,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 {/* Header */}
                                 <div className="px-6 pt-6 text-center">
                                     <h2 className="text-2xl font-semibold text-gray-800">
-                                        Continue Your Learning Journey
+                                        {m['aiSession.chat.pathwayModalTitle']()}
                                     </h2>
                                     <p className="text-sm text-gray-500 mt-1">
-                                        Select a pathway to keep exploring this topic
+                                        {m['aiSession.chat.pathwayModalSubtitle']()}
                                     </p>
                                 </div>
 
@@ -248,7 +253,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                     </div>
                                 ) : (
                                     <div className="text-center py-10 text-gray-500 px-6">
-                                        No learning pathways available for this session.
+                                        {m['aiSession.chat.noPathways']()}
                                     </div>
                                 )}
                             </div>
@@ -287,7 +292,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
     return (
         <>
-            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[calc(15px+env(safe-area-inset-bottom))] sm:pb-[env(safe-area-inset-bottom)] bg-grayscale-50">
+            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[15px] sm:pb-0 bg-grayscale-50">
                 {showUserAvatar && (
                     <div className="flex-shrink-0 pb-[6px]">
                         <ProfilePicture

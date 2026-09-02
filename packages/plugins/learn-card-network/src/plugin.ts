@@ -417,10 +417,12 @@ export async function getLearnCardNetworkPlugin(
             // ignore; initialQuery errors are non-fatal in API-key mode
         }
 
-        // Retry once in API-token mode in case the initial query raced with method calls
-        if (!userData && apiToken) {
+        // Retry once in case the initial query raced with method calls or failed transiently
+        if (!userData) {
             try {
-                learnCard?.debug?.('LCN ensureUser: retrying getProfile with apiToken');
+                learnCard?.debug?.('LCN ensureUser: retrying getProfile', {
+                    hasApiToken: !!apiToken,
+                });
                 const res = await client.profile.getProfile.query();
                 userData = res;
                 if (userData?.did) did = userData.did;
@@ -785,6 +787,26 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.profile.acceptConnectionRequest.mutate({ profileId });
+            },
+            getPendingConnectionPrompts: async _learnCard => {
+                await ensureUser();
+
+                return client.profile.pendingConnectionPrompts.query();
+            },
+            getConnectionPromptStatus: async (_learnCard, promptId) => {
+                await ensureUser();
+
+                return client.profile.connectionPromptStatus.query({ promptId });
+            },
+            skipConnectionPrompt: async (_learnCard, promptId) => {
+                await ensureUser();
+
+                return client.profile.skipConnectionPrompt.mutate({ promptId });
+            },
+            connectWithConnectionPrompt: async (_learnCard, promptId) => {
+                await ensureUser();
+
+                return client.profile.connectWithConnectionPrompt.mutate({ promptId });
             },
             getConnections: async _learnCard => {
                 console.warn(
@@ -2595,6 +2617,12 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.activity.getMyActivities.query(options);
+            },
+
+            getMyCredentialLifecycleStatuses: async (_learnCard, options) => {
+                await ensureUser();
+
+                return client.activity.getMyCredentialLifecycleStatuses.query(options);
             },
 
             getActivityStats: async (_learnCard, options = {}) => {

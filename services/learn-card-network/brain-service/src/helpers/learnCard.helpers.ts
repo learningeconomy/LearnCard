@@ -1,4 +1,6 @@
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { generateLearnCard } from '@learncard/core';
 import type { LearnCard } from '@learncard/core';
@@ -20,6 +22,24 @@ import type { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 import type { DidWebPlugin } from '@learncard/did-web-plugin';
 import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
+
+// The DIDKit WASM is copied next to the compiled handler at build time (see
+// esbuildPlugins.cjs). The Lambda bundle's node_modules layout doesn't match what
+// require.resolve expects (the package is a hoisted workspace symlink), so prefer the
+// co-located copy and fall back to package resolution for local dev / Docker.
+const DIDKIT_WASM_SPECIFIER = '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm';
+
+const resolveDidkitWasmPath = (): string => {
+    const colocated = join(__dirname, 'didkit_wasm_bg.wasm');
+    if (existsSync(colocated)) return colocated;
+
+    return require.resolve(DIDKIT_WASM_SPECIFIER);
+};
+
+// Which DIDKit engine actually loaded — exposed via the deep health check so
+// native-vs-wasm is observable from an HTTP probe instead of CloudWatch spelunking.
+let didKitEngine: 'native' | 'wasm' | 'unloaded' = 'unloaded';
+export const getDidKitEngine = (): 'native' | 'wasm' | 'unloaded' => didKitEngine;
 
 // Try native plugin first, fall back to WASM
 const didKitPluginPromises = new Map<boolean, Promise<DIDKitPlugin>>();
@@ -47,23 +67,28 @@ const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugi
         if (process.env.SKIP_DIDKIT_NAPI) {
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
-            const wasmBuffer = await readFile(
-                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
-            );
-            return await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            const wasmBuffer = await readFile(resolveDidkitWasmPath());
+            const plugin = await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            didKitEngine = 'wasm';
+            return plugin;
         }
 
         try {
             const didkitModule = await import('@learncard/didkit-plugin-node');
             const getNativePlugin = resolveDidKitPluginFactory(didkitModule);
-            return await getNativePlugin(undefined, allowRemoteContexts);
-        } catch {
+            const plugin = await getNativePlugin(undefined, allowRemoteContexts);
+            didKitEngine = 'native';
+            return plugin;
+        } catch (error) {
+            // Surface the fallback — a silent catch here hid a months-long "native never
+            // actually loads in Lambda" gap (see PR #1341 investigation).
+            console.warn('[didkit] native plugin unavailable, falling back to WASM:', error);
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
-            const wasmBuffer = await readFile(
-                require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
-            );
-            return await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            const wasmBuffer = await readFile(resolveDidkitWasmPath());
+            const plugin = await getWasmPlugin(wasmBuffer, allowRemoteContexts);
+            didKitEngine = 'wasm';
+            return plugin;
         }
     })();
 

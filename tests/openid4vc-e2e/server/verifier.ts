@@ -17,8 +17,8 @@
  * additionally requires an `id_token` alongside `vp_token` per
  * SIOPv2 + OID4VP combined flow (Slice 8).
  */
-import { importJWK, jwtVerify } from 'jose';
-import type { JWK } from 'jose';
+import { compactDecrypt, exportJWK, generateKeyPair, importJWK, jwtVerify } from 'jose';
+import type { JWK, KeyLike } from 'jose';
 
 import type { HandlerContext, HandlerResponse } from './issuer';
 
@@ -43,6 +43,12 @@ interface VerifySession {
     responseType: 'vp_token' | 'vp_token id_token';
     submissions: SubmissionRecord[];
     acceptedRedirect: string;
+    /** Query language the session drives: PEX or OID4VP 1.0 DCQL. */
+    queryKind: 'pex' | 'dcql';
+    /** `direct_post` (cleartext) or `direct_post.jwt` (JARM-encrypted). */
+    responseMode: 'direct_post' | 'direct_post.jwt';
+    /** Verifier's private enc key for JARM (`direct_post.jwt`) sessions. */
+    encPrivateKey?: KeyLike;
 }
 
 export interface SubmissionRecord {
@@ -67,13 +73,20 @@ export const createVerifierState = (origin: string): VerifierState => ({
  * Test admin — spin up a new VP verification session and hand back the
  * authorization-request URI the wallet should consume.
  */
-export const createSession = (
+export const createSession = async (
     state: VerifierState,
     options: {
-        presentationDefinition: Record<string, unknown>;
+        /** PEX definition. Mutually exclusive with `dcqlQuery`. */
+        presentationDefinition?: Record<string, unknown>;
+        /** OID4VP 1.0 DCQL query. Mutually exclusive with `presentationDefinition`. */
+        dcqlQuery?: Record<string, unknown>;
         includeSiop?: boolean;
+        /** Request `direct_post.jwt` (JARM) with a 1.0 enc-values advertisement. */
+        encryptResponse?: boolean;
+        /** OID4VP 1.0 §5.1 transaction_data (base64url strings) to attach. */
+        transactionData?: string[];
     }
-): VerifySession => {
+): Promise<VerifySession> => {
     const id = randomId();
     const clientId = `${state.origin}/vp/client/${id}`;
     const nonce = randomId();
@@ -83,6 +96,11 @@ export const createSession = (
         ? 'vp_token id_token'
         : 'vp_token';
 
+    const queryKind: VerifySession['queryKind'] = options.dcqlQuery ? 'dcql' : 'pex';
+    const responseMode: VerifySession['responseMode'] = options.encryptResponse
+        ? 'direct_post.jwt'
+        : 'direct_post';
+
     const session: VerifySession = {
         id,
         clientId,
@@ -91,27 +109,63 @@ export const createSession = (
         responseUri: `${state.origin}/vp/verify/${id}`,
         pdUri: `${state.origin}/vp/pd/${id}`,
         authRequestUri: '', // filled below
-        presentationDefinition: options.presentationDefinition,
+        presentationDefinition: options.presentationDefinition ?? {},
         responseType,
         submissions: [],
         acceptedRedirect: `${state.origin}/vp/success/${id}`,
+        queryKind,
+        responseMode,
     };
 
     // Authorization Request URI — fully by_value. We use
     // client_id_scheme=redirect_uri so no signed Request Object is
-    // required, and we inline `presentation_definition` (not `_uri`)
-    // because the plugin's PD-by-reference resolver mandates https://
-    // and our in-process test server runs on plain http://127.0.0.1.
+    // required, and we inline the query (not `_uri`) because the
+    // plugin's by-reference resolvers mandate https:// and our
+    // in-process test server runs on plain http://127.0.0.1.
     const params = new URLSearchParams({
         response_type: session.responseType,
         client_id: session.clientId,
         client_id_scheme: 'redirect_uri',
-        response_mode: 'direct_post',
+        response_mode: session.responseMode,
         response_uri: session.responseUri,
         nonce: session.nonce,
         state: session.state,
-        presentation_definition: JSON.stringify(session.presentationDefinition),
     });
+
+    if (queryKind === 'dcql') {
+        params.set('dcql_query', JSON.stringify(options.dcqlQuery));
+    } else {
+        params.set('presentation_definition', JSON.stringify(session.presentationDefinition));
+    }
+
+    if (options.transactionData && options.transactionData.length > 0) {
+        params.set('transaction_data', JSON.stringify(options.transactionData));
+    }
+
+    // JARM: generate an ephemeral P-256 enc key and advertise it via
+    // client_metadata using the OID4VP 1.0 field names — `jwks` for the
+    // key and `encrypted_response_enc_values_supported` for the `enc`
+    // list (this is what exercises the plugin's 1.0 negotiation path,
+    // not the pre-1.0 `authorization_encrypted_response_*` fields).
+    if (options.encryptResponse) {
+        const { publicKey, privateKey } = await generateKeyPair('ECDH-ES', {
+            crv: 'P-256',
+            extractable: true,
+        });
+        const publicJwk = (await exportJWK(publicKey)) as JWK;
+        publicJwk.use = 'enc';
+        publicJwk.alg = 'ECDH-ES';
+        publicJwk.kid = `verifier-enc-${id}`;
+        session.encPrivateKey = privateKey;
+
+        params.set(
+            'client_metadata',
+            JSON.stringify({
+                jwks: { keys: [publicJwk] },
+                encrypted_response_enc_values_supported: ['A128GCM'],
+            })
+        );
+    }
 
     session.authRequestUri = `openid4vp://authorize?${params.toString()}`;
 
@@ -154,10 +208,9 @@ export const handleVerifierRequest = async (
             return { status: 400, body: { error: 'invalid_json' } };
         }
 
-        const session = createSession(ctx.verifier, {
+        const session = await createSession(ctx.verifier, {
             presentationDefinition:
-                (body.presentation_definition as Record<string, unknown> | undefined) ??
-                {},
+                (body.presentation_definition as Record<string, unknown> | undefined) ?? {},
             includeSiop: Boolean(body.include_siop),
         });
 
@@ -181,75 +234,122 @@ const handleVerify = async (
     ctx: HandlerContext & { verifier: VerifierState },
     session: VerifySession
 ): Promise<HandlerResponse> => {
-    const form = Object.fromEntries(new URLSearchParams(ctx.body).entries());
+    const rawForm = Object.fromEntries(new URLSearchParams(ctx.body).entries());
 
     const record: SubmissionRecord = {
         receivedAt: Date.now(),
-        form,
+        form: rawForm,
         verifierAccepted: false,
     };
 
     session.submissions.push(record);
 
+    // For direct_post.jwt (JARM), the single `response` form field is a JWE
+    // encrypted to the verifier's advertised key. Decrypt it and treat the
+    // JSON payload as the response object; otherwise use the cleartext form.
+    let response: Record<string, unknown>;
+    if (session.responseMode === 'direct_post.jwt') {
+        if (!rawForm.response || !session.encPrivateKey) {
+            record.rejectionReason = 'expected encrypted `response` (direct_post.jwt)';
+            return {
+                status: 400,
+                body: { error: 'invalid_request', error_description: record.rejectionReason },
+            };
+        }
+        try {
+            const { plaintext } = await compactDecrypt(rawForm.response, session.encPrivateKey);
+            response = JSON.parse(new TextDecoder().decode(plaintext)) as Record<string, unknown>;
+        } catch (e) {
+            record.rejectionReason = `JARM decryption failed: ${describe(e)}`;
+            return {
+                status: 400,
+                body: { error: 'invalid_request', error_description: record.rejectionReason },
+            };
+        }
+    } else {
+        response = rawForm;
+    }
+
+    const stateValue = response.state as string | undefined;
+    const vpToken = response.vp_token;
+    const idToken = response.id_token as string | undefined;
+
     // Echoed state cross-check.
-    if (form.state !== session.state) {
-        record.rejectionReason = `state mismatch (got ${form.state}, expected ${session.state})`;
-        return { status: 400, body: { error: 'invalid_state', error_description: record.rejectionReason } };
+    if (stateValue !== session.state) {
+        record.rejectionReason = `state mismatch (got ${String(stateValue)}, expected ${
+            session.state
+        })`;
+        return {
+            status: 400,
+            body: { error: 'invalid_state', error_description: record.rejectionReason },
+        };
     }
 
-    if (!form.vp_token || !form.presentation_submission) {
-        record.rejectionReason = 'missing vp_token or presentation_submission';
+    if (vpToken === undefined || vpToken === null) {
+        record.rejectionReason = 'missing vp_token';
         return {
             status: 400,
             body: { error: 'invalid_request', error_description: record.rejectionReason },
         };
     }
 
-    // SIOPv2 combined flow (Slice 8) — `id_token` must accompany the
-    // vp_token when we asked for both in the Authorization Request.
-    if (session.responseType === 'vp_token id_token' && !form.id_token) {
-        record.rejectionReason = 'id_token required (SIOPv2 combined flow)';
-        return {
-            status: 400,
-            body: { error: 'invalid_request', error_description: record.rejectionReason },
-        };
-    }
-
-    // vp_token: either a compact JWS string or a JSON-stringified LDP VP.
-    try {
-        if (isCompactJws(form.vp_token)) {
-            record.decodedVp = await verifyVpJwt(form.vp_token, {
+    // OID4VP 1.0 §6.4: DCQL responses key vp_token by credential_query_id and
+    // MUST NOT carry a presentation_submission. PEX responses are a single
+    // presentation plus a presentation_submission.
+    if (session.queryKind === 'dcql') {
+        if (response.presentation_submission !== undefined) {
+            record.rejectionReason =
+                'DCQL response must not include presentation_submission (§6.4)';
+            return {
+                status: 400,
+                body: { error: 'invalid_request', error_description: record.rejectionReason },
+            };
+        }
+        try {
+            record.decodedVp = await verifyDcqlVpToken(vpToken, {
                 audience: session.clientId,
                 nonce: session.nonce,
             });
-        } else {
-            // ldp_vp path — parse + structural checks only.
-            const ldpVp = JSON.parse(form.vp_token);
-            if (
-                !ldpVp ||
-                typeof ldpVp !== 'object' ||
-                !ldpVp.proof ||
-                typeof ldpVp.proof.challenge !== 'string' ||
-                ldpVp.proof.challenge !== session.nonce ||
-                ldpVp.proof.domain !== session.clientId
-            ) {
-                throw new Error('ldp_vp proof domain/challenge do not match verifier session');
-            }
-            record.decodedVp = { header: {}, payload: ldpVp };
+        } catch (e) {
+            record.rejectionReason = `DCQL vp_token verification failed: ${describe(e)}`;
+            return {
+                status: 400,
+                body: { error: 'invalid_presentation', error_description: record.rejectionReason },
+            };
         }
-    } catch (e) {
-        record.rejectionReason = `vp_token verification failed: ${describe(e)}`;
-        return {
-            status: 400,
-            body: { error: 'invalid_presentation', error_description: record.rejectionReason },
-        };
+    } else {
+        if (response.presentation_submission === undefined) {
+            record.rejectionReason = 'missing presentation_submission (PEX)';
+            return {
+                status: 400,
+                body: { error: 'invalid_request', error_description: record.rejectionReason },
+            };
+        }
+        // SIOPv2 combined flow (Slice 8) — `id_token` must accompany the
+        // vp_token when we asked for both in the Authorization Request.
+        if (session.responseType === 'vp_token id_token' && !idToken) {
+            record.rejectionReason = 'id_token required (SIOPv2 combined flow)';
+            return {
+                status: 400,
+                body: { error: 'invalid_request', error_description: record.rejectionReason },
+            };
+        }
+        try {
+            record.decodedVp = await verifySinglePresentation(String(vpToken), session);
+        } catch (e) {
+            record.rejectionReason = `vp_token verification failed: ${describe(e)}`;
+            return {
+                status: 400,
+                body: { error: 'invalid_presentation', error_description: record.rejectionReason },
+            };
+        }
     }
 
     // id_token: when present, must verify against holder's did:jwk and
     // carry the session nonce.
-    if (form.id_token) {
+    if (idToken) {
         try {
-            record.decodedIdToken = await verifyIdToken(form.id_token, {
+            record.decodedIdToken = await verifyIdToken(idToken, {
                 audience: session.clientId,
                 nonce: session.nonce,
             });
@@ -271,6 +371,62 @@ const handleVerify = async (
         status: 200,
         body: { redirect_uri: session.acceptedRedirect },
     };
+};
+
+/* -------------------------- presentation checks --------------------------- */
+
+/** PEX single presentation: compact JWT-VP, or a structurally-checked LDP-VP. */
+const verifySinglePresentation = async (
+    vpToken: string,
+    session: VerifySession
+): Promise<{ header: unknown; payload: unknown }> => {
+    if (isCompactJws(vpToken)) {
+        return verifyVpJwt(vpToken, { audience: session.clientId, nonce: session.nonce });
+    }
+    const ldpVp = JSON.parse(vpToken);
+    if (
+        !ldpVp ||
+        typeof ldpVp !== 'object' ||
+        !ldpVp.proof ||
+        typeof ldpVp.proof.challenge !== 'string' ||
+        ldpVp.proof.challenge !== session.nonce ||
+        ldpVp.proof.domain !== session.clientId
+    ) {
+        throw new Error('ldp_vp proof domain/challenge do not match verifier session');
+    }
+    return { header: {}, payload: ldpVp };
+};
+
+/**
+ * DCQL vp_token (§6.4): a JSON object keyed by credential_query_id whose
+ * values are a presentation (string) or array of presentations. Verify each
+ * as a JWT-VP against the session audience + nonce.
+ */
+const verifyDcqlVpToken = async (
+    vpToken: unknown,
+    ctx: { audience: string; nonce: string }
+): Promise<{ header: unknown; payload: unknown }> => {
+    const obj = typeof vpToken === 'string' ? JSON.parse(vpToken) : vpToken;
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+        throw new Error('DCQL vp_token must be a JSON object keyed by credential_query_id');
+    }
+
+    const entries = Object.entries(obj as Record<string, unknown>);
+    if (entries.length === 0) throw new Error('DCQL vp_token object is empty');
+
+    let firstDecoded: { header: unknown; payload: unknown } | undefined;
+    for (const [, value] of entries) {
+        const presentations = Array.isArray(value) ? value : [value];
+        for (const p of presentations) {
+            if (typeof p !== 'string' || !isCompactJws(p)) {
+                throw new Error('DCQL presentation is not a compact JWS');
+            }
+            const decoded = await verifyVpJwt(p, ctx);
+            firstDecoded ??= decoded;
+        }
+    }
+
+    return firstDecoded ?? { header: {}, payload: {} };
 };
 
 /* -------------------------- JWT verification ------------------------------ */
@@ -328,7 +484,9 @@ const verifyIdToken = async (
     });
 
     if (payload.nonce !== ctx.nonce) {
-        throw new Error(`id_token nonce mismatch (got ${String(payload.nonce)}, expected ${ctx.nonce})`);
+        throw new Error(
+            `id_token nonce mismatch (got ${String(payload.nonce)}, expected ${ctx.nonce})`
+        );
     }
 
     return { header: protectedHeader, payload };

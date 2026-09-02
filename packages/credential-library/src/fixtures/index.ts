@@ -1,4 +1,4 @@
-import type { CredentialFixture } from '../types';
+import type { LibraryFixture } from '../types';
 
 // VC v1
 import { vcV1Basic } from './vc-v1/basic';
@@ -20,6 +20,7 @@ import { obv3OneedtechFull } from './obv3/1edtech-full';
 import { obv3ProfessionalCert } from './obv3/professional-cert';
 import { obv3MicroCredential } from './obv3/micro-credential';
 import { obv3CourseCompletion } from './obv3/course-completion';
+import { obv3StandaloneFullCourse } from './obv3/standalone-full-course';
 import { obv3K12Diploma } from './obv3/k12-diploma';
 import { obv3EndorsementCredential } from './obv3/endorsement';
 
@@ -56,11 +57,14 @@ import { clrGreatPlainsFull } from './clr/great-plains-full';
 import { clrWestbridgeFull } from './clr/westbridge-full';
 import { clrCompetencyAligned } from './clr/competency-aligned';
 
+// SD-JWT VC
+import { sdJwtVcCourseCompletion } from './sd-jwt-vc/course-completion';
+
 // ---------------------------------------------------------------------------
 // All fixtures — collected for auto-registration
 // ---------------------------------------------------------------------------
 
-export const ALL_FIXTURES: CredentialFixture[] = [
+export const ALL_FIXTURES: LibraryFixture[] = [
     // VC v1
     vcV1Basic,
     vcV1WithStatus,
@@ -81,6 +85,7 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     obv3ProfessionalCert,
     obv3MicroCredential,
     obv3CourseCompletion,
+    obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
 
@@ -114,6 +119,9 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+
+    // SD-JWT VC
+    sdJwtVcCourseCompletion,
 ];
 
 // Re-export individual fixtures for direct import
@@ -142,6 +150,7 @@ export {
     obv3ProfessionalCert,
     obv3MicroCredential,
     obv3CourseCompletion,
+    obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
     clrUniversityTranscript,
@@ -156,4 +165,5 @@ export {
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    sdJwtVcCourseCompletion,
 };

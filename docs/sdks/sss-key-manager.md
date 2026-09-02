@@ -9,19 +9,19 @@ description: Self-contained SSS key management library
 ## Installation
 
 ```bash
-pnpm add @learncard/sss-key-manager
+bun add @learncard/sss-key-manager
 ```
 
 ## Overview
 
 This package provides the `KeyDerivationStrategy` implementation used by the [AuthCoordinator](../core-concepts/architecture-and-principles/auth-coordinator.md). It handles:
 
-- **Key splitting and reconstruction** using a 2-of-3 Shamir threshold scheme
-- **Local device share storage** in IndexedDB with versioning
-- **Server communication** for storing and retrieving auth shares
-- **Recovery methods** — passkey (WebAuthn PRF), recovery phrase, backup file, email backup
-- **Cross-device login** via QR code with ephemeral ECDH encryption
-- **Migration** from Web3Auth to SSS
+-   **Key splitting and reconstruction** using a 2-of-3 Shamir threshold scheme
+-   **Local device share storage** in IndexedDB with versioning
+-   **Server communication** for storing and retrieving auth shares
+-   **Recovery methods** — passkey (WebAuthn PRF), recovery phrase, backup file, email backup
+-   **Cross-device login** via QR code with ephemeral ECDH encryption
+-   **Migration** from Web3Auth to SSS
 
 ## Architecture
 
@@ -63,9 +63,9 @@ Describes how well-protected a user's key is:
 type SecurityLevel = 'basic' | 'enhanced' | 'advanced';
 ```
 
-- **basic** — device + server share only (no recovery method)
-- **enhanced** — at least one recovery method configured
-- **advanced** — multiple recovery methods configured
+-   **basic** — device + server share only (no recovery method)
+-   **enhanced** — at least one recovery method configured
+-   **advanced** — multiple recovery methods configured
 
 ### RecoveryInput
 
@@ -128,23 +128,23 @@ interface SSSStrategyConfig {
 }
 ```
 
-| Option | Default | Description |
-|---|---|---|
-| `serverUrl` | — | Base URL of the lca-api server (e.g., `https://api.example.com/api`) |
+| Option                   | Default | Description                                                            |
+| ------------------------ | ------- | ---------------------------------------------------------------------- |
+| `serverUrl`              | —       | Base URL of the lca-api server (e.g., `https://api.example.com/api`)   |
 | `enableEmailBackupShare` | `false` | Automatically send a backup share to the user's email during key setup |
 
 ### Key Methods
 
-| Method | Purpose |
-|---|---|
-| `fetchServerKeyStatus(token, providerType)` | Check if a key record exists on the server for the authenticated user |
-| `setupNewKey(token, providerType, signVp)` | Generate a new key, split it, store shares on device and server |
-| `reconstructKey(token, providerType)` | Reconstruct the key from device share + auth share |
-| `recoverKey(token, providerType, input)` | Recover the key using a recovery method + auth share |
-| `hasLocalKey()` | Check if a device share exists in IndexedDB |
-| `clearLocalKey()` | Remove the device share from IndexedDB |
-| `setupRecoveryMethod(params)` | Set up a new recovery method (passkey, phrase, backup, email) |
-| `getAvailableRecoveryMethods(token, providerType)` | List the user's configured recovery methods |
+| Method                                             | Purpose                                                               |
+| -------------------------------------------------- | --------------------------------------------------------------------- |
+| `fetchServerKeyStatus(token, providerType)`        | Check if a key record exists on the server for the authenticated user |
+| `setupNewKey(token, providerType, signVp)`         | Generate a new key, split it, store shares on device and server       |
+| `reconstructKey(token, providerType)`              | Reconstruct the key from device share + auth share                    |
+| `recoverKey(token, providerType, input)`           | Recover the key using a recovery method + auth share                  |
+| `hasLocalKey()`                                    | Check if a device share exists in IndexedDB                           |
+| `clearLocalKey()`                                  | Remove the device share from IndexedDB                                |
+| `setupRecoveryMethod(params)`                      | Set up a new recovery method (passkey, phrase, backup, email)         |
+| `getAvailableRecoveryMethods(token, providerType)` | List the user's configured recovery methods                           |
 
 ## API Client
 
@@ -167,5 +167,5 @@ const status = await client.getAuthShare({
 The package includes ~249 unit tests across 13 test files:
 
 ```bash
-pnpm exec nx test sss-key-manager
+bunx nx test sss-key-manager
 ```

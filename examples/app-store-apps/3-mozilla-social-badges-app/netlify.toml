@@ -1,5 +1,12 @@
+[build.environment]
+BUN_VERSION = "1.3.14"
+BUN_FLAGS = "--ignore-scripts"
+NODE_VERSION = "20"
+NODE_OPTIONS = "--max-old-space-size=4096"
+SKIP_DIDKIT_NAPI = "1"
+
 [build]
-  command = "pnpm run build"
+command = "bunx nx run @learncard/app-store-demo-mozilla-social-badges:build"
   publish = "dist"
 
 [context.production.environment]

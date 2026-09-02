@@ -26,6 +26,11 @@ import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
 import AiPassportAppProfileConnectedView from '../../components/ai-passport-apps/AiPassportAppProfileConnectedView/AiPassportAppProfileConnectedView';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
+import {
+    getConsentFlowContractRedirect,
+    getConsentFlowDidAuthRedirect,
+} from './issueConsentFlowDidAuth';
 
 enum ConsentFlowStep {
     getAnAdult = 'landing',
@@ -88,7 +93,12 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
         !!childInsightsProfile
     );
 
-    const { returnTo: urlReturnTo, recipientToken } = queryString.parse(location.search);
+    const {
+        challenge,
+        domain,
+        returnTo: urlReturnTo,
+        recipientToken,
+    } = queryString.parse(location.search);
     const returnTo = urlReturnTo || contractDetails?.redirectUrl?.trim(); // prefer url param
     const shouldDisableRedirect =
         disableRedirect || Boolean(insightsProfile) || Boolean(childInsightsProfile);
@@ -157,49 +167,34 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
             }
 
             if (!shouldDisableRedirect) {
-                if (redirectUrl) {
-                    // If the consentToContract call returned a specific redirect url, use it over everything else
-                    window.location.href = redirectUrl;
+                const contractRedirectUrl = getConsentFlowContractRedirect({
+                    challenge,
+                    contractRedirectUrl: redirectUrl,
+                    domain,
+                });
+
+                if (contractRedirectUrl) {
+                    window.location.href = contractRedirectUrl;
                     return;
                 }
 
                 if (returnTo && !Array.isArray(returnTo)) {
                     if (returnTo.startsWith('http://') || returnTo.startsWith('https://')) {
                         const wallet = await initWallet();
+                        const ownerDid = contractDetails?.owner?.did;
 
-                        // add user's did to returnTo url
-                        const urlObj = new URL(returnTo);
-                        urlObj.searchParams.set('did', wallet.id.did());
-
-                        if (contractDetails?.owner?.did) {
-                            const unsignedDelegateCredential = wallet.invoke.newCredential({
-                                type: 'delegate',
-                                subject: contractDetails?.owner.did,
-                                access: ['read', 'write'],
-                            });
-
-                            const delegateCredential = await wallet.invoke.issueCredential(
-                                unsignedDelegateCredential
-                            );
-
-                            const unsignedDidAuthVp: any = await wallet.invoke.newPresentation(
-                                delegateCredential
-                            );
-
-                            // Add contractUri to VP before signing for xAPI tracking
-                            if (contractDetails?.uri) {
-                                unsignedDidAuthVp.contractUri = contractDetails.uri;
-                            }
-
-                            const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
-                                proofPurpose: 'authentication',
-                                proofFormat: 'jwt',
-                            })) as any as string;
-
-                            urlObj.searchParams.set('vp', vp);
+                        if (!ownerDid || !contractDetails?.uri) {
+                            throw new Error('Invalid consent request');
                         }
 
-                        window.location.href = urlObj.toString();
+                        window.location.href = await getConsentFlowDidAuthRedirect({
+                            challenge,
+                            contractUri: contractDetails.uri,
+                            domain,
+                            ownerDid,
+                            returnTo,
+                            wallet,
+                        });
                     } else history.push(returnTo);
                 }
             }

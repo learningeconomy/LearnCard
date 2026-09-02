@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bun
 
 import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger();
@@ -9,8 +9,8 @@ const log = getLogger();
  * Generates `public/tenant-config.json` for native (Capacitor) builds.
  *
  * Usage:
- *   npx tsx scripts/prepare-native-config.ts [tenant] [--stage <stage>]
- *   npx tsx scripts/prepare-native-config.ts --reset
+ *   bun scripts/prepare-native-config.ts [tenant] [--stage <stage>] [--local-aip]
+ *   bun scripts/prepare-native-config.ts --reset
  *
  * Arguments:
  *   tenant  - The tenant identifier (default: "learncard").
@@ -20,21 +20,23 @@ const log = getLogger();
  *             Loads environments/<tenant>/config.<stage>.json on top
  *             of config.json via deepMerge. Only diffs need to be in
  *             the stage file.
+ *   --local-aip - Point apis.aiService at http://localhost:3001.
  *   --reset - Undo all changes: restore git-tracked files and remove
  *             generated artifacts (public/branding/, tenant-config.json, etc.)
  *
  * Merge order:
- *   tenantDefaults → config.json → config.<stage>.json → final
+ *   tenantDefaults → config.json → config.<stage>.json → local AI override → final
  *
  * Examples:
- *   npx tsx scripts/prepare-native-config.ts                          # production learncard
- *   npx tsx scripts/prepare-native-config.ts vetpass                   # production vetpass
- *   npx tsx scripts/prepare-native-config.ts learncard --stage local   # local dev learncard
- *   npx tsx scripts/prepare-native-config.ts vetpass --stage staging   # staging vetpass
- *   npx tsx scripts/prepare-native-config.ts --reset                   # undo everything
+ *   bun scripts/prepare-native-config.ts                          # production learncard
+ *   bun scripts/prepare-native-config.ts vetpass                   # production vetpass
+ *   bun scripts/prepare-native-config.ts learncard --stage local   # local dev learncard
+ *   bun scripts/prepare-native-config.ts vetpass --stage staging   # staging vetpass
+ *   bun scripts/prepare-native-config.ts learncard --local-aip
+ *   bun scripts/prepare-native-config.ts --reset                   # undo everything
  *
  * Backward compat:
- *   npx tsx scripts/prepare-native-config.ts local
+ *   bun scripts/prepare-native-config.ts local
  *   → treated as: learncard --stage local
  *
  * The generated file is read by resolveTenantConfig() at runtime via
@@ -79,16 +81,22 @@ const APP_ROOT = resolve(__dirname, '..');
 const KNOWN_STAGES = ['local', 'staging', 'production'] as const;
 type Stage = (typeof KNOWN_STAGES)[number];
 
-const parseArgs = (): { tenant: string; stage: Stage | undefined } => {
+const parseArgs = (): {
+    tenant: string;
+    stage: Stage | undefined;
+    useLocalAi: boolean;
+} => {
     const args = process.argv.slice(2);
 
     let tenant = 'learncard';
     let stage: Stage | undefined;
-
+    let useLocalAi = false;
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--stage' && args[i + 1]) {
             stage = args[i + 1] as Stage;
             i++; // skip the stage value
+        } else if (args[i] === '--local-aip') {
+            useLocalAi = true;
         } else if (args[i] === '--reset') {
             // handled below
             tenant = '--reset';
@@ -111,10 +119,10 @@ const parseArgs = (): { tenant: string; stage: Stage | undefined } => {
         stage = undefined;
     }
 
-    return { tenant, stage };
+    return { tenant, stage, useLocalAi };
 };
 
-const { tenant: tenantArg, stage: stageArg } = parseArgs();
+const { tenant: tenantArg, stage: stageArg, useLocalAi } = parseArgs();
 
 // ---------------------------------------------------------------------------
 // 0. Handle --reset: undo all changes and exit
@@ -204,7 +212,7 @@ if (tenantArg === '--reset') {
     }
 
     log.info(`\n✅ Cleaned ${removed} file(s). To restore defaults, run:`);
-    log.info('   npx tsx scripts/prepare-native-config.ts learncard\n');
+    log.info('   bun scripts/prepare-native-config.ts learncard\n');
     process.exit(0);
 }
 
@@ -246,21 +254,25 @@ if (stageArg) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Deep-merge: defaults → config.json → config.<stage>.json
+// 2. Deep-merge: defaults → config.json → config.<stage>.json → local AI
 // ---------------------------------------------------------------------------
 
 const merged = deepMerge(
     deepMerge(
-        DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
-        tenantOverrides
+        deepMerge(
+            DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>,
+            tenantOverrides
+        ),
+        stageOverrides
     ),
-    stageOverrides
+    useLocalAi ? { apis: { aiService: 'http://localhost:3001' } } : {}
 );
 
 // Add build metadata
 merged['_source'] = 'baked-native';
 merged['_tenant'] = tenantArg;
 merged['_stage'] = stageArg ?? 'production';
+merged['_localAi'] = useLocalAi;
 
 // ---------------------------------------------------------------------------
 // 3. Validate against the Zod schema
@@ -567,7 +579,7 @@ if (nativeConfig) {
         }
     };
 
-    // Patch the native project capacitor config JSON files (generated by `npx cap sync`)
+    // Patch the native project capacitor config JSON files (generated by `bunx cap sync`)
     patchCapacitorConfigJson(resolve(APP_ROOT, 'ios/App/App/capacitor.config.json'));
     patchCapacitorConfigJson(
         resolve(APP_ROOT, 'android/app/src/main/assets/capacitor.config.json')
@@ -894,7 +906,6 @@ if (nativeConfig) {
         }
     }
 }
-
 // ---------------------------------------------------------------------------
 // 8. Patch manifest.json / manifest.webmanifest with tenant branding name
 // ---------------------------------------------------------------------------
@@ -1023,7 +1034,6 @@ if (nativeConfig?.deepLinkDomains?.length) {
         }
     }
 }
-
 // ---------------------------------------------------------------------------
 // 11. Patch index.html with tenant branding name + apple-touch-icon
 // ---------------------------------------------------------------------------

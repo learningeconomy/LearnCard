@@ -1,19 +1,21 @@
 {
     "name": "@learncard/sss-key-manager",
-    "version": "0.1.12",
+    "version": "0.1.20",
     "description": "Shamir Secret Sharing key manager for LearnCard - replaces Web3Auth SFA",
     "main": "./dist/index.js",
     "module": "./dist/sss-key-manager.esm.js",
     "types": "./dist/sss-key-manager.d.ts",
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntrypoint.js ./dist/index.js && dts-bundle-generator src/index.ts -o dist/sss-key-manager.d.ts --no-check",
         "dev": "node ./scripts/build.mjs --watch",
         "test": "vitest run",
         "test:watch": "vitest",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "test:coverage": "vitest run --coverage"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
@@ -34,7 +36,7 @@
         "jsdom": "^24.0.0",
         "shx": "^0.3.4",
         "typescript": "^5.0.0",
-        "vitest": "^1.0.0"
+        "vitest": "4.1.10"
     },
     "dependencies": {
         "@learncard/types": "workspace:*",
@@ -49,6 +51,15 @@
     "peerDependenciesMeta": {
         "@simplewebauthn/browser": {
             "optional": true
+        }
+    },
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "types": "./dist/sss-key-manager.d.ts",
+            "import": "./dist/sss-key-manager.esm.js",
+            "require": "./dist/index.js",
+            "default": "./dist/sss-key-manager.esm.js"
         }
     }
 }

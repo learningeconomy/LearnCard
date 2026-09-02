@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useModal, useWallet, useFilestack } from 'learn-card-base';
+import { useModal, useWallet, useImageUpload } from 'learn-card-base';
 import { IonInput } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
@@ -7,6 +7,7 @@ const log = getLogger('edit-framework-modal');
 // oxlint-disable-next-line no-unused-vars
 import { SkillFrameworkType } from '@learncard/types';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
+import * as m from '../../paraglide/messages.js';
 
 type EditFrameworkModalProps = {
     frameworkId: string;
@@ -21,7 +22,7 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
     const [description, setDescription] = useState('');
     const [image, setImage] = useState<string | undefined>(undefined);
 
-    const { handleFileSelect, isLoading: isUploadingImage } = useFilestack({
+    const { handleFileSelect, isLoading: isUploadingImage } = useImageUpload({
         onUpload: url => setImage(url),
         fileType: 'image/*',
     });
@@ -92,7 +93,9 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                 </div>
 
                 {isLoading ? (
-                    <div className="py-[20px] text-center text-grayscale-600">Loading...</div>
+                    <div className="py-[20px] text-center text-grayscale-600">
+                        {m['common.loading']()}
+                    </div>
                 ) : (
                     <>
                         <IonInput

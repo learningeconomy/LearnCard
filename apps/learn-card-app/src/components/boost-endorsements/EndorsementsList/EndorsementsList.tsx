@@ -11,6 +11,7 @@ import {
 } from 'learn-card-base';
 
 import EndorsementListItem from './EndorsementListItem';
+import * as m from '../../../paraglide/messages.js';
 
 export const EndorsementsList: React.FC<{
     credential: VC;
@@ -49,7 +50,7 @@ export const EndorsementsList: React.FC<{
     return (
         <div className="py-4 px-4 gap-4 bg-white flex flex-col items-start rounded-[20px] w-full shadow-bottom-2-4">
             <div className="flex items-center justify-between w-full">
-                <h1 className="text-[17px] text-grayscale-900">Endorsements</h1>
+                <h1 className="text-[17px] text-grayscale-900">{m['endorsement.list.title']()}</h1>
                 <EndorsementBadge
                     credential={credential}
                     categoryType={categoryType}
@@ -73,7 +74,7 @@ export const EndorsementsList: React.FC<{
                         }}
                         className="text-sm text-grayscale-900 font-semibold"
                     >
-                        View All
+                        {m['skills.search.viewAll']()}
                     </button>
                 </div>
             )}

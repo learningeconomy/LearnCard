@@ -1,4 +1,6 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
+import { mDynamic } from '../../i18n/mDynamic';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -8,13 +10,19 @@ import { useTheme } from '../../theme/hooks/useTheme';
  * Themed branded welcome panel shown on the right side of the desktop
  * login page when the tenant doesn't provide a custom desktop-login-bg image.
  */
+const pillKeyMap: Record<string, string> = {
+    Credentials: 'login.welcome.pills.credentials',
+    Achievements: 'login.welcome.pills.achievements',
+    Skills: 'login.welcome.pills.skills',
+};
+
 const LoginWelcomePanel: React.FC = () => {
     const brandingConfig = useBrandingConfig();
     const { brandMarkLight, fullLogoDark } = useTenantBrandingAssets();
     const { theme } = useTheme();
 
     const loaderColors = theme.colors.defaults.loaders ?? [];
-    const baseColor = theme.colors.defaults.loginBgColor ?? loaderColors[0] ?? '#059669';
+    const baseColor = theme.colors.defaults.loginBgColor ?? loaderColors[0] ?? '#058760';
     const accentColor = loaderColors[1] ?? loaderColors[0] ?? '#06B6D4';
 
     return (
@@ -55,11 +63,11 @@ const LoginWelcomePanel: React.FC = () => {
                 )} */}
 
                 <h2 className="text-white text-3xl font-semibold mb-4 leading-snug drop-shadow-sm">
-                    Welcome to {brandingConfig.name}
+                    {m['login.welcome.heading']({ brand: brandingConfig.name })}
                 </h2>
 
-                <p className="text-white/70 text-base leading-relaxed max-w-[340px]">
-                    Sign in to access your credentials, achievements, and more.
+                <p className="text-white text-base leading-relaxed max-w-[340px]">
+                    {m['login.welcome.subtitle']()}
                 </p>
 
                 {/* Feature pills */}
@@ -67,9 +75,9 @@ const LoginWelcomePanel: React.FC = () => {
                     {['Credentials', 'Achievements', 'Skills'].map(label => (
                         <span
                             key={label}
-                            className="px-4 py-2 rounded-full text-sm font-medium text-white/90 bg-white/10 backdrop-blur-sm"
+                            className="px-4 py-2 rounded-full text-sm font-medium text-white bg-black/10 backdrop-blur-sm"
                         >
-                            {label}
+                            {mDynamic(pillKeyMap[label] ?? label)}
                         </span>
                     ))}
                 </div>

@@ -43,6 +43,7 @@ import { Settings, ShieldAlert } from 'lucide-react';
 import { useGuardianGate } from '../../hooks/useGuardianGate';
 import DatePickerInput from '../../components/date-picker/DatePickerInput';
 import { checkAppInstallEligibility, AGE_RATING_TO_MIN_AGE } from '@learncard/helpers';
+import * as m from '../../paraglide/messages.js';
 
 // Extended type to include new fields (until types package is rebuilt)
 type ExtendedAppStoreListing = (AppStoreListing | InstalledApp) & {
@@ -208,7 +209,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         } catch (error) {
             log.error('Failed to install app:', error);
             if (error?.message) {
-                presentToast(`Failed to install app: ${error?.message}`, {
+                presentToast(m['launchpad.detail.installFailed']({ error: error?.message ?? '' }), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -256,7 +257,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
                 <div
                     className="border-b border-grayscale-200 p-6"
-                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+                    style={{ paddingTop: 'max(1.5rem, var(--ion-safe-area-top, 0px))' }}
                 >
                     <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                         Age Restricted
@@ -304,7 +305,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 <div
                     className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                     style={{
-                        paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+                        paddingBottom: 'max(1.5rem, var(--ion-safe-area-bottom, 0px))',
                     }}
                 >
                     <button
@@ -353,7 +354,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
                     <div
                         className="border-b border-grayscale-200 p-6"
-                        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
+                        style={{ paddingTop: 'max(1.5rem, var(--ion-safe-area-top, 0px))' }}
                     >
                         <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                             Date of Birth Required
@@ -411,7 +412,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     <div
                         className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                         style={{
-                            paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
+                            paddingBottom: 'max(1.5rem, var(--ion-safe-area-bottom, 0px))',
                         }}
                     >
                         <button
@@ -495,9 +496,24 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             }
 
             await uninstallMutation.mutateAsync(listing.listing_id);
+            track(AnalyticsEvents.LAUNCHPAD_APP_UNINSTALLED, {
+                appName: listing.display_name,
+                appId: listing.listing_id,
+                result: 'success',
+            });
             closeModal();
         } catch (error) {
             log.error('Failed to uninstall app:', error);
+            track(AnalyticsEvents.LAUNCHPAD_APP_UNINSTALLED, {
+                appName: listing.display_name,
+                appId: listing.listing_id,
+                result: 'failure',
+                error_code:
+                    (error as { code?: string })?.code ??
+                    (error instanceof Error && (error as Error).name !== 'Error'
+                        ? (error as Error).name
+                        : 'unknown'),
+            });
         } finally {
             setIsProcessing(false);
         }
@@ -554,7 +570,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         type="button"
                         onClick={handleShareApp}
                     >
-                        <p className="text-grayscale-900">Share App</p>
+                        <p className="text-grayscale-900">{m['launchpad.detail.shareApp']()}</p>
                         <svg
                             className="w-5 h-5 text-grayscale-600"
                             fill="none"
@@ -578,7 +594,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             type="button"
                             onClick={handleEditPermissions}
                         >
-                            <p className="text-grayscale-900">Edit Permissions</p>
+                            <p className="text-grayscale-900">
+                                {m['launchpad.detail.editPermissions']()}
+                            </p>
                             <Settings className="w-5 h-5 text-grayscale-600" />
                         </button>
                     </li>
@@ -593,7 +611,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             handleUninstallConfirm();
                         }}
                     >
-                        <p className="text-red-600">Uninstall</p>
+                        <p className="text-red-600">{m['launchpad.detail.uninstall']()}</p>
                         <TrashBin className="text-red-600" />
                     </button>
                 </li>
@@ -609,6 +627,13 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             showAgeBlockedModal();
             return;
         }
+
+        track(AnalyticsEvents.LAUNCHPAD_APP_OPENED, {
+            appName: listing.display_name,
+            appId: listing.listing_id,
+            appType: listing.launch_type,
+            entry_point: 'detail_modal',
+        });
 
         await proceedWithLaunch();
     };
@@ -719,7 +744,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             {/* Header */}
             <IonHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">
-                    <div className="flex items-center justify-normal ion-padding safe-area-top-margin">
+                    <div className="flex items-center justify-normal ion-padding mt-[var(--ion-safe-area-top,0px)]">
                         <div className="h-[65px] w-[65px] mr-3">
                             <img
                                 className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"
@@ -823,7 +848,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* Screenshots Section */}
                     {screenshots.length > 0 && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">Preview</h3>
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">
+                                {m['common.preview']()}
+                            </h3>
 
                             <AppScreenshotsSlider appScreenshots={screenshots} />
                         </div>
@@ -831,7 +858,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
                     {/* About Section */}
                     <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                        <h3 className="text-xl text-gray-900 font-notoSans">About</h3>
+                        <h3 className="text-xl text-gray-900 font-notoSans">
+                            {m['common.about']()}
+                        </h3>
 
                         <p
                             ref={textRef}
@@ -846,7 +875,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 onClick={() => setIsExpanded(!isExpanded)}
                                 className="underline text-grayscale-700 text-sm font-notoSans mt-2 font-normal whitespace-pre-wrap"
                             >
-                                {isExpanded ? 'Read Less' : 'Read More'}
+                                {isExpanded
+                                    ? m['launchpad.detail.readLess']()
+                                    : m['launchpad.detail.readMore']()}
                             </button>
                         )}
                     </div>
@@ -855,7 +886,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {listing.highlights && listing.highlights.length > 0 && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
                             <h3 className="text-xl text-gray-900 font-notoSans">
-                                Why Use This App?
+                                {m['launchpad.detail.whyUseThisApp']()}
                             </h3>
 
                             {listing.highlights.map((highlight: string, index: number) => (
@@ -873,13 +904,15 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* Promo Video Section */}
                     {listing.promo_video_url && getEmbedUrl(listing.promo_video_url) && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">Watch</h3>
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-4">
+                                {m['launchpad.detail.watch']()}
+                            </h3>
 
                             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                                 <iframe
                                     className="absolute top-0 left-0 w-full h-full rounded-lg"
                                     src={getEmbedUrl(listing.promo_video_url)!}
-                                    title="Promo Video"
+                                    title={m['launchpad.detail.promoVideo']()}
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen
                                 />
@@ -890,7 +923,9 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     {/* Links Section */}
                     {(listing.privacy_policy_url || listing.terms_url) && (
                         <div className="rounded-[20px] bg-white mt-4 w-full ion-padding shadow-sm">
-                            <h3 className="text-xl text-gray-900 font-notoSans mb-3">Links</h3>
+                            <h3 className="text-xl text-gray-900 font-notoSans mb-3">
+                                {m['launchpad.detail.links']()}
+                            </h3>
 
                             <div className="space-y-3">
                                 {listing.privacy_policy_url && (
@@ -965,7 +1000,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                             onClick={closeModal}
                             className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 shadow-button-bottom flex gap-[5px] justify-center flex-1"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         {isCheckingInstalled ? (
@@ -982,7 +1017,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                         onClick={handleLaunch}
                                         className={`bg-${primaryColor} py-[9px] px-[20px] rounded-[30px] text-white font-notoSans text-[17px] shadow-button-bottom flex items-center justify-center flex-1`}
                                     >
-                                        Open
+                                        {m['common.open']()}
                                     </button>
                                 )}
 
@@ -990,7 +1025,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                     <button
                                         onClick={handleOpenOptionsMenu}
                                         className="p-2 rounded-full bg-white shadow-button-bottom flex items-center justify-center"
-                                        aria-label="More options"
+                                        aria-label={m['launchpad.detail.moreOptions']()}
                                     >
                                         <ThreeDotVertical className="w-6 h-6 text-grayscale-600" />
                                     </button>
@@ -1005,7 +1040,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                                 {isProcessing ? (
                                     <IonSpinner name="dots" className="w-5 h-5" />
                                 ) : (
-                                    'Install'
+                                    m['launchpad.detail.install']()
                                 )}
                             </button>
                         )}
@@ -1016,7 +1051,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             <IonToast
                 isOpen={showCopiedToast}
                 onDidDismiss={() => setShowCopiedToast(false)}
-                message="Link copied to clipboard!"
+                message={m['launchpad.detail.linkCopied']()}
                 duration={2000}
                 position="bottom"
                 color="success"

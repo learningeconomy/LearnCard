@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import AiSessionLearningPathways from '../AiSessionLearningPathways/AiSessionLearningPathways';
 import { ChatBotBubbleAnswer, ChatBotBubbleQuestion } from './helpers/ChatBotBubble';
 import ExistingAiTopics from './ExistingAiTopics/ExistingAiTopics';
@@ -124,16 +126,19 @@ export const ExistingAiSessionChatBotContainer: React.FC<{
     const headerTitle =
         typeof introAnswer === 'string' && introAnswer.length > 0
             ? introAnswer
-            : 'Revisit Topic';
+            : m['ai.revisitTopic']();
 
     return (
         <div
             className={`w-full flex flex-col overflow-y-auto pt-[80px] ${
                 isDesktop ? 'max-w-[800px]' : ''
             } scrollbar-hide relative`}
-            style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
+            style={{ paddingTop: 'calc(80px + var(--ion-safe-area-top, 0px))' }}
         >
-            <OnboardingHeader title={headerTitle} onClose={isDesktop ? handleStartOver : undefined} />
+            <OnboardingHeader
+                title={headerTitle}
+                onClose={isDesktop ? handleStartOver : undefined}
+            />
             {chatBotQA.map((qa, index) => {
                 if (qa.hidden) return null;
 

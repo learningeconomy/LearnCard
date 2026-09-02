@@ -24,14 +24,19 @@ import {
     useSQLiteInitWeb,
     lazyWithRetry,
     Toast,
+    InAppMessageHost,
 } from 'learn-card-base';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
+import { SharedI18nProvider } from './i18n/SharedI18nProvider';
+import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';
 import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
+import UserProfileSetupListener from './components/user-profile/UserProfileSetupListener';
 import { QRCodeScannerStore } from 'learn-card-base';
+import * as m from './paraglide/messages.js';
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
@@ -110,20 +115,33 @@ const FullApp: React.FC = () => {
             <IonReactRouter>
                 <Suspense fallback={<LoadingPageDumb />}>
                     <IonApp>
-                        <AuthCoordinatorProvider>
-                            <ModalsProvider>
-                                <div id="modal-mid-root"></div>
-                                <Toast />
-                                <NetworkListener />
-                                <AppUrlListener />
-                                <PushNotificationListener />
-                                <PresentVcModalListener />
-                                <AppRouter />
-                                <QRCodeScannerListener />
-                                {showScannerOverlay && <QRCodeScannerOverlay />}
-                                <AuthKeyDebugWidget />
-                            </ModalsProvider>
-                        </AuthCoordinatorProvider>
+                        <SharedI18nProvider>
+                            <AuthCoordinatorProvider>
+                                <LocaleProfileSync />
+                                <ModalsProvider>
+                                    <div id="modal-mid-root"></div>
+                                    <Toast />
+                                    <NetworkListener />
+                                    <AppUrlListener />
+                                    <PushNotificationListener />
+                                    <PresentVcModalListener />
+                                    <UserProfileSetupListener />
+                                    <AppRouter />
+                                    <InAppMessageHost />
+                                    <QRCodeScannerListener />
+                                    {showScannerOverlay && (
+                                        <QRCodeScannerOverlay
+                                            title={m['scanner.title']()}
+                                            description={m['scanner.description']()}
+                                            frameLabel={m['scanner.frameLabel']()}
+                                            searchingLabel={m['scanner.lookingForQr']()}
+                                            closeLabel={m['scanner.closeAria']()}
+                                        />
+                                    )}
+                                    <AuthKeyDebugWidget />
+                                </ModalsProvider>
+                            </AuthCoordinatorProvider>
+                        </SharedI18nProvider>
                     </IonApp>
                 </Suspense>
             </IonReactRouter>

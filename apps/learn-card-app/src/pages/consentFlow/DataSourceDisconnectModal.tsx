@@ -1,5 +1,6 @@
 import React from 'react';
 import { IonLoading } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 
 import BrokenLink from '../../components/svgs/BrokenLink';
 import Refresh from 'learn-card-base/svgs/Refresh';
@@ -18,7 +19,7 @@ const DataSourceDisconnectModal: React.FC<DataSourceDisconnectModalProps> = ({ i
 
     return (
         <section className="h-full w-full flex flex-col items-center justify-end gap-[10px]">
-            <IonLoading mode="ios" message="Disconnecting..." isOpen={isPending} />
+            <IonLoading mode="ios" message={m['consentFlow.disconnecting']()} isOpen={isPending} />
             <button
                 className="text-black w-full bg-white flex items-center justify-between px-[20px] py-[35px] rounded-[24px] shadow-bottom font-montserrat text-center text-xl font-normal max-w-[350px]"
                 type="button"
@@ -27,7 +28,7 @@ const DataSourceDisconnectModal: React.FC<DataSourceDisconnectModalProps> = ({ i
                     closeModal();
                 }}
             >
-                <span>Sync</span>
+                <span>{m['consentFlow.synced']()}</span>
                 <Refresh />
             </button>
 
@@ -36,7 +37,7 @@ const DataSourceDisconnectModal: React.FC<DataSourceDisconnectModalProps> = ({ i
                 type="button"
                 onClick={() => disconnect().then(closeModal)}
             >
-                <span>Disconnect</span>
+                <span>{m['consentFlow.disconnect']()}</span>
                 <BrokenLink />
             </button>
         </section>

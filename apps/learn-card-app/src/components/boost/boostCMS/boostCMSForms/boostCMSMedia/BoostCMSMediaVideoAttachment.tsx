@@ -8,6 +8,7 @@ import { IonCol, IonRow, IonInput } from '@ionic/react';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostCMSMediaVideoAttachmentProps = {
     state: BoostCMSMediaState;
@@ -70,7 +71,7 @@ const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> 
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Title"
+                    placeholder={m['boost.cms.media.titlePlaceholder']()}
                     type="text"
                     value={state.videos?.[currentIndex]?.title || newLinkTitle}
                     onIonInput={e => {
@@ -91,7 +92,7 @@ const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> 
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Paste link..."
+                    placeholder={m['boost.cms.media.pasteLink']()}
                     type="text"
                     value={state.videos?.[currentIndex]?.url || newLinkUrl}
                     onIonInput={e => {
@@ -134,7 +135,7 @@ const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> 
                                 }}
                                 className={`flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
                             >
-                                Save
+                                {m['common.save']()}
                             </button>
                         </div>
 
@@ -152,7 +153,7 @@ const BoostCMSMediaVideoAttachment: React.FC<BoostCMSMediaVideoAttachmentProps> 
                                 }}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Back
+                                {m['common.close']()}
                             </button>
                         </div>
                     </div>,

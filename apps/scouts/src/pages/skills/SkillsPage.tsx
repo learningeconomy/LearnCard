@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
+import React, { useEffect, useState } from 'react';
 
 import TotalSkillsCount from './TotalSkillsCount';
 import { IonContent, IonPage } from '@ionic/react';
-import SkillsInsightCard from './SkillsInsightCard';
 import SkillsCategoryList from './SkillsCategoryList';
 import MainHeader from '../../components/main-header/MainHeader';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
@@ -24,13 +22,12 @@ import SkillsMyHub from './SkillsMyHub';
 import SkillsAdminPanel from './SkillsAdminPanel';
 import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import { SkillFramework } from '../../components/boost/boost';
-
-enum TabEnum {
-    MY_HUB = 'My Hub',
-    ADMIN_PANEL = 'Admin Panel',
-}
+import { useIsCurrentUserLCNUser } from 'learn-card-base';
+import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
+import SkillsTabs, { SkillsTab } from './SkillsTabs';
 
 const SkillsPage: React.FC = () => {
+    const { data: isNetworkUser } = useIsCurrentUserLCNUser();
     const {
         data: allResolvedCreds,
         isFetching: credentialsFetching,
@@ -39,38 +36,51 @@ const SkillsPage: React.FC = () => {
         refetch,
     } = useGetCredentialsForSkills();
 
-    const [selectedTab, setSelectedTab] = useState<TabEnum>(TabEnum.ADMIN_PANEL);
-    const [frameworkToBrowse, setFrameworkToBrowse] = useState<SkillFramework | null>(null);
-
-    // const flags = useFlags();
-    // const showAiInsights = flags?.showAiInsights;
+    const [selectedTab, setSelectedTab] = useState<SkillsTab>(SkillsTab.MyHub);
+    const [frameworkToBrowse, setFrameworkToBrowse] = useState<ApiFrameworkInfo | null>(null);
 
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
 
     useLoadingLine(credentialsBackgroundFetching);
 
+    const resolvedCreds = Array.isArray(allResolvedCreds) ? allResolvedCreds : [];
+
     let isBoostsEmpty = false;
-    if ((!allResolvedBoostsLoading && allResolvedCreds?.length === 0) || allResolvedBoostsLoading) {
+    if ((!allResolvedBoostsLoading && resolvedCreds.length === 0) || allResolvedBoostsLoading) {
         isBoostsEmpty = true;
     } else {
         isBoostsEmpty = false;
     }
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
+    const skillsMap = mapBoostsToSkills(resolvedCreds as any) as Record<
+        string,
+        { length?: number; totalSubskills?: number }
+    >;
 
     // Calculate total count of skills and subskills
-    const totalSkills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.length || 0),
+    const skillCategories = Object.values(skillsMap) as Array<{
+        length?: number;
+        totalSubskills?: number;
+    }>;
+
+    const totalSkills = skillCategories.reduce(
+        (total: number, category) => total + (category?.length || 0),
         0
     );
-    const totalSubskills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.totalSubskills || 0),
+    const totalSubskills = skillCategories.reduce(
+        (total: number, category) => total + (category?.totalSubskills || 0),
         0
     );
 
     const total = (totalSkills || 0) + (totalSubskills || 0);
 
-    const isHub = selectedTab === TabEnum.MY_HUB;
+    const canShowAdminPanel = isNetworkUser === true;
+
+    useEffect(() => {
+        if (!canShowAdminPanel && selectedTab === SkillsTab.AdminPanel) {
+            setSelectedTab(SkillsTab.MyHub);
+        }
+    }, [canShowAdminPanel, selectedTab]);
 
     if (frameworkToBrowse) {
         // could remove this if we want to use the modal instead (which we're currently doing)
@@ -84,7 +94,7 @@ const SkillsPage: React.FC = () => {
 
     return (
         <IonPage className="bg-violet-200">
-            <GenericErrorBoundary category={CredentialCategoryEnum.skill}>
+            <GenericErrorBoundary>
                 <MainHeader
                     showBackButton
                     subheaderType={SubheaderTypeEnum.Skill}
@@ -93,31 +103,16 @@ const SkillsPage: React.FC = () => {
                 <IonContent fullscreen className="skills-page" color="violet-200">
                     <div className="flex relative justify-center items-center w-full pb-[30px]">
                         <div className="w-full max-w-[600px] flex items-center justify-center flex-wrap text-center ion-padding mt-[30px] px-[20px]">
-                            {/* {showAiInsights && <SkillsInsightCard />} */}
                             {/* <TotalSkillsCount total={total} /> */}
 
-                            <div
-                                className={`flex items-center justify-start w-full ${
-                                    isHub ? 'mb-[10px]' : 'mb-[15px]'
-                                }`}
-                            >
-                                {Object.values(TabEnum).map(tab => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => setSelectedTab(tab)}
-                                        className={`px-[14px] py-[7px] rounded-[5px] font-[500] font-poppins text-[14px] ${
-                                            tab === selectedTab
-                                                ? 'bg-violet-100 text-grayscale-900'
-                                                : 'text-grayscale-600'
-                                        }`}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
-                            </div>
+                            <SkillsTabs
+                                selectedTab={selectedTab}
+                                onSelect={setSelectedTab}
+                                showAdminPanel={canShowAdminPanel}
+                            />
 
-                            {selectedTab === TabEnum.MY_HUB && <SkillsMyHub />}
-                            {selectedTab === TabEnum.ADMIN_PANEL && (
+                            {selectedTab === SkillsTab.MyHub && <SkillsMyHub />}
+                            {selectedTab === SkillsTab.AdminPanel && canShowAdminPanel && (
                                 <SkillsAdminPanel setFrameworkToBrowse={setFrameworkToBrowse} />
                             )}
                         </div>

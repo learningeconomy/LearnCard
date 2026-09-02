@@ -13,7 +13,21 @@ import { categoryMetadata, CredentialCategoryEnum } from 'learn-card-base';
 import {
     getDefaultCategoryForCredential,
     getExistingAttachmentsOrEvidence,
+    isPdfAttachmentSource,
+    PDF_DATA_URL_PATTERN,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers';
+
+const getEmbeddedPdfPreviewSource = (source: string | null | undefined): string | undefined => {
+    if (!isPdfAttachmentSource(source)) return undefined;
+
+    const trimmedSource = source!.trim();
+    if (PDF_DATA_URL_PATTERN.test(trimmedSource)) return trimmedSource;
+
+    const base64 = trimmedSource.replace(/-/g, '+').replace(/_/g, '/');
+    const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+    return `data:application/pdf;base64,${base64}${padding}`;
+};
 
 type CredentialBadgeProps = {
     credential: VC;
@@ -53,21 +67,29 @@ export const CredentialMediaBadge: React.FC<CredentialBadgeProps> = ({
 
     const _colorOverride = color ?? 'gray-500';
 
+    const rawArtifact = (credential as VC & { rawArtifact?: unknown }).rawArtifact;
     const mediaAttachments = getExistingAttachmentsOrEvidence(
         attachments || credential?.attachments || [],
-        credential?.evidence || []
-    );
+        credential?.evidence || [],
+        rawArtifact
+    ).map(attachment => ({
+        ...attachment,
+        url: getAttachmentSource(attachment) ?? null,
+    }));
     const photoAttachments = mediaAttachments.filter(a => a.type === BoostMediaOptionsEnum.photo);
     const documentAttachment = mediaAttachments.find(
         a => a.type === BoostMediaOptionsEnum.document
     );
     const videoAttachment = mediaAttachments.find(a => a.type === BoostMediaOptionsEnum.video);
+    const videoSource = videoAttachment?.url;
+    const documentSource = documentAttachment?.url;
+    const embeddedPdfPreviewSource = getEmbeddedPdfPreviewSource(documentSource);
 
     useEffect(() => {
-        if (videoAttachment?.url) {
-            getVideoMetadata(videoAttachment.url).then(setVideoMetaData);
+        if (videoSource) {
+            getVideoMetadata(videoSource).then(setVideoMetaData);
         }
-    }, [videoAttachment]);
+    }, [videoSource]);
 
     let badgeBackground: React.ReactNode = null;
 
@@ -115,9 +137,21 @@ export const CredentialMediaBadge: React.FC<CredentialBadgeProps> = ({
             </div>
         );
     }
-    // Document preview
-    else if (documentAttachment?.url) {
-        const preview = getFilestackPreviewUrl(documentAttachment.url, {
+    // Embedded PDF preview
+    else if (embeddedPdfPreviewSource) {
+        const previewTitle = documentAttachment.fileName || documentAttachment.title || 'Document';
+        badgeBackground = (
+            <iframe
+                src={embeddedPdfPreviewSource}
+                title={`${previewTitle} preview`}
+                loading="lazy"
+                className={`absolute z-10 w-full h-full border-0 bg-white pointer-events-none ${displayTypeBackgroundStyles}`}
+            />
+        );
+    }
+    // Remote document preview
+    else if (documentSource && !documentSource.startsWith('data:')) {
+        const preview = getFilestackPreviewUrl(documentSource, {
             width: 300,
             height: 300,
         });

@@ -14,10 +14,12 @@ import { IonCol } from '@ionic/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { BoostSmallCard } from '@learncard/react';
 
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+
+import * as m from '../../../paraglide/messages.js';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
@@ -94,7 +96,7 @@ export const LearnCardTemplateCard: React.FC<LearnCardTemplateCardProps> = ({
         customTitle = (
             <div className="flex flex-col items-center pt-[5px] gap-[5px]">
                 <span className="text-grayscale-900 text-[16px] font-notoSans font-semibold text-center leading-[125%] line-clamp-2 px-[8px]">
-                    {brandingConfig?.name} Template
+                    {m['boost.template.brandTemplate']({ brand: brandingConfig?.name })}
                 </span>
                 <span
                     className={`text-${textColor} text-center text-[12px] font-[600] uppercase font-notoSans`}
@@ -135,7 +137,7 @@ export const LearnCardTemplateCard: React.FC<LearnCardTemplateCardProps> = ({
                         </div>
                     }
                     customThumbComponent={
-                        <CredentialBadge
+                        <CredentialBadgeNew
                             achievementType={subType}
                             boostType={categoryType}
                             displayType={displayType}
@@ -148,7 +150,7 @@ export const LearnCardTemplateCard: React.FC<LearnCardTemplateCardProps> = ({
                             badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
                         />
                     }
-                    title={brandingConfig?.name + ' Template'}
+                    title={m['boost.template.brandTemplate']({ brand: brandingConfig?.name })}
                 />
             </IonCol>
         </ErrorBoundary>

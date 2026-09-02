@@ -26,7 +26,7 @@ environments/
 The easiest way is the interactive scaffolding script:
 
 ```bash
-pnpm create-tenant
+bun run create-tenant
 ```
 
 This guides you through naming, domains, features, and optionally creates
@@ -36,50 +36,50 @@ a custom theme — all with sensible defaults.
 
 1. **Create the directory and config:**
 
-   ```bash
-   mkdir -p environments/<tenant>
-   ```
+    ```bash
+    mkdir -p environments/<tenant>
+    ```
 
-   Create `environments/<tenant>/config.json` with overrides. Only include
-   fields that differ from the LearnCard defaults in `tenantDefaults.ts`.
-   The config is deep-merged onto defaults at build time.
+    Create `environments/<tenant>/config.json` with overrides. Only include
+    fields that differ from the LearnCard defaults in `tenantDefaults.ts`.
+    The config is deep-merged onto defaults at build time.
 
 2. **Generate assets from a logo:**
 
-   ```bash
-   npx tsx scripts/generate-tenant-assets.ts <tenant> <logo-path> --bg "#hex" --name "Display Name"
-   ```
+    ```bash
+    bun scripts/generate-tenant-assets.ts <tenant> <logo-path> --bg "#hex" --name "Display Name"
+    ```
 
-   This creates `environments/<tenant>/assets/` with all iOS, Android, web,
-   and branding images.
+    This creates `environments/<tenant>/assets/` with all iOS, Android, web,
+    and branding images.
 
 3. **Apply the tenant config:**
 
-   ```bash
-   npx tsx scripts/prepare-native-config.ts <tenant>
-   ```
+    ```bash
+    bun scripts/prepare-native-config.ts <tenant>
+    ```
 
-   This copies assets into the platform directories, patches Capacitor
-   configs, and writes `public/tenant-config.json`.
+    This copies assets into the platform directories, patches Capacitor
+    configs, and writes `public/tenant-config.json`.
 
 4. **Register the hostname** in `tenant-registry.json`:
 
-   ```jsonc
-   // environments/tenant-registry.json
-   {
-       "hostnames": {
-           "mytenant.app": { "tenantId": "mytenant", "domain": "mytenant.app" }
-       }
-   }
-   ```
+    ```jsonc
+    // environments/tenant-registry.json
+    {
+        "hostnames": {
+            "mytenant.app": { "tenantId": "mytenant", "domain": "mytenant.app" }
+        }
+    }
+    ```
 
-   The `create-tenant` script does this automatically.
+    The `create-tenant` script does this automatically.
 
 5. **Validate all configs (CI):**
 
-   ```bash
-   npx tsx scripts/validate-tenant-configs.ts
-   ```
+    ```bash
+    bun scripts/validate-tenant-configs.ts
+    ```
 
 ## Stage overlays
 
@@ -116,16 +116,16 @@ If no `--stage` is specified, **production** is assumed (no overlay applied).
 
 ```bash
 # Production vetpass
-npx tsx scripts/prepare-native-config.ts vetpass
+bun scripts/prepare-native-config.ts vetpass
 
 # Local dev vetpass
-npx tsx scripts/prepare-native-config.ts vetpass --stage local
+bun scripts/prepare-native-config.ts vetpass --stage local
 
 # Staging learncard
-npx tsx scripts/prepare-native-config.ts learncard --stage staging
+bun scripts/prepare-native-config.ts learncard --stage staging
 
 # Clean all generated files
-npx tsx scripts/prepare-native-config.ts --reset
+bun scripts/prepare-native-config.ts --reset
 ```
 
 Switching is git-clean — platform output files are gitignored. Only the
@@ -136,16 +136,16 @@ Switching is git-clean — platform output files are gitignored. Only the
 Some platform files (Vite's `index.html`, iOS entitlements) need to exist but
 are patched per-tenant. These use a **template pattern**:
 
-| Template (tracked) | Generated (gitignored) |
-| --- | --- |
-| `index.template.html` | `index.html` |
-| `ios/App/App/App.entitlements.template` | `ios/App/App/App.entitlements` |
+| Template (tracked)                             | Generated (gitignored)                |
+| ---------------------------------------------- | ------------------------------------- |
+| `index.template.html`                          | `index.html`                          |
+| `ios/App/App/App.entitlements.template`        | `ios/App/App/App.entitlements`        |
 | `ios/App/App/AppRelease.entitlements.template` | `ios/App/App/AppRelease.entitlements` |
 
 `prepare-native-config.ts` copies the template → generated file, then patches
 it with tenant-specific values (title, deep link domains, etc.). On a fresh
 clone the generated files won't exist until you run the script (e.g. via
-`pnpm lc dev`).
+`bun run lc dev`).
 
 Firebase configs (`google-services.json`, `GoogleService-Info.plist`) are
 copied directly from tenant assets and are also gitignored.
@@ -155,22 +155,48 @@ copied directly from tenant assets and are also gitignored.
 The config is a partial `TenantConfig` object. Fields are deep-merged onto
 `DEFAULT_LEARNCARD_TENANT_CONFIG`. Common override sections:
 
-| Section        | Purpose                                      |
-| -------------- | -------------------------------------------- |
-| `tenantId`     | Unique tenant identifier                     |
-| `domain`       | Production domain (e.g. `vetpass.app`)        |
-| `apis`         | API endpoint URLs                            |
-| `auth`         | Firebase project, SSS server, sign-in methods |
-| `branding`     | App name, colors, category labels            |
-| `features`     | Feature toggles                              |
-| `native`       | Bundle ID, deep link domains, Capgo channel  |
-| `email`        | Email branding for recovery / OTP / notification emails |
+| Section    | Purpose                                                 |
+| ---------- | ------------------------------------------------------- |
+| `tenantId` | Unique tenant identifier                                |
+| `domain`   | Production domain (e.g. `vetpass.app`)                  |
+| `apis`     | API endpoint URLs                                       |
+| `auth`     | Firebase project, SSS server, sign-in methods           |
+| `storage`  | Image upload provider and CDN settings                  |
+| `branding` | App name, colors, category labels                       |
+| `features` | Feature toggles                                         |
+| `native`   | Bundle ID, deep link domains, Capgo channel             |
+| `email`    | Email branding for recovery / OTP / notification emails |
 
 The config supports an optional `schemaVersion` field (defaults to the current
 version). When the schema version changes, stale localStorage caches are
 automatically invalidated.
 
 See `tenantConfigSchema.ts` for the full schema with defaults.
+
+### Image storage
+
+Omitting `storage` keeps the LearnCard default Filestack provider.
+
+```json
+{
+    "storage": {
+        "provider": "filestack",
+        "apiKey": "...",
+        "cdnDomain": "cdn.filestackcontent.com"
+    }
+}
+```
+
+```json
+{
+    "storage": {
+        "provider": "s3",
+        "uploadEndpoint": "https://uploads.example.com/images",
+        "cdnDomain": "cdn.mytenant.app",
+        "bucket": "mytenant-images"
+    }
+}
+```
 
 ### Email branding
 
@@ -219,39 +245,40 @@ The app has two config input paths. **Tenant config JSON is canonical.**
 ```
 
 **Rule of thumb:**
-- Tenant-specific values → `config.json`
-- Personal developer keys → `.env` (gitignored)
-- Everything else uses defaults
+
+-   Tenant-specific values → `config.json`
+-   Personal developer keys → `.env` (gitignored)
+-   Everything else uses defaults
 
 ## Quick start
 
 ```bash
-pnpm lc                       # Interactive menu — pick tenant, stage, launch mode
-pnpm lc dev                   # Full stack with tenant + stage picker
-pnpm lc dev vetpass            # Full stack vetpass (picks stage interactively)
-pnpm lc dev vetpass local      # Full stack vetpass, local stage
-pnpm lc start                  # App only, default tenant
-pnpm lc start vetpass local    # App only, vetpass local
-pnpm lc validate               # Run all config + theme validators
-pnpm lc create                 # Scaffold a new tenant
-pnpm lc tenants                # List tenants, stages, and themes
+bun run lc                       # Interactive menu — pick tenant, stage, launch mode
+bun run lc dev                   # Full stack with tenant + stage picker
+bun run lc dev vetpass            # Full stack vetpass (picks stage interactively)
+bun run lc dev vetpass local      # Full stack vetpass, local stage
+bun run lc start                  # App only, default tenant
+bun run lc start vetpass local    # App only, vetpass local
+bun run lc validate               # Run all config + theme validators
+bun run lc create                 # Scaffold a new tenant
+bun run lc tenants                # List tenants, stages, and themes
 ```
 
-If you don't need multi-tenant features, **`pnpm dev` still works exactly as before**.
+If you don't need multi-tenant features, **`bun run dev` still works exactly as before**.
 
 ## npm scripts
 
-| Script                        | Description                          |
-| ----------------------------- | ------------------------------------ |
-| **`pnpm lc`**                | **Interactive dev launcher** (start here) |
-| `pnpm dev`                   | Docker compose — full stack (unchanged) |
-| `pnpm dev:services`          | Docker services only (no app)        |
-| `pnpm start`                 | Vite dev server only                 |
-| `pnpm prepare-config`        | Apply default (learncard) config     |
-| `pnpm docker-start`          | Apply local config + start dev       |
-| `pnpm docker-start:tenant`   | Apply `$TENANT` config + start dev   |
-| `pnpm generate-assets`       | Generate assets from a logo          |
-| `pnpm validate-configs`      | Validate all tenant configs (CI)     |
-| `pnpm validate-themes`       | Validate all theme.json files (CI)   |
-| `pnpm create-tenant`         | Interactive tenant scaffolding       |
-| `pnpm config-editor`         | Launch visual config editor (:4400)  |
+| Script                        | Description                               |
+| ----------------------------- | ----------------------------------------- |
+| **`bun run lc`**              | **Interactive dev launcher** (start here) |
+| `bun run dev`                 | Docker compose — full stack (unchanged)   |
+| `bun run dev:services`        | Docker services only (no app)             |
+| `bun run start`               | Vite dev server only                      |
+| `bun run prepare-config`      | Apply default (learncard) config          |
+| `bun run docker-start`        | Apply local config + start dev            |
+| `bun run docker-start:tenant` | Apply `$TENANT` config + start dev        |
+| `bun run generate-assets`     | Generate assets from a logo               |
+| `bun run validate-configs`    | Validate all tenant configs (CI)          |
+| `bun run validate-themes`     | Validate all theme.json files (CI)        |
+| `bun run create-tenant`       | Interactive tenant scaffolding            |
+| `bun run config-editor`       | Launch visual config editor (:4400)       |

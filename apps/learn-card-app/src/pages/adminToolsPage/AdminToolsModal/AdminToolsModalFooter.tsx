@@ -1,10 +1,9 @@
 import React from 'react';
-import { Capacitor } from '@capacitor/core';
 
 import { IonFooter } from '@ionic/react';
 
 import { useModal } from 'learn-card-base';
-import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
+import * as m from '../../../paraglide/messages.js';
 
 const AdminToolsModalFooter: React.FC<{
     isDisabled?: boolean;
@@ -15,17 +14,16 @@ const AdminToolsModalFooter: React.FC<{
     buttonTitle?: string;
 }> = ({ isDisabled, onSave, className, showSaveButton, isLoading, buttonTitle }) => {
     const { closeModal } = useModal();
-    const safeArea = useSafeArea();
-
-    let bottomPosition = safeArea.bottom;
-    if (Capacitor.isNativePlatform()) bottomPosition = 20 + safeArea.bottom;
 
     return (
         <IonFooter
             mode="ios"
-            className={`w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white !max-h-[100px] ${className}`}
+            className={`lc-content-owns-bottom w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white ${className}`}
             style={{
-                bottom: `${bottomPosition}px`,
+                bottom: 0,
+                paddingBottom: 'var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px))',
+                maxHeight:
+                    'calc(100px + var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px)))',
             }}
         >
             <div className="w-full flex items-center justify-center">
@@ -44,7 +42,7 @@ const AdminToolsModalFooter: React.FC<{
                                 isDisabled ? 'bg-grayscale-300' : 'bg-emerald-700'
                             }`}
                         >
-                            {isLoading ? 'Loading...' : 'Save'}
+                            {isLoading ? m['common.loading']() : m['common.save']()}
                         </button>
                     )}
                 </div>

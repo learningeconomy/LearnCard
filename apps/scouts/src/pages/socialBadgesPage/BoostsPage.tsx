@@ -12,12 +12,10 @@ import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoos
 // @ts-ignore
 import EmptySocialBoostIcon from '../../assets/images/emptySocialBoost.svg';
 import Plus from '../../components/svgs/Plus';
-import { closeAll } from '../../helpers/uiHelpers';
-import NewJoinNetworkPrompt from '../../components/network-prompts/NewJoinNetworkPrompt';
+import { useJoinLCNetworkModal } from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
 import {
     usePathQuery,
-    EarnedAndManagedTabs,
     CredentialListTabEnum,
     CredentialCategoryEnum,
     useIsCurrentUserLCNUser,
@@ -28,12 +26,14 @@ import {
     useGetPaginatedManagedBoosts,
     useGetCredentialCount,
     useCountBoosts,
-    useModal,
-    ModalTypes,
-    useIsLoggedIn,
     categoryMetadata,
     BoostCategoryOptionsEnum,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
+import EarnedAndManagedTabs from '../../components/earned-and-managed-tabs/ScoutPassEarnedAndManagedTabs';
+
+import * as m from '../../paraglide/messages.js';
 
 import { useLoadingLine } from '../../stores/loadingStore';
 import {
@@ -47,6 +47,7 @@ const BoostsPage: React.FC = () => {
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
+
     const query = usePathQuery();
 
     const _activeTab = query.get('managed')
@@ -91,37 +92,12 @@ const BoostsPage: React.FC = () => {
 
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.SocialBadge];
 
-    const { newModal: newNetworkModal, closeModal: closeNetworkModal } = useModal({
-        mobile: ModalTypes.FullScreen,
-        desktop: ModalTypes.FullScreen,
-    });
-
-    const openNetworkModal = () => {
-        newNetworkModal(
-            <NewJoinNetworkPrompt
-                handleCloseModal={() => {
-                    closeNetworkModal();
-                    closeAll?.();
-                }}
-                showNotificationsModal={false}
-            />
-        );
-    };
-    const { data, isLoading } = useIsCurrentUserLCNUser();
-    const isLoggedIn = useIsLoggedIn();
-
-    const handlePresentJoinNetworkModal = async () => {
-        if (!isLoading && !data && isLoggedIn) {
-            openNetworkModal();
-            return { prompted: true };
-        }
-        return { prompted: false };
-    };
+    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
 
     const plusButtonOverride = (
         <button
             type="button"
-            aria-label="plus-button"
+            aria-label={m['boost.newBoost']()}
             onClick={async () => {
                 const isCurrentLCNUser =
                     currentLCNUserLoading || typeof currentLCNUser === 'undefined'
@@ -129,7 +105,7 @@ const BoostsPage: React.FC = () => {
                         : currentLCNUser;
 
                 if (!isCurrentLCNUser) {
-                    handlePresentJoinNetworkModal();
+                    void handlePresentJoinNetworkModal({ forceOpen: true });
                     return;
                 }
 
@@ -155,10 +131,10 @@ const BoostsPage: React.FC = () => {
         viewMode: viewMode,
         defaultImg: imgSrc,
         category: BoostCategoryOptionsEnum.socialBadge as unknown as CredentialCategoryEnum,
-        title: 'Boosts',
+        title: m['skills.listTitle'](),
         bgFillerColor: '!bg-sp-blue-light-ocean',
         emptyImg: EmptySocialBoostIcon as any,
-        emptyMessage: "You don't have any Boosts yet.",
+        emptyMessage: m['skills.emptyBoosts'](),
         emptyMessageStyle: 'text-[#03748D] -mt-4',
     };
 

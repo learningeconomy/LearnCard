@@ -6,6 +6,8 @@ import {
     LCNVisibleProfileValidator,
     LCNProfileValidator,
     LCNProfileConnectionStatusEnum,
+    LCNConnectionPromptActionResultValidator,
+    LCNConnectionPromptValidator,
     ProfileVisibilityEnum,
     PaginatedLCNProfilesValidator,
     PaginatedVisibleLCNProfilesValidator,
@@ -30,6 +32,12 @@ import {
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
 } from '@helpers/connection.helpers';
+import {
+    connectWithConnectionPrompt,
+    getConnectionPromptStatus,
+    getPendingConnectionPrompts,
+    skipConnectionPrompt,
+} from '@helpers/connectionPrompt.helpers';
 import {
     getDidWeb,
     getManagedDidWeb,
@@ -112,6 +120,19 @@ const UpdateProfileInputValidator = z.object({
     role: z.string().optional(),
     dob: z.string().optional(),
     country: z.string().optional(),
+    // Guard against arbitrary strings being durably persisted. Accept only a
+    // BCP-47 tag whose primary subtag is a supported catalog locale (en/es/fr/ar)
+    // — region variants like `es-MX` are allowed and normalized at notification
+    // time (see resolveCatalogLocale in helpers/notificationMessages.ts).
+    locale: z
+        .string()
+        .refine(
+            value => ['en', 'es', 'fr', 'ar'].includes(value.toLowerCase().split('-')[0] ?? ''),
+            {
+                message: 'Unsupported locale (expected one of en, es, fr, ar)',
+            }
+        )
+        .optional(),
     highlightedCredentials: z.array(z.string()).optional(),
     approved: z.boolean().optional(),
 });
@@ -169,10 +190,7 @@ export const profilesRouter = t.router({
                                     isPrimary: false,
                                 });
                             }
-                            await createProfileContactMethodRelationship(
-                                profile.profileId,
-                                cm.id
-                            );
+                            await createProfileContactMethodRelationship(profile.profileId, cm.id);
                             await deleteAllProfileContactMethodRelationshipsExceptForProfileId(
                                 profile.profileId,
                                 cm.id
@@ -193,7 +211,10 @@ export const profilesRouter = t.router({
                             try {
                                 await claimPendingGuardianLinksForProfile(profile);
                             } catch (err) {
-                                console.error('[createProfile] Auto-claim guardian links failed (non-fatal):', err);
+                                console.error(
+                                    '[createProfile] Auto-claim guardian links failed (non-fatal):',
+                                    err
+                                );
                             }
                         }
                     } catch (e) {
@@ -347,7 +368,10 @@ export const profilesRouter = t.router({
             const profile = updateDidForProfile(ctx.domain, otherProfile);
             const tier = await resolveProfileTier(selfProfile, profile);
 
-            if (tier === ProfileAccessTierEnum.unauthenticated && isPrivateToUnauthenticated(profile)) {
+            if (
+                tier === ProfileAccessTierEnum.unauthenticated &&
+                isPrivateToUnauthenticated(profile)
+            ) {
                 return undefined;
             }
 
@@ -474,7 +498,7 @@ export const profilesRouter = t.router({
             } = input;
 
             const _selfProfile = ctx.user?.did ? await getProfileByDid(ctx.user.did) : null;
-            const selfProfile = includeSelf ? null : (_selfProfile ?? null);
+            const selfProfile = includeSelf ? null : _selfProfile ?? null;
 
             const blacklist =
                 (_selfProfile && (await getBlockedAndBlockedByIds(_selfProfile))) || [];
@@ -559,6 +583,7 @@ export const profilesRouter = t.router({
                 role,
                 dob,
                 country,
+                locale,
                 highlightedCredentials,
                 approved,
             } = input;
@@ -606,8 +631,7 @@ export const profilesRouter = t.router({
             }
             if (typeof profileVisibility === 'string') {
                 actualUpdates.profileVisibility = profileVisibility;
-                actualUpdates.isPrivate =
-                    profileVisibility === ProfileVisibilityEnum.enum.private;
+                actualUpdates.isPrivate = profileVisibility === ProfileVisibilityEnum.enum.private;
             }
             if (typeof showEmail === 'boolean') actualUpdates.showEmail = showEmail;
             if (typeof allowConnectionRequests === 'string')
@@ -622,6 +646,7 @@ export const profilesRouter = t.router({
             if (typeof role === 'string') actualUpdates.role = role;
             if (typeof dob === 'string') actualUpdates.dob = dob;
             if (typeof country === 'string') actualUpdates.country = country;
+            if (typeof locale === 'string') actualUpdates.locale = locale;
             if (Array.isArray(highlightedCredentials))
                 actualUpdates.highlightedCredentials = highlightedCredentials;
             if (typeof approved === 'boolean') actualUpdates.approved = approved;
@@ -685,7 +710,8 @@ export const profilesRouter = t.router({
             }
 
             if (
-                (targetProfile.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone) ===
+                (targetProfile.allowConnectionRequests ??
+                    AllowConnectionRequestsEnum.enum.anyone) ===
                 AllowConnectionRequestsEnum.enum.invite_only
             ) {
                 throw new TRPCError({
@@ -731,7 +757,8 @@ export const profilesRouter = t.router({
             }
 
             if (
-                (targetProfile.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone) ===
+                (targetProfile.allowConnectionRequests ??
+                    AllowConnectionRequestsEnum.enum.anyone) ===
                 AllowConnectionRequestsEnum.enum.invite_only
             ) {
                 throw new TRPCError({
@@ -904,6 +931,32 @@ export const profilesRouter = t.router({
 
             return success;
         }),
+
+    pendingConnectionPrompts: profileRoute
+        .meta({ requiredScope: 'connections:read' })
+        .input(z.void())
+        .output(LCNConnectionPromptValidator.array())
+        .query(({ ctx }) => getPendingConnectionPrompts(ctx.user.profile)),
+
+    connectionPromptStatus: profileRoute
+        .meta({ requiredScope: 'connections:read' })
+        .input(z.object({ promptId: z.string().uuid() }))
+        .output(LCNConnectionPromptActionResultValidator)
+        .query(({ ctx, input }) => getConnectionPromptStatus(ctx.user.profile, input.promptId)),
+
+    skipConnectionPrompt: profileRoute
+        .meta({ requiredScope: 'connections:write' })
+        .input(z.object({ promptId: z.string().uuid() }))
+        .output(LCNConnectionPromptActionResultValidator)
+        .mutation(({ ctx, input }) => skipConnectionPrompt(ctx.user.profile, input.promptId)),
+
+    connectWithConnectionPrompt: profileRoute
+        .meta({ requiredScope: 'connections:write' })
+        .input(z.object({ promptId: z.string().uuid() }))
+        .output(LCNConnectionPromptActionResultValidator)
+        .mutation(({ ctx, input }) =>
+            connectWithConnectionPrompt(ctx.user.profile, input.promptId)
+        ),
 
     connections: profileRoute
         .meta({

@@ -1,8 +1,9 @@
 import React from 'react';
-import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
 import { VC } from '@learncard/types';
 import { IonCol } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
+import { formatLocaleDate } from '../../../i18n/formatters';
 import {
     BoostPageViewMode,
     BoostPageViewModeType,
@@ -59,6 +60,69 @@ type BoostEarnedCardProps = {
     branding?: BrandingEnum;
     loading?: boolean;
 };
+type BoostEarnedCardSkeletonProps = Pick<
+    BoostEarnedCardProps,
+    'categoryType' | 'boostPageViewMode' | 'branding'
+>;
+
+export const BoostEarnedCardSkeleton: React.FC<BoostEarnedCardSkeletonProps> = ({
+    categoryType,
+    boostPageViewMode = BoostPageViewMode.Card,
+    branding,
+}) => {
+    const isCardView = boostPageViewMode === BoostPageViewMode.Card;
+    const type = categoryMetadata[categoryType].walletSubtype;
+
+    return (
+        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <IonCol
+                size={isCardView ? '6' : '12'}
+                size-sm={isCardView ? '4' : undefined}
+                size-md={isCardView ? '4' : undefined}
+                size-lg={isCardView ? '4' : undefined}
+                className={`flex justify-center items-center relative ${isCardView ? '' : 'p-0'}`}
+                aria-hidden="true"
+                inert
+            >
+                <BoostGenericCardWrapper
+                    className="bg-white text-grayscale-900 z-[1000]"
+                    customHeaderClass="boost-managed-card"
+                    customDateDisplay={
+                        <BoostTextSkeleton
+                            containerClassName="w-full flex items-center justify-center"
+                            skeletonStyles={{ width: '50%' }}
+                        />
+                    }
+                    customIssuerName={
+                        <BoostTextSkeleton
+                            containerClassName="w-full flex items-center justify-center"
+                            skeletonStyles={{ width: '80%' }}
+                        />
+                    }
+                    customThumbComponent={
+                        <BadgeSkeleton
+                            badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                            badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
+                        />
+                    }
+                    customTitle={
+                        <div className="w-full flex items-center justify-center pt-2">
+                            <BoostTextSkeleton
+                                containerClassName="w-full flex items-center justify-center"
+                                skeletonStyles={{ width: '80%' }}
+                            />
+                        </div>
+                    }
+                    type={type}
+                    categoryType={categoryType}
+                    boostPageViewMode={boostPageViewMode}
+                    branding={branding}
+                    loading
+                />
+            </IonCol>
+        </ErrorBoundary>
+    );
+};
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     credential: _credential,
@@ -88,9 +152,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     // Below query is so we can get parent boost info...
     // Get boostId from resolved credential
-    const {
-        data: parentBoosts,
-    } = useGetBoostParents(resolvedCredential?.boostId, 1);
+    const { data: parentBoosts } = useGetBoostParents(resolvedCredential?.boostId, 1);
 
     const parentSourceTitle =
         parentBoosts?.records?.[0]?.meta?.edits?.name || parentBoosts?.records?.[0]?.name;
@@ -100,8 +162,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const cred = credential && unwrapBoostCredential(credential);
 
     const boostIssuer = (credential as any)?.boostCredential?.issuer;
-    const boostIssuerDid =
-        typeof boostIssuer === 'string' ? boostIssuer : boostIssuer?.id;
+    const boostIssuerDid = typeof boostIssuer === 'string' ? boostIssuer : boostIssuer?.id;
 
     // Fallback to VC issuer if boostCredential.issuer is not available
     const issuerDid =
@@ -111,7 +172,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     // Extract user ID from DID (e.g., "jpgclub" from "did:web:localhost%3A4000:users:jpgclub")
     const profileID = issuerDid?.split(':').pop();
 
-    const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
+    const { credentials: highlightedCreds } = useHighlightedCredentials(
+        profileID,
+        Boolean(profileID)
+    );
 
     const unknownVerifierTitle = React.useMemo(() => {
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
@@ -227,13 +291,17 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         handlePresentBoostMenuModal();
     };
 
-    const issueDate = moment(cred?.issuanceDate).format('MMMM DD YYYY');
+    const issueDate = formatLocaleDate(cred?.issuanceDate, {
+        month: 'long',
+        day: '2-digit',
+        year: 'numeric',
+    });
 
     const isCardView = boostPageViewMode === BoostPageViewMode.Card;
 
     if (!useWrapper) {
         return (
-            <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
                 <BoostGenericCardWrapper
                     innerOnClick={
                         cred && !showChecked && !showSkeleton
@@ -287,7 +355,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     if (verifierState) {
         return (
-            <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
                 <IonCol
                     size={isCardView ? '6' : '12'}
                     size-sm={isCardView ? '4' : undefined}
@@ -360,7 +428,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 </span>
 
                 <span className="text-sp-purple-base text-[12px] font-[600] uppercase font-notoSans">
-                    Merit Badge
+                    {m['boost.meritBadge']()}
                 </span>
                 <span className="px-[10px] text-[11px] line-clamp-1">{parentSourceTitle}</span>
             </div>
@@ -377,7 +445,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     }
 
     return (
-        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
             <IonCol
                 size={isCardView ? '6' : '12'}
                 size-sm={isCardView ? '4' : undefined}

@@ -1,5 +1,5 @@
 import { createCredentialActivity } from '@accesslayer/credential-activity/create';
-import {
+import type {
     LogCredentialActivityParams,
     CredentialActivityEventType,
     CredentialActivityRecipientType,
@@ -114,7 +114,7 @@ export const logCredentialFailed = async (params: {
     });
 };
 
-export {
+export type {
     CredentialActivityEventType,
     CredentialActivityRecipientType,
     CredentialActivitySourceType,

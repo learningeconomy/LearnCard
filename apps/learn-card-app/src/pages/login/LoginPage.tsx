@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { useHistory } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -44,12 +46,13 @@ import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
-import OnboardingContainer from '../../components/onboarding/OnboardingContainer';
-import { OnboardingStepsEnum } from '../../components/onboarding/onboarding.helpers';
+import { LanguagePickerCompact } from '../../components/sidemenu/LanguagePicker';
+import OnboardingFlow from '../../components/onboarding/v2/OnboardingFlow';
 import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
 import LoginWelcomePanel from './LoginWelcomePanel';
+import DesktopLoginBackground from './DesktopLoginBackground';
 import AppleIcon from 'learn-card-base/assets/images/apple-logo.svg';
 import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -59,11 +62,19 @@ import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    LAST_LOGIN_METHOD_KEY,
+    getOrCreateSignupFlow,
+} from '@analytics';
 
 export const LoginContent: React.FC = () => {
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
+    const { theme } = useTheme();
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState } = useAppAuth();
+    const { track } = useAnalytics();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
     const { appleLogin, googleLogin } = useFirebase();
@@ -102,19 +113,16 @@ export const LoginContent: React.FC = () => {
         }
     }, [generatePinUpdateToken]);
 
-    const openOnboardingModal = useCallback(
-        (initialStep?: OnboardingStepsEnum) => {
-            // OnboardingContainer unmount owns the `isOnboardingOpen(false)` reset.
-            redirectStore.set.isOnboardingOpen(true);
+    const openOnboardingModal = useCallback(() => {
+        // OnboardingFlow unmount owns the `isOnboardingOpen(false)` reset.
+        redirectStore.set.isOnboardingOpen(true);
 
-            newModal(
-                <OnboardingContainer initialStep={initialStep} />,
-                {},
-                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-            );
-        },
-        [coordinatorState.status, currentUser, isLoggedIn, newModal]
-    );
+        newModal(
+            <OnboardingFlow />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    }, [newModal]);
 
     // Removed unnecessary LC network redirect helper; inline push is sufficient.
 
@@ -124,7 +132,7 @@ export const LoginContent: React.FC = () => {
         }
 
         if (coordinatorState.status === 'needs_setup') {
-            openOnboardingModal(OnboardingStepsEnum.ageGate);
+            openOnboardingModal();
             return;
         }
 
@@ -135,7 +143,7 @@ export const LoginContent: React.FC = () => {
             const profile = await wallet?.invoke?.getProfile();
 
             if (!profile) {
-                openOnboardingModal(OnboardingStepsEnum.ageGate);
+                openOnboardingModal();
             } else if (profile?.approved === false) {
                 // Re-prompt EU Parental Consent if user was previously marked unapproved
                 newModal(
@@ -159,10 +167,31 @@ export const LoginContent: React.FC = () => {
 
     const didRedirectRef = useRef(false);
     const didOpenOnboardingRef = useRef(false);
+    const didTrackSignupStartedRef = useRef(false);
+
+    const trackSignupStarted = useCallback(() => {
+        if (didTrackSignupStartedRef.current) {
+            return;
+        }
+
+        const { flowId, isNew } = getOrCreateSignupFlow();
+        const method = localStorage.getItem(LAST_LOGIN_METHOD_KEY) ?? undefined;
+
+        if (isNew) {
+            track(AnalyticsEvents.SIGNUP_STARTED, {
+                flow_id: flowId,
+                method,
+                entry_point: 'login_page',
+            });
+        }
+
+        didTrackSignupStartedRef.current = true;
+    }, [track]);
 
     useEffect(() => {
         if (coordinatorState.status !== 'needs_setup') {
             didOpenOnboardingRef.current = false;
+            didTrackSignupStartedRef.current = false;
         }
     }, [coordinatorState.status]);
 
@@ -173,6 +202,7 @@ export const LoginContent: React.FC = () => {
         if (coordinatorState.status === 'needs_setup') {
             if (didOpenOnboardingRef.current) return;
 
+            trackSignupStarted();
             didOpenOnboardingRef.current = true;
             didRedirectRef.current = false;
             void handlePromptOnboarding();
@@ -213,7 +243,7 @@ export const LoginContent: React.FC = () => {
                 void handleGeneratePinUpdateToken();
                 void handlePromptOnboarding();
             } else {
-                history.push('/launchpad');
+                history.push('/dashboard');
                 void handleGeneratePinUpdateToken();
                 void handlePromptOnboarding();
             }
@@ -229,6 +259,7 @@ export const LoginContent: React.FC = () => {
         handleGeneratePinUpdateToken,
         handlePromptOnboarding,
         handleLogout,
+        trackSignupStarted,
     ]);
 
     useEffect(() => {
@@ -245,25 +276,49 @@ export const LoginContent: React.FC = () => {
         coordinatorState.status === 'ready' || coordinatorState.status === 'needs_recovery';
 
     // custom logins associated with the app
-    const extraSocialLogins = useMemo(
-        () => [
-            {
-                id: 1,
-                src: AppleIcon,
-                alt: 'apple',
-                onClick: appleLogin,
-                type: SocialLoginTypes.apple,
-            },
-            {
-                id: 2,
-                src: GoogleIcon,
-                alt: 'google',
-                onClick: googleLogin,
-                type: SocialLoginTypes.google,
-            },
-        ],
-        [appleLogin, googleLogin]
-    );
+    const extraSocialLogins = [
+        {
+            id: 1,
+            src: AppleIcon,
+            alt: 'apple',
+            onClick: appleLogin,
+            type: SocialLoginTypes.apple,
+        },
+        {
+            id: 2,
+            src: GoogleIcon,
+            alt: 'google',
+            onClick: googleLogin,
+            type: SocialLoginTypes.google,
+        },
+    ];
+
+    // Redirect-pending gate: once the wallet is built and the user counts as
+    // logged in, the effect above will history.push away from /login — but
+    // only on the tick AFTER React has already painted this component,
+    // flashing the login form between the boot loader and the app. Bridge
+    // that gap with a loader-colored overlay instead. Intentionally NOT
+    // LoginLoadingPage (an IonPage): nesting a page inside this route
+    // triggers Ionic's page transition twice — same reasoning as
+    // RouteTransitionLoader. needs_setup is excluded so the form stays
+    // visible under the onboarding modal.
+    const redirectPending =
+        (isLoggedIn || !!currentUser) && coordinatorState.status !== 'needs_setup';
+
+    if (redirectPending) {
+        return (
+            <div
+                className="fixed inset-0 z-[1000] flex items-center justify-center"
+                style={{ backgroundColor: theme.colors.defaults.loaders?.[0] ?? '#8B5CF6' }}
+            >
+                <img
+                    src={textLogo}
+                    alt="Logo"
+                    className="max-w-[300px] max-h-[80px] object-contain"
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-center p-0 m-0 px-[30px] overflow-y-auto  pt-[150px] pb-[100px] sm:pt-[0px] sm:pb-[0px] ">
@@ -345,20 +400,20 @@ export const LoginContent: React.FC = () => {
                         </div>
 
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
-                            You're all set!
+                            {m['login.qrApproved.heading']()}
                         </h2>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
                             {accountHint ? (
-                                <>
-                                    Sign in with{' '}
-                                    <span className="font-medium text-grayscale-900">
-                                        {accountHint}
-                                    </span>{' '}
-                                    to access your account.
-                                </>
+                                <TransP
+                                    m={m['login.qrApproved.withHint']}
+                                    values={{ hint: accountHint }}
+                                    components={[
+                                        <span className="font-medium text-grayscale-900" key="h" />,
+                                    ]}
+                                />
                             ) : (
-                                'Now just sign in below to access your account.'
+                                m['login.qrApproved.noHint']()
                             )}
                         </p>
 
@@ -370,37 +425,25 @@ export const LoginContent: React.FC = () => {
                             }}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            Continue to Sign In
+                            {m['login.qrApproved.continueButton']()}
                         </button>
                     </div>
                 </IonRow>
             ) : (
                 <>
                     <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                        <div
-                            className={`w-full p-3 rounded-[20px] border ${
-                                isNewUserSetup
-                                    ? 'bg-emerald-50 border-emerald-100'
-                                    : 'bg-white/20 border-white/10 backdrop-blur-sm'
-                            }`}
-                        >
-                            <p
-                                className={`text-sm font-medium ${
-                                    isNewUserSetup ? 'text-emerald-800' : 'text-white'
-                                }`}
-                            >
-                                {isNewUserSetup
-                                    ? 'Create your account in a few quick steps.'
-                                    : isReturningUser
-                                    ? 'Welcome back — sign in to continue.'
-                                    : 'Sign in or create your account.'}
-                            </p>
-                        </div>
+                        <p className="w-full text-center text-sm font-medium text-white">
+                            {isNewUserSetup
+                                ? m['login.prompt.newUser']()
+                                : isReturningUser
+                                ? m['login.prompt.returning']()
+                                : m['login.prompt.default']()}
+                        </p>
                     </IonRow>
 
                     {showLinkedBanner && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
                                 <svg
                                     width="16"
                                     height="16"
@@ -417,13 +460,15 @@ export const LoginContent: React.FC = () => {
 
                                 <span className="text-sm text-white font-medium">
                                     {accountHint ? (
-                                        <>
-                                            Sign in with{' '}
-                                            <span className="font-semibold">{accountHint}</span> to
-                                            finish
-                                        </>
+                                        <TransP
+                                            m={m['login.linkedBanner.withHint']}
+                                            values={{ hint: accountHint }}
+                                            components={[
+                                                <span className="font-semibold" key="h" />,
+                                            ]}
+                                        />
                                     ) : (
-                                        'Device linked — sign in to finish'
+                                        m['login.linkedBanner.noHint']()
                                     )}
                                 </span>
                             </div>
@@ -432,7 +477,7 @@ export const LoginContent: React.FC = () => {
 
                     {installIntent?.listingId && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
                                 {installIntent.appIcon && (
                                     <img
                                         src={installIntent.appIcon}
@@ -441,11 +486,42 @@ export const LoginContent: React.FC = () => {
                                     />
                                 )}
                                 <span className="text-sm text-white font-medium">
-                                    You'll be taken back to{' '}
-                                    <span className="font-semibold">
-                                        {installIntent.appName ?? 'the app'}
-                                    </span>{' '}
-                                    after sign in
+                                    <TransP
+                                        m={m['login.installIntent.banner']}
+                                        values={{
+                                            appName:
+                                                installIntent.appName ??
+                                                m['login.installIntent.defaultAppName'](),
+                                        }}
+                                        components={[<span className="font-semibold" key="a" />]}
+                                    />
+                                </span>
+                            </div>
+                        </IonRow>
+                    )}
+
+                    {((query.get('redirectTo') ?? '').includes('createFamily=true') ||
+                        Boolean(query.get('underageFamily'))) && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="w-5 h-5 text-white shrink-0 mt-0.5"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                </svg>
+                                <span className="text-sm text-white leading-relaxed">
+                                    Sign in as a parent or guardian to create a family account and
+                                    add your child.
                                 </span>
                             </div>
                         </IonRow>
@@ -503,15 +579,7 @@ export const LoginContent: React.FC = () => {
                                         log.warn('Failed to set Firebase persistence', e);
                                     }
                                 }}
-                                className={`
-                                    flex items-center gap-2.5 px-4 py-2 rounded-full
-                                    transition-all duration-200 select-none
-                                    ${
-                                        isPublicMode
-                                            ? 'bg-white/20 ring-1 ring-white/40'
-                                            : 'bg-white/10 hover:bg-white/15'
-                                    }
-                                `}
+                                className="flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <div
                                     className={`
@@ -535,10 +603,10 @@ export const LoginContent: React.FC = () => {
                                 <span
                                     className={`
                                     text-sm transition-colors duration-200
-                                    ${isPublicMode ? 'text-white font-medium' : 'text-white/60'}
+                                    ${isPublicMode ? 'text-white font-medium' : 'text-white'}
                                 `}
                                 >
-                                    Shared or public computer
+                                    {m['login.sharedComputer']()}
                                 </span>
                             </button>
                         </IonRow>
@@ -548,9 +616,9 @@ export const LoginContent: React.FC = () => {
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
                             <button
                                 onClick={() => setShowQrLogin(true)}
-                                className="text-sm text-white/80 hover:text-white underline transition-colors"
+                                className="text-sm text-white hover:text-white underline transition-colors"
                             >
-                                Sign in from another device
+                                {m['login.signInFromAnotherDevice']()}
                             </button>
                         </IonRow>
                     )}
@@ -570,7 +638,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     const { desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const loginBgColor =
-        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#058760';
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
@@ -603,6 +671,12 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                 className="flex flex-col flex-grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
             >
+                {/* Pre-auth language switcher. Positioned over the login background
+                    in the safe-area top-right; the side-menu LanguagePicker isn't
+                    reachable until after sign-in. */}
+                <div className="absolute top-0 end-0 z-10 pe-4 pt-[max(env(safe-area-inset-top),12px)]">
+                    <LanguagePickerCompact />
+                </div>
                 <IonGrid
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loginBgColor }}
@@ -617,16 +691,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                                     {alternateBgComponent ? (
                                         alternateBgComponent
                                     ) : desktopLoginBg ? (
-                                        <img
-                                            src={desktopLoginBg}
-                                            alt=""
-                                            aria-hidden="true"
-                                            className="w-full h-full object-cover"
-                                            onError={e => {
-                                                (e.target as HTMLImageElement).style.display =
-                                                    'none';
-                                            }}
-                                        />
+                                        <DesktopLoginBackground src={desktopLoginBg} />
                                     ) : (
                                         <LoginWelcomePanel />
                                     )}

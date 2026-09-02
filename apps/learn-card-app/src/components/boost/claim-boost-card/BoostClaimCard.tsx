@@ -1,16 +1,18 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { getVCDisplayCardVariant } from '@learncard/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-claim-card');
 
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
-import { useRenderMethodEnabled } from '../../../hooks/useRenderMethodEnabled';
+
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
-import Lottie from 'react-lottie-player';
-const HourGlass = '/lotties/hourglass.json';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
+import BoostFooterLayout from '../../accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../accessibility/AccessibleCredentialCard';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
 import {
@@ -20,6 +22,9 @@ import {
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
+    createFlowLifecycle,
+    newFlowId,
+    type FlowLifecycle,
 } from '@analytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetResolvedCredential, useToast, ToastTypeEnum } from 'learn-card-base';
@@ -42,14 +47,19 @@ import {
     isClrCredential,
     getClrLinkedCredentials,
     getClrLinkedCredentialCounts,
+    getCredentialName,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import ViewEndorsementRequest from '../../boost-endorsements/EndorsementRequestForm/ViewEndorsementRequest';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import * as m from '../../../paraglide/messages.js';
+import { useDuplicateCredentialGuard } from '../../credentials/duplicate-credential/useDuplicateCredentialGuard';
+import type { DuplicateCredentialLookup } from '../../credentials/duplicate-credential/findDuplicateCredential';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -63,7 +73,9 @@ type BoostClaimCardProps = {
     successCallback?: () => void;
     onDismiss?: () => void;
     notification?: LCNNotification;
+    duplicateLookup?: DuplicateCredentialLookup;
     hideEndorsementRequestCard?: boolean;
+    lifecycleStatus?: 'active' | 'revoked' | 'suspended';
 };
 
 export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
@@ -76,7 +88,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     successCallback,
     onDismiss,
     notification,
+    duplicateLookup,
     hideEndorsementRequestCard,
+    lifecycleStatus,
 }) => {
     const history = useHistory();
     const isLoggedIn = useIsLoggedIn();
@@ -111,6 +125,8 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
+    const claimAttemptRef = useRef<FlowLifecycle | null>(null);
+    const presentedCredentialKeyRef = useRef<string | null>(null);
 
     const [isFront, setIsFront] = useState(true);
     const [isClaimLoading, setIsClaimLoading] = useState(false);
@@ -122,14 +138,27 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         isSuccess: acceptCredentialSuccess,
     } = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
-    const enableRenderMethod = useRenderMethodEnabled();
 
     const [presentAlert, dismissAlert] = useIonAlert();
     const { presentToast } = useToast();
+    const { isCheckingDuplicate, requestDuplicateResolution, duplicateCredentialPrompt } =
+        useDuplicateCredentialGuard();
 
     const category = getDefaultCategoryForCredential(credential);
     const achievementType = getAchievementType(credential);
-    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
+    const issuerId =
+        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
+    const partnerId = (() => {
+        const profileId = getUserHandleFromDid(issuerId ?? '');
+        if (profileId) return profileId;
+
+        try {
+            return issuerId ? new URL(issuerId).host || undefined : undefined;
+        } catch {
+            return undefined;
+        }
+    })();
+    const renderMethod = getSvgMustacheRenderMethod(credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(credential as VC) as VC;
 
@@ -163,6 +192,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const _isEndorsement = isEndorsementCredential(credential) ?? false;
 
+    const getClaimErrorCode = (e: unknown): string =>
+        (e as { code?: string })?.code ??
+        (e instanceof Error && e.name !== 'Error' ? e.name : 'unknown');
+
     // A credential that fails verification because it's revoked can't be claimed
     // (the backend rejects acceptCredential with "Credential has been revoked").
     const isRevoked = vcVerifications.some(
@@ -171,38 +204,139 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
             /revoked/i.test(`${v?.message ?? ''} ${v?.details ?? ''} ${v?.check ?? ''}`)
     );
 
+    const beginClaimAttempt = () => {
+        const attempt = createFlowLifecycle();
+        claimAttemptRef.current = attempt;
+
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
+            flow_id: attempt.id,
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+            credential_count: 1,
+        });
+
+        return attempt;
+    };
+
+    const completeClaimAttempt = (
+        eventName:
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_FAILED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED,
+        extraProps?: { error_code?: string }
+    ) => {
+        const attempt = claimAttemptRef.current;
+        if (!attempt || !attempt.terminate()) return;
+
+        track(eventName, {
+            flow_id: attempt.id,
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+            credential_count: 1,
+            duration_ms: attempt.durationMs(),
+            ...extraProps,
+        });
+
+        claimAttemptRef.current = null;
+    };
+
+    useEffect(() => {
+        const presentedKey = credential?.id ?? credentialUri ?? notification?.id ?? null;
+        if (
+            !credential ||
+            isClaimed ||
+            !presentedKey ||
+            presentedCredentialKeyRef.current === presentedKey
+        ) {
+            return;
+        }
+
+        presentedCredentialKeyRef.current = presentedKey;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
+            flow_id: newFlowId(),
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+            credential_count: 1,
+        });
+    }, [
+        credential,
+        isClaimed,
+        credentialUri,
+        notification?.id,
+        track,
+        achievementType,
+        category,
+        partnerId,
+    ]);
+
     const handleBoostCredential = async (visibility?: boolean) => {
         const wallet = await initWallet();
 
         if (isRevoked) {
-            presentToast('This credential has been revoked and can no longer be claimed.', {
+            presentToast(m['claim.revokedToast'](), {
                 duration: 4000,
                 type: ToastTypeEnum.Error,
             });
             return;
         }
 
-        if (!acceptCredentialLoading && !isClaimLoading && !isClaimed) {
+        if (!acceptCredentialLoading && !isClaimLoading && !isCheckingDuplicate && !isClaimed) {
+            const duplicateResolution = _isEndorsement
+                ? ({ action: 'save', isDuplicate: false } as const)
+                : await requestDuplicateResolution(credential as VC, duplicateLookup);
+            if (duplicateResolution.action === 'cancel') return;
+
+            const tracksClaimAttempt = _isEndorsement || duplicateResolution.action === 'save';
+            if (tracksClaimAttempt) {
+                beginClaimAttempt();
+                // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+                capture();
+            }
             setIsClaimLoading(true);
-            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
-            capture();
             try {
                 mutate(
                     { uri: credentialUri, metadata: notification?.data?.metadata },
                     {
-                        async onSuccess(data, variables, context) {
-                            if (_isEndorsement) {
-                                await wallet.invoke.storeEndorsement(credential, {
-                                    credentialId,
-                                    relationship,
-                                    sharedUri,
-                                    visibility: visibility ? 'public' : 'private',
+                        async onSuccess() {
+                            try {
+                                if (_isEndorsement) {
+                                    await wallet.invoke.storeEndorsement(credential, {
+                                        credentialId,
+                                        relationship,
+                                        sharedUri,
+                                        visibility: visibility ? 'public' : 'private',
+                                    });
+                                } else if (duplicateResolution.action === 'save') {
+                                    const addedToWallet = await addVCtoWallet({
+                                        uri: credentialUri,
+                                        boostUri: duplicateLookup?.boostUri,
+                                    });
+                                    if (!addedToWallet) {
+                                        throw new Error('Credential was not added to LearnCard');
+                                    }
+                                }
+                            } catch (error) {
+                                if (tracksClaimAttempt) {
+                                    completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                                        error_code: getClaimErrorCode(error),
+                                    });
+                                }
+                                setIsClaimLoading(false);
+                                log.error('Unable to save accepted credential', error);
+                                presentToast(m['toasts.claimOops'](), {
+                                    duration: 4000,
+                                    type: ToastTypeEnum.Error,
                                 });
-                            } else {
-                                await addVCtoWallet({ uri: credentialUri });
+                                return;
                             }
 
-                            if (credential) {
+                            if (credential && tracksClaimAttempt) {
                                 track(AnalyticsEvents.CLAIM_BOOST, {
                                     category: category,
                                     boostType: achievementType,
@@ -225,45 +359,70 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     msSinceAccountCreated: now - accountCreatedAt,
                                     msSinceSessionStart: now - sessionStart,
                                 });
+                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
                             }
 
                             setIsClaimed(true);
-                            presentToast(`Successfully claimed Credential!`, {
-                                duration: 3000,
-                                type: ToastTypeEnum.Success,
-                            });
-
+                            presentToast(
+                                duplicateResolution.action === 'skip'
+                                    ? m['claim.duplicate.skippedToast']()
+                                    : m['toasts.credentialClaimed'](),
+                                {
+                                    duration: 3000,
+                                    type: ToastTypeEnum.Success,
+                                }
+                            );
                             setIsClaimLoading(false);
-                            await successCallback?.();
 
-                            if (category === CredentialCategoryEnum.family) {
-                                history.replace(
-                                    `/families?boostUri=${credentialUri}&showPreview=true`
-                                );
+                            try {
+                                await successCallback?.();
+
+                                if (category === CredentialCategoryEnum.family) {
+                                    history.replace(
+                                        `/families?boostUri=${credentialUri}&showPreview=true`
+                                    );
+                                }
+
+                                closeModal();
+                            } catch (error) {
+                                log.error('Unable to finish accepted credential flow', error);
                             }
-
-                            closeModal();
                         },
-                        onError(err: any) {
+                        onError(err) {
+                            if (tracksClaimAttempt) {
+                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                                    error_code: getClaimErrorCode(err),
+                                });
+                            }
                             setIsClaimLoading(false);
                             presentToast(
-                                `Failed to claim credential: ${
-                                    err?.message ?? 'Please try again.'
-                                }`,
+                                m['claim.failedToClaim']({
+                                    message:
+                                        err instanceof Error
+                                            ? err.message
+                                            : m['claim.pleaseTryAgain'](),
+                                }),
                                 { duration: 4000, type: ToastTypeEnum.Error }
                             );
                         },
                     }
                 );
             } catch (err) {
-                log.info('acceptCredential::error', err?.message);
+                if (tracksClaimAttempt) {
+                    completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                        error_code: getClaimErrorCode(err),
+                    });
+                }
+                log.info('acceptCredential::error', err);
                 presentAlert({
                     backdropDismiss: false,
                     cssClass: 'boost-confirmation-alert',
-                    header: `There was an error: ${err?.message}`,
+                    header: m['claim.errorWithMessage']({
+                        message: err instanceof Error ? err.message : '',
+                    }),
                     buttons: [
                         {
-                            text: 'Okay',
+                            text: m['contacts.okay'](),
                             role: 'cancel',
                             handler: () => {
                                 dismissAlert();
@@ -285,33 +444,32 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const selectedCredential = credential;
 
     let claimStatusText;
-    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed || isRevoked;
+    const disableClaimButton =
+        acceptCredentialLoading || isClaimLoading || isCheckingDuplicate || isClaimed || isRevoked;
 
-    if (!isClaimLoading && isLoggedIn && credential && isClaimed) {
-        claimStatusText = 'Claimed';
-        if (isFamily) claimStatusText = 'Joined';
+    if (!isClaimLoading && !isCheckingDuplicate && isLoggedIn && credential && isClaimed) {
+        claimStatusText = m['contacts.claimed']();
+        if (isFamily) claimStatusText = m['contacts.joined']();
     }
-    if (isClaimLoading && isLoggedIn) {
-        claimStatusText = 'Saving...';
-        if (isFamily) claimStatusText = 'Joining...';
+    if ((isClaimLoading || isCheckingDuplicate) && isLoggedIn) {
+        claimStatusText = m['contacts.saving']();
+        if (isFamily) claimStatusText = m['contacts.joining']();
     }
 
-    if (!isClaimLoading && isLoggedIn && credential && !isClaimed) {
-        claimStatusText = 'Accept';
-        if (isFamily) claimStatusText = 'Join';
+    if (!isClaimLoading && !isCheckingDuplicate && isLoggedIn && credential && !isClaimed) {
+        claimStatusText = m['common.accept']();
+        if (isFamily) claimStatusText = m['contacts.joinBoost']();
     }
 
     if (isRevoked) {
-        claimStatusText = 'Revoked';
+        claimStatusText = m['common.revoked']();
     }
 
     useEffect(() => {
         boostPreviewStore.set.updateSelectedDisplayView(
-            enableRenderMethod && renderMethod
-                ? BoostPreviewDisplayViewEnum.Issuer
-                : BoostPreviewDisplayViewEnum.Default
+            renderMethod ? BoostPreviewDisplayViewEnum.Issuer : BoostPreviewDisplayViewEnum.Default
         );
-    }, [credential?.id, renderMethod?.template, enableRenderMethod]);
+    }, [credential?.id, renderMethod?.template]);
 
     useEffect(() => {
         if (!isFront) {
@@ -323,36 +481,45 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }, [isFront]);
 
     const isIssuerViewSelected =
-        enableRenderMethod &&
-        Boolean(renderMethod) &&
-        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+        Boolean(renderMethod) && selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+    const shouldUseHostCardPadding =
+        !credential ||
+        isIssuerViewSelected ||
+        getVCDisplayCardVariant(displayCredential, category) !== 'ribbon';
 
     const credentialDisplay = (
-        <VCDisplayCardWrapper2
-            credential={credential}
-            hideNavButtons
-            // isFrontOverride={isFront}
-            setIsFrontOverride={setIsFront}
-            onMediaClick={handleImageClick}
-            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-            bottomButton={
-                isID ? (
-                    <button
-                        onClick={e => {
-                            e.stopPropagation();
-                            handleBoostCredential();
-                        }}
-                        className="bg-teal-400 rounded-[30px] w-full p-[7px] font-poppins text-white text-[17px] font-[600] leading-[24px] tracking-[0.25px] mt-[10px] disabled:opacity-60"
-                        disabled={disableClaimButton}
-                    >
-                        {claimStatusText}
-                    </button>
-                ) : undefined
-            }
-            hideFrontFaceDetails={false}
-            claimStatusText={claimStatusText}
-            handleClaim={handleBoostCredential}
-        />
+        <AccessibleCredentialCard
+            label={getCredentialName(credential as VC) || m['claim.modal.credentialFallback']()}
+        >
+            <VCDisplayCardWrapper2
+                credential={credential}
+                hideNavButtons
+                lifecycleStatus={lifecycleStatus}
+                // isFrontOverride={isFront}
+                setIsFrontOverride={setIsFront}
+                onMediaClick={handleImageClick}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                bottomButton={
+                    isID ? (
+                        <button
+                            type="button"
+                            aria-busy={isClaimLoading}
+                            onClick={e => {
+                                e.stopPropagation();
+                                handleBoostCredential();
+                            }}
+                            className="bg-teal-400 rounded-[30px] w-full p-[7px] font-poppins text-white text-[17px] font-[600] leading-[24px] tracking-[0.25px] mt-[10px] disabled:opacity-60"
+                            disabled={disableClaimButton}
+                        >
+                            {claimStatusText}
+                        </button>
+                    ) : undefined
+                }
+                hideFrontFaceDetails={false}
+                claimStatusText={claimStatusText}
+                handleClaim={handleBoostCredential}
+            />
+        </AccessibleCredentialCard>
     );
 
     const openDetailsSideModal = () => {
@@ -384,98 +551,107 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 endorsementVC={credential}
                 handleSaveEndorsement={handleBoostCredential}
                 isClaimed={isClaimed}
-                isLoading={isClaimLoading}
+                isLoading={isClaimLoading || isCheckingDuplicate}
             />
         );
     }
 
     return (
         <IonPage className="flex items-center justify-center boost-cms-preview">
-            <div className="flex h-full w-full">
-                {isClaimLoading && (
-                    <div className="absolute w-full h-full top-0 left-0 z-[10001] flex items-center justify-center flex-col boost-loading-wrapper">
-                        <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '180px', height: '180px' }}
-                            />
-                        </div>
-                    </div>
-                )}
-                <section className="flex flex-1 h-full overflow-y-auto items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
-                    <section className="flex flex-col items-center justify-center px-2 w-full">
-                        <section
-                            className={`boost-preview-display px-6 w-full safe-area-top-margin max-h-full pb-32 disable-scrollbars ${
-                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                            }`}
+            <h1 className="sr-only">
+                {getCredentialName(credential as VC) || m['claim.modal.credentialFallback']()}
+            </h1>
+            {duplicateCredentialPrompt}
+            <BoostFooterLayout
+                contentOwnsScroll
+                footerProps={{
+                    handleClose: () => {
+                        completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                        onDismiss?.();
+                        closeModal();
+                    },
+                    handleDetails: isMobile ? () => openDetailsSideModal() : undefined,
+                    handleClaim: handleBoostCredential,
+                    claimBtnText: claimStatusText,
+                    disableClaimButton,
+                    isIdClaim: isID,
+                    useFullCloseButton: !isMobile,
+                }}
+            >
+                <div className="flex h-full w-full">
+                    {(isClaimLoading || isCheckingDuplicate) && (
+                        <div
+                            role="status"
+                            aria-live="polite"
+                            className="absolute w-full h-full top-0 left-0 z-[10001] flex items-center justify-center flex-col boost-loading-wrapper"
                         >
-                            {credential && !selectedImage && (
-                                <>
-                                    {isIssuerViewSelected && renderMethod ? (
-                                        <RenderMethodDisplay
-                                            vc={displayCredential}
-                                            renderMethod={renderMethod}
-                                            fallback={credentialDisplay}
-                                            className="w-full"
-                                        />
-                                    ) : (
-                                        credentialDisplay
-                                    )}
-                                </>
-                            )}
-                            {selectedImage && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                    <div className="relative max-w-full max-h-[80vh]">
-                                        <img
-                                            src={selectedImage}
-                                            alt="Full size attachment"
-                                            className="max-w-full max-h-[80vh] object-contain"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                            {!credential && isLoading && (
-                                <section className="flippy-wrapper-container">
-                                    <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
-                                        <div className="w-full flex-grow h-full flex items-center justify-center bg-white">
-                                            <section className="loading-spinner-container flex flex-col items-center justify-center h-[100%] w-full opacity-50 ">
-                                                <IonSpinner color="dark" />
-                                            </section>
+                            <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
+                                <LoadingSpinner size="xl" label="Loading credential" />
+                            </div>
+                        </div>
+                    )}
+                    <section className="flex flex-1 h-full overflow-y-auto items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
+                        <section className="flex flex-col items-center justify-center w-full">
+                            <section
+                                className={`boost-preview-display w-full mt-[var(--ion-safe-area-top,0px)] max-h-full disable-scrollbars ${
+                                    shouldUseHostCardPadding ? 'px-6' : ''
+                                } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
+                            >
+                                {credential && !selectedImage && (
+                                    <>
+                                        {isIssuerViewSelected && renderMethod ? (
+                                            <RenderMethodDisplay
+                                                vc={displayCredential}
+                                                renderMethod={renderMethod}
+                                                fallback={credentialDisplay}
+                                                className="w-full"
+                                            />
+                                        ) : (
+                                            credentialDisplay
+                                        )}
+                                    </>
+                                )}
+                                {selectedImage && (
+                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                        <div className="relative max-w-full max-h-[80vh]">
+                                            <img
+                                                src={selectedImage}
+                                                alt={m['claim.fullSizeAttachment']()}
+                                                className="max-w-full max-h-[80vh] object-contain"
+                                            />
                                         </div>
+                                    </div>
+                                )}
+                                {!credential && isLoading && (
+                                    <section className="flippy-wrapper-container">
+                                        <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
+                                            <div className="w-full flex-grow h-full flex items-center justify-center bg-white">
+                                                <section className="loading-spinner-container flex flex-col items-center justify-center h-[100%] w-full opacity-50 ">
+                                                    <IonSpinner
+                                                        role="status"
+                                                        aria-label={m['common.loading']()}
+                                                        color="dark"
+                                                    />
+                                                </section>
+                                            </div>
+                                        </section>
                                     </section>
-                                </section>
-                            )}
+                                )}
+                            </section>
                         </section>
                     </section>
-                </section>
-                <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
-                    <BoostFooter
-                        handleClose={() => {
-                            onDismiss?.();
-                            closeModal();
-                        }}
-                        handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
-                        // handleBack={!isFront ? () => setIsFront(!isFront) : undefined}
-                        handleClaim={handleBoostCredential}
-                        claimBtnText={claimStatusText}
-                        disableClaimButton={disableClaimButton}
-                        isIdClaim={isID}
-                        useFullCloseButton={!isMobile}
-                    />
-                </footer>
-                {!isMobile && (
-                    <BoostDetailsSideBar
-                        credential={selectedCredential}
-                        // categoryType={categoryType}
-                        verificationItems={vcVerifications}
-                        hideEndorsementRequestCard={hideEndorsementRequestCard}
-                        customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-                        renderMethodCredential={credential as VC}
-                    />
-                )}
-            </div>
+                    {!isMobile && (
+                        <BoostDetailsSideBar
+                            credential={selectedCredential}
+                            // categoryType={categoryType}
+                            verificationItems={vcVerifications}
+                            hideEndorsementRequestCard={hideEndorsementRequestCard}
+                            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                            renderMethodCredential={credential as VC}
+                        />
+                    )}
+                </div>
+            </BoostFooterLayout>
         </IonPage>
     );
 };

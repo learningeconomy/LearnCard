@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 
 import { IonCol, IonSpinner } from '@ionic/react';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 import {
     CredentialCategoryEnum,
@@ -11,8 +11,8 @@ import {
     useGetPaginatedManagedBoosts,
     BrandingEnum,
     searchManagedBoostsFromCache,
-    pluralize,
 } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 import {
     SubheaderContentType,
     credentialCategoryToSubheaderType,
@@ -20,7 +20,6 @@ import {
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import BoostManagedIDCard from './BoostManagedIDCard';
-import Lottie from 'react-lottie-player';
 
 type BoostManagedIDListProps = {
     category: CredentialCategoryEnum;
@@ -60,7 +59,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
     const searchString = credentialSearchStore.use.searchString() || '';
     const searchResults = searchManagedBoostsFromCache(managedBoosts);
     const noSearchResults = searchResults?.length === 0;
-    const searchResultsCount = searchResults?.length;
+    const searchResultsCount = searchResults?.length ?? 0;
 
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
@@ -116,18 +115,27 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
     };
 
     const isCardView = viewMode === BoostPageViewMode.Card;
+    const searchResultsText =
+        searchString.trim() === ''
+            ? searchResultsCount === 1
+                ? m['common.searchResults.managedCountOne']({ count: searchResultsCount })
+                : m['common.searchResults.managedCountOther']({ count: searchResultsCount })
+            : noSearchResults
+            ? m['common.searchResults.noManaged']({ query: searchString })
+            : searchResultsCount === 1
+            ? m['common.searchResults.foundOne']({
+                  count: searchResultsCount,
+                  query: searchString,
+              })
+            : m['common.searchResults.foundOther']({
+                  count: searchResultsCount,
+                  query: searchString,
+              });
 
     const searchResultsElement = (
         <div className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[12px]' : ''}`}>
             <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
-                {searchString?.trim?.() === '' && `Search ${searchResultsCount} managed boosts`}
-                {noSearchResults && `No managed ${category} titled "${searchString}"`}
-                {searchResultsCount > 0 &&
-                    searchString?.trim?.() !== '' &&
-                    `Found ${searchResultsCount} ${pluralize(
-                        'result',
-                        searchResultsCount
-                    )} for "${searchString}" `}
+                {searchResultsText}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>
@@ -136,16 +144,10 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
     return (
         <>
             {managedBoostsLoading && !managedBoostsError && (
-                <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                    <div className="max-w-[280px] mt-[-10px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                    </div>
-                </section>
+                <CredentialListSkeleton
+                    viewMode={isCardView ? 'card' : 'list'}
+                    cardSize="credential"
+                />
             )}
 
             {!managedBoostsLoading &&
@@ -198,7 +200,7 @@ const BoostManagedIDList: React.FC<BoostManagedIDListProps> = ({
                 managedBoostsList &&
                 managedBoostsList?.length === 0 && (
                     <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center mt-[20px]">
-                        <img src={defaultImg} alt="ids" className="w-[200px] h-[200px] m-auto" />
+                        <img src={defaultImg} alt="" className="w-[200px] h-[200px] m-auto" />
                         <p
                             className={`absolute inset-0 flex items-center justify-center font-bold text-center w-[133px] m-auto text-[16px] ${emptyMessageStyle}`}
                         >

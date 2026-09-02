@@ -12,30 +12,30 @@ Read-only smoke tests for deployed LearnCard environments. These verify that ser
 ## Running Locally
 
 ```bash
-cd tests/smoketests && pnpm install
-pnpm exec playwright install chromium
+cd tests/smoketests && bun install
+bunx playwright install chromium
 
 # Pick the target environment — URLs are resolved automatically.
-SMOKETEST_ENV=staging    pnpm smoke   # defaults to staging if unset
-SMOKETEST_ENV=production pnpm smoke
-SMOKETEST_ENV=scouts     pnpm smoke   # production ScoutPass (no staging for scouts)
+SMOKETEST_ENV=staging    bun run smoke   # defaults to staging if unset
+SMOKETEST_ENV=production bun run smoke
+SMOKETEST_ENV=scouts     bun run smoke   # production ScoutPass (no staging for scouts)
 
 # API-only / browser-only
-SMOKETEST_ENV=staging pnpm smoke:api
-SMOKETEST_ENV=staging pnpm smoke:browser
+SMOKETEST_ENV=staging bun run smoke:api
+SMOKETEST_ENV=staging bun run smoke:browser
 
 # HTML report
-pnpm report
+bun run report
 ```
 
 ### URL resolution
 
 Target URLs come from repo config — no duplicated env vars:
 
-- **staging / production** → `apps/learn-card-app/environments/learncard/config.json`
-  (merged with `config.staging.json` for staging)
-- **scouts** → URLs mirror `packages/learn-card-base/src/constants/Networks.ts`
-  with the frontend at `pass.scout.org`
+-   **staging / production** → `apps/learn-card-app/environments/learncard/config.json`
+    (merged with `config.staging.json` for staging)
+-   **scouts** → URLs mirror `packages/learn-card-base/src/constants/Networks.ts`
+    with the frontend at `pass.scout.org`
 
 Override individual URLs for ad-hoc debugging via `SMOKETEST_APP_URL`,
 `SMOKETEST_API_URL`, `SMOKETEST_CLOUD_URL`, `SMOKETEST_LCA_API_URL`.
@@ -45,9 +45,9 @@ Override individual URLs for ad-hoc debugging via `SMOKETEST_APP_URL`,
 The smoketest workflow (`.github/workflows/smoketest.yml`) is triggered:
 
 1. **Automatically** after deploys in `deploy.yml`:
-   - `smoketest-staging` — after staging deploys (push to `main`)
-   - `smoketest-production` — after production deploys (release commit or manual `production` dispatch)
-   - `smoketest-scouts` — after manual `scouts` dispatch
+    - `smoketest-staging` — after staging deploys (push to `main`)
+    - `smoketest-production` — after production deploys (release commit or manual `production` dispatch)
+    - `smoketest-scouts` — after manual `scouts` dispatch
 2. **Manually** — via `workflow_dispatch` on `smoketest.yml` with environment selection (staging/production/scouts)
 
 No GitHub environment variables are required — the workflow passes
@@ -55,10 +55,10 @@ No GitHub environment variables are required — the workflow passes
 
 ## Test Tiers
 
-| Tier | File Pattern | Description | Example |
-|------|-------------|-------------|---------|
-| 1 | `api-*.spec.ts` | API health checks (GET only) | `api-health.spec.ts` |
-| 2 | `app-*.spec.ts` | Browser page loads, asset checks | `app-loads.spec.ts` |
+| Tier | File Pattern    | Description                      | Example              |
+| ---- | --------------- | -------------------------------- | -------------------- |
+| 1    | `api-*.spec.ts` | API health checks (GET only)     | `api-health.spec.ts` |
+| 2    | `app-*.spec.ts` | Browser page loads, asset checks | `app-loads.spec.ts`  |
 
 ## Adding New Tests
 
@@ -67,7 +67,7 @@ No GitHub environment variables are required — the workflow passes
 
 ### Naming Convention
 
-- `api-health.spec.ts` — service health endpoints
-- `api-<service>-<feature>.spec.ts` — specific API checks
-- `app-loads.spec.ts` — frontend rendering
-- `app-<feature>.spec.ts` — specific page/feature checks
+-   `api-health.spec.ts` — service health endpoints
+-   `api-<service>-<feature>.spec.ts` — specific API checks
+-   `app-loads.spec.ts` — frontend rendering
+-   `app-<feature>.spec.ts` — specific page/feature checks

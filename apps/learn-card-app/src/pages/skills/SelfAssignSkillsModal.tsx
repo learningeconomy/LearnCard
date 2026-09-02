@@ -18,12 +18,15 @@ import { IonFooter, IonSpinner } from '@ionic/react';
 
 import SkillSearchSelector from './SkillSearchSelector';
 import { SelectedSkill } from './skillTypes';
+import * as m from '../../paraglide/messages.js';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 type SelfAssignSkillsModalProps = {};
 
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const { presentToast } = useToast();
     const { closeModal, newModal } = useModal();
+    const { track } = useAnalytics();
 
     const [isUpdating, setIsUpdating] = useState(false);
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
@@ -35,11 +38,13 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     useEffect(() => {
         if (sasBoostSkills) {
             setSelectedSkills(
-                sasBoostSkills.map(s => ({
-                    id: s.id,
-                    frameworkId: s.frameworkId,
-                    proficiency: s.proficiencyLevel,
-                }))
+                sasBoostSkills.map(
+                    (s: { id: string; frameworkId: string; proficiencyLevel: number }) => ({
+                        id: s.id,
+                        frameworkId: s.frameworkId,
+                        proficiency: s.proficiencyLevel,
+                    })
+                )
             );
         }
     }, [sasBoostSkills]);
@@ -92,7 +97,12 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 })),
             });
 
-            presentToast('Skills saved successfully!', {
+            track(AnalyticsEvents.PROFILE_ITEM_UPDATED, {
+                itemType: 'skill',
+                surface: 'self_assign_skills_modal',
+            });
+
+            presentToast(m['toasts.skills.savedSuccess'](), {
                 type: ToastTypeEnum.Success,
             });
         } catch (error: any) {
@@ -109,11 +119,11 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
-            <div className="px-[20px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid rounded-b-[30px]">
+            <div className="px-[20px] py-[20px] bg-white flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid rounded-b-[30px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <PuzzlePiece className="w-[40px] h-[40px]" version="filled" />
                     <h5 className="text-[22px] font-poppins font-[600] leading-[24px]">
-                        Add Skills
+                        {m['boost.cms.skills.addSkills']()}
                     </h5>
                 </div>
             </div>
@@ -141,7 +151,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                         onClick={handleClose}
                         className="p-[10px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px] border-solid border-[1px] border-grayscale-200 leading-[22px]"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
 
                     <button
@@ -149,7 +159,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                         className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1 disabled:bg-grayscale-300"
                         disabled={hasNoChanges || skillsLoading || isUpdating}
                     >
-                        Save
+                        {m['common.save']()}
                     </button>
                 </div>
             </IonFooter>

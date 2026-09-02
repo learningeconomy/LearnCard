@@ -50,6 +50,7 @@ import type { UnsignedVP } from '@learncard/types';
 import type { AdaptableCredential } from './adapt';
 import type { DcqlQuery } from './types';
 import type { SdJwtDiscloseFrame } from '../vp/sign';
+import { vpBaseContextFor } from '../vp/context';
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
@@ -280,7 +281,7 @@ const buildOnePresentation = (
     );
 
     const unsignedVp: UnsignedVP = {
-        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        '@context': [vpBaseContextFor(innerCredentials)],
         id: `urn:uuid:${makeUuidV4(makeId)}`,
         type: ['VerifiablePresentation'],
         holder,

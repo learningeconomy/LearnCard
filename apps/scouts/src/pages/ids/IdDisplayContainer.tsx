@@ -1,11 +1,12 @@
 import React from 'react';
-import Lottie from 'react-lottie-player';
+
+import * as m from '../../paraglide/messages.js';
 
 import { IonRow, IonCol } from '@ionic/react';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import MembershipSleeve from 'learn-card-base/assets/images/troops-sleeve.svg';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
-import HourGlass from '../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import BoostPreviewBody from '../../components/boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostListItem from 'learn-card-base/components/boost/BoostListItem';
 import TroopPage from '../troop/TroopPage';
@@ -136,7 +137,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
         idBody = (
             <div
                 style={{
-                    backgroundImage: `url(${credSleeve})`,
+                    backgroundImage: `url("${credSleeve}")`,
                     backgroundRepeat: 'no-repeat',
                     position: 'absolute',
                     bottom: -65,
@@ -190,7 +191,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                         handleEditOnClick();
                     }}
                 >
-                    Edit Draft
+                    {m['scoutsId.editDraft']()}
                 </button>
             );
         }
@@ -199,12 +200,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
             recipientsEl = (
                 <div className="relative ml-8 text-center flex flex-col items-center justify-center">
                     <div className="max-w-[50px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                        <LoadingSpinner />
                     </div>
                 </div>
             );
@@ -225,7 +221,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
         idBody = (
             <div
                 style={{
-                    backgroundImage: `url(${credSleeve})`,
+                    backgroundImage: `url("${credSleeve}")`,
                     backgroundRepeat: 'no-repeat',
                     position: 'absolute',
                     bottom: -65,
@@ -267,7 +263,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 }}
                                 className="flex items-center justify-center bg-white rounded-full pl-[2.5px] pr-[10px] py-[4px] text-grayscale-800 text-base font-medium shadow-bottom"
                             >
-                                <RibbonAwardIcon className="ml-[5px] h-[23px] w-[23px] mr-1" /> Send
+                                <RibbonAwardIcon className="ml-[5px] h-[23px] w-[23px] mr-1" />{' '}
+                                {m['scoutsId.send']()}
                             </button>
                         )}
                     </IonCol>
@@ -301,7 +298,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                     <div className="w-[50px] h-[50px] min-w-[50px] min-h-[50px] rounded-full overflow-hidden relative">
                                         {issuerThumbnail ? (
                                             <img
-                                                alt="issuer thumbnail"
+                                                alt=""
                                                 src={insertParamsToFilestackUrl(
                                                     issuerThumbnail,
                                                     'resize=width:200/quality=value:75/'

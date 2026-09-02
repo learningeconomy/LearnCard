@@ -57,6 +57,7 @@ export const CredentialActivityWithDetailsValidator = CredentialActivityValidato
         .object({
             profileId: z.string(),
             displayName: z.string().optional(),
+            image: z.string().optional(),
         })
         .optional(),
 });
@@ -77,6 +78,8 @@ export const CredentialActivityStatsValidator = z.object({
     claimed: z.number(),
     expired: z.number(),
     failed: z.number(),
+    revoked: z.number(),
+    suspended: z.number(),
     claimRate: z.number(),
 });
 export type CredentialActivityStats = z.infer<typeof CredentialActivityStatsValidator>;

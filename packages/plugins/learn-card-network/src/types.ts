@@ -3,6 +3,8 @@ import {
     LCNProfile,
     LCNVisibleProfile,
     LCNProfileConnectionStatusEnum,
+    LCNConnectionPrompt,
+    LCNConnectionPromptActionResult,
     LCNProfileManager,
     UnsignedVC,
     VC,
@@ -185,6 +187,10 @@ export type LearnCardNetworkPluginMethods = {
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
+    getPendingConnectionPrompts: () => Promise<LCNConnectionPrompt[]>;
+    getConnectionPromptStatus: (promptId: string) => Promise<LCNConnectionPromptActionResult>;
+    skipConnectionPrompt: (promptId: string) => Promise<LCNConnectionPromptActionResult>;
+    connectWithConnectionPrompt: (promptId: string) => Promise<LCNConnectionPromptActionResult>;
     /** @deprecated Use getPaginatedConnections */
     getConnections: () => Promise<LCNVisibleProfile[]>;
     getPaginatedConnections: (
@@ -865,6 +871,16 @@ export type LearnCardNetworkPluginMethods = {
         eventType?: CredentialActivityEventType;
         integrationId?: string;
     }) => Promise<PaginatedCredentialActivities>;
+
+    /**
+     * Authoritative lifecycle status ('active' | 'revoked' | 'suspended') for the holder's
+     * credentials, keyed by URI. Backed by the CREDENTIAL_SENT/RECEIVED relationship status
+     * (the same source the issuer view and activity feed use). URIs the holder did not
+     * receive are omitted from the result.
+     */
+    getMyCredentialLifecycleStatuses: (options: {
+        uris: string[];
+    }) => Promise<Record<string, 'active' | 'revoked' | 'suspended'>>;
 
     getActivityStats: (options?: {
         boostUris?: string[];

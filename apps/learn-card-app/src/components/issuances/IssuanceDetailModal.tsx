@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { formatLocaleDate, formatLocaleTime } from '../../i18n/formatters';
 import {
     CheckCircle2,
     AlertTriangle,
@@ -30,6 +31,7 @@ import {
     useGetBoostPermissions,
     getLogger,
 } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
@@ -51,11 +53,6 @@ export interface IssuanceDetailModalProps {
     item: CredentialActivityRecord;
     /** Which issuer surface opened this modal — used for analytics attribution. */
     surface?: 'managed-boosts' | 'issuer-dashboard';
-    /**
-     * Called after a successful revoke/suspend/unsuspend so the opener can refresh its
-     * data (the activity list manages its own state, not a react-query cache).
-     */
-    onActionComplete?: () => void;
 }
 
 // Helper to get styling for an event type
@@ -91,7 +88,6 @@ function formatDuration(ms: number): string {
 export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
     item,
     surface = 'issuer-dashboard',
-    onActionComplete,
 }) => {
     const { initWallet } = useWallet();
     const [activityChain, setActivityChain] = useState<CredentialActivityRecord[]>([]);
@@ -134,7 +130,12 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
         const { verb, noun } = actionLabels[action];
 
         await confirm({
-            text: `Are you sure you want to ${verb} the credential for ${recipientName}?`,
+            text:
+                action === 'revoke'
+                    ? m['issue.confirmRevoke']()
+                    : action === 'suspend'
+                    ? m['issue.confirmSuspend']()
+                    : m['issue.confirmUnsuspend'](),
             onConfirm: async () => {
                 try {
                     const mutation =
@@ -165,8 +166,6 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                         unsuspend: 'active',
                     } as const;
                     setStatusOverride(nextStatus[action]);
-                    // ...and let the opener refetch its list/stats so the row updates too.
-                    onActionComplete?.();
                     presentToast(`${recipientName}'s credential has been ${noun}.`, {
                         type: ToastTypeEnum.Success,
                     });
@@ -243,7 +242,9 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
     return (
         <div className="bg-white rounded-2xl overflow-hidden w-full max-w-md">
             <div className="p-6 overflow-x-hidden">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Issuance Details</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                    {m['common.details']()}
+                </h2>
 
                 <div className="space-y-5">
                     <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
@@ -294,7 +295,9 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                                 : 'bg-amber-100 text-amber-700'
                                         }`}
                                     >
-                                        {recipientStatus === 'revoked' ? 'Revoked' : 'Suspended'}
+                                        {recipientStatus === 'revoked'
+                                            ? m['issue.revoked']()
+                                            : m['issue.suspended']()}
                                     </span>
                                 )}
                             </div>
@@ -308,7 +311,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                             </div>
 
                             <div className="min-w-0 flex-1">
-                                <p className="text-sm text-gray-500">Recipient</p>
+                                <p className="text-sm text-gray-500">{m['issue.recipient']()}</p>
                                 <p className="font-medium text-gray-900 truncate">
                                     {recipientName}
                                 </p>
@@ -328,14 +331,14 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm text-gray-500">Event Time</p>
                                 <p className="font-medium text-gray-900">
-                                    {timestamp.toLocaleDateString('en-US', {
+                                    {formatLocaleDate(timestamp, {
                                         weekday: 'short',
                                         year: 'numeric',
                                         month: 'short',
                                         day: 'numeric',
                                     })}
                                     {' at '}
-                                    {timestamp.toLocaleTimeString('en-US', {
+                                    {formatLocaleTime(timestamp, {
                                         hour: '2-digit',
                                         minute: '2-digit',
                                     })}
@@ -435,7 +438,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                                         </div>
 
                                                         <span className="text-xs text-gray-400">
-                                                            {eventTime.toLocaleTimeString('en-US', {
+                                                            {formatLocaleTime(eventTime, {
                                                                 hour: '2-digit',
                                                                 minute: '2-digit',
                                                             })}
@@ -558,7 +561,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                     (() => {
                         const SUSPEND_ACTION = {
                             key: 'suspend' as const,
-                            label: 'Suspend',
+                            label: m['issue.suspend'](),
                             description:
                                 'Temporarily turns off this credential. The recipient keeps it, but it verifies as suspended until you reactivate it.',
                             icon: Ban,
@@ -568,7 +571,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                         };
                         const REACTIVATE_ACTION = {
                             key: 'unsuspend' as const,
-                            label: 'Reactivate',
+                            label: m['issue.unsuspend'](),
                             description:
                                 'Turns a suspended credential back on so it verifies as valid again.',
                             icon: RotateCcw,
@@ -578,7 +581,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                         };
                         const REVOKE_ACTION = {
                             key: 'revoke' as const,
-                            label: 'Revoke',
+                            label: m['issue.revoke'](),
                             description:
                                 'Permanently cancels this credential. It will verify as revoked — this cannot be undone.',
                             icon: Trash2,
@@ -594,7 +597,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                         return (
                             <div className="mt-5 pt-4 border-t border-gray-100">
                                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-                                    Actions
+                                    {m['issue.actions']()}
                                 </p>
                                 <div className="flex flex-col gap-3">
                                     {actions.map(action => (

@@ -2,7 +2,14 @@ import React from 'react';
 import type { Preview } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ModalsProvider } from 'learn-card-base';
+import { IonApp, setupIonicReact } from '@ionic/react';
+import {
+    ModalsProvider,
+    TenantConfigProvider,
+    DEFAULT_LEARNCARD_TENANT_CONFIG,
+} from 'learn-card-base';
+import { AnalyticsContextProvider } from '../src/analytics';
+import { LocaleProvider } from '../src/i18n';
 import { Buffer } from 'buffer';
 
 (window as any).Buffer = (window as any).Buffer ?? Buffer;
@@ -21,6 +28,8 @@ import '@ionic/react/css/typography.css';
 
 import './preview.css';
 
+setupIonicReact({ swipeBackEnabled: false });
+
 const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
@@ -30,6 +39,10 @@ const preview: Preview = {
         actions: { argTypesRegex: '^on[A-Z].*' },
         controls: { matchers: { color: /(background|color)$/i, date: /Date$/ } },
         layout: 'fullscreen',
+        chromatic: {
+            diffThreshold: 0.1,
+            diffIncludeAntiAliasing: false,
+        },
         backgrounds: {
             default: 'app',
             values: [
@@ -39,24 +52,25 @@ const preview: Preview = {
         },
     },
     decorators: [
-        Story =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                React.createElement(
-                    MemoryRouter,
-                    null,
-                    React.createElement(
-                        ModalsProvider,
-                        null,
-                        React.createElement(
-                            'div',
-                            { className: 'font-poppins bg-grayscale-100 min-h-screen' },
-                            React.createElement(Story)
-                        )
-                    )
-                )
-            ),
+        Story => (
+            <IonApp>
+                <TenantConfigProvider config={DEFAULT_LEARNCARD_TENANT_CONFIG}>
+                    <LocaleProvider>
+                        <AnalyticsContextProvider>
+                            <QueryClientProvider client={queryClient}>
+                                <MemoryRouter>
+                                    <ModalsProvider>
+                                        <div className="font-poppins bg-grayscale-100 h-screen overflow-y-auto">
+                                            <Story />
+                                        </div>
+                                    </ModalsProvider>
+                                </MemoryRouter>
+                            </QueryClientProvider>
+                        </AnalyticsContextProvider>
+                    </LocaleProvider>
+                </TenantConfigProvider>
+            </IonApp>
+        ),
     ],
 };
 

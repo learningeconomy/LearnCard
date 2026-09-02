@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 
@@ -17,7 +18,7 @@ const OnboardingHeader: React.FC<{
                         className={`font-poppins select-none text-xl font-medium tracking-wider text-center text-black`}
                     >
                         <span className="font-poppins font-normal text-center text-grayscale-900 text-[24px] tracking-[0.75px]">
-                            Welcome to
+                            {m['onboarding.welcome']()}
                         </span>
                         <br />
                         <HeaderBranding
@@ -38,7 +39,7 @@ const OnboardingHeader: React.FC<{
                         {text}
                     </h1>
                     {secondaryText && (
-                        <p className="max-w-[520px] text-sm font-poppins font-normal leading-5 text-grayscale-500">
+                        <p className="max-w-[520px] text-sm font-poppins font-normal leading-5 text-grayscale-600">
                             {secondaryText}
                         </p>
                     )}

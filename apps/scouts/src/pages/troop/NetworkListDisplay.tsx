@@ -1,7 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import { useModal, useGetPaginatedBoostChildren, ModalTypes, pluralize } from 'learn-card-base';
+import {
+    useModal,
+    useCountBoostChildren,
+    useGetPaginatedBoostChildren,
+    ModalTypes,
+} from 'learn-card-base';
 
 import X from '../../components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
@@ -11,8 +16,10 @@ import TroopListItemCard from './TroopListItemCard';
 import { OrangeScoutsNetworkTent } from 'learn-card-base/svgs/ScoutsNetworkTent';
 import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 
+import * as m from '../../paraglide/messages.js';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
+import { selectLocalePlural } from '../../i18n/formatters';
 
 export enum TroopParentLevel {
     global,
@@ -25,15 +32,13 @@ const troopParentLevelToChildDepth = {
 };
 
 type NetworkListDisplayProps = {
-    count: number | undefined;
-    networkName: string;
+    networkName?: string;
     globalNetworkName?: string;
     uri: string;
     parentLevel: TroopParentLevel;
 };
 
 const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
-    count,
     networkName,
     uri,
     parentLevel = TroopParentLevel.national,
@@ -55,9 +60,16 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
 
     const [search, setSearch] = useState<string>('');
 
+    const { data: count } = useCountBoostChildren(uri, troopParentLevelToChildDepth[parentLevel], {
+        type: AchievementTypes.Network,
+    });
+
     const getCredentialMeta = () => {
         return {
-            title: 'National Network',
+            title: selectLocalePlural(count ?? 0, {
+                one: m['common.countLabels.nationalNetworkOne'](),
+                other: m['common.countLabels.nationalNetworkOther'](),
+            }),
             icon: <OrangeScoutsNetworkTent className="h-[50px] w-[50px]" />,
             color: 'sp-fire-red',
         };
@@ -74,7 +86,7 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
                         <span className="text-grayscale-900 text-[22px] font-notoSans leading-[130%] tracking-[-0.25px]">
                             <span className="mr-[5px]">{count}</span>
                             <span className={`font-[600] font-notoSans text-${color}`}>
-                                {pluralize(title, count ?? 0)}
+                                {title}
                             </span>
                         </span>
                         <span className="text-grayscale-800 font-notoSans text-[14px] font-[600]">
@@ -97,7 +109,7 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
                             <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
                                 <IonInput
                                     autocapitalize="on"
-                                    placeholder="Search network titles..."
+                                    placeholder={m['troops.membersList.startPlaceholder']()}
                                     value={search}
                                     className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
                                     onIonInput={e => setSearch(e?.detail?.value as string)}

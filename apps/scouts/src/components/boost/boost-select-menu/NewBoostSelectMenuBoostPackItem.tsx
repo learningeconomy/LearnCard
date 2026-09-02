@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useHistory } from 'react-router-dom';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import { BoostSmallCard } from '@learncard/react';
 
 import { IonCol } from '@ionic/react';
@@ -7,9 +8,10 @@ import Plus from 'learn-card-base/svgs/Plus';
 
 import { boostCategoryOptions, BoostUserTypeEnum } from '../boost-options/boostOptions';
 import { BoostCMSAppearanceDisplayTypeEnum, BrandingEnum, CredentialBadge } from 'learn-card-base';
-import { getDefaultAchievementTypeImage } from '../boostHelpers';
+import { getDefaultAchievementTypeImage, getDefaultBoostTitle } from '../boostHelpers';
 import { BoostCategoryOptionsEnum, ModalTypes, useModal } from 'learn-card-base';
 import BoostCMS from '../boostCMS/BoostCMS';
+import { getBoostPresetLocalization } from '../localizedPresetFields';
 
 export type NewBoostSelectMenuBoostPackItemProps = {
     stylePack: {
@@ -29,6 +31,7 @@ export type NewBoostSelectMenuBoostPackItemProps = {
     };
     parentUri?: string;
     useCMSModal?: boolean;
+    returnToParentAfterSave?: boolean;
 };
 
 const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemProps> = ({
@@ -38,9 +41,11 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
     boostPackItem,
     parentUri,
     useCMSModal = false,
+    returnToParentAfterSave = false,
 }) => {
     const history = useHistory();
-    const { newModal, closeModal, closeAllModals } = useModal({
+    const flags = useFlags();
+    const { newModal, closeModal } = useModal({
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
@@ -52,6 +57,10 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
         CategoryImage,
         stylePack
     );
+    const presetLocalization = getBoostPresetLocalization(flags?.localizeBoostTemplateContent);
+    const displayTitle =
+        getDefaultBoostTitle(category, boostPackItem.type, presetLocalization.contentOptions) ||
+        boostPackItem.title;
 
     const handleBoostCMSRedirect = (achievementType: string) => {
         handleCloseModal();
@@ -62,6 +71,7 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
             newModal(
                 <BoostCMS
                     handleCloseModal={closeModal}
+                    returnToParentAfterSave={returnToParentAfterSave}
                     parentUri={parentUri}
                     category={category}
                     boostUserType={BoostUserTypeEnum.someone}
@@ -87,7 +97,7 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
         buttonOverride = (
             <div className="w-full flex flex-col items-center justify-center">
                 <h4 className="font-semibold text-[17px] font-notoSans text-center px-4 line-clamp-2 mb-[2px]">
-                    {boostPackItem.title}
+                    {displayTitle}
                 </h4>
                 <button
                     onClick={() => handleBoostCMSRedirect(boostPackItem.type)}

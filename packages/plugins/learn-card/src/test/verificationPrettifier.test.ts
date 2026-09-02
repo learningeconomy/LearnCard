@@ -409,4 +409,80 @@ describe('verificationPrettifier', () => {
             expect(result.every(r => r.message && r.message !== r.check)).toBe(true);
         });
     });
+
+    describe('raw resolver / diagnostic failures (LC-1946)', () => {
+        it('maps an in-browser did:web resolution/fetch failure to friendly copy', () => {
+            const result = prettifyVerificationItem({
+                check:
+                    'Unable to filter proofs: Unable to resolve: Error sending HTTP request ' +
+                    '(https://participate.community/.well-known/did.json):',
+                message:
+                    'Unable to filter proofs: Unable to resolve: Error sending HTTP request ' +
+                    '(https://participate.community/.well-known/did.json): error sending request: ' +
+                    'JsValue(TypeError: Failed to fetch)',
+                status: VerificationStatusEnum.Failed,
+            });
+
+            expect(result.check).toBe('Issuer');
+            expect(result.message).toBe('Could not be reached');
+            // Raw diagnostic must not leak through message or details.
+            expect(result.message).not.toMatch(/fetch|resolve|http|did\.json/i);
+            expect(result.details).toBeUndefined();
+        });
+
+        it('maps a bare WASM/stack diagnostic to a generic friendly message', () => {
+            const result = prettifyVerificationItem({
+                check: 'proof',
+                message:
+                    'at https://staging.learncard.ai/assets/didkit_wasm.wasm:wasm-function[4263]:0x683',
+                status: VerificationStatusEnum.Failed,
+            });
+
+            expect(result.check).toBe('Verification');
+            expect(result.message).toBe('Could not be verified');
+            expect(result.message).not.toMatch(/wasm|assets|0x/i);
+        });
+
+        it('is idempotent on a mapped resolution failure', () => {
+            const raw = {
+                check: 'Unable to resolve',
+                message: 'Unable to resolve: Failed to fetch',
+                status: VerificationStatusEnum.Failed,
+            };
+            const once = prettifyVerificationItem(raw);
+            const twice = prettifyVerificationItem(once);
+            expect(twice).toEqual(once);
+            expect(once.message).toBe('Could not be reached');
+        });
+
+        it('does not touch a humanized non-resolver failure detail', () => {
+            const result = prettifyVerificationItem({
+                check: 'status',
+                details: 'Status: Revoked',
+                status: VerificationStatusEnum.Failed,
+            });
+            expect(result.details).toBe('Status: Revoked');
+            expect(result.check).toBe('status');
+        });
+
+        it('does not mislabel a humanized "Could not retrieve/resolve …" status detail as an issuer failure', () => {
+            const retrieve = prettifyVerificationItem({
+                check: 'revocation',
+                details: 'Could not retrieve revocation list',
+                status: VerificationStatusEnum.Failed,
+            });
+            expect(retrieve.check).toBe('revocation');
+            expect(retrieve.details).toBe('Could not retrieve revocation list');
+            expect(retrieve.check).not.toBe('Issuer');
+
+            const resolve = prettifyVerificationItem({
+                check: 'status',
+                details: 'Could not resolve credential status',
+                status: VerificationStatusEnum.Failed,
+            });
+            expect(resolve.check).toBe('status');
+            expect(resolve.details).toBe('Could not resolve credential status');
+            expect(resolve.check).not.toBe('Issuer');
+        });
+    });
 });

@@ -16,10 +16,7 @@
 import { pathwayStore } from '../../../stores/pathways';
 import { addEdge, addNode, setAction, setPolicy, setTermination } from '../build/buildOps';
 import { buildAiSessionSnapshot } from '../core/aiSessionSnapshot';
-import {
-    buildAppListingSnapshot,
-    type ListingSnapshotInput,
-} from '../core/appListingSnapshot';
+import { buildAppListingSnapshot, type ListingSnapshotInput } from '../core/appListingSnapshot';
 import type { AppListingSnapshot, OutcomeSignal, Pathway } from '../types';
 import { CURRENT_PATHWAY_SCHEMA_VERSION } from '../types';
 
@@ -189,7 +186,7 @@ export const seedDemoPathwayIfEmpty = (learnerDid: string): void => {
 // An 8-node pathway authored to exercise every meaningful ActionDescriptor
 // dispatch path AND every new termination kind in the pathway-progress
 // reactor architecture. Intended to be seeded *after*
-// `pnpm lc seed pathway-demo` has populated the matching listings
+// `bun run lc seed pathway-demo` has populated the matching listings
 // (see `presetListings.ts` for ID derivation).
 //
 // Node / kind mapping:
@@ -312,8 +309,7 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
 
     pathway = setPolicy(pathway, n1.id, {
         kind: 'artifact',
-        prompt:
-            'No upload needed — Northstar issues your completion credential automatically when you finish the course.',
+        prompt: 'No upload needed — Northstar issues your completion credential automatically when you finish the course.',
         expectedArtifact: 'other',
     });
     pathway = setTermination(pathway, n1.id, {
@@ -356,8 +352,7 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
 
     pathway = setPolicy(pathway, n2.id, {
         kind: 'artifact',
-        prompt:
-            'No upload needed — Northstar Practice issues your score credential automatically when you submit your practice log.',
+        prompt: 'No upload needed — Northstar Practice issues your score credential automatically when you submit your practice log.',
         expectedArtifact: 'other',
     });
     pathway = setTermination(pathway, n2.id, {
@@ -412,8 +407,7 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
 
     pathway = setPolicy(pathway, n3.id, {
         kind: 'artifact',
-        prompt:
-            'No upload needed — Northstar AI Coach issues an Open Badge v3 achievement automatically when you finish your drill.',
+        prompt: 'No upload needed — Northstar AI Coach issues an Open Badge v3 achievement automatically when you finish your drill.',
         expectedArtifact: 'other',
     });
     pathway = setTermination(pathway, n3.id, {
@@ -491,7 +485,7 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
                 skills: ['IAM', 'least-privilege', 'cross-account', 'assume-role'],
                 iconUrl: 'https://cdn.filestackcontent.com/RXaNgRHTHCNr3meO1G0A',
             },
-            { now },
+            { now }
         );
 
         pathway = setAction(pathway, nIam.id, {
@@ -542,7 +536,7 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
                 skills: ['VPC', 'subnets', 'routing', 'peering'],
                 iconUrl: 'https://cdn.filestackcontent.com/erbcRQfTG2TktX2hcmLu',
             },
-            { now },
+            { now }
         );
 
         pathway = setAction(pathway, nVpc.id, {
@@ -679,7 +673,7 @@ const buildAwsCloudPractitionerDemo = (ownerDid: string, now: string): Pathway =
  *
  * Does NOT seed listings — the pathway's `app-listing` actions point
  * at deterministic IDs (`AWS_DEMO_LISTING_IDS`) that
- * `pnpm lc seed pathway-demo` is responsible for populating in Neo4j.
+ * `bun run lc seed pathway-demo` is responsible for populating in Neo4j.
  * If the listings aren't seeded, the CTAs still render (the UI just
  * routes to `/app/:id` pages that 404); seed them first for the full
  * demo story.
@@ -688,7 +682,7 @@ export const seedAwsCloudPractitionerDemo = (learnerDid: string): Pathway => {
     const now = new Date().toISOString();
 
     const existing = Object.values(pathwayStore.get.pathways()).find(
-        p => p.ownerDid === learnerDid && p.title === 'AWS Cloud Practitioner',
+        p => p.ownerDid === learnerDid && p.title === 'AWS Cloud Practitioner'
     );
 
     if (existing) return existing;

@@ -17,6 +17,7 @@ import {
 
 import { IonCol, IonRow, IonGrid } from '@ionic/react';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { AddressBookContact } from '../addressBookHelpers';
 import ArrowRight from 'learn-card-base/svgs/ArrowRight';
 import ExpiredInviteLink from './ExpiredInviteLink';
@@ -26,6 +27,7 @@ import useLCNGatedAction from '../../../components/network-prompts/hooks/useLCNG
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
 import { useAcceptConnectionRequestMutation } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 import useTheme from '../../../theme/hooks/useTheme';
 
@@ -70,6 +72,7 @@ export const AddContactView: React.FC<{
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
+    const brandingConfig = useBrandingConfig();
     const { presentToast } = useToast();
     const { newModal } = useModal();
 
@@ -100,7 +103,7 @@ export const AddContactView: React.FC<{
         try {
             const connectionReq = await wallet?.invoke?.connectWith(profileId);
             if (connectionReq) {
-                presentToast('Connection Request sent', {
+                presentToast(m['contacts.connectionSent'](), {
                     hasDismissButton: true,
                 });
             }
@@ -138,7 +141,7 @@ export const AddContactView: React.FC<{
                 profileId
             );
             if (connectionReq) {
-                presentToast('Connection Request sent', {
+                presentToast(m['contacts.connectionSent'](), {
                     hasDismissButton: true,
                 });
             }
@@ -174,7 +177,7 @@ export const AddContactView: React.FC<{
         try {
             const connectionReq = await wallet?.invoke?.connectWithInvite(profileId, challenge);
             if (connectionReq) {
-                presentToast('Connected Successfully', {
+                presentToast(m['contacts.connectedSuccessfully'](), {
                     hasDismissButton: true,
                 });
             }
@@ -186,7 +189,7 @@ export const AddContactView: React.FC<{
         } catch (err) {
             let _errMessage = err?.message;
             if (_errMessage.includes('Challenge not found'))
-                _errMessage = 'Invite link has expired!';
+                _errMessage = m['contacts.inviteExpired']();
             if (err?.message === 'Invite not found or has expired') {
                 handleCancel?.();
                 newModal(
@@ -297,7 +300,9 @@ export const AddContactView: React.FC<{
                                 onClick={e => handleConnectionRequest(e, user?.profileId)}
                                 className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
                             >
-                                {loading ? 'loading...' : 'Request Connection'}
+                                {loading
+                                    ? m['contacts.loading']()
+                                    : m['contacts.requestConnection']()}
                             </button>
                         ) : (
                             <button
@@ -334,7 +339,9 @@ export const AddContactView: React.FC<{
                         onClick={e => handleAcceptInvite(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {loading ? 'loading...' : 'Connect'}
+                        {loading || acceptConnectionLoading
+                            ? m['contacts.loading']()
+                            : m['common.connect']()}
                     </button>
                 )}
             </IonCol>
@@ -361,7 +368,7 @@ export const AddContactView: React.FC<{
                         onClick={e => onHandleAcceptConnectionRequest(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white font-poppins text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {acceptConnectionLoading ? 'loading...' : 'Connect'}
+                        {acceptConnectionLoading ? m['contacts.loading']() : m['common.connect']()}
                     </button>
                 ) : (
                     <button
@@ -388,6 +395,15 @@ export const AddContactView: React.FC<{
             <p className="text-grayscale-600 text-lg font-semibold text-center">
                 {user?.displayName || `@${user?.profileId}`} has requested
                 <br /> to connect with you?
+            </p>
+        );
+    } else if (mode === AddContactViewMode?.acceptInvite) {
+        promptText = (
+            <p className="text-grayscale-600 text-lg font-semibold text-center">
+                {m['contacts.invite.invitedYou']({
+                    name: user?.displayName || `@${user?.profileId}`,
+                    brand: brandingConfig?.name ?? 'LearnCard',
+                })}
             </p>
         );
     } else {
@@ -443,7 +459,7 @@ export const AddContactView: React.FC<{
                 </IonRow>
                 <div onClick={handleCancel} className="w-full flex items-center justify-center">
                     <button className="text-grayscale-900 text-center text-sm">
-                        {isLoggedIn ? 'Cancel' : 'Return home'}
+                        {isLoggedIn ? m['common.cancel']() : m['contacts.returnHome']()}
                     </button>
                 </div>
             </IonRow>

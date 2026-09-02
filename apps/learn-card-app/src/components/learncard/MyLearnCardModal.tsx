@@ -4,6 +4,8 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('my-learn-card-modal');
 
+import * as m from '../../paraglide/messages.js';
+
 import CaretListItem from './CaretListItem';
 import LearnCardIdView from './LearnCardIdView';
 import LearnCardFooter from './LearnCardFooter';
@@ -15,26 +17,16 @@ import IdViewDivetFrame from '../svgs/IdViewDivetFrame';
 import AccountSwitcherModal from './AccountSwitcherModal';
 import SignOutIcon from 'learn-card-base/svgs/SignOutIcon';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
-import CheckListContainer from './checklist/CheckListContainer';
 import UserProfileSetup from '../user-profile/UserProfileSetup';
-import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import BluePaintBrush from 'learn-card-base/svgs/BluePaintBrush';
-import GreenGlobeStand from 'learn-card-base/svgs/GreenGlobeStand';
 import QrCodeUserCardModal from '../qrcode-user-card/QRCodeUserCard';
 import OrangeProfileIcon from 'learn-card-base/svgs/OrangeProfileIcon';
-import ConnectedAppsIcon from 'learn-card-base/svgs/ConnectedAppsIcon';
-import PurpleWrenchIcon from 'learn-card-base/svgs/PurpleWrenchIcon';
 import UserContact from '../user-profile/UserContact/UserContact';
-import BuildColorBlocksIcon from 'learn-card-base/svgs/BuildColorBlocksIcon';
 import LogoutLoadingPage from '../../pages/login/LoginPageLoader/LogoutLoader';
 import AdminToolsModal from '../../pages/adminToolsPage/AdminToolsModal/AdminToolsModal';
 import { WrenchColorFillIcon } from 'learn-card-base/svgs/WrenchIcon';
-import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersonalizationContainer';
-import ManageDataSharingModal from '../data-sharing/ManageDataSharingModal';
-import DataSharingIcon from 'learn-card-base/svgs/DataSharingIcon';
 import ShieldCheck from 'learn-card-base/svgs/ShieldCheck';
 import PrivacyLock from 'learn-card-base/svgs/PrivacyLock';
-import PrivacySettingsModal from '../../pages/privacy-settings/PrivacySettingsModal';
 import LearnCardIDCMS, { LearnCardIdCMSEditorModeEnum } from '../learncardID-CMS/LearnCardIDCMS';
 import { RecoverySetupModal } from '../recovery';
 
@@ -47,14 +39,11 @@ import {
     useGetCurrentLCNUser,
     useCurrentUser,
     useWallet,
-    useGetCheckListStatus,
     getAuthConfig,
 } from 'learn-card-base';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import useLogout from '../../hooks/useLogout';
 import ReAuthOverlay from '../auth/ReAuthOverlay';
-
-import { useTheme } from '../../theme/hooks/useTheme';
 
 import {
     DEFAULT_COLOR_LIGHT,
@@ -64,12 +53,11 @@ import {
 import { FamilyCMSAppearance } from '../familyCMS/familyCMSState';
 import { LCNProfile } from '@learncard/types';
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
-import { checklistItems } from 'learn-card-base';
 import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import { MyLearnCardModalViewModeEnum } from './MyLearnCardModal.types';
-import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getTenantHeaders } from '../../config/bootstrapTenantConfig';
+import { FeedbackSettingsRows } from '../../feedback/reporting/FeedbackSettingsRows';
 
 type MyLearnCardModalProps = {
     branding: BrandingEnum;
@@ -90,10 +78,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 }) => {
     const flags = useFlags();
     const [user, setUser] = useState(_user);
-    const { theme } = useTheme();
-    const { buildMyLCIcon } = theme.defaults;
-    const brandingConfig = useBrandingConfig();
-    const buildMyLCTitle = `Build My ${brandingConfig.name}`;
 
     const { initWallet } = useWallet();
     const history = useHistory();
@@ -106,7 +90,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const { handleLogout, isLoggingOut } = useLogout();
 
     const { data: isNetworkUser, isLoading: isNetworkUserLoading } = useIsCurrentUserLCNUser();
-    const notInNetwork = isNetworkUser === false;
 
     const { data: connections } = useGetConnections();
 
@@ -117,10 +100,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
         authProvider: contextAuthProvider,
         refreshAuthSession,
     } = useAppAuth();
-
-    const { checklistItemsWithStatus, completedItems, numStepsRemaining } = useGetCheckListStatus();
-    const checkListItemText = `${completedItems} of ${checklistItems?.length}`;
-    const numConnectedApps = connections?.filter(c => c.isServiceProfile)?.length;
 
     const description = user?.bio ?? user?.shortBio;
 
@@ -187,6 +166,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const rows: {
         Icon: React.FC;
         title: string;
+        iconVersion?: string;
         caretText?: string;
         onClick?: () => void;
         hide?: boolean;
@@ -195,92 +175,48 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
         rows.push(
             {
-                title: 'My Contacts',
-                Icon: GreenGlobeStand,
-                caretText: connections?.length.toString() ?? '...',
-                onClick: () => {
-                    closeModal();
-                    history.push('/contacts');
-                },
-                hide: notInNetwork,
-            },
-            {
-                title: 'My Account',
+                title: m['profile.menu.settings'](),
                 Icon: OrangeProfileIcon,
                 caretText: '',
                 onClick: async () => {
                     newModal(
-                        <UserProfileSetup
-                            title="My Account"
-                            handleCloseModal={closeModal}
-                            handleLogout={() => handleLogout()}
-                            showNetworkSettings={true}
-                            showNotificationsModal={false}
-                        />,
-                        {
-                            sectionClassName: '!max-w-[400px]',
-                            usePortal: true,
-                            hideButton: true,
-                            portalClassName: '!max-w-[400px]',
-                        },
-                        { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
-                    );
-                },
-            },
-            {
-                title: 'Personalize AI Sessions',
-                Icon: BlueMagicWand,
-                caretText: '',
-                onClick: async () => {
-                    newModal(
-                        <AiPassportPersonalizationContainer />,
-                        { className: '!bg-transparent' },
+                        <div className="h-full">
+                            <UserProfileSetup
+                                title={m['profile.menu.settings']()}
+                                handleCloseModal={closeModal}
+                                handleLogout={() => handleLogout({ overrideRedirectUrl: '/login' })}
+                                showNetworkSettings={true}
+                                showNotificationsModal={false}
+                            />
+                        </div>,
+                        {},
                         { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                     );
                 },
             },
             {
-                title: 'Email Addresses',
+                title: m['profile.menu.emailAddresses'](),
+                iconVersion: '2',
                 Icon: EmailIcon,
                 caretText: '',
                 onClick: async () => {
                     const { prompted } = await gate();
                     if (prompted) return;
                     newModal(
-                        <UserContact />,
+                        <div className="h-full">
+                            <UserContact />
+                        </div>,
                         {},
-                        { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
-                    );
-                },
-            },
-            {
-                title: buildMyLCTitle,
-                Icon: BuildColorBlocksIcon,
-                caretText: checkListItemText,
-                onClick: async () => {
-                    // closeModal();
-                    const { prompted } = await gate();
-                    if (prompted) return;
-                    newModal(
-                        <CheckListContainer />,
-                        { className: '!bg-transparent' },
                         { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                     );
                 },
             }
-            // {
-            //     title: 'Engagement Styles',
-            //     Icon: BlueBoostOutline2,
-            //     caretText: '',
-            //     onClick: () => { },
-            //     hide: notInNetwork, // ?
-            // },
         );
     }
 
     if (!hideEdit) {
         rows.push({
-            title: 'Edit Contact Card',
+            title: m['profile.menu.editContactCard'](),
             Icon: BluePaintBrush,
             caretText: '',
             onClick: () => {
@@ -326,7 +262,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         viewMode={LearnCardIdCMSEditorModeEnum.edit}
                     />,
                     {},
-                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                    { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                 );
             },
         });
@@ -335,33 +271,16 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
         rows.push(
             {
-                title: 'Manage Data Sharing',
-                Icon: DataSharingIcon,
-                caretText: '',
-                onClick: async () => {
-                    const { prompted } = await gate();
-                    if (prompted) return;
-                    newModal(
-                        <ManageDataSharingModal />,
-                        { sectionClassName: '!bg-transparent !shadow-none !max-w-[450px]' },
-                        { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
-                    );
-                },
-            },
-            {
-                title: 'Privacy & Data',
+                title: m['dataSharing.title'](),
                 Icon: PrivacyLock,
                 caretText: '',
                 onClick: () => {
-                    newModal(
-                        <PrivacySettingsModal />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
-                        { desktop: ModalTypes.Center, mobile: ModalTypes.Cancel }
-                    );
+                    closeModal();
+                    history.push('/privacy-and-data');
                 },
             },
             {
-                title: 'Admin Tools',
+                title: m['profile.menu.adminTools'](),
                 Icon: WrenchColorFillIcon,
                 caretText: '',
                 onClick: async () => {
@@ -378,7 +297,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.recovery) {
             rows.push({
-                title: 'Account Recovery',
+                title: m['profile.menu.accountRecovery'](),
                 Icon: ShieldCheck,
                 caretText: '',
                 onClick: async () => {
@@ -620,7 +539,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.deviceLinking) {
             rows.push({
-                title: 'Link a Device',
+                title: m['profile.menu.linkADevice'](),
                 Icon: QRCodeScanner,
                 caretText: '',
                 onClick: () => {
@@ -630,19 +549,6 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
             });
         }
     }
-
-    // if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
-    //     rows.push({
-    //         title: 'Connections',
-    //         Icon: ConnectedAppsIcon,
-    //         caretText: numConnectedApps ?? '',
-    //         onClick: () => {
-    //             closeModal();
-    //             history.push('/launchpad');
-    //         },
-    //         hide: notInNetwork,
-    //     });
-    // }
 
     const handleSwitchAccountsClick = () => {
         newModal(
@@ -722,7 +628,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 ...backgroundStyles,
             }}
         >
-            <section className="min-h-[calc(100%-85px)] p-[20px] flex items-center justify-center">
+            <h1 className="sr-only">{m['profile.menu.settings']()}</h1>
+            {/* items-start (not items-center): when the profile content is taller
+                than the modal, align-items:center pushes the top above the scroll
+                origin where it can't be reached, clipping it. Top-align so it's
+                always scrollable from the top. */}
+            <section
+                className="min-h-[calc(100%-85px)] px-[20px] pb-[20px] flex items-start justify-center"
+                style={{ paddingTop: '20px' }}
+            >
                 <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
                     <div className="bg-white bg-opacity-70 backdrop-blur-[10px]">
                         <div className="p-[15px] flex flex-col gap-[10px]">
@@ -740,10 +654,15 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         >
                             {!hideShare && (
                                 <button
+                                    type="button"
                                     onClick={handleQrCodeClick}
+                                    aria-label={m['share.shareProfile']()}
                                     className="bg-white rounded-full p-[10px] h-[50px] w-[50px] shadow-box-bottom"
                                 >
-                                    <QRCodeScanner className="text-grayscale-900" />
+                                    <QRCodeScanner
+                                        className="text-grayscale-900"
+                                        aria-hidden="true"
+                                    />
                                 </button>
                             )}
 
@@ -756,34 +675,27 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                         </span>
                         {!isNetworkUser && !isNetworkUserLoading && (
                             <button
+                                type="button"
                                 onClick={() => {
                                     void handlePresentJoinNetworkModal();
                                 }}
                                 className="bg-grayscale-800 text-white font-notoSans text-[17px] font-semibold px-[20px] py-[7px] rounded-[10px] mb-[10px]"
                             >
-                                Complete Profile
+                                {m['profile.menu.completeProfile']()}
                             </button>
                         )}
 
                         <div>
                             {rows.map((r, index) => {
-                                const { title, Icon, caretText, onClick, hide } = r;
+                                const { title, Icon, iconVersion, caretText, onClick, hide } = r;
 
                                 if (hide) return undefined;
 
-                                const version = title === 'Email Addresses' ? '2' : '1';
+                                const version = iconVersion ?? '1';
 
-                                let icon = <Icon className="h-[30px] w-[30px]" version={version} />;
-
-                                if (title === buildMyLCTitle) {
-                                    icon = (
-                                        <img
-                                            src={buildMyLCIcon}
-                                            className="w-[30px] h-[30px]"
-                                            alt="blocks"
-                                        />
-                                    );
-                                }
+                                const icon = (
+                                    <Icon className="h-[30px] w-[30px]" version={version} />
+                                );
 
                                 return (
                                     <CaretListItem
@@ -795,16 +707,23 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                     />
                                 );
                             })}
+
+                            {/* Explicit feedback entry points (LC-2086), gated
+                                per destination by privacy eligibility. */}
+                            {viewMode === MyLearnCardModalViewModeEnum.guardian && (
+                                <FeedbackSettingsRows />
+                            )}
                         </div>
 
                         {!hideLogout && (
                             <button
+                                type="button"
                                 onClick={() => handleLogout({ overrideRedirectUrl: '/login' })}
                                 className="flex items-center justify-center gap-[5px] py-[10px] text-grayscale-900 font-notoSans text-[20px] disabled:opacity-60"
                                 disabled={isLoggingOut}
                             >
                                 <SignOutIcon />
-                                Logout
+                                {m['sidemenu.footer.logout']()}
                             </button>
                         )}
                     </div>

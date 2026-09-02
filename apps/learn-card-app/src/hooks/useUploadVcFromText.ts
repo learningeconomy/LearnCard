@@ -3,6 +3,8 @@ import { useWallet, CredentialCategory } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { openBadgeV2Plugin } from '@learncard/open-badge-v2-plugin';
 
+import { extractCredentialsFromText } from './extractCredentialsFromText';
+
 export interface FileInfo {
     name?: string;
     size?: number;
@@ -35,6 +37,17 @@ export interface UploadOptions {
     uploadType?: string;
 }
 
+export interface AggregateUploadResult {
+    /** True when at least one credential was added. */
+    success: boolean;
+    /** Per-credential outcomes, in extraction order (successes and failures). */
+    results: UploadResult[];
+    addedCount: number;
+    failedCount: number;
+    /** Flattened failure + extraction messages for display. */
+    errors: string[];
+}
+
 export const useUploadVcFromText = () => {
     const { initWallet } = useWallet();
 
@@ -44,39 +57,23 @@ export const useUploadVcFromText = () => {
         return false;
     };
 
-    const validateTextVC = (vcText: string) => {
-        if (!vcText) return undefined;
-
-        // validate JSON string or object
-        let rawCredential: any;
-        if (typeof vcText === 'string') {
-            rawCredential = vcText;
-        } else if (typeof vcText === 'object') {
-            rawCredential = JSON.stringify(vcText);
-        }
-
-        let parsed: any;
-        try {
-            parsed = JSON.parse(rawCredential);
-        } catch (err: any) {
-            return [err.message];
-        }
-
-        if (isOpenBadgeV2(parsed)) {
-            return undefined;
-        }
+    // Validate a single, already-parsed credential object directly. Does NOT re-extract —
+    // callers that hold an object (extracted from a VP, or a bare VC) must use this so a
+    // nested `verifiableCredential` field can't cause the object's children to be validated
+    // in place of the object itself.
+    const validateCredentialObject = (parsed: any): string[] | undefined => {
+        if (isOpenBadgeV2(parsed)) return undefined;
 
         try {
             const vcValidation = VCValidator.safeParse(parsed);
             if (vcValidation.error) {
                 const flattened = vcValidation.error.flatten();
-                const fieldErrors = Object.entries(flattened.fieldErrors).flatMap(
-                    ([field, errors]) => (errors || []).map(error => `${field}: ${error}`)
+                const fieldErrors = Object.entries(flattened.fieldErrors).flatMap(([field, errs]) =>
+                    (errs || []).map(error => `${field}: ${error}`)
                 );
                 const formErrors = flattened.formErrors || [];
                 const allErrors = [...fieldErrors, ...formErrors].filter(Boolean) as string[];
-
-                return allErrors;
+                return allErrors.length ? allErrors : ['Invalid credential.'];
             }
         } catch (error: any) {
             return [error.message];
@@ -85,24 +82,36 @@ export const useUploadVcFromText = () => {
         return undefined;
     };
 
-    const uploadVcFromText = async (input: string | File, options: UploadOptions = {}) => {
-        const { fileInfo, id, uploadType } = options;
-        const wallet = await initWallet();
-        // Handle both string and File inputs
-        const text = input instanceof File ? await input.text() : input;
-        let parsed: any;
+    // Validate raw text/paste input for the live paste-box feedback. Extracts candidates
+    // (unwrapping a VP) and treats the input as valid when at least one candidate validates.
+    const validateTextVC = (vcText: string) => {
+        if (!vcText) return undefined;
 
-        try {
-            parsed = JSON.parse(text);
-        } catch (err: any) {
-            return {
-                success: false,
-                error: `Invalid JSON format: ${err.message}`,
-            };
+        const rawCredential = typeof vcText === 'string' ? vcText : JSON.stringify(vcText);
+
+        // Resilient extraction first — handles VPs, wrapped VCs, and JSON-in-text.
+        const { credentials, errors: extractionErrors } = extractCredentialsFromText(rawCredential);
+        if (credentials.length === 0) {
+            return extractionErrors.length ? extractionErrors : ['Could not parse credential.'];
         }
 
+        // A VP (or any multi-credential input) is valid as long as one candidate validates.
+        for (const parsed of credentials) {
+            if (!validateCredentialObject(parsed)) return undefined;
+        }
+
+        // None validated — surface the first candidate's errors for a useful message.
+        return validateCredentialObject(credentials[0]) ?? ['Invalid credential.'];
+    };
+
+    const uploadSingleCredential = async (
+        parsed: any,
+        options: UploadOptions = {}
+    ): Promise<UploadResult> => {
+        const { fileInfo, id, uploadType } = options;
+        const wallet = await initWallet();
+
         if (isOpenBadgeV2(parsed)) {
-            // Handle Open Badge V2 flow
             try {
                 const walletWithObv2 = await wallet.addPlugin(openBadgeV2Plugin(wallet));
                 const newVC = await walletWithObv2.invoke.wrapOpenBadgeV2(parsed);
@@ -139,26 +148,21 @@ export const useUploadVcFromText = () => {
             }
         }
 
-        //Handle regular VC
         try {
-            const errors = validateTextVC(parsed);
+            const errors = validateCredentialObject(parsed);
             if (errors) {
                 return {
                     success: false,
-                    error: errors,
+                    error: Array.isArray(errors) ? errors.join('; ') : errors,
                 };
             }
 
             const category = getDefaultCategoryForCredential(parsed) as CredentialCategory;
 
-            let credentialUri, storedVC;
-
             try {
-                // Upload the credential to LearnCloud
-                credentialUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(parsed);
+                const credentialUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(parsed);
 
                 if (credentialUri) {
-                    // Add to index if credentialUri was successfully obtained
                     try {
                         const name =
                             fileInfo?.name ||
@@ -166,7 +170,7 @@ export const useUploadVcFromText = () => {
                             parsed?.credentialSubject?.achievement?.name ||
                             'JSON Credential';
 
-                        storedVC = await wallet.index.LearnCloud.add({
+                        const storedVC = await wallet.index.LearnCloud.add({
                             id: id || crypto.randomUUID(),
                             uri: credentialUri,
                             category,
@@ -183,7 +187,7 @@ export const useUploadVcFromText = () => {
                             category,
                             fileInfo: fileInfo || {},
                         };
-                    } catch (error) {
+                    } catch (error: any) {
                         return {
                             success: false,
                             error: `Failed to add credential to index: ${error.message}`,
@@ -192,6 +196,13 @@ export const useUploadVcFromText = () => {
                         };
                     }
                 }
+
+                return {
+                    success: false,
+                    error: 'Failed to upload credential: no URI returned.',
+                    category,
+                    fileInfo: fileInfo || {},
+                };
             } catch (error: any) {
                 return {
                     success: false,
@@ -207,6 +218,44 @@ export const useUploadVcFromText = () => {
                 fileInfo: fileInfo || {},
             };
         }
+    };
+
+    const uploadVcFromText = async (
+        input: string | File,
+        options: UploadOptions = {}
+    ): Promise<AggregateUploadResult> => {
+        const text = input instanceof File ? await input.text() : input;
+
+        const { credentials, errors: extractionErrors } = extractCredentialsFromText(text);
+
+        if (credentials.length === 0) {
+            return {
+                success: false,
+                results: [],
+                addedCount: 0,
+                failedCount: 0,
+                errors: extractionErrors.length ? extractionErrors : ['No credentials found.'],
+            };
+        }
+
+        const results: UploadResult[] = [];
+        for (const credential of credentials) {
+            // Sequential to avoid racing wallet index writes.
+            // eslint-disable-next-line no-await-in-loop
+            results.push(await uploadSingleCredential(credential, options));
+        }
+
+        const addedCount = results.filter(r => r.success).length;
+        const failedCount = results.length - addedCount;
+        const errors = [
+            ...extractionErrors,
+            ...(results
+                .filter(r => !r.success)
+                .map(r => (Array.isArray(r.error) ? r.error.join('; ') : r.error))
+                .filter(Boolean) as string[]),
+        ];
+
+        return { success: addedCount > 0, results, addedCount, failedCount, errors };
     };
 
     const uploadVcFromTextAndAddToWallet = async (input: VC | string) => {
@@ -225,7 +274,7 @@ export const useUploadVcFromText = () => {
                 rawCredential = input; // already parsed
             }
 
-            const errors = validateTextVC(rawCredential);
+            const errors = validateCredentialObject(rawCredential);
             if (errors) {
                 return {
                     success: false,

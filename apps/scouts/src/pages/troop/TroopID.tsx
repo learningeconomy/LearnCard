@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
-import moment from 'moment';
 import { VC } from '@learncard/types';
 import { useGetCredentialWithEdits } from 'learn-card-base';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import troopPageStore from '../../stores/troopPageStore';
 import useGetTroopNetwork from '../../hooks/useGetTroopNetwork';
+import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
+import { formatLocaleDate } from '../../i18n/formatters';
 import {
     getDefaultBadgeThumbForCredential,
     getIdBackgroundStyles,
@@ -15,6 +17,7 @@ import ScoutIdThumbPlaceholder from '../../components/svgs/ScoutIdThumbPlacehold
 import LeaderIdThumbPlaceholder from '../../components/svgs/LeaderIdThumbPlaceholder';
 import NationalAdminIdThumbPlaceholder from '../../components/svgs/NationalAdminIdThumbPlaceholder';
 import GlobalAdminIdThumbPlaceholder from '../../components/svgs/GlobalAdminIdThumbPlaceholder';
+import { getTroopIdRoleLabel } from './troopIdCopy';
 
 interface TroopIDProps {
     name?: string | undefined;
@@ -30,29 +33,24 @@ interface TroopIDProps {
 
 interface RoleSpecificProperties {
     PlaceholderThumbComponent: React.FC<{ className?: string }>;
-    idTypeText: string;
     footerSubText?: string;
 }
 
 const ROLE_PROPERTIES: Record<ScoutsRoleEnum, RoleSpecificProperties> = {
     [ScoutsRoleEnum.scout]: {
         PlaceholderThumbComponent: ScoutIdThumbPlaceholder,
-        idTypeText: 'Scout',
         footerSubText: undefined, // Will be set dynamically
     },
     [ScoutsRoleEnum.leader]: {
         PlaceholderThumbComponent: LeaderIdThumbPlaceholder,
-        idTypeText: 'Leader',
         footerSubText: undefined, // Will be set dynamically
     },
     [ScoutsRoleEnum.national]: {
         PlaceholderThumbComponent: NationalAdminIdThumbPlaceholder,
-        idTypeText: 'National Admin',
         footerSubText: undefined,
     },
     [ScoutsRoleEnum.global]: {
         PlaceholderThumbComponent: GlobalAdminIdThumbPlaceholder,
-        idTypeText: 'Global Admin',
         footerSubText: undefined,
     },
 };
@@ -68,14 +66,16 @@ const TroopID: React.FC<TroopIDProps> = ({
     issuedDateOverride,
     showDetails,
 }) => {
+    const locale = useLocale();
     const { credentialWithEdits } = useGetCredentialWithEdits(initialCredential);
     const credential = credentialWithEdits ?? initialCredential;
-    const network = useGetTroopNetwork({ credential });
+    const { network: networkData } = useGetTroopNetwork({ credential });
     const role = getRoleFromCred(credential);
+    const roleLabel = getTroopIdRoleLabel(role);
     const thumbSrc = initialThumbSrc || credential?.boostID?.idThumbnail;
     const issueDate = useMemo(
-        () => moment(credential?.issuanceDate).format('MM/D/YYYY'),
-        [credential?.issuanceDate]
+        () => formatLocaleDate(credential?.issuanceDate, { dateStyle: 'short' }),
+        [credential?.issuanceDate, locale]
     );
 
     const roleProperties = useMemo(() => {
@@ -84,10 +84,10 @@ const TroopID: React.FC<TroopIDProps> = ({
             ...baseProperties,
             footerSubText:
                 role === ScoutsRoleEnum.scout || role === ScoutsRoleEnum.leader
-                    ? network?.name
+                    ? networkData?.name
                     : baseProperties.footerSubText,
         };
-    }, [role, network?.name]);
+    }, [role, networkData?.name]);
 
     const backgroundStyles = useMemo(
         () => getIdBackgroundStyles(undefined, credential),
@@ -108,7 +108,7 @@ const TroopID: React.FC<TroopIDProps> = ({
             {thumbSrc ? (
                 <img
                     src={thumbSrc}
-                    alt={`${name}'s profile`}
+                    alt=""
                     className="rounded-full h-[80px] w-[80px] object-cover"
                 />
             ) : (
@@ -117,14 +117,16 @@ const TroopID: React.FC<TroopIDProps> = ({
 
             <div className="flex flex-col items-start">
                 <span className="font-notoSans font-[600] text-[17px] leading-[24px] tracking-[0.25px]">
-                    {name || ROLE_PROPERTIES[role].idTypeText}
+                    {name || roleLabel}
                 </span>
                 <span className="font-notoSans font-[600] text-[12px]">
-                    {subTextOverride || roleProperties.idTypeText}
+                    {subTextOverride || roleLabel}
                 </span>
                 {issuedDateOverride || (
                     <span className="font-notoSans font-[600] text-[12px]">
-                        Issued {issueDate || 'Unknown'}
+                        {issueDate
+                            ? m['troops.id.issued']({ date: issueDate })
+                            : m['common.unknown']()}
                     </span>
                 )}
             </div>
@@ -154,7 +156,7 @@ const TroopID: React.FC<TroopIDProps> = ({
                 {credential?.boostID?.issuerThumbnail ? (
                     <img
                         src={credential.boostID.issuerThumbnail}
-                        alt="Issuer thumbnail"
+                        alt=""
                         className="rounded-full h-[50px] w-[50px] object-cover"
                     />
                 ) : (

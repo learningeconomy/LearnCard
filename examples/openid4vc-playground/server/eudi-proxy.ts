@@ -69,6 +69,21 @@ export const EUDI_PROXY_PUBLIC_BASE_URL =
     process.env.EUDI_PROXY_PUBLIC_BASE_URL ?? 'http://localhost:5173/api/eudi-proxy';
 
 const PROXY_PATH_PREFIX = '/api/eudi-proxy';
+const ISSUER_WELL_KNOWN = '/.well-known/openid-credential-issuer';
+const OAUTH_AS_WELL_KNOWN = '/.well-known/oauth-authorization-server';
+
+/**
+ * The public base URL the wallet should use for this proxy. Prefers the
+ * explicit env override, otherwise derives it from the request's own host so
+ * the offer/metadata stay correct whatever port Vite actually bound to.
+ */
+const resolveProxyPublicBaseUrl = (req: IncomingMessage): string => {
+    if (process.env.EUDI_PROXY_PUBLIC_BASE_URL) return process.env.EUDI_PROXY_PUBLIC_BASE_URL;
+    const host = (req.headers.host ?? 'localhost:5173').toString();
+    const rawProto = (req.headers['x-forwarded-proto'] ?? 'http').toString();
+    const proto = rawProto === 'https' ? 'https' : 'http';
+    return `${proto}://${host}${PROXY_PATH_PREFIX}`;
+};
 
 /* -------------------------------------------------------------------------- */
 /*                              public middleware                             */
@@ -83,11 +98,24 @@ export const handleEudiProxy = async (
     req: IncomingMessage,
     res: ServerResponse
 ): Promise<boolean> => {
-    const rawUrl = req.url ?? '';
+    const rawUrl = (req.url ?? '').split('?')[0]!;
 
-    if (!rawUrl.startsWith(PROXY_PATH_PREFIX)) return false;
+    // Metadata may be requested at the OID4VCI 1.0 insert-style URL
+    // (`/.well-known/...<proxy path>`) or the Draft 13 append-style URL
+    // (`<proxy path>/.well-known/...`). Serving both means the wallet's
+    // insert-first probe succeeds and it correctly treats EUDI as 1.0.
+    const issuerAppend = `${PROXY_PATH_PREFIX}${ISSUER_WELL_KNOWN}`;
+    const issuerInsert = `${ISSUER_WELL_KNOWN}${PROXY_PATH_PREFIX}`;
+    const asAppend = `${PROXY_PATH_PREFIX}${OAUTH_AS_WELL_KNOWN}`;
+    const asInsert = `${OAUTH_AS_WELL_KNOWN}${PROXY_PATH_PREFIX}`;
 
-    const subPath = rawUrl.slice(PROXY_PATH_PREFIX.length) || '/';
+    const isMetadataUrl = rawUrl === issuerInsert || rawUrl === asInsert;
+
+    if (!rawUrl.startsWith(PROXY_PATH_PREFIX) && !isMetadataUrl) return false;
+
+    const subPath = rawUrl.startsWith(PROXY_PATH_PREFIX)
+        ? rawUrl.slice(PROXY_PATH_PREFIX.length) || '/'
+        : rawUrl;
 
     // Always set CORS up front \u2014 the wallet at localhost:3000 is
     // the canonical caller, but allow any localhost origin for dev
@@ -100,14 +128,16 @@ export const handleEudiProxy = async (
         return true;
     }
 
+    const publicBaseUrl = resolveProxyPublicBaseUrl(req);
+
     try {
-        if (req.method === 'GET' && subPath === '/.well-known/openid-credential-issuer') {
-            await proxyCredentialIssuerMetadata(res);
+        if (req.method === 'GET' && (rawUrl === issuerAppend || rawUrl === issuerInsert)) {
+            await proxyCredentialIssuerMetadata(res, publicBaseUrl);
             return true;
         }
 
-        if (req.method === 'GET' && subPath === '/.well-known/oauth-authorization-server') {
-            await proxyAuthorizationServerMetadata(res);
+        if (req.method === 'GET' && (rawUrl === asAppend || rawUrl === asInsert)) {
+            await proxyAuthorizationServerMetadata(res, publicBaseUrl);
             return true;
         }
 
@@ -177,7 +207,10 @@ export const handleEudiProxy = async (
  * `credential_issuer` and `credential_endpoint`. Everything else
  * (formats, claims, display) passes through unchanged.
  */
-const proxyCredentialIssuerMetadata = async (res: ServerResponse): Promise<void> => {
+const proxyCredentialIssuerMetadata = async (
+    res: ServerResponse,
+    publicBaseUrl: string
+): Promise<void> => {
     const upstream = await fetch(`${REAL_ISSUER_BASE}/.well-known/openid-credential-issuer`, {
         method: 'GET',
     });
@@ -186,10 +219,10 @@ const proxyCredentialIssuerMetadata = async (res: ServerResponse): Promise<void>
     }
     const json = (await upstream.json()) as Record<string, unknown>;
 
-    json.credential_issuer = EUDI_PROXY_PUBLIC_BASE_URL;
-    json.credential_endpoint = `${EUDI_PROXY_PUBLIC_BASE_URL}/credential`;
+    json.credential_issuer = publicBaseUrl;
+    json.credential_endpoint = `${publicBaseUrl}/credential`;
     if (typeof json.nonce_endpoint === 'string') {
-        json.nonce_endpoint = `${EUDI_PROXY_PUBLIC_BASE_URL}/nonce`;
+        json.nonce_endpoint = `${publicBaseUrl}/nonce`;
     }
 
     res.statusCode = 200;
@@ -207,7 +240,10 @@ const proxyCredentialIssuerMetadata = async (res: ServerResponse): Promise<void>
  *   - `authorization_endpoint`: top-level browser navigation, no
  *     CORS involved.
  */
-const proxyAuthorizationServerMetadata = async (res: ServerResponse): Promise<void> => {
+const proxyAuthorizationServerMetadata = async (
+    res: ServerResponse,
+    publicBaseUrl: string
+): Promise<void> => {
     const upstream = await fetch(`${REAL_ISSUER_BASE}/.well-known/oauth-authorization-server`, {
         method: 'GET',
     });
@@ -216,7 +252,7 @@ const proxyAuthorizationServerMetadata = async (res: ServerResponse): Promise<vo
     }
     const json = (await upstream.json()) as Record<string, unknown>;
 
-    json.token_endpoint = `${EUDI_PROXY_PUBLIC_BASE_URL}/token`;
+    json.token_endpoint = `${publicBaseUrl}/token`;
 
     res.statusCode = 200;
     res.setHeader('content-type', 'application/json');

@@ -3,49 +3,59 @@ import React from 'react';
 import { IonCol, IonRouterLink } from '@ionic/react';
 import Web3AuthLogo from '../../assets/images/web3auth-logo.svg';
 import ExternalLinkIcon from 'learn-card-base/svgs/ExternalLink';
+import * as m from '../../paraglide/messages.js';
 import { openToS, openPP, openContactLink, openLCwebsite } from '../../helpers/externalLinkHelpers';
 
-const LoginFooter: React.FC = () => {
+interface LoginFooterProps {
+    className?: string;
+    wrapperClassName?: string;
+    hideSelfCustodialLogin?: boolean;
+}
+
+const LoginFooter: React.FC<LoginFooterProps> = ({
+    className = 'login-footer-container',
+    wrapperClassName = 'login-footer-wrap',
+    hideSelfCustodialLogin = false,
+}) => {
     return (
-        <div className="login-footer-container">
-            <div className="ion-padding pl-6 w-full login-footer-wrap">
-                <IonCol
-                    size="12"
-                    className="w-full flex-col items-center justify-start login-footer-title-wrap"
-                >
-                    <p className="w-full flex items-center mr-3 text-grayscale-600 font-medium text-base">
-                        Self-custodial login.
-                    </p>
-                </IonCol>
+        <div className={`${className}`}>
+            <div className={`ion-padding pl-6 !pt-1 w-full ${wrapperClassName}`}>
+                {!hideSelfCustodialLogin && (
+                    <IonCol size="12" className="login-footer-title-wrap">
+                        <p className="text-grayscale-600 font-medium text-base">
+                            {m['login.selfCustodial']()}
+                        </p>
+                    </IonCol>
+                )}
                 <div className="bg-grayscale-100 w-full h-[2px]" />
                 <button
                     onClick={openLCwebsite}
                     className="flex items-end justify-center text-indigo-500 font-bold text-sm mr-2 mt-2"
                 >
-                    Learn More about ScoutPass{' '}
+                    {m['login.learnMoreScoutPass']()}{' '}
                     <ExternalLinkIcon className="ml-[6px] w-[20px]" color="#6366f1" />
                 </button>
                 <IonCol
                     size="12"
-                    className="w-full flex items-start justify-start p-0 mt-2 login-footer-links-wrap"
+                    className="w-full flex items-center justify-center p-0 mt-2 login-footer-links-wrap"
                 >
                     <button
                         onClick={openToS}
                         className="flex items-center justify-center text-indigo-500 font-bold text-xs mr-2 mt-2"
                     >
-                        Terms of Service
+                        {m['login.termsOfService']()}
                     </button>
                     <button
                         onClick={openPP}
                         className="flex items-center text-indigo-500 font-bold text-xs mr-2 mt-2"
                     >
-                        Privacy Policy
+                        {m['login.privacyPolicy']()}
                     </button>
                     <button
                         onClick={openContactLink}
                         className="flex items-center text-indigo-500 font-bold text-xs mr-1 mt-2"
                     >
-                        Contact
+                        {m['login.contact']()}
                     </button>
                 </IonCol>
             </div>

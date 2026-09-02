@@ -1,4 +1,6 @@
+import { vi } from 'vitest';
 import { SignJWT, generateKeyPair } from 'jose';
+import type { Mock } from 'vitest';
 
 import { storeAcceptedCredentials } from './store';
 import { AcceptedCredentialResult } from './types';
@@ -11,9 +13,9 @@ const signVcJwt = async (payload: Record<string, unknown>): Promise<string> => {
 
 const makeLearnCard = (
     overrides: {
-        upload?: jest.Mock;
-        uploadEncrypted?: jest.Mock;
-        add?: jest.Mock;
+        upload?: Mock;
+        uploadEncrypted?: Mock;
+        add?: Mock;
         storage?: string;
     } = {}
 ) => {
@@ -61,8 +63,8 @@ const baseAccepted = async (
 
 describe('storeAcceptedCredentials', () => {
     it('uploads each credential and indexes it with a computed category', async () => {
-        const upload = jest.fn().mockResolvedValue('lc:network:abc');
-        const add = jest.fn().mockResolvedValue(true);
+        const upload = vi.fn().mockResolvedValue('lc:network:abc');
+        const add = vi.fn().mockResolvedValue(true);
         const learnCard = makeLearnCard({ uploadEncrypted: upload, add });
 
         const accepted = await baseAccepted();
@@ -73,6 +75,7 @@ describe('storeAcceptedCredentials', () => {
         expect(result.stored[0].uri).toBe('lc:network:abc');
         expect(result.stored[0].configurationId).toBe('OpenBadge_jwt_vc_json');
         expect(result.stored[0].format).toBe('jwt_vc_json');
+        expect(result.stored[0].category).toBe('Achievement');
 
         // Default encrypt=true → uses uploadEncrypted
         expect(upload).toHaveBeenCalledTimes(1);
@@ -96,9 +99,9 @@ describe('storeAcceptedCredentials', () => {
     });
 
     it('falls back to `upload` when encryption is disabled', async () => {
-        const upload = jest.fn().mockResolvedValue('lc:network:plain');
-        const uploadEncrypted = jest.fn();
-        const add = jest.fn().mockResolvedValue(true);
+        const upload = vi.fn().mockResolvedValue('lc:network:plain');
+        const uploadEncrypted = vi.fn();
+        const add = vi.fn().mockResolvedValue(true);
         const learnCard = makeLearnCard({ upload, uploadEncrypted, add });
 
         const accepted = await baseAccepted();
@@ -109,8 +112,8 @@ describe('storeAcceptedCredentials', () => {
     });
 
     it('falls back to `upload` when the store plugin has no uploadEncrypted', async () => {
-        const upload = jest.fn().mockResolvedValue('lc:network:plain');
-        const add = jest.fn().mockResolvedValue(true);
+        const upload = vi.fn().mockResolvedValue('lc:network:plain');
+        const add = vi.fn().mockResolvedValue(true);
         const learnCard = makeLearnCard({ upload, add }); // no uploadEncrypted
 
         const accepted = await baseAccepted();
@@ -120,10 +123,40 @@ describe('storeAcceptedCredentials', () => {
         expect(upload).toHaveBeenCalledTimes(1);
     });
 
+    it("maps employment credentials to the wallet's 'Work History' category", async () => {
+        const upload = vi.fn().mockResolvedValue('lc:network:work');
+        const add = vi.fn().mockResolvedValue(true);
+        const learnCard = makeLearnCard({ uploadEncrypted: upload, add });
+
+        const jwt = await signVcJwt({
+            iss: 'did:web:issuer.example.com',
+            sub: 'did:key:z6Mkholder',
+            nbf: 1_700_000_000,
+            vc: {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential', 'EmploymentCredential'],
+                credentialSubject: { name: 'Alice' },
+            },
+        });
+
+        const result = await storeAcceptedCredentials(learnCard, {
+            credentials: [
+                {
+                    format: 'jwt_vc_json',
+                    credential: jwt,
+                    configuration_id: 'Employment_jwt_vc_json',
+                },
+            ],
+        });
+
+        expect(add.mock.calls[0][0].category).toBe('Work History');
+        expect(result.stored[0]?.category).toBe('Work History');
+    });
+
     it('honors a caller-supplied category override (string)', async () => {
-        const add = jest.fn().mockResolvedValue(true);
+        const add = vi.fn().mockResolvedValue(true);
         const learnCard = makeLearnCard({
-            uploadEncrypted: jest.fn().mockResolvedValue('uri'),
+            uploadEncrypted: vi.fn().mockResolvedValue('uri'),
             add,
         });
 
@@ -133,9 +166,9 @@ describe('storeAcceptedCredentials', () => {
     });
 
     it('honors a caller-supplied category function', async () => {
-        const add = jest.fn().mockResolvedValue(true);
+        const add = vi.fn().mockResolvedValue(true);
         const learnCard = makeLearnCard({
-            uploadEncrypted: jest.fn().mockResolvedValue('uri'),
+            uploadEncrypted: vi.fn().mockResolvedValue('uri'),
             add,
         });
 
@@ -151,9 +184,9 @@ describe('storeAcceptedCredentials', () => {
     });
 
     it('infers default category from a VCDM ID credential', async () => {
-        const add = jest.fn().mockResolvedValue(true);
+        const add = vi.fn().mockResolvedValue(true);
         const learnCard = makeLearnCard({
-            uploadEncrypted: jest.fn().mockResolvedValue('uri'),
+            uploadEncrypted: vi.fn().mockResolvedValue('uri'),
             add,
         });
 
@@ -175,9 +208,9 @@ describe('storeAcceptedCredentials', () => {
     });
 
     it('includes optional title and imgUrl when provided', async () => {
-        const add = jest.fn().mockResolvedValue(true);
+        const add = vi.fn().mockResolvedValue(true);
         const learnCard = makeLearnCard({
-            uploadEncrypted: jest.fn().mockResolvedValue('uri'),
+            uploadEncrypted: vi.fn().mockResolvedValue('uri'),
             add,
         });
 
@@ -203,7 +236,7 @@ describe('storeAcceptedCredentials', () => {
 
     it('throws index_plane_missing when the index plugin is absent', async () => {
         const learnCard = {
-            store: { LearnCloud: { uploadEncrypted: jest.fn().mockResolvedValue('uri') } },
+            store: { LearnCloud: { uploadEncrypted: vi.fn().mockResolvedValue('uri') } },
             index: {},
         } as unknown as LearnCard<any, any, any>;
 
@@ -223,7 +256,7 @@ describe('storeAcceptedCredentials', () => {
             },
         });
 
-        const upload = jest
+        const upload = vi
             .fn()
             // first call: good
             .mockResolvedValueOnce('lc:network:one')
@@ -232,7 +265,7 @@ describe('storeAcceptedCredentials', () => {
             // third call: good
             .mockResolvedValueOnce('lc:network:three');
 
-        const add = jest
+        const add = vi
             .fn()
             .mockResolvedValueOnce(true)
             .mockRejectedValueOnce(new Error('index write failed'))
@@ -260,8 +293,8 @@ describe('storeAcceptedCredentials', () => {
     });
 
     it('captures unsupported formats as per-credential failures', async () => {
-        const add = jest.fn();
-        const upload = jest.fn();
+        const add = vi.fn();
+        const upload = vi.fn();
         const learnCard = makeLearnCard({ uploadEncrypted: upload, add });
 
         const accepted: AcceptedCredentialResult = {
@@ -288,8 +321,8 @@ describe('storeAcceptedCredentials', () => {
     });
 
     it('treats an empty upload URI as a failure', async () => {
-        const upload = jest.fn().mockResolvedValue('');
-        const add = jest.fn();
+        const upload = vi.fn().mockResolvedValue('');
+        const add = vi.fn();
         const learnCard = makeLearnCard({ uploadEncrypted: upload, add });
 
         const result = await storeAcceptedCredentials(learnCard, await baseAccepted());
@@ -300,8 +333,8 @@ describe('storeAcceptedCredentials', () => {
     });
 
     it('respects the caller-supplied upload / addToIndex callbacks', async () => {
-        const upload = jest.fn().mockResolvedValue('custom:uri');
-        const addToIndex = jest.fn().mockResolvedValue(undefined);
+        const upload = vi.fn().mockResolvedValue('custom:uri');
+        const addToIndex = vi.fn().mockResolvedValue(undefined);
         const learnCard = { store: {}, index: {} } as unknown as LearnCard<any, any, any>;
 
         const result = await storeAcceptedCredentials(learnCard, await baseAccepted(), {
@@ -317,9 +350,9 @@ describe('storeAcceptedCredentials', () => {
 
     describe('SD-JWT-VC delegation', () => {
         const makeLearnCardWithSdJwt = (
-            parseFn?: jest.Mock,
-            categorizeFn?: jest.Mock,
-            verifyFn: jest.Mock = jest
+            parseFn?: Mock,
+            categorizeFn?: Mock,
+            verifyFn: Mock = vi
                 .fn()
                 .mockResolvedValue({ checks: ['issuer_signature'], warnings: [], errors: [] })
         ) => {
@@ -328,8 +361,8 @@ describe('storeAcceptedCredentials', () => {
             if (categorizeFn) invoke.categorizeSdJwtVct = categorizeFn;
             if (verifyFn) invoke.verifySdJwtVc = verifyFn;
             return {
-                store: { LearnCloud: { uploadEncrypted: jest.fn().mockResolvedValue('lc:abc') } },
-                index: { LearnCloud: { add: jest.fn().mockResolvedValue(true) } },
+                store: { LearnCloud: { uploadEncrypted: vi.fn().mockResolvedValue('lc:abc') } },
+                index: { LearnCloud: { add: vi.fn().mockResolvedValue(true) } },
                 invoke,
             } as unknown as LearnCard<any, any, any>;
         };
@@ -360,8 +393,8 @@ describe('storeAcceptedCredentials', () => {
         };
 
         it('delegates parse to the sd-jwt-vc plugin and category to categorizeSdJwtVct', async () => {
-            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
-            const categorizeFn = jest.fn().mockReturnValue('ID');
+            const parseFn = vi.fn().mockResolvedValue(fakeParsed);
+            const categorizeFn = vi.fn().mockReturnValue('ID');
             const learnCard = makeLearnCardWithSdJwt(parseFn, categorizeFn);
 
             const result = await storeAcceptedCredentials(learnCard, sdJwtAccepted());
@@ -373,8 +406,8 @@ describe('storeAcceptedCredentials', () => {
                 'https://ca.gov/credentials/career-passport-test'
             );
             const addedRecord = (
-                (learnCard.index as unknown as { LearnCloud: { add: jest.Mock } }).LearnCloud.add
-                    .mock.calls[0] as unknown[]
+                (learnCard.index as unknown as { LearnCloud: { add: Mock } }).LearnCloud.add.mock
+                    .calls[0] as unknown[]
             )[0] as { category: string };
             expect(addedRecord.category).toBe('ID');
         });
@@ -388,8 +421,8 @@ describe('storeAcceptedCredentials', () => {
                     kid: 'did:web:issuer.example.com#key-1',
                 },
             };
-            const parseFn = jest.fn().mockResolvedValue(legacyParsed);
-            const categorizeFn = jest.fn().mockReturnValue('Achievement');
+            const parseFn = vi.fn().mockResolvedValue(legacyParsed);
+            const categorizeFn = vi.fn().mockReturnValue('Achievement');
             const learnCard = makeLearnCardWithSdJwt(parseFn, categorizeFn);
 
             const result = await storeAcceptedCredentials(learnCard, sdJwtAccepted('vc+sd-jwt'));
@@ -400,15 +433,15 @@ describe('storeAcceptedCredentials', () => {
         });
 
         it('falls back to the W3C heuristic when categorizeSdJwtVct is unavailable', async () => {
-            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
+            const parseFn = vi.fn().mockResolvedValue(fakeParsed);
             const learnCard = makeLearnCardWithSdJwt(parseFn);
 
             const result = await storeAcceptedCredentials(learnCard, sdJwtAccepted());
 
             expect(result.failures).toEqual([]);
             const addedRecord = (
-                (learnCard.index as unknown as { LearnCloud: { add: jest.Mock } }).LearnCloud.add
-                    .mock.calls[0] as unknown[]
+                (learnCard.index as unknown as { LearnCloud: { add: Mock } }).LearnCloud.add.mock
+                    .calls[0] as unknown[]
             )[0] as { category: string };
             expect(addedRecord.category).toBe('Achievement');
         });
@@ -425,8 +458,8 @@ describe('storeAcceptedCredentials', () => {
         });
 
         it('preserves the SD-JWT compact form under proof.jwt of the synthesized VC', async () => {
-            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
-            const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
+            const parseFn = vi.fn().mockResolvedValue(fakeParsed);
+            const learnCard = makeLearnCardWithSdJwt(parseFn, vi.fn().mockReturnValue('ID'));
 
             const result = await storeAcceptedCredentials(learnCard, sdJwtAccepted());
 
@@ -443,9 +476,9 @@ describe('storeAcceptedCredentials', () => {
         });
 
         it('uploads the storage envelope, NOT the W3C wrapper, for SD-JWT', async () => {
-            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
-            const upload = jest.fn().mockResolvedValue('learn-cloud:sd-jwt-envelope');
-            const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
+            const parseFn = vi.fn().mockResolvedValue(fakeParsed);
+            const upload = vi.fn().mockResolvedValue('learn-cloud:sd-jwt-envelope');
+            const learnCard = makeLearnCardWithSdJwt(parseFn, vi.fn().mockReturnValue('ID'));
 
             await storeAcceptedCredentials(learnCard, sdJwtAccepted(), { upload });
 
@@ -465,9 +498,9 @@ describe('storeAcceptedCredentials', () => {
                 ...fakeParsed,
                 header: { ...fakeParsed.header, typ: 'vc+sd-jwt' },
             };
-            const parseFn = jest.fn().mockResolvedValue(legacyParsed);
-            const upload = jest.fn().mockResolvedValue('learn-cloud:sd-jwt-envelope');
-            const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
+            const parseFn = vi.fn().mockResolvedValue(legacyParsed);
+            const upload = vi.fn().mockResolvedValue('learn-cloud:sd-jwt-envelope');
+            const learnCard = makeLearnCardWithSdJwt(parseFn, vi.fn().mockReturnValue('ID'));
 
             await storeAcceptedCredentials(learnCard, sdJwtAccepted('vc+sd-jwt'), { upload });
 
@@ -477,8 +510,8 @@ describe('storeAcceptedCredentials', () => {
         });
 
         it('legacy W3C VC path still uploads the VC object (no envelope wrap)', async () => {
-            const upload = jest.fn().mockResolvedValue('learn-cloud:w3c-vc');
-            const addToIndex = jest.fn().mockResolvedValue(undefined);
+            const upload = vi.fn().mockResolvedValue('learn-cloud:w3c-vc');
+            const addToIndex = vi.fn().mockResolvedValue(undefined);
             const learnCard = { store: {}, index: {} } as unknown as LearnCard<any, any, any>;
 
             await storeAcceptedCredentials(learnCard, await baseAccepted(), {
@@ -493,9 +526,9 @@ describe('storeAcceptedCredentials', () => {
         });
 
         it('persists ADR-0001 Phase 1.5 format-tagged metadata on the IndexRecord', async () => {
-            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
-            const addToIndex = jest.fn().mockResolvedValue(undefined);
-            const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
+            const parseFn = vi.fn().mockResolvedValue(fakeParsed);
+            const addToIndex = vi.fn().mockResolvedValue(undefined);
+            const learnCard = makeLearnCardWithSdJwt(parseFn, vi.fn().mockReturnValue('ID'));
 
             await storeAcceptedCredentials(learnCard, sdJwtAccepted(), { addToIndex });
 
@@ -506,9 +539,9 @@ describe('storeAcceptedCredentials', () => {
         });
 
         it('does NOT carry credential body data on the IndexRecord (rawWireForm lives in storage, not index)', async () => {
-            const parseFn = jest.fn().mockResolvedValue(fakeParsed);
-            const addToIndex = jest.fn().mockResolvedValue(undefined);
-            const learnCard = makeLearnCardWithSdJwt(parseFn, jest.fn().mockReturnValue('ID'));
+            const parseFn = vi.fn().mockResolvedValue(fakeParsed);
+            const addToIndex = vi.fn().mockResolvedValue(undefined);
+            const learnCard = makeLearnCardWithSdJwt(parseFn, vi.fn().mockReturnValue('ID'));
 
             await storeAcceptedCredentials(learnCard, sdJwtAccepted(), { addToIndex });
 
@@ -519,8 +552,8 @@ describe('storeAcceptedCredentials', () => {
         });
 
         it('does NOT populate format-tagged fields on the IndexRecord for legacy W3C VCs', async () => {
-            const upload = jest.fn().mockResolvedValue('learn-cloud:w3c-vc');
-            const addToIndex = jest.fn().mockResolvedValue(undefined);
+            const upload = vi.fn().mockResolvedValue('learn-cloud:w3c-vc');
+            const addToIndex = vi.fn().mockResolvedValue(undefined);
             const learnCard = { store: {}, index: {} } as unknown as LearnCard<any, any, any>;
 
             await storeAcceptedCredentials(learnCard, await baseAccepted(), {

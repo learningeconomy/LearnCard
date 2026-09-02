@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Sign + assemble unit tests for the DCQL response pipeline.
  *
@@ -30,7 +31,7 @@ const makeJwtSigner = (
             header: Record<string, unknown>;
             payload: Record<string, unknown>;
         }>,
-        sign: jest.fn(
+        sign: vi.fn(
             async (
                 header: Record<string, unknown>,
                 payload: Record<string, unknown>
@@ -114,8 +115,8 @@ describe('assembleDcqlVpToken', () => {
         ]);
 
         expect(out).toEqual({
-            a: 'jwt.a.sig',
-            b: 'jwt.b.sig',
+            a: ['jwt.a.sig'],
+            b: ['jwt.b.sig'],
         });
     });
 
@@ -160,7 +161,7 @@ describe('buildDcqlResponse — end-to-end orchestration', () => {
         expect(result.presentations).toHaveLength(1);
         expect(result.presentations[0]?.credentialQueryId).toBe('degree');
         expect(result.vpToken).toEqual({
-            degree: result.presentations[0]?.vpToken,
+            degree: [result.presentations[0]?.vpToken],
         });
     });
 });
@@ -203,7 +204,7 @@ describe('signDcqlPresentations — SD-JWT-VC passthrough', () => {
             holder: HOLDER,
         });
 
-        const presenter = jest.fn(async (_c: string, _o) => ({ compact: presentedCompact }));
+        const presenter = vi.fn(async (_c: string, _o) => ({ compact: presentedCompact }));
         const jwtSigner = makeJwtSigner();
 
         const result = await signDcqlPresentations(
@@ -264,7 +265,7 @@ describe('signDcqlPresentations — SD-JWT-VC passthrough', () => {
             holder: HOLDER,
         });
 
-        const presenter = jest.fn(async () => {
+        const presenter = vi.fn(async () => {
             throw new Error('verifier rejected nonce');
         });
 
@@ -303,7 +304,7 @@ describe('signDcqlPresentations — SD-JWT-VC passthrough', () => {
             holder: HOLDER,
         });
 
-        const presenter = jest.fn(async () => ({ compact: presentedCompact }));
+        const presenter = vi.fn(async () => ({ compact: presentedCompact }));
         const jwtSigner = makeJwtSigner();
 
         const response = await buildDcqlResponse(
@@ -312,8 +313,9 @@ describe('signDcqlPresentations — SD-JWT-VC passthrough', () => {
         );
 
         expect(Object.keys(response.vpToken).sort()).toEqual(['degree', 'pid']);
-        expect(response.vpToken.pid).toBe(presentedCompact);
-        expect(typeof response.vpToken.degree).toBe('string');
+        expect(response.vpToken.pid).toEqual([presentedCompact]);
+        expect(response.vpToken.degree).toHaveLength(1);
+        expect(typeof response.vpToken.degree?.[0]).toBe('string');
         expect(jwtSigner.signCalls).toHaveLength(1);
         expect(presenter).toHaveBeenCalledTimes(1);
     });

@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Shield, Loader2, CheckCircle2, AlertCircle } fro
 import { getLogger } from 'learn-card-base';
 const log = getLogger('signing-authority-step');
 
+import * as m from '../../../../paraglide/messages.js';
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
@@ -70,11 +71,13 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                 authority.name
             );
 
-            presentToast('Signing authority created!', { hasDismissButton: true });
+            presentToast(m['developerPortal.onboarding.signingAuthority.createdToast'](), {
+                hasDismissButton: true,
+            });
             fetchSigningAuthority();
         } catch (err) {
             log.error('Failed to create signing authority:', err);
-            presentToast('Failed to create signing authority', {
+            presentToast(m['developerPortal.onboarding.signingAuthority.failedToast'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -89,12 +92,11 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Set Up Signing Authority
+                    {m['developerPortal.onboarding.signingAuthority.title']()}
                 </h3>
 
                 <p className="text-gray-600">
-                    A signing authority cryptographically signs your credentials, making them
-                    verifiable. This proves the credentials actually came from you.
+                    {m['developerPortal.onboarding.signingAuthority.description']()}
                 </p>
             </div>
 
@@ -159,12 +161,12 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                     {creating ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Creating...
+                            {m['developerPortal.onboarding.signingAuthority.creating']()}
                         </>
                     ) : (
                         <>
                             <Shield className="w-4 h-4" />
-                            Create Signing Authority
+                            {m['developerPortal.onboarding.signingAuthority.createButton']()}
                         </>
                     )}
                 </button>
@@ -172,12 +174,23 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
 
             {/* Info about what it does */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">What does this do?</h4>
+                <h4 className="font-medium text-blue-800 mb-2">
+                    {m['developerPortal.onboarding.signingAuthority.whatDoesThisDo']()}
+                </h4>
 
                 <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• Creates a cryptographic key pair for signing</li>
-                    <li>• Registers the key with LearnCard's verification network</li>
-                    <li>• Allows anyone to verify credentials you issue</li>
+                    <li>
+                        {'• '}
+                        {m['developerPortal.onboarding.signingAuthority.benefit1']()}
+                    </li>
+                    <li>
+                        {'• '}
+                        {m['developerPortal.onboarding.signingAuthority.benefit2']()}
+                    </li>
+                    <li>
+                        {'• '}
+                        {m['developerPortal.onboarding.signingAuthority.benefit3']()}
+                    </li>
                 </ul>
             </div>
 
@@ -188,7 +201,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.onboarding.signingAuthority.back']()}
                 </button>
 
                 <button
@@ -196,7 +209,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                     disabled={!hasSigningAuthority}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue
+                    {m['developerPortal.onboarding.signingAuthority.continue']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>

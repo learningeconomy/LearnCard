@@ -1,5 +1,106 @@
 # learn-card-core
 
+## 2.3.37
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.31
+    -   @learncard/helpers@1.3.13
+    -   @learncard/learn-cloud-client@1.6.37
+    -   @learncard/didkit-plugin@1.9.11
+
+## 2.3.36
+
+### Patch Changes
+
+-   Updated dependencies [[`80bce3e745d8e3dcca0e1c07337d97ec13c4b417`](https://github.com/learningeconomy/LearnCard/commit/80bce3e745d8e3dcca0e1c07337d97ec13c4b417)]:
+    -   @learncard/helpers@1.3.12
+    -   @learncard/learn-cloud-client@1.6.36
+    -   @learncard/core@9.4.30
+    -   @learncard/didkit-plugin@1.9.10
+
+## 2.3.35
+
+### Patch Changes
+
+-   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4), [`6796b321354ca870e4dfa3606719f9882221bc1b`](https://github.com/learningeconomy/LearnCard/commit/6796b321354ca870e4dfa3606719f9882221bc1b)]:
+    -   @learncard/didkit-plugin@1.9.9
+    -   @learncard/helpers@1.3.11
+    -   @learncard/learn-cloud-client@1.6.35
+    -   @learncard/core@9.4.29
+
+## 2.3.34
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.28
+    -   @learncard/helpers@1.3.10
+    -   @learncard/learn-cloud-client@1.6.34
+    -   @learncard/didkit-plugin@1.9.8
+
+## 2.3.33
+
+### Patch Changes
+
+-   Updated dependencies [[`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05)]:
+    -   @learncard/learn-cloud-client@1.6.33
+
+## 2.3.32
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.27
+    -   @learncard/helpers@1.3.9
+    -   @learncard/learn-cloud-client@1.6.32
+    -   @learncard/didkit-plugin@1.9.7
+
+## 2.3.31
+
+### Patch Changes
+
+-   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/core@9.4.26
+    -   @learncard/helpers@1.3.8
+    -   @learncard/didkit-plugin@1.9.6
+    -   @learncard/learn-cloud-client@1.6.31
+
+## 2.3.30
+
+### Patch Changes
+
+-   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    -   @learncard/core@9.4.25
+    -   @learncard/helpers@1.3.7
+    -   @learncard/learn-cloud-client@1.6.30
+    -   @learncard/didkit-plugin@1.9.5
+
+## 2.3.29
+
+### Patch Changes
+
+-   Updated dependencies [[`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/helpers@1.3.6
+    -   @learncard/learn-cloud-client@1.6.29
+    -   @learncard/core@9.4.24
+    -   @learncard/didkit-plugin@1.9.4
+
+## 2.3.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.23
+    -   @learncard/helpers@1.3.5
+    -   @learncard/learn-cloud-client@1.6.28
+    -   @learncard/didkit-plugin@1.9.3
+
 ## 2.3.27
 
 ### Patch Changes
@@ -30,7 +131,7 @@
 
     This change is verified by two new CI surfaces:
 
-    -   `pnpm validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
+    -   `bun run validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
     -   `.github/workflows/smoketest-npm-packages.yml` now also probes every published plugin's ESM + CJS export surface directly (not just `@learncard/init` transitively) and bundles a trivial consumer with esbuild to catch bundler-resolution-only regressions.
 
     Follow-up work tracked as advisory failures in both surfaces (not gating CI until fixed): `@learncard/ceramic-plugin`, `@learncard/didkey-plugin`, `@learncard/helpers`, `@learncard/idx-plugin`, `@learncard/lca-api-plugin`, `@learncard/learn-cloud-plugin`, `@learncard/network-plugin`, `@learncard/simple-signing-plugin` each have pre-existing publish-time bugs (CJS-only transitive deps imported via named ESM, dynamic `require()` in ESM bundles, or unmigrated upstream packages).
@@ -291,7 +392,7 @@
     -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
     -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
     -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`pnpm test -- run`).
+    -   Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 

@@ -3,6 +3,8 @@ import React from 'react';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 
 import { useTheme } from '../../theme/hooks/useTheme';
+import { TransP } from '../../i18n/TransP';
+import * as m from '../../paraglide/messages.js';
 
 export const AiPassportPersonalizationFormHeader: React.FC = () => {
     const { colors } = useTheme();
@@ -15,12 +17,18 @@ export const AiPassportPersonalizationFormHeader: React.FC = () => {
             </div>
 
             <div className="mt-4 text-center">
+                {/* "Personalize my AI Sessions" — "AI Sessions" keeps the colored +
+                    semibold styling via the <0>…</0> markup component. */}
                 <h1 className="text-grayscale-900 text-[22px] font-normal font-notoSans">
-                    Personalize my
+                    <TransP
+                        m={m['aiPersonalization.header']}
+                        components={[
+                            <span
+                                className={`text-${primaryColor} text-[22px] font-semibold font-notoSans`}
+                            />,
+                        ]}
+                    />
                 </h1>
-                <h2 className={`text-${primaryColor} text-[22px] font-semibold font-notoSans mt-1`}>
-                    AI Sessions
-                </h2>
             </div>
         </div>
     );

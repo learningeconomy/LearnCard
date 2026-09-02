@@ -53,7 +53,7 @@ The plugin is **auto-wired into every seed-based `@learncard/init` initializer**
 For custom LearnCards that don't use `@learncard/init`:
 
 ```bash
-pnpm add @learncard/sd-jwt-vc-plugin
+bun add @learncard/sd-jwt-vc-plugin
 ```
 
 Required peer plugin: `@learncard/didkit-plugin` (for issuer DID resolution).
@@ -100,7 +100,7 @@ All errors thrown by this plugin are `SdJwtVcError` instances with a stable `cod
 ## Testing
 
 ```bash
-pnpm --filter @learncard/sd-jwt-vc-plugin test
+bun --filter @learncard/sd-jwt-vc-plugin run test
 ```
 
 The unit suite round-trips real credentials end-to-end: each test generates a fresh Ed25519 keypair, issues an SD-JWT-VC via `SDJwtVcInstance` from the OpenWallet Foundation library, then exercises the plugin's `parse` / `verify` paths against the live output. Hand-crafted fixtures cover the negative-shape cases (missing `iss`, `vct`, `alg`).

@@ -22,6 +22,8 @@ import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
 import { useAcceptConnectionRequestMutation } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 const log = getLogger('add-contact-view');
 
 export enum AddContactViewMode {
@@ -92,7 +94,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         try {
             const connectionReq = await wallet?.invoke?.connectWith(profileId);
             if (connectionReq) {
-                presentToast('Connection Request sent', {
+                presentToast(m['addressBook.toasts.connectionRequestSent'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -101,7 +103,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
             setConnectionRequested(true);
             if (closeModal) handleCancel?.();
         } catch (err) {
-            presentToast(err?.message ?? 'An error ocurred, unable to send connection request.', {
+            presentToast(err?.message ?? m['addressBook.toasts.unableToSendConnectionRequest'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -121,14 +123,14 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         const wallet = await initWallet();
 
         if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
+            void handlePresentJoinNetworkModal({ forceOpen: true });
         }
 
         setLoading(true);
         try {
             const connectionReq = await wallet?.invoke?.connectWithInvite(profileId, challenge);
             if (connectionReq) {
-                presentToast('Connected Successfully!', {
+                presentToast(m['addressBook.toasts.connectedSuccessfully'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -139,8 +141,8 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         } catch (err) {
             let _errMessage = err?.message;
             if (_errMessage.includes('Challenge not found'))
-                _errMessage = 'Invite link has expired!';
-            presentToast(_errMessage ?? 'An error ocurred, unable to connect!', {
+                _errMessage = m['addressBook.toasts.inviteLinkExpired']();
+            presentToast(_errMessage ?? m['addressBook.toasts.unableToConnect'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -182,7 +184,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                     },
                     onError(error, variables, context) {
                         presentToast(
-                            error?.message || 'An error occurred, unable to accept request',
+                            error?.message || m['addressBook.toasts.unableToAcceptRequest'](),
                             {
                                 // @ts-ignore
                                 type: ToastTypeEnum.Error,
@@ -193,7 +195,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                 }
             );
         } catch (err) {
-            presentToast(err?.message || 'An error occurred, unable to accept request', {
+            presentToast(err?.message || m['addressBook.toasts.unableToAcceptRequest'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -224,7 +226,8 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                             onClick={e => handleAddBoostIssueTo(e, user?.profileId)}
                             className="w-full flex items-center justify-center bg-indigo-500 rounded-full px-[12px] py-[8px] text-white text-4xl shadow-lg mb-4"
                         >
-                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Boost
+                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                            {m['boost.boost']()}
                         </button>
                     </IonCol>
                 );
@@ -236,14 +239,16 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                                 onClick={e => handleConnectionRequest(e, user?.profileId)}
                                 className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                             >
-                                {loading ? 'loading...' : 'Request Connection'}
+                                {loading
+                                    ? m['addressBook.loading']()
+                                    : m['addressBook.requestConnection']()}
                             </button>
                         ) : (
                             <button
                                 disabled
                                 className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                             >
-                                Pending request
+                                {m['addressBook.pendingRequest']()}
                             </button>
                         )}
                     </IonCol>
@@ -261,7 +266,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         handleCancel();
                     }}
                 >
-                    Login to Connect
+                    {m['addressBook.loginToConnect']()}
                 </button>
             );
         }
@@ -273,14 +278,14 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         onClick={e => handleAcceptInvite(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {loading ? 'loading...' : 'Connect'}
+                        {loading ? m['common.loading']() : m['common.connect']()}
                     </button>
                 ) : (
                     <button
                         disabled
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        Connected
+                        {m['addressBook.connected']()}
                     </button>
                 )}
             </IonCol>
@@ -295,7 +300,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         handleCancel();
                     }}
                 >
-                    Login to Connect
+                    {m['addressBook.loginToConnect']()}
                 </button>
             );
         }
@@ -307,14 +312,14 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         onClick={e => onHandleAcceptConnectionRequest(e, user?.profileId)}
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        {acceptConnectionLoading ? 'loading...' : 'Connect'}
+                        {acceptConnectionLoading ? m['common.loading']() : m['common.connect']()}
                     </button>
                 ) : (
                     <button
                         disabled
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        Connected
+                        {m['addressBook.connected']()}
                     </button>
                 )}
             </IonCol>
@@ -323,23 +328,36 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
 
     let promptText = null;
 
+    const userName = user?.displayName || `@${user?.profileId}`;
+
     if (isIssuingBoost) {
         promptText = (
             <p className="text-grayscale-600 text-lg font-semibold text-center">
-                Would you like to <br /> boost {user?.displayName || `@${user?.profileId}`}?
+                <TransP
+                    m={m['addressBook.wouldYouLikeToBoost']}
+                    values={{ name: userName }}
+                    components={[<br key="br" />]}
+                />
             </p>
         );
     } else if (mode === AddContactViewMode?.acceptConnectionRequest) {
         promptText = (
             <p className="text-grayscale-600 text-lg font-semibold text-center">
-                {user?.displayName || `@${user?.profileId}`} has requested
-                <br /> to connect with you?
+                <TransP
+                    m={m['addressBook.hasRequestedToConnect']}
+                    values={{ name: userName }}
+                    components={[<br key="br" />]}
+                />
             </p>
         );
     } else {
         promptText = (
             <p className="text-grayscale-600 text-lg font-semibold text-center">
-                Would you like to <br /> connect with {user?.displayName || `@${user?.profileId}`}?
+                <TransP
+                    m={m['addressBook.wouldYouLikeToConnect']}
+                    values={{ name: userName }}
+                    components={[<br key="br" />]}
+                />
             </p>
         );
     }
@@ -368,7 +386,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         )}
 
                         {isLoggedIn && !isIssuingBoost && (
-                            <ArrowRight className="w-[30px] h-[30px] mx-3" />
+                            <ArrowRight className="rtl-mirror w-[30px] h-[30px] mx-3" />
                         )}
 
                         <UserProfilePicture
@@ -389,7 +407,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                 </IonRow>
                 <div onClick={handleCancel} className="w-full flex items-center justify-center">
                     <button className="text-grayscale-900 text-center text-sm">
-                        {isLoggedIn ? 'Cancel' : 'Return home'}
+                        {isLoggedIn ? m['common.cancel']() : m['addressBook.returnHome']()}
                     </button>
                 </div>
             </IonRow>

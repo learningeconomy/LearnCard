@@ -1,3 +1,4 @@
+import * as m from '../../paraglide/messages.js';
 import React from 'react';
 
 import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
@@ -31,7 +32,7 @@ const LearnCardIDCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        Dark
+                        {m['learnCardId.dark']()}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -43,7 +44,7 @@ const LearnCardIDCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        Light
+                        {m['learnCardId.light']()}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -55,7 +56,7 @@ const LearnCardIDCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        Custom
+                        {m['learnCardId.custom']()}
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>

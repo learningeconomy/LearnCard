@@ -2,11 +2,15 @@ import React, { useEffect } from 'react';
 
 import { useLoadingLine } from 'apps/learn-card-app/src/stores/loadingStore';
 import { useGetUserNotifications } from 'learn-card-base';
+import { deduplicateConnectionPromptNotifications } from 'learn-card-base/components/connection-prompts/deduplicateConnectionPromptNotifications';
 
 import { IonSpinner } from '@ionic/react';
 import ArrowCircle from 'learn-card-base/svgs/ArrowCircle';
 import GenericErrorBoundary from '../../generic/GenericErrorBoundary';
 import NotificationCardContainer from './NotificationCardContainer';
+import GroupedConsentFlowCard from './GroupedConsentFlowCard';
+import { buildNotificationListItems } from './consentFlowGrouping';
+import * as m from '../../../paraglide/messages.js';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
@@ -37,10 +41,7 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     const primaryColor = colorSet.primaryColor;
 
-    const { data, isLoading, refetch, isRefetching, isFetching } = useGetUserNotifications(
-        options,
-        filter
-    );
+    const { data, isLoading, refetch, isFetching } = useGetUserNotifications(options, filter);
 
     useEffect(() => {
         if (!isLoading && data) {
@@ -51,28 +52,36 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     useLoadingLine(isLoading || isFetching);
 
-    const queryOptions = { options, filter };
+    const flatNotifications = (data?.pages?.flatMap(group => group?.notifications ?? []) ??
+        []) as NotificationType[];
+    const visibleNotifications = deduplicateConnectionPromptNotifications(flatNotifications);
 
-    const renderNotifications =
-        data &&
-        data.pages.map((group, i) => (
-            <React.Fragment key={i}>
-                {group?.notifications?.map((notification: NotificationType) => {
-                    return (
-                        <GenericErrorBoundary key={notification?._id}>
-                            <NotificationCardContainer
-                                queryOptions={queryOptions}
-                                notification={notification}
-                            />
-                        </GenericErrorBoundary>
-                    );
-                })}
-            </React.Fragment>
-        ));
+    const listItems = buildNotificationListItems(visibleNotifications);
+
+    const renderNotifications = listItems.map(item => {
+        if (item.kind === 'consentGroup') {
+            return (
+                <GenericErrorBoundary key={`group-${item.key}`}>
+                    <GroupedConsentFlowCard notifications={item.notifications} />
+                </GenericErrorBoundary>
+            );
+        }
+
+        return (
+            <GenericErrorBoundary key={item.notification?._id}>
+                <NotificationCardContainer notification={item.notification} />
+            </GenericErrorBoundary>
+        );
+    });
 
     const handleRefetch = () => refetch();
 
-    const notificationsLoading = isRefetching || isLoading;
+    // Gate the full-screen spinner on the INITIAL load only. Including
+    // `isRefetching` here tore the whole list down and rebuilt it on every
+    // background refetch — that caused the constant flashing and remounted each
+    // card (wiping local accepted state). Background refetches now surface only
+    // via the subtle top loading line (useLoadingLine above).
+    const notificationsLoading = isLoading;
 
     return (
         <div className="m-auto max-w-[600px] h-full bg-white">
@@ -80,7 +89,7 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
                 <div className="min-w-[300px] min-h-[300px] h-full w-full relative flex flex-col items-center justify-center">
                     <IonSpinner name="crescent" color="grayscale-900" className="scale-[4] mb-8" />
                     <p className="flex items-center justify-center text-left text-grayscale-900 font-medium text-sm line-clamp-1 mt-8">
-                        Loading Notifications...
+                        {m['alerts.loadingNotifications']()}
                     </p>
                 </div>
             )}
@@ -89,13 +98,14 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
                 <div className="p-[20px] flex flex-col justify-center items-center w-full h-full">
                     <TelescopeIcon className="w-[150px] h-[130px]" />
                     <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                        No alerts found.
+                        {m['alerts.noAlerts']()}
                     </p>
                     <button
                         className={`font-poppins flex items-center mt-[20px] justify-center max-w-[200px] bg-${primaryColor} rounded-full w-full font-semibold px-[18px] py-[12px] text-white text-[18px] shadow-button-bottom`}
                         onClick={handleRefetch}
                     >
-                        Refresh <ArrowCircle className="w-[20px] h-[20px] ml-2 text-white" />
+                        {m['alerts.refresh']()}{' '}
+                        <ArrowCircle className="w-[20px] h-[20px] ml-2 text-white" />
                     </button>
                 </div>
             )}

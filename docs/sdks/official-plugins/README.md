@@ -43,7 +43,7 @@ const enhancedLearnCard = await learnCard.addPlugin(await getMyPlugin());
 | Plugin                                  | Package                              | Description                          |
 | --------------------------------------- | ------------------------------------ | ------------------------------------ |
 | [Claimable Boosts](claimable-boosts.md) | `@learncard/claimable-boosts-plugin` | Generate claimable credential links  |
-| [Simple Signing](simple-signing.md)     | `@learncard/simple-signing-plugin`   | Remote signing authority support     |
+| [LCA API](lca-api.md)                   | `@learncard/lca-api-plugin`          | LearnCard-managed service support    |
 | [CHAPI](chapi.md)                       | `@learncard/chapi-plugin`            | Credential Handler API integration   |
 | [Ceramic](ceramic.md)                   | `@learncard/ceramic-plugin`          | Ceramic Network storage              |
 | [Ethereum](ethereum.md)                 | `@learncard/ethereum-plugin`         | Ethereum blockchain integration      |

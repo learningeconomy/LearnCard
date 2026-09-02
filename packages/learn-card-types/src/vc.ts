@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export const ContextValidator = z.array(z.string().or(z.record(z.string(), z.any())));
 export type Context = z.infer<typeof ContextValidator>;
@@ -102,7 +102,7 @@ export const CredentialSubjectValidator = z.object({ id: z.string().optional() }
 export type CredentialSubject = z.infer<typeof CredentialSubjectValidator>;
 
 export const CredentialStatusValidator = z
-    .object({ type: z.string(), id: z.string() })
+    .object({ type: z.string(), id: z.string().optional() })
     .catchall(z.any());
 export type CredentialStatus = z.infer<typeof CredentialStatusValidator>;
 

@@ -17,6 +17,8 @@ import firstStartupStore, {
     useIntroSlidesCompleted,
 } from 'learn-card-base/stores/firstStartupStore';
 import IntroSlides from './components/intro-slides/IntroSlides';
+import { useEnforceVisibleLocale } from './i18n/useLanguageSelectorConfig';
+import { useLocale } from './i18n';
 
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 
@@ -41,7 +43,7 @@ import './theme/variables.css';
 import './theme/floating-tab-bar.css';
 
 // importing styles
-import '@learncard/react/dist/main.css';
+import '@learncard/react/main.css';
 import './index.scss';
 
 // base styles of swiper js
@@ -56,6 +58,14 @@ networkStore.set.cloudUrl(SCOUTCLOUD_URL);
 networkStore.set.apiEndpoint(SCOUTPASS_API_ENDPOINT);
 
 const App: React.FC = () => {
+    // Subscribe at the application boundary so catalog-backed data getters
+    // rerender even when their leaf component does not consume locale context.
+    useLocale();
+
+    // Keep the active locale within the LaunchDarkly-allowed set (falls a hidden
+    // locale back to a visible one). Must run unconditionally, above the
+    // intro-slides early return, since hooks can't sit behind a conditional.
+    useEnforceVisibleLocale();
     useIntroSlidesCompleted();
     const introSlidesCompleted = firstStartupStore.get.introSlidesCompleted();
     const isLoggedIn = useIsLoggedIn();

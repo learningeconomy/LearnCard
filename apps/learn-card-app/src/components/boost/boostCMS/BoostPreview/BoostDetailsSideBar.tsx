@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 
 import X from '../../../svgs/X';
-import { IonFooter } from '@ionic/react';
-import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
+
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
@@ -11,7 +10,7 @@ import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 import SkillsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/SkillsBox';
 import BoostEndorsementDetails from '../../../boost-endorsements/BoostEndorsementDetails';
 import EndorsementsList from '../../../boost-endorsements/EndorsementsList/EndorsementsList';
@@ -19,6 +18,7 @@ import AlignmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/A
 import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/TruncateTextBox';
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
+import PreviewVerificationBox from './PreviewVerificationBox';
 
 import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
@@ -34,6 +34,7 @@ import {
 import { VC, VerificationItem } from '@learncard/types';
 import { UnsignedVC } from '@learncard/types';
 import moment from 'moment';
+import * as m from '../../../../paraglide/messages.js';
 
 type BoostDetailsSideBarProps = {
     credential: VC;
@@ -48,6 +49,7 @@ type BoostDetailsSideBarProps = {
     isClrChildCredential?: boolean;
     renderMethodCredential?: VC | UnsignedVC;
     issuancesSummaryComponent?: React.ReactNode;
+    isPreview?: boolean;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -62,9 +64,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     isClrChildCredential = false,
     renderMethodCredential,
     issuancesSummaryComponent,
+    isPreview = false,
 }) => {
-    const enableRenderMethod = useRenderMethodEnabled();
-
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
 
     const { closeModal } = useModal();
@@ -117,8 +118,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
             activeTabDetails = (
                 <>
                     <TruncateTextBox
-                        headerText="Details"
-                        subHeaderText={`${isMediaDisplay ? title : 'About'}`}
+                        headerText={m['common.details']()}
+                        subHeaderText={`${isMediaDisplay ? title : m['common.about']()}`}
                         text={description}
                         displayTextBelowChildren={isMediaDisplay}
                         subHeaderTextClassName="text-[17px] text-grayscale-900 font-semibold"
@@ -129,7 +130,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                         {isMediaDisplay && <BoostSideMenuMediaDetails credential={credential} />}
 
                         {!isMediaDisplay && dateRangeText && (
-                            <span className="text-grayscale-500 font-poppins text-[12px] font-[500] w-full">
+                            <span className="text-grayscale-600 font-poppins text-[12px] font-[500] w-full">
                                 {dateRangeText}
                             </span>
                         )}
@@ -156,18 +157,20 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                         </div>
                     )}
 
-                    {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
-                        <BoostDisplayStyleSelector
-                            credential={renderMethodCredential}
-                            enableRenderMethod={enableRenderMethod}
-                        />
+                    {!isMediaDisplay && renderMethodCredential && (
+                        <BoostDisplayStyleSelector credential={renderMethodCredential} />
                     )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
 
                     <SdJwtVcClaimsBox credential={credential} />
 
-                    {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
+                    {criteria && (
+                        <TruncateTextBox
+                            headerText={m['boost.cms.preview.criteria']()}
+                            text={criteria}
+                        />
+                    )}
 
                     <CredentialIssuerInformation credential={credential} />
 
@@ -206,10 +209,20 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                             />
                         )}
 
-                    {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
+                    {alignment && (
+                        <AlignmentsBox
+                            alignment={alignment}
+                            style={m['boost.cms.preview.certificate']()}
+                        />
+                    )}
 
-                    {verificationItems && verificationItems?.length > 0 && (
-                        <VerificationsBox verificationItems={verificationItems} />
+                    {isPreview ? (
+                        <PreviewVerificationBox />
+                    ) : (
+                        verificationItems &&
+                        verificationItems?.length > 0 && (
+                            <VerificationsBox verificationItems={verificationItems} />
+                        )
                     )}
                 </>
             );
@@ -235,33 +248,34 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
     return (
         <aside className="bg-white bg-opacity-70 h-full max-w-full min-w-[375px] px-[20px]">
-            <div className="overflow-y-auto max-h-[calc(100vh-80px)] mx-auto px-[2px] overflow-x-hidden py-[30px]">
-                {isMobile && (
-                    <button
-                        className="text-grayscale-900 flex items-center justify-center gap-[5px] px-[10px] py-[5px] rounded-[10px] bg-white/90 shadow-md mb-[20px]"
-                        onClick={handleClose}
-                    >
-                        <X className="w-[20px]" />
-                        Close
-                    </button>
-                )}
-                <section className="flex flex-col gap-[10px] w-[335px] pb-[30%] sm:pb-[20px] mx-auto">
-                    <BoostPreviewTabs
-                        selectedTab={selectedTab}
-                        setSelectedTab={boostPreviewStore.set.updateSelectedTab}
-                        isEarnedBoost={isEarnedBoost}
-                    />
-                    {activeTabDetails}
-                </section>
-            </div>
-            {isMobile && (
-                <IonFooter
-                    mode="ios"
-                    className="flex justify-center items-center ion-no-border absolute bottom-0"
-                >
-                    <BoostFooter handleBack={handleClose} />
-                </IonFooter>
-            )}
+            <BoostFooterLayout
+                className="h-full"
+                footerProps={isMobile ? { handleBack: handleClose } : undefined}
+                contentClassName="overflow-x-hidden pt-[30px]"
+            >
+                <div className="min-h-full mx-auto px-[2px]">
+                    {isMobile && (
+                        <button
+                            type="button"
+                            className="text-grayscale-900 flex items-center justify-center gap-[5px] px-[10px] py-[5px] rounded-[10px] bg-white/90 shadow-md mb-[20px]"
+                            onClick={handleClose}
+                        >
+                            <span aria-hidden="true">
+                                <X className="w-[20px]" />
+                            </span>
+                            Close
+                        </button>
+                    )}
+                    <section className="flex flex-col gap-[10px] w-[335px] pb-[20px] mx-auto">
+                        <BoostPreviewTabs
+                            selectedTab={selectedTab}
+                            setSelectedTab={boostPreviewStore.set.updateSelectedTab}
+                            isEarnedBoost={isEarnedBoost}
+                        />
+                        {activeTabDetails}
+                    </section>
+                </div>
+            </BoostFooterLayout>
         </aside>
     );
 };

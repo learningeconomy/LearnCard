@@ -12,6 +12,8 @@ import X from 'learn-card-base/svgs/X';
 import useTheme from '../../theme/hooks/useTheme';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
+
 export enum CredentialListTabEnum {
     Earned = 'earned',
     Managed = 'managed',
@@ -65,6 +67,11 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
     const history = useHistory();
 
     const { searchString, isSearchActive } = credentialSearchStore.useStore();
+    const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        if (isSearchActive) searchInputRef.current?.focus();
+    }, [isSearchActive]);
 
     const handleOnChange = (tab: CredentialListTabEnum) => {
         if (tab === CredentialListTabEnum.Managed) {
@@ -89,32 +96,42 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
             className={`relative pt-[50px] px-[5px] flex gap-[10px] w-full items-center justify-center max-w-[600px] mx-auto overflow-hidden ${containerClassName}`}
         >
             <IonCol className="flex items-center justify-between w-full p-0 min-w-0">
-                <div className="flex pl-6">
-                    {!isSearchActive && (
+                {!isSearchActive && (
+                    <div
+                        className="flex pl-6"
+                        role="tablist"
+                        aria-label={`${m['boost.earnedTab']()} / ${m['boost.managedTab']()}`}
+                    >
                         <button
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === CredentialListTabEnum.Earned}
                             onClick={() => handleOnChange(CredentialListTabEnum.Earned)}
-                            className={`py-[8px] px-[16px] rounded-[5px] text-base ${
+                            className={`py-[8px] px-[16px] rounded-[5px] text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                 activeTab === CredentialListTabEnum.Earned
                                     ? `${activeLabelClassName} ${tabColor}`
                                     : inactiveLabelClassName
                             }`}
                         >
-                            Earned
+                            {m['boost.earnedTab']()}
                         </button>
-                    )}
-                    {showEarnedManaged && (
-                        <button
-                            onClick={() => handleOnChange(CredentialListTabEnum.Managed)}
-                            className={`py-[8px] px-[16px] rounded-[5px] text-base ${
-                                activeTab === CredentialListTabEnum.Managed
-                                    ? `${activeLabelClassName} ${tabColor}`
-                                    : inactiveLabelClassName
-                            }`}
-                        >
-                            Managed
-                        </button>
-                    )}
-                </div>
+                        {showEarnedManaged && (
+                            <button
+                                type="button"
+                                role="tab"
+                                aria-selected={activeTab === CredentialListTabEnum.Managed}
+                                onClick={() => handleOnChange(CredentialListTabEnum.Managed)}
+                                className={`py-[8px] px-[16px] rounded-[5px] text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                                    activeTab === CredentialListTabEnum.Managed
+                                        ? `${activeLabelClassName} ${tabColor}`
+                                        : inactiveLabelClassName
+                                }`}
+                            >
+                                {m['boost.managedTab']()}
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 <div className={`flex items-center ${isSearchActive ? 'flex-1 px-2 min-w-0' : ''}`}>
                     {!hideSearch && (
@@ -130,24 +147,27 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                             {isSearchActive && (
                                 <div className="flex-1 relative min-w-0">
                                     <input
+                                        ref={searchInputRef}
                                         type="text"
+                                        aria-label={m['wallet.search']()}
                                         value={searchString}
                                         onChange={e =>
                                             credentialSearchStore.set.searchStringWithMatch(
                                                 e.target.value
                                             )
                                         }
-                                        placeholder={`Browse ${
+                                        placeholder={
                                             activeTab === CredentialListTabEnum.Earned
-                                                ? 'earned'
-                                                : 'managed'
-                                        }...`}
-                                        className={`rounded-[10px] pl-4 w-full h-[44px] pr-[34px] font-notoSans text-[14px] outline-none placeholder:text-grayscale-900 ${tabColor}`}
-                                        autoFocus
+                                                ? m['boost.browseEarnedPlaceholder']()
+                                                : m['boost.browseManagedPlaceholder']()
+                                        }
+                                        className={`rounded-[10px] pl-4 w-full h-[44px] pr-[34px] font-notoSans text-[14px] outline-none placeholder:text-grayscale-400 focus-visible:ring-2 focus-visible:ring-emerald-500 ${tabColor}`}
                                     />
                                     {searchString && (
                                         <button
-                                            className="absolute right-[10px] top-[12px] z-10"
+                                            type="button"
+                                            aria-label={m['common.clear']()}
+                                            className="absolute right-[10px] top-[12px] z-10 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                             onClick={() =>
                                                 credentialSearchStore.set.searchStringWithMatch('')
                                             }
@@ -163,12 +183,17 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                     {/* Reuse hideSearch to hide toggle when there is nothing to display in the current tab */}
                     {showListViewToggle && setViewMode && !isSearchActive && !hideSearch && (
                         <div
+                            role="group"
+                            aria-label={m['wallet.viewMode']()}
                             className={`fix-ripple p-1 rounded-[5px] flex w-fit items-center ${
                                 !showEarnedManaged ? 'mx-auto min-w-[82px]' : ''
                             } ${className} ${tabColor} bg-opacity-25`}
                         >
                             <button
-                                className={`py-[8px] rounded-[5px] px-[8px] shrink-0 ${
+                                type="button"
+                                aria-label={m['wallet.gridView']()}
+                                aria-pressed={viewMode === BoostPageViewMode.Card}
+                                className={`py-[8px] rounded-[5px] px-[8px] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                     viewMode === BoostPageViewMode.Card
                                         ? `bg-white ${activeLabelClassName}`
                                         : `${inactiveLabelClassName}`
@@ -178,13 +203,17 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                 {viewModeToggleIconOverride && (
                                     <img
                                         src={viewModeToggleIconOverride}
+                                        alt=""
                                         className="w-[20px] h-[20px]"
                                     />
                                 )}
                                 {!viewModeToggleIconOverride && <GridIcon />}
                             </button>
                             <button
-                                className={`py-[8px] rounded-[5px] px-[8px] shrink-0 ${
+                                type="button"
+                                aria-label={m['wallet.listView']()}
+                                aria-pressed={viewMode === BoostPageViewMode.List}
+                                className={`py-[8px] rounded-[5px] px-[8px] shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                                     viewMode === BoostPageViewMode.List
                                         ? `bg-white ${activeLabelClassName}`
                                         : `${inactiveLabelClassName}`
@@ -198,16 +227,20 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
 
                     {isSearchActive && (
                         <button
+                            type="button"
+                            aria-label={m['common.close']()}
                             onClick={() => credentialSearchStore.set.toggleIsSearchActive()}
-                            className={`flex items-center justify-center w-[40px] h-[40px] rounded-full z-10 text-grayscale-900 shrink-0`}
+                            className="flex items-center justify-center w-[40px] h-[40px] rounded-full z-10 text-grayscale-900 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                         >
                             <X className="h-[20px] w-[20px]" />
                         </button>
                     )}
                     {!isSearchActive && !hideSearch && (
                         <button
+                            type="button"
+                            aria-label={m['common.search']()}
                             onClick={() => credentialSearchStore.set.toggleIsSearchActive()}
-                            className={`flex items-center justify-center w-[40px] h-[40px] rounded-full z-10 text-grayscale-900 shrink-0`}
+                            className="flex items-center justify-center w-[40px] h-[40px] rounded-full z-10 text-grayscale-900 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                         >
                             <Search className="h-[20px] w-[20px]" />
                         </button>

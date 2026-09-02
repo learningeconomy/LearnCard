@@ -15,7 +15,7 @@ export const PrivacyAndDataHeader: React.FC<PrivacyAndDataHeaderProps> = ({
 }) => {
     // TODO properly handle mobile top padding
     return (
-        <header className={`p-[20px] shadow-header safe-area-top-margin ${className}`}>
+        <header className={`p-[20px] shadow-header mt-[var(--ion-safe-area-top,0px)] ${className}`}>
             <div className="flex items-center justify-normal gap-[10px]">
                 <div className="h-[65px] w-[65px]">
                     {image ? (

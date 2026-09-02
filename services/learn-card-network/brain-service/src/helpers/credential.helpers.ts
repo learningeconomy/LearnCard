@@ -15,11 +15,14 @@ import {
 import { getOwnerProfileForListing } from '@accesslayer/app-store-listing/relationships/read';
 import { constructUri, getDomainFromUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
+import { getNotificationMessage } from './notificationMessages';
+import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { logCredentialClaimed } from './activity.helpers';
 import { ProfileType } from 'types/profile';
 import { AppStoreListingType } from 'types/app-store-listing';
 import { processClaimHooks } from './claim-hooks.helpers';
 import { ensureConnectionsForCredentialAcceptance } from './connection.helpers';
+import { handleConnectionPromptsForCredentialClaim } from './connectionPrompt.helpers';
 
 const isProfileType = (source: ProfileType | AppStoreListingType): source is ProfileType => {
     return 'profileId' in source;
@@ -52,20 +55,17 @@ export const sendCredential = async (
 
     const isEndorsement = metadata?.type === 'endorsement';
 
-    const notificationTitle = isEndorsement ? 'New Endorsement Received' : 'Credential Received';
-
-    const notificationBody = isEndorsement
-        ? `${from.displayName} has endorsed your credential`
-        : `${from.displayName} has sent you a credential`;
+    const message = getNotificationMessage(
+        isEndorsement ? 'endorsementReceived' : 'credentialReceived',
+        resolveRecipientLocale(to),
+        { from: from.displayName }
+    );
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
         to,
         from,
-        message: {
-            title: notificationTitle,
-            body: notificationBody,
-        },
+        message,
         data: {
             vcUris: [uri],
             ...(metadata ? { metadata } : {}),
@@ -110,27 +110,34 @@ export const acceptCredential = async (
             message: 'Credential is suspended',
         });
     }
+    // Acceptance is idempotent so clients can safely recover after a completed
+    // request whose response was interrupted or whose local follow-up failed.
+    const alreadyReceived = Boolean(await getCredentialReceivedByProfile(id, profile));
 
-    const alreadyReceived = await getCredentialReceivedByProfile(id, profile);
-    if (alreadyReceived) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Credential has already been received',
-        });
+    if (!alreadyReceived) {
+        await createReceivedCredentialRelationship(
+            profile,
+            pendingVc.source,
+            pendingVc.target,
+            pendingVc.relationship.metadata
+        );
+
+        await processClaimHooks(profile, pendingVc.target);
+
+        await setDefaultClaimedRole(profile, pendingVc.target);
     }
 
-    await createReceivedCredentialRelationship(
-        profile,
-        pendingVc.source,
-        pendingVc.target,
-        pendingVc.relationship.metadata
-    );
-
-    await processClaimHooks(profile, pendingVc.target);
-
-    await setDefaultClaimedRole(profile, pendingVc.target);
-
-    await ensureConnectionsForCredentialAcceptance(profile, pendingVc.target.id);
+    // Automatic connection batches can partially commit because every target pair owns an
+    // independent transaction. Re-run this idempotent reconciliation even after the credential is
+    // already received, while retaining an error until new-acceptance-only side effects finish.
+    let automaticConnectionFailed = false;
+    let automaticConnectionError: unknown;
+    try {
+        await ensureConnectionsForCredentialAcceptance(profile, pendingVc.target.id);
+    } catch (error) {
+        automaticConnectionFailed = true;
+        automaticConnectionError = error;
+    }
 
     const sourceProfile = isProfileType(pendingVc.source)
         ? pendingVc.source
@@ -143,37 +150,80 @@ export const acceptCredential = async (
         });
     }
 
-    if (!options?.skipNotification) {
-        await addNotificationToQueue({
-            type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
-            to: sourceProfile,
-            from: profile,
-            message: {
-                title: 'Boost Accepted',
-                body: `${profile.displayName} has accepted your boost!`,
-            },
-            data: { vcUris: [uri], ...(options?.metadata ? { metadata: options.metadata } : {}) },
+    if (!alreadyReceived) {
+        const originalActivityId = pendingVc.relationship.activityId;
+        const integrationId = pendingVc.relationship.integrationId;
+
+        const boostId = await getBoostIdForCredentialInstance(pendingVc.target);
+        const boostUri = boostId
+            ? constructUri('boost', boostId, getDomainFromUri(uri))
+            : undefined;
+
+        await logCredentialClaimed({
+            activityId: originalActivityId,
+            actorProfileId: sourceProfile.profileId,
+            recipientType: 'profile',
+            recipientIdentifier: profile.profileId,
+            recipientProfileId: profile.profileId,
+            credentialUri: uri,
+            boostUri,
+            integrationId,
+            source: 'claim',
+            metadata: options?.metadata,
         });
     }
 
-    const originalActivityId = pendingVc.relationship.activityId;
-    const integrationId = pendingVc.relationship.integrationId;
+    const promptResult = isProfileType(pendingVc.source)
+        ? await handleConnectionPromptsForCredentialClaim({
+              claimer: profile,
+              sender: sourceProfile,
+              triggerId: `credential:${id}`,
+              vcUris: [uri],
+              metadata: options.metadata,
+          })
+        : {};
 
-    const boostId = await getBoostIdForCredentialInstance(pendingVc.target);
-    const boostUri = boostId ? constructUri('boost', boostId, getDomainFromUri(uri)) : undefined;
+    const shouldSendLegacyNotification =
+        !options?.skipNotification &&
+        !alreadyReceived &&
+        (!promptResult.senderPrompt?.isNew || promptResult.senderNotificationFailed);
 
-    await logCredentialClaimed({
-        activityId: originalActivityId,
-        actorProfileId: sourceProfile.profileId,
-        recipientType: 'profile',
-        recipientIdentifier: profile.profileId,
-        recipientProfileId: profile.profileId,
-        credentialUri: uri,
-        boostUri,
-        integrationId,
-        source: 'claim',
-        metadata: options?.metadata,
-    });
+    if (shouldSendLegacyNotification) {
+        const legacyNotificationMetadata = options.metadata
+            ? Object.fromEntries(
+                  Object.entries(options.metadata).filter(([key]) => key !== 'connectionPrompt')
+              )
+            : undefined;
+
+        try {
+            await addNotificationToQueue({
+                type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+                to: sourceProfile,
+                from: profile,
+                message: getNotificationMessage(
+                    'boostAccepted',
+                    resolveRecipientLocale(sourceProfile),
+                    {
+                        name: profile.displayName,
+                    }
+                ),
+                data: {
+                    vcUris: [uri],
+                    ...(legacyNotificationMetadata ? { metadata: legacyNotificationMetadata } : {}),
+                },
+            });
+        } catch (error) {
+            console.error('Failed to enqueue legacy credential claim notification', {
+                claimerProfileId: profile.profileId,
+                senderProfileId: sourceProfile.profileId,
+                credentialId: id,
+                credentialUri: uri,
+                error,
+            });
+        }
+    }
+
+    if (automaticConnectionFailed) throw automaticConnectionError;
 
     return true;
 };

@@ -342,7 +342,7 @@ export const CATEGORY_TO_TEMPLATE_LIST = {
             type: AchievementTypes.Award,
         },
         {
-            title: 'Online Badge',
+            title: 'Badge',
             type: AchievementTypes.Badge,
         },
     ],

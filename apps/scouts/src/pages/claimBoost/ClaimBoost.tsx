@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import moment from 'moment';
 import { useHistory } from 'react-router';
 
 import { IonContent, IonPage, IonSpinner, useIonAlert, IonRow } from '@ionic/react';
+import { getVCDisplayCardVariant } from '@learncard/react';
 // import MainHeader from '../../components/main-header/MainHeader';
 import X from 'learn-card-base/svgs/X';
 // @ts-ignore
@@ -12,6 +12,7 @@ import ViewTroopIdModal from '../troop/ViewTroopIdModal';
 import ClaimBoostLoading from './ClaimBoostLoading';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import ClaimBoostLoggedOutPrompt from '../../components/boost/logged-out-claim-boost/ClaimBoostLoggedOutPrompt';
+import { formatLocaleDate } from '../../i18n/formatters';
 
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -33,6 +34,8 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import {
     isTroopCredential,
@@ -56,7 +59,11 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const profileId = getUserHandleFromDid(boostVC?.issuer as any);
     const { data } = useGetProfile(profileId);
 
-    const issueDate = moment(boostVC?.issuanceDate).format('MMM DD, YYYY');
+    const issueDate = formatLocaleDate(boostVC?.issuanceDate, {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+    });
 
     if (isLoggedIn) {
         return (
@@ -84,7 +91,11 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
                 <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                     <span className="created-at text-grayscale-700">{issueDate}</span>
                     <span className="issued-by text-grayscale-900 font-[500]">
-                        by <strong className="font-[700] capitalize">{data?.displayName}</strong>
+                        <TransP
+                            m={m['claimBoost.issuedBy']}
+                            values={{ name: data?.displayName }}
+                            components={[<strong key="b" className="font-[700] capitalize" />]}
+                        />
                     </span>
                 </div>
             </>
@@ -106,7 +117,11 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
             <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                 <span className="created-at text-grayscale-700">{issueDate}</span>
                 <span className="issued-by text-grayscale-900 font-[500]">
-                    by <strong className="font-[700] capitalize">{data?.displayName}</strong>
+                    <TransP
+                        m={m['claimBoost.issuedBy']}
+                        values={{ name: data?.displayName }}
+                        components={[<strong key="b" className="font-[700] capitalize" />]}
+                    />
                 </span>
             </div>
         </>
@@ -163,8 +178,8 @@ export const ClaimBoostModal: React.FC<{
     });
 
     const { newModal: newLoaderModal, closeModal: closeLoaderModal } = useModal({
-        mobile: ModalTypes.Cancel,
-        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
 
     const openLoggedOutModal = () => {
@@ -247,7 +262,7 @@ export const ClaimBoostModal: React.FC<{
 
             history?.push('/');
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(m['notifications.toasts.successfullyClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -255,7 +270,11 @@ export const ClaimBoostModal: React.FC<{
             setIsClaimLoading(false);
             closeLoaderModal();
 
-            presentToast(`Unable to claim Credential`, {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            const isExpired =
+                errorMsg.includes('Challenge not found') || errorMsg.includes('expired');
+
+            presentToast(m['claimBoost.toast.claimFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -263,10 +282,10 @@ export const ClaimBoostModal: React.FC<{
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: `The boost claim link has expired or has reached the maximum number of times it can be claimed.`,
+                header: isExpired ? m['claimBoost.expiredAlert']() : m['claimBoost.errorAlert'](),
                 buttons: [
                     {
-                        text: 'Okay',
+                        text: m['consentFlow.okay'](),
                         role: 'cancel',
                         handler: () => {
                             dismissAlert();
@@ -294,19 +313,22 @@ export const ClaimBoostModal: React.FC<{
             openLoggedOutModal();
         }
     };
-    let actionButtonText = 'Accept';
+    let actionButtonText = m['common.accept']();
 
     if (isClaimLoading) {
-        actionButtonText = 'Loading...';
+        actionButtonText = m['common.loading']();
     } else if (!isClaimLoading && isClaimed) {
-        actionButtonText = 'Accepted';
+        actionButtonText = m['notifications.accepted']();
     } else {
-        actionButtonText = 'Accept';
+        actionButtonText = m['common.accept']();
     }
 
-    const isTroopIdClaim = isTroopCredential(boost);
+    const isTroopIdClaim = boost ? isTroopCredential(boost) : false;
 
     const boostExists = !!boost && !loading;
+    const isRibbonDisplayCard =
+        boostExists &&
+        getVCDisplayCardVariant(boost, getDefaultCategoryForCredential(boost)) === 'ribbon';
 
     return (
         <IonPage>
@@ -316,25 +338,25 @@ export const ClaimBoostModal: React.FC<{
                 customHeaderClass="main-header-branding-public-route"
             /> */}
             <IonContent fullscreen color="grayscale-100">
-                <div className="px-[40px] pb-4 vc-preview-modal-safe-area h-full">
+                <div
+                    className={`pb-4 vc-preview-modal-safe-area h-full ${
+                        isRibbonDisplayCard ? 'px-0' : 'px-[40px]'
+                    }`}
+                >
                     {!boostExists && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
                             <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                            <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
                     {!loading && !boost && (
                         <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                            <img
-                                src={MiniGhost}
-                                alt="currencies"
-                                className="relative max-w-[250px] m-auto"
-                            />
+                            <img src={MiniGhost} alt="" className="relative max-w-[250px] m-auto" />
                             <h1 className="text-center text-3xl font-bold text-grayscale-800">
-                                Eeek!
+                                {m['scanner.eek']()}
                             </h1>
                             <strong className="text-center font-medium text-grayscale-600">
-                                Unable to find boost
+                                {m['claimBoost.unableToFind']()}
                             </strong>
                         </section>
                     )}
@@ -388,27 +410,51 @@ export const ClaimBoostModal: React.FC<{
 };
 
 const ClaimBoost: React.FC = () => {
+    const history = useHistory();
+    const query = usePathQuery();
+    const isLoggedIn = useIsLoggedIn();
+
     const { newModal, closeAllModals } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
 
-    const query = usePathQuery();
-    const uriParam = query.get('boostUri') || undefined;
-    const challengeParam = query.get('challenge') || undefined;
+    const boostUri = query.get('boostUri') || undefined;
+    const challenge = query.get('challenge') || undefined;
+    const redirectTo = `${history.location.pathname}${history.location.search}`;
 
     useEffect(() => {
+        redirectStore.set.lcnRedirect(redirectTo);
+    }, [redirectTo]);
+
+    useEffect(() => {
+        if (!isLoggedIn) return;
+
         // opens 2 modals for some reason, but looks fine...
         newModal(
             <ClaimBoostModal
-                uri={uriParam}
-                claimChallenge={challengeParam}
+                uri={boostUri}
+                claimChallenge={challenge}
                 dismissClaimModal={closeAllModals}
             />
         );
         // only open once per route load
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isLoggedIn, boostUri, challenge]);
+
+    if (!isLoggedIn) {
+        return (
+            <ClaimBoostLoggedOutPrompt
+                handleCloseModal={() => history.push('/')}
+                handleRedirectTo={() => {
+                    const redirectTo = `${history.location.pathname}${history.location.search}`;
+
+                    redirectStore.set.lcnRedirect(redirectTo);
+                    history.push(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+                }}
+            />
+        );
+    }
 
     return <IonPage className="bg-grayscale-100" />;
 };

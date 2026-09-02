@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 
+import { m } from '../../../../paraglide/messages.js';
+
 import { ArrowUp } from 'lucide-react';
 
-import { isPlatformIOS, ProfilePicture, useDeviceTypeByWidth, useKeyboardHeight } from 'learn-card-base';
+import {
+    isPlatformIOS,
+    ProfilePicture,
+    useDeviceTypeByWidth,
+    useKeyboardHeight,
+} from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import { ChatBotQuestionsEnum } from '../newAiSessionChatbot.helpers';
@@ -35,7 +42,7 @@ export const TopicInput: React.FC<{
                 handleChatBotAnswer(ChatBotQuestionsEnum.TopicSelection, topic, index);
             }}
             style={styles}
-            className={`w-full flex items-end gap-[10px] fade-enter px-[15px] py-[12px] pb-[calc(12px+env(safe-area-inset-bottom))] ${
+            className={`w-full flex items-end gap-[10px] fade-enter px-[15px] py-[12px] pb-[calc(12px+var(--ion-safe-area-bottom,0px))] ${
                 isDesktop ? 'bg-white rounded-[20px] shadow-box-bottom mt-4' : 'bg-grayscale-50'
             }`}
         >
@@ -51,7 +58,7 @@ export const TopicInput: React.FC<{
                     value={topic}
                     onChange={e => setTopic(e.target.value)}
                     className="flex-1 min-w-0 bg-white text-grayscale-900 placeholder-grayscale-600 text-[17px] font-poppins px-[15px] py-[12px] focus:outline-none"
-                    placeholder="Something else..."
+                    placeholder={m['aiSession.somethingElse']()}
                     autoComplete="off"
                 />
                 <button

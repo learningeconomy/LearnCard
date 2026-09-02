@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export const BITSTRING_STATUS_PURPOSES = ['revocation', 'suspension'] as const;
 export const DEFAULT_BITSTRING_STATUS_LIST_SIZE = 131_072;
@@ -10,7 +10,7 @@ export const BitstringStatusListEntryValidator = z.object({
     id: z.string().optional(),
     type: z.literal('BitstringStatusListEntry'),
     statusPurpose: BitstringStatusPurposeValidator,
-    statusListIndex: z.string(),
+    statusListIndex: z.string().or(z.number().int().nonnegative()),
     statusListCredential: z.string(),
 });
 export type BitstringStatusListEntry = z.infer<typeof BitstringStatusListEntryValidator>;

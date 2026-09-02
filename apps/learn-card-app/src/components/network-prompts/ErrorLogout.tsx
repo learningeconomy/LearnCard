@@ -5,7 +5,9 @@ const ErrorLogout: React.FC = () => {
     const { handleLogout, isLoggingOut } = useLogout();
 
     const _handleLogout = () => {
-        handleLogout();
+        // Return to the in-app login screen (relative /login) rather than the
+        // absolute tenant URL, which on native opens the system browser.
+        handleLogout({ overrideRedirectUrl: '/login' });
     };
 
     return (

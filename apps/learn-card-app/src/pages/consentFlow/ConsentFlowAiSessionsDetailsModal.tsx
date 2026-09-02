@@ -15,6 +15,7 @@ import ConsentFlowReadSharingItem from './ConsentFlowReadSharingItem';
 
 import { getPrivacyAndDataInfo } from '../../helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowAiSessionsDetailsModalProps = {
     aiSessionCategories: {
@@ -65,12 +66,14 @@ const ConsentFlowAiSessionsDetailsModal: React.FC<ConsentFlowAiSessionsDetailsMo
                         >
                             <BlueMagicWand className={`h-[30px] w-[30px]`} />
                         </div>
-                        AI Sessions
+                        {m['consentFlow.aiSessions']()}
                     </h4>
                     <div className="flex flex-col gap-[5px]">
                         <p className="text-grayscale-600 text-[14px] font-notoSans">
                             You're About to Share Your{' '}
-                            <span className="font-[600] font-notoSans">AI Learning Data</span>
+                            <span className="font-[600] font-notoSans">
+                                {m['consentFlow.aiLearningData']()}
+                            </span>
                         </p>
                         <p className="text-grayscale-600 text-[14px] font-notoSans">
                             By continuing, you consent to share the following information with this
@@ -115,7 +118,10 @@ const ConsentFlowAiSessionsDetailsModal: React.FC<ConsentFlowAiSessionsDetailsMo
                     </p>
                 </div>
             </div>
-            <ConsentFlowFooter secondaryButtonText="Back" onSecondaryButtonClick={closeModal} />
+            <ConsentFlowFooter
+                secondaryButtonText={m['common.back']()}
+                onSecondaryButtonClick={closeModal}
+            />
         </div>
     );
 };

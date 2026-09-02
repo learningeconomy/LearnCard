@@ -5,24 +5,16 @@
     "projectType": "application",
     "root": "tests/e2e",
     "tags": [],
-    "implicitDependencies": ["init", "helpers", "simple-signing-plugin", "nx-run-command"],
+    "implicitDependencies": ["init", "helpers", "lca-api-plugin", "nx-run-command"],
     "namedInputs": {
         "tests": ["{projectRoot}/tests/**/*"]
     },
     "targets": {
-        "test": {
-            "executor": "./tools/executors/workspace:run-command",
-            "dependsOn": ["^build"],
-            "options": {
-                "command": "pnpm test",
-                "cwd": "{root}/tests/e2e"
-            }
-        },
         "test:e2e": {
             "executor": "./tools/executors/workspace:run-command",
             "dependsOn": ["^build"],
             "options": {
-                "command": "pnpm test:e2e",
+                "command": "bun run test:e2e",
                 "cwd": "{root}/tests/e2e"
             }
         },
@@ -30,7 +22,7 @@
             "executor": "./tools/executors/workspace:run-command",
             "dependsOn": ["^build"],
             "options": {
-                "command": "pnpm test:run",
+                "command": "bun run test:run",
                 "cwd": "{root}/tests/e2e"
             }
         },

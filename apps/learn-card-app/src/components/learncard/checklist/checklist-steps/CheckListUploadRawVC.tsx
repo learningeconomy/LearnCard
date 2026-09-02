@@ -36,6 +36,11 @@ export type RawVCFileType = {
     uri: string;
 };
 
+// Stable, user-facing copy. Raw parser / validation / storage details are logged, never
+// rendered — they can contain JSON parser internals, Zod field paths, or index errors.
+const FRIENDLY_PASTE_ERROR =
+    'We could not add that credential. Please check the text and try again.';
+
 export const CheckListUploadRawVC: React.FC = () => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
@@ -152,14 +157,11 @@ export const CheckListUploadRawVC: React.FC = () => {
         loadRawVCs();
     }, []);
 
-    // Validate VC on input change
+    // Validate VC on input change. Show friendly copy only — validateTextVC can return raw
+    // Zod field paths, which shouldn't reach the user.
     useEffect(() => {
         const errors = validateTextVC(rawVcText);
-        if (errors?.length > 0) {
-            setRawTextErrors(errors);
-        } else {
-            setRawTextErrors([]);
-        }
+        setRawTextErrors(errors && errors.length > 0 ? [FRIENDLY_PASTE_ERROR] : []);
     }, [rawVcText]);
 
     const handleAddRawVcText = async () => {
@@ -176,18 +178,36 @@ export const CheckListUploadRawVC: React.FC = () => {
             if (result?.success) {
                 setRawVcText('');
                 loadRawVCs();
-                presentToast(`Your journey is now reflected in portable, trusted credentials.`, {
-                    title: `JSON Credential Successfully Added`,
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Success,
-                    hasCheckmark: true,
-                    autoDismiss: false,
-                });
+
+                const added = result.addedCount;
+                const failed = result.failedCount;
+                const partial = failed > 0;
+
+                presentToast(
+                    partial
+                        ? `${added} of ${
+                              added + failed
+                          } credentials added. ${failed} could not be added.`
+                        : `Your journey is now reflected in portable, trusted credentials.`,
+                    {
+                        title:
+                            added === 1 && !partial
+                                ? `JSON Credential Successfully Added`
+                                : `${added} Credential${added === 1 ? '' : 's'} Added`,
+                        hasDismissButton: true,
+                        type: ToastTypeEnum.Success,
+                        hasCheckmark: true,
+                        autoDismiss: false,
+                    }
+                );
             } else {
-                setRawTextErrors([`Failed to parse JSON VC. ${result?.error}`]);
+                // Keep the raw reasons in logs; show stable friendly copy in the UI.
+                log.error('Paste VC upload failed', result?.errors);
+                setRawTextErrors([FRIENDLY_PASTE_ERROR]);
             }
         } catch (error: any) {
-            setRawTextErrors([error.message]);
+            log.error('Paste VC upload threw', error);
+            setRawTextErrors([FRIENDLY_PASTE_ERROR]);
         } finally {
             setIsUploadingRawVC(false);
         }
@@ -197,10 +217,7 @@ export const CheckListUploadRawVC: React.FC = () => {
 
     return (
         <div className="h-full relative bg-grayscale-100">
-            <IonHeader
-                color="light"
-                className="rounded-b-[30px] safe-area-top-margin overflow-hidden shadow-md "
-            >
+            <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md ">
                 <IonToolbar color="light" className="text-white px-4 !py-4">
                     <div className="flex items-center justify-normal p-2">
                         <div className="flex items-center gap-[10px]">
@@ -229,7 +246,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                     <input
                         multiple
                         type="file"
-                        accept=".json"
+                        accept=".json,.txt"
                         onChange={async e => {
                             setFileErrors([]);
                             const results = await getJsonFiles(e, error => {

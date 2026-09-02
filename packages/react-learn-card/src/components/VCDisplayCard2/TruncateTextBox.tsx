@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useT } from '../../i18n';
 
 type TruncateTextBoxProps = {
     headerText?: string;
@@ -29,6 +30,7 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
     containerClassName = '',
     textClassName = '',
 }) => {
+    const t = useT();
     const needsTruncate = text?.length > truncateThreshold;
     const [showFullText, setShowFullText] = useState(false);
     const truncated = needsTruncate && !showFullText;
@@ -61,7 +63,7 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
                                 setShowFullText(true);
                             }}
                         >
-                            More
+                            {t('credential.more')}
                         </button>
                     </>
                 )}
@@ -75,7 +77,7 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
                                 setShowFullText(false);
                             }}
                         >
-                            Close
+                            {t('credential.close')}
                         </button>
                     </>
                 )}

@@ -3,6 +3,7 @@ import React from 'react';
 import { IonPage } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
 
+import * as m from '../../paraglide/messages.js';
 import CategoryDescriptor from '../../components/category-descriptor/CategoryDescriptor';
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
@@ -23,7 +24,7 @@ const CategoryDescriptorModal: React.FC<{
                 category = BoostCategoryOptionsEnum.learningHistory;
                 break;
 
-            case 'Boosts':
+            case 'Badges':
                 imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.socialBadges);
                 category = BoostCategoryOptionsEnum.socialBadge;
                 break;
@@ -39,6 +40,7 @@ const CategoryDescriptorModal: React.FC<{
                 break;
 
             case 'Skills Hub':
+            case 'Skills':
                 imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.skills);
                 category = BoostCategoryOptionsEnum.skill;
                 break;
@@ -75,7 +77,13 @@ const CategoryDescriptorModal: React.FC<{
                 break;
 
             default:
-                throw new Error('Invalid title provided');
+                // Unknown titles must not crash the app: this modal is hosted by
+                // useIonModal (no error boundary), so a throw here unmounts the
+                // whole React root (white screen). Fall back to the skills visuals.
+                console.error(`CategoryDescriptorModal: unknown title "${title}"`);
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.skills);
+                category = BoostCategoryOptionsEnum.skill;
+                break;
         }
 
         return { imgSrc, category };
@@ -85,7 +93,10 @@ const CategoryDescriptorModal: React.FC<{
 
     return (
         <IonPage>
-            <ModalLayout handleOnClick={handleCloseModal} buttonText="Got It">
+            <ModalLayout
+                handleOnClick={handleCloseModal}
+                buttonText={m['wallet.categoryDescriptor.gotIt']()}
+            >
                 <div className="p-[30px]">
                     <img
                         src={imgSrc}
@@ -93,7 +104,7 @@ const CategoryDescriptorModal: React.FC<{
                         className="w-[100px] h-[100px] m-auto"
                     />
                     <p className="text-center text-[22px] font-poppins font-normal leading-[130%] text-grayscale-900">
-                        <strong>About {title}</strong>
+                        <strong>{m['wallet.categoryDescriptor.about']({ name: title })}</strong>
                     </p>
                     <CategoryDescriptor category={category} className="text-left mt-[10px]" />
                 </div>

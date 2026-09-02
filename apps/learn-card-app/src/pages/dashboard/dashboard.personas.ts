@@ -11,6 +11,7 @@ import type {
 
 import PassportIcon from 'learn-card-base/svgs/PassportIcon';
 import AiInsightsTwoTonedIcon from 'learn-card-base/svgs/SideNav/AiInsightsTwoTonedIcon';
+import SkillsTwoTonedIcon from 'learn-card-base/svgs/SideNav/SkillsTwoTonedIcon';
 import CompassTwoTonedIcon from 'learn-card-base/svgs/SideNav/CompassTwoTonedIcon';
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
@@ -86,11 +87,12 @@ const makeAction = (
     slot: SlotName,
     id: string,
     label: string,
-    caption: string
+    caption: string,
+    Icon: QuickActionIcon = SLOT_ICON[slot]
 ): ResolvedAction => ({
     id,
     slot,
-    Icon: SLOT_ICON[slot],
+    Icon,
     label,
     caption,
     onClick: noop,
@@ -220,7 +222,6 @@ const baseHeader = {
     profileImage: 'https://i.pravatar.cc/160?img=68',
     profileRole: undefined,
     shortBio: undefined,
-    onSkillPillClick: noop,
     onAvatarClick: noop,
     onScanQrTopRight: noop,
 };
@@ -252,9 +253,6 @@ export const brandNewUser: DashboardViewModel = {
     brandName: 'LearnCard',
     header: {
         ...baseHeader,
-        affiliation: null,
-        stats: { credentials: 0, skills: 0, contacts: 0 },
-        skills: [],
     },
     heroSlot: 'getStarted',
     checklistItems: checklist({ credential: false, goal: false, skills: false }),
@@ -264,7 +262,7 @@ export const brandNewUser: DashboardViewModel = {
     reviewsDueToday: 0,
     onContinueGoal: baseHandlers.onContinueGoal,
     onReviewGoal: baseHandlers.onReviewGoal,
-    primaryButtonClass: 'bg-indigo-500 text-white',
+    primaryButtonClass: 'bg-indigo-600 text-white',
     slots: {
         collect: makeAction(
             'collect',
@@ -276,7 +274,8 @@ export const brandNewUser: DashboardViewModel = {
             'understand',
             'understand-new',
             'Create Skill Profile',
-            'Tell us about your skills'
+            'Tell us about your skills',
+            SkillsTwoTonedIcon
         ),
         navigate: makeAction('navigate', 'navigate-new', 'Set a Goal', 'Get a personal path'),
     },
@@ -314,18 +313,6 @@ export const activeLearner: DashboardViewModel = {
     header: {
         ...baseHeader,
         professionalTitle: 'Professional QA Engineer',
-        experience: { years: 10, months: 0 },
-        affiliation: {
-            role: 'Member',
-            from: 'State University',
-            issuedAt: new Date().toISOString(),
-        },
-        stats: { credentials: 12, skills: 8, contacts: 5 },
-        skills: [
-            { id: 's1', label: 'Attention to detail' },
-            { id: 's2', label: 'Giving and receiving feedback' },
-            { id: 's3', label: 'Empathy' },
-        ],
     },
     heroSlot: 'goal',
     checklistItems: checklist({ credential: true, goal: true, skills: false }),
@@ -346,7 +333,7 @@ export const activeLearner: DashboardViewModel = {
     reviewsDueToday: 3,
     onContinueGoal: baseHandlers.onContinueGoal,
     onReviewGoal: baseHandlers.onReviewGoal,
-    primaryButtonClass: 'bg-indigo-500 text-white',
+    primaryButtonClass: 'bg-indigo-600 text-white',
     slots: {
         collect: makeAction('collect', 'connect-active', 'See Passport', '12 credentials'),
         understand: makeAction(

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Plugin-level integration tests for the OpenID4VC holder.
  *
@@ -204,6 +205,7 @@ const buildFakeVerifier = (
         nonce?: string;
         state?: string;
         verifierOrigin?: string;
+        clientMetadata?: Record<string, unknown>;
     } = {}
 ): FakeVerifier => {
     const verifierOrigin = opts.verifierOrigin ?? 'https://verifier.test';
@@ -223,6 +225,7 @@ const buildFakeVerifier = (
     params.set('nonce', nonce);
     params.set('state', state);
     params.set('presentation_definition_uri', pdUri);
+    if (opts.clientMetadata) params.set('client_metadata', JSON.stringify(opts.clientMetadata));
 
     const authRequestUri = `openid4vp://authorize?${params.toString()}`;
 
@@ -239,7 +242,7 @@ const buildFakeVerifier = (
         responder = next;
     };
 
-    const fetchImpl = jest.fn(
+    const fetchImpl = vi.fn(
         async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
             const url = String(input);
 
@@ -484,6 +487,45 @@ describe('OpenID4VC plugin — presentCredentials end-to-end', () => {
         expect(submission.descriptor_map[0].path).toBe('$.verifiableCredential[0]');
     });
 
+    it('ldp_vp: signs with DataIntegrityProof when client_metadata restricts proof types', async () => {
+        const mock = await buildMockLearnCard();
+        const verifier = buildFakeVerifier({
+            clientMetadata: {
+                vp_formats_supported: {
+                    ldp_vp: {
+                        proof_type_values: ['DataIntegrityProof'],
+                        cryptosuite_values: ['eddsa-rdfc-2022', 'ecdsa-rdfc-2019'],
+                    },
+                },
+            },
+        });
+        const plugin = getPlugin(mock, verifier.fetchImpl);
+
+        const result = await plugin.presentCredentials(
+            verifier.session.authRequestUri,
+            [
+                {
+                    descriptorId: 'UniversityDegree',
+                    candidate: {
+                        credential: degreeVc(mock.did),
+                        format: 'ldp_vc',
+                    },
+                },
+            ],
+            { envelopeFormat: 'ldp_vp' }
+        );
+
+        expect(result.submitted.status).toBe(200);
+        expect(mock.ldpIssueCalls).toHaveLength(1);
+        expect(mock.ldpIssueCalls[0].options).toEqual({
+            domain: verifier.session.clientId,
+            challenge: verifier.session.nonce,
+            type: 'DataIntegrityProof',
+            cryptosuite: 'eddsa-rdfc-2022',
+            proofPurpose: 'authentication',
+        });
+    });
+
     it('bubbles verifier rejection as VpSubmitError with status + body', async () => {
         const mock = await buildMockLearnCard();
         const verifier = buildFakeVerifier();
@@ -676,8 +718,8 @@ describe('OpenID4VC plugin — SD-JWT-VC matcher wiring', () => {
         ],
     });
 
-    const attachParser = (mock: MockLearnCardHandle): jest.Mock => {
-        const parseSdJwtVc = jest.fn(async (compact: string) => {
+    const attachParser = (mock: MockLearnCardHandle): Mock => {
+        const parseSdJwtVc = vi.fn(async (compact: string) => {
             expect(compact).toBe(SD_JWT_COMPACT);
             return {
                 vct: SD_JWT_VCT,

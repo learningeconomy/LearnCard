@@ -16,10 +16,10 @@ This app demonstrates how to retrieve learner context (credentials and history) 
 
 ```bash
 # From monorepo root
-pnpm exec nx dev 4-request-learner-context-app
+bunx nx dev 4-request-learner-context-app
 
 # Or from app directory
-pnpm dev
+bun run dev
 ```
 
 The app will be available at `http://localhost:4321`.
@@ -61,7 +61,7 @@ const systemPrompt = `You are a tutor. ${context.prompt}`;
 Build for production:
 
 ```bash
-pnpm build
+bun run build
 ```
 
 Deploy the `dist/` directory to any static hosting provider.

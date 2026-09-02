@@ -3,7 +3,7 @@ import React from 'react';
 import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
 import BulkImportWithPlusIcon from 'learn-card-base/svgs/BulkImportWithPlusIcon';
 
-import { AdminToolOption, AdminToolOptionsEnum } from './admin-tools.helpers';
+import { AdminToolOption, AdminToolOptionsEnum, getAdminToolTitle } from './admin-tools.helpers';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 
@@ -30,13 +30,13 @@ export const AdminToolsOptionsContainerHeader: React.FC<{ option: AdminToolOptio
     }
 
     return (
-        <div className="ion-padding bg-white safe-area-top-margin rounded-b-[30px] overflow-hidden shadow-md">
+        <div className="ion-padding bg-white rounded-b-[30px] overflow-hidden shadow-md">
             <div className="flex items-center justify-normal p-2">
                 <div className="flex items-center">
                     {iconComponent}
                     <div className="flex flex-col items-start justify-center">
                         <h5 className="text-[22px] font-semibold text-grayscale-800 font-notoSans">
-                            {option.title}
+                            {getAdminToolTitle(option)}
                         </h5>
                     </div>
                 </div>

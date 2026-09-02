@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import { CredentialSubjectValidator, ProfileValidator } from './vc';
 import { CredentialFormatValidator, type CredentialFormat } from './credential-format';
 
@@ -44,8 +44,17 @@ export const StatusCheckEntryValidator = z.object({
 export type StatusCheckEntry = z.infer<typeof StatusCheckEntryValidator>;
 
 export const VerificationCheckValidator = z.object({
+    /**
+     * Checks that completed successfully. This does not imply that warnings can be ignored.
+     */
     checks: z.string().array(),
+    /**
+     * Security-relevant conditions that did not prevent the requested cryptographic checks from
+     * completing. In particular, a non-DID issuer warning means the signature is valid but the
+     * named URL issuer's authorization of that signing key was not established.
+     */
     warnings: z.string().array(),
+    /** Verification failures that prevented one or more requested checks from succeeding. */
     errors: z.string().array(),
     /**
      * Per-entry results for the `credentialStatus` check, populated

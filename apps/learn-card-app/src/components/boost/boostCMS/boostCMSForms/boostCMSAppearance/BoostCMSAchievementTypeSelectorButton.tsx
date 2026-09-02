@@ -22,6 +22,7 @@ import { BoostCMSState } from '../../../boost';
 import BoostCMSAchievementTypeSelectorModal from './BoostCMSAchievementTypeSelectorModal';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
+import * as m from '../../../../../paraglide/messages.js';
 
 type AchievementTypeSelectorButtonProps = {
     state: BoostCMSState;
@@ -59,7 +60,7 @@ const BoostCMSAchievementTypeSelectorButton: React.FC<AchievementTypeSelectorBut
         const subcategories = CATEGORY_TO_SUBCATEGORY_LIST?.[state?.basicInfo?.type] || [];
         achievementTypeSelected =
             subcategories.find(options => options?.type === state?.basicInfo?.achievementType)
-                ?.title ?? 'Select Type';
+                ?.title ?? m['boost.cms.appearance.selectType']();
     }
 
     const boostMetadata =

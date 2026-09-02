@@ -41,8 +41,12 @@ beforeEach(() => {
 
     vi.stubGlobal('localStorage', {
         getItem: (key: string) => localStorageMock[key] ?? null,
-        setItem: (key: string, value: string) => { localStorageMock[key] = value; },
-        removeItem: (key: string) => { delete localStorageMock[key]; },
+        setItem: (key: string, value: string) => {
+            localStorageMock[key] = value;
+        },
+        removeItem: (key: string) => {
+            delete localStorageMock[key];
+        },
     });
 });
 
@@ -143,6 +147,7 @@ describe('resolveTenantConfig – full boot path', () => {
         expect(result.apis.brainService).toBe(DEFAULT_LEARNCARD_TENANT_CONFIG.apis.brainService);
         expect(result.auth.provider).toBe('firebase');
         expect(result.auth.keyDerivation).toBe('sss');
+        expect(result.storage.provider).toBe('filestack');
         expect(result.features.aiFeatures).toBe(true);
     });
 
@@ -176,7 +181,8 @@ describe('resolveTenantConfig – full boot path', () => {
         // Only baked fetch should have been called (for /tenant-config.json)
         const fetchCalls = fetchMock.mock.calls.map((c: unknown[]) => c[0]);
         const edgeCalls = fetchCalls.filter(
-            (url: unknown): url is string => typeof url === 'string' && url.includes('__tenant-config')
+            (url: unknown): url is string =>
+                typeof url === 'string' && url.includes('__tenant-config')
         );
 
         expect(edgeCalls).toHaveLength(0);

@@ -14,8 +14,9 @@ import TroopIdDetails from './TroopIdDetails/TroopIdDetails';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import X from 'learn-card-base/svgs/X';
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../assets/lotties/hourglass.json';
+import * as m from '../../paraglide/messages.js';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 import { getWallpaperBackgroundStyles } from '../../helpers/troop.helpers';
 import { VC, VerificationItem } from '@learncard/types';
@@ -102,12 +103,7 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
             {isClaiming && (
                 <div className="absolute w-full h-full top-0 left-0 z-50 flex items-center justify-center flex-col boost-loading-wrapper">
                     <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '180px', height: '180px' }}
-                        />
+                        <LoadingSpinner size="xl" label="Loading troop ID" />
                     </div>
                 </div>
             )}
@@ -163,14 +159,14 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
                                 onClick={() => setShowDetails(!showDetails)}
                                 className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                             >
-                                {showDetails ? 'Back' : 'Details'}
+                                {showDetails ? m['common.back']() : m['common.details']()}
                             </button>
                             {handleShare && (
                                 <button
                                     onClick={handleShare}
                                     className="bg-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] justify-center"
                                 >
-                                    Share
+                                    {m['common.share']()}
                                     <ReplyIcon />
                                 </button>
                             )}
@@ -185,13 +181,13 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
                                 onClick={handleClose}
                                 className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                             >
-                                Close
+                                {m['common.close']()}
                             </button>
                             <button
                                 onClick={() => setShowDetails(!showDetails)}
                                 className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                             >
-                                {showDetails ? 'Back' : 'Details'}
+                                {showDetails ? m['common.back']() : m['common.details']()}
                             </button>
                         </>
                     )}
