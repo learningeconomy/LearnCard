@@ -1,4 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { LearnCardAppEnvironment } from '../config/buildEnvironment';
+
+type MockAnalyticsEnvironment = Pick<
+    LearnCardAppEnvironment,
+    'MODE' | 'DEV' | 'PROD' | 'VITE_APP_VERSION'
+>;
 
 const { mockCapacitor, mockEnvironment, mockGetResolvedTenantConfig } = vi.hoisted(() => ({
     mockCapacitor: {
@@ -9,8 +15,8 @@ const { mockCapacitor, mockEnvironment, mockGetResolvedTenantConfig } = vi.hoist
         MODE: 'test',
         DEV: false,
         PROD: false,
-        VITE_APP_VERSION: undefined as string | undefined,
-    },
+        VITE_APP_VERSION: undefined,
+    } satisfies MockAnalyticsEnvironment,
     mockGetResolvedTenantConfig: vi.fn(),
 }));
 
@@ -76,9 +82,19 @@ describe('detectAnalyticsEnvironment', () => {
     it('classifies native production builds as production even on localhost', () => {
         setHostname('localhost');
         mockCapacitor.isNativePlatform.mockReturnValue(true);
+        mockEnvironment.MODE = 'production';
         mockEnvironment.PROD = true;
 
         expect(detectAnalyticsEnvironment()).toBe('production');
+    });
+
+    it('classifies native staging builds as staging even when Vite marks the build PROD', () => {
+        setHostname('localhost');
+        mockCapacitor.isNativePlatform.mockReturnValue(true);
+        mockEnvironment.MODE = 'staging';
+        mockEnvironment.PROD = true;
+
+        expect(detectAnalyticsEnvironment()).toBe('staging');
     });
 
     it('classifies web localhost as development', () => {

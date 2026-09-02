@@ -55,7 +55,9 @@ export const detectAnalyticsEnvironment = (): AnalyticsEnvironment => {
     if (environment.MODE === 'test') return 'test';
 
     if (Capacitor.isNativePlatform()) {
-        return environment.PROD ? 'production' : 'development';
+        if (environment.MODE === 'production') return 'production';
+        if (environment.MODE === 'staging') return 'staging';
+        return 'development';
     }
 
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
