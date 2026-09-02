@@ -1,8 +1,8 @@
 ---
-description: 'How-To Guide: Sending Credentials with LearnCard'
+description: 'How-To Guide: Sending and issuing credentials with LearnCard'
 ---
 
-# Send Credentials
+# Send & Issue Credentials
 
 This guide provides practical, step-by-step recipes for sending credentials. We'll start with the simplest possible use case and progressively add more powerful configurations.
 
@@ -13,20 +13,22 @@ This guide provides practical, step-by-step recipes for sending credentials. We'
 The `send` method is the simplest and most ergonomic way to send credentials to recipients. It handles credential issuance, signing, and delivery in a single call.
 
 **The `send` method automatically detects your recipient type:**
-- **Profile ID** → Direct delivery to their LearnCard
-- **DID** → Direct delivery via DID resolution  
-- **Email** → Routes through Universal Inbox (sends claim email)
-- **Phone** → Routes through Universal Inbox (sends claim SMS)
+
+-   **Profile ID** → Direct delivery to their LearnCard
+-   **DID** → Direct delivery via DID resolution
+-   **Email** → Routes through Universal Inbox (sends claim email)
+-   **Phone** → Routes through Universal Inbox (sends claim SMS)
 
 ### Prerequisites
 
-* LearnCard SDK initialized with `network: true`
-* A [signing authority](create-signing-authority.md) configured (for server-side signing) **OR** local key material available (for client-side signing) **OR** a pre-signed credential (no signing authority needed)
+-   LearnCard SDK initialized with `network: true`
+-   A [signing authority](create-signing-authority.md) configured (for server-side signing) **OR** local key material available (for client-side signing) **OR** a pre-signed credential (no signing authority needed)
 
 ### Basic Usage
 
 {% tabs %}
 {% tab title="Send to Profile ID or DID" %}
+
 ```typescript
 // Send to an existing LearnCard user
 const result = await learnCard.invoke.send({
@@ -36,11 +38,13 @@ const result = await learnCard.invoke.send({
 });
 
 console.log(result.credentialUri); // URI of the sent credential
-console.log(result.uri);           // URI of the boost template used
+console.log(result.uri); // URI of the boost template used
 ```
+
 {% endtab %}
 
 {% tab title="Send to Email" %}
+
 ```typescript
 // Send to someone via email (they'll get a claim link)
 const result = await learnCard.invoke.send({
@@ -57,12 +61,14 @@ const result = await learnCard.invoke.send({
     },
 });
 
-console.log(result.inbox?.claimUrl);   // Claim URL (if suppressDelivery=true)
+console.log(result.inbox?.claimUrl); // Claim URL (if suppressDelivery=true)
 console.log(result.inbox?.issuanceId); // Issuance tracking ID
 ```
+
 {% endtab %}
 
 {% tab title="Send to Phone" %}
+
 ```typescript
 // Send to someone via SMS
 const result = await learnCard.invoke.send({
@@ -76,9 +82,11 @@ const result = await learnCard.invoke.send({
 
 // Use result.inbox.claimUrl in your own notification
 ```
+
 {% endtab %}
 
 {% tab title="Creating a New Boost On-the-Fly" %}
+
 ```typescript
 // Send by creating a new boost from an unsigned credential
 const result = await learnCard.invoke.send({
@@ -86,51 +94,54 @@ const result = await learnCard.invoke.send({
     recipient: 'recipient-profile-id',
     template: {
         credential: {
-            "@context": [
-                "https://www.w3.org/2018/credentials/v1",
-                "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
+            '@context': [
+                'https://www.w3.org/2018/credentials/v1',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
             ],
-            "type": ["VerifiableCredential", "OpenBadgeCredential"],
-            "issuer": "did:web:example.com",
-            "name": "Course Completion",
-            "credentialSubject": {
-                "type": ["AchievementSubject"],
-                "achievement": {
-                    "type": ["Achievement"],
-                    "name": "Web Development 101",
-                    "description": "Completed the Web Development fundamentals course.",
-                    "criteria": {
-                        "narrative": "Successfully completed all modules and passed the final assessment."
-                    }
-                }
-            }
+            'type': ['VerifiableCredential', 'OpenBadgeCredential'],
+            'issuer': 'did:web:example.com',
+            'name': 'Course Completion',
+            'credentialSubject': {
+                'type': ['AchievementSubject'],
+                'achievement': {
+                    'type': ['Achievement'],
+                    'name': 'Web Development 101',
+                    'description': 'Completed the Web Development fundamentals course.',
+                    'criteria': {
+                        'narrative':
+                            'Successfully completed all modules and passed the final assessment.',
+                    },
+                },
+            },
         },
         name: 'Web Development 101 Certificate',
         category: 'Achievement',
     },
 });
 ```
+
 {% endtab %}
 
 {% tab title="Send a Pre-Signed Credential" %}
+
 ```typescript
 // Sign a credential yourself, then send it — no template needed
 const signedCredential = await learnCard.invoke.issueCredential({
-    "@context": [
-        "https://www.w3.org/ns/credentials/v2",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+    '@context': [
+        'https://www.w3.org/ns/credentials/v2',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
     ],
-    "type": ["VerifiableCredential", "OpenBadgeCredential"],
-    "issuer": learnCard.id.did(),
-    "credentialSubject": {
-        "type": ["AchievementSubject"],
-        "achievement": {
-            "type": ["Achievement"],
-            "name": "Teamwork Badge",
-            "description": "Recognized for outstanding collaboration.",
-            "criteria": { "narrative": "Nominated by peers." }
-        }
-    }
+    'type': ['VerifiableCredential', 'OpenBadgeCredential'],
+    'issuer': learnCard.id.did(),
+    'credentialSubject': {
+        'type': ['AchievementSubject'],
+        'achievement': {
+            'type': ['Achievement'],
+            'name': 'Teamwork Badge',
+            'description': 'Recognized for outstanding collaboration.',
+            'criteria': { 'narrative': 'Nominated by peers.' },
+        },
+    },
 });
 
 const result = await learnCard.invoke.send({
@@ -139,9 +150,11 @@ const result = await learnCard.invoke.send({
     signedCredential,
 });
 ```
+
 {% endtab %}
 
 {% tab title="With ConsentFlow Contract" %}
+
 ```typescript
 // Send through a consent flow contract
 // Automatically routes via consent terms if the recipient has consented
@@ -152,6 +165,7 @@ const result = await learnCard.invoke.send({
     contractUri: 'urn:lc:contract:xyz789', // Optional: link to consent contract
 });
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -161,6 +175,7 @@ The `send` method is also available as a REST endpoint. Use an API key or bearer
 
 {% tabs %}
 {% tab title="cURL: Send with Template" %}
+
 ```bash
 curl -X POST https://network.learncard.com/api/send \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -171,9 +186,11 @@ curl -X POST https://network.learncard.com/api/send \
     "templateUri": "urn:lc:boost:abc123"
   }'
 ```
+
 {% endtab %}
 
 {% tab title="cURL: Send Pre-Signed Credential" %}
+
 ```bash
 curl -X POST https://network.learncard.com/api/send \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -210,9 +227,11 @@ curl -X POST https://network.learncard.com/api/send \
     }
   }'
 ```
+
 {% endtab %}
 
 {% tab title="JavaScript (fetch)" %}
+
 ```javascript
 const response = await fetch('https://network.learncard.com/api/send', {
     method: 'POST',
@@ -231,6 +250,7 @@ const result = await response.json();
 console.log(result);
 // { type: 'boost', uri: 'urn:lc:boost:...', inbox: { issuanceId: '...', status: 'PENDING' } }
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -276,20 +296,20 @@ The guardian receives an approval email with an OTP challenge. The student canno
 interface SendResponse {
     type: 'boost';
     credentialUri: string; // URI of the issued credential
-    uri: string;           // URI of the boost template
-    
+    uri: string; // URI of the boost template
+
     // Only present when sent to email/phone recipients
     inbox?: {
-        issuanceId: string;  // Tracking ID for this issuance
-        status: 
-            | 'PENDING'      // Waiting to be claimed
-            | 'ISSUED'       // Auto-delivered to verified user
-            | 'CLAIMED';     // Claimed via claim link
-        claimUrl?: string;   // Present when suppressDelivery=true
+        issuanceId: string; // Tracking ID for this issuance
+        status:
+            | 'PENDING' // Waiting to be claimed
+            | 'ISSUED' // Auto-delivered to verified user
+            | 'CLAIMED'; // Claimed via claim link
+        claimUrl?: string; // Present when suppressDelivery=true
         recipientDid?: string; // DID of recipient (present when ISSUED)
-        guardianStatus?:       // Present when guardianEmail was specified
-            | 'AWAITING_GUARDIAN'  // Waiting for guardian approval
-            | 'GUARDIAN_APPROVED'  // Guardian approved
+        guardianStatus?: // Present when guardianEmail was specified
+        | 'AWAITING_GUARDIAN' // Waiting for guardian approval
+            | 'GUARDIAN_APPROVED' // Guardian approved
             | 'GUARDIAN_REJECTED'; // Guardian rejected
     };
 }
@@ -318,17 +338,19 @@ options: {
 
 {% hint style="info" %}
 **Contract Integration**: When you provide a `contractUri`, the method automatically:
-- Checks if the recipient has consented to the contract
-- Routes the credential through the consent flow if terms exist
-- Creates a `RELATED_TO` relationship between new boosts and the contract
-{% endhint %}
+
+-   Checks if the recipient has consented to the contract
+-   Routes the credential through the consent flow if terms exist
+-   Creates a `RELATED_TO` relationship between new boosts and the contract
+    {% endhint %}
 
 {% hint style="info" %}
 **Email Verification**: When a recipient claims a credential via an email claim link, their email address becomes a **verified contact method** linked to their LearnCard profile. This means:
-- Future credentials sent to that email will be **auto-delivered** directly to their wallet
-- No claim link is needed for subsequent issuances
-- The issuer receives `status: 'ISSUED'` instead of `status: 'PENDING'`
-{% endhint %}
+
+-   Future credentials sent to that email will be **auto-delivered** directly to their wallet
+-   No claim link is needed for subsequent issuances
+-   The issuer receives `status: 'ISSUED'` instead of `status: 'PENDING'`
+    {% endhint %}
 
 ---
 
@@ -348,9 +370,10 @@ console.log(recipients);
 ```
 
 This is useful for:
-- **Auditing**: See who has received a specific credential
-- **Preventing duplicates**: Check if a user already received a boost before sending
-- **Analytics**: Track issuance metrics for your credentials
+
+-   **Auditing**: See who has received a specific credential
+-   **Preventing duplicates**: Check if a user already received a boost before sending
+-   **Analytics**: Track issuance metrics for your credentials
 
 ---
 
@@ -363,25 +386,29 @@ Use Mustache-style templates to personalize credentials with unique data for eac
 First, create a boost with `{{variableName}}` placeholders:
 
 ```typescript
-const templatedBoostUri = await learnCard.invoke.createBoost({
-    "@context": [
-        "https://www.w3.org/2018/credentials/v1",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
-    ],
-    "type": ["VerifiableCredential", "OpenBadgeCredential"],
-    "issuer": learnCard.id.did(),
-    "issuanceDate": new Date().toISOString(),
-    "name": "Certificate for {{courseName}}",
-    "credentialSubject": {
-        "type": ["AchievementSubject"],
-        "achievement": {
-            "type": ["Achievement"],
-            "name": "{{courseName}} - {{level}}",
-            "description": "Awarded to {{studentName}} for completing {{courseName}} with grade {{grade}}",
-            "criteria": { "narrative": "Complete all course modules" }
-        }
-    }
-}, { name: 'Course Completion Template' });
+const templatedBoostUri = await learnCard.invoke.createBoost(
+    {
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
+        ],
+        'type': ['VerifiableCredential', 'OpenBadgeCredential'],
+        'issuer': learnCard.id.did(),
+        'issuanceDate': new Date().toISOString(),
+        'name': 'Certificate for {{courseName}}',
+        'credentialSubject': {
+            'type': ['AchievementSubject'],
+            'achievement': {
+                'type': ['Achievement'],
+                'name': '{{courseName}} - {{level}}',
+                'description':
+                    'Awarded to {{studentName}} for completing {{courseName}} with grade {{grade}}',
+                'criteria': { 'narrative': 'Complete all course modules' },
+            },
+        },
+    },
+    { name: 'Course Completion Template' }
+);
 ```
 
 ### Sending with Personalized Data
@@ -431,10 +458,11 @@ for (const student of students) {
 ### Special Characters
 
 Template values are automatically escaped for JSON safety. You can safely include:
-- Quotes: `"Course with \"quotes\""`
-- Newlines: `"Line 1\nLine 2"`
-- Backslashes: `"Path\\to\\file"`
-- Unicode: `"Café ☕ 日本語"`
+
+-   Quotes: `"Course with \"quotes\""`
+-   Newlines: `"Line 1\nLine 2"`
+-   Backslashes: `"Path\\to\\file"`
+-   Unicode: `"Café ☕ 日本語"`
 
 {% hint style="info" %}
 **Missing Variables**: If a variable in the template isn't provided in `templateData`, it renders as an empty string. This allows for optional fields.
@@ -448,9 +476,9 @@ For more details, see [Dynamic Templates with Mustache](../core-concepts/credent
 
 For advanced use cases requiring full control over the inbox issuance process, you can use the `sendCredentialViaInbox` method directly. This is useful when you need:
 
-- Full configuration control (signing authority, expiration, etc.)
-- To send raw credentials (not boost templates)
-- Custom template IDs for email/SMS
+-   Full configuration control (signing authority, expiration, etc.)
+-   To send raw credentials (not boost templates)
+-   Custom template IDs for email/SMS
 
 This approach assumes you are familiar with the core concepts of the [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) and have [a valid API token](../sdks/learncard-network/authentication.md#id-2.-using-a-scoped-api-token) & [signing authority](create-signing-authority.md) set up.
 
@@ -460,117 +488,110 @@ Your goal is to send a single, verifiable record to a user. You want our system 
 
 This is the most common use case, perfect for one-off issuances like a course completion certificate.
 
-**The Recipe:** Make a `POST` request to the `/inbox/issue` endpoint with only two required fields: `recipient` and a _signed_ or _unsigned_ `credential`.  An unsigned credential requires [a configured signing authority](create-signing-authority.md).
+**The Recipe:** Make a `POST` request to the `/inbox/issue` endpoint with only two required fields: `recipient` and a _signed_ or _unsigned_ `credential`. An unsigned credential requires [a configured signing authority](create-signing-authority.md).
 
 **Example:**
 
 {% tabs %}
 {% tab title="SDK" %}
+
 ```javascript
 // A bootcamp sending an "Advanced Javascript" achievement to a student.
-await learnCard.invoke.sendCredentialViaInbox({ 
-  recipient: { 
-    type: 'email', 
-    value: 'student@school.edu' 
-  }, 
-  credential: {
-    "@context": [
-        "https://www.w3.org/2018/credentials/v1",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
-    ],
-    "id": "http://example.com/credentials/3527",
-    "type": [
-        "VerifiableCredential",
-        "OpenBadgeCredential"
-    ],
-    "issuer": "did:key:z6Mku381DztEvDosbgR5RZrvLxMhVgJ33sLVhTnngDuUA5bM",
-    "issuanceDate": "2025-07-03T17:54:56.881Z",
-    "name": "Advanced Javascript",
-    "credentialSubject": {
-        "id": "did:example:d23dd687a7dc6787646f2eb98d0",
-        "type": [
-            "AchievementSubject"
+await learnCard.invoke.sendCredentialViaInbox({
+    recipient: {
+        type: 'email',
+        value: 'student@school.edu',
+    },
+    credential: {
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
         ],
-        "achievement": {
-            "id": "https://example.com/certificates/javascript/advanced",
-            "type": [
-                "Achievement"
-            ],
-            "criteria": {
-                "narrative": "Team members are nominated for this badge by their peers and recognized upon review by Example Corp management."
+        'id': 'http://example.com/credentials/3527',
+        'type': ['VerifiableCredential', 'OpenBadgeCredential'],
+        'issuer': 'did:key:z6Mku381DztEvDosbgR5RZrvLxMhVgJ33sLVhTnngDuUA5bM',
+        'issuanceDate': '2025-07-03T17:54:56.881Z',
+        'name': 'Advanced Javascript',
+        'credentialSubject': {
+            'id': 'did:example:d23dd687a7dc6787646f2eb98d0',
+            'type': ['AchievementSubject'],
+            'achievement': {
+                'id': 'https://example.com/certificates/javascript/advanced',
+                'type': ['Achievement'],
+                'criteria': {
+                    'narrative':
+                        'Team members are nominated for this badge by their peers and recognized upon review by Example Corp management.',
+                },
+                'description': 'This badge recognizes advanced javasript proficiency.',
+                'name': 'Advanced Javascript',
             },
-            "description": "This badge recognizes advanced javasript proficiency.",
-            "name": "Advanced Javascript"
-        }
-    }
-  }
-})
+        },
+    },
+});
 
 // Retrieve sent inbox credential
-const sentInbox = await learnCard.invoke.getMySentInboxCredentials()
-const inboxCredId = sentInbox.records[0].id
+const sentInbox = await learnCard.invoke.getMySentInboxCredentials();
+const inboxCredId = sentInbox.records[0].id;
 
 // Retrieve inbox credential
-await learnCard.invoke.getInboxCredential(inboxCredId)
+await learnCard.invoke.getInboxCredential(inboxCredId);
 ```
+
 {% endtab %}
 
 {% tab title="Javascript" %}
+
 ```javascript
 // A bootcamp sending an "Advanced Javascript" achievement to a student.
 const apiKey = 'YOUR_API_KEY';
 
 const response = await fetch('https://network.learncard.com/api/inbox/issue', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${apiKey}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    recipient: {
-      type: 'email',
-      value: 'student@example.com',
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
     },
-    credential: {
-      "@context": [
-        "https://www.w3.org/2018/credentials/v1",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json"
-      ],
-      "id": "http://example.com/credentials/3527",
-      "type": [
-        "VerifiableCredential",
-        "OpenBadgeCredential"
-      ],
-      "issuer": "did:key:z6Mku381DztEvDosbgR5RZrvLxMhVgJ33sLVhTnngDuUA5bM",
-      "issuanceDate": "2025-07-03T17:54:56.881Z",
-      "name": "Advanced Javascript",
-      "credentialSubject": {
-        "id": "did:example:d23dd687a7dc6787646f2eb98d0",
-        "type": [
-          "AchievementSubject"
-        ],
-        "achievement": {
-          "id": "https://example.com/certificates/javascript/advanced",
-          "type": [
-            "Achievement"
-          ],
-          "criteria": {
-            "narrative": "Team members are nominated for this badge by their peers and recognized upon review by Example Corp management."
-          },
-          "description": "This badge recognizes advanced javasript proficiency.",
-          "name": "Advanced Javascript"
-        }
-      }
-    },
-  }),
+    body: JSON.stringify({
+        recipient: {
+            type: 'email',
+            value: 'student@example.com',
+        },
+        credential: {
+            '@context': [
+                'https://www.w3.org/2018/credentials/v1',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
+            ],
+            'id': 'http://example.com/credentials/3527',
+            'type': ['VerifiableCredential', 'OpenBadgeCredential'],
+            'issuer': 'did:key:z6Mku381DztEvDosbgR5RZrvLxMhVgJ33sLVhTnngDuUA5bM',
+            'issuanceDate': '2025-07-03T17:54:56.881Z',
+            'name': 'Advanced Javascript',
+            'credentialSubject': {
+                'id': 'did:example:d23dd687a7dc6787646f2eb98d0',
+                'type': ['AchievementSubject'],
+                'achievement': {
+                    'id': 'https://example.com/certificates/javascript/advanced',
+                    'type': ['Achievement'],
+                    'criteria': {
+                        'narrative':
+                            'Team members are nominated for this badge by their peers and recognized upon review by Example Corp management.',
+                    },
+                    'description': 'This badge recognizes advanced javasript proficiency.',
+                    'name': 'Advanced Javascript',
+                },
+            },
+        },
+    }),
 });
 
 const data = await response.json();
 console.log(data);
 ```
+
 {% endtab %}
 
 {% tab title="cURL" %}
+
 ```bash
 curl -X POST https://network.learncard.com/api/inbox/issue \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -613,10 +634,12 @@ curl -X POST https://network.learncard.com/api/inbox/issue \
     }
   }'
 ```
+
 {% endtab %}
 {% endtabs %}
 
 {% hint style="warning" %}
+
 ## Have you configured your default Primary Signing Authority?
 
 If you get an error about a missing signing authority, **ensure you've set one up** [**following this guide**](create-signing-authority.md)**.** When you send an unsigned credential with Universal Inbox, it will use your primary signing authority to sign the credential when a user claims it.&#x20;
@@ -626,23 +649,28 @@ If you'd like to use a custom signing authority, or specify it per request:
 ```javascript
 // Note the explicit `signingAuthority` object in the configuration.
 await learncardApiClient.post('/inbox/issue', {
-  recipient: { /* ... */ },
-  credential: { /* ...unsigned credential data... */ },
-  configuration: {
-    signingAuthority: {
-      name: 'my-custom-signer',
-      endpoint: 'https://my-vc-api.my-org.com/issue'
-    }
-  }
+    recipient: {
+        /* ... */
+    },
+    credential: {
+        /* ...unsigned credential data... */
+    },
+    configuration: {
+        signingAuthority: {
+            name: 'my-custom-signer',
+            endpoint: 'https://my-vc-api.my-org.com/issue',
+        },
+    },
 });
 ```
+
 {% endhint %}
 
 **What Happens:**
 
-* Our system receives the unsigned credential data.
-* It sends a professionally designed email to `student@example.com` with a secure link to claim their record.
-* When the student claims their record, it automatically signs it using your default Primary Signing Authority attached to your profile.
+-   Our system receives the unsigned credential data.
+-   It sends a professionally designed email to `student@example.com` with a secure link to claim their record.
+-   When the student claims their record, it automatically signs it using your default Primary Signing Authority attached to your profile.
 
 You're done. The rest of the user onboarding and claim process is handled for you.
 
@@ -658,32 +686,33 @@ Your goal is to send a credential, but you want the notification email to be bra
 // A university sending a branded digital transcript.
 
 await learncardApiClient.post('/inbox/issue', {
-  recipient: {
-    type: 'email',
-    value: 'student@stateu.edu',
-  },
-  credential: { /* ... */ },
-  configuration: {
-    delivery: {
-      template: {
-        model: {
-          issuer: {
-            name: 'State University',
-            logoUrl: 'https://stateu.edu/logo.png', //1024px x 1024px Recommended
-          },
-          credential: {
-            name: 'Official Fall Semester Transcript',
-            type: 'transcript',
-          },
-          recipient: {
-            name: 'John Doe'
-          }
-        },
-      },
+    recipient: {
+        type: 'email',
+        value: 'student@stateu.edu',
     },
-  },
+    credential: {
+        /* ... */
+    },
+    configuration: {
+        delivery: {
+            template: {
+                model: {
+                    issuer: {
+                        name: 'State University',
+                        logoUrl: 'https://stateu.edu/logo.png', //1024px x 1024px Recommended
+                    },
+                    credential: {
+                        name: 'Official Fall Semester Transcript',
+                        type: 'transcript',
+                    },
+                    recipient: {
+                        name: 'John Doe',
+                    },
+                },
+            },
+        },
+    },
 });
-
 ```
 
 **What Happens:** The email sent to the student will now feature the State University name and logo prominently, creating a more professional and trustworthy experience.
@@ -704,18 +733,21 @@ You have more advanced needs. You might want to deliver the claim link through y
 // An HR platform embedding a claim link directly in their onboarding portal.
 
 const response = await learncardApiClient.post('/inbox/issue', {
-  recipient: { /* ... */ },
-  credential: { /* ... */ },
-  configuration: {
-    delivery: {
-      suppress: true,
+    recipient: {
+        /* ... */
     },
-  },
+    credential: {
+        /* ... */
+    },
+    configuration: {
+        delivery: {
+            suppress: true,
+        },
+    },
 });
 
 // Use the claimUrl from the response to create a button in your own UI.
 const claimUrl = response.data.claimUrl;
-
 ```
 
 ### **Recipe 3b: Tracking Status with Webhooks**
@@ -730,13 +762,16 @@ const claimUrl = response.data.claimUrl;
 // A professional association tracking when a member claims their certificate.
 
 await learncardApiClient.post('/inbox/issue', {
-  recipient: { /* ... */ },
-  credential: { /* ... */ },
-  configuration: {
-    webhookUrl: 'https://api.myassociation.org/learncard/hooks',
-  },
+    recipient: {
+        /* ... */
+    },
+    credential: {
+        /* ... */
+    },
+    configuration: {
+        webhookUrl: 'https://api.myassociation.org/learncard/hooks',
+    },
 });
-
 ```
 
 **What Happens:** When the user claims their record, our system will send a `POST` request to your webhook URL with a payload containing the `issuanceId`, a `status` of `CLAIMED`, and the user's permanent `recipientDid`.
@@ -757,19 +792,21 @@ await learncardApiClient.post('/inbox/issue', {
 // A corporate learning platform that will issue multiple skill badges over time.
 
 await learncardApiClient.post('/inbox/issue', {
-  recipient: { type: 'email', value: 'employee@acme.com' },
-  credential: { /* ... */ },
-  
-  // ONLY AVAILABLE IN BETA - WILL FAIL IN PRODUCTION
-  consentRequest: {
-    scopes: ['credential:write:Badge', 'credential:write:SkillAssertion'],
-    description: 'Allow Acme Corp to automatically add new skill badges and certificates to your LearnCard Passport.',
-  },
-  configuration: {
-    webhookUrl: 'https://api.acme.com/hooks/learncard',
-  },
-});
+    recipient: { type: 'email', value: 'employee@acme.com' },
+    credential: {
+        /* ... */
+    },
 
+    // ONLY AVAILABLE IN BETA - WILL FAIL IN PRODUCTION
+    consentRequest: {
+        scopes: ['credential:write:Badge', 'credential:write:SkillAssertion'],
+        description:
+            'Allow Acme Corp to automatically add new skill badges and certificates to your LearnCard Passport.',
+    },
+    configuration: {
+        webhookUrl: 'https://api.acme.com/hooks/learncard',
+    },
+});
 ```
 
 **What Happens:**

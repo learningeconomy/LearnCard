@@ -2,7 +2,7 @@
 description: Send a credential to any email address in about 15 lines of code.
 ---
 
-# Your First Integration
+# Quickstart: Send a Credential
 
 The fastest way to see LearnCard work: send a verifiable credential to an email address. The recipient gets an email with a claim link — no account needed before claiming.
 

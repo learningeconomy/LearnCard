@@ -1,8 +1,8 @@
 ---
-description: 'Tutorial: Implementing a Basic ConsentFlow'
+description: 'Tutorial: create a ConsentFlow — the starting point for consent and guardian-approval flows.'
 ---
 
-# Create a ConsentFlow
+# Consent & Guardianship: Create a ConsentFlow
 
 **What is a ConsentFlow?** A ConsentFlow is a powerful mechanism in LearnCard that allows your application or service (as an "Issuer" or "Contract Owner") to request permission from users ("Holders") to access certain parts of their data or to write new information (like credentials) to their profile. It's all based on explicit user consent, ensuring transparency and user control.
 
