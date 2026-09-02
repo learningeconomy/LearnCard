@@ -5,6 +5,7 @@ import type { NotificationType } from 'packages/plugins/lca-api-plugin/src/types
 
 import type { ResolvedAction } from './quickActions/types';
 import type { PathwayNode } from '../pathways/types';
+import type { RecoverySetupType } from '../../components/recovery';
 
 export type DashboardGoalSummary = {
     title: string;
@@ -128,6 +129,16 @@ export type DashboardDataTrustViewModel = {
 
 export type DashboardHeroSlot = 'getStarted' | 'goal';
 
+export type DashboardRecoveryPromptViewModel = {
+    recoverySupported: boolean;
+    recoveryMethodCount: number | null;
+    totalCredentialCount: number;
+    onSetup: (options: {
+        initialMethod: RecoverySetupType;
+        onCompleted: (method: RecoverySetupType) => void;
+    }) => void;
+};
+
 export type DashboardViewModel = {
     brandName: string;
     header: DashboardHeaderViewModel;
@@ -141,6 +152,7 @@ export type DashboardViewModel = {
     onReviewGoal: () => void;
     primaryButtonClass?: string;
     slots: DashboardSlots;
+    recoveryPrompt: DashboardRecoveryPromptViewModel;
     dataTrust: DashboardDataTrustViewModel;
     activity: DashboardActivityViewModel;
     learningProfile: DashboardLearningProfileViewModel;
