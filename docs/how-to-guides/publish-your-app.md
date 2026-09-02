@@ -57,7 +57,7 @@ Launch your draft listing from the Developer Portal. LearnCard loads your app in
 
 ## 4. Submit for review
 
-Set your listing's status to **SUBMITTED** in the Developer Portal. The LearnCard team reviews it; on approval the status becomes **PUBLISHED** and your app appears in the public app store.
+Click **Submit for Review** on your listing in the Developer Portal — its status moves to **PENDING_REVIEW**. The LearnCard team reviews it; on approval the status becomes **LISTED** and your app appears in the public app store. (You can unsubmit while it's pending; listings can later be **ARCHIVED**.)
 
 {% hint style="info" %}
 There is currently no automatic notification when your listing is approved — check the Developer Portal, or contact [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io) with questions about a pending review.
@@ -65,7 +65,7 @@ There is currently no automatic notification when your listing is approved — c
 
 ## Rate limits & good citizenship
 
--   In-app notifications: 10/hour per user via the SDK (server-to-server routes have higher limits)
+-   In-app notifications: 10/hour per user per app via the SDK; 60/hour per app via the server-to-server route
 -   Counters: up to 50 keys per app per user
 -   Never bypass origin validation, and handle every SDK call's rejection path — users can decline any request
 

@@ -35,9 +35,9 @@ For the statement format and endpoints, see the [xAPI Reference](../../sdks/lear
 3. **Expired or malformed VP JWT** — regenerate the presentation
 4. **Delegate credential without the right scope** — delegated read/write requires a valid delegate credential inside the VP
 
-## Domain allowlists
+## Required network endpoints
 
-If your app runs inside schools or districts with network filtering, these domains must be reachable:
+If your app runs inside schools or districts with network filtering, ask IT to allow outbound traffic to these domains. (This is separate from the SDK's `hostOrigin` setting, which controls which LearnCard hosts your app will accept messages from.)
 
 | Domain                  | Purpose                        |
 | ----------------------- | ------------------------------ |

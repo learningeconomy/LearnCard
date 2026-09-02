@@ -31,16 +31,15 @@ LearnCard is already used to:
 
 ### Docs Structure at a Glance
 
-This documentation is your guide to building with LearnCard. Here’s how to navigate it:
+This documentation is organized around what you're trying to do:
 
--   [**What Do You Want to Build?**](introduction/what-do-you-want-to-build.md): Pick one of five integration paths.
--   [**Quick Start**](quick-start/your-first-integration.md): Send your first credential in ~15 lines of code.
--   [**Tutorials**](tutorials/create-a-credential.md): Learn by building — create credentials, boosts, and connected apps.
--   [**How-To Guides**](how-to-guides/send-credentials.md): Step-by-step recipes for common workflows.
--   [**Core Concepts**](core-concepts/credentials-and-data/verifiable-credentials-vcs.md): Understand credentials, DIDs, consent, and the plugin system.
--   [**SDK Reference**](sdks/learncard-core/README.md): Deep dive into our SDK and APIs.
+-   🚀 **Start Here** — [What Do You Want to Build?](introduction/what-do-you-want-to-build.md) picks one of five integration paths; the [Quickstart](quick-start/your-first-integration.md) sends your first credential in ~15 lines of code.
+-   🛠️ **Build** — outcome-driven guides and tutorials: [send & issue credentials](how-to-guides/send-credentials.md), [publish your app](how-to-guides/publish-your-app.md), [add LearnCard to your product](how-to-guides/connect-systems/README.md), [consent & guardianship](tutorials/create-a-consentflow.md), and [going deep on the SDK](how-to-guides/deploy-infrastructure/README.md).
+-   🧠 **Understand** — the concepts behind it all: [credentials](core-concepts/credentials-and-data/README.md), [identities & keys](core-concepts/identities-and-keys/README.md), [consent](core-concepts/consent-and-permissions/README.md), [the network](core-concepts/network-and-interactions/README.md), and [architecture](core-concepts/architecture-and-principles/README.md).
+-   📖 **Reference** — [which SDK do I need?](sdks/which-sdk.md), then full API docs for the [Wallet SDK](sdks/learncard-core/README.md), [Network API](sdks/learncard-network/README.md), [Storage API](sdks/learncloud-storage-api/README.md), [Partner Connect](sdks/partner-connect.md), [Embed SDK](sdks/embed-sdk.md), and [plugins](sdks/official-plugins/README.md).
+-   📱 **Products & More** — the [LearnCard App](apps/learn-card-app/README.md), [ScoutPass](apps/scouts/README.md), and [contributing](development/contributing.md).
 
-If you're new, start with [**Your First Integration**](quick-start/your-first-integration.md) under the Quick Start section.
+If you're new, start with the [**Quickstart**](quick-start/your-first-integration.md).
 
 ---
 
