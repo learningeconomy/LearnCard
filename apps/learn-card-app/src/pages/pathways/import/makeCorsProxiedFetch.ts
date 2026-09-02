@@ -34,13 +34,22 @@ export interface MakeCorsProxiedFetchOptions {
     corsProxyKey?: string;
 }
 
+const resolveCorsProxyKey = (override: string | undefined): string | undefined => {
+    if (override !== undefined) return override;
+
+    try {
+        return getResolvedTenantConfig().apis.corsProxyApiKey;
+    } catch {
+        return undefined;
+    }
+};
+
 /**
  * Build a `typeof fetch` that tunnels through the appropriate channel
  * for the current runtime.
  */
 export const makeCorsProxiedFetch = (opts: MakeCorsProxiedFetchOptions = {}): typeof fetch => {
     const { forceWeb = false } = opts;
-    const corsProxyKey = opts.corsProxyKey ?? getResolvedTenantConfig().apis.corsProxyApiKey;
 
     const isNative = !forceWeb && Capacitor.isNativePlatform();
 
@@ -51,6 +60,8 @@ export const makeCorsProxiedFetch = (opts: MakeCorsProxiedFetchOptions = {}): ty
                 : input instanceof URL
                   ? input.toString()
                   : (input as Request).url;
+
+        const corsProxyKey = resolveCorsProxyKey(opts.corsProxyKey);
 
         // Resolve the URL we actually send the request to.
         const resolvedUrl =

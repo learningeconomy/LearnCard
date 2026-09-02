@@ -2139,11 +2139,15 @@
     },
     "packages/credential-library/src/registry.ts": {
         "00eaf30a9df7cb6a43f0b186503b31778db67828cd47a4038d25e30960626250": 1,
-        "2dc632a44046cf7dbf13686bce3f0fb6198258ef22184b6bd55cbc29a038929b": 1
+        "2dc632a44046cf7dbf13686bce3f0fb6198258ef22184b6bd55cbc29a038929b": 1,
+        "5626d829d961514e6bb2ffedd8ea8ff559ffe30c3005b02ee3359e11f22e8cf9": 1,
+        "6a5fa59a45fcabf1f6e848aabdace57e32f9ee8195f5021ab26a3b9a7a5a6561": 1
     },
     "packages/credential-library/src/types.ts": {
         "5ffa4f1a31f604f53082923bdb7c36982fbc322006d9ef63ad13ec3e601bb192": 1,
-        "f955bf2066482d7d8516b74132f520ce4cd9ccba6b43a0353b255f4e7fe5824e": 1
+        "f955bf2066482d7d8516b74132f520ce4cd9ccba6b43a0353b255f4e7fe5824e": 1,
+        "16075de0738822b32935b20e989ed39757504d00ae6a3e13bf8e965088e970d0": 1,
+        "89c7c91f3e6d7699e96cbb01dacb763bfe85ef87f7e3959e7c248b623f79bdfa": 1
     },
     "packages/email-templates/src/__tests__/render.test.ts": {
         "021b6d77833f3994e78533e2ea563faddb332dce373e25efee59e408d34a758a": 1,
@@ -6104,7 +6108,8 @@
     "services/learn-card-network/brain-service/src/helpers/connection.helpers.ts": {
         "2a34b44d6689b84648f983192447494f36cb0fcec432b6d05ab43fa6a692fd67": 1,
         "a916344708636d380e73ed7e39ef8343cb7eba9a0e1bb58e05c5060a822324ad": 2,
-        "bce1ebc5b3d0561449c4adfd675d5680ce021bbd9d5c34924a05599fe3372f34": 2
+        "bce1ebc5b3d0561449c4adfd675d5680ce021bbd9d5c34924a05599fe3372f34": 2,
+        "246ed777fe1e1a496b1bd145722800e7156f4cb98f91f4dc9b934ffe3951e55e": 1
     },
     "services/learn-card-network/brain-service/src/helpers/contact-method.helpers.ts": {
         "998107b1dacac740e192e591a8aaa9f266cd635f2425deac7ab8e809a0393d33": 1
@@ -7282,13 +7287,15 @@
         "d15cd80ba3506adc848b9b7d8a9a647a1812421f5d75835c4879def04a2ed3f8": 1
     },
     "packages/learn-card-base/src/components/connection-prompts/ConnectionPromptCoordinator.test.tsx": {
-        "334745cbcbaf72229d6b5a1cddb8d0ec2f0dcc19ebf534b842e38f230def2908": 1
+        "334745cbcbaf72229d6b5a1cddb8d0ec2f0dcc19ebf534b842e38f230def2908": 1,
+        "9acb2d36179972bef91b94c7de2fa745bcbcef1c621f779d2a43c6519ad9f34c": 1
     },
     "packages/learn-card-base/src/components/connection-prompts/ConnectionPromptCoordinator.tsx": {
         "2c0467314d932abefc7bf37ecb952067ef7de6c920c19720b708273106293ddc": 1,
         "88d9a7a061a49f27299c5fe80b35bb0b9508d51744db66f4559049c17a294ea8": 1,
         "bf210b868cf545b31b6664317a13adf4a26861b608ac4f09d0c9024688489b73": 1,
-        "e5eacfcad29818366786639562c87995cbf9659fc7d9666c98c8d4886e3cb023": 1
+        "e5eacfcad29818366786639562c87995cbf9659fc7d9666c98c8d4886e3cb023": 1,
+        "e12b7d57c9aca9048b9eb2b32e5196dc12ce46341961263829c4da2f661b6cf3": 1
     },
     "packages/learn-card-base/src/components/connection-prompts/ConnectionPromptNotificationCard.test.tsx": {
         "12e04a494b86f0e254c08adcfdb34467b3629e7f1e515d2e750ffc49fe8b15c5": 1
@@ -7313,5 +7320,19 @@
     "services/learn-card-network/brain-service/src/helpers/connectionPrompt.helpers.ts": {
         "3e5f971210b0de63c3da2f0600aa20b278ec7d651560d308fd6635be9d1bff6b": 1,
         "479f1639f1001de6459ec60b8c6282e8ad9d44a51812a508d33dd7705d1e2273": 1
+    },
+    "packages/learn-card-base/src/components/modals/ModalsContext.test.tsx": {
+        "24939f08502c48116cf8103df2266c6cf6234c051872978ce2f3b34b1e0aeb5d": 1
+    },
+    "packages/learn-card-base/src/logging/logger.test.ts": {
+        "7faa931f5e05bd6d82e607b815cbb37e5dacd09cc30c74918a4051853e13baa3": 1
+    },
+    "packages/learn-card-base/src/react-query/queries/preferences.test.tsx": {
+        "a69bf6ddf4d5d6e9869b7525c62b7a70acd0607f48bf3e28046d36b00f36ed26": 1
+    },
+    "packages/learn-card-base/src/react-query/queries/preferences.ts": {
+        "195201b8dab0e2700658e719582e74f7272f63b8651850cf6010eb9adcfce1a4": 1,
+        "7a286ea1b8b07fceddb1d74c0f7253f9c44dfa747c0515d6ed167c1bbed5196e": 1,
+        "8b4196a414f2488da106f201893014f6b19eb7f34f2bfad738cf7e517e63b8cb": 1
     }
 }

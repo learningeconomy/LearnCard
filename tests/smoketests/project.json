@@ -4,12 +4,6 @@
     "sourceRoot": "tests/smoketests",
     "projectType": "application",
     "targets": {
-        "test": {
-            "executor": "nx:run-script",
-            "options": {
-                "script": "test"
-            }
-        },
         "smoke": {
             "executor": "nx:run-script",
             "options": {

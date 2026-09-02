@@ -20,22 +20,29 @@ export const learnCardAppEnvironmentShape = {
     BUILD_SHA: optionalEnvironmentString,
 } satisfies z.ZodRawShape;
 
-export const learnCardAppEnvironmentSchema = z
-    .object(learnCardAppEnvironmentShape)
-    .transform(environment => ({
-        ...environment,
-        DEV: environment.MODE !== 'production',
-        PROD: environment.MODE === 'production',
-    }));
+export const learnCardAppEnvironmentSchema = z.object(learnCardAppEnvironmentShape);
 
-export type LearnCardAppEnvironment = z.output<typeof learnCardAppEnvironmentSchema>;
+type ViteCommand = 'serve' | 'build';
+
+export type LearnCardAppEnvironment = z.output<typeof learnCardAppEnvironmentSchema> & {
+    DEV: boolean;
+    PROD: boolean;
+};
 
 export const parseLearnCardAppEnvironment = (
     raw: Record<string, unknown>,
-    source: string
-): LearnCardAppEnvironment =>
-    parseEnvironment(learnCardAppEnvironmentSchema, raw, {
+    source: string,
+    command: ViteCommand = 'build'
+): LearnCardAppEnvironment => {
+    const environment = parseEnvironment(learnCardAppEnvironmentSchema, raw, {
         project: 'learn-card-app',
         source,
         examplePath: 'apps/learn-card-app/.env.example',
     });
+
+    return {
+        ...environment,
+        DEV: command === 'serve',
+        PROD: command === 'build',
+    };
+};

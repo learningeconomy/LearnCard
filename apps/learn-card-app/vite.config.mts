@@ -142,7 +142,8 @@ export default defineConfig(async ({ mode, command }) => {
     const loadedEnvironment = loadEnv(mode, __dirname, '');
     const environment = parseLearnCardAppEnvironment(
         { ...loadedEnvironment, ...process.env, MODE: mode },
-        `Vite ${command} (${mode})`
+        `Vite ${command} (${mode})`,
+        command
     );
     const { default: tsconfigPaths } = await import('vite-tsconfig-paths');
 

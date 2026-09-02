@@ -18,10 +18,9 @@ import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { statusListsFastifyPlugin } from './status-lists';
-import { sendNotification } from '@helpers/notifications.helpers';
+import { deliverQueuedNotification } from '@helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from '@helpers/skill-embedding.helpers';
 import { maybeAutoSeedSkillFrameworks } from './seed/seedSkillFrameworks';
-import { LCNNotificationValidator } from '@learncard/types';
 
 const server = Fastify({ routerOptions: { maxParamLength: 5000 } });
 
@@ -165,12 +164,7 @@ if (pollUrl) {
                 await Promise.all(
                     messages.map(async message => {
                         try {
-                            const _notification = JSON.parse(message.Body ?? '');
-
-                            const notification =
-                                await LCNNotificationValidator.parseAsync(_notification);
-
-                            await sendNotification(notification);
+                            await deliverQueuedNotification(message.Body ?? '');
 
                             const deleteCommand = new DeleteMessageCommand({
                                 QueueUrl: pollUrl,
@@ -179,7 +173,11 @@ if (pollUrl) {
 
                             return await sqs.send(deleteCommand);
                         } catch (error) {
-                            console.error('Invalid Notification Object', message.Body);
+                            console.error('Notification queue record failed', {
+                                messageId: message.MessageId,
+                                error,
+                            });
+
                             return;
                         }
                     })

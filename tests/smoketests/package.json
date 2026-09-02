@@ -3,7 +3,6 @@
     "version": "0.0.2",
     "private": true,
     "scripts": {
-        "test": "playwright test",
         "smoke": "playwright test",
         "smoke:api": "playwright test --project=api",
         "smoke:browser": "playwright test --project=browser",
