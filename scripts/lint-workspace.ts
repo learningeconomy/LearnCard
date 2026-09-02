@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 const BASELINE_PATH = 'scripts/eslint-baseline.json';
+const REPOSITORY_PATH_PLACEHOLDER = '<repository>';
 const concurrency = 2;
 
 const walkProjectConfigs = (root: string): string[] => {
@@ -181,7 +182,10 @@ for (const result of lintResults) {
         if (message.severity !== 2) continue;
 
         const sourceLine = sourceLines[message.line - 1]?.trim() ?? '';
-        const description = `${message.ruleId ?? 'fatal'}: ${message.message} | ${sourceLine}`;
+        const portableMessage = message.message
+            .split(process.cwd())
+            .join(REPOSITORY_PATH_PLACEHOLDER);
+        const description = `${message.ruleId ?? 'fatal'}: ${portableMessage} | ${sourceLine}`;
         const fingerprint = createHash('sha256').update(description).digest('hex');
         const fileErrors = (currentErrors[path] ??= {});
         const fileDescriptions = (currentDescriptions[path] ??= {});

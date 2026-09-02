@@ -99,7 +99,7 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
     const canTrustPreferences = Boolean(
         currentUser && reportingEligibility.profileId && !preferencesLoading
     );
-    const bugReportsEnabled = canTrustPreferences ? preferences?.bugReportsEnabled ?? true : true;
+    const bugReportsEnabled = canTrustPreferences ? (preferences?.bugReportsEnabled ?? true) : true;
 
     useEffect(() => {
         // Keep logger privacy gate in sync with user preferences

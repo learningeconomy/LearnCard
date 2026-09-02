@@ -20,6 +20,8 @@ export default tseslint.config(
             '**/.nx-cache/**',
             '**/storybook-static/**',
             '**/.vite*/**',
+            '**/playwright-report*/**',
+            '**/test-results*/**',
             '**/public/build/**',
             '**/swagger-ui/**',
             '**/*.d.ts',

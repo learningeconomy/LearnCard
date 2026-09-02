@@ -1747,8 +1747,8 @@
         "e50f84e969aeee8ff0b0c78945995f4baeda2c0783c689d7a9c96216246202bd": 1
     },
     "packages/learn-card-base/src/auth-coordinator/AuthCoordinatorProvider.tsx": {
-        "403acb6ca4a7fa934d55aa00532cf6cd5589d203e7d964e2ccfab42fc8d5fb45": 1,
-        "42b3aa5f28af383025b3788d5b151484df5fcaddfea0a0c5766e4e93eb20e38d": 1
+        "0a83fd4aeaea1bc8422ee49c11f43b06f2994767df9c7819c78335e037abe119": 1,
+        "b7b66e2061889c8c1fc08a874347d52dd76cc640285314fb76c9a9d911c4e98b": 1
     },
     "packages/learn-card-base/src/auth-coordinator/components/EmailLinkOverlay.tsx": {
         "0e30c95856fa31faf4e500e94adea8a929ad08ec424270448f537c7f46eb4738": 1,
@@ -1784,8 +1784,8 @@
         "7eb549cf72e99dd039db79673fe30c6482049e6b6fbd8d7c03313050ce96be7c": 1
     },
     "packages/learn-card-base/src/auth-coordinator/useAuthCoordinatorAutoSetup.ts": {
-        "109befe7e1df063142576d73b5688c5feae384e49bb79a5de39c7ddf20f96ac7": 1,
-        "ce9665ba8f7e9eb95f26762180aef70f0d6e046e9ff31b04b01516cd29447711": 1
+        "964a7047f30385641c0fb74d9206d98e518f58b6cf3d08e9fb6e2c16c9ab6483": 1,
+        "dd18405ea037540525412544db47aa064a92a49b7f3a28de950280c966481eb9": 1
     },
     "packages/learn-card-base/src/auth-providers/__tests__/createFirebaseAuthProvider.test.ts": {
         "28366542014dadef7764b9d7ffee3241b2988b4992ef11b1f550ca142432ebe5": 1
@@ -1806,7 +1806,7 @@
         "a304d00a805e60fa9d841c8345fe0ad64ab26c3cd3f7e7e7fbed4e3e9ee76205": 1
     },
     "packages/learn-card-base/src/components/boost/BoostListItem.tsx": {
-        "d0844bc44147f8dede73272790d2f08f03ff13b5c60d3ee9f3c91aba544dbcef": 1
+        "8c2cc6d23c9814518e92be0c93337909e661c35207f9e7f1e93b5b47487e4146": 1
     },
     "packages/learn-card-base/src/components/boost/boostOptions/boostOptions.ts": {
         "1f0773057ef82d1025a05ba4ae8b47e830777e1188a6fb08f3b73ebf6c9577b8": 1
@@ -1830,13 +1830,13 @@
         "5c42bc586068f09f8abd6e2ccca3f730d73e2fde708fc9478b1632371d9d17e5": 1
     },
     "packages/learn-card-base/src/components/connection-prompts/ConnectionPromptCoordinator.test.tsx": {
-        "9acb2d36179972bef91b94c7de2fa745bcbcef1c621f779d2a43c6519ad9f34c": 1
+        "4429e84944c856087452200248d093c61b27d11b6cf40cd272878ecd84f9b8ef": 1
     },
     "packages/learn-card-base/src/components/connection-prompts/ConnectionPromptCoordinator.tsx": {
-        "2c0467314d932abefc7bf37ecb952067ef7de6c920c19720b708273106293ddc": 1,
-        "bf210b868cf545b31b6664317a13adf4a26861b608ac4f09d0c9024688489b73": 1,
-        "e12b7d57c9aca9048b9eb2b32e5196dc12ce46341961263829c4da2f661b6cf3": 1,
-        "e5eacfcad29818366786639562c87995cbf9659fc7d9666c98c8d4886e3cb023": 1
+        "3d6882f2bb48c656ea65996593f67f154d549decb8c21c0879c864821a5c7b7e": 1,
+        "5a43f2283451efe409037aaaa942f1f601e9cdb23b66ca513dca24a7024d4a9c": 1,
+        "e5eacfcad29818366786639562c87995cbf9659fc7d9666c98c8d4886e3cb023": 1,
+        "ff102a03cd12b21120059cb431e5d88847ccb56459c53a4e1e4083112958b9d1": 1
     },
     "packages/learn-card-base/src/components/connection-prompts/ConnectionPromptNotificationCard.test.tsx": {
         "12e04a494b86f0e254c08adcfdb34467b3629e7f1e515d2e750ffc49fe8b15c5": 1
@@ -1845,28 +1845,28 @@
         "0b44bff11b55a392e5f1af7675a587145d5ed5c56dd5d5f0795051951ad9ecdb": 1,
         "1988ef0222675f4e74a9449b7c07a5d0021d9c3e7a247c3b708ab0633eb44e6c": 1,
         "6e08893e36217717c0c933319c521f9c20309acdd76b9a5df5c5c1d308dbdc94": 1,
-        "8b6d1a0288770421f0f5f9b510d2f00d064320053ad4386242cd872edab1db0e": 1,
+        "7496adf617c49ec01389bfced0daeeff3ca9c47a01870f39f44aab318dcf4066": 1,
         "d83eecac62ab1ade093e992e3aac7f435733c56a83a7aee3de6d509d6c094dcb": 1
     },
     "packages/learn-card-base/src/components/connection-prompts/deduplicateConnectionPromptNotifications.ts": {
         "c86a0e01af70fcaa6301735eef40d3108f80b4241f80e60130b04199b9fc3fb5": 1
     },
     "packages/learn-card-base/src/components/CredentialBadge/BadgeThumbnailImg.tsx": {
-        "cb036de667bfdd02022553ae60d9f95f459bbe247deee811fee5cf9ac2ac7805": 1
+        "a6087fe9b1334549aa23b7f19e7f6b728586cc6d6b1318fa9da4f22588a74b15": 1
     },
     "packages/learn-card-base/src/components/CredentialBadge/CredentialBadge.tsx": {
+        "2b33e4f1f2608419c7006a10125309ea9d310a7f5be5f2696e412687e682f7b2": 1,
         "3bfce2964915076e8f8a3db8a9a8211fe4c2dd66d15d17d85261db64936f5bcb": 1,
-        "55bc7e3de6e95b18740c7a0eb1954d4b0730a08a8d247993043f196bf429b7f8": 1,
-        "f581de9de7d9fe7d6e50280b17c3057d1b178d77af2e10e9cd5412eddacccbe1": 1
+        "eace9a255d128a9ddb6b90fea9b27e929becf9d705326bffd20657dd0601e340": 1
     },
     "packages/learn-card-base/src/components/CredentialBadge/CredentialBadgeNew.tsx": {
-        "759d34ffabddcf37aac8b1ba93bdaea229c01d2fca851390c15ee13c1aa8e1ad": 1,
-        "763356cbc87d8b25867c16e38808a4791dff5c75f6a2a6518a41496d619083aa": 1,
+        "2628a7bcd8c43d127fb160e4eed2e391261bd138f96764f5b51f31e299040318": 1,
         "853964c2ee244f4f7524b0d08986fa2fd874ad0c60514b2837783c32aa003297": 1,
+        "89dbc64d358831791df8a5954cf29649dc0a705e75d64da5306ad1c0c503e6ce": 1,
+        "89e79f5ae02dbb94c8787fded8ecde245939362cce00bec02160e400284e9ce3": 1,
+        "93d66e5e4acddd8c1cccc91d93b76abcebad2ccb8038961f922fa4a7e8e019e0": 1,
         "a844371f3736ae8781d8e20d495cf89a0ca3d7f17e30b6df2cd7127c99578050": 1,
-        "b37aa32ec049bdb07c5c88ff17ec98cf81c2584b92e92db96f812c3c2cd44bff": 1,
         "b6a3df13c36bc2597fc855e602368a469419bebff9b030cc73a778fa72e60211": 1,
-        "c6a5f1e291e2047b6842156c44d35deee021b6929434c27280c01d169536dbed": 1,
         "fdf38e6ae147f2cb2b82f00532492b4e7dacfd4f0a5f68b76b44345878447dea": 1
     },
     "packages/learn-card-base/src/components/CredentialBadge/CredentialIssuerPopover.tsx": {
@@ -1885,7 +1885,7 @@
     },
     "packages/learn-card-base/src/components/did-auth-modal/DIDAuthModal.tsx": {
         "d88c847079721a85a41fd2bf4e338d3c445dae3ddb9798cebfdf9f8b577b5982": 1,
-        "df1f15c0f40f298031ed49811c8169b51dea2c058ed23452ad9445c8c727468a": 1
+        "f6902a93e4d4aa7545b00bb183760b66997917f23ca2f5c35f9c118f354349a1": 1
     },
     "packages/learn-card-base/src/components/earned-and-managed-tabs/EarnedAndManagedTabs.tsx": {
         "40cb553f9347b37b8454b29fa9dd8d0e132c57b91eec49e697cf5a2d3ec1715d": 1
@@ -1899,8 +1899,8 @@
         "9134cadcac1ae01781b03ed24a4ffa48220a6bd9fa7bb788fc4edc07b76e5f8b": 1
     },
     "packages/learn-card-base/src/components/GenericCardWrapper/GenericCardWrapper.tsx": {
-        "524cdd8f01d0018362f7845162a40a49f69f444e543bcfe2c3141f8b7a458edf": 1,
-        "8e8c85ab1ffeac9a57d746eef815933f9bc115db8864ab6f06b7847d83885230": 1
+        "855a0cc8ba63c6bc644ddf5c17b1a1bf599916b878e69eae5c4886237fb9950a": 1,
+        "f2f17f0c52aea78496597681a9e097758c3923b17a58fc6e62e237e1531de983": 1
     },
     "packages/learn-card-base/src/components/id/IdCardDetailsModal.tsx": {
         "d0695cdfd911595f4e2415c1d888f2682dbaf0d417a57f2b27f684fcb7af8c3b": 1
@@ -1910,9 +1910,9 @@
     },
     "packages/learn-card-base/src/components/IssueVC/IssueVCCreator.tsx": {
         "3375d6b96bc1e7eb22d272af0704eb3b6a21c33dbcb023c2ca8c816c24ba685f": 1,
-        "bed0fea19bfc03211517a6305b762b5867c1e414d3261b34f1cd47b1111dd52f": 1,
+        "3d6864b0c235c667c1a003e1d21641c137310a3143f2c0a4df27a19e96ae4505": 1,
         "c71a3378fdd3e022879c2aa3fe4e76c0379706d3825769d92894750693386900": 1,
-        "d1692345ecda43f51a1add17341ba27840001d2db92b5103a8f74f1936db33c2": 1
+        "fac2acf0d9e4c6fe50e060c990976d87f94b4909f15bb80a2d93f40c78f0d102": 1
     },
     "packages/learn-card-base/src/components/IssueVC/IssueVCModal.tsx": {
         "6939924db5de8c221c3cc3c84af34efd7bc8e5377ea8bb853209a5dd5093fc9d": 1,
@@ -1928,11 +1928,11 @@
         "a8c1240a902f52fd567cba6fecf11cfead7408d776174b3139da0337e898d731": 1
     },
     "packages/learn-card-base/src/components/modals/ModalsContext.test.tsx": {
-        "24939f08502c48116cf8103df2266c6cf6234c051872978ce2f3b34b1e0aeb5d": 1
+        "9bd218d54ab0781b490d6de145598c4e09500fce3ef1cdd1c9cba5cdf2973e78": 1
     },
     "packages/learn-card-base/src/components/modals/ModalsContext.tsx": {
         "3a9d71735b88e96d4886718d24dd338a4f8f2d0a5a20471cc0d5f2ad466a60c1": 1,
-        "da14c4413d9e3745a11caabe3da5d3a4a5a69b083bbb5a2bfd14e9feb5be59a9": 1
+        "e27b97441c233174f43620ad0a05dff2588bfa5da0a3b95dff762ba9cbd4962d": 1
     },
     "packages/learn-card-base/src/components/modals/types/Modals.ts": {
         "c0b0d1bd5231d0c82b81268b47281272f6a8dd467cc55621f37b7f30a59edf2f": 1
@@ -1961,8 +1961,8 @@
         "f0807c652b45066124e60677a2f3c23d3c6776120cfb331998757405d191817a": 1
     },
     "packages/learn-card-base/src/components/profilePicture/ProfilePicture.tsx": {
+        "1547e96e75074ee31f3a499c2e76eef9775ff0fb858297a6ab207ece8cfea37f": 1,
         "5da1e37f594dafbf0ff7a7722ac336a50c5e2d958b4b48fadc3d7fca75182de8": 1,
-        "7bb29b871aeba28ee07108c49a05ad4920070fcb000b03aae119cae2bd11782a": 1,
         "b58318821a0233ee53084bb2a4cfb758fdb449a8b1b53b04462d21d2c82aaed4": 1,
         "d1c9bff57fc763d3eeafb81578860ba4151d6055fd8d43feed21daa048aa9494": 1
     },
@@ -2020,26 +2020,26 @@
         "9411b8e59ce9e65a5d15e93737e5bd817193b6f770cd918d4f8d11e3c11351a6": 1
     },
     "packages/learn-card-base/src/components/sidemenu/SideMenu.tsx": {
-        "356785529353f2ea8df2e588084a89b93ee2207510e5bfce8953d390734e0674": 1,
-        "9eac431d27403f9c9a215e5a35cb4e99f4dd9f96b4d885cf9cb887d349743f7e": 1
+        "34d464bf096bcb50216018794d5fc3087de0c4b0e388697de22466aa44dda8e1": 1,
+        "356785529353f2ea8df2e588084a89b93ee2207510e5bfce8953d390734e0674": 1
     },
     "packages/learn-card-base/src/components/sidemenu/sidemenuHelpers.ts": {
         "6bd1091e023d96d4a9e32459aceb6e19b12c5f0d6a878ac285727c2fd4259bf8": 1
     },
     "packages/learn-card-base/src/components/typewriter/Typewriter.tsx": {
-        "bba840f68afb7687b690be02cfb155d12b81d1f610bf6643503ffa097db41bfe": 1,
-        "c800356b9fecad1207cee1ccf33561a68d7a30428781cf06e448e9b2d6e9058a": 1
+        "03b63d5e6dd35eae8f7f07005fc4efeda8a73d4cf0107b978da2671a041519ef": 1,
+        "a15f42013138cc4539fec7a689110dda34562d8e6210016a8a7c3cf2c563c195": 1
     },
     "packages/learn-card-base/src/components/vcmodal/hooks/useCredentialProfiles.ts": {
-        "78956d9561ebbeb0d6b8899dd2aa38ef034de3a5ffff6844202329f928d0e88e": 1
+        "ee44bd4be4c34d8d9d98092b0db16c2628c246a9e1848c36708edcacb6453f2b": 1
     },
     "packages/learn-card-base/src/components/vcmodal/hooks/useWalletDid.ts": {
-        "76eb511501374deade7d40baa263110109285d97322b155f6eac7e5e219b3dbb": 1
+        "dace3aeac930ea795abb8f1a7c1d55bf62b5a23f491f809bdbe74a20907ce7eb": 1
     },
     "packages/learn-card-base/src/components/vcmodal/VCDisplayCardWrapper.tsx": {
         "003bc1faef7ab0186f163f5c745e654ae893f0a69db817981dce3f8e4973e334": 1,
         "15c65972b23255dce00261326d5b591e0b5c32e3150913790ce8c3e32c8c5c86": 1,
-        "2ebd161699ca9ef493c30c850b6c245200ed6eb92a9b1ada75537a7d89621e74": 1,
+        "24bbfc8098459419f09c42755f7e85f6229f86bd38fb0bd21e492abe77f1b4f8": 1,
         "419218a273a72985b4f0ff3d174119187b81c23bfc14cbc0a286a2ae4c37d070": 1,
         "606541f2129bd6f8779db6b6e7ffc15c5027e980bcb9f8aea6f9bba4b2998edd": 1,
         "78bc756dd0ed7bc79594a98bd1f5e01c414c0e2c3d6736cd6bfe4bc50bb815bd": 1,
@@ -2055,10 +2055,10 @@
         "113f78f82cbb009ccbfeac2d014b586212c9013bae17670825570918c82fd4fb": 1
     },
     "packages/learn-card-base/src/components/vcmodal/VCModal.tsx": {
-        "177f3f20695f70aae2a6cd61df748357d918534a47fa695f386918b7eb5aea96": 1,
-        "1dddb4921a469943a412a9370f6a678005cc97f57463e5961a992295d196aa4b": 1,
-        "3077aedc916ebf0b6636b5c9349f3f29d915bafc27cc8614cb609f19454798ea": 1,
-        "6f34aaafa8132fbdf45168772f0b5108292b0e18fa71ab516f50639c5f8b56c7": 1
+        "1b1e6b0318552b96490e6d1484e40a261e457d2ef81c2ea844a22c252907b8bb": 1,
+        "6c5b21dbf68cf68fcfacba1c492975eea5f1d100afea314973b191478fbd94a2": 1,
+        "6f34aaafa8132fbdf45168772f0b5108292b0e18fa71ab516f50639c5f8b56c7": 1,
+        "809904f5c02cef89d3b09320c698432c90a00a81c10b137b5f26143ee37c895f": 1
     },
     "packages/learn-card-base/src/config/__tests__/providerRegistry.test.ts": {
         "229fc344e27bb33eb3feba540154a6093d4860ddf4b7ba866e1cec30ae12b4a6": 1,
@@ -2264,7 +2264,7 @@
         "e2fb0ff79a3ceb507ad462fdcbdcb021e616d9a352fb848d341ec7bd7253ba88": 1
     },
     "packages/learn-card-base/src/hooks/useConnectivity.ts": {
-        "001c571c2f9018c3260e24b2c088864f9f1a2c82b7d2551dbc5c1921463cabf8": 1
+        "877e3cb7ee52d557b2626ec57e830f976375b294e51648415b4ac71d72aa2d00": 1
     },
     "packages/learn-card-base/src/hooks/useConsentToContract.ts": {
         "292ab9d7f5d0068b891f68d5bfda0c8b6bfb9015d9878658f61ef5c427918a42": 2
@@ -2347,6 +2347,7 @@
         "75e197ef326c1fb30e7f0622ac39c7b975836b39e142324e06f2ceb682d3b4a9": 1,
         "7a938d91488f06e512f5c88681d5909a0dfdda53f4e20fd149de18bf0d4b0820": 1,
         "7bc3f3583b6d39be27281fdbe56cc726aa53512e87217479a50629587ac1eb7c": 2,
+        "86341cc71f5ccb52e65ae351847b82d7700a9b355ad590f7dddf585cfda1cc9a": 1,
         "88d7aa2c1420ee46d705b5073d1aeb5d0f3f69c6f4fecb5c69b2ec85f1434cae": 1,
         "8ac89e0c7e8a55b21b732c247c480c1dbd75c66928af148d59fa9055d081da76": 1,
         "9770e0dd1376ac05979485673d67af308b88f3eed8a5537f7af410d6c24c9d3c": 1,
@@ -2364,7 +2365,6 @@
         "d0903774c0ae6b0ab05ea734fb6f84fcf36639785d6eec3e3378e8941ea0bb47": 2,
         "d5564f5e01fccc33a0c53c7cd68f1e2c14339c7fef6be86f3311f96a5d9e8087": 1,
         "d767fd7d96890d45db1764c44b65856f72f9d3cb1d01c9768fe3bd84e0367379": 1,
-        "dce40d4efabd4fa4a42a042e8b57c5943b1a6f782f815372614d0f8e66509910": 1,
         "e0bb46c1464cf735111770effed85c1f028e1a3d6a8e23abe7433c98e9d7e62f": 1,
         "e0c52835108fabb11ac255b57ba6394e8bc2af8df2c74f16026ffe7e82d99ce2": 1,
         "e6c90bad6cdcab940f8f12d0e978a6994d070d91758f8cd3a0467683862e3363": 1,
@@ -2372,8 +2372,8 @@
         "fc92739111957c1449375a93dc7579d5a5396925e337eb83199452c9bc2c9d55": 1
     },
     "packages/learn-card-base/src/hooks/useShareCredentials.ts": {
+        "0c6754757c1f043c8c452da89171ff675e8dd697359b6837a3c7b861a4ae8d9f": 1,
         "51f862be17b9a3362124de2c247277bd0315c4805fdf284a9d4a5fb0c0d4806b": 1,
-        "a0c65ca22aa105e256ce49c8dddb093ad183f941b5207f10565f9d4d1acfe775": 1,
         "e17c11832b73e2ebd33522544714fc1c95d7959bfe947b57b7777d26040737da": 1
     },
     "packages/learn-card-base/src/hooks/useSharedUrisInTerms.ts": {
@@ -2413,15 +2413,12 @@
         "65bd6ab96ca600af42bb2d3e3788bde8c4612987ecfa3eb998fd0c132445ab3d": 1
     },
     "packages/learn-card-base/src/in-app-messages/usePresentationGate.ts": {
-        "1b429743f91efb452be6821e38f6d35c543bbb56b52f14a99765b6f4ca3f568c": 1
+        "fa9a03da3b4ca1f456c66d4cf7b903937adb0ca4ce4048322c71458fe43fe298": 1
     },
     "packages/learn-card-base/src/key-derivation/createWeb3AuthStrategy.ts": {
         "534f5ef8079eec8a5f6d430b02434714390438fa5dbed00dfe76e87cb480b937": 1,
         "899357d9c17dddc5f5c5bd911c3d51d93f9748332dd68e17a6e02599b080064e": 1,
         "9555dbbf14e3f83807e9a1630e74c19f52b79fefcc7c203b26519486b92bfbc5": 1
-    },
-    "packages/learn-card-base/src/logging/logger.test.ts": {
-        "7faa931f5e05bd6d82e607b815cbb37e5dacd09cc30c74918a4051853e13baa3": 1
     },
     "packages/learn-card-base/src/oid4vc-resilience/orchestrator.test.ts": {
         "0281ca1876d2f4d3cba47c04d8a706e8c77f1764b247db7770186b0170dc5e8a": 1,
@@ -2536,15 +2533,15 @@
     },
     "packages/learn-card-base/src/react-query/queries/preferences.ts": {
         "195201b8dab0e2700658e719582e74f7272f63b8651850cf6010eb9adcfce1a4": 1,
-        "7a286ea1b8b07fceddb1d74c0f7253f9c44dfa747c0515d6ed167c1bbed5196e": 1,
-        "8b4196a414f2488da106f201893014f6b19eb7f34f2bfad738cf7e517e63b8cb": 1
+        "46c55da7601494686a2af0c527bce1f58c70649c87f42db20df8739562478f97": 1,
+        "8ddff4e94b11d399ead2e9dcde319415a8b507f55668efc4f0b44c74071c1926": 1
     },
     "packages/learn-card-base/src/react-query/queries/queries.ts": {
+        "316d817e415b79fd721c8f670018fa909d50edfc608af72870ddf425706d0109": 1,
         "32911e6b4ecae5caaaa9d882acc9b4360ed9a5b4da8bdda36614fcba26394fe5": 1,
         "45da8a1226d74214ca3245c6558c7d54d8c51a5cd309c0b44c9246feb3503415": 1,
         "9f0b2936c89c06fe751e6824862101f90b0de1b21f86edb78635ac764f0b06d0": 2,
         "b76c88563518776e0ec465fe03bbe37951346b51c85b63692195550efb9b6b3a": 2,
-        "ba928aaa809fe3df387d546702bbf5ce9bf22631550c759453fd45179257d221": 1,
         "d4eee2fe36bc6f84e42cce02de75a17c28cba59be3b602324f0f4d1b9ea96e77": 1,
         "d83bfbbb6705af9ecba911d494bccfcf6fb54c326fb0480ad7ac4ce34e67dfb7": 2,
         "ff1162e8fe39197db83642d94454959a15576d030c70e6cba1e41d1b4b52cb4a": 1
@@ -2600,10 +2597,10 @@
         "eda29e33208082307bff70ab3cd1dd11b5e4d5c998749e534b868ee1dc2e1cc7": 1
     },
     "packages/learn-card-base/src/storage/image-upload/useImageUpload.ts": {
-        "2ad4e00324a9b3788b297a09258c5a7047bb36d457abfdba8118a3581edb000b": 1,
-        "6e66f0c3be719ffc9b7025cf3072865546d1d4366d0ba6d2e1bb066d772740ae": 1,
-        "bece851f84b54d54cc138a0fc3ec9dbd683cb755b7913238a3bad7f85fea290e": 1,
-        "c1d6ae51d3a8cb5ae35c4eb1882d73f342f0ba48f3a20bdf65e5244c7b11d2d7": 1
+        "1cf2ae6f56aee5b3eb73e3f240a32ae7b7741d560572416f559f5a8a251e7e24": 1,
+        "851cfc999f1df9900ce2404e9143aaa4b9d6ed0dd795f56be11b67febac2e06f": 1,
+        "95e925fe03e1087ad42d059c84f8e6805dbe696422052f91c53502807c4c10d2": 1,
+        "b3e6b70513349af66c0a2f53088716e5b2ac6682d506400b5ed28455c261f8b0": 1
     },
     "packages/learn-card-base/src/stores/authUserStore.ts": {
         "606f1d2058eb713bd265546328cf06e0e88ab7d319370d25a02c2b10879a51b2": 1,
@@ -2826,8 +2823,8 @@
         "9dffca9465bd0f1578619f9e38faec6a8407d60acada126ba0fdad26eda0f29b": 1
     },
     "packages/learn-card-base/src/svgs/MeritBadgeRibbon.tsx": {
-        "844f319c91a8f8ebce01db5985a2614fb6a2620e9d513f23f86e7694f7c49921": 1,
-        "d38a44a58eeded1d94c745cbfa541d8df1f1a536eabad1500024233fe6b99a33": 1
+        "37155491d5349ac48a1d60071503390b0d06ae7d774016081fcf3c4c7fdc8be0": 1,
+        "844f319c91a8f8ebce01db5985a2614fb6a2620e9d513f23f86e7694f7c49921": 1
     },
     "packages/learn-card-base/src/svgs/navbar/formal/NavBarFormalCircleIcon.tsx": {
         "1f46c9e23ffa433ff36f5d544ec8bf9a89f2fc28274ae28b9de96e2361717dbe": 1,
@@ -4401,7 +4398,7 @@
         "d5185af7dfc47becf7f1c0853cd2a4b24850c13350517085e013deee69a56e95": 2
     },
     "packages/react-learn-card/src/components/BadgeThumbnailImg/BadgeThumbnailImg.tsx": {
-        "674cc30878b894e23e5643ae539f77f13db61a9846c7b9c06c72b1d337ab2503": 1
+        "450396445f36703dc43e19288bda067b29916b73f737a3c20b9abeacbda6a35e": 1
     },
     "packages/react-learn-card/src/components/BoostGenericCard/AlignmentSkillsCount.tsx": {
         "1f82f2e0d9b89ed2e0b8298a64719ad7681de9c2dca751349804818c5df660f8": 1,
@@ -4412,7 +4409,7 @@
         "e728e5ba2cb78aed40374ee985fe11cf31354863219fa2d5c568c9e2612f1a25": 1
     },
     "packages/react-learn-card/src/components/BoostGenericCard/BoostGenericCard.tsx": {
-        "52488c8bb1db9e18450166a6141949e97e6caf0f780ad92a1c4059d975b8d50a": 1
+        "ae954be8202553434b3fb2860c5f529c6ae31089ed2be39ea85976d44987f9c5": 1
     },
     "packages/react-learn-card/src/components/CertificateDisplayCard/CertDisplayCardSkillsCount.tsx": {
         "1f82f2e0d9b89ed2e0b8298a64719ad7681de9c2dca751349804818c5df660f8": 1,
@@ -4425,7 +4422,7 @@
         "7b3dc9afe0c3f49b9321d5ebcf7b30fa3ffbc7a49a6e781fa9663d526700f5df": 1
     },
     "packages/react-learn-card/src/components/CertificateDisplayCard/CertificateImageDisplay.tsx": {
-        "81f49b236b3414b6884c1b1f88e51069418437b6a10e318e371754d98f620de4": 1
+        "7fa53bd277f6174f65d3a7a48236f0751c14751afae66fa62e9e71f8e12d3fd7": 1
     },
     "packages/react-learn-card/src/components/CertificateDisplayCard/MediaAttachmentsBox.tsx": {
         "c1c898560a4e2ad987adfcf4053d4f569480eb3b64cc198a81a0f5c82682d37f": 1
@@ -4456,8 +4453,8 @@
         "c1c898560a4e2ad987adfcf4053d4f569480eb3b64cc198a81a0f5c82682d37f": 1
     },
     "packages/react-learn-card/src/components/MeritBadgeDisplayCard/MeritBadgeRibbon.tsx": {
-        "844f319c91a8f8ebce01db5985a2614fb6a2620e9d513f23f86e7694f7c49921": 1,
-        "fba219353a71f711adb993990988f42ebfecd99a95421aa3529fd2ccdefe1429": 1
+        "5d9b7c4b1f279db3c80bea033a87ceb23b70ad90e97e5b479018cc96dbb99afb": 1,
+        "844f319c91a8f8ebce01db5985a2614fb6a2620e9d513f23f86e7694f7c49921": 1
     },
     "packages/react-learn-card/src/components/MeritBadgeDisplayCard/MeritBadgeSkillsCount.tsx": {
         "1f82f2e0d9b89ed2e0b8298a64719ad7681de9c2dca751349804818c5df660f8": 1,
@@ -4467,22 +4464,22 @@
         "e728e5ba2cb78aed40374ee985fe11cf31354863219fa2d5c568c9e2612f1a25": 1
     },
     "packages/react-learn-card/src/components/Notification/Notification.tsx": {
-        "3b03383289b446635ac40f040598eeccfefbd95a11a869dc2448643f3ae0895e": 1,
-        "ff1f654d99c083f66ea28781596474e311fc0234b2b6df506523543fec07873c": 1
+        "4f2cf0e0963b68c83f80cf23ea9bcc28236fedfbeeba43d0eaec1e7658dca6d7": 1,
+        "a22740b8cb9f616b83849215c4ddd29298e0150c363448ef26e5989af5674aa7": 1
     },
     "packages/react-learn-card/src/components/Notification/types.ts": {
         "7891ded0c2d9e916696f47bc95ad74a0ed7c4c7c69737d815f6b23f726f872f8": 1
     },
     "packages/react-learn-card/src/components/NotificationBoostCard/NotificationBoostCard.tsx": {
-        "3e92d794094b4f92b6ae1b8d4d48abb3f6be572e9262e8336c8ad6bc1211e520": 1,
-        "f37ebe587d4b7e05076d6acd0e61e42db5a3b8e3fe80f8a676b069014a33ab42": 1
+        "49f8f69b0eb9822c5f80e3960ce1ac0a78bfba996cf9761d1b6b544e9fecb6c3": 1,
+        "54a93e27926631ebc6a61183d32b629ee2c812b6c2a78f993d19524aaed20428": 1
     },
     "packages/react-learn-card/src/components/NotificationUserAcceptedBoostCard/NotificationUserAcceptedBoostCard.tsx": {
-        "61faddf1c8e5795532f3021c5cbdea8bd1003754af9c3c50a6057ce02b05670b": 1
+        "afd2ccc6df7e0e4f6226a3631dc88193b09d328abe75a2310b3896aaf89df3d2": 1
     },
     "packages/react-learn-card/src/components/NotificationUserCard/NotificationUserCard.tsx": {
-        "3d0707ef2a1229cbf67b75b81995de38bc5ac206ea959f99e6457fb99066f471": 1,
-        "e0bc9e7a5f4c0f99607f788941bf46f36630200fc49bf34663a83e08ce579027": 1
+        "5f0e9cbc55ded2188b92a36dc19e543efc85f03e8db83beddbfe45822907afd6": 1,
+        "f53ac05df5e7c4be633f610e32f6217bdb8ffdf617232f265d5465b9d2569a9e": 1
     },
     "packages/react-learn-card/src/components/QRCodeCard/QRCodeCard.tsx": {
         "df5ec43184cb8f9ca6253c9601fd4cba37093bb74b106beac1df220a0ce1e19a": 1
@@ -4512,8 +4509,8 @@
         "86b6b2a9849f885a8d2564fd569c4f0e3a5f74a14d2ff6e00e9d46e8e4569c4b": 1
     },
     "packages/react-learn-card/src/components/UserProfilePicture/UserProfilePicture.tsx": {
-        "d1c9bff57fc763d3eeafb81578860ba4151d6055fd8d43feed21daa048aa9494": 1,
-        "dc0814b884fde458fe7fc49aeff279662d683d794e049061a86869fe349cc5ce": 1
+        "003db4f63cf42ed34139c12327fcb09ae170d50fefc4336323f1572cf3f2c055": 1,
+        "d1c9bff57fc763d3eeafb81578860ba4151d6055fd8d43feed21daa048aa9494": 1
     },
     "packages/react-learn-card/src/components/VCCard/VCCard.tsx": {
         "d2a1a15983c5abba4571ef7af2fb7b8599c3482652d127a5669f5ab168d24016": 1
@@ -4628,8 +4625,8 @@
         "d72782598136e7a3491c6a52d774314ada9486d10660ae307b53fe1e3864d215": 1
     },
     "packages/react-learn-card/src/hooks/useParsedSdJwtVc.tsx": {
-        "4f31b617e97d523b415084b2582749e3fdc90b8cd01a6f1d369e231ce5698bda": 1,
-        "5a676508ec50589e1a4da5bab3b3d20f2087c6a25ad9903d88d2131e1bea5a86": 1
+        "2161b2e9e5499ba4d25d7deaaf69f97c4ccf8c1689273a67305b453a4107693b": 1,
+        "4f31b617e97d523b415084b2582749e3fdc90b8cd01a6f1d369e231ce5698bda": 1
     },
     "packages/react-learn-card/src/index.ts": {
         "4ba5adae99d9c221409f6ea4cea7c44f9a3085af675676152639cc11ad0da160": 1

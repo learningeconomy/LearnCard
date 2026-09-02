@@ -25,7 +25,9 @@
     },
     "scripts": {
         "prepare": "husky install",
-        "lint": "bun scripts/lint-workspace.ts && node scripts/lint-a11y.cjs",
+        "lint": "bun run lint:workspace && bun run lint:a11y",
+        "lint:workspace": "bun scripts/lint-workspace.ts",
+        "lint:a11y": "node scripts/lint-a11y.cjs",
         "lint:staged": "lint-staged",
         "typecheck": "nx run-many -t typecheck --projects=helpers,types,network-brain-service,lca-api-service,learn-cloud-service --parallel=1 --skip-nx-cache",
         "build": "nx run-many -t build --all --exclude=docs,reference",
