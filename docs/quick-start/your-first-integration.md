@@ -213,7 +213,3 @@ The token has one permission (`inbox:write`). Store it like a password; [revoke 
 - **Issue the same badge to many people** → [Create a Boost](../tutorials/create-a-boost.md)
 - **Know when it's claimed** → [Listen to Webhooks](../tutorials/listen-to-webhooks.md)
 - **Not sure what to build?** → [What Do You Want to Build?](../introduction/what-do-you-want-to-build.md)
-
-{% hint style="info" %}
-The code on this page is run against a live LearnCard Network in CI on every change, so it stays correct. Source: [`docs/snippets/quickstart/`](https://github.com/learningeconomy/LearnCard/tree/main/docs/snippets/quickstart).
-{% endhint %}
