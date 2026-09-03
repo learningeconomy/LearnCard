@@ -221,6 +221,8 @@ services:
         ports:
             - '7687:7687'
             - '7474:7474'
+        volumes:
+            - neo4j-data:/data
         healthcheck:
             test:
                 [
@@ -444,3 +446,6 @@ services:
 networks:
     learn-card:
         driver: bridge
+
+volumes:
+    neo4j-data:
