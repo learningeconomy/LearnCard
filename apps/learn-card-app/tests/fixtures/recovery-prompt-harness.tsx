@@ -14,6 +14,7 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 type SetupOptions = {
     initialMethod: RecoverySetupType;
     onCompleted: (method: RecoverySetupType) => void;
+    onClosed: () => void;
 };
 
 type RecoveryPromptHarnessApi = {
@@ -92,7 +93,10 @@ const Harness: React.FC = () => {
                             maskedEmail: 'r***@example.com',
                         })}
                         onSetupEmailRecovery={async () => undefined}
-                        onClose={() => setSetupOptions(null)}
+                        onClose={() => {
+                            setupOptions.onClosed();
+                            setSetupOptions(null);
+                        }}
                     />
                 </div>
             )}

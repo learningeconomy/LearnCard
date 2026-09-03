@@ -144,6 +144,7 @@ const log = getLogger('auth-coordinator');
 export interface RecoverySetupOptions {
     initialMethod?: RecoverySetupType;
     onCompleted?: (method: RecoverySetupType) => void;
+    onClosed?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -538,9 +539,12 @@ const AuthSessionManager: React.FC<{
     }, []);
 
     const closeRecoverySetup = useCallback(() => {
+        const onClosed = recoverySetupOptionsRef.current.onClosed;
+
         recoverySetupOptionsRef.current = {};
         completedRecoveryMethodsRef.current.clear();
         setShowRecoverySetup(false);
+        onClosed?.();
     }, []);
 
     const completeRecoverySetup = useCallback((method: RecoverySetupType) => {

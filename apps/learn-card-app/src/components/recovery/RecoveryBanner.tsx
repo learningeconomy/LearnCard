@@ -26,6 +26,7 @@ interface RecoveryBannerProps {
     onSetup: (options: {
         initialMethod: RecoverySetupType;
         onCompleted: (method: RecoverySetupType) => void;
+        onClosed: () => void;
     }) => void;
 }
 
@@ -40,8 +41,11 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
     const snoozedUntil = firstStartupStore.useTracked.recoveryPromptSnoozedUntil();
     const [phase, setPhase] = useState<RecoveryPromptPhase>('visible');
     const [completed, setCompleted] = useState(false);
+    const [setupRequested, setSetupRequested] = useState(false);
     const [currentTime, setCurrentTime] = useState(() => Date.now());
     const shownRef = useRef(false);
+    const setupRequestedRef = useRef(false);
+    const completionHandledRef = useRef(false);
 
     const weight: RecoveryPromptWeight = isPublic ? 'urgent' : 'calm';
     const recommendedMethod = useMemo<RecoverySetupType>(
@@ -54,8 +58,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
         recoveryMethodCount === 0 &&
         (isPublic || totalCredentialCount > 0) &&
         !isSnoozed;
-    const isRendered =
-        phase !== 'hidden' && (isEligible || phase === 'success' || phase === 'exiting');
+    const isRendered = (!completed && isEligible) || phase === 'success' || phase === 'exiting';
 
     useEffect(() => {
         if (!isEligible || shownRef.current) return;
@@ -79,12 +82,6 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
     }, [currentTime, isPublic, snoozedUntil]);
 
     useEffect(() => {
-        if (!completed && isEligible && phase === 'hidden') {
-            setPhase('visible');
-        }
-    }, [completed, isEligible, phase]);
-
-    useEffect(() => {
         if (phase !== 'success') return;
 
         const successTimer = window.setTimeout(() => setPhase('exiting'), SUCCESS_DURATION_MS);
@@ -103,24 +100,43 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
     if (!isRendered) return null;
 
     const handleSetup = (): void => {
+        if (setupRequestedRef.current) return;
+
+        setupRequestedRef.current = true;
+        completionHandledRef.current = false;
+        setSetupRequested(true);
+
         track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
             action: 'clicked',
             weight,
             method: recommendedMethod,
         });
 
-        onSetup({
-            initialMethod: recommendedMethod,
-            onCompleted: method => {
-                track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
-                    action: 'completed',
-                    weight,
-                    method,
-                });
-                setCompleted(true);
-                setPhase('success');
-            },
-        });
+        try {
+            onSetup({
+                initialMethod: recommendedMethod,
+                onCompleted: method => {
+                    if (completionHandledRef.current) return;
+
+                    completionHandledRef.current = true;
+                    track(AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED, {
+                        action: 'completed',
+                        weight,
+                        method,
+                    });
+                    setCompleted(true);
+                    setPhase('success');
+                },
+                onClosed: () => {
+                    setupRequestedRef.current = false;
+                    setSetupRequested(false);
+                },
+            });
+        } catch (error) {
+            setupRequestedRef.current = false;
+            setSetupRequested(false);
+            throw error;
+        }
     };
 
     const handleSnooze = (): void => {
@@ -176,8 +192,9 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                         <button
                             type="button"
                             onClick={handleSetup}
+                            disabled={setupRequested}
                             aria-label={m['recovery.prompt.openAria']()}
-                            className="group flex-1 min-w-0 flex items-center gap-3 p-4 text-start rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            className="group flex-1 min-w-0 flex items-center gap-3 p-4 text-start rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-wait"
                         >
                             <span
                                 className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${

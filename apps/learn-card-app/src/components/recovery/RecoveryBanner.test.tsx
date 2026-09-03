@@ -145,16 +145,41 @@ describe('RecoveryBanner', () => {
         const [{ initialMethod, onCompleted }] = onSetup.mock.calls[0];
         expect(initialMethod).toBe('passkey');
 
-        act(() => onCompleted('passkey'));
+        act(() => {
+            onCompleted('passkey');
+            onCompleted('passkey');
+        });
         expect(screen.getByRole('status')).toHaveTextContent("You're covered");
-        expect(mocks.track).toHaveBeenCalledWith(
-            'dashboard_recovery_prompt_interacted',
-            expect.objectContaining({ action: 'completed', method: 'passkey', weight: 'calm' })
-        );
+        expect(
+            mocks.track.mock.calls.filter(([, payload]) => payload.action === 'completed')
+        ).toEqual([
+            [
+                'dashboard_recovery_prompt_interacted',
+                expect.objectContaining({ action: 'completed', method: 'passkey', weight: 'calm' }),
+            ],
+        ]);
 
         act(() => vi.advanceTimersByTime(4000));
         act(() => vi.advanceTimersByTime(300));
         expect(screen.queryByTestId('dashboard-recovery-prompt')).not.toBeInTheDocument();
+    });
+
+    it('coalesces repeated setup requests and unlocks after the modal closes', () => {
+        const { onSetup } = renderPrompt();
+        const action = screen.getByRole('button', { name: 'Set up a way to sign back in' });
+
+        fireEvent.click(action);
+        fireEvent.click(action);
+
+        expect(onSetup).toHaveBeenCalledOnce();
+        expect(
+            mocks.track.mock.calls.filter(([, payload]) => payload.action === 'clicked')
+        ).toHaveLength(1);
+
+        act(() => onSetup.mock.calls[0][0].onClosed());
+        fireEvent.click(action);
+
+        expect(onSetup).toHaveBeenCalledTimes(2);
     });
 
     it('cleans up the success timer when unmounted', () => {
