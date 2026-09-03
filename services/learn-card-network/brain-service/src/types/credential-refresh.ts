@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import { CredentialRefreshSigningModeValidator } from '@learncard/types';
+import {
+    CredentialRefreshSigningModeValidator,
+    PublishCredentialRefreshNotificationValidator,
+} from '@learncard/types';
 
 /**
  * Types for the managed credential refresh aggregate (LC-2117 / LC-2135 / LC-2136).
@@ -76,6 +79,11 @@ export const CredentialRefreshVersionNodeValidator = z.object({
     etag: z.string().optional(),
     signingMode: CredentialRefreshSigningModeValidator,
     updateSummary: z.string().optional(),
+    /**
+     * Notification decision recorded at publication. Brain-internal (used to return
+     * the exact prior result on idempotent replay) — never exposed by history APIs.
+     */
+    notificationOutcome: PublishCredentialRefreshNotificationValidator.optional(),
 });
 export type CredentialRefreshVersionNode = z.infer<typeof CredentialRefreshVersionNodeValidator>;
 
@@ -100,6 +108,8 @@ export const AdvanceCredentialRefreshHeadParamsValidator = z.object({
     signingMode: CredentialRefreshSigningModeValidator,
     updateSummary: z.string().optional(),
     idempotencyKey: z.string().optional(),
+    /** Notification decision to record on the new immutable version node */
+    notificationOutcome: PublishCredentialRefreshNotificationValidator.optional(),
 });
 export type AdvanceCredentialRefreshHeadParams = z.infer<
     typeof AdvanceCredentialRefreshHeadParamsValidator

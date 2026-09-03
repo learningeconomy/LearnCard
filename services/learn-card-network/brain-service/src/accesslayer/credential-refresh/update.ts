@@ -77,6 +77,7 @@ export const advanceCredentialRefreshHead = async (
         materialDigest,
         updateSummary,
         effectiveAt,
+        notificationOutcome,
     } = validated;
 
     const publishedAt = validated.publishedAt ?? new Date().toISOString();
@@ -95,6 +96,7 @@ export const advanceCredentialRefreshHead = async (
             etag,
             signingMode,
             updateSummary,
+            notificationOutcome,
         }).filter(([, value]) => value !== undefined)
     );
 

@@ -1,19 +1,38 @@
+import { createHash } from 'crypto';
+
 import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
 import {
     LCNNotificationTypeEnumValidator,
     VC,
     type AllocateCredentialRefreshResult,
+    type CredentialRefreshSigningMode,
+    type PublishCredentialRefreshInput,
+    type PublishCredentialRefreshNotification,
+    type PublishCredentialRefreshResult,
 } from '@learncard/types';
-import { getCredentialIssuerId } from '@learncard/helpers';
+import { getCredentialEffectiveTime, getCredentialIssuerId } from '@learncard/helpers';
 
 import { neogma } from '@instance';
 
 import { storeCredential } from '@accesslayer/credential/create';
 import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { generateRefreshId, getCredentialRefresh } from '@accesslayer/credential-refresh';
+import {
+    advanceCredentialRefreshHead,
+    generateRefreshId,
+    getCredentialRefresh,
+    getCredentialRefreshHead,
+} from '@accesslayer/credential-refresh';
+import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import type { CredentialRefreshRecord } from 'types/credential-refresh';
 
 import { createDagJweForRecipients, getLearnCard } from './learnCard.helpers';
+import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
+import {
+    computeCredentialMaterialDigest,
+    decideCredentialRefreshNotification,
+} from './credential-refresh-materiality.helpers';
 import { getStatusListBaseUrl } from './status-list.helpers';
 import { getCredentialUri } from './credential.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
@@ -270,4 +289,282 @@ export const sendRefreshableCredential = async (
     });
 
     return uri;
+};
+
+// --- Publication (LC-2135) -----------------------------------------------------
+
+/**
+ * Route-level refinement of the Task 1 contract's permissive signing-authority
+ * descriptor: resolving ownership requires the registered name + endpoint.
+ */
+const SigningAuthorityReferenceValidator = z
+    .object({
+        type: z.string().min(1),
+        name: z.string().min(1),
+        endpoint: z.string().min(1),
+    })
+    .catchall(z.any());
+
+/** Opaque ETag derived from the stored encrypted bytes (never from plaintext). */
+const computeRefreshEtag = (encryptedCredential: string): string =>
+    createHash('sha256').update(encryptedCredential).digest('base64url');
+
+/**
+ * Shared invariants every published version must satisfy, checked on the signed VC
+ * (issuer-signed mode) or on the unsigned body before proof creation
+ * (signing-authority mode). Error messages are deliberately generic — credential
+ * content must never appear in exception messages, tracing attributes, or logs.
+ */
+const assertRefreshVersionInvariants = (
+    credential: VC,
+    aggregate: CredentialRefreshRecord,
+    domain: string
+): void => {
+    if (credential.id !== aggregate.credentialId) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential ID does not match the allocated refresh',
+        });
+    }
+
+    if (getCredentialIssuerId(credential) !== aggregate.issuerDid) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential issuer does not match the allocated refresh',
+        });
+    }
+
+    if (!getCredentialSubjectIds(credential).includes(aggregate.holderDid)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential subject does not match the intended holder',
+        });
+    }
+
+    if (!hasAllocatedRefreshService(credential, aggregate.refreshId, domain)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential does not contain the allocated refresh service',
+        });
+    }
+};
+
+/**
+ * Transient in-memory proof verification; the plaintext result is never persisted.
+ * Only the proof check runs: the credentialStatus check would fetch remote status
+ * list credentials at publish time (availability + SSRF hazard), and revocation
+ * state moves through its own lifecycle rather than the refresh publication path.
+ */
+const verifyRefreshVersionProof = async (credential: VC): Promise<void> => {
+    const learnCard = await getLearnCard();
+    const verification = await learnCard.invoke.verifyCredential(credential, {
+        checks: ['proof'],
+    });
+
+    if (verification.errors.length > 0 || !verification.checks.includes('proof')) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential proof could not be verified',
+        });
+    }
+};
+
+export type PublishCredentialRefreshParams = {
+    issuerProfile: ProfileType;
+    input: PublishCredentialRefreshInput;
+    domain: string;
+};
+
+/**
+ * Publishes a new immutable version of a managed refreshable credential and
+ * atomically advances the aggregate head.
+ *
+ * Plaintext exists only transiently inside this request: invariants and proofs are
+ * checked in memory, a server-keyed HMAC over the canonical user-visible projection
+ * is computed for materiality, and only the holder-encrypted JWE is persisted.
+ * The version chain is advanced through the single-writer compare-and-advance in
+ * the access layer; losers of a concurrent race receive CONFLICT and may retry.
+ */
+export const publishCredentialRefresh = async (
+    params: PublishCredentialRefreshParams
+): Promise<PublishCredentialRefreshResult> => {
+    const { issuerProfile, input, domain } = params;
+    const { refreshId, idempotencyKey, notifyHolder, updateSummary } = input;
+
+    const aggregate = await getCredentialRefresh(refreshId);
+
+    if (!aggregate) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential refresh not found' });
+    }
+
+    if (aggregate.issuerProfileId !== issuerProfile.profileId) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Profile did not allocate this credential refresh',
+        });
+    }
+
+    if (aggregate.state === 'revoked') {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh has been revoked',
+        });
+    }
+
+    // Idempotent retry: the key that produced the current version is stored on the
+    // aggregate, so a retry short-circuits and returns the exact prior result.
+    if (idempotencyKey && aggregate.idempotencyKey === idempotencyKey) {
+        const head = await getCredentialRefreshHead(refreshId);
+
+        return {
+            refreshId,
+            version: aggregate.currentVersion,
+            publishedAt: aggregate.lastPublishedAt ?? head?.publishedAt ?? '',
+            notification: head?.notificationOutcome ?? 'suppressed',
+        };
+    }
+
+    const head = await getCredentialRefreshHead(refreshId);
+
+    if (!head) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh is not bound to a credential yet',
+        });
+    }
+
+    let signedCredential: VC;
+    let signingMode: CredentialRefreshSigningMode;
+
+    if (input.mode === 'issuer-signed') {
+        signedCredential = input.signedCredential;
+        signingMode = 'issuer-signed';
+
+        assertRefreshVersionInvariants(signedCredential, aggregate, domain);
+        await verifyRefreshVersionProof(signedCredential);
+    } else {
+        const reference = SigningAuthorityReferenceValidator.safeParse(input.signingAuthority);
+
+        if (!reference.success) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Signing authority reference requires a name and endpoint',
+            });
+        }
+
+        const signingAuthority = await getSigningAuthorityForUserByName(
+            issuerProfile,
+            reference.data.endpoint,
+            reference.data.name.toLowerCase()
+        );
+
+        if (!signingAuthority) {
+            throw new TRPCError({
+                code: 'UNAUTHORIZED',
+                message: 'Profile does not own this signing authority',
+            });
+        }
+
+        // Enforce the full invariant set on the unsigned body before proof creation.
+        // The signing authority is the issuer's own registered delegate and signs the
+        // body as supplied, so the completed credential is checked for proof + ID.
+        assertRefreshVersionInvariants(input.credential as VC, aggregate, domain);
+
+        // appendCredentialStatus: false — a refresh version must preserve the
+        // issuer-supplied credentialStatus descriptor; no new status-list entry is
+        // allocated for a version of an already-issued credential.
+        signedCredential = (await issueCredentialWithSigningAuthority(
+            { type: 'profile', profile: issuerProfile },
+            input.credential,
+            signingAuthority,
+            domain,
+            false,
+            undefined,
+            false
+        )) as VC;
+        signingMode = 'signing-authority';
+
+        if (signedCredential.id !== aggregate.credentialId) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Credential ID does not match the allocated refresh',
+            });
+        }
+
+        await verifyRefreshVersionProof(signedCredential);
+    }
+
+    // Reject a strictly older effective/issuance timestamp. Equal or missing
+    // timestamps are accepted: some interoperable issuers omit or reuse them, and
+    // managed version ordering remains authoritative.
+    const effectiveTime = getCredentialEffectiveTime(signedCredential);
+
+    if (effectiveTime !== undefined && head.effectiveAt) {
+        const headTime = Date.parse(head.effectiveAt);
+
+        if (!Number.isNaN(headTime) && effectiveTime < headTime) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Credential effective time is older than the current version',
+            });
+        }
+    }
+
+    // Materiality + notification decision (transient comparison; only the keyed
+    // digest is persisted). Actual event emission is wired by the notification task.
+    const nextDigest = computeCredentialMaterialDigest(
+        signedCredential as unknown as Record<string, unknown>
+    );
+
+    const notification: PublishCredentialRefreshNotification = decideCredentialRefreshNotification({
+        state: aggregate.state,
+        notifyHolder,
+        previousDigest: aggregate.materialDigest,
+        nextDigest,
+    });
+
+    // Holder-only encryption: the brain DID must NOT be a recipient.
+    const jwe = await createDagJweForRecipients(signedCredential, [aggregate.holderDid]);
+    const encryptedCredential = JSON.stringify(jwe);
+    const etag = computeRefreshEtag(encryptedCredential);
+
+    const advance = await advanceCredentialRefreshHead({
+        refreshId,
+        expectedVersion: aggregate.currentVersion,
+        encryptedCredential,
+        signingMode,
+        idempotencyKey,
+        etag,
+        materialDigest: nextDigest,
+        updateSummary,
+        effectiveAt:
+            effectiveTime !== undefined ? new Date(effectiveTime).toISOString() : undefined,
+        notificationOutcome: notification,
+    });
+
+    if (advance.status === 'conflict') {
+        // A concurrent publication advanced the head first; nothing was written.
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh was updated concurrently; retry the publication',
+        });
+    }
+
+    if (advance.status === 'replay') {
+        const replayedHead = await getCredentialRefreshHead(refreshId);
+
+        return {
+            refreshId,
+            version: advance.version,
+            publishedAt: advance.publishedAt ?? replayedHead?.publishedAt ?? '',
+            notification: replayedHead?.notificationOutcome ?? 'suppressed',
+        };
+    }
+
+    return {
+        refreshId,
+        version: advance.version,
+        publishedAt: advance.publishedAt ?? new Date().toISOString(),
+        notification,
+    };
 };
