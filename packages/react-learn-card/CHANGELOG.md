@@ -1,30 +1,37 @@
 # @welibraryos/react-learn-card
 
+## 2.12.3
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.4.13
+
 ## 2.12.2
 
 ### Patch Changes
 
--   [#1474](https://github.com/learningeconomy/LearnCard/pull/1474) [`a1ac82e44d56f1fecd6f39e1a4e4c1ba29ff005d`](https://github.com/learningeconomy/LearnCard/commit/a1ac82e44d56f1fecd6f39e1a4e4c1ba29ff005d) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump vite, sharp, nx dev deps (high Dependabot alerts)
+- [#1474](https://github.com/learningeconomy/LearnCard/pull/1474) [`a1ac82e44d56f1fecd6f39e1a4e4c1ba29ff005d`](https://github.com/learningeconomy/LearnCard/commit/a1ac82e44d56f1fecd6f39e1a4e4c1ba29ff005d) Thanks [@Custard7](https://github.com/Custard7)! - fix: bump vite, sharp, nx dev deps (high Dependabot alerts)
 
--   Updated dependencies []:
-    -   @learncard/init@2.4.12
+- Updated dependencies []:
+    - @learncard/init@2.4.12
 
 ## 2.12.1
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.4.11
+- Updated dependencies []:
+    - @learncard/init@2.4.11
 
 ## 2.12.0
 
 ### Minor Changes
 
--   [#1440](https://github.com/learningeconomy/LearnCard/pull/1440) [`54bdfbee2960f0c38c7faa801ca82911fb3fcf03`](https://github.com/learningeconomy/LearnCard/commit/54bdfbee2960f0c38c7faa801ca82911fb3fcf03) Thanks [@gerardopar](https://github.com/gerardopar)! - Keep credential-card padding aligned with the rendered card variant and improve responsive ribbon-title fitting.
+- [#1440](https://github.com/learningeconomy/LearnCard/pull/1440) [`54bdfbee2960f0c38c7faa801ca82911fb3fcf03`](https://github.com/learningeconomy/LearnCard/commit/54bdfbee2960f0c38c7faa801ca82911fb3fcf03) Thanks [@gerardopar](https://github.com/gerardopar)! - Keep credential-card padding aligned with the rendered card variant and improve responsive ribbon-title fitting.
 
 ### Patch Changes
 
--   [#1447](https://github.com/learningeconomy/LearnCard/pull/1447) [`b61fb6c6ae83838549078a538ca765776ba46b5e`](https://github.com/learningeconomy/LearnCard/commit/b61fb6c6ae83838549078a538ca765776ba46b5e) Thanks [@goblincore](https://github.com/goblincore)! - Fix boost/credential grid card header collapsing on iOS 18 (LC-2066)
+- [#1447](https://github.com/learningeconomy/LearnCard/pull/1447) [`b61fb6c6ae83838549078a538ca765776ba46b5e`](https://github.com/learningeconomy/LearnCard/commit/b61fb6c6ae83838549078a538ca765776ba46b5e) Thanks [@goblincore](https://github.com/goblincore)! - Fix boost/credential grid card header collapsing on iOS 18 (LC-2066)
 
     The thumbnail wrapper added in #1366 for the revoked/suspended grayscale
     treatment had no width of its own and relied on the card `<button>` stretching
@@ -37,273 +44,273 @@
     the bug only appeared on older devices. The wrapper is now explicitly
     `width: 100%` (verified by A/B on an iOS 18.1 simulator).
 
--   [#1454](https://github.com/learningeconomy/LearnCard/pull/1454) [`306855bd45eacd131f5803ba74c87519ab316ff5`](https://github.com/learningeconomy/LearnCard/commit/306855bd45eacd131f5803ba74c87519ab316ff5) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-1964] YouTube embeds fail with Error 153 on iOS native
+- [#1454](https://github.com/learningeconomy/LearnCard/pull/1454) [`306855bd45eacd131f5803ba74c87519ab316ff5`](https://github.com/learningeconomy/LearnCard/commit/306855bd45eacd131f5803ba74c87519ab316ff5) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-1964] YouTube embeds fail with Error 153 on iOS native
 
--   Updated dependencies []:
-    -   @learncard/init@2.4.10
+- Updated dependencies []:
+    - @learncard/init@2.4.10
 
 ## 2.11.0
 
 ### Minor Changes
 
--   [#1366](https://github.com/learningeconomy/LearnCard/pull/1366) [`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a) Thanks [@goblincore](https://github.com/goblincore)! - Revocation/suspension follow-ups (LC-1894, LC-1913)
+- [#1366](https://github.com/learningeconomy/LearnCard/pull/1366) [`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a) Thanks [@goblincore](https://github.com/goblincore)! - Revocation/suspension follow-ups (LC-1894, LC-1913)
 
-    -   Issuance now allocates a `suspension` bitstring status entry by default, so suspended credentials are externally verifiable (LC-1894).
-    -   `getActivityStats` returns `revoked`/`suspended` counts, surfaced in the issuer Issuances summary (LC-1894).
-    -   Credential-lifecycle mutations (revoke/suspend/unsuspend) now emit a holder notification, and the activity views migrated to react-query so they auto-refresh without manual callbacks (LC-1894 / LC-1913).
-    -   Holder wallet cards show a revoked/suspended treatment: a red/orange X seal badge (replacing the verified seal), a colored corner pill, and a desaturated card, driven by a lazy per-card status check; revoked/suspended credentials remain in the Earned tab (LC-1913).
+    - Issuance now allocates a `suspension` bitstring status entry by default, so suspended credentials are externally verifiable (LC-1894).
+    - `getActivityStats` returns `revoked`/`suspended` counts, surfaced in the issuer Issuances summary (LC-1894).
+    - Credential-lifecycle mutations (revoke/suspend/unsuspend) now emit a holder notification, and the activity views migrated to react-query so they auto-refresh without manual callbacks (LC-1894 / LC-1913).
+    - Holder wallet cards show a revoked/suspended treatment: a red/orange X seal badge (replacing the verified seal), a colored corner pill, and a desaturated card, driven by a lazy per-card status check; revoked/suspended credentials remain in the Earned tab (LC-1913).
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.4.9
+- Updated dependencies []:
+    - @learncard/init@2.4.9
 
 ## 2.10.8
 
 ### Patch Changes
 
--   [#1419](https://github.com/learningeconomy/LearnCard/pull/1419) [`2e5f5dba1b8b95a0fbdc24cd431d8826dc180852`](https://github.com/learningeconomy/LearnCard/commit/2e5f5dba1b8b95a0fbdc24cd431d8826dc180852) Thanks [@smurflo2](https://github.com/smurflo2)! - Implement logged out claim flow for Scouts, fix network join prompt, and various Scouts bugs
+- [#1419](https://github.com/learningeconomy/LearnCard/pull/1419) [`2e5f5dba1b8b95a0fbdc24cd431d8826dc180852`](https://github.com/learningeconomy/LearnCard/commit/2e5f5dba1b8b95a0fbdc24cd431d8826dc180852) Thanks [@smurflo2](https://github.com/smurflo2)! - Implement logged out claim flow for Scouts, fix network join prompt, and various Scouts bugs
 
--   Updated dependencies []:
-    -   @learncard/init@2.4.8
+- Updated dependencies []:
+    - @learncard/init@2.4.8
 
 ## 2.10.7
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.4.7
+- Updated dependencies []:
+    - @learncard/init@2.4.7
 
 ## 2.10.6
 
 ### Patch Changes
 
--   [#1295](https://github.com/learningeconomy/LearnCard/pull/1295) [`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba) Thanks [@Custard7](https://github.com/Custard7)! - Add a streamlined "Create Credential" flow (simple send), gated behind the `enableSimpleSend` flag.
+- [#1295](https://github.com/learningeconomy/LearnCard/pull/1295) [`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba) Thanks [@Custard7](https://github.com/Custard7)! - Add a streamlined "Create Credential" flow (simple send), gated behind the `enableSimpleSend` flag.
 
     A new `/issue` page lets users issue a standards-pure OBv3 credential from one screen — from scratch, from an imported source (link, file, JSON, or Credential Engine ID), or by resending a credential they already manage — with a live card preview and self / specific-people / claim-link recipients.
 
     Also includes shared credential-card fixes used across the wallet: achievement-type-aware subtitles and display types, corrected category mapping, redesigned "verified source" alignments, and image/placeholder fallbacks. `@learncard/types` gains an optional `created` field on the boost validator.
 
--   Updated dependencies []:
-    -   @learncard/init@2.4.6
+- Updated dependencies []:
+    - @learncard/init@2.4.6
 
 ## 2.10.5
 
 ### Patch Changes
 
--   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+- [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
 
--   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
-    -   @learncard/init@2.4.5
+- Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    - @learncard/init@2.4.5
 
 ## 2.10.4
 
 ### Patch Changes
 
--   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+- [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
 
--   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
-    -   @learncard/init@2.4.4
+- Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    - @learncard/init@2.4.4
 
 ## 2.10.3
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.4.3
+- Updated dependencies []:
+    - @learncard/init@2.4.3
 
 ## 2.10.2
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.4.2
+- Updated dependencies []:
+    - @learncard/init@2.4.2
 
 ## 2.10.1
 
 ### Patch Changes
 
--   [#1298](https://github.com/learningeconomy/LearnCard/pull/1298) [`ff998efc079ad82dec633353927dfa0dd3f6054c`](https://github.com/learningeconomy/LearnCard/commit/ff998efc079ad82dec633353927dfa0dd3f6054c) Thanks [@Custard7](https://github.com/Custard7)! - fix: stop barrelsby-generated barrels from fighting prettier
+- [#1298](https://github.com/learningeconomy/LearnCard/pull/1298) [`ff998efc079ad82dec633353927dfa0dd3f6054c`](https://github.com/learningeconomy/LearnCard/commit/ff998efc079ad82dec633353927dfa0dd3f6054c) Thanks [@Custard7](https://github.com/Custard7)! - fix: stop barrelsby-generated barrels from fighting prettier
 
--   [#1293](https://github.com/learningeconomy/LearnCard/pull/1293) [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9) Thanks [@smurflo2](https://github.com/smurflo2)! - Update ConsentFlow so it can read My Skill Profile data (Verifiable Data)
+- [#1293](https://github.com/learningeconomy/LearnCard/pull/1293) [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9) Thanks [@smurflo2](https://github.com/smurflo2)! - Update ConsentFlow so it can read My Skill Profile data (Verifiable Data)
 
--   [#1302](https://github.com/learningeconomy/LearnCard/pull/1302) [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095) Thanks [@smurflo2](https://github.com/smurflo2)! - Privacy & Data onboarding step
+- [#1302](https://github.com/learningeconomy/LearnCard/pull/1302) [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095) Thanks [@smurflo2](https://github.com/smurflo2)! - Privacy & Data onboarding step
 
--   [#1305](https://github.com/learningeconomy/LearnCard/pull/1305) [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1895] - Issuer Detail Popover
+- [#1305](https://github.com/learningeconomy/LearnCard/pull/1305) [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1895] - Issuer Detail Popover
 
--   Updated dependencies [[`ee40d1ed82a153c30425c2c2e836c56da781b1c6`](https://github.com/learningeconomy/LearnCard/commit/ee40d1ed82a153c30425c2c2e836c56da781b1c6), [`49c3f178b72adc423f10d5362af4d74dbe04f521`](https://github.com/learningeconomy/LearnCard/commit/49c3f178b72adc423f10d5362af4d74dbe04f521)]:
-    -   @learncard/init@2.4.1
+- Updated dependencies [[`ee40d1ed82a153c30425c2c2e836c56da781b1c6`](https://github.com/learningeconomy/LearnCard/commit/ee40d1ed82a153c30425c2c2e836c56da781b1c6), [`49c3f178b72adc423f10d5362af4d74dbe04f521`](https://github.com/learningeconomy/LearnCard/commit/49c3f178b72adc423f10d5362af4d74dbe04f521)]:
+    - @learncard/init@2.4.1
 
 ## 2.10.0
 
 ### Minor Changes
 
--   [#1264](https://github.com/learningeconomy/LearnCard/pull/1264) [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4) Thanks [@Custard7](https://github.com/Custard7)! - Add useCredentialFormat + useParsedSdJwtVc hooks and credentialFormat.helpers (humanizeClaimLabel, formatClaimValue) for use by format-aware widgets in consumer apps. The W3C projection continues to drive existing display card routing; consumers can layer format-aware widgets where SD-JWT-VC-specific UX is needed (e.g., line-item disclosed claims).
+- [#1264](https://github.com/learningeconomy/LearnCard/pull/1264) [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4) Thanks [@Custard7](https://github.com/Custard7)! - Add useCredentialFormat + useParsedSdJwtVc hooks and credentialFormat.helpers (humanizeClaimLabel, formatClaimValue) for use by format-aware widgets in consumer apps. The W3C projection continues to drive existing display card routing; consumers can layer format-aware widgets where SD-JWT-VC-specific UX is needed (e.g., line-item disclosed claims).
 
 ### Patch Changes
 
--   [#1276](https://github.com/learningeconomy/LearnCard/pull/1276) [`e4e315614f49ff96190c7ef60e9796a486d3e661`](https://github.com/learningeconomy/LearnCard/commit/e4e315614f49ff96190c7ef60e9796a486d3e661) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1869] - Implement CLR badge card
+- [#1276](https://github.com/learningeconomy/LearnCard/pull/1276) [`e4e315614f49ff96190c7ef60e9796a486d3e661`](https://github.com/learningeconomy/LearnCard/commit/e4e315614f49ff96190c7ef60e9796a486d3e661) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1869] - Implement CLR badge card
 
--   [#1272](https://github.com/learningeconomy/LearnCard/pull/1272) [`fd0cac0b78add9150cc5256a984188c32b6f4b2f`](https://github.com/learningeconomy/LearnCard/commit/fd0cac0b78add9150cc5256a984188c32b6f4b2f) Thanks [@goblincore](https://github.com/goblincore)! - LC-1877: Polish VC broken states — clamp long issuer names to 2 lines, show graceful placeholders when badge/issuer/recipient images fail to load, and add a neutral backing behind transparent logos so badge backgrounds no longer bleed through.
+- [#1272](https://github.com/learningeconomy/LearnCard/pull/1272) [`fd0cac0b78add9150cc5256a984188c32b6f4b2f`](https://github.com/learningeconomy/LearnCard/commit/fd0cac0b78add9150cc5256a984188c32b6f4b2f) Thanks [@goblincore](https://github.com/goblincore)! - LC-1877: Polish VC broken states — clamp long issuer names to 2 lines, show graceful placeholders when badge/issuer/recipient images fail to load, and add a neutral backing behind transparent logos so badge backgrounds no longer bleed through.
 
--   [#1292](https://github.com/learningeconomy/LearnCard/pull/1292) [`c93e603d42c7aeb7e433bb4ba6a3374af18dde74`](https://github.com/learningeconomy/LearnCard/commit/c93e603d42c7aeb7e433bb4ba6a3374af18dde74) Thanks [@Custard7](https://github.com/Custard7)! - Hide unknown issuer
+- [#1292](https://github.com/learningeconomy/LearnCard/pull/1292) [`c93e603d42c7aeb7e433bb4ba6a3374af18dde74`](https://github.com/learningeconomy/LearnCard/commit/c93e603d42c7aeb7e433bb4ba6a3374af18dde74) Thanks [@Custard7](https://github.com/Custard7)! - Hide unknown issuer
 
--   Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083)]:
-    -   @learncard/init@2.4.0
+- Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083)]:
+    - @learncard/init@2.4.0
 
 ## 2.9.29
 
 ### Patch Changes
 
--   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
-    -   @learncard/init@2.3.21
+- Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    - @learncard/init@2.3.21
 
 ## 2.9.28
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.20
+- Updated dependencies []:
+    - @learncard/init@2.3.20
 
 ## 2.9.27
 
 ### Patch Changes
 
--   [#1242](https://github.com/learningeconomy/LearnCard/pull/1242) [`cf6c5db6aa03842674427441301cf4a8633bbe88`](https://github.com/learningeconomy/LearnCard/commit/cf6c5db6aa03842674427441301cf4a8633bbe88) Thanks [@smurflo2](https://github.com/smurflo2)! - Better, prettier handling for issuer/issuee names when they're missing or dids
+- [#1242](https://github.com/learningeconomy/LearnCard/pull/1242) [`cf6c5db6aa03842674427441301cf4a8633bbe88`](https://github.com/learningeconomy/LearnCard/commit/cf6c5db6aa03842674427441301cf4a8633bbe88) Thanks [@smurflo2](https://github.com/smurflo2)! - Better, prettier handling for issuer/issuee names when they're missing or dids
 
--   Updated dependencies [[`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
-    -   @learncard/init@2.3.19
+- Updated dependencies [[`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
+    - @learncard/init@2.3.19
 
 ## 2.9.26
 
 ### Patch Changes
 
--   Updated dependencies [[`b7ac1ec2432501b112748f5285fd83a2de1de344`](https://github.com/learningeconomy/LearnCard/commit/b7ac1ec2432501b112748f5285fd83a2de1de344)]:
-    -   @learncard/init@2.3.18
+- Updated dependencies [[`b7ac1ec2432501b112748f5285fd83a2de1de344`](https://github.com/learningeconomy/LearnCard/commit/b7ac1ec2432501b112748f5285fd83a2de1de344)]:
+    - @learncard/init@2.3.18
 
 ## 2.9.25
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.16
+- Updated dependencies []:
+    - @learncard/init@2.3.16
 
 ## 2.9.24
 
 ### Patch Changes
 
--   [#1150](https://github.com/learningeconomy/LearnCard/pull/1150) [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 3 directories with 6 updates
+- [#1150](https://github.com/learningeconomy/LearnCard/pull/1150) [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 3 directories with 6 updates
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.15
+- Updated dependencies []:
+    - @learncard/init@2.3.15
 
 ## 2.9.23
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.14
+- Updated dependencies []:
+    - @learncard/init@2.3.14
 
 ## 2.9.22
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.13
+- Updated dependencies []:
+    - @learncard/init@2.3.13
 
 ## 2.9.21
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.12
+- Updated dependencies []:
+    - @learncard/init@2.3.12
 
 ## 2.9.20
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.11
+- Updated dependencies []:
+    - @learncard/init@2.3.11
 
 ## 2.9.19
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.10
+- Updated dependencies []:
+    - @learncard/init@2.3.10
 
 ## 2.9.18
 
 ### Patch Changes
 
--   [#1097](https://github.com/learningeconomy/LearnCard/pull/1097) [`26de4ce53c2e8b6c2bb3e461789e976178250179`](https://github.com/learningeconomy/LearnCard/commit/26de4ce53c2e8b6c2bb3e461789e976178250179) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1674 - Enhance CLR Credential
+- [#1097](https://github.com/learningeconomy/LearnCard/pull/1097) [`26de4ce53c2e8b6c2bb3e461789e976178250179`](https://github.com/learningeconomy/LearnCard/commit/26de4ce53c2e8b6c2bb3e461789e976178250179) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1674 - Enhance CLR Credential
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.9
+- Updated dependencies []:
+    - @learncard/init@2.3.9
 
 ## 2.9.17
 
 ### Patch Changes
 
--   Updated dependencies [[`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322)]:
-    -   @learncard/init@2.3.8
+- Updated dependencies [[`50fa611b714ae47fa3d6d56e7751ba59b5b71322`](https://github.com/learningeconomy/LearnCard/commit/50fa611b714ae47fa3d6d56e7751ba59b5b71322)]:
+    - @learncard/init@2.3.8
 
 ## 2.9.16
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.7
+- Updated dependencies []:
+    - @learncard/init@2.3.7
 
 ## 2.9.15
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.6
+- Updated dependencies []:
+    - @learncard/init@2.3.6
 
 ## 2.9.14
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.5
+- Updated dependencies []:
+    - @learncard/init@2.3.5
 
 ## 2.9.13
 
 ### Patch Changes
 
--   Updated dependencies [[`f05491d71c2499f80ad20d75fccb60fc15eedb91`](https://github.com/learningeconomy/LearnCard/commit/f05491d71c2499f80ad20d75fccb60fc15eedb91)]:
-    -   @learncard/init@2.3.4
+- Updated dependencies [[`f05491d71c2499f80ad20d75fccb60fc15eedb91`](https://github.com/learningeconomy/LearnCard/commit/f05491d71c2499f80ad20d75fccb60fc15eedb91)]:
+    - @learncard/init@2.3.4
 
 ## 2.9.12
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.3
+- Updated dependencies []:
+    - @learncard/init@2.3.3
 
 ## 2.9.11
 
 ### Patch Changes
 
--   [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
+- [#987](https://github.com/learningeconomy/LearnCard/pull/987) [`f9e1902456c88b5db3fcd7b934956b139796fa0c`](https://github.com/learningeconomy/LearnCard/commit/f9e1902456c88b5db3fcd7b934956b139796fa0c) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-1578] Optimize skill framework uploads (aka fix timeout error)
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.2
+- Updated dependencies []:
+    - @learncard/init@2.3.2
 
 ## 2.9.10
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.3.1
+- Updated dependencies []:
+    - @learncard/init@2.3.1
 
 ## 2.9.9
 
 ### Patch Changes
 
--   [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Resolve app DIDs in credential UI and show app issuer details.
+- [#969](https://github.com/learningeconomy/LearnCard/pull/969) [`d2b259d3afabd9509d96d8879c6080fcd707f3d6`](https://github.com/learningeconomy/LearnCard/commit/d2b259d3afabd9509d96d8879c6080fcd707f3d6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Resolve app DIDs in credential UI and show app issuer details.
 
     Credentials issued by App Store listings now map app did:web values to
     app names/icons (with a link back to the app), and display the "App Issuer"
@@ -313,1805 +320,1797 @@
 
 ### Patch Changes
 
--   Updated dependencies [[`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309)]:
-    -   @learncard/init@2.3.0
+- Updated dependencies [[`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309)]:
+    - @learncard/init@2.3.0
 
 ## 2.9.7
 
 ### Patch Changes
 
--   [#933](https://github.com/learningeconomy/LearnCard/pull/933) [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1511] Override unknown issuer verifier state text and use roles in Scouts app
+- [#933](https://github.com/learningeconomy/LearnCard/pull/933) [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1511] Override unknown issuer verifier state text and use roles in Scouts app
 
--   [#933](https://github.com/learningeconomy/LearnCard/pull/933) [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1511] Override unknown issuer verifier state text and use roles in Scouts app
+- [#933](https://github.com/learningeconomy/LearnCard/pull/933) [`1247b3b2b372626b06d6193b5c9227504c23a3be`](https://github.com/learningeconomy/LearnCard/commit/1247b3b2b372626b06d6193b5c9227504c23a3be) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1511] Override unknown issuer verifier state text and use roles in Scouts app
 
 ## 2.9.6
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.2.6
+- Updated dependencies []:
+    - @learncard/init@2.2.6
 
 ## 2.9.5
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.2.5
+- Updated dependencies []:
+    - @learncard/init@2.2.5
 
 ## 2.9.4
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.2.4
+- Updated dependencies []:
+    - @learncard/init@2.2.4
 
 ## 2.9.3
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.2.3
+- Updated dependencies []:
+    - @learncard/init@2.2.3
 
 ## 2.9.2
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.2.2
+- Updated dependencies []:
+    - @learncard/init@2.2.2
 
 ## 2.9.1
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.2.1
+- Updated dependencies []:
+    - @learncard/init@2.2.1
 
 ## 2.9.0
 
 ### Minor Changes
 
--   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+- [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
 
     This includes follow-up fixes for Zod v4 behavior and typing changes:
 
-    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
-    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
-    -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`bun run test -- run`).
+    - Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    - Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    - Allow `Infinity` for generational query inputs in brain-service routes.
+    - Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 
--   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
-    -   @learncard/init@2.2.0
+- Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    - @learncard/init@2.2.0
 
 ## 2.8.62
 
 ### Patch Changes
 
--   [#878](https://github.com/learningeconomy/LearnCard/pull/878) [`4b833c0e2e1e2be48488f265c4b98f17f1260b44`](https://github.com/learningeconomy/LearnCard/commit/4b833c0e2e1e2be48488f265c4b98f17f1260b44) Thanks [@smurflo2](https://github.com/smurflo2)! - Update style for alignments on BoostGenericCard
+- [#878](https://github.com/learningeconomy/LearnCard/pull/878) [`4b833c0e2e1e2be48488f265c4b98f17f1260b44`](https://github.com/learningeconomy/LearnCard/commit/4b833c0e2e1e2be48488f265c4b98f17f1260b44) Thanks [@smurflo2](https://github.com/smurflo2)! - Update style for alignments on BoostGenericCard
 
 ## 2.8.61
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.16
+- Updated dependencies []:
+    - @learncard/init@2.1.16
 
 ## 2.8.60
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.15
+- Updated dependencies []:
+    - @learncard/init@2.1.15
 
 ## 2.8.59
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.14
+- Updated dependencies []:
+    - @learncard/init@2.1.14
 
 ## 2.8.58
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.13
+- Updated dependencies []:
+    - @learncard/init@2.1.13
 
 ## 2.8.57
 
 ### Patch Changes
 
--   [#848](https://github.com/learningeconomy/LearnCard/pull/848) [`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add comprehensive Skills & Skill Frameworks system to LearnCard Network
+- [#848](https://github.com/learningeconomy/LearnCard/pull/848) [`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add comprehensive Skills & Skill Frameworks system to LearnCard Network
 
     This introduces a complete skill taxonomy system spanning the LearnCard Network plugin, brain service, and shared types. Organizations can now create custom skill frameworks, organize skills hierarchically, attach frameworks to Boosts, and align specific skills to credentials.
 
     ## Core Features
 
     ### Skill Framework Management
-
-    -   **Create Managed Frameworks**: Users can create skill frameworks with metadata (name, description, status)
-    -   **Framework Ownership**: Frameworks are linked to profiles via `MANAGES` relationship for access control
-    -   **Framework Queries**: List, search, and filter frameworks by various criteria
-    -   **External Provider Sync**: Optional integration with external skills services
+    - **Create Managed Frameworks**: Users can create skill frameworks with metadata (name, description, status)
+    - **Framework Ownership**: Frameworks are linked to profiles via `MANAGES` relationship for access control
+    - **Framework Queries**: List, search, and filter frameworks by various criteria
+    - **External Provider Sync**: Optional integration with external skills services
 
     ### Hierarchical Skill Organization
-
-    -   **Create Skills**: Add individual skills with statement, description, and code to frameworks
-    -   **Parent-Child Relationships**: Build skill hierarchies using `IS_CHILD_OF` relationships
-    -   **Framework Containment**: Skills linked to frameworks via `CONTAINS` relationships
-    -   **Bulk Operations**: Support for creating multiple skills and frameworks efficiently
+    - **Create Skills**: Add individual skills with statement, description, and code to frameworks
+    - **Parent-Child Relationships**: Build skill hierarchies using `IS_CHILD_OF` relationships
+    - **Framework Containment**: Skills linked to frameworks via `CONTAINS` relationships
+    - **Bulk Operations**: Support for creating multiple skills and frameworks efficiently
 
     ### Boost Integration
-
-    -   **Attach Frameworks**: Link skill frameworks to Boosts using `USES_FRAMEWORK` relationships
-    -   **Skill Alignment**: Align specific skills to Boosts via `ALIGNED_TO` relationships
-    -   **Ancestor Traversal**: Query skills from frameworks attached to a boost or its ancestors
-    -   **Permission Checks**: Validates boost admin rights before allowing framework/skill operations
+    - **Attach Frameworks**: Link skill frameworks to Boosts using `USES_FRAMEWORK` relationships
+    - **Skill Alignment**: Align specific skills to Boosts via `ALIGNED_TO` relationships
+    - **Ancestor Traversal**: Query skills from frameworks attached to a boost or its ancestors
+    - **Permission Checks**: Validates boost admin rights before allowing framework/skill operations
 
     ## API Methods Added
 
     ### Plugin Methods
-
-    -   `createManagedSkillFramework()` - Create a new skill framework
-    -   `createManagedSkillFrameworks()` - Bulk create frameworks
-    -   `createSkill()` - Add a skill to a framework
-    -   `createSkills()` - Bulk create skills
-    -   `attachFrameworkToBoost()` - Link framework to boost
-    -   `detachFrameworkFromBoost()` - Remove framework from boost
-    -   `alignBoostSkills()` - Align specific skills to boost
-    -   `getSkillsAvailableForBoost()` - Query alignable skills
-    -   `searchSkillsAvailableForBoost()` - Search skills for boost
-    -   `getBoostFrameworks()` - List frameworks attached to boost
+    - `createManagedSkillFramework()` - Create a new skill framework
+    - `createManagedSkillFrameworks()` - Bulk create frameworks
+    - `createSkill()` - Add a skill to a framework
+    - `createSkills()` - Bulk create skills
+    - `attachFrameworkToBoost()` - Link framework to boost
+    - `detachFrameworkFromBoost()` - Remove framework from boost
+    - `alignBoostSkills()` - Align specific skills to boost
+    - `getSkillsAvailableForBoost()` - Query alignable skills
+    - `searchSkillsAvailableForBoost()` - Search skills for boost
+    - `getBoostFrameworks()` - List frameworks attached to boost
 
     ### Brain Service Routes
-
-    -   `skillFrameworks.createManaged` - Create framework with MANAGES relationship
-    -   `skillFrameworks.listMine` - Query user's managed frameworks
-    -   `skillFrameworks.update` - Update framework metadata
-    -   `skills.create` - Create skills with hierarchy support
-    -   `skills.update` - Update skill metadata
-    -   `skills.searchFrameworkSkills` - Search within framework
-    -   `boost.attachFrameworkToBoost` - Establish USES_FRAMEWORK relationship
-    -   `boost.alignBoostSkills` - Create ALIGNED_TO relationships
-    -   `boost.getSkillsAvailableForBoost` - Graph traversal for available skills
+    - `skillFrameworks.createManaged` - Create framework with MANAGES relationship
+    - `skillFrameworks.listMine` - Query user's managed frameworks
+    - `skillFrameworks.update` - Update framework metadata
+    - `skills.create` - Create skills with hierarchy support
+    - `skills.update` - Update skill metadata
+    - `skills.searchFrameworkSkills` - Search within framework
+    - `boost.attachFrameworkToBoost` - Establish USES_FRAMEWORK relationship
+    - `boost.alignBoostSkills` - Create ALIGNED_TO relationships
+    - `boost.getSkillsAvailableForBoost` - Graph traversal for available skills
 
     ## Type System
 
     ### New Types & Validators
-
-    -   `SkillFrameworkValidator` / `SkillFrameworkType` - Framework structure
-    -   `SkillValidator` / `SkillType` - Individual skill structure
-    -   `SkillFrameworkStatus` - Framework lifecycle states
-    -   `CreateManagedSkillFrameworkInput` - Framework creation params
-    -   `SkillFrameworkQuery` - Framework search parameters
+    - `SkillFrameworkValidator` / `SkillFrameworkType` - Framework structure
+    - `SkillValidator` / `SkillType` - Individual skill structure
+    - `SkillFrameworkStatus` - Framework lifecycle states
+    - `CreateManagedSkillFrameworkInput` - Framework creation params
+    - `SkillFrameworkQuery` - Framework search parameters
 
     ## Graph Database Schema
 
     ### New Relationships
-
-    -   `(Profile)-[:MANAGES]->(SkillFramework)` - Framework ownership
-    -   `(SkillFramework)-[:CONTAINS]->(Skill)` - Framework-skill membership
-    -   `(Skill)-[:IS_CHILD_OF]->(Skill)` - Hierarchical skill organization
-    -   `(Boost)-[:USES_FRAMEWORK]->(SkillFramework)` - Framework attachment
-    -   `(Boost)-[:ALIGNED_TO]->(Skill)` - Skill alignment for credentials
+    - `(Profile)-[:MANAGES]->(SkillFramework)` - Framework ownership
+    - `(SkillFramework)-[:CONTAINS]->(Skill)` - Framework-skill membership
+    - `(Skill)-[:IS_CHILD_OF]->(Skill)` - Hierarchical skill organization
+    - `(Boost)-[:USES_FRAMEWORK]->(SkillFramework)` - Framework attachment
+    - `(Boost)-[:ALIGNED_TO]->(Skill)` - Skill alignment for credentials
 
     ### Access Layer Methods
-
-    -   `createSkillFrameworkNode()` - Persist framework with MANAGES relationship
-    -   `createSkill()` - Create skill with CONTAINS and optional IS_CHILD_OF relationships
-    -   `setBoostUsesFramework()` - Establish framework attachment
-    -   `addAlignedSkillsToBoost()` - Batch create ALIGNED_TO relationships
-    -   `getFrameworkSkillsAvailableForBoost()` - Traverse graph for available skills
+    - `createSkillFrameworkNode()` - Persist framework with MANAGES relationship
+    - `createSkill()` - Create skill with CONTAINS and optional IS_CHILD_OF relationships
+    - `setBoostUsesFramework()` - Establish framework attachment
+    - `addAlignedSkillsToBoost()` - Batch create ALIGNED_TO relationships
+    - `getFrameworkSkillsAvailableForBoost()` - Traverse graph for available skills
 
     This system enables rich skill-based credential metadata, allowing organizations to categorize and align credentials with industry-standard or custom skill taxonomies.
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.12
+- Updated dependencies []:
+    - @learncard/init@2.1.12
 
 ## 2.8.56
 
 ### Patch Changes
 
--   [#814](https://github.com/learningeconomy/LearnCard/pull/814) [`ff96c92a9066be7d292b7206d3b4285e8612486a`](https://github.com/learningeconomy/LearnCard/commit/ff96c92a9066be7d292b7206d3b4285e8612486a) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1365 - Update verification expiration response
+- [#814](https://github.com/learningeconomy/LearnCard/pull/814) [`ff96c92a9066be7d292b7206d3b4285e8612486a`](https://github.com/learningeconomy/LearnCard/commit/ff96c92a9066be7d292b7206d3b4285e8612486a) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1365 - Update verification expiration response
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.11
+- Updated dependencies []:
+    - @learncard/init@2.1.11
 
 ## 2.8.55
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.10
+- Updated dependencies []:
+    - @learncard/init@2.1.10
 
 ## 2.8.54
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.9
+- Updated dependencies []:
+    - @learncard/init@2.1.9
 
 ## 2.8.53
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.8
+- Updated dependencies []:
+    - @learncard/init@2.1.8
 
 ## 2.8.52
 
 ### Patch Changes
 
--   [#834](https://github.com/learningeconomy/LearnCard/pull/834) [`56e2abeb9038f5f40b402691492973f32b44ca5e`](https://github.com/learningeconomy/LearnCard/commit/56e2abeb9038f5f40b402691492973f32b44ca5e) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1400] Fix long title for merit badge from running off screen
+- [#834](https://github.com/learningeconomy/LearnCard/pull/834) [`56e2abeb9038f5f40b402691492973f32b44ca5e`](https://github.com/learningeconomy/LearnCard/commit/56e2abeb9038f5f40b402691492973f32b44ca5e) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1400] Fix long title for merit badge from running off screen
 
 ## 2.8.51
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.7
+- Updated dependencies []:
+    - @learncard/init@2.1.7
 
 ## 2.8.50
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.6
+- Updated dependencies []:
+    - @learncard/init@2.1.6
 
 ## 2.8.49
 
 ### Patch Changes
 
--   [#827](https://github.com/learningeconomy/LearnCard/pull/827) [`55689b35362e4835a2e48059f2c7a594e070d006`](https://github.com/learningeconomy/LearnCard/commit/55689b35362e4835a2e48059f2c7a594e070d006) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1387] Broken image when previewing merit badge
+- [#827](https://github.com/learningeconomy/LearnCard/pull/827) [`55689b35362e4835a2e48059f2c7a594e070d006`](https://github.com/learningeconomy/LearnCard/commit/55689b35362e4835a2e48059f2c7a594e070d006) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1387] Broken image when previewing merit badge
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.5
+- Updated dependencies []:
+    - @learncard/init@2.1.5
 
 ## 2.8.48
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.4
+- Updated dependencies []:
+    - @learncard/init@2.1.4
 
 ## 2.8.47
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.3
+- Updated dependencies []:
+    - @learncard/init@2.1.3
 
 ## 2.8.46
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.2
+- Updated dependencies []:
+    - @learncard/init@2.1.2
 
 ## 2.8.45
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.1.1
+- Updated dependencies []:
+    - @learncard/init@2.1.1
 
 ## 2.8.44
 
 ### Patch Changes
 
--   [#815](https://github.com/learningeconomy/LearnCard/pull/815) [`133d455b26d30d9d4e09745d4fb128e4a596a80b`](https://github.com/learningeconomy/LearnCard/commit/133d455b26d30d9d4e09745d4fb128e4a596a80b) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1357] Broken video attachment and make skill button clickable
+- [#815](https://github.com/learningeconomy/LearnCard/pull/815) [`133d455b26d30d9d4e09745d4fb128e4a596a80b`](https://github.com/learningeconomy/LearnCard/commit/133d455b26d30d9d4e09745d4fb128e4a596a80b) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1357] Broken video attachment and make skill button clickable
 
 ## 2.8.43
 
 ### Patch Changes
 
--   [#810](https://github.com/learningeconomy/LearnCard/pull/810) [`16e9f31e765b7c3c5782ee6313e5b4e2704e5b01`](https://github.com/learningeconomy/LearnCard/commit/16e9f31e765b7c3c5782ee6313e5b4e2704e5b01) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1333] Hide awarded to for claimable credentials
+- [#810](https://github.com/learningeconomy/LearnCard/pull/810) [`16e9f31e765b7c3c5782ee6313e5b4e2704e5b01`](https://github.com/learningeconomy/LearnCard/commit/16e9f31e765b7c3c5782ee6313e5b4e2704e5b01) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1333] Hide awarded to for claimable credentials
 
--   [#812](https://github.com/learningeconomy/LearnCard/pull/812) [`5d4320f157ac8be2832564a0f7bb2341f9c45361`](https://github.com/learningeconomy/LearnCard/commit/5d4320f157ac8be2832564a0f7bb2341f9c45361) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1369 - update lightbox props
+- [#812](https://github.com/learningeconomy/LearnCard/pull/812) [`5d4320f157ac8be2832564a0f7bb2341f9c45361`](https://github.com/learningeconomy/LearnCard/commit/5d4320f157ac8be2832564a0f7bb2341f9c45361) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1369 - update lightbox props
 
 ## 2.8.42
 
 ### Patch Changes
 
--   Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
-    -   @learncard/init@2.1.0
+- Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
+    - @learncard/init@2.1.0
 
 ## 2.8.41
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.47
+- Updated dependencies []:
+    - @learncard/init@2.0.47
 
 ## 2.8.40
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.46
+- Updated dependencies []:
+    - @learncard/init@2.0.46
 
 ## 2.8.39
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.45
+- Updated dependencies []:
+    - @learncard/init@2.0.45
 
 ## 2.8.38
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.44
+- Updated dependencies []:
+    - @learncard/init@2.0.44
 
 ## 2.8.37
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.43
+- Updated dependencies []:
+    - @learncard/init@2.0.43
 
 ## 2.8.36
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.42
+- Updated dependencies []:
+    - @learncard/init@2.0.42
 
 ## 2.8.35
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.41
+- Updated dependencies []:
+    - @learncard/init@2.0.41
 
 ## 2.8.34
 
 ### Patch Changes
 
--   [#782](https://github.com/learningeconomy/LearnCard/pull/782) [`877dd2e4b95fe78ac656a5098cc3b22b591bcf35`](https://github.com/learningeconomy/LearnCard/commit/877dd2e4b95fe78ac656a5098cc3b22b591bcf35) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1248] & [LC-1254] fix long pdf names
+- [#782](https://github.com/learningeconomy/LearnCard/pull/782) [`877dd2e4b95fe78ac656a5098cc3b22b591bcf35`](https://github.com/learningeconomy/LearnCard/commit/877dd2e4b95fe78ac656a5098cc3b22b591bcf35) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1248] & [LC-1254] fix long pdf names
 
 ## 2.8.33
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.40
+- Updated dependencies []:
+    - @learncard/init@2.0.40
 
 ## 2.8.32
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.39
+- Updated dependencies []:
+    - @learncard/init@2.0.39
 
 ## 2.8.31
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.38
+- Updated dependencies []:
+    - @learncard/init@2.0.38
 
 ## 2.8.30
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.37
+- Updated dependencies []:
+    - @learncard/init@2.0.37
 
 ## 2.8.29
 
 ### Patch Changes
 
--   Updated dependencies [[`41a24971a8e9a916736c82e44b5b41f1da1f1a67`](https://github.com/learningeconomy/LearnCard/commit/41a24971a8e9a916736c82e44b5b41f1da1f1a67)]:
-    -   @learncard/init@2.0.36
+- Updated dependencies [[`41a24971a8e9a916736c82e44b5b41f1da1f1a67`](https://github.com/learningeconomy/LearnCard/commit/41a24971a8e9a916736c82e44b5b41f1da1f1a67)]:
+    - @learncard/init@2.0.36
 
 ## 2.8.28
 
 ### Patch Changes
 
--   [#766](https://github.com/learningeconomy/LearnCard/pull/766) [`258b08e9baacb3a6e31ea275d25d9fecf3270f0c`](https://github.com/learningeconomy/LearnCard/commit/258b08e9baacb3a6e31ea275d25d9fecf3270f0c) Thanks [@smurflo2](https://github.com/smurflo2)! - Use first letter of user name instead of DefaultFace picture when missing a profile picture
+- [#766](https://github.com/learningeconomy/LearnCard/pull/766) [`258b08e9baacb3a6e31ea275d25d9fecf3270f0c`](https://github.com/learningeconomy/LearnCard/commit/258b08e9baacb3a6e31ea275d25d9fecf3270f0c) Thanks [@smurflo2](https://github.com/smurflo2)! - Use first letter of user name instead of DefaultFace picture when missing a profile picture
 
 ## 2.8.27
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.35
+- Updated dependencies []:
+    - @learncard/init@2.0.35
 
 ## 2.8.26
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.34
+- Updated dependencies []:
+    - @learncard/init@2.0.34
 
 ## 2.8.25
 
 ### Patch Changes
 
--   [#760](https://github.com/learningeconomy/LearnCard/pull/760) [`238155cf1ff325559e517dece60bca3e1f143a80`](https://github.com/learningeconomy/LearnCard/commit/238155cf1ff325559e517dece60bca3e1f143a80) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: BoostGenericCard selective state
+- [#760](https://github.com/learningeconomy/LearnCard/pull/760) [`238155cf1ff325559e517dece60bca3e1f143a80`](https://github.com/learningeconomy/LearnCard/commit/238155cf1ff325559e517dece60bca3e1f143a80) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: BoostGenericCard selective state
 
 ## 2.8.24
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.33
+- Updated dependencies []:
+    - @learncard/init@2.0.33
 
 ## 2.8.23
 
 ### Patch Changes
 
--   [#756](https://github.com/learningeconomy/LearnCard/pull/756) [`84a7928c4e78217010dce6d70443de540148d976`](https://github.com/learningeconomy/LearnCard/commit/84a7928c4e78217010dce6d70443de540148d976) Thanks [@gerardopar](https://github.com/gerardopar)! - Update Verifier State Text
+- [#756](https://github.com/learningeconomy/LearnCard/pull/756) [`84a7928c4e78217010dce6d70443de540148d976`](https://github.com/learningeconomy/LearnCard/commit/84a7928c4e78217010dce6d70443de540148d976) Thanks [@gerardopar](https://github.com/gerardopar)! - Update Verifier State Text
 
 ## 2.8.22
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.32
+- Updated dependencies []:
+    - @learncard/init@2.0.32
 
 ## 2.8.21
 
 ### Patch Changes
 
--   [#751](https://github.com/learningeconomy/LearnCard/pull/751) [`65bacfaa9a24f97a5e59a7dd4cffe7f1f96c1888`](https://github.com/learningeconomy/LearnCard/commit/65bacfaa9a24f97a5e59a7dd4cffe7f1f96c1888) Thanks [@gerardopar](https://github.com/gerardopar)! - fix portfolio category display text
+- [#751](https://github.com/learningeconomy/LearnCard/pull/751) [`65bacfaa9a24f97a5e59a7dd4cffe7f1f96c1888`](https://github.com/learningeconomy/LearnCard/commit/65bacfaa9a24f97a5e59a7dd4cffe7f1f96c1888) Thanks [@gerardopar](https://github.com/gerardopar)! - fix portfolio category display text
 
 ## 2.8.20
 
 ### Patch Changes
 
--   [#749](https://github.com/learningeconomy/LearnCard/pull/749) [`e2764728feaa2c4f1a5bc6cb3b2dec8b21b49458`](https://github.com/learningeconomy/LearnCard/commit/e2764728feaa2c4f1a5bc6cb3b2dec8b21b49458) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1168 - Update Verifier State
+- [#749](https://github.com/learningeconomy/LearnCard/pull/749) [`e2764728feaa2c4f1a5bc6cb3b2dec8b21b49458`](https://github.com/learningeconomy/LearnCard/commit/e2764728feaa2c4f1a5bc6cb3b2dec8b21b49458) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1168 - Update Verifier State
 
 ## 2.8.19
 
 ### Patch Changes
 
--   [#746](https://github.com/learningeconomy/LearnCard/pull/746) [`9bde535a160695364fc3bb7fa087ad3cf91adafe`](https://github.com/learningeconomy/LearnCard/commit/9bde535a160695364fc3bb7fa087ad3cf91adafe) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1167] Remove shadow around skills
+- [#746](https://github.com/learningeconomy/LearnCard/pull/746) [`9bde535a160695364fc3bb7fa087ad3cf91adafe`](https://github.com/learningeconomy/LearnCard/commit/9bde535a160695364fc3bb7fa087ad3cf91adafe) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1167] Remove shadow around skills
 
 ## 2.8.18
 
 ### Patch Changes
 
--   [#745](https://github.com/learningeconomy/LearnCard/pull/745) [`a4fbcdba26392e0badfc407cb3bcb24e92e3d2ad`](https://github.com/learningeconomy/LearnCard/commit/a4fbcdba26392e0badfc407cb3bcb24e92e3d2ad) Thanks [@gerardopar](https://github.com/gerardopar)! - center text
+- [#745](https://github.com/learningeconomy/LearnCard/pull/745) [`a4fbcdba26392e0badfc407cb3bcb24e92e3d2ad`](https://github.com/learningeconomy/LearnCard/commit/a4fbcdba26392e0badfc407cb3bcb24e92e3d2ad) Thanks [@gerardopar](https://github.com/gerardopar)! - center text
 
 ## 2.8.17
 
 ### Patch Changes
 
--   [#742](https://github.com/learningeconomy/LearnCard/pull/742) [`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2) Thanks [@gerardopar](https://github.com/gerardopar)! - fix checkbox button on generic card
+- [#742](https://github.com/learningeconomy/LearnCard/pull/742) [`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2) Thanks [@gerardopar](https://github.com/gerardopar)! - fix checkbox button on generic card
 
 ## 2.8.16
 
 ### Patch Changes
 
--   [#740](https://github.com/learningeconomy/LearnCard/pull/740) [`255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1`](https://github.com/learningeconomy/LearnCard/commit/255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1155] Fix padding above title and below type
+- [#740](https://github.com/learningeconomy/LearnCard/pull/740) [`255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1`](https://github.com/learningeconomy/LearnCard/commit/255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1155] Fix padding above title and below type
 
--   [#742](https://github.com/learningeconomy/LearnCard/pull/742) [`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2) Thanks [@gerardopar](https://github.com/gerardopar)! - fix checkbox button on generic card
+- [#742](https://github.com/learningeconomy/LearnCard/pull/742) [`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2) Thanks [@gerardopar](https://github.com/gerardopar)! - fix checkbox button on generic card
 
 ## 2.8.15
 
 ### Patch Changes
 
--   [#738](https://github.com/learningeconomy/LearnCard/pull/738) [`f7851009fdef650581e9681175cc47c35b5b3d3f`](https://github.com/learningeconomy/LearnCard/commit/f7851009fdef650581e9681175cc47c35b5b3d3f) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Boost Generic Card Content
+- [#738](https://github.com/learningeconomy/LearnCard/pull/738) [`f7851009fdef650581e9681175cc47c35b5b3d3f`](https://github.com/learningeconomy/LearnCard/commit/f7851009fdef650581e9681175cc47c35b5b3d3f) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Boost Generic Card Content
 
 ## 2.8.14
 
 ### Patch Changes
 
--   [#733](https://github.com/learningeconomy/LearnCard/pull/733) [`b81277c9118111178342b09ccf1cd3070de92b19`](https://github.com/learningeconomy/LearnCard/commit/b81277c9118111178342b09ccf1cd3070de92b19) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1132] - thumbnail polishes
+- [#733](https://github.com/learningeconomy/LearnCard/pull/733) [`b81277c9118111178342b09ccf1cd3070de92b19`](https://github.com/learningeconomy/LearnCard/commit/b81277c9118111178342b09ccf1cd3070de92b19) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1132] - thumbnail polishes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.31
+- Updated dependencies []:
+    - @learncard/init@2.0.31
 
 ## 2.8.13
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.30
+- Updated dependencies []:
+    - @learncard/init@2.0.30
 
 ## 2.8.12
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.29
+- Updated dependencies []:
+    - @learncard/init@2.0.29
 
 ## 2.8.11
 
 ### Patch Changes
 
--   [#720](https://github.com/learningeconomy/LearnCard/pull/720) [`53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b`](https://github.com/learningeconomy/LearnCard/commit/53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1107] - Media Display Type
+- [#720](https://github.com/learningeconomy/LearnCard/pull/720) [`53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b`](https://github.com/learningeconomy/LearnCard/commit/53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1107] - Media Display Type
 
 ## 2.8.10
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.28
+- Updated dependencies []:
+    - @learncard/init@2.0.28
 
 ## 2.8.9
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.27
+- Updated dependencies []:
+    - @learncard/init@2.0.27
 
 ## 2.8.8
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.26
+- Updated dependencies []:
+    - @learncard/init@2.0.26
 
 ## 2.8.7
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.25
+- Updated dependencies []:
+    - @learncard/init@2.0.25
 
 ## 2.8.6
 
 ### Patch Changes
 
--   [#718](https://github.com/learningeconomy/LearnCard/pull/718) [`f9d07836a4392d2a396ad25304730192260f8b45`](https://github.com/learningeconomy/LearnCard/commit/f9d07836a4392d2a396ad25304730192260f8b45) Thanks [@gerardopar](https://github.com/gerardopar)! - add comment
+- [#718](https://github.com/learningeconomy/LearnCard/pull/718) [`f9d07836a4392d2a396ad25304730192260f8b45`](https://github.com/learningeconomy/LearnCard/commit/f9d07836a4392d2a396ad25304730192260f8b45) Thanks [@gerardopar](https://github.com/gerardopar)! - add comment
 
 ## 2.8.5
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.24
+- Updated dependencies []:
+    - @learncard/init@2.0.24
 
 ## 2.8.4
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.23
+- Updated dependencies []:
+    - @learncard/init@2.0.23
 
 ## 2.8.3
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.22
+- Updated dependencies []:
+    - @learncard/init@2.0.22
 
 ## 2.8.2
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.21
+- Updated dependencies []:
+    - @learncard/init@2.0.21
 
 ## 2.8.1
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.20
+- Updated dependencies []:
+    - @learncard/init@2.0.20
 
 ## 2.8.0
 
 ### Minor Changes
 
--   [#687](https://github.com/learningeconomy/LearnCard/pull/687) [`bd9809172b3b696d47c9a440519d264466444c2d`](https://github.com/learningeconomy/LearnCard/commit/bd9809172b3b696d47c9a440519d264466444c2d) Thanks [@smurflo2](https://github.com/smurflo2)! - Change width behavior for Certificate display. It now has a max width of 400px with "width: full" so it will fill the 400px. Notably, the auto x margin was removed, so anything relying on it for centering will be broken.
+- [#687](https://github.com/learningeconomy/LearnCard/pull/687) [`bd9809172b3b696d47c9a440519d264466444c2d`](https://github.com/learningeconomy/LearnCard/commit/bd9809172b3b696d47c9a440519d264466444c2d) Thanks [@smurflo2](https://github.com/smurflo2)! - Change width behavior for Certificate display. It now has a max width of 400px with "width: full" so it will fill the 400px. Notably, the auto x margin was removed, so anything relying on it for centering will be broken.
 
 ## 2.7.93
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.19
+- Updated dependencies []:
+    - @learncard/init@2.0.19
 
 ## 2.7.92
 
 ### Patch Changes
 
--   [#681](https://github.com/learningeconomy/LearnCard/pull/681) [`6fb5fcef103a56eb019c6d4aefdbde7ab4918155`](https://github.com/learningeconomy/LearnCard/commit/6fb5fcef103a56eb019c6d4aefdbde7ab4918155) Thanks [@rhen92](https://github.com/rhen92)! - [LC-961] Upgrade Trust Registries
+- [#681](https://github.com/learningeconomy/LearnCard/pull/681) [`6fb5fcef103a56eb019c6d4aefdbde7ab4918155`](https://github.com/learningeconomy/LearnCard/commit/6fb5fcef103a56eb019c6d4aefdbde7ab4918155) Thanks [@rhen92](https://github.com/rhen92)! - [LC-961] Upgrade Trust Registries
 
 ## 2.7.91
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.18
+- Updated dependencies []:
+    - @learncard/init@2.0.18
 
 ## 2.7.90
 
 ### Patch Changes
 
--   [#688](https://github.com/learningeconomy/LearnCard/pull/688) [`d1c55ca4e179162ba0d0b63e85b0e16eebae3278`](https://github.com/learningeconomy/LearnCard/commit/d1c55ca4e179162ba0d0b63e85b0e16eebae3278) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-849 - colors support
+- [#688](https://github.com/learningeconomy/LearnCard/pull/688) [`d1c55ca4e179162ba0d0b63e85b0e16eebae3278`](https://github.com/learningeconomy/LearnCard/commit/d1c55ca4e179162ba0d0b63e85b0e16eebae3278) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-849 - colors support
 
 ## 2.7.89
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.17
+- Updated dependencies []:
+    - @learncard/init@2.0.17
 
 ## 2.7.88
 
 ### Patch Changes
 
--   [#684](https://github.com/learningeconomy/LearnCard/pull/684) [`0b10e74bac01e5232031539a8f88b9b63aee847b`](https://github.com/learningeconomy/LearnCard/commit/0b10e74bac01e5232031539a8f88b9b63aee847b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - fix: add VC 2.0 support for validFrom field in React components
+- [#684](https://github.com/learningeconomy/LearnCard/pull/684) [`0b10e74bac01e5232031539a8f88b9b63aee847b`](https://github.com/learningeconomy/LearnCard/commit/0b10e74bac01e5232031539a8f88b9b63aee847b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - fix: add VC 2.0 support for validFrom field in React components
 
 ## 2.7.87
 
 ### Patch Changes
 
--   Updated dependencies [[`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3)]:
-    -   @learncard/init@2.0.16
+- Updated dependencies [[`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3)]:
+    - @learncard/init@2.0.16
 
 ## 2.7.86
 
 ### Patch Changes
 
--   Updated dependencies [[`8957eda698be3222588d0b56834d7ef5622057fb`](https://github.com/learningeconomy/LearnCard/commit/8957eda698be3222588d0b56834d7ef5622057fb)]:
-    -   @learncard/init@2.0.15
+- Updated dependencies [[`8957eda698be3222588d0b56834d7ef5622057fb`](https://github.com/learningeconomy/LearnCard/commit/8957eda698be3222588d0b56834d7ef5622057fb)]:
+    - @learncard/init@2.0.15
 
 ## 2.7.85
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.14
+- Updated dependencies []:
+    - @learncard/init@2.0.14
 
 ## 2.7.84
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.13
+- Updated dependencies []:
+    - @learncard/init@2.0.13
 
 ## 2.7.83
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.12
+- Updated dependencies []:
+    - @learncard/init@2.0.12
 
 ## 2.7.82
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.11
+- Updated dependencies []:
+    - @learncard/init@2.0.11
 
 ## 2.7.81
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.10
+- Updated dependencies []:
+    - @learncard/init@2.0.10
 
 ## 2.7.80
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.9
+- Updated dependencies []:
+    - @learncard/init@2.0.9
 
 ## 2.7.79
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.8
+- Updated dependencies []:
+    - @learncard/init@2.0.8
 
 ## 2.7.78
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.7
+- Updated dependencies []:
+    - @learncard/init@2.0.7
 
 ## 2.7.77
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.6
+- Updated dependencies []:
+    - @learncard/init@2.0.6
 
 ## 2.7.76
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.5
+- Updated dependencies []:
+    - @learncard/init@2.0.5
 
 ## 2.7.75
 
 ### Patch Changes
 
--   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+- [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
 
--   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
-    -   @learncard/init@2.0.4
+- Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    - @learncard/init@2.0.4
 
 ## 2.7.74
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.3
+- Updated dependencies []:
+    - @learncard/init@2.0.3
 
 ## 2.7.73
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.2
+- Updated dependencies []:
+    - @learncard/init@2.0.2
 
 ## 2.7.72
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.0.1
+- Updated dependencies []:
+    - @learncard/init@2.0.1
 
 ## 2.7.71
 
 ### Patch Changes
 
--   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
-    -   @learncard/init@2.0.0
+- Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    - @learncard/init@2.0.0
 
 ## 2.7.70
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.40
+- Updated dependencies []:
+    - @learncard/init@1.3.40
 
 ## 2.7.69
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.39
+- Updated dependencies []:
+    - @learncard/init@1.3.39
 
 ## 2.7.68
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.38
+- Updated dependencies []:
+    - @learncard/init@1.3.38
 
 ## 2.7.67
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.37
+- Updated dependencies []:
+    - @learncard/init@1.3.37
 
 ## 2.7.66
 
 ### Patch Changes
 
--   [#624](https://github.com/learningeconomy/LearnCard/pull/624) [`b91c3a7275e23caaeb327019851d7893681d1c0f`](https://github.com/learningeconomy/LearnCard/commit/b91c3a7275e23caaeb327019851d7893681d1c0f) Thanks [@rhen92](https://github.com/rhen92)! - [LC-819] Fix missing achievement image on Certificate Views
+- [#624](https://github.com/learningeconomy/LearnCard/pull/624) [`b91c3a7275e23caaeb327019851d7893681d1c0f`](https://github.com/learningeconomy/LearnCard/commit/b91c3a7275e23caaeb327019851d7893681d1c0f) Thanks [@rhen92](https://github.com/rhen92)! - [LC-819] Fix missing achievement image on Certificate Views
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.36
+- Updated dependencies []:
+    - @learncard/init@1.3.36
 
 ## 2.7.65
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.35
+- Updated dependencies []:
+    - @learncard/init@1.3.35
 
 ## 2.7.64
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.34
+- Updated dependencies []:
+    - @learncard/init@1.3.34
 
 ## 2.7.63
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.33
+- Updated dependencies []:
+    - @learncard/init@1.3.33
 
 ## 2.7.62
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.32
+- Updated dependencies []:
+    - @learncard/init@1.3.32
 
 ## 2.7.61
 
 ### Patch Changes
 
--   [#610](https://github.com/learningeconomy/LearnCard/pull/610) [`399b1d877fbf9db8852385740ee12bb007cc7e6c`](https://github.com/learningeconomy/LearnCard/commit/399b1d877fbf9db8852385740ee12bb007cc7e6c) Thanks [@rhen92](https://github.com/rhen92)! - [LC-758] Fix full view for certs and awards
+- [#610](https://github.com/learningeconomy/LearnCard/pull/610) [`399b1d877fbf9db8852385740ee12bb007cc7e6c`](https://github.com/learningeconomy/LearnCard/commit/399b1d877fbf9db8852385740ee12bb007cc7e6c) Thanks [@rhen92](https://github.com/rhen92)! - [LC-758] Fix full view for certs and awards
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.31
+- Updated dependencies []:
+    - @learncard/init@1.3.31
 
 ## 2.7.60
 
 ### Patch Changes
 
--   [#607](https://github.com/learningeconomy/LearnCard/pull/607) [`0929f10633d3f86db0aca3f3c982f5cdf2c02a0c`](https://github.com/learningeconomy/LearnCard/commit/0929f10633d3f86db0aca3f3c982f5cdf2c02a0c) Thanks [@rhen92](https://github.com/rhen92)! - [LC-758] Add type and category to CertificateFrontFace and MeritBadgeFrontFace
+- [#607](https://github.com/learningeconomy/LearnCard/pull/607) [`0929f10633d3f86db0aca3f3c982f5cdf2c02a0c`](https://github.com/learningeconomy/LearnCard/commit/0929f10633d3f86db0aca3f3c982f5cdf2c02a0c) Thanks [@rhen92](https://github.com/rhen92)! - [LC-758] Add type and category to CertificateFrontFace and MeritBadgeFrontFace
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.30
+- Updated dependencies []:
+    - @learncard/init@1.3.30
 
 ## 2.7.59
 
 ### Patch Changes
 
--   [#602](https://github.com/learningeconomy/LearnCard/pull/602) [`c5ffa5a053742368765e557591e40d0a37a5c7e8`](https://github.com/learningeconomy/LearnCard/commit/c5ffa5a053742368765e557591e40d0a37a5c7e8) Thanks [@goblincore](https://github.com/goblincore)! - chore: clean up react-learn-card assets
+- [#602](https://github.com/learningeconomy/LearnCard/pull/602) [`c5ffa5a053742368765e557591e40d0a37a5c7e8`](https://github.com/learningeconomy/LearnCard/commit/c5ffa5a053742368765e557591e40d0a37a5c7e8) Thanks [@goblincore](https://github.com/goblincore)! - chore: clean up react-learn-card assets
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.29
+- Updated dependencies []:
+    - @learncard/init@1.3.29
 
 ## 2.7.58
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.28
+- Updated dependencies []:
+    - @learncard/init@1.3.28
 
 ## 2.7.57
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.27
+- Updated dependencies []:
+    - @learncard/init@1.3.27
 
 ## 2.7.56
 
 ### Patch Changes
 
--   [`74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f`](https://github.com/learningeconomy/LearnCard/commit/74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't crash from bad skills
+- [`74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f`](https://github.com/learningeconomy/LearnCard/commit/74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't crash from bad skills
 
 ## 2.7.55
 
 ### Patch Changes
 
--   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
-    -   @learncard/init@1.3.26
+- Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    - @learncard/init@1.3.26
 
 ## 2.7.54
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.25
+- Updated dependencies []:
+    - @learncard/init@1.3.25
 
 ## 2.7.53
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.24
+- Updated dependencies []:
+    - @learncard/init@1.3.24
 
 ## 2.7.52
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.23
+- Updated dependencies []:
+    - @learncard/init@1.3.23
 
 ## 2.7.51
 
 ### Patch Changes
 
--   Updated dependencies [[`24706505149561d7de8cf76250607f4ca7459858`](https://github.com/learningeconomy/LearnCard/commit/24706505149561d7de8cf76250607f4ca7459858)]:
-    -   @learncard/init@1.3.22
+- Updated dependencies [[`24706505149561d7de8cf76250607f4ca7459858`](https://github.com/learningeconomy/LearnCard/commit/24706505149561d7de8cf76250607f4ca7459858)]:
+    - @learncard/init@1.3.22
 
 ## 2.7.50
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.21
+- Updated dependencies []:
+    - @learncard/init@1.3.21
 
 ## 2.7.49
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.20
+- Updated dependencies []:
+    - @learncard/init@1.3.20
 
 ## 2.7.48
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.19
+- Updated dependencies []:
+    - @learncard/init@1.3.19
 
 ## 2.7.47
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.18
+- Updated dependencies []:
+    - @learncard/init@1.3.18
 
 ## 2.7.46
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.17
+- Updated dependencies []:
+    - @learncard/init@1.3.17
 
 ## 2.7.45
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.16
+- Updated dependencies []:
+    - @learncard/init@1.3.16
 
 ## 2.7.44
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.15
+- Updated dependencies []:
+    - @learncard/init@1.3.15
 
 ## 2.7.43
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.14
+- Updated dependencies []:
+    - @learncard/init@1.3.14
 
 ## 2.7.42
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.13
+- Updated dependencies []:
+    - @learncard/init@1.3.13
 
 ## 2.7.41
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.12
+- Updated dependencies []:
+    - @learncard/init@1.3.12
 
 ## 2.7.40
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.11
+- Updated dependencies []:
+    - @learncard/init@1.3.11
 
 ## 2.7.39
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.10
+- Updated dependencies []:
+    - @learncard/init@1.3.10
 
 ## 2.7.38
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.9
+- Updated dependencies []:
+    - @learncard/init@1.3.9
 
 ## 2.7.37
 
 ### Patch Changes
 
--   [#557](https://github.com/learningeconomy/LearnCard/pull/557) [`3cd4737a68e9dced7a5af207571c2fb0767f8326`](https://github.com/learningeconomy/LearnCard/commit/3cd4737a68e9dced7a5af207571c2fb0767f8326) Thanks [@rhen92](https://github.com/rhen92)! - [LC-549] Polish Skills Modal
+- [#557](https://github.com/learningeconomy/LearnCard/pull/557) [`3cd4737a68e9dced7a5af207571c2fb0767f8326`](https://github.com/learningeconomy/LearnCard/commit/3cd4737a68e9dced7a5af207571c2fb0767f8326) Thanks [@rhen92](https://github.com/rhen92)! - [LC-549] Polish Skills Modal
 
 ## 2.7.36
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.8
+- Updated dependencies []:
+    - @learncard/init@1.3.8
 
 ## 2.7.35
 
 ### Patch Changes
 
--   [#553](https://github.com/learningeconomy/LearnCard/pull/553) [`01bb2e55ce182975663f2c43ec79d05aa9e61919`](https://github.com/learningeconomy/LearnCard/commit/01bb2e55ce182975663f2c43ec79d05aa9e61919) Thanks [@goblincore](https://github.com/goblincore)! - Fix icon position and remove bad graphics files
+- [#553](https://github.com/learningeconomy/LearnCard/pull/553) [`01bb2e55ce182975663f2c43ec79d05aa9e61919`](https://github.com/learningeconomy/LearnCard/commit/01bb2e55ce182975663f2c43ec79d05aa9e61919) Thanks [@goblincore](https://github.com/goblincore)! - Fix icon position and remove bad graphics files
 
 ## 2.7.34
 
 ### Patch Changes
 
--   [#551](https://github.com/learningeconomy/LearnCard/pull/551) [`92d47059935e4e04f8132dee3c8dcf2db96488ac`](https://github.com/learningeconomy/LearnCard/commit/92d47059935e4e04f8132dee3c8dcf2db96488ac) Thanks [@rhen92](https://github.com/rhen92)! - [Lc-627] Give credentials more room
+- [#551](https://github.com/learningeconomy/LearnCard/pull/551) [`92d47059935e4e04f8132dee3c8dcf2db96488ac`](https://github.com/learningeconomy/LearnCard/commit/92d47059935e4e04f8132dee3c8dcf2db96488ac) Thanks [@rhen92](https://github.com/rhen92)! - [Lc-627] Give credentials more room
 
 ## 2.7.33
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.7
+- Updated dependencies []:
+    - @learncard/init@1.3.7
 
 ## 2.7.32
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.6
+- Updated dependencies []:
+    - @learncard/init@1.3.6
 
 ## 2.7.31
 
 ### Patch Changes
 
--   [#544](https://github.com/learningeconomy/LearnCard/pull/544) [`287836291b5b37a2922be73f1414d7bca6ff2a39`](https://github.com/learningeconomy/LearnCard/commit/287836291b5b37a2922be73f1414d7bca6ff2a39) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-393] Change ribbon size and replace backpack graphic
+- [#544](https://github.com/learningeconomy/LearnCard/pull/544) [`287836291b5b37a2922be73f1414d7bca6ff2a39`](https://github.com/learningeconomy/LearnCard/commit/287836291b5b37a2922be73f1414d7bca6ff2a39) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-393] Change ribbon size and replace backpack graphic
 
 ## 2.7.30
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.5
+- Updated dependencies []:
+    - @learncard/init@1.3.5
 
 ## 2.7.29
 
 ### Patch Changes
 
--   [#539](https://github.com/learningeconomy/LearnCard/pull/539) [`6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0`](https://github.com/learningeconomy/LearnCard/commit/6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0) Thanks [@smurflo2](https://github.com/smurflo2)! - Show Merit Badge display for credential if displayType === 'award'
+- [#539](https://github.com/learningeconomy/LearnCard/pull/539) [`6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0`](https://github.com/learningeconomy/LearnCard/commit/6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0) Thanks [@smurflo2](https://github.com/smurflo2)! - Show Merit Badge display for credential if displayType === 'award'
 
 ## 2.7.28
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.4
+- Updated dependencies []:
+    - @learncard/init@1.3.4
 
 ## 2.7.27
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.3
+- Updated dependencies []:
+    - @learncard/init@1.3.3
 
 ## 2.7.26
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.2
+- Updated dependencies []:
+    - @learncard/init@1.3.2
 
 ## 2.7.25
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.3.1
+- Updated dependencies []:
+    - @learncard/init@1.3.1
 
 ## 2.7.24
 
 ### Patch Changes
 
--   Updated dependencies [[`46390f8ee3b3c1ca81bef687c8054bed8d9912d2`](https://github.com/learningeconomy/LearnCard/commit/46390f8ee3b3c1ca81bef687c8054bed8d9912d2)]:
-    -   @learncard/init@1.3.0
+- Updated dependencies [[`46390f8ee3b3c1ca81bef687c8054bed8d9912d2`](https://github.com/learningeconomy/LearnCard/commit/46390f8ee3b3c1ca81bef687c8054bed8d9912d2)]:
+    - @learncard/init@1.3.0
 
 ## 2.7.23
 
 ### Patch Changes
 
--   [#523](https://github.com/learningeconomy/LearnCard/pull/523) [`bab40e44aea413976b7f5a72779522e88676e1da`](https://github.com/learningeconomy/LearnCard/commit/bab40e44aea413976b7f5a72779522e88676e1da) Thanks [@smurflo2](https://github.com/smurflo2)! - Redesign merit badge display
+- [#523](https://github.com/learningeconomy/LearnCard/pull/523) [`bab40e44aea413976b7f5a72779522e88676e1da`](https://github.com/learningeconomy/LearnCard/commit/bab40e44aea413976b7f5a72779522e88676e1da) Thanks [@smurflo2](https://github.com/smurflo2)! - Redesign merit badge display
 
 ## 2.7.22
 
 ### Patch Changes
 
--   Updated dependencies [[`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40)]:
-    -   @learncard/init@1.2.40
+- Updated dependencies [[`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40)]:
+    - @learncard/init@1.2.40
 
 ## 2.7.21
 
 ### Patch Changes
 
--   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+- [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.39
+- Updated dependencies []:
+    - @learncard/init@1.2.39
 
 ## 2.7.20
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.38
+- Updated dependencies []:
+    - @learncard/init@1.2.38
 
 ## 2.7.19
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.37
+- Updated dependencies []:
+    - @learncard/init@1.2.37
 
 ## 2.7.18
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.36
+- Updated dependencies []:
+    - @learncard/init@1.2.36
 
 ## 2.7.17
 
 ### Patch Changes
 
--   [#507](https://github.com/learningeconomy/LearnCard/pull/507) [`e6ddc54`](https://github.com/learningeconomy/LearnCard/commit/e6ddc548d69d1d9b7e770e8d66f81a0d348e0678) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-250] Fix spacing for big titles in Boost display
+- [#507](https://github.com/learningeconomy/LearnCard/pull/507) [`e6ddc54`](https://github.com/learningeconomy/LearnCard/commit/e6ddc548d69d1d9b7e770e8d66f81a0d348e0678) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-250] Fix spacing for big titles in Boost display
 
 ## 2.7.16
 
 ### Patch Changes
 
--   [#514](https://github.com/learningeconomy/LearnCard/pull/514) [`ac7cd5c`](https://github.com/learningeconomy/LearnCard/commit/ac7cd5ccd2ee6d572fedda50259eb751817564a2) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-309] - fix VC card warping on flip
+- [#514](https://github.com/learningeconomy/LearnCard/pull/514) [`ac7cd5c`](https://github.com/learningeconomy/LearnCard/commit/ac7cd5ccd2ee6d572fedda50259eb751817564a2) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-309] - fix VC card warping on flip
 
 ## 2.7.15
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.35
+- Updated dependencies []:
+    - @learncard/init@1.2.35
 
 ## 2.7.14
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.34
+- Updated dependencies []:
+    - @learncard/init@1.2.34
 
 ## 2.7.13
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.33
+- Updated dependencies []:
+    - @learncard/init@1.2.33
 
 ## 2.7.12
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.32
+- Updated dependencies []:
+    - @learncard/init@1.2.32
 
 ## 2.7.11
 
 ### Patch Changes
 
--   [#501](https://github.com/learningeconomy/LearnCard/pull/501) [`df3e01c`](https://github.com/learningeconomy/LearnCard/commit/df3e01c99bd0dc3c697103f16628a783ea02de60) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Merit Badge display
+- [#501](https://github.com/learningeconomy/LearnCard/pull/501) [`df3e01c`](https://github.com/learningeconomy/LearnCard/commit/df3e01c99bd0dc3c697103f16628a783ea02de60) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Merit Badge display
 
 ## 2.7.10
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.31
+- Updated dependencies []:
+    - @learncard/init@1.2.31
 
 ## 2.7.9
 
 ### Patch Changes
 
--   [#495](https://github.com/learningeconomy/LearnCard/pull/495) [`f14f9f2`](https://github.com/learningeconomy/LearnCard/commit/f14f9f2315453e322501ae45872b97fa2610d08b) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-292] - Boost Draft State Changes
+- [#495](https://github.com/learningeconomy/LearnCard/pull/495) [`f14f9f2`](https://github.com/learningeconomy/LearnCard/commit/f14f9f2315453e322501ae45872b97fa2610d08b) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-292] - Boost Draft State Changes
 
 ## 2.7.8
 
 ### Patch Changes
 
--   [#496](https://github.com/learningeconomy/LearnCard/pull/496) [`0cb111c`](https://github.com/learningeconomy/LearnCard/commit/0cb111c6a1809488774d0233f704c7cc3b7ae472) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update Signature styles in Certificate displays so that the signatures don't ellipsis and also aren't cut off at the bottom
+- [#496](https://github.com/learningeconomy/LearnCard/pull/496) [`0cb111c`](https://github.com/learningeconomy/LearnCard/commit/0cb111c6a1809488774d0233f704c7cc3b7ae472) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update Signature styles in Certificate displays so that the signatures don't ellipsis and also aren't cut off at the bottom
 
 ## 2.7.7
 
 ### Patch Changes
 
--   [#492](https://github.com/learningeconomy/LearnCard/pull/492) [`f68ff86`](https://github.com/learningeconomy/LearnCard/commit/f68ff86d57a24cc9bd1d6668821c77da75e9a814) Thanks [@rhen92](https://github.com/rhen92)! - [LC-312] Change wording on CertificateFrontFace
+- [#492](https://github.com/learningeconomy/LearnCard/pull/492) [`f68ff86`](https://github.com/learningeconomy/LearnCard/commit/f68ff86d57a24cc9bd1d6668821c77da75e9a814) Thanks [@rhen92](https://github.com/rhen92)! - [LC-312] Change wording on CertificateFrontFace
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.30
+- Updated dependencies []:
+    - @learncard/init@1.2.30
 
 ## 2.7.6
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.29
+- Updated dependencies []:
+    - @learncard/init@1.2.29
 
 ## 2.7.5
 
 ### Patch Changes
 
--   [#488](https://github.com/learningeconomy/LearnCard/pull/488) [`8ff55be`](https://github.com/learningeconomy/LearnCard/commit/8ff55be756f17e9b0ab0ae2d60def320d425fdc5) Thanks [@rhen92](https://github.com/rhen92)! - [LC-199] Wallet description
+- [#488](https://github.com/learningeconomy/LearnCard/pull/488) [`8ff55be`](https://github.com/learningeconomy/LearnCard/commit/8ff55be756f17e9b0ab0ae2d60def320d425fdc5) Thanks [@rhen92](https://github.com/rhen92)! - [LC-199] Wallet description
 
 ## 2.7.4
 
 ### Patch Changes
 
--   [#485](https://github.com/learningeconomy/LearnCard/pull/485) [`aec3e346`](https://github.com/learningeconomy/LearnCard/commit/aec3e346611624a106e94428a1a5d63988d04cc7) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update boost generic card spacing and formatting of content
+- [#485](https://github.com/learningeconomy/LearnCard/pull/485) [`aec3e346`](https://github.com/learningeconomy/LearnCard/commit/aec3e346611624a106e94428a1a5d63988d04cc7) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update boost generic card spacing and formatting of content
 
--   [#487](https://github.com/learningeconomy/LearnCard/pull/487) [`68550bb`](https://github.com/learningeconomy/LearnCard/commit/68550bb7f143897841defabdd13c5c9e5e1bf553) Thanks [@smurflo2](https://github.com/smurflo2)! - Truncate issuer name to 20 characters instead of 25
+- [#487](https://github.com/learningeconomy/LearnCard/pull/487) [`68550bb`](https://github.com/learningeconomy/LearnCard/commit/68550bb7f143897841defabdd13c5c9e5e1bf553) Thanks [@smurflo2](https://github.com/smurflo2)! - Truncate issuer name to 20 characters instead of 25
 
 ## 2.7.3
 
 ### Patch Changes
 
--   [#482](https://github.com/learningeconomy/LearnCard/pull/482) [`a309dd0`](https://github.com/learningeconomy/LearnCard/commit/a309dd00210a1a2b2e90a0b2ccb3187b3d9c40e5) Thanks [@gerardopar](https://github.com/gerardopar)! - Update Props
+- [#482](https://github.com/learningeconomy/LearnCard/pull/482) [`a309dd0`](https://github.com/learningeconomy/LearnCard/commit/a309dd00210a1a2b2e90a0b2ccb3187b3d9c40e5) Thanks [@gerardopar](https://github.com/gerardopar)! - Update Props
 
 ## 2.7.2
 
 ### Patch Changes
 
--   [#477](https://github.com/learningeconomy/LearnCard/pull/477) [`57898a5`](https://github.com/learningeconomy/LearnCard/commit/57898a5a810ea50583d3a9485fd98095251efc1d) Thanks [@rhen92](https://github.com/rhen92)! - [LC-235] Prevent attachment section from being crammed
+- [#477](https://github.com/learningeconomy/LearnCard/pull/477) [`57898a5`](https://github.com/learningeconomy/LearnCard/commit/57898a5a810ea50583d3a9485fd98095251efc1d) Thanks [@rhen92](https://github.com/rhen92)! - [LC-235] Prevent attachment section from being crammed
 
 ## 2.7.1
 
 ### Patch Changes
 
--   [#476](https://github.com/learningeconomy/LearnCard/pull/476) [`24372e9`](https://github.com/learningeconomy/LearnCard/commit/24372e9d85180a077ec4b06e3c6e6659b9b6b5f8) Thanks [@smurflo2](https://github.com/smurflo2)! - Add support for issuer badges (e.g. trusted/untrusted/unknown issuer)
+- [#476](https://github.com/learningeconomy/LearnCard/pull/476) [`24372e9`](https://github.com/learningeconomy/LearnCard/commit/24372e9d85180a077ec4b06e3c6e6659b9b6b5f8) Thanks [@smurflo2](https://github.com/smurflo2)! - Add support for issuer badges (e.g. trusted/untrusted/unknown issuer)
 
 ## 2.7.0
 
 ### Minor Changes
 
--   [#468](https://github.com/learningeconomy/LearnCard/pull/468) [`32154c01`](https://github.com/learningeconomy/LearnCard/commit/32154c01aa64ea8cfe612fd93ed1a710bb043d95) Thanks [@smurflo2](https://github.com/smurflo2)! - Make clicking anywhere on a credential 'flip' it
+- [#468](https://github.com/learningeconomy/LearnCard/pull/468) [`32154c01`](https://github.com/learningeconomy/LearnCard/commit/32154c01aa64ea8cfe612fd93ed1a710bb043d95) Thanks [@smurflo2](https://github.com/smurflo2)! - Make clicking anywhere on a credential 'flip' it
 
 ## 2.6.79
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.28
+- Updated dependencies []:
+    - @learncard/init@1.2.28
 
 ## 2.6.78
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.27
+- Updated dependencies []:
+    - @learncard/init@1.2.27
 
 ## 2.6.77
 
 ### Patch Changes
 
--   [#471](https://github.com/learningeconomy/LearnCard/pull/471) [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276) Thanks [@smurflo2](https://github.com/smurflo2)! - Move nav buttons (e.g. "Details") to bottom-center of Certificate Display
+- [#471](https://github.com/learningeconomy/LearnCard/pull/471) [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276) Thanks [@smurflo2](https://github.com/smurflo2)! - Move nav buttons (e.g. "Details") to bottom-center of Certificate Display
 
--   [#471](https://github.com/learningeconomy/LearnCard/pull/471) [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-246] Fix broken-looking claim certificate screen
+- [#471](https://github.com/learningeconomy/LearnCard/pull/471) [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-246] Fix broken-looking claim certificate screen
 
 ## 2.6.76
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.26
+- Updated dependencies []:
+    - @learncard/init@1.2.26
 
 ## 2.6.75
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.25
+- Updated dependencies []:
+    - @learncard/init@1.2.25
 
 ## 2.6.74
 
 ### Patch Changes
 
--   [#465](https://github.com/learningeconomy/LearnCard/pull/465) [`718b3f0`](https://github.com/learningeconomy/LearnCard/commit/718b3f0cd323c010f603bf717d9d61b7a18786ff) Thanks [@gerardopar](https://github.com/gerardopar)! - add hideGradientBackground prop
+- [#465](https://github.com/learningeconomy/LearnCard/pull/465) [`718b3f0`](https://github.com/learningeconomy/LearnCard/commit/718b3f0cd323c010f603bf717d9d61b7a18786ff) Thanks [@gerardopar](https://github.com/gerardopar)! - add hideGradientBackground prop
 
 ## 2.6.73
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.24
+- Updated dependencies []:
+    - @learncard/init@1.2.24
 
 ## 2.6.72
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.23
+- Updated dependencies []:
+    - @learncard/init@1.2.23
 
 ## 2.6.71
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.22
+- Updated dependencies []:
+    - @learncard/init@1.2.22
 
 ## 2.6.70
 
 ### Patch Changes
 
--   [#455](https://github.com/learningeconomy/LearnCard/pull/455) [`0ffe0984`](https://github.com/learningeconomy/LearnCard/commit/0ffe0984572e813d39dfc38345fde27a1afcd1c2) Thanks [@gerardopar](https://github.com/gerardopar)! - Store groupID on VC 🥑
+- [#455](https://github.com/learningeconomy/LearnCard/pull/455) [`0ffe0984`](https://github.com/learningeconomy/LearnCard/commit/0ffe0984572e813d39dfc38345fde27a1afcd1c2) Thanks [@gerardopar](https://github.com/gerardopar)! - Store groupID on VC 🥑
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.21
+- Updated dependencies []:
+    - @learncard/init@1.2.21
 
 ## 2.6.69
 
 ### Patch Changes
 
--   Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae)]:
-    -   @learncard/init@1.2.20
+- Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae)]:
+    - @learncard/init@1.2.20
 
 ## 2.6.68
 
 ### Patch Changes
 
--   [#449](https://github.com/learningeconomy/LearnCard/pull/449) [`2e46c23`](https://github.com/learningeconomy/LearnCard/commit/2e46c2342e092ffa49667a79cd607acc3c766081) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Details button (ID, Cert) VC display types
+- [#449](https://github.com/learningeconomy/LearnCard/pull/449) [`2e46c23`](https://github.com/learningeconomy/LearnCard/commit/2e46c2342e092ffa49667a79cd607acc3c766081) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Details button (ID, Cert) VC display types
 
 ## 2.6.67
 
 ### Patch Changes
 
--   [#447](https://github.com/learningeconomy/LearnCard/pull/447) [`c0aa883`](https://github.com/learningeconomy/LearnCard/commit/c0aa883df0d94dd6bc1225b34386516158dafae1) Thanks [@gerardopar](https://github.com/gerardopar)! - Revert background changes for normal boost types
+- [#447](https://github.com/learningeconomy/LearnCard/pull/447) [`c0aa883`](https://github.com/learningeconomy/LearnCard/commit/c0aa883df0d94dd6bc1225b34386516158dafae1) Thanks [@gerardopar](https://github.com/gerardopar)! - Revert background changes for normal boost types
 
 ## 2.6.66
 
 ### Patch Changes
 
--   [#445](https://github.com/learningeconomy/LearnCard/pull/445) [`14a65f2`](https://github.com/learningeconomy/LearnCard/commit/14a65f2e5b96263b3ace63eef48ece55f9b4ff9b) Thanks [@gerardopar](https://github.com/gerardopar)! - Wallet Page ID asset updates
+- [#445](https://github.com/learningeconomy/LearnCard/pull/445) [`14a65f2`](https://github.com/learningeconomy/LearnCard/commit/14a65f2e5b96263b3ace63eef48ece55f9b4ff9b) Thanks [@gerardopar](https://github.com/gerardopar)! - Wallet Page ID asset updates
 
 ## 2.6.65
 
 ### Patch Changes
 
--   [#443](https://github.com/learningeconomy/LearnCard/pull/443) [`9f96918`](https://github.com/learningeconomy/LearnCard/commit/9f96918972939f6b7af9a335118d9794cb87ef58) Thanks [@gerardopar](https://github.com/gerardopar)! - Add ID VC display type
+- [#443](https://github.com/learningeconomy/LearnCard/pull/443) [`9f96918`](https://github.com/learningeconomy/LearnCard/commit/9f96918972939f6b7af9a335118d9794cb87ef58) Thanks [@gerardopar](https://github.com/gerardopar)! - Add ID VC display type
 
 ## 2.6.64
 
 ### Patch Changes
 
--   [#441](https://github.com/learningeconomy/LearnCard/pull/441) [`49cfc5e2`](https://github.com/learningeconomy/LearnCard/commit/49cfc5e2b33ef553511e90b305a6420a5b31f524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update Icons
+- [#441](https://github.com/learningeconomy/LearnCard/pull/441) [`49cfc5e2`](https://github.com/learningeconomy/LearnCard/commit/49cfc5e2b33ef553511e90b305a6420a5b31f524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update Icons
 
--   [#441](https://github.com/learningeconomy/LearnCard/pull/441) [`49cfc5e2`](https://github.com/learningeconomy/LearnCard/commit/49cfc5e2b33ef553511e90b305a6420a5b31f524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow hiding/overriding nav buttons in VCCard2
+- [#441](https://github.com/learningeconomy/LearnCard/pull/441) [`49cfc5e2`](https://github.com/learningeconomy/LearnCard/commit/49cfc5e2b33ef553511e90b305a6420a5b31f524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow hiding/overriding nav buttons in VCCard2
 
 ## 2.6.63
 
 ### Patch Changes
 
--   [#439](https://github.com/learningeconomy/LearnCard/pull/439) [`283ef624`](https://github.com/learningeconomy/LearnCard/commit/283ef624cb4b1df03174d73985394a0c1f6b9be2) Thanks [@rhen92](https://github.com/rhen92)! - [LC-164] - Add credential engine support to LCA
+- [#439](https://github.com/learningeconomy/LearnCard/pull/439) [`283ef624`](https://github.com/learningeconomy/LearnCard/commit/283ef624cb4b1df03174d73985394a0c1f6b9be2) Thanks [@rhen92](https://github.com/rhen92)! - [LC-164] - Add credential engine support to LCA
 
 ## 2.6.62
 
 ### Patch Changes
 
--   [#435](https://github.com/learningeconomy/LearnCard/pull/435) [`74faabb`](https://github.com/learningeconomy/LearnCard/commit/74faabbc1730ef6655ea35266066c5d52b8649d3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Easier to see skills count and the scrolling thing is reverted
+- [#435](https://github.com/learningeconomy/LearnCard/pull/435) [`74faabb`](https://github.com/learningeconomy/LearnCard/commit/74faabbc1730ef6655ea35266066c5d52b8649d3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Easier to see skills count and the scrolling thing is reverted
 
 ## 2.6.61
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.19
+- Updated dependencies []:
+    - @learncard/init@1.2.19
 
 ## 2.6.60
 
 ### Patch Changes
 
--   [#431](https://github.com/learningeconomy/LearnCard/pull/431) [`6a68eab`](https://github.com/learningeconomy/LearnCard/commit/6a68eabb4abc6c8196af8f154515f85114ee14e5) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Skills widget to certificate view
+- [#431](https://github.com/learningeconomy/LearnCard/pull/431) [`6a68eab`](https://github.com/learningeconomy/LearnCard/commit/6a68eabb4abc6c8196af8f154515f85114ee14e5) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Skills widget to certificate view
 
 ## 2.6.59
 
 ### Patch Changes
 
--   [#429](https://github.com/learningeconomy/LearnCard/pull/429) [`1649dac`](https://github.com/learningeconomy/LearnCard/commit/1649dace725a5b2515fe825e53c96d8ec4d76b6a) Thanks [@gerardopar](https://github.com/gerardopar)! - Display skills widget
+- [#429](https://github.com/learningeconomy/LearnCard/pull/429) [`1649dac`](https://github.com/learningeconomy/LearnCard/commit/1649dace725a5b2515fe825e53c96d8ec4d76b6a) Thanks [@gerardopar](https://github.com/gerardopar)! - Display skills widget
 
 ## 2.6.58
 
 ### Patch Changes
 
--   [#427](https://github.com/learningeconomy/LearnCard/pull/427) [`d7ab64a`](https://github.com/learningeconomy/LearnCard/commit/d7ab64a4c97da4602c86291f19e05ff64e120923) Thanks [@gerardopar](https://github.com/gerardopar)! - fix wallet id icon
+- [#427](https://github.com/learningeconomy/LearnCard/pull/427) [`d7ab64a`](https://github.com/learningeconomy/LearnCard/commit/d7ab64a4c97da4602c86291f19e05ff64e120923) Thanks [@gerardopar](https://github.com/gerardopar)! - fix wallet id icon
 
 ## 2.6.57
 
 ### Patch Changes
 
--   [#425](https://github.com/learningeconomy/LearnCard/pull/425) [`62ee53a`](https://github.com/learningeconomy/LearnCard/commit/62ee53a39a24b0b15bc3390e99d903e523b9a249) Thanks [@gerardopar](https://github.com/gerardopar)! - Quick style fixes - (boost card, vc card, wallet page icons)
+- [#425](https://github.com/learningeconomy/LearnCard/pull/425) [`62ee53a`](https://github.com/learningeconomy/LearnCard/commit/62ee53a39a24b0b15bc3390e99d903e523b9a249) Thanks [@gerardopar](https://github.com/gerardopar)! - Quick style fixes - (boost card, vc card, wallet page icons)
 
 ## 2.6.56
 
 ### Patch Changes
 
--   [#417](https://github.com/learningeconomy/LearnCard/pull/417) [`b8855d3b`](https://github.com/learningeconomy/LearnCard/commit/b8855d3b4b80c4fdc5d1830a8c2ee63df022a866) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-158] Certificate Display Card
+- [#417](https://github.com/learningeconomy/LearnCard/pull/417) [`b8855d3b`](https://github.com/learningeconomy/LearnCard/commit/b8855d3b4b80c4fdc5d1830a8c2ee63df022a866) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-158] Certificate Display Card
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.18
+- Updated dependencies []:
+    - @learncard/init@1.2.18
 
 ## 2.6.55
 
 ### Patch Changes
 
--   [#422](https://github.com/learningeconomy/LearnCard/pull/422) [`639f5b5`](https://github.com/learningeconomy/LearnCard/commit/639f5b5655e1126a6cef31828269a0dbbddc7b41) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Polish VCDisplayCard2
+- [#422](https://github.com/learningeconomy/LearnCard/pull/422) [`639f5b5`](https://github.com/learningeconomy/LearnCard/commit/639f5b5655e1126a6cef31828269a0dbbddc7b41) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Polish VCDisplayCard2
 
 ## 2.6.54
 
 ### Patch Changes
 
--   [#420](https://github.com/learningeconomy/LearnCard/pull/420) [`1d13b3e`](https://github.com/learningeconomy/LearnCard/commit/1d13b3eed13644f7b1778b214e3d351bdcd05079) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't tile Boost BG Image
+- [#420](https://github.com/learningeconomy/LearnCard/pull/420) [`1d13b3e`](https://github.com/learningeconomy/LearnCard/commit/1d13b3eed13644f7b1778b214e3d351bdcd05079) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't tile Boost BG Image
 
 ## 2.6.53
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.17
+- Updated dependencies []:
+    - @learncard/init@1.2.17
 
 ## 2.6.52
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.16
+- Updated dependencies []:
+    - @learncard/init@1.2.16
 
 ## 2.6.51
 
 ### Patch Changes
 
--   [#412](https://github.com/learningeconomy/LearnCard/pull/412) [`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb) Thanks [@cboydstun](https://github.com/cboydstun)! - quest [LC-155] Updated Boost Cards
+- [#412](https://github.com/learningeconomy/LearnCard/pull/412) [`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb) Thanks [@cboydstun](https://github.com/cboydstun)! - quest [LC-155] Updated Boost Cards
 
     updated wallet card squares
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.15
+- Updated dependencies []:
+    - @learncard/init@1.2.15
 
 ## 2.6.50
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.14
+- Updated dependencies []:
+    - @learncard/init@1.2.14
 
 ## 2.6.49
 
 ### Patch Changes
 
--   [#406](https://github.com/learningeconomy/LearnCard/pull/406) [`7d30db5`](https://github.com/learningeconomy/LearnCard/commit/7d30db5b51b842b74c6806b537e08d8f26879843) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-25] Add alt tag to BoostGenericCard and BoostSmallCard components
+- [#406](https://github.com/learningeconomy/LearnCard/pull/406) [`7d30db5`](https://github.com/learningeconomy/LearnCard/commit/7d30db5b51b842b74c6806b537e08d8f26879843) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-25] Add alt tag to BoostGenericCard and BoostSmallCard components
 
 ## 2.6.48
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.13
+- Updated dependencies []:
+    - @learncard/init@1.2.13
 
 ## 2.6.47
 
 ### Patch Changes
 
--   [#403](https://github.com/learningeconomy/LearnCard/pull/403) [`f4135a3`](https://github.com/learningeconomy/LearnCard/commit/f4135a387e3865a40d7bc4005dc034b6040269db) Thanks [@goblincore](https://github.com/goblincore)! - Fix syntax error
+- [#403](https://github.com/learningeconomy/LearnCard/pull/403) [`f4135a3`](https://github.com/learningeconomy/LearnCard/commit/f4135a387e3865a40d7bc4005dc034b6040269db) Thanks [@goblincore](https://github.com/goblincore)! - Fix syntax error
 
--   [#402](https://github.com/learningeconomy/LearnCard/pull/402) [`26aa86c4`](https://github.com/learningeconomy/LearnCard/commit/26aa86c4a805adc2c012922a518000349d600e8a) Thanks [@goblincore](https://github.com/goblincore)! - Fix: VCDisplayCard2 bug on iosSafari with resizing header
+- [#402](https://github.com/learningeconomy/LearnCard/pull/402) [`26aa86c4`](https://github.com/learningeconomy/LearnCard/commit/26aa86c4a805adc2c012922a518000349d600e8a) Thanks [@goblincore](https://github.com/goblincore)! - Fix: VCDisplayCard2 bug on iosSafari with resizing header
 
 ## 2.6.46
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.12
+- Updated dependencies []:
+    - @learncard/init@1.2.12
 
 ## 2.6.45
 
 ### Patch Changes
 
--   [#396](https://github.com/learningeconomy/LearnCard/pull/396) [`3b1d2687`](https://github.com/learningeconomy/LearnCard/commit/3b1d2687c035297da8b34ca2ffbd33ad49687faf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix text resizing issues
+- [#396](https://github.com/learningeconomy/LearnCard/pull/396) [`3b1d2687`](https://github.com/learningeconomy/LearnCard/commit/3b1d2687c035297da8b34ca2ffbd33ad49687faf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix text resizing issues
 
 ## 2.6.44
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.11
+- Updated dependencies []:
+    - @learncard/init@1.2.11
 
 ## 2.6.43
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.10
+- Updated dependencies []:
+    - @learncard/init@1.2.10
 
 ## 2.6.42
 
 ### Patch Changes
 
--   [#392](https://github.com/learningeconomy/LearnCard/pull/392) [`fd21c7c`](https://github.com/learningeconomy/LearnCard/commit/fd21c7c30d499805c03aa6ee0c328f969e189b87) Thanks [@gerardopar](https://github.com/gerardopar)! - VCDisplayCard updates - allow front face button customization
+- [#392](https://github.com/learningeconomy/LearnCard/pull/392) [`fd21c7c`](https://github.com/learningeconomy/LearnCard/commit/fd21c7c30d499805c03aa6ee0c328f969e189b87) Thanks [@gerardopar](https://github.com/gerardopar)! - VCDisplayCard updates - allow front face button customization
 
 ## 2.6.41
 
 ### Patch Changes
 
--   [#388](https://github.com/learningeconomy/LearnCard/pull/388) [`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Emit declarationMap
+- [#388](https://github.com/learningeconomy/LearnCard/pull/388) [`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Emit declarationMap
 
--   Updated dependencies [[`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8)]:
-    -   @learncard/init@1.2.9
+- Updated dependencies [[`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8)]:
+    - @learncard/init@1.2.9
 
 ## 2.6.40
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.8
+- Updated dependencies []:
+    - @learncard/init@1.2.8
 
 ## 2.6.39
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.7
+- Updated dependencies []:
+    - @learncard/init@1.2.7
 
 ## 2.6.38
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.6
+- Updated dependencies []:
+    - @learncard/init@1.2.6
 
 ## 2.6.37
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.5
+- Updated dependencies []:
+    - @learncard/init@1.2.5
 
 ## 2.6.36
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.4
+- Updated dependencies []:
+    - @learncard/init@1.2.4
 
 ## 2.6.35
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.3
+- Updated dependencies []:
+    - @learncard/init@1.2.3
 
 ## 2.6.34
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.2
+- Updated dependencies []:
+    - @learncard/init@1.2.2
 
 ## 2.6.33
 
 ### Patch Changes
 
--   [#376](https://github.com/learningeconomy/LearnCard/pull/376) [`b419f1f`](https://github.com/learningeconomy/LearnCard/commit/b419f1f4eaf229f54555ee9c60495a2edfcad07e) Thanks [@gerardopar](https://github.com/gerardopar)! - add prop to display subject did
+- [#376](https://github.com/learningeconomy/LearnCard/pull/376) [`b419f1f`](https://github.com/learningeconomy/LearnCard/commit/b419f1f4eaf229f54555ee9c60495a2edfcad07e) Thanks [@gerardopar](https://github.com/gerardopar)! - add prop to display subject did
 
 ## 2.6.32
 
 ### Patch Changes
 
--   [#374](https://github.com/learningeconomy/LearnCard/pull/374) [`db5fcaf`](https://github.com/learningeconomy/LearnCard/commit/db5fcaf2afaf24d3cfb3d47219ad777cdf96108d) Thanks [@gerardopar](https://github.com/gerardopar)! - VC Backface Overrides
+- [#374](https://github.com/learningeconomy/LearnCard/pull/374) [`db5fcaf`](https://github.com/learningeconomy/LearnCard/commit/db5fcaf2afaf24d3cfb3d47219ad777cdf96108d) Thanks [@gerardopar](https://github.com/gerardopar)! - VC Backface Overrides
 
 ## 2.6.31
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.2.1
+- Updated dependencies []:
+    - @learncard/init@1.2.1
 
 ## 2.6.30
 
 ### Patch Changes
 
--   Updated dependencies [[`867d38c`](https://github.com/learningeconomy/LearnCard/commit/867d38c5f606ff73fa328a4616a8a58a8f49d0f0)]:
-    -   @learncard/init@1.2.0
+- Updated dependencies [[`867d38c`](https://github.com/learningeconomy/LearnCard/commit/867d38c5f606ff73fa328a4616a8a58a8f49d0f0)]:
+    - @learncard/init@1.2.0
 
 ## 2.6.29
 
 ### Patch Changes
 
--   Updated dependencies [[`1c4e09d`](https://github.com/learningeconomy/LearnCard/commit/1c4e09d136464286959000e5ed14cdf59dba9196)]:
-    -   @learncard/init@1.1.0
+- Updated dependencies [[`1c4e09d`](https://github.com/learningeconomy/LearnCard/commit/1c4e09d136464286959000e5ed14cdf59dba9196)]:
+    - @learncard/init@1.1.0
 
 ## 2.6.28
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.23
+- Updated dependencies []:
+    - @learncard/init@1.0.23
 
 ## 2.6.27
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.22
+- Updated dependencies []:
+    - @learncard/init@1.0.22
 
 ## 2.6.26
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.21
+- Updated dependencies []:
+    - @learncard/init@1.0.21
 
 ## 2.6.25
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.20
+- Updated dependencies []:
+    - @learncard/init@1.0.20
 
 ## 2.6.24
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.19
+- Updated dependencies []:
+    - @learncard/init@1.0.19
 
 ## 2.6.23
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.18
+- Updated dependencies []:
+    - @learncard/init@1.0.18
 
 ## 2.6.22
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.17
+- Updated dependencies []:
+    - @learncard/init@1.0.17
 
 ## 2.6.21
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.16
+- Updated dependencies []:
+    - @learncard/init@1.0.16
 
 ## 2.6.20
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.15
+- Updated dependencies []:
+    - @learncard/init@1.0.15
 
 ## 2.6.19
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.14
+- Updated dependencies []:
+    - @learncard/init@1.0.14
 
 ## 2.6.18
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.13
+- Updated dependencies []:
+    - @learncard/init@1.0.13
 
 ## 2.6.17
 
 ### Patch Changes
 
--   Updated dependencies [[`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6)]:
-    -   @learncard/init@1.0.12
+- Updated dependencies [[`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6)]:
+    - @learncard/init@1.0.12
 
 ## 2.6.16
 
 ### Patch Changes
 
--   [#336](https://github.com/learningeconomy/LearnCard/pull/336) [`f3cbaad`](https://github.com/learningeconomy/LearnCard/commit/f3cbaad5df6136ee8f49386b35ca86c682100662) Thanks [@gerardopar](https://github.com/gerardopar)! - [WE-2814] - UI support
+- [#336](https://github.com/learningeconomy/LearnCard/pull/336) [`f3cbaad`](https://github.com/learningeconomy/LearnCard/commit/f3cbaad5df6136ee8f49386b35ca86c682100662) Thanks [@gerardopar](https://github.com/gerardopar)! - [WE-2814] - UI support
 
 ## 2.6.15
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.11
+- Updated dependencies []:
+    - @learncard/init@1.0.11
 
 ## 2.6.14
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.10
+- Updated dependencies []:
+    - @learncard/init@1.0.10
 
 ## 2.6.13
 
 ### Patch Changes
 
--   [#332](https://github.com/learningeconomy/LearnCard/pull/332) [`68b0610`](https://github.com/learningeconomy/LearnCard/commit/68b0610a30de0994cb45bbcfa6760a8a0aabf7c6) Thanks [@Cyntheon](https://github.com/Cyntheon)! - Various lightbox iterations
+- [#332](https://github.com/learningeconomy/LearnCard/pull/332) [`68b0610`](https://github.com/learningeconomy/LearnCard/commit/68b0610a30de0994cb45bbcfa6760a8a0aabf7c6) Thanks [@Cyntheon](https://github.com/Cyntheon)! - Various lightbox iterations
 
 ## 2.6.12
 
 ### Patch Changes
 
--   [#329](https://github.com/learningeconomy/LearnCard/pull/329) [`25e1339`](https://github.com/learningeconomy/LearnCard/commit/25e133906bb01c34a61e580cca680a306848bb8b) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add loading spinner display and props to Rounded Square
+- [#329](https://github.com/learningeconomy/LearnCard/pull/329) [`25e1339`](https://github.com/learningeconomy/LearnCard/commit/25e133906bb01c34a61e580cca680a306848bb8b) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add loading spinner display and props to Rounded Square
 
--   [#329](https://github.com/learningeconomy/LearnCard/pull/329) [`25e1339`](https://github.com/learningeconomy/LearnCard/commit/25e133906bb01c34a61e580cca680a306848bb8b) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add loading spinner display and props to Rounded Square
+- [#329](https://github.com/learningeconomy/LearnCard/pull/329) [`25e1339`](https://github.com/learningeconomy/LearnCard/commit/25e133906bb01c34a61e580cca680a306848bb8b) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add loading spinner display and props to Rounded Square
 
 ## 2.6.11
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.9
+- Updated dependencies []:
+    - @learncard/init@1.0.9
 
 ## 2.6.10
 
 ### Patch Changes
 
--   [#322](https://github.com/learningeconomy/LearnCard/pull/322) [`bde35ba`](https://github.com/learningeconomy/LearnCard/commit/bde35baa4821688e97d49e5f5ea2c3f3748e5327) Thanks [@gerardopar](https://github.com/gerardopar)! - bump react to v18
+- [#322](https://github.com/learningeconomy/LearnCard/pull/322) [`bde35ba`](https://github.com/learningeconomy/LearnCard/commit/bde35baa4821688e97d49e5f5ea2c3f3748e5327) Thanks [@gerardopar](https://github.com/gerardopar)! - bump react to v18
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.8
+- Updated dependencies []:
+    - @learncard/init@1.0.8
 
 ## 2.6.9
 
 ### Patch Changes
 
--   [#318](https://github.com/learningeconomy/LearnCard/pull/318) [`ba70a92`](https://github.com/learningeconomy/LearnCard/commit/ba70a922be3f9ac9db8c2dbaf6beade4d678dce0) Thanks [@Cyntheon](https://github.com/Cyntheon)! - Add default lightbox implementation for boost attachments
+- [#318](https://github.com/learningeconomy/LearnCard/pull/318) [`ba70a92`](https://github.com/learningeconomy/LearnCard/commit/ba70a922be3f9ac9db8c2dbaf6beade4d678dce0) Thanks [@Cyntheon](https://github.com/Cyntheon)! - Add default lightbox implementation for boost attachments
 
--   Updated dependencies [[`a0b62f3`](https://github.com/learningeconomy/LearnCard/commit/a0b62f351d32c4e0a788b519dd852aa5df9e6c8a)]:
-    -   @learncard/init@1.0.7
+- Updated dependencies [[`a0b62f3`](https://github.com/learningeconomy/LearnCard/commit/a0b62f351d32c4e0a788b519dd852aa5df9e6c8a)]:
+    - @learncard/init@1.0.7
 
 ## 2.6.8
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.6
+- Updated dependencies []:
+    - @learncard/init@1.0.6
 
 ## 2.6.7
 
 ### Patch Changes
 
--   [#310](https://github.com/learningeconomy/LearnCard/pull/310) [`0c53923`](https://github.com/learningeconomy/LearnCard/commit/0c539231aeb26ebaaa07e7fca6be8a216f30c399) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix weird text display issue
+- [#310](https://github.com/learningeconomy/LearnCard/pull/310) [`0c53923`](https://github.com/learningeconomy/LearnCard/commit/0c539231aeb26ebaaa07e7fca6be8a216f30c399) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix weird text display issue
 
 ## 2.6.6
 
 ### Patch Changes
 
--   [#307](https://github.com/learningeconomy/LearnCard/pull/307) [`ea1fc75`](https://github.com/learningeconomy/LearnCard/commit/ea1fc7593ebdc8b2800dd034b04b6653fad2171d) Thanks [@Cyntheon](https://github.com/Cyntheon)! - Update rollup config to fix learncardapp bug when using local @learncard/react package
+- [#307](https://github.com/learningeconomy/LearnCard/pull/307) [`ea1fc75`](https://github.com/learningeconomy/LearnCard/commit/ea1fc7593ebdc8b2800dd034b04b6653fad2171d) Thanks [@Cyntheon](https://github.com/Cyntheon)! - Update rollup config to fix learncardapp bug when using local @learncard/react package
 
 ## 2.6.5
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.5
+- Updated dependencies []:
+    - @learncard/init@1.0.5
 
 ## 2.6.4
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.4
+- Updated dependencies []:
+    - @learncard/init@1.0.4
 
 ## 2.6.3
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.3
+- Updated dependencies []:
+    - @learncard/init@1.0.3
 
 ## 2.6.2
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.2
+- Updated dependencies []:
+    - @learncard/init@1.0.2
 
 ## 2.6.1
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@1.0.1
+- Updated dependencies []:
+    - @learncard/init@1.0.1
 
 ## 2.6.0
 
 ### Minor Changes
 
--   [#300](https://github.com/learningeconomy/LearnCard/pull/300) [`2e80eb8`](https://github.com/learningeconomy/LearnCard/commit/2e80eb83fc5ee2b954b40cc020ad5c790b571209) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - BREAKING CHANGE: Split @learncard/core into multiple plugin packages and @learncard/init.
+- [#300](https://github.com/learningeconomy/LearnCard/pull/300) [`2e80eb8`](https://github.com/learningeconomy/LearnCard/commit/2e80eb83fc5ee2b954b40cc020ad5c790b571209) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - BREAKING CHANGE: Split @learncard/core into multiple plugin packages and @learncard/init.
 
     _Breaking Changes_
 
-    -   `initLearnCard` is no longer exported by `@learncard/core`, as it is now the responsibility of `@learncard/init`
+    - `initLearnCard` is no longer exported by `@learncard/core`, as it is now the responsibility of `@learncard/init`
 
     ```ts
     // Old
@@ -2121,7 +2120,7 @@
     const { initLearnCard } from '@learncard/init';
     ```
 
-    -   The didkit wasm binary is no longer exported by `@learncard/core` as it is now the responsibility of `@learncard/didkit-plugin`
+    - The didkit wasm binary is no longer exported by `@learncard/core` as it is now the responsibility of `@learncard/didkit-plugin`
 
     ```ts
     // Old
@@ -2131,7 +2130,7 @@
     import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm';
     ```
 
-    -   `@learncard/network-plugin` and `@learncard/did-web-plugin` no longer export their own version of `initLearnCard`, and are instead now proper instantiation targets from `@learncard/init`
+    - `@learncard/network-plugin` and `@learncard/did-web-plugin` no longer export their own version of `initLearnCard`, and are instead now proper instantiation targets from `@learncard/init`
 
     ```ts
     // Old
@@ -2153,897 +2152,897 @@
 
 ### Patch Changes
 
--   Updated dependencies [[`2e80eb8`](https://github.com/learningeconomy/LearnCard/commit/2e80eb83fc5ee2b954b40cc020ad5c790b571209)]:
-    -   @learncard/init@1.0.0
+- Updated dependencies [[`2e80eb8`](https://github.com/learningeconomy/LearnCard/commit/2e80eb83fc5ee2b954b40cc020ad5c790b571209)]:
+    - @learncard/init@1.0.0
 
 ## 2.5.20
 
 ### Patch Changes
 
--   [#295](https://github.com/learningeconomy/LearnCard/pull/295) [`2008848`](https://github.com/learningeconomy/LearnCard/commit/2008848ddfc34af0c1a92261b45ff0d7e15a0f59) Thanks [@goblincore](https://github.com/goblincore)! - Add additional options button on Boost display cards
+- [#295](https://github.com/learningeconomy/LearnCard/pull/295) [`2008848`](https://github.com/learningeconomy/LearnCard/commit/2008848ddfc34af0c1a92261b45ff0d7e15a0f59) Thanks [@goblincore](https://github.com/goblincore)! - Add additional options button on Boost display cards
 
 ## 2.5.19
 
 ### Patch Changes
 
--   [#292](https://github.com/learningeconomy/LearnCard/pull/292) [`e081c19`](https://github.com/learningeconomy/LearnCard/commit/e081c19cb9c3d1a4ae45a7a47b120ec16287d9df) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Small style fixes for VC Cards
+- [#292](https://github.com/learningeconomy/LearnCard/pull/292) [`e081c19`](https://github.com/learningeconomy/LearnCard/commit/e081c19cb9c3d1a4ae45a7a47b120ec16287d9df) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Small style fixes for VC Cards
 
 ## 2.5.18
 
 ### Patch Changes
 
--   [`74e459d`](https://github.com/learningeconomy/LearnCard/commit/74e459d0089497cbf031d18305f33fa539f2a96f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Empty version bump
+- [`74e459d`](https://github.com/learningeconomy/LearnCard/commit/74e459d0089497cbf031d18305f33fa539f2a96f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Empty version bump
 
--   Updated dependencies []:
-    -   @learncard/core@8.5.5
+- Updated dependencies []:
+    - @learncard/core@8.5.5
 
 ## 2.5.17
 
 ### Patch Changes
 
--   [#289](https://github.com/learningeconomy/LearnCard/pull/289) [`4787227`](https://github.com/learningeconomy/LearnCard/commit/4787227c2e8a2b4ffa4c8b177920f80feed8a64b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't show check if it's not needed in VCDisplayCard2
+- [#289](https://github.com/learningeconomy/LearnCard/pull/289) [`4787227`](https://github.com/learningeconomy/LearnCard/commit/4787227c2e8a2b4ffa4c8b177920f80feed8a64b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't show check if it's not needed in VCDisplayCard2
 
--   Updated dependencies []:
-    -   @learncard/core@8.5.5
+- Updated dependencies []:
+    - @learncard/core@8.5.5
 
 ## 2.5.16
 
 ### Patch Changes
 
--   [#287](https://github.com/learningeconomy/LearnCard/pull/287) [`337e061`](https://github.com/learningeconomy/LearnCard/commit/337e061c0eef5ade2d5f7cc36f5e84e5dd4d5f12) Thanks [@gerardopar](https://github.com/gerardopar)! - Support custom issue history component
+- [#287](https://github.com/learningeconomy/LearnCard/pull/287) [`337e061`](https://github.com/learningeconomy/LearnCard/commit/337e061c0eef5ade2d5f7cc36f5e84e5dd4d5f12) Thanks [@gerardopar](https://github.com/gerardopar)! - Support custom issue history component
 
 ## 2.5.15
 
 ### Patch Changes
 
--   [#283](https://github.com/learningeconomy/LearnCard/pull/283) [`daf6eaf`](https://github.com/learningeconomy/LearnCard/commit/daf6eafd167689c995378c792a0e459632293092) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Minor VCDisplayCard2 updates
+- [#283](https://github.com/learningeconomy/LearnCard/pull/283) [`daf6eaf`](https://github.com/learningeconomy/LearnCard/commit/daf6eafd167689c995378c792a0e459632293092) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Minor VCDisplayCard2 updates
 
 ## 2.5.14
 
 ### Patch Changes
 
--   No change, just forcible version bump
+- No change, just forcible version bump
 
--   Updated dependencies []:
-    -   @learncard/core@8.5.5
+- Updated dependencies []:
+    - @learncard/core@8.5.5
 
 ## 2.5.13
 
 ### Patch Changes
 
--   [#275](https://github.com/learningeconomy/LearnCard/pull/275) [`798a22c`](https://github.com/learningeconomy/LearnCard/commit/798a22cbd296495eb365e85c7c8d1bd293ba2b34) Thanks [@gerardopar](https://github.com/gerardopar)! - Vc display card updates
+- [#275](https://github.com/learningeconomy/LearnCard/pull/275) [`798a22c`](https://github.com/learningeconomy/LearnCard/commit/798a22cbd296495eb365e85c7c8d1bd293ba2b34) Thanks [@gerardopar](https://github.com/gerardopar)! - Vc display card updates
 
 ## 2.5.12
 
 ### Patch Changes
 
--   [#270](https://github.com/learningeconomy/LearnCard/pull/270) [`5cc4fce`](https://github.com/learningeconomy/LearnCard/commit/5cc4fce1fcdfaedf6d50e5e7e99df37ff06ae393) Thanks [@goblincore](https://github.com/goblincore)! - fix: Export notification card components properly
+- [#270](https://github.com/learningeconomy/LearnCard/pull/270) [`5cc4fce`](https://github.com/learningeconomy/LearnCard/commit/5cc4fce1fcdfaedf6d50e5e7e99df37ff06ae393) Thanks [@goblincore](https://github.com/goblincore)! - fix: Export notification card components properly
 
 ## 2.5.11
 
 ### Patch Changes
 
--   [#268](https://github.com/learningeconomy/LearnCard/pull/268) [`fdbce48`](https://github.com/learningeconomy/LearnCard/commit/fdbce48c2c0a467c1ae480f6dcc4ae377de51aab) Thanks [@goblincore](https://github.com/goblincore)! - Add updated LCA notification card components
+- [#268](https://github.com/learningeconomy/LearnCard/pull/268) [`fdbce48`](https://github.com/learningeconomy/LearnCard/commit/fdbce48c2c0a467c1ae480f6dcc4ae377de51aab) Thanks [@goblincore](https://github.com/goblincore)! - Add updated LCA notification card components
 
 ## 2.5.10
 
 ### Patch Changes
 
--   Updated dependencies [[`f6abbd4`](https://github.com/learningeconomy/LearnCard/commit/f6abbd490e02f65d56465ec5853aa31cfd2ae40c)]:
-    -   @learncard/core@8.5.4
+- Updated dependencies [[`f6abbd4`](https://github.com/learningeconomy/LearnCard/commit/f6abbd490e02f65d56465ec5853aa31cfd2ae40c)]:
+    - @learncard/core@8.5.4
 
 ## 2.5.9
 
 ### Patch Changes
 
--   [#253](https://github.com/learningeconomy/LearnCard/pull/253) [`c769bc1`](https://github.com/learningeconomy/LearnCard/commit/c769bc19d0eb7b16f11af0a70f4342f9f45ed79d) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: update social badge icon
+- [#253](https://github.com/learningeconomy/LearnCard/pull/253) [`c769bc1`](https://github.com/learningeconomy/LearnCard/commit/c769bc19d0eb7b16f11af0a70f4342f9f45ed79d) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: update social badge icon
 
 ## 2.5.8
 
 ### Patch Changes
 
--   [#249](https://github.com/learningeconomy/LearnCard/pull/249) [`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1) Thanks [@goblincore](https://github.com/goblincore)! - Republish
+- [#249](https://github.com/learningeconomy/LearnCard/pull/249) [`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1) Thanks [@goblincore](https://github.com/goblincore)! - Republish
 
--   Updated dependencies [[`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1)]:
-    -   @learncard/core@8.5.3
+- Updated dependencies [[`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1)]:
+    - @learncard/core@8.5.3
 
 ## 2.5.7
 
 ### Patch Changes
 
--   [#245](https://github.com/learningeconomy/LearnCard/pull/245) [`790bae6`](https://github.com/learningeconomy/LearnCard/commit/790bae6b844263318ec0660fa269c2a43b9d4716) Thanks [@gerardopar](https://github.com/gerardopar)! - notification style updates
+- [#245](https://github.com/learningeconomy/LearnCard/pull/245) [`790bae6`](https://github.com/learningeconomy/LearnCard/commit/790bae6b844263318ec0660fa269c2a43b9d4716) Thanks [@gerardopar](https://github.com/gerardopar)! - notification style updates
 
 ## 2.5.6
 
 ### Patch Changes
 
--   Updated dependencies [[`f1a8679`](https://github.com/learningeconomy/LearnCard/commit/f1a86796817fa20a0667a6b717b56d22038028c1)]:
-    -   @learncard/core@8.5.2
+- Updated dependencies [[`f1a8679`](https://github.com/learningeconomy/LearnCard/commit/f1a86796817fa20a0667a6b717b56d22038028c1)]:
+    - @learncard/core@8.5.2
 
 ## 2.5.5
 
 ### Patch Changes
 
--   [#239](https://github.com/learningeconomy/LearnCard/pull/239) [`4153ea0`](https://github.com/learningeconomy/LearnCard/commit/4153ea0dd3b3c562876308ba27a6060ef76ebac9) Thanks [@goblincore](https://github.com/goblincore)! - chore: small boost card update - fix inner click handler container wrapping button, add tailwind css cursor class to clickable region
+- [#239](https://github.com/learningeconomy/LearnCard/pull/239) [`4153ea0`](https://github.com/learningeconomy/LearnCard/commit/4153ea0dd3b3c562876308ba27a6060ef76ebac9) Thanks [@goblincore](https://github.com/goblincore)! - chore: small boost card update - fix inner click handler container wrapping button, add tailwind css cursor class to clickable region
 
 ## 2.5.4
 
 ### Patch Changes
 
--   [#235](https://github.com/learningeconomy/LearnCard/pull/235) [`f7404ea`](https://github.com/learningeconomy/LearnCard/commit/f7404ea710a09aa0b6a5f701ff3bb27bd105f5e7) Thanks [@goblincore](https://github.com/goblincore)! - Small Boost card updates, add BoostGenericCard
+- [#235](https://github.com/learningeconomy/LearnCard/pull/235) [`f7404ea`](https://github.com/learningeconomy/LearnCard/commit/f7404ea710a09aa0b6a5f701ff3bb27bd105f5e7) Thanks [@goblincore](https://github.com/goblincore)! - Small Boost card updates, add BoostGenericCard
 
 ## 2.5.3
 
 ### Patch Changes
 
--   Updated dependencies [[`13d0393`](https://github.com/learningeconomy/LearnCard/commit/13d0393725d9d5e17b02de7a8088f46bda688d92), [`ed3c460`](https://github.com/learningeconomy/LearnCard/commit/ed3c460fadae88702c1244795ab3b7483d97bab7)]:
-    -   @learncard/core@8.5.1
+- Updated dependencies [[`13d0393`](https://github.com/learningeconomy/LearnCard/commit/13d0393725d9d5e17b02de7a8088f46bda688d92), [`ed3c460`](https://github.com/learningeconomy/LearnCard/commit/ed3c460fadae88702c1244795ab3b7483d97bab7)]:
+    - @learncard/core@8.5.1
 
 ## 2.5.2
 
 ### Patch Changes
 
--   [#226](https://github.com/learningeconomy/LearnCard/pull/226) [`ad7f281`](https://github.com/learningeconomy/LearnCard/commit/ad7f281d6ed1fe1c33601defe71f2714f8675f45) Thanks [@goblincore](https://github.com/goblincore)! - Add additional optional prop to VCDisplayCard2 and fix VC type display
+- [#226](https://github.com/learningeconomy/LearnCard/pull/226) [`ad7f281`](https://github.com/learningeconomy/LearnCard/commit/ad7f281d6ed1fe1c33601defe71f2714f8675f45) Thanks [@goblincore](https://github.com/goblincore)! - Add additional optional prop to VCDisplayCard2 and fix VC type display
 
 ## 2.5.1
 
 ### Patch Changes
 
--   [#225](https://github.com/learningeconomy/LearnCard/pull/225) [`d29a2d5`](https://github.com/learningeconomy/LearnCard/commit/d29a2d5dd0d4ac1c7f178dc0d00956561012a1fb) Thanks [@gerardopar](https://github.com/gerardopar)! - fix notification tests
+- [#225](https://github.com/learningeconomy/LearnCard/pull/225) [`d29a2d5`](https://github.com/learningeconomy/LearnCard/commit/d29a2d5dd0d4ac1c7f178dc0d00956561012a1fb) Thanks [@gerardopar](https://github.com/gerardopar)! - fix notification tests
 
--   [#223](https://github.com/learningeconomy/LearnCard/pull/223) [`2707350`](https://github.com/learningeconomy/LearnCard/commit/27073505a7e0c4f4ec8fef191fbff16d97c5d74a) Thanks [@goblincore](https://github.com/goblincore)! - Add Small Boost Card and update VCDisplayCard2 with additional props for overriding parts of the card display (body, thumb, footer) and adds support for displaying an issue history
+- [#223](https://github.com/learningeconomy/LearnCard/pull/223) [`2707350`](https://github.com/learningeconomy/LearnCard/commit/27073505a7e0c4f4ec8fef191fbff16d97c5d74a) Thanks [@goblincore](https://github.com/goblincore)! - Add Small Boost Card and update VCDisplayCard2 with additional props for overriding parts of the card display (body, thumb, footer) and adds support for displaying an issue history
 
--   [#221](https://github.com/learningeconomy/LearnCard/pull/221) [`c997138`](https://github.com/learningeconomy/LearnCard/commit/c9971386188169859bbe9e8ef7da6572432ed3f0) Thanks [@gerardopar](https://github.com/gerardopar)! - Update notification types - ( add social badge )
+- [#221](https://github.com/learningeconomy/LearnCard/pull/221) [`c997138`](https://github.com/learningeconomy/LearnCard/commit/c9971386188169859bbe9e8ef7da6572432ed3f0) Thanks [@gerardopar](https://github.com/gerardopar)! - Update notification types - ( add social badge )
 
--   [#224](https://github.com/learningeconomy/LearnCard/pull/224) [`8fbee11`](https://github.com/learningeconomy/LearnCard/commit/8fbee11a07df86ba7d3fdee7430a7288b6ba321f) Thanks [@goblincore](https://github.com/goblincore)! - Update BoostSmallCard with additional click handler prop
+- [#224](https://github.com/learningeconomy/LearnCard/pull/224) [`8fbee11`](https://github.com/learningeconomy/LearnCard/commit/8fbee11a07df86ba7d3fdee7430a7288b6ba321f) Thanks [@goblincore](https://github.com/goblincore)! - Update BoostSmallCard with additional click handler prop
 
 ## 2.5.0
 
 ### Minor Changes
 
--   [#217](https://github.com/learningeconomy/LearnCard/pull/217) [`df2aa4e`](https://github.com/learningeconomy/LearnCard/commit/df2aa4ef50ed45c627d2d36b73aefab47da2bcc5) Thanks [@Custard7](https://github.com/Custard7)! - Updated React Components to have new VC display.
+- [#217](https://github.com/learningeconomy/LearnCard/pull/217) [`df2aa4e`](https://github.com/learningeconomy/LearnCard/commit/df2aa4ef50ed45c627d2d36b73aefab47da2bcc5) Thanks [@Custard7](https://github.com/Custard7)! - Updated React Components to have new VC display.
 
 ### Patch Changes
 
--   Updated dependencies [[`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe)]:
-    -   @learncard/core@8.5.0
+- Updated dependencies [[`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe)]:
+    - @learncard/core@8.5.0
 
 ## 2.4.0
 
 ### Minor Changes
 
--   [#212](https://github.com/learningeconomy/LearnCard/pull/212) [`74b7264`](https://github.com/learningeconomy/LearnCard/commit/74b72643c85d715b1f93610e8bef16c282efd3ce) Thanks [@smurflo2](https://github.com/smurflo2)! - Add new VC Display!
+- [#212](https://github.com/learningeconomy/LearnCard/pull/212) [`74b7264`](https://github.com/learningeconomy/LearnCard/commit/74b72643c85d715b1f93610e8bef16c282efd3ce) Thanks [@smurflo2](https://github.com/smurflo2)! - Add new VC Display!
 
 ### Patch Changes
 
--   [#211](https://github.com/learningeconomy/LearnCard/pull/211) [`406b9dc`](https://github.com/learningeconomy/LearnCard/commit/406b9dcb88a56395125e865672474283a15f1d03) Thanks [@gerardopar](https://github.com/gerardopar)! - WE-2604 - wallet page iterations (rounded square)
+- [#211](https://github.com/learningeconomy/LearnCard/pull/211) [`406b9dc`](https://github.com/learningeconomy/LearnCard/commit/406b9dcb88a56395125e865672474283a15f1d03) Thanks [@gerardopar](https://github.com/gerardopar)! - WE-2604 - wallet page iterations (rounded square)
 
 ## 2.3.69
 
 ### Patch Changes
 
--   Updated dependencies [[`9652a2f`](https://github.com/learningeconomy/LearnCard/commit/9652a2f59bc305ed3ef4cd7d53731608f81a54c6)]:
-    -   @learncard/core@8.4.2
+- Updated dependencies [[`9652a2f`](https://github.com/learningeconomy/LearnCard/commit/9652a2f59bc305ed3ef4cd7d53731608f81a54c6)]:
+    - @learncard/core@8.4.2
 
 ## 2.3.68
 
 ### Patch Changes
 
--   [#207](https://github.com/learningeconomy/LearnCard/pull/207) [`1cb2e88`](https://github.com/learningeconomy/LearnCard/commit/1cb2e883792eba09e2adfc0e6ab386f6d6a274b2) Thanks [@goblincore](https://github.com/goblincore)! - Add additional prop to job listing card to override with custom button component
+- [#207](https://github.com/learningeconomy/LearnCard/pull/207) [`1cb2e88`](https://github.com/learningeconomy/LearnCard/commit/1cb2e883792eba09e2adfc0e6ab386f6d6a274b2) Thanks [@goblincore](https://github.com/goblincore)! - Add additional prop to job listing card to override with custom button component
 
 ## 2.3.67
 
 ### Patch Changes
 
--   Updated dependencies [[`d2e5817`](https://github.com/learningeconomy/LearnCard/commit/d2e581790d63a75d304c2ace8b02133ce122c7ce)]:
-    -   @learncard/core@8.4.1
+- Updated dependencies [[`d2e5817`](https://github.com/learningeconomy/LearnCard/commit/d2e581790d63a75d304c2ace8b02133ce122c7ce)]:
+    - @learncard/core@8.4.1
 
 ## 2.3.66
 
 ### Patch Changes
 
--   Updated dependencies [[`e78c77d`](https://github.com/learningeconomy/LearnCard/commit/e78c77dc8dfa6c69d7163ed49b551bd739de2f09)]:
-    -   @learncard/core@8.4.0
+- Updated dependencies [[`e78c77d`](https://github.com/learningeconomy/LearnCard/commit/e78c77dc8dfa6c69d7163ed49b551bd739de2f09)]:
+    - @learncard/core@8.4.0
 
 ## 2.3.65
 
 ### Patch Changes
 
--   Updated dependencies [[`d6ebc5b`](https://github.com/learningeconomy/LearnCard/commit/d6ebc5baa52eab591398e81267adb40b3dce74f3)]:
-    -   @learncard/core@8.3.1
+- Updated dependencies [[`d6ebc5b`](https://github.com/learningeconomy/LearnCard/commit/d6ebc5baa52eab591398e81267adb40b3dce74f3)]:
+    - @learncard/core@8.3.1
 
 ## 2.3.64
 
 ### Patch Changes
 
--   Updated dependencies [[`d817fde`](https://github.com/learningeconomy/LearnCard/commit/d817fdecfc98023b3907451750338561df9d577c)]:
-    -   @learncard/core@8.3.0
+- Updated dependencies [[`d817fde`](https://github.com/learningeconomy/LearnCard/commit/d817fdecfc98023b3907451750338561df9d577c)]:
+    - @learncard/core@8.3.0
 
 ## 2.3.63
 
 ### Patch Changes
 
--   Updated dependencies [[`ace9b60`](https://github.com/learningeconomy/LearnCard/commit/ace9b60b02932e36090e7392a1b7b6a13a9593b8)]:
-    -   @learncard/core@8.2.0
+- Updated dependencies [[`ace9b60`](https://github.com/learningeconomy/LearnCard/commit/ace9b60b02932e36090e7392a1b7b6a13a9593b8)]:
+    - @learncard/core@8.2.0
 
 ## 2.3.62
 
 ### Patch Changes
 
--   Updated dependencies [[`42d02db`](https://github.com/learningeconomy/LearnCard/commit/42d02dba24129983664aceb7da5aaeb4039f8b04)]:
-    -   @learncard/core@8.1.1
+- Updated dependencies [[`42d02db`](https://github.com/learningeconomy/LearnCard/commit/42d02dba24129983664aceb7da5aaeb4039f8b04)]:
+    - @learncard/core@8.1.1
 
 ## 2.3.61
 
 ### Patch Changes
 
--   Updated dependencies [[`36e938b`](https://github.com/learningeconomy/LearnCard/commit/36e938b1211b53b96962663e8b33b50f24b2ca51), [`36e938b`](https://github.com/learningeconomy/LearnCard/commit/36e938b1211b53b96962663e8b33b50f24b2ca51)]:
-    -   @learncard/core@8.1.0
+- Updated dependencies [[`36e938b`](https://github.com/learningeconomy/LearnCard/commit/36e938b1211b53b96962663e8b33b50f24b2ca51), [`36e938b`](https://github.com/learningeconomy/LearnCard/commit/36e938b1211b53b96962663e8b33b50f24b2ca51)]:
+    - @learncard/core@8.1.0
 
 ## 2.3.60
 
 ### Patch Changes
 
--   [#184](https://github.com/learningeconomy/LearnCard/pull/184) [`31b67a5`](https://github.com/learningeconomy/LearnCard/commit/31b67a5d6010ce3886406677a0aa838b778d64f8) Thanks [@Custard7](https://github.com/Custard7)! - Patch: Add react ux docs
+- [#184](https://github.com/learningeconomy/LearnCard/pull/184) [`31b67a5`](https://github.com/learningeconomy/LearnCard/commit/31b67a5d6010ce3886406677a0aa838b778d64f8) Thanks [@Custard7](https://github.com/Custard7)! - Patch: Add react ux docs
 
 ## 2.3.59
 
 ### Patch Changes
 
--   [#179](https://github.com/learningeconomy/LearnCard/pull/179) [`f545ed4`](https://github.com/learningeconomy/LearnCard/commit/f545ed434dd23179591e3b7c0bd82bd9c2ae2fb2) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update course card
+- [#179](https://github.com/learningeconomy/LearnCard/pull/179) [`f545ed4`](https://github.com/learningeconomy/LearnCard/commit/f545ed434dd23179591e3b7c0bd82bd9c2ae2fb2) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update course card
 
 ## 2.3.58
 
 ### Patch Changes
 
--   [#177](https://github.com/learningeconomy/LearnCard/pull/177) [`bc746a0`](https://github.com/learningeconomy/LearnCard/commit/bc746a05fa6c4196e432fac20b5783221b59be65) Thanks [@goblincore](https://github.com/goblincore)! - chore: VC Card updates - add additional override props, generic card add check display and flipped display
+- [#177](https://github.com/learningeconomy/LearnCard/pull/177) [`bc746a0`](https://github.com/learningeconomy/LearnCard/commit/bc746a05fa6c4196e432fac20b5783221b59be65) Thanks [@goblincore](https://github.com/goblincore)! - chore: VC Card updates - add additional override props, generic card add check display and flipped display
 
--   [#170](https://github.com/learningeconomy/LearnCard/pull/170) [`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update READMEs to 8.0 syntax
+- [#170](https://github.com/learningeconomy/LearnCard/pull/170) [`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update READMEs to 8.0 syntax
 
--   Updated dependencies [[`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660)]:
-    -   @learncard/core@8.0.7
+- Updated dependencies [[`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660)]:
+    - @learncard/core@8.0.7
 
 ## 2.3.57
 
 ### Patch Changes
 
--   Updated dependencies [[`b3ae77e`](https://github.com/learningeconomy/LearnCard/commit/b3ae77ef20a10dee303a2c8318faa8bf28344215)]:
-    -   @learncard/core@8.0.6
+- Updated dependencies [[`b3ae77e`](https://github.com/learningeconomy/LearnCard/commit/b3ae77ef20a10dee303a2c8318faa8bf28344215)]:
+    - @learncard/core@8.0.6
 
 ## 2.3.56
 
 ### Patch Changes
 
--   Updated dependencies [[`a3aafb3`](https://github.com/learningeconomy/LearnCard/commit/a3aafb39db6fccae19e999fb4fc89a588bc14555)]:
-    -   @learncard/core@8.0.5
+- Updated dependencies [[`a3aafb3`](https://github.com/learningeconomy/LearnCard/commit/a3aafb39db6fccae19e999fb4fc89a588bc14555)]:
+    - @learncard/core@8.0.5
 
 ## 2.3.55
 
 ### Patch Changes
 
--   Updated dependencies [[`86f3541`](https://github.com/learningeconomy/LearnCard/commit/86f35413e6006a17a596d71ea3f186f915e90f28)]:
-    -   @learncard/core@8.0.4
+- Updated dependencies [[`86f3541`](https://github.com/learningeconomy/LearnCard/commit/86f35413e6006a17a596d71ea3f186f915e90f28)]:
+    - @learncard/core@8.0.4
 
 ## 2.3.54
 
 ### Patch Changes
 
--   Updated dependencies [[`8ba3a12`](https://github.com/learningeconomy/LearnCard/commit/8ba3a128602a1dee4ce1d3a73652cb6f96efc2d3)]:
-    -   @learncard/core@8.0.3
+- Updated dependencies [[`8ba3a12`](https://github.com/learningeconomy/LearnCard/commit/8ba3a128602a1dee4ce1d3a73652cb6f96efc2d3)]:
+    - @learncard/core@8.0.3
 
 ## 2.3.53
 
 ### Patch Changes
 
--   Updated dependencies [[`7c6945c`](https://github.com/learningeconomy/LearnCard/commit/7c6945cfe4be8574c869c2515f7806123c372765)]:
-    -   @learncard/core@8.0.2
+- Updated dependencies [[`7c6945c`](https://github.com/learningeconomy/LearnCard/commit/7c6945cfe4be8574c869c2515f7806123c372765)]:
+    - @learncard/core@8.0.2
 
 ## 2.3.52
 
 ### Patch Changes
 
--   [#151](https://github.com/learningeconomy/LearnCard/pull/151) [`88df9f8`](https://github.com/learningeconomy/LearnCard/commit/88df9f8c34f2d258845a62c3a214e9a382796f1e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add override props for VC display card
+- [#151](https://github.com/learningeconomy/LearnCard/pull/151) [`88df9f8`](https://github.com/learningeconomy/LearnCard/commit/88df9f8c34f2d258845a62c3a214e9a382796f1e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add override props for VC display card
 
-*   [#151](https://github.com/learningeconomy/LearnCard/pull/151) [`88df9f8`](https://github.com/learningeconomy/LearnCard/commit/88df9f8c34f2d258845a62c3a214e9a382796f1e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add override props for VC display card
+* [#151](https://github.com/learningeconomy/LearnCard/pull/151) [`88df9f8`](https://github.com/learningeconomy/LearnCard/commit/88df9f8c34f2d258845a62c3a214e9a382796f1e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add override props for VC display card
 
 ## 2.3.51
 
 ### Patch Changes
 
--   [#149](https://github.com/learningeconomy/LearnCard/pull/149) [`abec576`](https://github.com/learningeconomy/LearnCard/commit/abec576ab55bd9874d487e6ae13b5976a7d52c4e) Thanks [@Custard7](https://github.com/Custard7)! - Fix image for jff 2.0 badge
+- [#149](https://github.com/learningeconomy/LearnCard/pull/149) [`abec576`](https://github.com/learningeconomy/LearnCard/commit/abec576ab55bd9874d487e6ae13b5976a7d52c4e) Thanks [@Custard7](https://github.com/Custard7)! - Fix image for jff 2.0 badge
 
-*   [#150](https://github.com/learningeconomy/LearnCard/pull/150) [`2851dcd`](https://github.com/learningeconomy/LearnCard/commit/2851dcd70129a4e84b78c62bbd2de05d871edd76) Thanks [@goblincore](https://github.com/goblincore)! - Actually fix image for jff 2.0 badge
+* [#150](https://github.com/learningeconomy/LearnCard/pull/150) [`2851dcd`](https://github.com/learningeconomy/LearnCard/commit/2851dcd70129a4e84b78c62bbd2de05d871edd76) Thanks [@goblincore](https://github.com/goblincore)! - Actually fix image for jff 2.0 badge
 
-*   Updated dependencies [[`1cafab4`](https://github.com/learningeconomy/LearnCard/commit/1cafab43a6c053914305e0a8b938748ed2a5fd31)]:
-    -   @learncard/core@8.0.1
+* Updated dependencies [[`1cafab4`](https://github.com/learningeconomy/LearnCard/commit/1cafab43a6c053914305e0a8b938748ed2a5fd31)]:
+    - @learncard/core@8.0.1
 
 ## 2.3.50
 
 ### Patch Changes
 
--   [#142](https://github.com/learningeconomy/LearnCard/pull/142) [`b9bab6e`](https://github.com/learningeconomy/LearnCard/commit/b9bab6ec68db49ffda5163811a61211811f0b0fe) Thanks [@goblincore](https://github.com/goblincore)! - chore: VC Display card update
+- [#142](https://github.com/learningeconomy/LearnCard/pull/142) [`b9bab6e`](https://github.com/learningeconomy/LearnCard/commit/b9bab6ec68db49ffda5163811a61211811f0b0fe) Thanks [@goblincore](https://github.com/goblincore)! - chore: VC Display card update
 
 ## 2.3.49
 
 ### Patch Changes
 
--   Updated dependencies [[`e7cfb63`](https://github.com/learningeconomy/LearnCard/commit/e7cfb636b21cfdd834e3b0cb028036819326a2f9), [`e7cfb63`](https://github.com/learningeconomy/LearnCard/commit/e7cfb636b21cfdd834e3b0cb028036819326a2f9)]:
-    -   @learncard/core@8.0.0
+- Updated dependencies [[`e7cfb63`](https://github.com/learningeconomy/LearnCard/commit/e7cfb636b21cfdd834e3b0cb028036819326a2f9), [`e7cfb63`](https://github.com/learningeconomy/LearnCard/commit/e7cfb636b21cfdd834e3b0cb028036819326a2f9)]:
+    - @learncard/core@8.0.0
 
 ## 2.3.48
 
 ### Patch Changes
 
--   [#137](https://github.com/learningeconomy/LearnCard/pull/137) [`b655513`](https://github.com/learningeconomy/LearnCard/commit/b6555139a5fcf653db514d8ee059bd9edd99fd54) Thanks [@goblincore](https://github.com/goblincore)! - chore: School ID card additional props and default image placeholder options
+- [#137](https://github.com/learningeconomy/LearnCard/pull/137) [`b655513`](https://github.com/learningeconomy/LearnCard/commit/b6555139a5fcf653db514d8ee059bd9edd99fd54) Thanks [@goblincore](https://github.com/goblincore)! - chore: School ID card additional props and default image placeholder options
 
 ## 2.3.47
 
 ### Patch Changes
 
--   [#135](https://github.com/learningeconomy/LearnCard/pull/135) [`235c773`](https://github.com/learningeconomy/LearnCard/commit/235c7731aded77985cf9083c09c6200ff8599766) Thanks [@goblincore](https://github.com/goblincore)! - chore: rounded square update - add back constant exports and left justify title
+- [#135](https://github.com/learningeconomy/LearnCard/pull/135) [`235c773`](https://github.com/learningeconomy/LearnCard/commit/235c7731aded77985cf9083c09c6200ff8599766) Thanks [@goblincore](https://github.com/goblincore)! - chore: rounded square update - add back constant exports and left justify title
 
 ## 2.3.46
 
 ### Patch Changes
 
--   [#133](https://github.com/learningeconomy/LearnCard/pull/133) [`f12e6b0`](https://github.com/learningeconomy/LearnCard/commit/f12e6b03b078ef5861a657de52f48fb28eb2660e) Thanks [@goblincore](https://github.com/goblincore)! - Generic Card Update
+- [#133](https://github.com/learningeconomy/LearnCard/pull/133) [`f12e6b0`](https://github.com/learningeconomy/LearnCard/commit/f12e6b03b078ef5861a657de52f48fb28eb2660e) Thanks [@goblincore](https://github.com/goblincore)! - Generic Card Update
 
 ## 2.3.45
 
 ### Patch Changes
 
--   [#131](https://github.com/learningeconomy/LearnCard/pull/131) [`dd4931f`](https://github.com/learningeconomy/LearnCard/commit/dd4931f9e439c4f80b16c6f438aff3e4eee6b8af) Thanks [@goblincore](https://github.com/goblincore)! - Hide VC image when no image for vc, course card additional hide header prop, css changes for generic display card
+- [#131](https://github.com/learningeconomy/LearnCard/pull/131) [`dd4931f`](https://github.com/learningeconomy/LearnCard/commit/dd4931f9e439c4f80b16c6f438aff3e4eee6b8af) Thanks [@goblincore](https://github.com/goblincore)! - Hide VC image when no image for vc, course card additional hide header prop, css changes for generic display card
 
 ## 2.3.44
 
 ### Patch Changes
 
--   [#128](https://github.com/learningeconomy/LearnCard/pull/128) [`e67119e`](https://github.com/learningeconomy/LearnCard/commit/e67119e978d4df324aa71235c3b202b3e8bdde7c) Thanks [@goblincore](https://github.com/goblincore)! - Small UI updates - add generic display card, job history card, update job listing card
+- [#128](https://github.com/learningeconomy/LearnCard/pull/128) [`e67119e`](https://github.com/learningeconomy/LearnCard/commit/e67119e978d4df324aa71235c3b202b3e8bdde7c) Thanks [@goblincore](https://github.com/goblincore)! - Small UI updates - add generic display card, job history card, update job listing card
 
 ## 2.3.43
 
 ### Patch Changes
 
--   Updated dependencies [[`2a4f635`](https://github.com/learningeconomy/LearnCard/commit/2a4f63521b2ce68961868359873064a25394dd99)]:
-    -   @learncard/core@7.0.3
+- Updated dependencies [[`2a4f635`](https://github.com/learningeconomy/LearnCard/commit/2a4f63521b2ce68961868359873064a25394dd99)]:
+    - @learncard/core@7.0.3
 
 ## 2.3.42
 
 ### Patch Changes
 
--   Updated dependencies [[`00b119a`](https://github.com/learningeconomy/LearnCard/commit/00b119a56769bcdc921502a5ad0591d07ad667e8)]:
-    -   @learncard/core@7.0.2
+- Updated dependencies [[`00b119a`](https://github.com/learningeconomy/LearnCard/commit/00b119a56769bcdc921502a5ad0591d07ad667e8)]:
+    - @learncard/core@7.0.2
 
 ## 2.3.41
 
 ### Patch Changes
 
--   [#118](https://github.com/learningeconomy/LearnCard/pull/118) [`7f98a90`](https://github.com/learningeconomy/LearnCard/commit/7f98a90df1e3ee8c2d39cabc754c6655e6072aa0) Thanks [@gerardopar](https://github.com/gerardopar)! - fix vc display card styles
+- [#118](https://github.com/learningeconomy/LearnCard/pull/118) [`7f98a90`](https://github.com/learningeconomy/LearnCard/commit/7f98a90df1e3ee8c2d39cabc754c6655e6072aa0) Thanks [@gerardopar](https://github.com/gerardopar)! - fix vc display card styles
 
 ## 2.3.40
 
 ### Patch Changes
 
--   Updated dependencies [[`e8f1ba3`](https://github.com/learningeconomy/LearnCard/commit/e8f1ba3594bc749caf18959962da4b85c97db4a6)]:
-    -   @learncard/core@7.0.1
+- Updated dependencies [[`e8f1ba3`](https://github.com/learningeconomy/LearnCard/commit/e8f1ba3594bc749caf18959962da4b85c97db4a6)]:
+    - @learncard/core@7.0.1
 
 ## 2.3.39
 
 ### Patch Changes
 
--   Updated dependencies [[`25349fe`](https://github.com/learningeconomy/LearnCard/commit/25349fe064c751a004092bcab24e1674fadfd5fe)]:
-    -   @learncard/core@7.0.0
+- Updated dependencies [[`25349fe`](https://github.com/learningeconomy/LearnCard/commit/25349fe064c751a004092bcab24e1674fadfd5fe)]:
+    - @learncard/core@7.0.0
 
 ## 2.3.38
 
 ### Patch Changes
 
--   [#109](https://github.com/learningeconomy/LearnCard/pull/109) [`8843fda`](https://github.com/learningeconomy/LearnCard/commit/8843fda579ffb9b8adbb4d467143207e20dfe305) Thanks [@gerardopar](https://github.com/gerardopar)! - [WE-2405] - update components with profile images
+- [#109](https://github.com/learningeconomy/LearnCard/pull/109) [`8843fda`](https://github.com/learningeconomy/LearnCard/commit/8843fda579ffb9b8adbb4d467143207e20dfe305) Thanks [@gerardopar](https://github.com/gerardopar)! - [WE-2405] - update components with profile images
 
--   Updated dependencies [[`27e4ecd`](https://github.com/learningeconomy/LearnCard/commit/27e4ecd6641cf16b97d198434250f55135d09e97)]:
-    -   @learncard/core@6.4.0
+- Updated dependencies [[`27e4ecd`](https://github.com/learningeconomy/LearnCard/commit/27e4ecd6641cf16b97d198434250f55135d09e97)]:
+    - @learncard/core@6.4.0
 
 ## 2.3.37
 
 ### Patch Changes
 
--   Updated dependencies [[`e085abd`](https://github.com/learningeconomy/LearnCard/commit/e085abd72d3b4c085cdfc5c623864b40e35cf302)]:
-    -   @learncard/core@6.3.1
+- Updated dependencies [[`e085abd`](https://github.com/learningeconomy/LearnCard/commit/e085abd72d3b4c085cdfc5c623864b40e35cf302)]:
+    - @learncard/core@6.3.1
 
 ## 2.3.36
 
 ### Patch Changes
 
--   Updated dependencies [[`f6734b2`](https://github.com/learningeconomy/LearnCard/commit/f6734b2dff7eade58dca5a03b8f46f058773c3b0)]:
-    -   @learncard/core@6.3.0
+- Updated dependencies [[`f6734b2`](https://github.com/learningeconomy/LearnCard/commit/f6734b2dff7eade58dca5a03b8f46f058773c3b0)]:
+    - @learncard/core@6.3.0
 
 ## 2.3.35
 
 ### Patch Changes
 
--   [#101](https://github.com/learningeconomy/LearnCard/pull/101) [`08c1c30`](https://github.com/learningeconomy/LearnCard/commit/08c1c30e24a65853c0e04ae1c775d79cd55628e1) Thanks [@goblincore](https://github.com/goblincore)! - Add SkilTabCard, CircleCheckButton, Course Vertical Card, some light refactoring and updated types and props, main addition is checkmark related functionality to various card components
+- [#101](https://github.com/learningeconomy/LearnCard/pull/101) [`08c1c30`](https://github.com/learningeconomy/LearnCard/commit/08c1c30e24a65853c0e04ae1c775d79cd55628e1) Thanks [@goblincore](https://github.com/goblincore)! - Add SkilTabCard, CircleCheckButton, Course Vertical Card, some light refactoring and updated types and props, main addition is checkmark related functionality to various card components
 
 ## 2.3.34
 
 ### Patch Changes
 
--   [#98](https://github.com/learningeconomy/LearnCard/pull/98) [`d85b8dc`](https://github.com/learningeconomy/LearnCard/commit/d85b8dce25482d7acff7b0629da53e51a09dcc9e) Thanks [@goblincore](https://github.com/goblincore)! - [WE-2345] Achievement display card update with status and skills
+- [#98](https://github.com/learningeconomy/LearnCard/pull/98) [`d85b8dc`](https://github.com/learningeconomy/LearnCard/commit/d85b8dce25482d7acff7b0629da53e51a09dcc9e) Thanks [@goblincore](https://github.com/goblincore)! - [WE-2345] Achievement display card update with status and skills
 
-*   [#98](https://github.com/learningeconomy/LearnCard/pull/98) [`d85b8dc`](https://github.com/learningeconomy/LearnCard/commit/d85b8dce25482d7acff7b0629da53e51a09dcc9e) Thanks [@goblincore](https://github.com/goblincore)! - Achievement display card update with status and skills
+* [#98](https://github.com/learningeconomy/LearnCard/pull/98) [`d85b8dc`](https://github.com/learningeconomy/LearnCard/commit/d85b8dce25482d7acff7b0629da53e51a09dcc9e) Thanks [@goblincore](https://github.com/goblincore)! - Achievement display card update with status and skills
 
 ## 2.3.33
 
 ### Patch Changes
 
--   [#95](https://github.com/learningeconomy/LearnCard/pull/95) [`426702f`](https://github.com/learningeconomy/LearnCard/commit/426702f50b8790a8eeb68908331a79c79043f4f5) Thanks [@goblincore](https://github.com/goblincore)! - Add Mini-Job display card
+- [#95](https://github.com/learningeconomy/LearnCard/pull/95) [`426702f`](https://github.com/learningeconomy/LearnCard/commit/426702f50b8790a8eeb68908331a79c79043f4f5) Thanks [@goblincore](https://github.com/goblincore)! - Add Mini-Job display card
 
 ## 2.3.32
 
 ### Patch Changes
 
--   [#94](https://github.com/learningeconomy/LearnCard/pull/94) [`4e5cc2f`](https://github.com/learningeconomy/LearnCard/commit/4e5cc2fe935f99ca663bc9b7d75db2a86c0b7b23) Thanks [@smurflo2](https://github.com/smurflo2)! - Add children to credit card front face
+- [#94](https://github.com/learningeconomy/LearnCard/pull/94) [`4e5cc2f`](https://github.com/learningeconomy/LearnCard/commit/4e5cc2fe935f99ca663bc9b7d75db2a86c0b7b23) Thanks [@smurflo2](https://github.com/smurflo2)! - Add children to credit card front face
 
 ## 2.3.31
 
 ### Patch Changes
 
--   Updated dependencies [[`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342)]:
-    -   @learncard/core@6.2.0
+- Updated dependencies [[`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342)]:
+    - @learncard/core@6.2.0
 
 ## 2.3.30
 
 ### Patch Changes
 
--   Updated dependencies [[`c1befdc`](https://github.com/learningeconomy/LearnCard/commit/c1befdc8a30d3cc111d938c530493b1a5b87aa00)]:
-    -   @learncard/core@6.1.0
+- Updated dependencies [[`c1befdc`](https://github.com/learningeconomy/LearnCard/commit/c1befdc8a30d3cc111d938c530493b1a5b87aa00)]:
+    - @learncard/core@6.1.0
 
 ## 2.3.29
 
 ### Patch Changes
 
--   [#82](https://github.com/learningeconomy/LearnCard/pull/82) [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update ReadMe
+- [#82](https://github.com/learningeconomy/LearnCard/pull/82) [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update ReadMe
 
--   Updated dependencies [[`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104), [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104), [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104)]:
-    -   @learncard/core@6.0.0
+- Updated dependencies [[`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104), [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104), [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104)]:
+    - @learncard/core@6.0.0
 
 ## 2.3.28
 
 ### Patch Changes
 
--   [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Mark @learncard/core as external
+- [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Mark @learncard/core as external
 
-*   [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix VCCard erroring from invalid key
+* [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix VCCard erroring from invalid key
 
-*   Updated dependencies [[`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562), [`074989f`](https://github.com/learningeconomy/LearnCard/commit/074989f2eb4b7d8cb9b2d6a62451cdcf047d72d5), [`120744b`](https://github.com/learningeconomy/LearnCard/commit/120744bc4cf9d03254049fcf37707763b10ddeab), [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562), [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562)]:
-    -   @learncard/core@5.1.1
+* Updated dependencies [[`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562), [`074989f`](https://github.com/learningeconomy/LearnCard/commit/074989f2eb4b7d8cb9b2d6a62451cdcf047d72d5), [`120744b`](https://github.com/learningeconomy/LearnCard/commit/120744bc4cf9d03254049fcf37707763b10ddeab), [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562), [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562)]:
+    - @learncard/core@5.1.1
 
 ## 2.3.27
 
 ### Patch Changes
 
--   [#78](https://github.com/WeLibraryOS/LearnCard/pull/78) [`3149715`](https://github.com/WeLibraryOS/LearnCard/commit/3149715875dd007c54ca0a67b7424b025efdc558) Thanks [@goblincore](https://github.com/goblincore)! - fix: [WE-2340] Fix VC display text not showing in dark mode
+- [#78](https://github.com/WeLibraryOS/LearnCard/pull/78) [`3149715`](https://github.com/WeLibraryOS/LearnCard/commit/3149715875dd007c54ca0a67b7424b025efdc558) Thanks [@goblincore](https://github.com/goblincore)! - fix: [WE-2340] Fix VC display text not showing in dark mode
 
 ## 2.3.26
 
 ### Patch Changes
 
--   [#76](https://github.com/WeLibraryOS/LearnCard/pull/76) [`f88e82a`](https://github.com/WeLibraryOS/LearnCard/commit/f88e82a87cd12f30105639c2339561a72aa20d7e) Thanks [@goblincore](https://github.com/goblincore)! - Fix type errors to fix build
+- [#76](https://github.com/WeLibraryOS/LearnCard/pull/76) [`f88e82a`](https://github.com/WeLibraryOS/LearnCard/commit/f88e82a87cd12f30105639c2339561a72aa20d7e) Thanks [@goblincore](https://github.com/goblincore)! - Fix type errors to fix build
 
-*   [#75](https://github.com/WeLibraryOS/LearnCard/pull/75) [`2808d37`](https://github.com/WeLibraryOS/LearnCard/commit/2808d37a4889d9fafd341b472e4c7dbb68eef40a) Thanks [@goblincore](https://github.com/goblincore)! - Add Course Card, Skill Card components
+* [#75](https://github.com/WeLibraryOS/LearnCard/pull/75) [`2808d37`](https://github.com/WeLibraryOS/LearnCard/commit/2808d37a4889d9fafd341b472e4c7dbb68eef40a) Thanks [@goblincore](https://github.com/goblincore)! - Add Course Card, Skill Card components
 
 ## 2.3.25
 
 ### Patch Changes
 
--   [#74](https://github.com/WeLibraryOS/LearnCard/pull/74) [`b06f5de`](https://github.com/WeLibraryOS/LearnCard/commit/b06f5de90c8aa91aeddd9d1c92ba40044ad1461f) Thanks [@gerardopar](https://github.com/gerardopar)! - Id card
+- [#74](https://github.com/WeLibraryOS/LearnCard/pull/74) [`b06f5de`](https://github.com/WeLibraryOS/LearnCard/commit/b06f5de90c8aa91aeddd9d1c92ba40044ad1461f) Thanks [@gerardopar](https://github.com/gerardopar)! - Id card
 
--   Updated dependencies [[`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208), [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208), [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208)]:
-    -   @learncard/core@5.1.0
+- Updated dependencies [[`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208), [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208), [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208)]:
+    - @learncard/core@5.1.0
 
 ## 2.3.24
 
 ### Patch Changes
 
--   [#71](https://github.com/WeLibraryOS/LearnCard/pull/71) [`1b7a85a`](https://github.com/WeLibraryOS/LearnCard/commit/1b7a85aa7e61da07ed20e9297cd865b7cdd657d5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better Image Handling in Build Pipeline
+- [#71](https://github.com/WeLibraryOS/LearnCard/pull/71) [`1b7a85a`](https://github.com/WeLibraryOS/LearnCard/commit/1b7a85aa7e61da07ed20e9297cd865b7cdd657d5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better Image Handling in Build Pipeline
 
 ## 2.3.23
 
 ### Patch Changes
 
--   [#69](https://github.com/WeLibraryOS/LearnCard/pull/69) [`a5ca571`](https://github.com/WeLibraryOS/LearnCard/commit/a5ca57166c62aea0ce40ceb2d84f8d12cad23e1e) Thanks [@goblincore](https://github.com/goblincore)! - fix build error from rollup-plugin-img and add additional img source prop to rounded card component
+- [#69](https://github.com/WeLibraryOS/LearnCard/pull/69) [`a5ca571`](https://github.com/WeLibraryOS/LearnCard/commit/a5ca57166c62aea0ce40ceb2d84f8d12cad23e1e) Thanks [@goblincore](https://github.com/goblincore)! - fix build error from rollup-plugin-img and add additional img source prop to rounded card component
 
 ## 2.3.22
 
 ### Patch Changes
 
--   [#67](https://github.com/WeLibraryOS/LearnCard/pull/67) [`db2e9be`](https://github.com/WeLibraryOS/LearnCard/commit/db2e9beee227698e95b8da71e37046b2d0c006a9) Thanks [@goblincore](https://github.com/goblincore)! - Update wallet components with new assets
+- [#67](https://github.com/WeLibraryOS/LearnCard/pull/67) [`db2e9be`](https://github.com/WeLibraryOS/LearnCard/commit/db2e9beee227698e95b8da71e37046b2d0c006a9) Thanks [@goblincore](https://github.com/goblincore)! - Update wallet components with new assets
 
 ## 2.3.21
 
 ### Patch Changes
 
--   [#65](https://github.com/WeLibraryOS/LearnCard/pull/65) [`b413a7f`](https://github.com/WeLibraryOS/LearnCard/commit/b413a7f7147e344eb65c3ed9cd68ac08193e60b9) Thanks [@gerardopar](https://github.com/gerardopar)! - Credit card front face prop update
+- [#65](https://github.com/WeLibraryOS/LearnCard/pull/65) [`b413a7f`](https://github.com/WeLibraryOS/LearnCard/commit/b413a7f7147e344eb65c3ed9cd68ac08193e60b9) Thanks [@gerardopar](https://github.com/gerardopar)! - Credit card front face prop update
 
 ## 2.3.20
 
 ### Patch Changes
 
--   Updated dependencies [[`5c5f28b`](https://github.com/WeLibraryOS/LearnCard/commit/5c5f28b1db1a9527e56946522ea94d444a7f1eed), [`fab5557`](https://github.com/WeLibraryOS/LearnCard/commit/fab55579a1e75b438425ea019a1ac63ecb5634fe)]:
-    -   @learncard/core@5.0.0
+- Updated dependencies [[`5c5f28b`](https://github.com/WeLibraryOS/LearnCard/commit/5c5f28b1db1a9527e56946522ea94d444a7f1eed), [`fab5557`](https://github.com/WeLibraryOS/LearnCard/commit/fab55579a1e75b438425ea019a1ac63ecb5634fe)]:
+    - @learncard/core@5.0.0
 
 ## 2.3.19
 
 ### Patch Changes
 
--   Updated dependencies [[`100899e`](https://github.com/WeLibraryOS/LearnCard/commit/100899e32db4385758dc1b3559da7b64f705d305)]:
-    -   @learncard/core@4.1.0
+- Updated dependencies [[`100899e`](https://github.com/WeLibraryOS/LearnCard/commit/100899e32db4385758dc1b3559da7b64f705d305)]:
+    - @learncard/core@4.1.0
 
 ## 2.3.18
 
 ### Patch Changes
 
--   [#53](https://github.com/WeLibraryOS/LearnCard/pull/53) [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use `emptyWallet` to instantiate a `LearnCard` in `VCCard`
+- [#53](https://github.com/WeLibraryOS/LearnCard/pull/53) [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use `emptyWallet` to instantiate a `LearnCard` in `VCCard`
 
     Previously, this component was providing dummy key material and instantiating a full-blown `LearnCard`
     object even though it only made use of verification functionality. Now, it calls `emptyWallet` and
     instantiates a much smaller `LearnCard` without needing to provide dummy key material
 
--   Updated dependencies [[`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd), [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd)]:
-    -   @learncard/core@4.0.0
+- Updated dependencies [[`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd), [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd)]:
+    - @learncard/core@4.0.0
 
 ## 2.3.17
 
 ### Patch Changes
 
--   [#55](https://github.com/WeLibraryOS/LearnCard/pull/55) [`833c348`](https://github.com/WeLibraryOS/LearnCard/commit/833c3488b28c74c865545e09d9030aed79a15d8f) Thanks [@goblincore](https://github.com/goblincore)! - Fix Safari flipipy card animation glitch
+- [#55](https://github.com/WeLibraryOS/LearnCard/pull/55) [`833c348`](https://github.com/WeLibraryOS/LearnCard/commit/833c3488b28c74c865545e09d9030aed79a15d8f) Thanks [@goblincore](https://github.com/goblincore)! - Fix Safari flipipy card animation glitch
 
 ## 2.3.16
 
 ### Patch Changes
 
--   [#52](https://github.com/WeLibraryOS/LearnCard/pull/52) [`045428b`](https://github.com/WeLibraryOS/LearnCard/commit/045428be878dff6ba71c72ecf1205df4708f7fb1) Thanks [@goblincore](https://github.com/goblincore)! - [WE-2277] VC Display Card Update
+- [#52](https://github.com/WeLibraryOS/LearnCard/pull/52) [`045428b`](https://github.com/WeLibraryOS/LearnCard/commit/045428be878dff6ba71c72ecf1205df4708f7fb1) Thanks [@goblincore](https://github.com/goblincore)! - [WE-2277] VC Display Card Update
 
 ## 2.3.15
 
 ### Patch Changes
 
--   [#50](https://github.com/WeLibraryOS/LearnCard/pull/50) [`9c857c5`](https://github.com/WeLibraryOS/LearnCard/commit/9c857c5457f3340bf83093e58f4578a62ac745d6) Thanks [@goblincore](https://github.com/goblincore)! - Add basic achievement display card component to react-learncard
+- [#50](https://github.com/WeLibraryOS/LearnCard/pull/50) [`9c857c5`](https://github.com/WeLibraryOS/LearnCard/commit/9c857c5457f3340bf83093e58f4578a62ac745d6) Thanks [@goblincore](https://github.com/goblincore)! - Add basic achievement display card component to react-learncard
 
 ## 2.3.14
 
 ### Patch Changes
 
--   Updated dependencies [[`60e0f5b`](https://github.com/WeLibraryOS/LearnCard/commit/60e0f5b6ddaeb124959e87ac61189b2638c0b32b)]:
-    -   @learncard/core@3.0.0
+- Updated dependencies [[`60e0f5b`](https://github.com/WeLibraryOS/LearnCard/commit/60e0f5b6ddaeb124959e87ac61189b2638c0b32b)]:
+    - @learncard/core@3.0.0
 
 ## 2.3.13
 
 ### Patch Changes
 
--   [#47](https://github.com/WeLibraryOS/LearnCard/pull/47) [`b544330`](https://github.com/WeLibraryOS/LearnCard/commit/b5443302b0843c377fa5a364e3810482f391f275) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Notification polishes
+- [#47](https://github.com/WeLibraryOS/LearnCard/pull/47) [`b544330`](https://github.com/WeLibraryOS/LearnCard/commit/b5443302b0843c377fa5a364e3810482f391f275) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Notification polishes
 
 ## 2.3.12
 
 ### Patch Changes
 
--   [#42](https://github.com/WeLibraryOS/LearnCard/pull/42) [`4c6c11f`](https://github.com/WeLibraryOS/LearnCard/commit/4c6c11f30b81b103017883d7f57bd89e2f7d623e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Bump jest to latest
+- [#42](https://github.com/WeLibraryOS/LearnCard/pull/42) [`4c6c11f`](https://github.com/WeLibraryOS/LearnCard/commit/4c6c11f30b81b103017883d7f57bd89e2f7d623e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Bump jest to latest
 
--   Updated dependencies [[`4c6c11f`](https://github.com/WeLibraryOS/LearnCard/commit/4c6c11f30b81b103017883d7f57bd89e2f7d623e), [`7c09ebf`](https://github.com/WeLibraryOS/LearnCard/commit/7c09ebf0106ec207ac1aa2d7bcf1437d275328d7)]:
-    -   @learncard/core@2.1.0
+- Updated dependencies [[`4c6c11f`](https://github.com/WeLibraryOS/LearnCard/commit/4c6c11f30b81b103017883d7f57bd89e2f7d623e), [`7c09ebf`](https://github.com/WeLibraryOS/LearnCard/commit/7c09ebf0106ec207ac1aa2d7bcf1437d275328d7)]:
+    - @learncard/core@2.1.0
 
 ## 2.3.11
 
 ### Patch Changes
 
--   Updated dependencies [[`7adc30e`](https://github.com/WeLibraryOS/LearnCard/commit/7adc30eba700da4c6886a086d48c40b9820dc05a), [`b07187c`](https://github.com/WeLibraryOS/LearnCard/commit/b07187c4384152ec7f4c5be35a8f2b31a3aff079)]:
-    -   @learncard/core@2.0.1
+- Updated dependencies [[`7adc30e`](https://github.com/WeLibraryOS/LearnCard/commit/7adc30eba700da4c6886a086d48c40b9820dc05a), [`b07187c`](https://github.com/WeLibraryOS/LearnCard/commit/b07187c4384152ec7f4c5be35a8f2b31a3aff079)]:
+    - @learncard/core@2.0.1
 
 ## 2.3.10
 
 ### Patch Changes
 
--   Updated dependencies [[`a131966`](https://github.com/WeLibraryOS/LearnCard/commit/a13196655378bcb51c35aaad2165b9bccac0526c)]:
-    -   @learncard/core@2.0.0
+- Updated dependencies [[`a131966`](https://github.com/WeLibraryOS/LearnCard/commit/a13196655378bcb51c35aaad2165b9bccac0526c)]:
+    - @learncard/core@2.0.0
 
 ## 2.3.9
 
 ### Patch Changes
 
--   Updated dependencies [[`4028716`](https://github.com/WeLibraryOS/LearnCard/commit/40287160de54d06f7baff000dee6f59f08f8623a)]:
-    -   @learncard/core@1.5.1
+- Updated dependencies [[`4028716`](https://github.com/WeLibraryOS/LearnCard/commit/40287160de54d06f7baff000dee6f59f08f8623a)]:
+    - @learncard/core@1.5.1
 
 ## 2.3.8
 
 ### Patch Changes
 
--   Updated dependencies [[`de4e724`](https://github.com/WeLibraryOS/LearnCard/commit/de4e7244961f0ef91b91e6cbf32a43f29ff58b96)]:
-    -   @learncard/core@1.5.0
+- Updated dependencies [[`de4e724`](https://github.com/WeLibraryOS/LearnCard/commit/de4e7244961f0ef91b91e6cbf32a43f29ff58b96)]:
+    - @learncard/core@1.5.0
 
 ## 2.3.7
 
 ### Patch Changes
 
--   Updated dependencies [[`e72b559`](https://github.com/WeLibraryOS/LearnCard/commit/e72b55994495e4bc6156b08abdd166c77fae67b7)]:
-    -   @learncard/core@1.4.0
+- Updated dependencies [[`e72b559`](https://github.com/WeLibraryOS/LearnCard/commit/e72b55994495e4bc6156b08abdd166c77fae67b7)]:
+    - @learncard/core@1.4.0
 
 ## 2.3.6
 
 ### Patch Changes
 
--   Updated dependencies [[`da81189`](https://github.com/WeLibraryOS/LearnCard/commit/da811895ae672f4287fbcd2026bf1aac5a6447e1)]:
-    -   @learncard/core@1.3.1
+- Updated dependencies [[`da81189`](https://github.com/WeLibraryOS/LearnCard/commit/da811895ae672f4287fbcd2026bf1aac5a6447e1)]:
+    - @learncard/core@1.3.1
 
 ## 2.3.5
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/core@1.3.0
+- Updated dependencies []:
+    - @learncard/core@1.3.0
 
 ## 2.3.4
 
 ### Patch Changes
 
--   Fix learn card - front face card component
+- Fix learn card - front face card component
 
 ## 2.3.3
 
 ### Patch Changes
 
--   Fix Learn Card - Card mobile styles
+- Fix Learn Card - Card mobile styles
 
 ## 2.3.2
 
 ### Patch Changes
 
--   Learn Card Card View
+- Learn Card Card View
 
 ## 2.3.1
 
 ### Patch Changes
 
--   Updated dependencies
-    -   @learncard/core@1.1.5
+- Updated dependencies
+    - @learncard/core@1.1.5
 
 ## 2.3.0
 
 ### Minor Changes
 
--   Require consumers to import css
+- Require consumers to import css
 
 ## 2.2.8
 
 ### Patch Changes
 
--   Fix css issues
+- Fix css issues
 
 ## 2.2.7
 
 ### Patch Changes
 
--   Remove sideEffects array
+- Remove sideEffects array
 
 ## 2.2.6
 
 ### Patch Changes
 
--   Fix Notification export
+- Fix Notification export
 
 ## 2.2.5
 
 ### Patch Changes
 
--   Clean dist folder before building
+- Clean dist folder before building
 
 ## 2.2.4
 
 ### Patch Changes
 
--   Updated dependencies
-    -   @learncard/core@1.2.0
--   Notification component
--   9ddcfab: Notification component
+- Updated dependencies
+    - @learncard/core@1.2.0
+- Notification component
+- 9ddcfab: Notification component
 
 ## 2.2.3
 
 ### Patch Changes
 
--   Updated dependencies
-    -   @learncard/core@1.1.4
+- Updated dependencies
+    - @learncard/core@1.1.4
 
 ## 2.2.2
 
 ### Patch Changes
 
--   Fix botched release
--   Updated dependencies
-    -   @learncard/core@1.1.3
+- Fix botched release
+- Updated dependencies
+    - @learncard/core@1.1.3
 
 ## 2.2.1
 
 ### Patch Changes
 
--   Upgrade @learncard/types to use zod and implement types for VCs/OBv3
--   Updated dependencies
-    -   @learncard/core@1.1.2
+- Upgrade @learncard/types to use zod and implement types for VCs/OBv3
+- Updated dependencies
+    - @learncard/core@1.1.2
 
 ## 2.2.0
 
 ### Minor Changes
 
--   Fix broken exports and use esbuild instead of terser for bundling
+- Fix broken exports and use esbuild instead of terser for bundling
 
 ### Patch Changes
 
--   Updated dependencies
-    -   @learncard/core@1.1.1
+- Updated dependencies
+    - @learncard/core@1.1.1
 
 ## 2.1.2
 
 ### Patch Changes
 
--   Updated dependencies
-    -   @learncard/core@1.1.0
+- Updated dependencies
+    - @learncard/core@1.1.0
 
 ## 2.1.1
 
 ### Patch Changes
 
--   Updated dependencies
-    -   @learncard/core@1.0.2
+- Updated dependencies
+    - @learncard/core@1.0.2
 
 ## 2.1.0
 
 ### Minor Changes
 
--   Improve Tree-Shakeability
+- Improve Tree-Shakeability
 
 ## 2.0.1
 
 ### Patch Changes
 
--   Update ReadMe
--   Updated dependencies
-    -   @learncard/core@1.0.1
+- Update ReadMe
+- Updated dependencies
+    - @learncard/core@1.0.1
 
 ## 2.0.0
 
 ### Major Changes
 
--   Rename to @learncard/react
+- Rename to @learncard/react
 
 ## 1.7.2
 
 ### Patch Changes
 
--   Fix Safari bug where backface is not hidden on Flippy Card
+- Fix Safari bug where backface is not hidden on Flippy Card
 
 ## 1.7.1
 
 ### Patch Changes
 
--   Add minimum time for verification loader animation
--   Updated dependencies
-    -   learn-card-core@0.3.5
-    -   learn-card-types@1.2.1
+- Add minimum time for verification loader animation
+- Updated dependencies
+    - learn-card-core@0.3.5
+    - learn-card-types@1.2.1
 
 ## 1.7.0
 
 ### Minor Changes
 
--   Create VCCard component
+- Create VCCard component
 
 ## 1.6.0
 
 ### Minor Changes
 
--   Verify inside of VCDisplayCard
+- Verify inside of VCDisplayCard
 
 ## 1.5.1
 
 ### Patch Changes
 
--   Updated dependencies
-    -   learn-card-core@0.3.4
+- Updated dependencies
+    - learn-card-core@0.3.4
 
 ## 1.5.0
 
 ### Minor Changes
 
--   Update Update VCDisplayCard to accept a credential
+- Update Update VCDisplayCard to accept a credential
 
 ### Patch Changes
 
--   Updated dependencies
-    -   learn-card-types@1.2.0
-    -   learn-card-core@0.3.3
+- Updated dependencies
+    - learn-card-types@1.2.0
+    - learn-card-core@0.3.3
 
 ## 1.4.4
 
 ### Patch Changes
 
--   Updated dependencies
-    -   learn-card-core@0.3.2
+- Updated dependencies
+    - learn-card-core@0.3.2
 
 ## 1.4.3
 
 ### Patch Changes
 
--   Updated dependencies [0a650d4]
-    -   learn-card-types@1.1.0
-    -   learn-card-core@0.3.1
+- Updated dependencies [0a650d4]
+    - learn-card-types@1.1.0
+    - learn-card-core@0.3.1
 
 ## 1.4.2
 
 ### Patch Changes
 
--   Inject CSS at top of head
+- Inject CSS at top of head
 
 ## 1.4.1
 
 ### Patch Changes
 
--   Updated dependencies
-    -   learn-card-core@0.3.0
+- Updated dependencies
+    - learn-card-core@0.3.0
 
 ## 1.4.0
 
 ### Minor Changes
 
--   Actually fix exports
+- Actually fix exports
 
 ## 1.3.0
 
 ### Minor Changes
 
--   Fix deploy scripts
+- Fix deploy scripts
 
 ## 1.2.0
 
 ### Minor Changes
 
--   Release Learn Card Types, add stuff to react-learn-card
+- Release Learn Card Types, add stuff to react-learn-card
 
 ### Patch Changes
 
--   Updated dependencies
-    -   learn-card-types@1.0.0
+- Updated dependencies
+    - learn-card-types@1.0.0
 
 ## 1.1.0
 
 ### Minor Changes
 
--   Release list component
+- Release list component
 
 ## 1.0.3
 
 ### Patch Changes
 
--   Updated dependencies
--   Updated dependencies [b16655b]
-    -   learn-card-core@0.2.1
+- Updated dependencies
+- Updated dependencies [b16655b]
+    - learn-card-core@0.2.1
 
 ## 1.0.2
 
 ### Patch Changes
 
--   Updated dependencies
-    -   learn-card-core@0.2.0
+- Updated dependencies
+    - learn-card-core@0.2.0
 
 ## 1.0.1
 
 ### Patch Changes
 
--   Updated dependencies
-    -   learn-card-core@0.1.1
+- Updated dependencies
+    - learn-card-core@0.1.1
 
 ## 1.0.0
 
 ### Major Changes
 
--   Initial Release
+- Initial Release
 
 ### Patch Changes
 
--   Updated dependencies
-    -   learn-card-core@0.1.0
+- Updated dependencies
+    - learn-card-core@0.1.0

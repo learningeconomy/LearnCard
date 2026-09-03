@@ -1,470 +1,480 @@
 # @learncard/open-badge-v2-plugin
 
+## 1.1.33
+
+### Patch Changes
+
+- Updated dependencies [[`127eec62c5756b6f737028fa2e6a5e2277dc647a`](https://github.com/learningeconomy/LearnCard/commit/127eec62c5756b6f737028fa2e6a5e2277dc647a)]:
+    - @learncard/types@5.18.3
+    - @learncard/core@9.4.32
+    - @learncard/vc-plugin@1.5.12
+    - @learncard/crypto-plugin@1.1.32
+
 ## 1.1.32
 
 ### Patch Changes
 
--   Updated dependencies [[`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e)]:
-    -   @learncard/types@5.18.2
-    -   @learncard/core@9.4.31
-    -   @learncard/vc-plugin@1.5.11
-    -   @learncard/crypto-plugin@1.1.31
+- Updated dependencies [[`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e)]:
+    - @learncard/types@5.18.2
+    - @learncard/core@9.4.31
+    - @learncard/vc-plugin@1.5.11
+    - @learncard/crypto-plugin@1.1.31
 
 ## 1.1.31
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/core@9.4.30
-    -   @learncard/crypto-plugin@1.1.30
-    -   @learncard/vc-plugin@1.5.10
+- Updated dependencies []:
+    - @learncard/core@9.4.30
+    - @learncard/crypto-plugin@1.1.30
+    - @learncard/vc-plugin@1.5.10
 
 ## 1.1.30
 
 ### Patch Changes
 
--   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4)]:
-    -   @learncard/types@5.18.1
-    -   @learncard/core@9.4.29
-    -   @learncard/vc-plugin@1.5.9
-    -   @learncard/crypto-plugin@1.1.29
+- Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4)]:
+    - @learncard/types@5.18.1
+    - @learncard/core@9.4.29
+    - @learncard/vc-plugin@1.5.9
+    - @learncard/crypto-plugin@1.1.29
 
 ## 1.1.29
 
 ### Patch Changes
 
--   Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24), [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158)]:
-    -   @learncard/types@5.18.0
-    -   @learncard/core@9.4.28
-    -   @learncard/vc-plugin@1.5.8
-    -   @learncard/crypto-plugin@1.1.28
+- Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24), [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158)]:
+    - @learncard/types@5.18.0
+    - @learncard/core@9.4.28
+    - @learncard/vc-plugin@1.5.8
+    - @learncard/crypto-plugin@1.1.28
 
 ## 1.1.28
 
 ### Patch Changes
 
--   Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
-    -   @learncard/types@5.17.6
-    -   @learncard/core@9.4.27
-    -   @learncard/vc-plugin@1.5.7
-    -   @learncard/crypto-plugin@1.1.27
+- Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    - @learncard/types@5.17.6
+    - @learncard/core@9.4.27
+    - @learncard/vc-plugin@1.5.7
+    - @learncard/crypto-plugin@1.1.27
 
 ## 1.1.27
 
 ### Patch Changes
 
--   [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
+- [`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Republish package metadata with concrete internal dependency versions instead of workspace protocol ranges.
 
--   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
-    -   @learncard/core@9.4.26
-    -   @learncard/crypto-plugin@1.1.26
-    -   @learncard/vc-plugin@1.5.6
+- Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    - @learncard/core@9.4.26
+    - @learncard/crypto-plugin@1.1.26
+    - @learncard/vc-plugin@1.5.6
 
 ## 1.1.26
 
 ### Patch Changes
 
--   [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
+- [#1303](https://github.com/learningeconomy/LearnCard/pull/1303) [`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Switch workspace development to Bun source-mode resolution while preserving package build outputs for npm publishing.
 
--   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
-    -   @learncard/core@9.4.25
-    -   @learncard/types@5.17.5
-    -   @learncard/crypto-plugin@1.1.25
-    -   @learncard/vc-plugin@1.5.5
+- Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    - @learncard/core@9.4.25
+    - @learncard/types@5.17.5
+    - @learncard/crypto-plugin@1.1.25
+    - @learncard/vc-plugin@1.5.5
 
 ## 1.1.25
 
 ### Patch Changes
 
--   Updated dependencies [[`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
-    -   @learncard/types@5.17.4
-    -   @learncard/core@9.4.24
-    -   @learncard/vc-plugin@1.5.4
-    -   @learncard/crypto-plugin@1.1.24
+- Updated dependencies [[`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    - @learncard/types@5.17.4
+    - @learncard/core@9.4.24
+    - @learncard/vc-plugin@1.5.4
+    - @learncard/crypto-plugin@1.1.24
 
 ## 1.1.24
 
 ### Patch Changes
 
--   Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
-    -   @learncard/types@5.17.3
-    -   @learncard/core@9.4.23
-    -   @learncard/vc-plugin@1.5.3
-    -   @learncard/crypto-plugin@1.1.23
+- Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
+    - @learncard/types@5.17.3
+    - @learncard/core@9.4.23
+    - @learncard/vc-plugin@1.5.3
+    - @learncard/crypto-plugin@1.1.23
 
 ## 1.1.23
 
 ### Patch Changes
 
--   Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`357ba3615d69cf28412ac779ddc4858139b46929`](https://github.com/learningeconomy/LearnCard/commit/357ba3615d69cf28412ac779ddc4858139b46929)]:
-    -   @learncard/types@5.17.2
-    -   @learncard/core@9.4.22
-    -   @learncard/crypto-plugin@1.1.22
-    -   @learncard/vc-plugin@1.5.2
+- Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`357ba3615d69cf28412ac779ddc4858139b46929`](https://github.com/learningeconomy/LearnCard/commit/357ba3615d69cf28412ac779ddc4858139b46929)]:
+    - @learncard/types@5.17.2
+    - @learncard/core@9.4.22
+    - @learncard/crypto-plugin@1.1.22
+    - @learncard/vc-plugin@1.5.2
 
 ## 1.1.22
 
 ### Patch Changes
 
--   [#1256](https://github.com/learningeconomy/LearnCard/pull/1256) [`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Node ESM consumers (e.g. `@learncard/init`'s published ESM bundle) being unable to resolve named exports from these plugins.
+- [#1256](https://github.com/learningeconomy/LearnCard/pull/1256) [`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Node ESM consumers (e.g. `@learncard/init`'s published ESM bundle) being unable to resolve named exports from these plugins.
 
     These packages previously declared only `main` (CJS shim) and `module` (ESM bundle) without an `exports` map. Node ESM does not honor the `module` field, so it fell back to the CJS shim — a conditional `module.exports = require(...)` re-export that `cjs-module-lexer` cannot statically analyze, causing `SyntaxError: Named export 'X' not found` for every downstream ESM consumer.
 
     Each affected plugin now:
 
-    -   declares `"type": "module"`,
-    -   ships its CJS shim as `dist/index.cjs` (renamed from `.js`) and bundle outputs as `.cjs`,
-    -   exposes a proper `exports` map with `import` → ESM bundle, `require` → CJS shim, and `types` → `.d.ts`.
+    - declares `"type": "module"`,
+    - ships its CJS shim as `dist/index.cjs` (renamed from `.js`) and bundle outputs as `.cjs`,
+    - exposes a proper `exports` map with `import` → ESM bundle, `require` → CJS shim, and `types` → `.d.ts`.
 
     No runtime behavior changes for existing consumers; bundlers that read `module` continue to work, and CJS `require()` callers continue to load the same shim under a new extension.
 
     This change is verified by two new CI surfaces:
 
-    -   `bun run validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
-    -   `.github/workflows/smoketest-npm-packages.yml` now also probes every published plugin's ESM + CJS export surface directly (not just `@learncard/init` transitively) and bundles a trivial consumer with esbuild to catch bundler-resolution-only regressions.
+    - `bun run validate-packages` runs `publint` + `@arethetypeswrong/cli` against every published `@learncard/*` package's built `dist/`. Catches missing `exports` maps, dangling file paths, condition ordering bugs, ESM-file-as-CJS extension mistakes, and the `workspace:*` protocol-leakage incident class statically, before publish.
+    - `.github/workflows/smoketest-npm-packages.yml` now also probes every published plugin's ESM + CJS export surface directly (not just `@learncard/init` transitively) and bundles a trivial consumer with esbuild to catch bundler-resolution-only regressions.
 
     Follow-up work tracked as advisory failures in both surfaces (not gating CI until fixed): `@learncard/ceramic-plugin`, `@learncard/didkey-plugin`, `@learncard/helpers`, `@learncard/idx-plugin`, `@learncard/lca-api-plugin`, `@learncard/learn-cloud-plugin`, `@learncard/network-plugin`, `@learncard/simple-signing-plugin` each have pre-existing publish-time bugs (CJS-only transitive deps imported via named ESM, dynamic `require()` in ESM bundles, or unmigrated upstream packages).
 
--   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
-    -   @learncard/crypto-plugin@1.1.21
-    -   @learncard/types@5.17.1
-    -   @learncard/vc-plugin@1.5.1
-    -   @learncard/core@9.4.21
+- Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    - @learncard/crypto-plugin@1.1.21
+    - @learncard/types@5.17.1
+    - @learncard/vc-plugin@1.5.1
+    - @learncard/core@9.4.21
 
 ## 1.1.21
 
 ### Patch Changes
 
--   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3), [`7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b`](https://github.com/learningeconomy/LearnCard/commit/7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b)]:
-    -   @learncard/types@5.17.0
-    -   @learncard/vc-plugin@1.5.0
-    -   @learncard/core@9.4.20
-    -   @learncard/crypto-plugin@1.1.20
+- Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3), [`7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b`](https://github.com/learningeconomy/LearnCard/commit/7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b)]:
+    - @learncard/types@5.17.0
+    - @learncard/vc-plugin@1.5.0
+    - @learncard/core@9.4.20
+    - @learncard/crypto-plugin@1.1.20
 
 ## 1.1.20
 
 ### Patch Changes
 
--   Updated dependencies [[`3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b`](https://github.com/learningeconomy/LearnCard/commit/3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
-    -   @learncard/types@5.16.0
-    -   @learncard/core@9.4.19
-    -   @learncard/vc-plugin@1.4.15
-    -   @learncard/crypto-plugin@1.1.19
+- Updated dependencies [[`3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b`](https://github.com/learningeconomy/LearnCard/commit/3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
+    - @learncard/types@5.16.0
+    - @learncard/core@9.4.19
+    - @learncard/vc-plugin@1.4.15
+    - @learncard/crypto-plugin@1.1.19
 
 ## 1.1.19
 
 ### Patch Changes
 
--   Updated dependencies [[`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
-    -   @learncard/types@5.15.0
-    -   @learncard/vc-plugin@1.4.14
-    -   @learncard/core@9.4.18
-    -   @learncard/crypto-plugin@1.1.18
+- Updated dependencies [[`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
+    - @learncard/types@5.15.0
+    - @learncard/vc-plugin@1.4.14
+    - @learncard/core@9.4.18
+    - @learncard/crypto-plugin@1.1.18
 
 ## 1.1.18
 
 ### Patch Changes
 
--   Updated dependencies [[`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02)]:
-    -   @learncard/types@5.14.0
-    -   @learncard/core@9.4.17
-    -   @learncard/vc-plugin@1.4.13
-    -   @learncard/crypto-plugin@1.1.17
+- Updated dependencies [[`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02)]:
+    - @learncard/types@5.14.0
+    - @learncard/core@9.4.17
+    - @learncard/vc-plugin@1.4.13
+    - @learncard/crypto-plugin@1.1.17
 
 ## 1.1.17
 
 ### Patch Changes
 
--   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
-    -   @learncard/types@5.13.6
-    -   @learncard/core@9.4.16
-    -   @learncard/vc-plugin@1.4.12
-    -   @learncard/crypto-plugin@1.1.16
+- Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
+    - @learncard/types@5.13.6
+    - @learncard/core@9.4.16
+    - @learncard/vc-plugin@1.4.12
+    - @learncard/crypto-plugin@1.1.16
 
 ## 1.1.16
 
 ### Patch Changes
 
--   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564), [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
-    -   @learncard/types@5.13.5
-    -   @learncard/core@9.4.15
-    -   @learncard/vc-plugin@1.4.11
-    -   @learncard/crypto-plugin@1.1.15
+- Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`c38452f9678c17aa13c2f3f6d16056cc8f9c7564`](https://github.com/learningeconomy/LearnCard/commit/c38452f9678c17aa13c2f3f6d16056cc8f9c7564), [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    - @learncard/types@5.13.5
+    - @learncard/core@9.4.15
+    - @learncard/vc-plugin@1.4.11
+    - @learncard/crypto-plugin@1.1.15
 
 ## 1.1.15
 
 ### Patch Changes
 
--   Updated dependencies [[`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a)]:
-    -   @learncard/types@5.13.4
-    -   @learncard/core@9.4.14
-    -   @learncard/vc-plugin@1.4.10
-    -   @learncard/crypto-plugin@1.1.14
+- Updated dependencies [[`c68bed993c5304a667dc75d422a118858848737a`](https://github.com/learningeconomy/LearnCard/commit/c68bed993c5304a667dc75d422a118858848737a)]:
+    - @learncard/types@5.13.4
+    - @learncard/core@9.4.14
+    - @learncard/vc-plugin@1.4.10
+    - @learncard/crypto-plugin@1.1.14
 
 ## 1.1.14
 
 ### Patch Changes
 
--   Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
-    -   @learncard/types@5.13.3
-    -   @learncard/core@9.4.13
-    -   @learncard/vc-plugin@1.4.9
-    -   @learncard/crypto-plugin@1.1.13
+- Updated dependencies [[`fb6627b7fa3c4a07c83d4186619a937e6a83f369`](https://github.com/learningeconomy/LearnCard/commit/fb6627b7fa3c4a07c83d4186619a937e6a83f369)]:
+    - @learncard/types@5.13.3
+    - @learncard/core@9.4.13
+    - @learncard/vc-plugin@1.4.9
+    - @learncard/crypto-plugin@1.1.13
 
 ## 1.1.13
 
 ### Patch Changes
 
--   Updated dependencies [[`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8), [`fce9d2fd32898cfc64c59b88ca644dea3b53d1a5`](https://github.com/learningeconomy/LearnCard/commit/fce9d2fd32898cfc64c59b88ca644dea3b53d1a5)]:
-    -   @learncard/types@5.13.2
-    -   @learncard/core@9.4.12
-    -   @learncard/vc-plugin@1.4.8
-    -   @learncard/crypto-plugin@1.1.12
+- Updated dependencies [[`bba1f735e107d9cc86880e9f869413bc7072bff8`](https://github.com/learningeconomy/LearnCard/commit/bba1f735e107d9cc86880e9f869413bc7072bff8), [`fce9d2fd32898cfc64c59b88ca644dea3b53d1a5`](https://github.com/learningeconomy/LearnCard/commit/fce9d2fd32898cfc64c59b88ca644dea3b53d1a5)]:
+    - @learncard/types@5.13.2
+    - @learncard/core@9.4.12
+    - @learncard/vc-plugin@1.4.8
+    - @learncard/crypto-plugin@1.1.12
 
 ## 1.1.12
 
 ### Patch Changes
 
--   Updated dependencies [[`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2), [`fe4a1a265132271860460b8121e28ec0eacf4cb0`](https://github.com/learningeconomy/LearnCard/commit/fe4a1a265132271860460b8121e28ec0eacf4cb0)]:
-    -   @learncard/types@5.13.1
-    -   @learncard/core@9.4.11
-    -   @learncard/vc-plugin@1.4.7
-    -   @learncard/crypto-plugin@1.1.11
+- Updated dependencies [[`c83e3de987c11a6d95deec31c1fdb2401a990db2`](https://github.com/learningeconomy/LearnCard/commit/c83e3de987c11a6d95deec31c1fdb2401a990db2), [`fe4a1a265132271860460b8121e28ec0eacf4cb0`](https://github.com/learningeconomy/LearnCard/commit/fe4a1a265132271860460b8121e28ec0eacf4cb0)]:
+    - @learncard/types@5.13.1
+    - @learncard/core@9.4.11
+    - @learncard/vc-plugin@1.4.7
+    - @learncard/crypto-plugin@1.1.11
 
 ## 1.1.11
 
 ### Patch Changes
 
--   Updated dependencies [[`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c)]:
-    -   @learncard/types@5.13.0
-    -   @learncard/core@9.4.10
-    -   @learncard/vc-plugin@1.4.6
-    -   @learncard/crypto-plugin@1.1.10
+- Updated dependencies [[`34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c`](https://github.com/learningeconomy/LearnCard/commit/34ced8d1c933ca7015dd1d3bd37b6b2ff847de3c)]:
+    - @learncard/types@5.13.0
+    - @learncard/core@9.4.10
+    - @learncard/vc-plugin@1.4.6
+    - @learncard/crypto-plugin@1.1.10
 
 ## 1.1.10
 
 ### Patch Changes
 
--   Updated dependencies [[`bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee`](https://github.com/learningeconomy/LearnCard/commit/bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee)]:
-    -   @learncard/types@5.12.3
-    -   @learncard/core@9.4.9
-    -   @learncard/vc-plugin@1.4.5
-    -   @learncard/crypto-plugin@1.1.9
+- Updated dependencies [[`bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee`](https://github.com/learningeconomy/LearnCard/commit/bf4f00306f64e701f3c9acee4c5f7438d3f3b6ee)]:
+    - @learncard/types@5.12.3
+    - @learncard/core@9.4.9
+    - @learncard/vc-plugin@1.4.5
+    - @learncard/crypto-plugin@1.1.9
 
 ## 1.1.9
 
 ### Patch Changes
 
--   Updated dependencies [[`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6), [`08a1c8a07501c2f426d16239c4b0551e518a7ed5`](https://github.com/learningeconomy/LearnCard/commit/08a1c8a07501c2f426d16239c4b0551e518a7ed5)]:
-    -   @learncard/types@5.12.2
-    -   @learncard/core@9.4.8
-    -   @learncard/vc-plugin@1.4.4
-    -   @learncard/crypto-plugin@1.1.8
+- Updated dependencies [[`495f2939cb6e4271cab0a88abea5105fb7e4f9b6`](https://github.com/learningeconomy/LearnCard/commit/495f2939cb6e4271cab0a88abea5105fb7e4f9b6), [`08a1c8a07501c2f426d16239c4b0551e518a7ed5`](https://github.com/learningeconomy/LearnCard/commit/08a1c8a07501c2f426d16239c4b0551e518a7ed5)]:
+    - @learncard/types@5.12.2
+    - @learncard/core@9.4.8
+    - @learncard/vc-plugin@1.4.4
+    - @learncard/crypto-plugin@1.1.8
 
 ## 1.1.8
 
 ### Patch Changes
 
--   Updated dependencies [[`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228)]:
-    -   @learncard/types@5.12.1
-    -   @learncard/core@9.4.7
-    -   @learncard/vc-plugin@1.4.3
-    -   @learncard/crypto-plugin@1.1.7
+- Updated dependencies [[`caf231b53707174ea49f0eb2b65885a36b3e7228`](https://github.com/learningeconomy/LearnCard/commit/caf231b53707174ea49f0eb2b65885a36b3e7228)]:
+    - @learncard/types@5.12.1
+    - @learncard/core@9.4.7
+    - @learncard/vc-plugin@1.4.3
+    - @learncard/crypto-plugin@1.1.7
 
 ## 1.1.7
 
 ### Patch Changes
 
--   Updated dependencies [[`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da)]:
-    -   @learncard/types@5.12.0
-    -   @learncard/core@9.4.6
-    -   @learncard/vc-plugin@1.4.2
-    -   @learncard/crypto-plugin@1.1.6
+- Updated dependencies [[`32e5cfacf499e9a68700170298040f3d313b38da`](https://github.com/learningeconomy/LearnCard/commit/32e5cfacf499e9a68700170298040f3d313b38da)]:
+    - @learncard/types@5.12.0
+    - @learncard/core@9.4.6
+    - @learncard/vc-plugin@1.4.2
+    - @learncard/crypto-plugin@1.1.6
 
 ## 1.1.6
 
 ### Patch Changes
 
--   Updated dependencies [[`d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9`](https://github.com/learningeconomy/LearnCard/commit/d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9)]:
-    -   @learncard/types@5.11.4
-    -   @learncard/core@9.4.5
-    -   @learncard/vc-plugin@1.4.1
-    -   @learncard/crypto-plugin@1.1.5
+- Updated dependencies [[`d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9`](https://github.com/learningeconomy/LearnCard/commit/d2bbcd71ac1af95da8328c6c0d9d7a84f69675b9)]:
+    - @learncard/types@5.11.4
+    - @learncard/core@9.4.5
+    - @learncard/vc-plugin@1.4.1
+    - @learncard/crypto-plugin@1.1.5
 
 ## 1.1.5
 
 ### Patch Changes
 
--   Updated dependencies [[`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309)]:
-    -   @learncard/vc-plugin@1.4.0
+- Updated dependencies [[`7e30fc7116411ba19a4889cfbf9fc71dd725c309`](https://github.com/learningeconomy/LearnCard/commit/7e30fc7116411ba19a4889cfbf9fc71dd725c309)]:
+    - @learncard/vc-plugin@1.4.0
 
 ## 1.1.4
 
 ### Patch Changes
 
--   Updated dependencies [[`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025)]:
-    -   @learncard/types@5.11.3
-    -   @learncard/core@9.4.4
-    -   @learncard/vc-plugin@1.3.4
-    -   @learncard/crypto-plugin@1.1.4
+- Updated dependencies [[`016b7edc231273aab962b89b4351a3e229fca025`](https://github.com/learningeconomy/LearnCard/commit/016b7edc231273aab962b89b4351a3e229fca025)]:
+    - @learncard/types@5.11.3
+    - @learncard/core@9.4.4
+    - @learncard/vc-plugin@1.3.4
+    - @learncard/crypto-plugin@1.1.4
 
 ## 1.1.3
 
 ### Patch Changes
 
--   Updated dependencies [[`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f)]:
-    -   @learncard/types@5.11.2
-    -   @learncard/core@9.4.3
-    -   @learncard/vc-plugin@1.3.3
-    -   @learncard/crypto-plugin@1.1.3
+- Updated dependencies [[`73865cc62ea292badb99fe41ca8b0f484a12728f`](https://github.com/learningeconomy/LearnCard/commit/73865cc62ea292badb99fe41ca8b0f484a12728f)]:
+    - @learncard/types@5.11.2
+    - @learncard/core@9.4.3
+    - @learncard/vc-plugin@1.3.3
+    - @learncard/crypto-plugin@1.1.3
 
 ## 1.1.2
 
 ### Patch Changes
 
--   Updated dependencies [[`f8e50b1e3ceafccde28bef859b2c8b220acb2b7d`](https://github.com/learningeconomy/LearnCard/commit/f8e50b1e3ceafccde28bef859b2c8b220acb2b7d)]:
-    -   @learncard/types@5.11.1
-    -   @learncard/core@9.4.2
-    -   @learncard/vc-plugin@1.3.2
-    -   @learncard/crypto-plugin@1.1.2
+- Updated dependencies [[`f8e50b1e3ceafccde28bef859b2c8b220acb2b7d`](https://github.com/learningeconomy/LearnCard/commit/f8e50b1e3ceafccde28bef859b2c8b220acb2b7d)]:
+    - @learncard/types@5.11.1
+    - @learncard/core@9.4.2
+    - @learncard/vc-plugin@1.3.2
+    - @learncard/crypto-plugin@1.1.2
 
 ## 1.1.1
 
 ### Patch Changes
 
--   Updated dependencies [[`3727c732ad54b4a8ccb89c6354291799e953c8ab`](https://github.com/learningeconomy/LearnCard/commit/3727c732ad54b4a8ccb89c6354291799e953c8ab), [`bb6749d4cd123ca1fcee8d6f657861ae77a614a2`](https://github.com/learningeconomy/LearnCard/commit/bb6749d4cd123ca1fcee8d6f657861ae77a614a2)]:
-    -   @learncard/types@5.11.0
-    -   @learncard/core@9.4.1
-    -   @learncard/vc-plugin@1.3.1
-    -   @learncard/crypto-plugin@1.1.1
+- Updated dependencies [[`3727c732ad54b4a8ccb89c6354291799e953c8ab`](https://github.com/learningeconomy/LearnCard/commit/3727c732ad54b4a8ccb89c6354291799e953c8ab), [`bb6749d4cd123ca1fcee8d6f657861ae77a614a2`](https://github.com/learningeconomy/LearnCard/commit/bb6749d4cd123ca1fcee8d6f657861ae77a614a2)]:
+    - @learncard/types@5.11.0
+    - @learncard/core@9.4.1
+    - @learncard/vc-plugin@1.3.1
+    - @learncard/crypto-plugin@1.1.1
 
 ## 1.1.0
 
 ### Minor Changes
 
--   [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
+- [#858](https://github.com/learningeconomy/LearnCard/pull/858) [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9) Thanks [@Custard7](https://github.com/Custard7)! - Upgrade build tooling (esbuild `0.27.1`) and migrate to Zod v4 + TypeScript `5.9.3` across the monorepo.
 
     This includes follow-up fixes for Zod v4 behavior and typing changes:
 
-    -   Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
-    -   Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
-    -   Allow `Infinity` for generational query inputs in brain-service routes.
-    -   Document running Vitest in non-watch mode (`bun run test -- run`).
+    - Update query validators to preserve runtime deep-partial semantics while keeping TypeScript inference compatible with `{}` defaults.
+    - Prevent `.partial()` + `.default()` from materializing omitted fields in permission updates (`canManageChildrenProfiles`).
+    - Allow `Infinity` for generational query inputs in brain-service routes.
+    - Document running Vitest in non-watch mode (`bun run test -- run`).
 
 ### Patch Changes
 
--   Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9), [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
-    -   @learncard/types@5.10.0
-    -   @learncard/core@9.4.0
-    -   @learncard/crypto-plugin@1.1.0
-    -   @learncard/vc-plugin@1.3.0
+- Updated dependencies [[`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9), [`279e0491c5f284f9343ef0c39f3c38cd76e608f9`](https://github.com/learningeconomy/LearnCard/commit/279e0491c5f284f9343ef0c39f3c38cd76e608f9)]:
+    - @learncard/types@5.10.0
+    - @learncard/core@9.4.0
+    - @learncard/crypto-plugin@1.1.0
+    - @learncard/vc-plugin@1.3.0
 
 ## 1.0.12
 
 ### Patch Changes
 
--   Updated dependencies [[`cb518c2f15b8257eb07fa2c606f52dd3304bc9ea`](https://github.com/learningeconomy/LearnCard/commit/cb518c2f15b8257eb07fa2c606f52dd3304bc9ea)]:
-    -   @learncard/types@5.9.2
-    -   @learncard/core@9.3.44
-    -   @learncard/vc-plugin@1.2.7
-    -   @learncard/crypto-plugin@1.0.55
+- Updated dependencies [[`cb518c2f15b8257eb07fa2c606f52dd3304bc9ea`](https://github.com/learningeconomy/LearnCard/commit/cb518c2f15b8257eb07fa2c606f52dd3304bc9ea)]:
+    - @learncard/types@5.9.2
+    - @learncard/core@9.3.44
+    - @learncard/vc-plugin@1.2.7
+    - @learncard/crypto-plugin@1.0.55
 
 ## 1.0.11
 
 ### Patch Changes
 
--   Updated dependencies [[`a8ba030d48e75094fd64cd3da0725c3c0f468cf2`](https://github.com/learningeconomy/LearnCard/commit/a8ba030d48e75094fd64cd3da0725c3c0f468cf2)]:
-    -   @learncard/types@5.9.1
-    -   @learncard/core@9.3.43
-    -   @learncard/vc-plugin@1.2.6
-    -   @learncard/crypto-plugin@1.0.54
+- Updated dependencies [[`a8ba030d48e75094fd64cd3da0725c3c0f468cf2`](https://github.com/learningeconomy/LearnCard/commit/a8ba030d48e75094fd64cd3da0725c3c0f468cf2)]:
+    - @learncard/types@5.9.1
+    - @learncard/core@9.3.43
+    - @learncard/vc-plugin@1.2.6
+    - @learncard/crypto-plugin@1.0.54
 
 ## 1.0.10
 
 ### Patch Changes
 
--   Updated dependencies [[`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357)]:
-    -   @learncard/types@5.9.0
-    -   @learncard/core@9.3.42
-    -   @learncard/vc-plugin@1.2.5
-    -   @learncard/crypto-plugin@1.0.53
+- Updated dependencies [[`f56a417dc005623e793945e19808d6d9a9193357`](https://github.com/learningeconomy/LearnCard/commit/f56a417dc005623e793945e19808d6d9a9193357)]:
+    - @learncard/types@5.9.0
+    - @learncard/core@9.3.42
+    - @learncard/vc-plugin@1.2.5
+    - @learncard/crypto-plugin@1.0.53
 
 ## 1.0.9
 
 ### Patch Changes
 
--   Updated dependencies [[`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959)]:
-    -   @learncard/types@5.8.11
-    -   @learncard/core@9.3.41
-    -   @learncard/vc-plugin@1.2.4
-    -   @learncard/crypto-plugin@1.0.52
+- Updated dependencies [[`5fbc434308423d97db4fc8cf63898ed8f8980959`](https://github.com/learningeconomy/LearnCard/commit/5fbc434308423d97db4fc8cf63898ed8f8980959)]:
+    - @learncard/types@5.8.11
+    - @learncard/core@9.3.41
+    - @learncard/vc-plugin@1.2.4
+    - @learncard/crypto-plugin@1.0.52
 
 ## 1.0.8
 
 ### Patch Changes
 
--   Updated dependencies [[`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e)]:
-    -   @learncard/types@5.8.9
-    -   @learncard/core@9.3.40
-    -   @learncard/vc-plugin@1.2.3
-    -   @learncard/crypto-plugin@1.0.51
+- Updated dependencies [[`9d8e71a4e4ca97c004d0d639fcc2869bc008b67e`](https://github.com/learningeconomy/LearnCard/commit/9d8e71a4e4ca97c004d0d639fcc2869bc008b67e)]:
+    - @learncard/types@5.8.9
+    - @learncard/core@9.3.40
+    - @learncard/vc-plugin@1.2.3
+    - @learncard/crypto-plugin@1.0.51
 
 ## 1.0.7
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/vc-plugin@1.2.2
+- Updated dependencies []:
+    - @learncard/vc-plugin@1.2.2
 
 ## 1.0.6
 
 ### Patch Changes
 
--   Updated dependencies [[`8c3f9ad3846c57b0442b5a09c74ee63323e47c34`](https://github.com/learningeconomy/LearnCard/commit/8c3f9ad3846c57b0442b5a09c74ee63323e47c34)]:
-    -   @learncard/types@5.8.7
-    -   @learncard/core@9.3.39
-    -   @learncard/vc-plugin@1.2.1
-    -   @learncard/crypto-plugin@1.0.50
+- Updated dependencies [[`8c3f9ad3846c57b0442b5a09c74ee63323e47c34`](https://github.com/learningeconomy/LearnCard/commit/8c3f9ad3846c57b0442b5a09c74ee63323e47c34)]:
+    - @learncard/types@5.8.7
+    - @learncard/core@9.3.39
+    - @learncard/vc-plugin@1.2.1
+    - @learncard/crypto-plugin@1.0.50
 
 ## 1.0.5
 
 ### Patch Changes
 
--   Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
-    -   @learncard/vc-plugin@1.2.0
+- Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
+    - @learncard/vc-plugin@1.2.0
 
 ## 1.0.4
 
 ### Patch Changes
 
--   Updated dependencies [[`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3), [`beb9c54789a2f48b06e1f82082e1dd51eab6b51d`](https://github.com/learningeconomy/LearnCard/commit/beb9c54789a2f48b06e1f82082e1dd51eab6b51d)]:
-    -   @learncard/types@5.8.6
-    -   @learncard/vc-plugin@1.1.60
-    -   @learncard/core@9.3.38
-    -   @learncard/crypto-plugin@1.0.49
+- Updated dependencies [[`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3), [`beb9c54789a2f48b06e1f82082e1dd51eab6b51d`](https://github.com/learningeconomy/LearnCard/commit/beb9c54789a2f48b06e1f82082e1dd51eab6b51d)]:
+    - @learncard/types@5.8.6
+    - @learncard/vc-plugin@1.1.60
+    - @learncard/core@9.3.38
+    - @learncard/crypto-plugin@1.0.49
 
 ## 1.0.3
 
 ### Patch Changes
 
--   Updated dependencies [[`00c5403c2932185290ae4e226ca4bf446a1d636c`](https://github.com/learningeconomy/LearnCard/commit/00c5403c2932185290ae4e226ca4bf446a1d636c)]:
-    -   @learncard/types@5.8.5
-    -   @learncard/core@9.3.37
-    -   @learncard/vc-plugin@1.1.59
-    -   @learncard/crypto-plugin@1.0.48
+- Updated dependencies [[`00c5403c2932185290ae4e226ca4bf446a1d636c`](https://github.com/learningeconomy/LearnCard/commit/00c5403c2932185290ae4e226ca4bf446a1d636c)]:
+    - @learncard/types@5.8.5
+    - @learncard/core@9.3.37
+    - @learncard/vc-plugin@1.1.59
+    - @learncard/crypto-plugin@1.0.48
 
 ## 1.0.2
 
 ### Patch Changes
 
--   Updated dependencies [[`3707252bea0526aed3c17f0501ec3275e162f6bb`](https://github.com/learningeconomy/LearnCard/commit/3707252bea0526aed3c17f0501ec3275e162f6bb)]:
-    -   @learncard/types@5.8.4
-    -   @learncard/core@9.3.36
-    -   @learncard/vc-plugin@1.1.58
-    -   @learncard/crypto-plugin@1.0.47
+- Updated dependencies [[`3707252bea0526aed3c17f0501ec3275e162f6bb`](https://github.com/learningeconomy/LearnCard/commit/3707252bea0526aed3c17f0501ec3275e162f6bb)]:
+    - @learncard/types@5.8.4
+    - @learncard/core@9.3.36
+    - @learncard/vc-plugin@1.1.58
+    - @learncard/crypto-plugin@1.0.47
 
 ## 1.0.1
 
 ### Patch Changes
 
--   [#786](https://github.com/learningeconomy/LearnCard/pull/786) [`632f516a38aed4397f68abecc89cd7c6c6fa5fcf`](https://github.com/learningeconomy/LearnCard/commit/632f516a38aed4397f68abecc89cd7c6c6fa5fcf) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1293] - feat: Add OpenBadgeV2 SDK Plugin
+- [#786](https://github.com/learningeconomy/LearnCard/pull/786) [`632f516a38aed4397f68abecc89cd7c6c6fa5fcf`](https://github.com/learningeconomy/LearnCard/commit/632f516a38aed4397f68abecc89cd7c6c6fa5fcf) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1293] - feat: Add OpenBadgeV2 SDK Plugin
