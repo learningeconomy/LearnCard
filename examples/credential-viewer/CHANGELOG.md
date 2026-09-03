@@ -1,214 +1,227 @@
 # @learncard/credential-viewer
 
+## 0.0.24
+
+### Patch Changes
+
+- [#1499](https://github.com/learningeconomy/LearnCard/pull/1499) [`46bf069131fd108ce24e0696712eae79eda28a93`](https://github.com/learningeconomy/LearnCard/commit/46bf069131fd108ce24e0696712eae79eda28a93) Thanks [@goblincore](https://github.com/goblincore)! - LC-1879: Add SD-JWT VC fixtures and viewer materialization
+
+- Updated dependencies [[`127eec62c5756b6f737028fa2e6a5e2277dc647a`](https://github.com/learningeconomy/LearnCard/commit/127eec62c5756b6f737028fa2e6a5e2277dc647a), [`46bf069131fd108ce24e0696712eae79eda28a93`](https://github.com/learningeconomy/LearnCard/commit/46bf069131fd108ce24e0696712eae79eda28a93)]:
+    - @learncard/types@5.18.3
+    - @learncard/credential-library@2.0.0
+    - @learncard/init@2.4.13
+    - @learncard/lca-api-plugin@2.0.2
+    - @learncard/sd-jwt-vc-plugin@0.2.10
+
 ## 0.0.23
 
 ### Patch Changes
 
--   Updated dependencies [[`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e)]:
-    -   @learncard/types@5.18.2
-    -   @learncard/credential-library@1.0.17
-    -   @learncard/init@2.4.12
-    -   @learncard/lca-api-plugin@2.0.1
+- Updated dependencies [[`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e)]:
+    - @learncard/types@5.18.2
+    - @learncard/credential-library@1.0.17
+    - @learncard/init@2.4.12
+    - @learncard/lca-api-plugin@2.0.1
 
 ## 0.0.22
 
 ### Patch Changes
 
--   Updated dependencies [[`7c4bebd5aa638a99835b575b6afb995f14fd3c68`](https://github.com/learningeconomy/LearnCard/commit/7c4bebd5aa638a99835b575b6afb995f14fd3c68)]:
-    -   @learncard/credential-library@1.0.16
+- Updated dependencies [[`7c4bebd5aa638a99835b575b6afb995f14fd3c68`](https://github.com/learningeconomy/LearnCard/commit/7c4bebd5aa638a99835b575b6afb995f14fd3c68)]:
+    - @learncard/credential-library@1.0.16
 
 ## 0.0.21
 
 ### Patch Changes
 
--   Updated dependencies [[`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575)]:
-    -   @learncard/lca-api-plugin@2.0.0
-    -   @learncard/init@2.4.11
-    -   @learncard/credential-library@1.0.15
+- Updated dependencies [[`7427cf62082e753eeeaa815f392b6fac39315575`](https://github.com/learningeconomy/LearnCard/commit/7427cf62082e753eeeaa815f392b6fac39315575)]:
+    - @learncard/lca-api-plugin@2.0.0
+    - @learncard/init@2.4.11
+    - @learncard/credential-library@1.0.15
 
 ## 0.0.20
 
 ### Patch Changes
 
--   Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4)]:
-    -   @learncard/credential-library@1.0.15
-    -   @learncard/types@5.18.1
-    -   @learncard/init@2.4.10
-    -   @learncard/simple-signing-plugin@1.1.34
+- Updated dependencies [[`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4)]:
+    - @learncard/credential-library@1.0.15
+    - @learncard/types@5.18.1
+    - @learncard/init@2.4.10
+    - @learncard/simple-signing-plugin@1.1.34
 
 ## 0.0.19
 
 ### Patch Changes
 
--   Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24), [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158)]:
-    -   @learncard/types@5.18.0
-    -   @learncard/credential-library@1.0.14
-    -   @learncard/init@2.4.9
-    -   @learncard/simple-signing-plugin@1.1.33
+- Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24), [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158)]:
+    - @learncard/types@5.18.0
+    - @learncard/credential-library@1.0.14
+    - @learncard/init@2.4.9
+    - @learncard/simple-signing-plugin@1.1.33
 
 ## 0.0.18
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/init@2.4.8
-    -   @learncard/credential-library@1.0.13
+- Updated dependencies []:
+    - @learncard/init@2.4.8
+    - @learncard/credential-library@1.0.13
 
 ## 0.0.17
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/simple-signing-plugin@1.1.32
-    -   @learncard/init@2.4.7
-    -   @learncard/credential-library@1.0.13
+- Updated dependencies []:
+    - @learncard/simple-signing-plugin@1.1.32
+    - @learncard/init@2.4.7
+    - @learncard/credential-library@1.0.13
 
 ## 0.0.16
 
 ### Patch Changes
 
--   Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
-    -   @learncard/types@5.17.6
-    -   @learncard/credential-library@1.0.13
-    -   @learncard/init@2.4.6
-    -   @learncard/simple-signing-plugin@1.1.31
+- Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    - @learncard/types@5.17.6
+    - @learncard/credential-library@1.0.13
+    - @learncard/init@2.4.6
+    - @learncard/simple-signing-plugin@1.1.31
 
 ## 0.0.15
 
 ### Patch Changes
 
--   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
-    -   @learncard/init@2.4.5
-    -   @learncard/credential-library@1.0.12
-    -   @learncard/simple-signing-plugin@1.1.30
+- Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    - @learncard/init@2.4.5
+    - @learncard/credential-library@1.0.12
+    - @learncard/simple-signing-plugin@1.1.30
 
 ## 0.0.14
 
 ### Patch Changes
 
--   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
-    -   @learncard/credential-library@1.0.11
-    -   @learncard/init@2.4.4
-    -   @learncard/types@5.17.5
-    -   @learncard/simple-signing-plugin@1.1.29
+- Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930), [`8bcccce23f919e9bcd0d22d87e7d33242b557930`](https://github.com/learningeconomy/LearnCard/commit/8bcccce23f919e9bcd0d22d87e7d33242b557930)]:
+    - @learncard/credential-library@1.0.11
+    - @learncard/init@2.4.4
+    - @learncard/types@5.17.5
+    - @learncard/simple-signing-plugin@1.1.29
 
 ## 0.0.13
 
 ### Patch Changes
 
--   Updated dependencies [[`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
-    -   @learncard/types@5.17.4
-    -   @learncard/credential-library@1.0.10
-    -   @learncard/init@2.4.3
-    -   @learncard/simple-signing-plugin@1.1.28
+- Updated dependencies [[`7a60dec7c32d19b2a3120b949eadc5770926f354`](https://github.com/learningeconomy/LearnCard/commit/7a60dec7c32d19b2a3120b949eadc5770926f354), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    - @learncard/types@5.17.4
+    - @learncard/credential-library@1.0.10
+    - @learncard/init@2.4.3
+    - @learncard/simple-signing-plugin@1.1.28
 
 ## 0.0.12
 
 ### Patch Changes
 
--   Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
-    -   @learncard/types@5.17.3
-    -   @learncard/credential-library@1.0.9
-    -   @learncard/init@2.4.2
-    -   @learncard/simple-signing-plugin@1.1.27
+- Updated dependencies [[`05fc8f650d9e3348232ddc5517a5c39e94b4f52f`](https://github.com/learningeconomy/LearnCard/commit/05fc8f650d9e3348232ddc5517a5c39e94b4f52f)]:
+    - @learncard/types@5.17.3
+    - @learncard/credential-library@1.0.9
+    - @learncard/init@2.4.2
+    - @learncard/simple-signing-plugin@1.1.27
 
 ## 0.0.11
 
 ### Patch Changes
 
--   Updated dependencies [[`ee40d1ed82a153c30425c2c2e836c56da781b1c6`](https://github.com/learningeconomy/LearnCard/commit/ee40d1ed82a153c30425c2c2e836c56da781b1c6), [`49c3f178b72adc423f10d5362af4d74dbe04f521`](https://github.com/learningeconomy/LearnCard/commit/49c3f178b72adc423f10d5362af4d74dbe04f521)]:
-    -   @learncard/init@2.4.1
-    -   @learncard/credential-library@1.0.8
+- Updated dependencies [[`ee40d1ed82a153c30425c2c2e836c56da781b1c6`](https://github.com/learningeconomy/LearnCard/commit/ee40d1ed82a153c30425c2c2e836c56da781b1c6), [`49c3f178b72adc423f10d5362af4d74dbe04f521`](https://github.com/learningeconomy/LearnCard/commit/49c3f178b72adc423f10d5362af4d74dbe04f521)]:
+    - @learncard/init@2.4.1
+    - @learncard/credential-library@1.0.8
 
 ## 0.0.10
 
 ### Patch Changes
 
--   Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083)]:
-    -   @learncard/types@5.17.2
-    -   @learncard/init@2.4.0
-    -   @learncard/credential-library@1.0.8
-    -   @learncard/simple-signing-plugin@1.1.26
+- Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083)]:
+    - @learncard/types@5.17.2
+    - @learncard/init@2.4.0
+    - @learncard/credential-library@1.0.8
+    - @learncard/simple-signing-plugin@1.1.26
 
 ## 0.0.9
 
 ### Patch Changes
 
--   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2), [`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
-    -   @learncard/init@2.3.21
-    -   @learncard/types@5.17.1
-    -   @learncard/credential-library@1.0.7
-    -   @learncard/simple-signing-plugin@1.1.25
+- Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2), [`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    - @learncard/init@2.3.21
+    - @learncard/types@5.17.1
+    - @learncard/credential-library@1.0.7
+    - @learncard/simple-signing-plugin@1.1.25
 
 ## 0.0.8
 
 ### Patch Changes
 
--   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3)]:
-    -   @learncard/types@5.17.0
-    -   @learncard/init@2.3.20
-    -   @learncard/credential-library@1.0.6
-    -   @learncard/simple-signing-plugin@1.1.24
+- Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278), [`406f5f64ff49aaecbf8cb499a7f6b294c7105cc3`](https://github.com/learningeconomy/LearnCard/commit/406f5f64ff49aaecbf8cb499a7f6b294c7105cc3)]:
+    - @learncard/types@5.17.0
+    - @learncard/init@2.3.20
+    - @learncard/credential-library@1.0.6
+    - @learncard/simple-signing-plugin@1.1.24
 
 ## 0.0.7
 
 ### Patch Changes
 
--   Updated dependencies [[`3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b`](https://github.com/learningeconomy/LearnCard/commit/3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
-    -   @learncard/credential-library@1.0.5
-    -   @learncard/types@5.16.0
-    -   @learncard/init@2.3.19
-    -   @learncard/simple-signing-plugin@1.1.23
+- Updated dependencies [[`3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b`](https://github.com/learningeconomy/LearnCard/commit/3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b), [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b)]:
+    - @learncard/credential-library@1.0.5
+    - @learncard/types@5.16.0
+    - @learncard/init@2.3.19
+    - @learncard/simple-signing-plugin@1.1.23
 
 ## 0.0.6
 
 ### Patch Changes
 
--   Updated dependencies [[`b7ac1ec2432501b112748f5285fd83a2de1de344`](https://github.com/learningeconomy/LearnCard/commit/b7ac1ec2432501b112748f5285fd83a2de1de344), [`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
-    -   @learncard/init@2.3.18
-    -   @learncard/types@5.15.0
-    -   @learncard/credential-library@1.0.4
-    -   @learncard/simple-signing-plugin@1.1.22
+- Updated dependencies [[`b7ac1ec2432501b112748f5285fd83a2de1de344`](https://github.com/learningeconomy/LearnCard/commit/b7ac1ec2432501b112748f5285fd83a2de1de344), [`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
+    - @learncard/init@2.3.18
+    - @learncard/types@5.15.0
+    - @learncard/credential-library@1.0.4
+    - @learncard/simple-signing-plugin@1.1.22
 
 ## 0.0.5
 
 ### Patch Changes
 
--   Updated dependencies []:
-    -   @learncard/credential-library@1.0.3
-    -   @learncard/init@2.3.16
-    -   @learncard/simple-signing-plugin@1.1.21
+- Updated dependencies []:
+    - @learncard/credential-library@1.0.3
+    - @learncard/init@2.3.16
+    - @learncard/simple-signing-plugin@1.1.21
 
 ## 0.0.4
 
 ### Patch Changes
 
--   [#1150](https://github.com/learningeconomy/LearnCard/pull/1150) [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 3 directories with 6 updates
+- [#1150](https://github.com/learningeconomy/LearnCard/pull/1150) [`66979075bf3a39fe76435f31bdc582f7f25009c0`](https://github.com/learningeconomy/LearnCard/commit/66979075bf3a39fe76435f31bdc582f7f25009c0) Thanks [@dependabot](https://github.com/apps/dependabot)! - chore(deps): bump the npm_and_yarn group across 3 directories with 6 updates
 
--   Updated dependencies [[`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02)]:
-    -   @learncard/types@5.14.0
-    -   @learncard/credential-library@1.0.3
-    -   @learncard/init@2.3.15
-    -   @learncard/simple-signing-plugin@1.1.20
+- Updated dependencies [[`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02), [`da8b402d78db16c52dfc651275df31a22d634b02`](https://github.com/learningeconomy/LearnCard/commit/da8b402d78db16c52dfc651275df31a22d634b02)]:
+    - @learncard/types@5.14.0
+    - @learncard/credential-library@1.0.3
+    - @learncard/init@2.3.15
+    - @learncard/simple-signing-plugin@1.1.20
 
 ## 0.0.3
 
 ### Patch Changes
 
--   Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
-    -   @learncard/types@5.13.6
-    -   @learncard/credential-library@1.0.2
-    -   @learncard/init@2.3.14
-    -   @learncard/simple-signing-plugin@1.1.19
+- Updated dependencies [[`70ced8498dae6384f0f82a619fa1a02b878c972f`](https://github.com/learningeconomy/LearnCard/commit/70ced8498dae6384f0f82a619fa1a02b878c972f), [`8e408e48f89db234bcb7d357787a0faf3a605488`](https://github.com/learningeconomy/LearnCard/commit/8e408e48f89db234bcb7d357787a0faf3a605488)]:
+    - @learncard/types@5.13.6
+    - @learncard/credential-library@1.0.2
+    - @learncard/init@2.3.14
+    - @learncard/simple-signing-plugin@1.1.19
 
 ## 0.0.2
 
 ### Patch Changes
 
--   [#1138](https://github.com/learningeconomy/LearnCard/pull/1138) [`4f78962bb540b55c5c7146d5aa1319ac7b79e273`](https://github.com/learningeconomy/LearnCard/commit/4f78962bb540b55c5c7146d5aa1319ac7b79e273) Thanks [@Custard7](https://github.com/Custard7)! - feat: Credential Library & Viewer
+- [#1138](https://github.com/learningeconomy/LearnCard/pull/1138) [`4f78962bb540b55c5c7146d5aa1319ac7b79e273`](https://github.com/learningeconomy/LearnCard/commit/4f78962bb540b55c5c7146d5aa1319ac7b79e273) Thanks [@Custard7](https://github.com/Custard7)! - feat: Credential Library & Viewer
 
--   Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
-    -   @learncard/types@5.13.5
-    -   @learncard/credential-library@1.0.1
-    -   @learncard/init@2.3.13
-    -   @learncard/simple-signing-plugin@1.1.18
+- Updated dependencies [[`80943eba1b9451406f9e465e405fb7d785f5a43d`](https://github.com/learningeconomy/LearnCard/commit/80943eba1b9451406f9e465e405fb7d785f5a43d), [`4250d4814b6f38fc9ed9982a94bcfb830ea36edc`](https://github.com/learningeconomy/LearnCard/commit/4250d4814b6f38fc9ed9982a94bcfb830ea36edc), [`68f8cfec63fa16f654a451efa120faa95dd5f362`](https://github.com/learningeconomy/LearnCard/commit/68f8cfec63fa16f654a451efa120faa95dd5f362)]:
+    - @learncard/types@5.13.5
+    - @learncard/credential-library@1.0.1
+    - @learncard/init@2.3.13
+    - @learncard/simple-signing-plugin@1.1.18
