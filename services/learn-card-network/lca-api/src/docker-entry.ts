@@ -49,6 +49,7 @@ server.register(fastifyCors, {
         'Authorization',
         'X-Tenant-Id',
         'X-Guardian-Approval',
+        'X-Auth-Token',
         'baggage',
         'sentry-trace',
     ],
