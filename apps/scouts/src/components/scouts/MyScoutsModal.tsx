@@ -306,7 +306,12 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
                 const setupMethod = canSetup
                     ? async (
-                          input: { method: string; password?: string; did?: string },
+                          input: {
+                              method: string;
+                              password?: string;
+                              did?: string;
+                              email?: string;
+                          },
                           authUser?: unknown
                       ) => {
                           let token: string;
@@ -321,10 +326,16 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
                           const providerType = contextAuthProvider.getProviderType();
 
-                          const signVp = async (pk: string): Promise<string> => {
+                          const signVp = async (
+                              pk: string,
+                              challenge?: string
+                          ): Promise<string> => {
                               const lc = await getSigningLearnCard(pk);
 
-                              const jwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+                              const jwt = await lc.invoke.getDidAuthVp({
+                                  proofFormat: 'jwt',
+                                  challenge,
+                              });
 
                               if (!jwt || typeof jwt !== 'string')
                                   throw new Error('Failed to sign DID-Auth VP');
@@ -361,13 +372,34 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
                 const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
                     const lc = await getSigningLearnCard(currentUser.privateKey!);
-                    const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+                    const did = lc.id.did();
+                    const signVp = async (
+                        privateKey: string,
+                        challenge?: string
+                    ): Promise<string> => {
+                        const signingLc = await getSigningLearnCard(privateKey);
+                        const jwt = await signingLc.invoke.getDidAuthVp({
+                            proofFormat: 'jwt',
+                            challenge,
+                        });
+
+                        if (!jwt || typeof jwt !== 'string') {
+                            throw new Error('Failed to sign DID-Auth VP');
+                        }
+
+                        return jwt;
+                    };
+                    const vpJwt = keyDerivation.getFreshDidAuthVp
+                        ? await keyDerivation.getFreshDidAuthVp(
+                              currentUser.privateKey!,
+                              did,
+                              signVp
+                          )
+                        : await signVp(currentUser.privateKey!);
 
                     return {
                         'Content-Type': 'application/json',
-                        ...(vpJwt && typeof vpJwt === 'string'
-                            ? { Authorization: `Bearer ${vpJwt}` }
-                            : {}),
+                        Authorization: `Bearer ${vpJwt}`,
                     };
                 };
 
@@ -459,9 +491,9 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                         }}
                         onSetupEmailRecovery={
                             setupMethod
-                                ? async () => {
+                                ? async email => {
                                       const authUser = await contextAuthProvider.getCurrentUser();
-                                      await setupMethod({ method: 'email' }, authUser);
+                                      await setupMethod({ method: 'email', email }, authUser);
                                   }
                                 : requireAuth
                         }
