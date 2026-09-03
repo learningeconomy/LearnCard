@@ -346,8 +346,8 @@ const result = await learnCard.invoke.send({
     recipient: userDID,
     contractUri: '${contractUri || 'YOUR_CONTRACT_URI'}',
     templateUri: '${templateUri || 'YOUR_TEMPLATE_URI'}',${
-                            integration.id ? `\n    integrationId: '${integration.id}',` : ''
-                        }
+        integration.id ? `\n    integrationId: '${integration.id}',` : ''
+    }
 });
 
 log.info('Credential sent:', result.credentialUri);`,
@@ -359,8 +359,8 @@ log.info('Credential sent:', result.credentialUri);`,
     "recipient": "did:web:...",
     "contractUri": "${contractUri || 'YOUR_CONTRACT_URI'}",
     "templateUri": "${templateUri || 'YOUR_TEMPLATE_URI'}"${
-                            integration.id ? `,\n    "integrationId": "${integration.id}"` : ''
-                        }
+        integration.id ? `,\n    "integrationId": "${integration.id}"` : ''
+    }
   }'`,
                     }}
                 />

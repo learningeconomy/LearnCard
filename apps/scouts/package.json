@@ -2,6 +2,10 @@
     "name": "scoutpass-app",
     "version": "1.90.31",
     "private": true,
+    "engines": {
+        "node": ">=24.12 <25"
+    },
+    "packageManager": "bun@1.3.14",
     "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",
         "@capacitor-firebase/analytics": "8.2.0",
@@ -95,6 +99,7 @@
         "use-immer": "^0.9.0",
         "uuid": "^14.0.0",
         "web-vitals": "^0.2.4",
+        "zod": "4.4.3",
         "zustand": "^3.7.2"
     },
     "scripts": {
@@ -104,7 +109,7 @@
         "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
         "lc": "bun scripts/lc.ts",
         "start": "vite",
-        "docker-start": "LCN_URL=http://localhost:4000/trpc LCN_API_URL=http://localhost:4000/api CLOUD_URL=http://localhost:4100/trpc LEARN_CLOUD_XAPI_URL=http://localhost:4100/xapi API_URL=http://localhost:5100/trpc VITE_SSS_SERVER_URL=/lca-api vite --host",
+        "docker-start": "VITE_NODE_ENV=development vite --host",
         "serve": "vite",
         "i18n:check-keys": "node scripts/check-i18n-keys.mjs",
         "check:i18n-imports": "node scripts/check-i18n-imports.mjs",
@@ -113,10 +118,10 @@
         "i18n:check-untranslated": "node scripts/check-i18n-untranslated.mjs",
         "i18n:check-ast": "node scripts/check-i18n-ast.mjs",
         "i18n:generate": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide",
-        "i18n:check-memos": "eslint --no-eslintrc --no-inline-config -c .eslintrc-i18n-memo.cjs --rulesdir eslint-rules --resolve-plugins-relative-to ../.. --ext .tsx,.ts src",
+        "i18n:check-memos": "eslint --no-inline-config --config eslint-i18n-memo.config.mjs src",
         "test:i18n": "vitest run src/i18n",
         "build": "NODE_OPTIONS=\"--max-old-space-size=4608\" vite build",
-        "docker-build": "VITE_DOCKER_SOURCE=true LCN_URL=http://localhost:4000/trpc CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc NODE_OPTIONS=\"--max-old-space-size=8192\" vite build -d",
+        "docker-build": "VITE_DOCKER_SOURCE=true VITE_NODE_ENV=development NODE_OPTIONS=\"--max-old-space-size=8192\" vite build -d",
         "test": "NODE_OPTIONS=--no-experimental-webstorage vitest run --config vitest.config.ts",
         "test:watch": "NODE_OPTIONS=--no-experimental-webstorage vitest --config vitest.config.ts",
         "test:coverage": "NODE_OPTIONS=--no-experimental-webstorage vitest run --coverage --config vitest.config.ts",
@@ -135,14 +140,8 @@
         "ionic:serve": "vite",
         "appflow:install": "bun install --ignore-scripts --frozen-lockfile && bunx nx build scouts",
         "preview": "vite preview --port=3000",
-        "build-and-open-android-app": "SENTRY_ENV='scouts-production', SENTRY_DSN='https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.sentry.io/4505432118984704' bun install --frozen-lockfile && bun run build && bunx cap sync && bunx cap open android",
-        "build-and-open-ios-app": "SENTRY_ENV='scouts-production', SENTRY_DSN='https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.sentry.io/4505432118984704' bun install --frozen-lockfile && bun run build && bunx cap sync && bunx cap open ios"
-    },
-    "eslintConfig": {
-        "extends": [
-            "react-app",
-            "react-app/jest"
-        ]
+        "build-and-open-android-app": "VITE_NODE_ENV=production bun install --frozen-lockfile && bun run build && bunx cap sync && bunx cap open android",
+        "build-and-open-ios-app": "VITE_NODE_ENV=production bun install --frozen-lockfile && bun run build && bunx cap sync && bunx cap open ios"
     },
     "browserslist": {
         "production": [
@@ -159,7 +158,7 @@
     "devDependencies": {
         "@capacitor/cli": "^8.3.1",
         "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-        "@inlang/paraglide-js": "^2.18.1",
+        "@inlang/paraglide-js": "2.20.2",
         "@ionic/cli": "^7.2.1",
         "@playwright/test": "^1.51.0",
         "@tailwindcss/line-clamp": "^0.4.4",

@@ -1,5 +1,6 @@
 /// <reference path="../global.d.ts" />
 
+import { environment } from '@environment';
 import Redis, { RedisValue, RedisKey } from 'ioredis';
 import MemoryRedis, { Redis as RedisMockType } from 'ioredis-mock';
 
@@ -228,15 +229,14 @@ export const getCache = (): Cache => {
     };
 
     try {
-        const { REDIS_HOST: url, REDIS_PORT: _port } = process.env;
-        const port = parseInt(_port ?? '');
+        const { REDIS_HOST: host, REDIS_PORT: port } = environment;
 
-        if (url && !Number.isNaN(port)) {
+        if (host && port) {
             console.info('Setting up Redis-backed cache');
 
             cache.redis = new Redis({
-                host: url,
-                port: port,
+                host,
+                port,
                 retryStrategy: (times: number) => Math.min(times * 50, 2000),
                 enableAutoPipelining: true,
             });

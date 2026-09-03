@@ -4,6 +4,7 @@ import { isLocalhost } from 'learn-card-base';
 
 import SpilledCup from '../../svgs/SpilledCup';
 import { getLogger } from '../../logging/logger';
+import { isProductionEnvironment } from '../../config/isProduction';
 const log = getLogger('generic-error-boundary');
 
 type ErrorFallbackProps = {
@@ -19,7 +20,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
     hideGoHome = false,
     extraButtons,
 }) => {
-    const showError = process.env.NODE_ENV === 'development' || isLocalhost;
+    const showError = !isProductionEnvironment() || isLocalhost;
 
     return (
         <div className="text-grayscale-900 h-full w-full flex flex-col gap-[50px] items-center justify-center p-4">

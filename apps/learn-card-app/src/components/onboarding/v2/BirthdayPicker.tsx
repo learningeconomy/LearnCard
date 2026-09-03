@@ -260,8 +260,8 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
             type === 'month'
                 ? m['onboarding.dobMonth']()
                 : type === 'day'
-                ? m['onboarding.dobDay']()
-                : m['onboarding.dobYear']();
+                  ? m['onboarding.dobDay']()
+                  : m['onboarding.dobYear']();
         return (
             <div
                 ref={ref}

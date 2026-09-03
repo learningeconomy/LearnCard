@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { isHex, RegExpTransformer } from '../src';
+import { isHex, isVC2Format, RegExpTransformer } from '../src';
 
 describe('isHex', () => {
     it('should accept valid hex', () => expect(isHex('123')).toBe(true));
@@ -16,6 +16,18 @@ describe('isHex', () => {
 
     it('should accept long strings', () => {
         expect(isHex('abc1230123456789abcdeffedcba9876543210'.repeat(20))).toBe(true);
+    });
+});
+
+describe('isVC2Format', () => {
+    it('detects VC 2.0 array and string contexts', () => {
+        expect(isVC2Format({ '@context': ['https://www.w3.org/ns/credentials/v2'] })).toBe(true);
+        expect(isVC2Format({ '@context': 'https://www.w3.org/ns/credentials/v2' })).toBe(true);
+    });
+
+    it('rejects encrypted and non-credential values', () => {
+        expect(isVC2Format({ ciphertext: 'encrypted' })).toBe(false);
+        expect(isVC2Format(undefined)).toBe(false);
     });
 });
 
