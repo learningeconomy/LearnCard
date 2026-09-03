@@ -172,3 +172,4 @@
 - [ScoutPass](apps/scouts/README.md)
 - [Contributing](development/contributing.md)
 - [Roadmap](https://roadmap.learncard.com/)
+- [Changelog](https://roadmap.learncard.com/changelog)

@@ -61,12 +61,8 @@ Whether you're building a web app, mobile experience, backend service, or bot, L
 
 This stack was built by developers, for developers. It supports open standards and real-world interoperability from day one. We’re glad you’re here—let’s build a more learner-friendly future together.
 
-### Questions or Feedback?
+### Get Help
 
-The best way to start engaging in the community is to participate in our [Github Discussions](https://github.com/learningeconomy/LearnCard/discussions):&#x20;
-
-- [Post a Feature Request ](https://github.com/learningeconomy/LearnCard/discussions/categories/feature-requests)💡
-- [Ask for Help](https://github.com/learningeconomy/LearnCard/discussions/categories/help) 💖
-- [Show off your project to the community!](https://github.com/learningeconomy/LearnCard/discussions/categories/show-and-tell) 🙌
-
-Do you need custom development or technical support? Click [here](https://www.learningeconomy.io/contact), or send us an email at [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).
+- **Something broken?** [Open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) — bugs and technical questions live on GitHub, next to the code.
+- **Want a feature, or curious what's coming?** [Request and vote on the roadmap](https://roadmap.learncard.com) — and follow the [changelog](https://roadmap.learncard.com/changelog).
+- **Private or commercial question?** Email [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io) or [contact Learning Economy](https://www.learningeconomy.io/contact).

@@ -58,4 +58,4 @@ User opens your app in LearnCard
   → LearnCloud verifies VP, stores the statement
 ```
 
-Questions this page doesn't answer? [GitHub Discussions](https://github.com/learningeconomy/LearnCard/discussions/categories/help) or [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).
+Questions this page doesn't answer? [Open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) or email [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).
