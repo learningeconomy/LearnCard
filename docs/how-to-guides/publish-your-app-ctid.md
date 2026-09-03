@@ -1,6 +1,10 @@
-# Credential Registry ID (CTID) in CredentialBuilder
+---
+description: Give every credential your app issues a link to its public Credential Engine Registry entry.
+---
 
-This page documents how to link credentials to the Credential Engine Registry using CTID in the CredentialBuilder.
+# Link Credentials to the Credential Engine Registry (CTID)
+
+If your credential is listed in the [Credential Engine Registry](https://credentialengine.org/), add its CTID to your template in the Developer Portal so every credential you issue links back to the public registry entry. This is done in the credential template step of [publishing your app](publish-your-app.md).
 
 ## Overview
 
@@ -23,15 +27,15 @@ For example: `ce-12345678-1234-5678-9abc-def012345678`
 3. Scroll to **Additional Details**
 4. Find the **Credential Registry ID (CTID)** field
 5. Enter either:
-   - The CTID directly (e.g., `ce-12345678-1234-5678-9abc-def012345678`)
-   - A full Credential Finder URL (the CTID will be extracted automatically)
+    - The CTID directly (e.g., `ce-12345678-1234-5678-9abc-def012345678`)
+    - A full Credential Finder URL (the CTID will be extracted automatically)
 
 ### Supported Input Formats
 
-| Input | Example |
-|-------|---------|
-| CTID only | `ce-12345678-1234-5678-9abc-def012345678` |
-| Full URL | `https://credentialfinder.org/credential/ce-12345678-1234-5678-9abc-def012345678` |
+| Input     | Example                                                                           |
+| --------- | --------------------------------------------------------------------------------- |
+| CTID only | `ce-12345678-1234-5678-9abc-def012345678`                                         |
+| Full URL  | `https://credentialfinder.org/credential/ce-12345678-1234-5678-9abc-def012345678` |
 
 ## Generated Alignment Entry
 
@@ -39,12 +43,12 @@ When a CTID is present, `templateToJson()` generates an OBv3 alignment entry:
 
 ```json
 {
-  "type": ["Alignment"],
-  "targetName": "<achievement name>",
-  "targetUrl": "https://credentialfinder.org/credential/<ctid>",
-  "targetType": "ceterms:Credential",
-  "targetCode": "<ctid>",
-  "targetFramework": "Credential Engine Registry"
+    "type": ["Alignment"],
+    "targetName": "<achievement name>",
+    "targetUrl": "https://credentialfinder.org/credential/<ctid>",
+    "targetType": "ceterms:Credential",
+    "targetCode": "<ctid>",
+    "targetFramework": "Credential Engine Registry"
 }
 ```
 

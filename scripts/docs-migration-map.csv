@@ -1,11 +1,11 @@
 old_url,new_url,action,status
 .,.,keep,unchanged
-apps/apps,products-and-more/apps,moved,redirected
-apps/learn-card-app,products-and-more/learn-card-app,moved,redirected
-apps/learn-card-app/analytics,products-and-more/learn-card-app/analytics,moved,redirected
-apps/learn-card-app/resume-builder-ler-rs-mapping,products-and-more/learn-card-app,internal,redirected
-apps/scouts,products-and-more/scouts,moved,redirected
-apps/scouts/credential-revocation,products-and-more/scouts/credential-revocation,moved,redirected
+apps/apps,products/apps,moved,redirected
+apps/learn-card-app,products/learn-card-app,moved,redirected
+apps/learn-card-app/analytics,products/learn-card-app,internal,redirected
+apps/learn-card-app/resume-builder-ler-rs-mapping,products/learn-card-app,internal,redirected
+apps/scouts,products/scouts,moved,redirected
+apps/scouts/credential-revocation,understand/credentials-and-data/credential-status-and-bitstring-status-lists,internal,redirected
 core-concepts/architecture-and-principles,understand/architecture-and-principles,moved,redirected
 core-concepts/architecture-and-principles/auth-coordinator,understand/architecture-and-principles/auth-coordinator,moved,redirected
 core-concepts/architecture-and-principles/auth-grants-and-api-tokens,understand/architecture-and-principles/auth-grants-and-api-tokens,moved,redirected
@@ -50,8 +50,8 @@ core-concepts/network-and-interactions/credential-activity,understand/network-an
 core-concepts/network-and-interactions/key-network-procedures,understand/network-and-interactions/network-architecture,merge,redirected
 core-concepts/network-and-interactions/network-vision-and-principles,understand/network-and-interactions/network-architecture,merge,redirected
 core-concepts/network-and-interactions/universal-inbox,understand/network-and-interactions/universal-inbox,moved,redirected
-core-concepts/tenant-branded-emails,products-and-more/apps,internal,redirected
-development/contributing,products-and-more/contributing,moved,redirected
+core-concepts/tenant-branded-emails,products/apps,internal,redirected
+development/contributing,products/contributing,moved,redirected
 how-to-guides/connect-systems,build/connect-systems,moved,redirected
 how-to-guides/connect-systems/connect-a-game,build/connect-systems/connect-a-game,moved,redirected
 how-to-guides/connect-systems/connect-a-website,build/connect-systems/connect-a-website,moved,redirected
@@ -66,7 +66,7 @@ how-to-guides/deploy-infrastructure/generate-api-tokens,build/deploy-infrastruct
 how-to-guides/deploy-infrastructure/managing-seed-phrases,build/deploy-infrastructure/managing-seed-phrases,moved,redirected
 how-to-guides/deploy-infrastructure/sss-key-management-config,build/deploy-infrastructure/sss-key-management-config,moved,redirected
 how-to-guides/deploy-infrastructure/the-simplest-plugin,build/deploy-infrastructure/the-simplest-plugin,moved,redirected
-how-to-guides/export-and-import-your-data,products-and-more/learn-card-app/export-and-import-your-data,moved,redirected
+how-to-guides/export-and-import-your-data,products/learn-card-app/export-and-import-your-data,moved,redirected
 how-to-guides/implement-flows,build/create-a-consentflow,moved,redirected
 how-to-guides/implement-flows/chapi,start-here/interoperability,archive,redirected
 how-to-guides/implement-flows/chapi/chapi-wallet-setup-guide,start-here/interoperability,archive,redirected

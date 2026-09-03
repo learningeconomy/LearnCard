@@ -49,9 +49,9 @@ redirects:
     # --- Pages that still exist but whose URL changed in the nav restructure ---
     apps/apps: apps/README.md
     apps/learn-card-app: apps/learn-card-app/README.md
-    apps/learn-card-app/analytics: apps/learn-card-app/analytics.md
+    apps/learn-card-app/analytics: apps/learn-card-app/README.md
     apps/scouts: apps/scouts/README.md
-    apps/scouts/credential-revocation: apps/scouts/credential-revocation.md
+    apps/scouts/credential-revocation: core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md
     core-concepts/architecture-and-principles: core-concepts/architecture-and-principles/README.md
     core-concepts/architecture-and-principles/auth-coordinator: core-concepts/architecture-and-principles/auth-coordinator.md
     core-concepts/architecture-and-principles/auth-grants-and-api-tokens: core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md

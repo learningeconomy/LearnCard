@@ -41,7 +41,7 @@ In the LearnCard app, open **App Store → Developer Portal** (`/app-store/devel
 1. Project setup (creates your Integration — the entity that owns your listings and templates)
 2. Signing authority (for server-side credential issuance)
 3. Branding — name, tagline, icon, description
-4. Credential template builder (defines the `templateAlias` values your app issues)
+4. Credential template builder (defines the `templateAlias` values your app issues; optionally [link each template to its Credential Engine Registry entry](publish-your-app-ctid.md))
 5. Integration method — `EMBEDDED_IFRAME` with your app's URL
 6. Data mapping, sandbox test, and production checks
 
@@ -51,9 +51,9 @@ Your listing starts as a **DRAFT** — visible to you, not the public.
 
 Launch your draft listing from the Developer Portal. LearnCard loads your app in an iframe; the SDK detects the real host and switches out of mock mode automatically. Verify:
 
--   [ ] `requestIdentity()` returns a real user DID
--   [ ] Credentials appear in the test user's wallet after `sendCredential()`
--   [ ] Notifications, counters, and any consent flows behave as expected
+- [ ] `requestIdentity()` returns a real user DID
+- [ ] Credentials appear in the test user's wallet after `sendCredential()`
+- [ ] Notifications, counters, and any consent flows behave as expected
 
 ## 4. Submit for review
 
@@ -65,9 +65,9 @@ There is currently no automatic notification when your listing is approved — c
 
 ## Rate limits & good citizenship
 
--   In-app notifications: 10/hour per user per app via the SDK; 60/hour per app via the server-to-server route
--   Counters: up to 50 keys per app per user
--   Never bypass origin validation, and handle every SDK call's rejection path — users can decline any request
+- In-app notifications: 10/hour per user per app via the SDK; 60/hour per app via the server-to-server route
+- Counters: up to 50 keys per app per user
+- Never bypass origin validation, and handle every SDK call's rejection path — users can decline any request
 
 ## Full API reference
 

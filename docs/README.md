@@ -10,10 +10,10 @@ Under the hood, LearnCard is an open-source wallet, SDK, and network built on [W
 
 ### Why Use LearnCard?
 
--   **Portable**: Credentials travel with the learner—not locked into one system.
--   **Consent-Driven**: Learners control who sees their data, and when.
--   **Open**: Built on interoperable, community-driven standards.
--   **Developer-Friendly**: Plug in easily to existing apps with modern APIs and tools.
+- **Portable**: Credentials travel with the learner—not locked into one system.
+- **Consent-Driven**: Learners control who sees their data, and when.
+- **Open**: Built on interoperable, community-driven standards.
+- **Developer-Friendly**: Plug in easily to existing apps with modern APIs and tools.
 
 ---
 
@@ -21,11 +21,11 @@ Under the hood, LearnCard is an open-source wallet, SDK, and network built on [W
 
 LearnCard is already used to:
 
--   Issue and verify credentials (skills, achievements, badges)
--   Build learner passports and skill profiles
--   Power AI copilots and bots that adapt to learner data
--   Create consent-based dashboards for families, schools, and career counselors
--   Support interoperability across educational, employment, and credentialing platforms
+- Issue and verify credentials (skills, achievements, badges)
+- Build learner passports and skill profiles
+- Power AI copilots and bots that adapt to learner data
+- Create consent-based dashboards for families, schools, and career counselors
+- Support interoperability across educational, employment, and credentialing platforms
 
 ---
 
@@ -33,11 +33,11 @@ LearnCard is already used to:
 
 This documentation is organized around what you're trying to do:
 
--   🚀 **Start Here** — [What Do You Want to Build?](introduction/what-do-you-want-to-build.md) picks one of five integration paths; the [Quickstart](quick-start/your-first-integration.md) sends your first credential in ~15 lines of code.
--   🛠️ **Build** — outcome-driven guides and tutorials: [send & issue credentials](how-to-guides/send-credentials.md), [publish your app](how-to-guides/publish-your-app.md), [add LearnCard to your product](how-to-guides/connect-systems/README.md), [consent & guardianship](tutorials/create-a-consentflow.md), and [going deep on the SDK](how-to-guides/deploy-infrastructure/README.md).
--   🧠 **Understand** — the concepts behind it all: [credentials](core-concepts/credentials-and-data/README.md), [identities & keys](core-concepts/identities-and-keys/README.md), [consent](core-concepts/consent-and-permissions/README.md), [the network](core-concepts/network-and-interactions/README.md), and [architecture](core-concepts/architecture-and-principles/README.md).
--   📖 **Reference** — [which SDK do I need?](sdks/which-sdk.md), then full API docs for the [Wallet SDK](sdks/learncard-core/README.md), [Network API](sdks/learncard-network/README.md), [Storage API](sdks/learncloud-storage-api/README.md), [Partner Connect](sdks/partner-connect.md), [Embed SDK](sdks/embed-sdk.md), and [plugins](sdks/official-plugins/README.md).
--   📱 **Products & More** — the [LearnCard App](apps/learn-card-app/README.md), [ScoutPass](apps/scouts/README.md), and [contributing](development/contributing.md).
+- 🚀 **Start Here** — [What Do You Want to Build?](introduction/what-do-you-want-to-build.md) picks one of five integration paths; the [Quickstart](quick-start/your-first-integration.md) sends your first credential in ~15 lines of code.
+- 🛠️ **Build** — outcome-driven guides and tutorials: [send & issue credentials](how-to-guides/send-credentials.md), [publish your app](how-to-guides/publish-your-app.md), [add LearnCard to your product](how-to-guides/connect-systems/README.md), [consent & guardianship](tutorials/create-a-consentflow.md), and [going deep on the SDK](how-to-guides/deploy-infrastructure/README.md).
+- 🧠 **Understand** — the concepts behind it all: [credentials](core-concepts/credentials-and-data/README.md), [identities & keys](core-concepts/identities-and-keys/README.md), [consent](core-concepts/consent-and-permissions/README.md), [the network](core-concepts/network-and-interactions/README.md), and [architecture](core-concepts/architecture-and-principles/README.md).
+- 📖 **Reference** — [which SDK do I need?](sdks/which-sdk.md), then full API docs for the [Wallet SDK](sdks/learncard-core/README.md), [Network API](sdks/learncard-network/README.md), [Storage API](sdks/learncloud-storage-api/README.md), [Partner Connect](sdks/partner-connect.md), [Embed SDK](sdks/embed-sdk.md), and [plugins](sdks/official-plugins/README.md).
+- 📱 **Products** — the [apps built on LearnCard](apps/README.md): the [LearnCard App](apps/learn-card-app/README.md), [ScoutPass](apps/scouts/README.md), and [contributing](development/contributing.md).
 
 If you're new, start with the [**Quickstart**](quick-start/your-first-integration.md).
 
@@ -65,8 +65,8 @@ This stack was built by developers, for developers. It supports open standards a
 
 The best way to start engaging in the community is to participate in our [Github Discussions](https://github.com/learningeconomy/LearnCard/discussions):&#x20;
 
--   [Post a Feature Request ](https://github.com/learningeconomy/LearnCard/discussions/categories/feature-requests)💡
--   [Ask for Help](https://github.com/learningeconomy/LearnCard/discussions/categories/help) 💖
--   [Show off your project to the community!](https://github.com/learningeconomy/LearnCard/discussions/categories/show-and-tell) 🙌
+- [Post a Feature Request ](https://github.com/learningeconomy/LearnCard/discussions/categories/feature-requests)💡
+- [Ask for Help](https://github.com/learningeconomy/LearnCard/discussions/categories/help) 💖
+- [Show off your project to the community!](https://github.com/learningeconomy/LearnCard/discussions/categories/show-and-tell) 🙌
 
 Do you need custom development or technical support? Click [here](https://www.learningeconomy.io/contact), or send us an email at [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).

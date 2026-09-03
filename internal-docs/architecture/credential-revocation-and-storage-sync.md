@@ -8,13 +8,14 @@ When a scout leaves a troop or their credential needs to be invalidated, ScoutPa
 
 Revocation is tracked via a `status` property on the Neo4j `CREDENTIAL_RECEIVED` relationship:
 
-| Status Value | Meaning |
-|--------------|---------|
-| `null` | Active/claimed credential |
-| `'pending'` | Sent but not yet accepted |
-| `'revoked'` | Credential has been revoked |
+| Status Value | Meaning                     |
+| ------------ | --------------------------- |
+| `null`       | Active/claimed credential   |
+| `'pending'`  | Sent but not yet accepted   |
+| `'revoked'`  | Credential has been revoked |
 
 When a credential is revoked:
+
 1. The credential is **marked as revoked** (not deleted) for audit purposes
 2. The scout is **filtered out** of member/recipient lists
 3. Any **permissions granted via claim hooks** are reversed
@@ -35,9 +36,9 @@ sequenceDiagram
     TL->>BS: Revoke credential
     BS->>Neo4j: Set CREDENTIAL_RECEIVED.status = 'revoked'
     BS->>Neo4j: Run revoke hooks (cleanup permissions)
-    
+
     Note over Scout: Later, when scout opens app...
-    
+
     Scout->>BS: getRevokedCredentials()
     BS-->>Scout: [revokedUri1, ...]
     Scout->>Scout: Remove from local wallet index
@@ -50,12 +51,12 @@ sequenceDiagram
 
 When revocation occurs, these cleanup operations run automatically:
 
-| Hook | Purpose |
-|------|---------|
-| `processPermissionsRevokeHooks` | Removes roles granted via GRANT_PERMISSIONS claim hooks |
-| `processAutoConnectRevokeHooks` | Removes AUTO_CONNECT_RECIPIENT relationships |
-| `processAdminRevokeHooks` | Removes admin roles granted via ADD_ADMIN claim hooks |
-| `processConnectionRevoke` | Removes CONNECTED_WITH relationships sourced from the boost |
+| Hook                            | Purpose                                                     |
+| ------------------------------- | ----------------------------------------------------------- |
+| `processPermissionsRevokeHooks` | Removes roles granted via GRANT_PERMISSIONS claim hooks     |
+| `processAutoConnectRevokeHooks` | Removes AUTO_CONNECT_RECIPIENT relationships                |
+| `processAdminRevokeHooks`       | Removes admin roles granted via ADD_ADMIN claim hooks       |
+| `processConnectionRevoke`       | Removes CONNECTED_WITH relationships sourced from the boost |
 
 ---
 
@@ -69,10 +70,10 @@ WHERE (r.status IS NULL OR r.status <> 'revoked')
 RETURN p
 ```
 
-| Query | Default Behavior |
-|-------|------------------|
-| `getBoostRecipients` | Returns only claimed credentials |
-| `countBoostRecipients` | Counts only claimed credentials |
+| Query                  | Default Behavior                 |
+| ---------------------- | -------------------------------- |
+| `getBoostRecipients`   | Returns only claimed credentials |
+| `countBoostRecipients` | Counts only claimed credentials  |
 
 > **Note:** Revoked credentials are always filtered out, regardless of query options.
 
@@ -90,6 +91,7 @@ useSyncRevokedCredentials(enabled);
 ```
 
 This hook:
+
 1. Fetches revoked URIs from `wallet.invoke.getRevokedCredentials()`
 2. Removes matching records from the LearnCloud personal index
 3. Invalidates UI queries to refresh the display
@@ -100,10 +102,10 @@ This hook:
 
 Credentials exist in two places:
 
-| Layer | Purpose |
-|-------|---------|
+| Layer                     | Purpose                                            |
+| ------------------------- | -------------------------------------------------- |
 | **Brain Service (Neo4j)** | Network-level tracking, source of truth for status |
-| **LearnCloud (MongoDB)** | User's personal wallet, what shows in the app |
+| **LearnCloud (MongoDB)**  | User's personal wallet, what shows in the app      |
 
 The brain service cannot directly modify the user's LearnCloud index (it's user-authenticated). The frontend sync hook bridges this gap.
 
