@@ -14,18 +14,21 @@ export default function RecoveryKeyScenarios() {
             <RecoveryKey
                 branding={LEARNCARD_BRANDING}
                 recoveryKey="mango-delta-fox-echo-bravo-seven-lima-niner"
+                confirmationCode="123456"
             />
 
             <ScenarioDivider label="Long recovery key (wrapping test)" />
             <RecoveryKey
                 branding={LEARNCARD_BRANDING}
                 recoveryKey="alpha-bravo-charlie-delta-echo-foxtrot-golf-hotel-india-juliet-kilo-lima"
+                confirmationCode="654321"
             />
 
             <ScenarioDivider label="VetPass tenant branding" />
             <RecoveryKey
                 branding={VETPASS_BRANDING}
                 recoveryKey="sierra-tango-uniform-victor-whiskey-xray"
+                confirmationCode="987654"
             />
         </>
     );
