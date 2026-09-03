@@ -589,8 +589,8 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                                 errors?.dob
                                                     ? 'user-profile-dob-error'
                                                     : dob && !Number.isNaN(calculateAge(dob))
-                                                    ? 'user-profile-dob-age'
-                                                    : undefined
+                                                      ? 'user-profile-dob-age'
+                                                      : undefined
                                             }
                                             isMobile={!isDesktop}
                                             disabled={hasParentSwitchedProfile}

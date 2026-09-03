@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -65,7 +66,7 @@ const getDidKitPlugin = async (allowRemoteContexts = false): Promise<DIDKitPlugi
     if (cached) return cached;
 
     const promise = (async () => {
-        if (process.env.SKIP_DIDKIT_NAPI) {
+        if (environment.SKIP_DIDKIT_NAPI) {
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
             const wasmBuffer = await readFile(resolveDidkitWasmPath());
@@ -111,7 +112,7 @@ export type SeedLearnCard = LearnCard<
         VCPlugin,
         VCTemplatePlugin,
         ExpirationPlugin,
-        LearnCardPlugin
+        LearnCardPlugin,
     ]
 >;
 
@@ -125,7 +126,7 @@ export type DidWebLearnCard = LearnCard<
         VCTemplatePlugin,
         ExpirationPlugin,
         LearnCardPlugin,
-        DidWebPlugin
+        DidWebPlugin,
     ]
 >;
 
@@ -142,7 +143,7 @@ const learnCards: Record<string, SeedLearnCard> = {};
 const didKeyLearnCards: Record<string, DidKeyLearnCard> = {};
 let didWebLearnCard: DidWebLearnCard;
 
-const IS_OFFLINE = process.env.IS_OFFLINE;
+const IS_OFFLINE = environment.IS_OFFLINE;
 
 export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     if (!emptyLearnCard || IS_OFFLINE) {
@@ -161,7 +162,7 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
 };
 
 export const getLearnCard = async (
-    seed = process.env.SEED,
+    seed = environment.SEED,
     allowRemoteContexts = false
 ): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
@@ -231,8 +232,8 @@ export const createDagJweForRecipients = async <T>(
 };
 
 export const getServerDidWebDID = (): string => {
-    const domainName = process.env.DOMAIN_NAME;
-    const isOffline = !!process.env.IS_OFFLINE;
+    const domainName = environment.DOMAIN_NAME;
+    const isOffline = !!environment.IS_OFFLINE;
 
     // Misconfig guard: a deployed (non-offline) environment without DOMAIN_NAME
     // would silently fall back to localhost and produce an unresolvable did:web,
@@ -247,7 +248,7 @@ export const getServerDidWebDID = (): string => {
 
     // IS_OFFLINE forces localhost even if DOMAIN_NAME is set — preserves dev/prod
     // isolation so an inherited prod env var can't leak into a local dev session.
-    const domain = isOffline ? `localhost%3A${process.env.PORT || 3000}` : domainName!;
+    const domain = isOffline ? `localhost%3A${environment.PORT || 3000}` : domainName!;
     return `did:web:${domain}`;
 };
 
@@ -256,13 +257,13 @@ export const isServersDidWebDID = (did: string): boolean => {
 };
 
 export const isTrustedLoginProviderDID = (did: string): boolean => {
-    const loginProviderDid = process.env.LOGIN_PROVIDER_DID;
+    const loginProviderDid = environment.LOGIN_PROVIDER_DID;
 
     return did === getServerDidWebDID() || (loginProviderDid ? did === loginProviderDid : false);
 };
 
 export const getDidWebLearnCard = async (): Promise<DidWebLearnCard> => {
-    const seed = process.env.SEED;
+    const seed = environment.SEED;
 
     const didWeb = getServerDidWebDID();
 

@@ -1,6 +1,38 @@
 import { describe, it, expect } from 'vitest';
 
-import { shouldResetWalletOnStatus, mergeAuthUserIntoCurrentUser } from './authCoordinator.helpers';
+import {
+    countUserConfiguredRecoveryMethods,
+    registerRecoveryMethodCompletion,
+    shouldResetWalletOnStatus,
+    mergeAuthUserIntoCurrentUser,
+} from './authCoordinator.helpers';
+
+describe('registerRecoveryMethodCompletion', () => {
+    it('registers each method once per setup session', () => {
+        const completedMethods = new Set<string>();
+
+        expect(registerRecoveryMethodCompletion(completedMethods, 'phrase')).toBe(true);
+        expect(registerRecoveryMethodCompletion(completedMethods, 'phrase')).toBe(false);
+        expect(registerRecoveryMethodCompletion(completedMethods, 'email')).toBe(true);
+        expect([...completedMethods]).toEqual(['phrase', 'email']);
+    });
+});
+
+describe('countUserConfiguredRecoveryMethods', () => {
+    it('counts durable methods and ignores a synthetic primary-email entry', () => {
+        expect(
+            countUserConfiguredRecoveryMethods([
+                { type: 'email' },
+                { type: 'passkey' },
+                { type: 'phrase' },
+            ])
+        ).toBe(2);
+    });
+
+    it('counts a verified recovery email after reload', () => {
+        expect(countUserConfiguredRecoveryMethods([{ type: 'email' }], 'r***@example.com')).toBe(1);
+    });
+});
 
 describe('shouldResetWalletOnStatus', () => {
     it('keeps the wallet while the coordinator is in a transitional status', () => {

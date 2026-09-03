@@ -6,7 +6,6 @@ import {
     useWallet,
     useModal,
     ModalTypes,
-    LEARNCARD_AI_URL,
     getOrFetchIntegrationForListing,
     pendingContractSyncStore,
     getCategoryForCredential,
@@ -19,7 +18,7 @@ import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
-import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
+import { ActionHandlers, AppEvent, VerifiablePresentationRequest } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import sdkActivityStore from '../../stores/sdkActivityStore';
@@ -89,6 +88,17 @@ type LearnerContextMetadata = {
         prewarmAgeMs?: number;
     };
     backendMetadata?: Record<string, unknown>;
+};
+const createDeferred = <T>(): {
+    promise: Promise<T>;
+    resolve: (value: T | PromiseLike<T>) => void;
+} => {
+    let resolve!: (value: T | PromiseLike<T>) => void;
+    const promise = new Promise<T>(deferredResolve => {
+        resolve = deferredResolve;
+    });
+
+    return { promise, resolve };
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -167,7 +177,9 @@ const waitForPendingSync = async (contractUri?: string, timeoutMs = 25000) => {
     while (Date.now() - startedAt < timeoutMs) {
         const status = getPendingSyncStatus(contractUri);
         if (status.status !== 'syncing') return status;
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const { promise, resolve } = createDeferred<void>();
+        setTimeout(resolve, 500);
+        await promise;
     }
 
     return getPendingSyncStatus(contractUri);
@@ -273,7 +285,8 @@ export function useLearnCardMessageHandlers({
         ): Promise<{ granted: boolean }> => {
             const { redirect = false } = options ?? {};
 
-            return new Promise(async resolve => {
+            const { promise, resolve } = createDeferred<{ granted: boolean }>();
+            void (async () => {
                 try {
                     const wallet = await initWallet();
                     if (!wallet) {
@@ -346,7 +359,8 @@ export function useLearnCardMessageHandlers({
                     sdkActivityStore.set.endActivity();
                     resolve({ granted: false });
                 }
-            });
+            })();
+            return promise;
         },
         [initWallet, newModal, closeModal, consentedContracts, log, logError, generateVpAndRedirect]
     );
@@ -472,11 +486,7 @@ export function useLearnCardMessageHandlers({
             personalData: Record<string, unknown> | undefined,
             options: LearnerContextRequestOptions
         ): Promise<{ prompt: string; backendMetadata?: Record<string, unknown> }> => {
-            const aiServiceUrl = (
-                import.meta.env.VITE_LEARNCARD_AI_URL ||
-                networkStore.get.aiServiceUrl() ||
-                LEARNCARD_AI_URL
-            ).replace(/\/+$/, '');
+            const aiServiceUrl = networkStore.get.aiServiceUrl().replace(/\/+$/, '');
 
             try {
                 // The formatter URL is tenant/deployment configuration, not partner input.
@@ -649,7 +659,8 @@ export function useLearnCardMessageHandlers({
                     };
                 },
                 showLoginConsentModal: async (origin: string, appName?: string) => {
-                    return new Promise(async resolve => {
+                    const { promise, resolve } = createDeferred<boolean>();
+                    void (async () => {
                         try {
                             // Import trusted origins utilities
                             //const { isOriginTrusted, addTrustedOrigin } = await import('./trustedOrigins');
@@ -679,9 +690,8 @@ export function useLearnCardMessageHandlers({
                             log('Login consent requested for:', origin);
 
                             // Dynamically import LoginConsentModal
-                            const { default: LoginConsentModal } = await import(
-                                '../../components/credentials/LoginConsentModal'
-                            );
+                            const { default: LoginConsentModal } =
+                                await import('../../components/credentials/LoginConsentModal');
 
                             const handleAccept = () => {
                                 log('User accepted login consent');
@@ -722,7 +732,8 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
-                    });
+                    })();
+                    return promise;
                 },
                 mintDelegatedToken: async (challenge?: string) => {
                     const learnCard = await initWallet();
@@ -758,15 +769,16 @@ export function useLearnCardMessageHandlers({
                 prewarmLearnerContext,
 
                 // Credential handlers
-                showCredentialAcceptanceModal: async (credential: any) => {
-                    return new Promise(async resolve => {
+                showCredentialAcceptanceModal: async (credential: unknown) => {
+                    const vc = credential as VC;
+                    const { promise, resolve } = createDeferred<string | boolean>();
+                    void (async () => {
                         try {
                             log('Credential offered:', credential);
 
                             // Dynamically import CredentialAcceptanceModal
-                            const { default: CredentialAcceptanceModal } = await import(
-                                '../../components/credentials/CredentialAcceptanceModal'
-                            );
+                            const { default: CredentialAcceptanceModal } =
+                                await import('../../components/credentials/CredentialAcceptanceModal');
 
                             let accepting = false;
 
@@ -780,8 +792,8 @@ export function useLearnCardMessageHandlers({
                                 try {
                                     const credentialId = (
                                         await storeAndAddVCToWallet(
-                                            credential,
-                                            { title: credential.name || 'Credential' },
+                                            vc,
+                                            { title: vc.name || 'Credential' },
                                             'LearnCloud',
                                             true
                                         )
@@ -807,7 +819,7 @@ export function useLearnCardMessageHandlers({
                                                 kind: 'credential-ingested',
                                                 eventId: crypto.randomUUID(),
                                                 credentialUri: credentialId,
-                                                vc: credential,
+                                                vc,
                                                 ingestedAt: new Date().toISOString(),
                                                 source: 'partner-sdk',
                                             });
@@ -840,7 +852,7 @@ export function useLearnCardMessageHandlers({
                             // Open the credential acceptance modal
                             newModal(
                                 React.createElement(CredentialAcceptanceModal, {
-                                    credential,
+                                    credential: vc,
                                     onAccept: handleAccept,
                                     onDismiss: handleDismiss,
                                     accepting,
@@ -857,14 +869,16 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
-                    });
+                    })();
+                    return promise;
                 },
-                saveCredential: async (credential: any) => {
-                    log('Saving credential:', credential);
+                saveCredential: async (credential: unknown) => {
+                    const vc = credential as VC;
+                    log('Saving credential:', vc);
 
                     const stored = await storeAndAddVCToWallet(
-                        credential,
-                        { title: credential.name || 'Credential' },
+                        vc,
+                        { title: vc.name || 'Credential' },
                         'LearnCloud',
                         true
                     );
@@ -934,46 +948,16 @@ export function useLearnCardMessageHandlers({
                     sdkActivityStore.set.endActivity();
                     return credential;
                 },
-                searchCredentials: async (query: any) => {
-                    const learnCard = await initWallet();
-
-                    if (!learnCard) {
-                        sdkActivityStore.set.endActivity();
-                        throw new Error(
-                            'LearnCard wallet not initialized. Cannot search credentials.'
-                        );
-                    }
-
-                    if (!learnCard.index.LearnCloud.getPage) {
-                        sdkActivityStore.set.endActivity();
-                        throw new Error(
-                            'LearnCard wallet index not initialized. Cannot search credentials.'
-                        );
-                    }
-
-                    const indexedCredentials = await learnCard.index.LearnCloud.getPage(query);
-                    log('Indexed credentials:', indexedCredentials);
-
-                    const resolvedCredentials = await Promise.all(
-                        indexedCredentials.records.map(async credential => {
-                            const resolvedVC = await learnCard.read.get(credential.uri);
-                            return { ...resolvedVC, uri: credential?.uri };
-                        })
-                    );
-
-                    log('Resolved credentials:', resolvedCredentials);
-                    sdkActivityStore.set.endActivity();
-                    return resolvedCredentials;
-                },
-                showShareCredentialModal: async (credential: any) => {
-                    return new Promise(async resolve => {
+                showShareCredentialModal: async (credential: unknown) => {
+                    const vc = credential as VC;
+                    const { promise, resolve } = createDeferred<boolean>();
+                    void (async () => {
                         try {
                             log('Share credential?', credential);
 
                             // Dynamically import ShareCredentialModal
-                            const { default: ShareCredentialModal } = await import(
-                                '../../components/credentials/ShareCredentialModal'
-                            );
+                            const { default: ShareCredentialModal } =
+                                await import('../../components/credentials/ShareCredentialModal');
 
                             let sharing = false;
 
@@ -998,7 +982,7 @@ export function useLearnCardMessageHandlers({
                             // Open the share credential modal
                             newModal(
                                 React.createElement(ShareCredentialModal, {
-                                    credential,
+                                    credential: vc,
                                     onShare: handleShare,
                                     onCancel: handleCancel,
                                     sharing,
@@ -1015,21 +999,24 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
-                    });
+                    })();
+                    return promise;
                 },
-                showVprModal: async (verifiablePresentationRequest: any) => {
-                    return new Promise(async resolve => {
+                showVprModal: async (
+                    verifiablePresentationRequest: VerifiablePresentationRequest
+                ) => {
+                    const { promise, resolve } = createDeferred<unknown>();
+                    void (async () => {
                         try {
                             log('VPR request:', verifiablePresentationRequest);
 
                             // Dynamically import VprShareModal
-                            const { default: VprShareModal } = await import(
-                                '../../components/credentials/VprShareModal'
-                            );
+                            const { default: VprShareModal } =
+                                await import('../../components/credentials/VprShareModal');
 
                             let sharing = false;
 
-                            const handleShare = async (selectedCredentials: any[]) => {
+                            const handleShare = async (selectedCredentials: VC[]) => {
                                 if (sharing) return;
                                 sharing = true;
 
@@ -1109,17 +1096,19 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(null);
                         }
-                    });
+                    })();
+                    return promise;
                 },
-                signCredential: async (credential: any) => {
-                    return new Promise(async resolve => {
-                        try {
-                            log('Sign credential requested:', credential);
 
-                            // Dynamically import SignCredentialModal
-                            const { default: SignCredentialModal } = await import(
-                                '../../components/credentials/SignCredentialModal'
-                            );
+                signCredential: async (credential: unknown) => {
+                    const vc = credential as VC;
+                    const { promise, resolve } = createDeferred<unknown>();
+                    void (async () => {
+                        try {
+                            log('Sign credential requested:', vc);
+
+                            const { default: SignCredentialModal } =
+                                await import('../../components/credentials/SignCredentialModal');
 
                             let signing = false;
 
@@ -1139,9 +1128,8 @@ export function useLearnCardMessageHandlers({
                                         return;
                                     }
 
-                                    const signedCredential = await learnCard.invoke.issueCredential(
-                                        credential
-                                    );
+                                    const signedCredential =
+                                        await learnCard.invoke.issueCredential(vc);
 
                                     log('Signed credential:', signedCredential);
                                     closeModal();
@@ -1159,13 +1147,11 @@ export function useLearnCardMessageHandlers({
                                 resolve(null);
                             };
 
-                            // Hide activity indicator before showing modal
                             sdkActivityStore.set.endActivity();
 
-                            // Open the sign credential modal
                             newModal(
                                 React.createElement(SignCredentialModal, {
-                                    credential,
+                                    credential: vc,
                                     onSign: handleSign,
                                     onCancel: handleCancel,
                                     signing,
@@ -1182,10 +1168,11 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(null);
                         }
-                    });
+                    })();
+                    return promise;
                 },
 
-                signPresentation: async (credential: any) => {
+                signPresentation: async (credential: unknown) => {
                     log('Signing presentation:', credential);
 
                     const learnCard = await initWallet();
@@ -1201,7 +1188,7 @@ export function useLearnCardMessageHandlers({
                         '@context': ['https://www.w3.org/ns/credentials/v2'],
                         type: ['VerifiablePresentation'],
                         holder: learnCard.id.did(),
-                        verifiableCredential: [credential],
+                        verifiableCredential: [credential as VC],
                     };
 
                     try {
@@ -1234,7 +1221,8 @@ export function useLearnCardMessageHandlers({
 
                 // Boost template issue handler
                 showBoostIssueModal: async (templateId: string, draftRecipients?: string[]) => {
-                    return new Promise(async resolve => {
+                    const { promise, resolve } = createDeferred<boolean>();
+                    void (async () => {
                         try {
                             const learnCard = await initWallet();
                             if (!learnCard) {
@@ -1265,9 +1253,8 @@ export function useLearnCardMessageHandlers({
                             const boostVC = boost.uri ? await learnCard.read.get(boost.uri) : null;
 
                             // Import ShortBoostUserOptions dynamically
-                            const { default: ShortBoostUserOptions } = await import(
-                                '../../components/boost/boost-options/boostUserOptions/ShortBoostUserOptions'
-                            );
+                            const { default: ShortBoostUserOptions } =
+                                await import('../../components/boost/boost-options/boostUserOptions/ShortBoostUserOptions');
 
                             const handleCloseModal = (completed: boolean) => {
                                 closeModal();
@@ -1324,7 +1311,8 @@ export function useLearnCardMessageHandlers({
                             sdkActivityStore.set.endActivity();
                             resolve(false);
                         }
-                    });
+                    })();
+                    return promise;
                 },
                 canUserIssueTemplate: async (templateId: string) => {
                     try {
@@ -1475,20 +1463,15 @@ export function useLearnCardMessageHandlers({
                           ) {
                               onAppNotification({
                                   title: (event as Record<string, unknown>).title as
-                                      | string
-                                      | undefined,
+                                      string | undefined,
                                   body: (event as Record<string, unknown>).body as
-                                      | string
-                                      | undefined,
+                                      string | undefined,
                                   actionPath: (event as Record<string, unknown>).actionPath as
-                                      | string
-                                      | undefined,
+                                      string | undefined,
                                   category: (event as Record<string, unknown>).category as
-                                      | string
-                                      | undefined,
+                                      string | undefined,
                                   priority: (event as Record<string, unknown>).priority as
-                                      | string
-                                      | undefined,
+                                      string | undefined,
                               });
                           }
 

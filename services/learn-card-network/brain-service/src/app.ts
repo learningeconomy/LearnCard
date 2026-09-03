@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { t } from '@routes';
 import { boostsRouter, BoostsRouter } from '@routes/boosts';
 import { claimHooksRouter, ClaimHooksRouter } from '@routes/claim-hooks';
@@ -75,8 +76,8 @@ export const appRouter = t.router<{
     appStore: appStoreRouter,
     activity: activityRouter,
     federation: federationRouter,
-    test: process.env.IS_E2E_TEST ? testRouter : undefined,
-    bench: process.env.ENABLE_BENCH_ROUTES ? benchRouter : undefined,
+    test: environment.IS_E2E_TEST ? testRouter : undefined,
+    bench: environment.ENABLE_BENCH_ROUTES ? benchRouter : undefined,
 });
 
 export type AppRouter = typeof appRouter;

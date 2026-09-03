@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
-import { Agent } from 'undici';
+import { environment } from '@environment';
+import { Agent, fetch as undiciFetch, type Response as UndiciResponse } from 'undici';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { VCValidator, JWEValidator } from '@learncard/types';
@@ -12,9 +12,7 @@ import { PerfTracker } from '@helpers/perf';
 import { benchContextStorage } from '@helpers/bench-context.helpers';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
 
-dotenv.config();
-
-const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
+const IS_TEST_ENVIRONMENT = environment.NODE_ENV === 'test';
 
 // LC-1644 Phase 4e: the SA HTTP call previously used a 21s timeout with no retry.
 // In practice a healthy SA responds in ~220ms warm / ~1.5s cold; when it fails it's
@@ -215,12 +213,12 @@ export async function issueCredentialWithSigningAuthority(
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-                    let response: Response;
+                    let response: UndiciResponse;
                     try {
                         response = await traceHttp(
                             'fetch-lca-api',
                             () =>
-                                fetch(issuerEndpoint, {
+                                undiciFetch(issuerEndpoint, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -230,7 +228,7 @@ export async function issueCredentialWithSigningAuthority(
                                     signal: controller.signal,
                                     // LC-1644 Task 3: keepAlive + pooling via shared undici Agent
                                     dispatcher: getSaAgent(),
-                                } as RequestInit & { dispatcher: Agent }),
+                                }),
                             { endpoint: issuerEndpoint, attempt: attemptIndex + 1 }
                         );
                     } catch (err) {
@@ -244,9 +242,7 @@ export async function issueCredentialWithSigningAuthority(
                         throw new SaIssueError({
                             message: isAbort
                                 ? `SA request aborted after ${REQUEST_TIMEOUT_MS}ms timeout`
-                                : `SA network error: ${
-                                      err instanceof Error ? err.message : String(err)
-                                  }`,
+                                : `SA network error: ${err instanceof Error ? err.message : String(err)}`,
                             status: 0,
                             kind: isAbort ? 'timeout' : 'network',
                             retryable: true,
@@ -275,9 +271,7 @@ export async function issueCredentialWithSigningAuthority(
                             ...logContext,
                         });
                         throw new SaIssueError({
-                            message: `LCA-API returned ${response.status}${
-                                response.statusText ? ` ${response.statusText}` : ''
-                            }`,
+                            message: `LCA-API returned ${response.status}${response.statusText ? ` ${response.statusText}` : ''}`,
                             status: response.status,
                             body: errorBody,
                             kind,
@@ -285,9 +279,16 @@ export async function issueCredentialWithSigningAuthority(
                         });
                     }
 
-                    const res = await trace('internal', 'parseResponse', () => response.json());
+                    const res = await trace<unknown>('internal', 'parseResponse', () =>
+                        response.json()
+                    );
+                    const isInternalServerError =
+                        typeof res === 'object' &&
+                        res !== null &&
+                        'code' in res &&
+                        res.code === 'INTERNAL_SERVER_ERROR';
 
-                    if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
+                    if (!res || isInternalServerError) {
                         console.error(
                             '[SA Helper] LCA-API returned error in body:',
                             JSON.stringify(res)

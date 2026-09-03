@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { PostHog } from 'posthog-node';
 
 let client: PostHog | null | undefined;
@@ -13,18 +14,18 @@ let client: PostHog | null | undefined;
  * This backend operational switch is independent of frontend analytics configuration
  * and can be changed without a code redeploy.
  */
-const isTelemetryEnabled = (): boolean => process.env.ENABLE_SEND_CREDENTIAL_TELEMETRY === 'true';
+const isTelemetryEnabled = (): boolean => environment.ENABLE_SEND_CREDENTIAL_TELEMETRY;
 
 const getClient = (): PostHog | null => {
     if (client !== undefined) return client;
-    const apiKey = process.env.POSTHOG_API_KEY;
+    const apiKey = environment.POSTHOG_API_KEY;
     if (!apiKey) {
         // eslint-disable-next-line no-console
         console.log('[PostHog] POSTHOG_API_KEY not set — bench events will not be emitted');
         client = null;
         return null;
     }
-    const host = process.env.POSTHOG_HOST ?? 'https://us.i.posthog.com';
+    const host = environment.POSTHOG_HOST ?? 'https://us.i.posthog.com';
     try {
         client = new PostHog(apiKey, { host, flushAt: 1, flushInterval: 0 });
         // eslint-disable-next-line no-console
@@ -54,8 +55,8 @@ export const captureBenchEvent = async (
             event,
             properties: {
                 ...properties,
-                env: process.env.NODE_ENV ?? 'development',
-                commit_sha: process.env.GIT_SHA ?? 'unknown',
+                env: environment.NODE_ENV ?? 'development',
+                commit_sha: environment.GIT_SHA ?? 'unknown',
             },
         });
         // eslint-disable-next-line no-console

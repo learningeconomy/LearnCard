@@ -119,8 +119,8 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
         mode === 'qr-code'
             ? m['claim.paste.subtitleQr']()
             : mode === 'claim-link'
-            ? m['claim.paste.subtitleLink']()
-            : m['claim.paste.subtitle']();
+              ? m['claim.paste.subtitleLink']()
+              : m['claim.paste.subtitle']();
 
     const dispatch = useCallback(
         async (input: string, source: ClaimInputSource): Promise<boolean> => {

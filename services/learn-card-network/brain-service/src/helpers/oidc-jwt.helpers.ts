@@ -1,4 +1,6 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { environment } from '@environment';
+import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
+import { z } from 'zod';
 
 type AuthProviderConfig = {
     issuer: string;
@@ -8,14 +10,16 @@ type AuthProviderConfig = {
 };
 
 // Module-level JWKS cache keyed by issuer
-const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+const jwksCache = new Map<string, JWTVerifyGetKey>();
 
-async function getJWKS(issuer: string): Promise<ReturnType<typeof createRemoteJWKSet>> {
+const oidcDiscoverySchema = z.object({ jwks_uri: z.url() });
+
+async function getJWKS(issuer: string): Promise<JWTVerifyGetKey> {
     if (jwksCache.has(issuer)) return jwksCache.get(issuer)!;
 
     const discoveryUrl = `${issuer.replace(/\/$/, '')}/.well-known/openid-configuration`;
     const res = await fetch(discoveryUrl);
-    const config = await res.json();
+    const config = oidcDiscoverySchema.parse(await res.json());
 
     const jwks = createRemoteJWKSet(new URL(config.jwks_uri));
     jwksCache.set(issuer, jwks);
@@ -24,8 +28,8 @@ async function getJWKS(issuer: string): Promise<ReturnType<typeof createRemoteJW
 }
 
 function getAuthProviders(): AuthProviderConfig[] {
-    const issuers = (process.env.OIDC_TRUSTED_ISSUERS ?? '').split(',').filter(Boolean);
-    const audience = process.env.OIDC_EXPECTED_AUDIENCE ?? '';
+    const issuers = (environment.OIDC_TRUSTED_ISSUERS ?? '').split(',').filter(Boolean);
+    const audience = environment.OIDC_EXPECTED_AUDIENCE ?? '';
     return issuers.map(issuer => ({ issuer: issuer.trim(), audience }));
 }
 
