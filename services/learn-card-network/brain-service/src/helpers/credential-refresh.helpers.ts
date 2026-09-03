@@ -306,7 +306,7 @@ const SigningAuthorityReferenceValidator = z
     .catchall(z.any());
 
 /** Opaque ETag derived from the stored encrypted bytes (never from plaintext). */
-const computeRefreshEtag = (encryptedCredential: string): string =>
+export const computeRefreshEtag = (encryptedCredential: string): string =>
     createHash('sha256').update(encryptedCredential).digest('base64url');
 
 /**

@@ -56,6 +56,24 @@ export const getCredentialRefreshHead = async (
     return CredentialRefreshVersionNodeValidator.parse(normalizeProps(node.properties));
 };
 
+/** Fetches one immutable version node (including its holder-encrypted JWE payload). */
+export const getCredentialRefreshVersion = async (
+    refreshId: string,
+    version: number
+): Promise<CredentialRefreshVersionNode | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (version:Credential {refreshVersionKey: $refreshVersionKey})
+         RETURN version LIMIT 1`,
+        { refreshVersionKey: `${refreshId}:${version}` }
+    );
+
+    const node = result.records[0]?.get('version');
+
+    if (!node) return null;
+
+    return CredentialRefreshVersionNodeValidator.parse(normalizeProps(node.properties));
+};
+
 export type GetCredentialRefreshVersionsOptions = {
     /** Opaque cursor from a previous page (encodes the last seen version) */
     cursor?: string;

@@ -141,6 +141,21 @@ functions:
             - httpApi: GET /status-lists/{id}
             - httpApi: OPTIONS /status-lists/{id}
 
+    credentialRefresh:
+        handler: lambda.credentialRefreshHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /refresh/{refreshId}
+            - httpApi: OPTIONS /refresh/{refreshId}
+            - httpApi: GET /refresh/{refreshId}/history
+            - httpApi: OPTIONS /refresh/{refreshId}/history
+            - httpApi: GET /refresh/{refreshId}/versions/{version}
+            - httpApi: OPTIONS /refresh/{refreshId}/versions/{version}
+
 resources:
     Resources:
         VPC:

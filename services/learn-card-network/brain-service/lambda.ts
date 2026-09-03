@@ -15,6 +15,7 @@ import * as Sentry from '@sentry/serverless';
 import app from './src/openapi';
 import skillsViewerApp from './src/skills-viewer';
 import statusListsApp from './src/status-lists';
+import credentialRefreshApp from './src/credential-refresh';
 import { appRouter, createContext } from './src/app';
 import { sendNotification } from './src/helpers/notifications.helpers';
 import { acknowledgeConnectionPromptNotificationDelivery } from './src/helpers/connectionPrompt.helpers';
@@ -48,6 +49,8 @@ export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 export const skillsViewerHandler = serverlessHttp(skillsViewerApp);
 
 export const statusListsHandler = serverlessHttp(statusListsApp);
+
+export const credentialRefreshHandler = serverlessHttp(credentialRefreshApp);
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
