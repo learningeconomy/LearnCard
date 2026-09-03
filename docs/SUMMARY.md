@@ -15,6 +15,7 @@
 ## ✅ How-To Guides
 
 -   [Send Credentials](how-to-guides/send-credentials.md)
+-   [Issue & Refresh a Managed Credential](how-to-guides/issue-and-refresh-a-managed-credential.md)
 -   [Export & Import Your Data](how-to-guides/export-and-import-your-data.md)
 -   [Create Signing Authority](how-to-guides/create-signing-authority.md)
 -   [Interoperate with LearnCard](how-to-guides/interoperate-with-learncard.md)
@@ -122,6 +123,7 @@
 -   [Credentials & Data](core-concepts/credentials-and-data/README.md)
     -   [Verifiable Credentials (VCs)](core-concepts/credentials-and-data/verifiable-credentials-vcs.md)
     -   [Credential Lifecycle](core-concepts/credentials-and-data/credential-lifecycle.md)
+    -   [Credential Refresh](core-concepts/credential-refresh.md)
     -   [Credential Status & Bitstring Status Lists](core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md)
     -   [Schemas, Types, & Categories](core-concepts/credentials-and-data/achievement-types-and-categories.md)
     -   [Display Hint Tags (`lc:` convention)](core-concepts/credentials-and-data/display-hint-tags.md)
