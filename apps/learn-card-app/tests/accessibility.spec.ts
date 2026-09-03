@@ -10,6 +10,19 @@ import { TEST_CREDENTIAL_TITLE, waitForAuthenticatedState } from './test.helpers
 // catch authoring mistakes; axe verifies the composed UI after Ionic, portals,
 // and client-side routing have rendered.
 const HIGH_IMPACT_LEVELS = new Set(['serious', 'critical']);
+
+// Scan explicitly against WCAG 2.0/2.1/2.2 A+AA (plus axe best-practices) so
+// the report surfaces WCAG 2.2-specific rules (e.g. target-size) instead of
+// axe's narrower defaults.
+const AXE_SCAN_TAGS = [
+    'wcag2a',
+    'wcag2aa',
+    'wcag21a',
+    'wcag21aa',
+    'wcag22a',
+    'wcag22aa',
+    'best-practice',
+];
 const FOCUS_RESET_SENTINEL_ID = 'playwright-a11y-focus-reset';
 
 /**
@@ -101,20 +114,21 @@ const assertNoHighImpactViolations = async (
         await Promise.allSettled(transientAnimations.map(animation => animation.finished));
     });
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const results = await new AxeBuilder({ page }).withTags(AXE_SCAN_TAGS).analyze();
     const violations = results.violations.filter(
         violation => violation.impact && HIGH_IMPACT_LEVELS.has(violation.impact)
     );
 
-    if (violations.length > 0) {
+    if (results.violations.length > 0) {
         await testInfo.attach(axeAttachmentName(checkpoint), {
             body: JSON.stringify(
                 {
                     checkpoint,
                     url: page.url(),
-                    violations: violations.map(violation => ({
+                    violations: results.violations.map(violation => ({
                         id: violation.id,
                         impact: violation.impact,
+                        tags: violation.tags,
                         help: violation.help,
                         description: violation.description,
                         helpUrl: violation.helpUrl,
