@@ -45,3 +45,5 @@ export type { EmailVerificationProps } from './email-verification';
 
 export { CredentialUpdated, getCredentialUpdatedSubject } from './credential-updated';
 export type { CredentialUpdatedProps } from './credential-updated';
+export { AccountSignInChanged, getAccountSignInChangedSubject } from './account-sign-in-changed';
+export type { AccountSignInChangedProps } from './account-sign-in-changed';
