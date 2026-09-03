@@ -122,3 +122,63 @@ export const decideCredentialRefreshNotification = (
 
     return !previousDigest || previousDigest !== nextDigest ? 'queued' : 'suppressed';
 };
+
+// --- Notification routing + delivery-window keys (LC-2136) -------------------
+
+/**
+ * Default collapse window (hours) for repeat refresh notifications. Overridable via
+ * `CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS` (see the plan's configuration
+ * contract).
+ */
+export const DEFAULT_CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS = 24;
+
+/**
+ * The configured delivery window in hours. Invalid or unset configuration falls
+ * back to the 24-hour default so notification collapse never breaks on a bad env.
+ */
+export const getCredentialRefreshNotificationWindowHours = (): number => {
+    const raw = process.env.CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS;
+
+    if (!raw) return DEFAULT_CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS;
+
+    const parsed = Number(raw);
+
+    return Number.isFinite(parsed) && parsed > 0
+        ? parsed
+        : DEFAULT_CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS;
+};
+
+const hmacBase64Url = (input: string, secret: string): string =>
+    createHmac('sha256', secret).update(input).digest('base64url');
+
+/**
+ * Opaque, stable per-refresh routing key: a server-keyed HMAC over the refreshId.
+ * Window-independent, so downstream notification storage can correlate every
+ * delivery window for the same refresh without a reversible identifier. Never
+ * derived from credential content.
+ */
+export const computeCredentialRefreshRouteKey = (
+    refreshId: string,
+    secret: string = getCredentialRefreshDigestSecret()
+): string => hmacBase64Url(`credential-refresh-route:v1:${refreshId}`, secret);
+
+/**
+ * Opaque delivery-window key: a server-keyed HMAC over (refreshId, configured
+ * window size, window bucket). Repeat material updates inside the same configured
+ * window share the key so downstream storage collapses them into one notification;
+ * a new window bucket — or a changed configured window — produces a new key.
+ * Never derived from credential content.
+ */
+export const computeCredentialRefreshDeliveryKey = (
+    refreshId: string,
+    at: Date = new Date(),
+    windowHours: number = getCredentialRefreshNotificationWindowHours(),
+    secret: string = getCredentialRefreshDigestSecret()
+): string => {
+    const bucket = Math.floor(at.getTime() / (windowHours * 3_600_000));
+
+    return hmacBase64Url(
+        `credential-refresh-delivery:v1:${refreshId}:${windowHours}:${bucket}`,
+        secret
+    );
+};

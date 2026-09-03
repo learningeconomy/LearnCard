@@ -218,6 +218,7 @@ export * from './helpers/aiErrors';
 export * from './helpers/aiPassportAuth';
 export * from './helpers/credentialHelpers';
 export * from './helpers/credentialIngestion';
+export * from './helpers/credentialRefresh';
 export * from './helpers/credentials/queries';
 export * from './helpers/openid4vcErrors';
 export * from './helpers/faviconHelpers';
@@ -282,6 +283,8 @@ export * from './react-query/mutations/preferences';
 export * from './react-query/queries/preferences';
 export * from './react-query/queries/careerOneStop';
 export * from './react-query/mutations/syncAllCredentials';
+export * from './react-query/mutations/credentialRefresh';
+export * from './react-query/queries/credentialRefresh';
 
 export * from './svgs/SideNav/SideNavIcons';
 export * from './svgs/SideNav/formal/SideNavFormalIcons';
