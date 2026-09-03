@@ -972,6 +972,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'CREDENTIAL_REVOKED',
     'CREDENTIAL_SUSPENDED',
     'CREDENTIAL_UNSUSPENDED',
+    'CREDENTIAL_REFRESHED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;

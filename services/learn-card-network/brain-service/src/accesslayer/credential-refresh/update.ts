@@ -170,6 +170,34 @@ export const advanceCredentialRefreshHead = async (
     };
 };
 
+/**
+ * Records the outcome of a best-effort `CREDENTIAL_REFRESHED` event emission on the
+ * aggregate (LC-2136), for retry and observability. Called only after the
+ * publication is durable — never inside the publication transaction — and only
+ * after the event was handed to the queue; an emission failure leaves these unset
+ * (and is logged), so absence of `lastNotificationAt` means "not delivered".
+ */
+export const recordCredentialRefreshNotification = async (params: {
+    refreshId: string;
+    /** Local observability reference generated at emission time */
+    notificationId: string;
+    /** Opaque delivery-window collapse key carried by the event */
+    deliveryKey: string;
+    notifiedAt: string;
+}): Promise<void> => {
+    const { refreshId, notificationId, deliveryKey, notifiedAt } = params;
+    const now = new Date().toISOString();
+
+    await neogma.queryRunner.run(
+        `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+         SET refresh.notificationWindowKey = $deliveryKey,
+             refresh.lastNotificationId = $notificationId,
+             refresh.lastNotificationAt = $notifiedAt,
+             refresh.updatedAt = $now`,
+        { refreshId, notificationId, deliveryKey, notifiedAt, now }
+    );
+};
+
 /** Transitions the aggregate lifecycle state (awaiting_claim → active → revoked). */
 export const setCredentialRefreshState = async (
     refreshId: string,

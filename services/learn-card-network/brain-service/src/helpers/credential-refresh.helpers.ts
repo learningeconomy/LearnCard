@@ -23,6 +23,7 @@ import {
     generateRefreshId,
     getCredentialRefresh,
     getCredentialRefreshHead,
+    recordCredentialRefreshNotification,
 } from '@accesslayer/credential-refresh';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import type { CredentialRefreshRecord } from 'types/credential-refresh';
@@ -35,7 +36,10 @@ import {
 } from './credential-refresh-materiality.helpers';
 import { getStatusListBaseUrl } from './status-list.helpers';
 import { getCredentialUri } from './credential.helpers';
-import { addNotificationToQueue } from './notifications.helpers';
+import {
+    addNotificationToQueue,
+    buildCredentialRefreshedNotification,
+} from './notifications.helpers';
 import { getNotificationMessage } from './notificationMessages';
 import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { ProfileType } from 'types/profile';
@@ -559,6 +563,43 @@ export const publishCredentialRefresh = async (
             publishedAt: advance.publishedAt ?? replayedHead?.publishedAt ?? '',
             notification: replayedHead?.notificationOutcome ?? 'suppressed',
         };
+    }
+
+    // Notification event emission (LC-2136). Best-effort, strictly after the
+    // durable publication: the opaque CREDENTIAL_REFRESHED event carries only the
+    // refreshId, version, route key, and delivery-window key — no credential
+    // content. A delivery failure is logged for observability and never rolls
+    // back the published version. Idempotent replays returned above return the
+    // recorded decision without re-emitting.
+    if (notification === 'queued') {
+        try {
+            const holderProfile = aggregate.holderProfileId
+                ? await getProfileByProfileId(aggregate.holderProfileId)
+                : null;
+
+            if (holderProfile) {
+                const event = buildCredentialRefreshedNotification({
+                    holderProfile,
+                    issuerProfile,
+                    refreshId,
+                    version: advance.version,
+                });
+
+                await addNotificationToQueue(event.notification);
+
+                await recordCredentialRefreshNotification({
+                    refreshId,
+                    notificationId: event.notificationId,
+                    deliveryKey: event.deliveryKey,
+                    notifiedAt: event.notifiedAt,
+                });
+            }
+        } catch (error) {
+            console.error(
+                'Credential Refresh Helpers - Failed to enqueue CREDENTIAL_REFRESHED notification:',
+                error
+            );
+        }
     }
 
     return {
