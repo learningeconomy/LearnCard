@@ -215,6 +215,26 @@ describe('Credential Refresh Lifecycle', () => {
             expect(current.statusCode).toBe(200);
         });
 
+        it('activates by holder profile when the public DID differs from its controller DID', async () => {
+            const { allocation, uri } = await sendOriginal();
+
+            // Network clients address the holder by public did:web, while the
+            // authenticated Profile node retains its controller did:key.
+            await runQuery(
+                `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+                 SET refresh.holderDid = $publicHolderDid`,
+                {
+                    refreshId: allocation.refreshId,
+                    publicHolderDid: `did:web:localhost%3A3000:users:${HOLDER_PROFILE_ID}`,
+                }
+            );
+
+            await holder.clients.fullAuth.credential.acceptCredential({ uri });
+
+            const aggregate = await getCredentialRefresh(allocation.refreshId);
+            expect(aggregate?.state).toBe('active');
+        });
+
         it('is idempotent across repeated acceptance', async () => {
             const { allocation, uri } = await sendOriginal();
 

@@ -44,6 +44,7 @@ import {
 } from './notifications.helpers';
 import { getNotificationMessage } from './notificationMessages';
 import { resolveRecipientLocale } from './getRecipientLocale.helpers';
+import { getDidWeb } from './did.helpers';
 import { ProfileType } from 'types/profile';
 
 /**
@@ -84,7 +85,11 @@ export const allocateCredentialRefresh = async (
     const props = {
         refreshId,
         issuerProfileId: issuerProfile.profileId,
-        issuerDid: issuerProfile.did,
+        // Credentials issued through the network plugin use the profile's public
+        // did:web identity. `issuerProfile.did` is the internal controller did:key,
+        // so persisting it here would reject the normal SDK-issued credential when
+        // the allocation is bound after signing.
+        issuerDid: getDidWeb(domain, issuerProfile.profileId),
         holderProfileId: holderProfile.profileId,
         holderDid,
         credentialId,
@@ -195,7 +200,18 @@ export const sendRefreshableCredential = async (
         });
     }
 
-    if (getCredentialIssuerId(credential) !== aggregate.issuerDid) {
+    const credentialIssuerDid = getCredentialIssuerId(credential);
+    const publicIssuerDid = getDidWeb(domain, issuerProfile.profileId);
+
+    // A profile controls both its internal controller did:key and its public network
+    // did:web. The network plugin normally issues with did:web, while lower-level
+    // callers may legitimately issue with the controller DID. Bind the aggregate to
+    // whichever controlled identity appears on version 1; later versions must match
+    // that exact normalized issuer.
+    if (
+        !credentialIssuerDid ||
+        ![issuerProfile.did, publicIssuerDid].includes(credentialIssuerDid)
+    ) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Credential issuer does not match the allocated refresh',
@@ -275,13 +291,15 @@ export const sendRefreshableCredential = async (
              root.version = 1,
              root.refreshVersionKey = $versionKey,
              root.publishedAt = $now,
-             root.signingMode = 'issuer-signed'
+             root.signingMode = 'issuer-signed',
+             refresh.issuerDid = $credentialIssuerDid
          RETURN refresh`,
         {
             refreshId,
             rootCredentialNodeId: credentialInstance.id,
             versionKey: `${refreshId}:1`,
             now,
+            credentialIssuerDid,
         }
     );
 

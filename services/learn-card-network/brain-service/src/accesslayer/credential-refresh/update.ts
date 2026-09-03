@@ -221,23 +221,25 @@ export const setCredentialRefreshState = async (
 
 /**
  * Idempotently activates the `awaiting_claim` aggregate whose ROOT is the accepted
- * credential, only when the accepting DID is the intended holder. Returns true when a
+ * credential, only when the accepting profile is the intended holder. Profile ID is
+ * the stable binding here because a network-facing did:web and the authenticated
+ * Profile node's controller did:key represent the same holder. Returns true when a
  * transition happened. Called after canonical acceptance succeeds; failures are safe
  * to swallow because the holder endpoint lazily reconciles from the canonical
  * CREDENTIAL_RECEIVED relationship.
  */
 export const activateCredentialRefreshForAcceptedCredential = async (
     credentialNodeId: string,
-    holderDid: string
+    holderProfileId: string
 ): Promise<boolean> => {
     const now = new Date().toISOString();
 
     const result = await neogma.queryRunner.run(
         `MATCH (refresh:CredentialRefresh)-[:ROOT]->(root:Credential {id: $credentialNodeId})
-         WHERE refresh.state = 'awaiting_claim' AND refresh.holderDid = $holderDid
+         WHERE refresh.state = 'awaiting_claim' AND refresh.holderProfileId = $holderProfileId
          SET refresh.state = 'active', refresh.updatedAt = $now
          RETURN refresh.refreshId AS refreshId`,
-        { credentialNodeId, holderDid, now }
+        { credentialNodeId, holderProfileId, now }
     );
 
     return result.records.length > 0;

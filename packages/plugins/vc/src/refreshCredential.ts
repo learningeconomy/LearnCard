@@ -602,6 +602,7 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
 
             try {
                 vp = await _learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
                     challenge: challenge.challenge,
                     domain: challenge.domain ?? validated.url.host,
                 });

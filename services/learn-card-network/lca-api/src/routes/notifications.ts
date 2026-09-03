@@ -46,6 +46,7 @@ const recordE2ePushAttempt = async (notification: LCNNotification): Promise<void
 
     try {
         const toDid = typeof notification.to === 'string' ? notification.to : notification.to.did;
+        const metadata = notification.data?.metadata;
 
         await cache.set(
             `${E2E_PUSH_ATTEMPT_CACHE_PREFIX}${uuidv4()}`,
@@ -53,6 +54,11 @@ const recordE2ePushAttempt = async (notification: LCNNotification): Promise<void
                 type: notification.type,
                 toDid,
                 at: new Date().toISOString(),
+                refreshId: typeof metadata?.refreshId === 'string' ? metadata.refreshId : undefined,
+                routeKey: typeof metadata?.routeKey === 'string' ? metadata.routeKey : undefined,
+                deliveryKey:
+                    typeof metadata?.deliveryKey === 'string' ? metadata.deliveryKey : undefined,
+                version: typeof metadata?.version === 'number' ? metadata.version : undefined,
             })
         );
     } catch (error) {

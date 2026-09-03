@@ -198,22 +198,29 @@ describe('Query API', () => {
             const provisional = prepareFixtureById('clr/provisional-transcript', {
                 issuerDid: 'did:example:test-issuer',
                 subjectDid: 'did:example:test-holder',
-            }) as Record<string, any>;
+            });
 
             expect(typeof provisional.id).toBe('string');
             expect(provisional.name).toContain('Provisional');
 
             const final = buildFinalTranscriptVariant(provisional, {
                 validFrom: '2026-06-01T00:00:00Z',
-            }) as Record<string, any>;
+            });
+            const provisionalIssuer =
+                typeof provisional.issuer === 'string' ? provisional.issuer : provisional.issuer.id;
+            const finalIssuer = typeof final.issuer === 'string' ? final.issuer : final.issuer.id;
+            const provisionalSubject = Array.isArray(provisional.credentialSubject)
+                ? provisional.credentialSubject[0]
+                : provisional.credentialSubject;
+            const finalSubject = Array.isArray(final.credentialSubject)
+                ? final.credentialSubject[0]
+                : final.credentialSubject;
 
             // Identity stability: the final version shares the credential ID, issuer,
             // and subject with the provisional version.
             expect(final.id).toBe(provisional.id);
-            expect(final.issuer?.id ?? final.issuer).toBe(
-                provisional.issuer?.id ?? provisional.issuer
-            );
-            expect(final.credentialSubject?.id).toBe(provisional.credentialSubject?.id);
+            expect(finalIssuer).toBe(provisionalIssuer);
+            expect(finalSubject?.id).toBe(provisionalSubject?.id);
 
             // The final variant is materially different and marked final.
             expect(final.name).toContain('Final');

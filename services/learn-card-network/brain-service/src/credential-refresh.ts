@@ -208,7 +208,8 @@ const authenticateRefreshRequest = async (
 const sendJweEnvelope = async (
     reply: FastifyReply,
     encryptedCredential: string,
-    etag: string | undefined
+    etag: string | undefined,
+    version: number
 ) => {
     if (etag) reply.header('ETag', formatEtag(etag));
 
@@ -218,6 +219,7 @@ const sendJweEnvelope = async (
         format: 'jwe',
         jwe: JSON.parse(encryptedCredential),
         ...(etag ? { etag } : {}),
+        version,
     });
 };
 
@@ -275,7 +277,7 @@ export const credentialRefreshFastifyPlugin: FastifyPluginAsync<
 
         logRefreshRequest(refreshId, 'served', startedAt, head.version);
 
-        return sendJweEnvelope(reply, head.credential, etag);
+        return sendJweEnvelope(reply, head.credential, etag, head.version);
     });
 
     fastify.get<RefreshParams & HistoryQuery>(
@@ -357,7 +359,7 @@ export const credentialRefreshFastifyPlugin: FastifyPluginAsync<
 
         logRefreshRequest(refreshId, 'version-served', startedAt, version);
 
-        return sendJweEnvelope(reply, versionNode.credential, versionEtag);
+        return sendJweEnvelope(reply, versionNode.credential, versionEtag, versionNode.version);
     });
 };
 

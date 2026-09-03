@@ -28,6 +28,10 @@ services:
 
         volumes:
             - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
+            # Workspace packages are baked into the shared image, so mount the refresh
+            # contracts explicitly to exercise branch-local validator changes without a
+            # full monorepo image rebuild.
+            - ../../packages/learn-card-types/src:/app/packages/learn-card-types/src
 
         environment:
             PORT: 4000

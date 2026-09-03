@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll } from 'vitest';
+import { describe, test, expect, beforeAll, beforeEach } from 'vitest';
 
 import { prepareFixtureById, buildFinalTranscriptVariant } from '@learncard/credential-library';
 import type { UnsignedVC, VC } from '@learncard/types';
@@ -102,7 +102,15 @@ const getRefreshNotifications = async (wallet: LearnCard): Promise<RefreshNotifi
     );
 };
 
-type PushAttempt = { type: string; toDid: string; at: string };
+type PushAttempt = {
+    type: string;
+    toDid: string;
+    at: string;
+    refreshId?: string;
+    routeKey?: string;
+    deliveryKey?: string;
+    version?: number;
+};
 
 const getPushAttempts = async (): Promise<PushAttempt[]> => {
     const response = await fetch(`${LCA_API_BASE_URL}/api/test/push-attempts`);
@@ -117,9 +125,6 @@ describe('Credential Refresh (managed)', () => {
     let holder: LearnCard;
 
     beforeAll(async () => {
-        issuer = await getLearnCardForUser('a');
-        holder = await getLearnCardForUser('b');
-
         // The global setup only waits for brain-service; make sure lca-api is up too.
         await waitFor(
             async () =>
@@ -129,6 +134,13 @@ describe('Credential Refresh (managed)', () => {
             status => status === 200,
             { attempts: 60, intervalMs: 1_000 }
         );
+    }, 120_000);
+
+    // The shared E2E harness clears profile data after every test, so recreate the
+    // wallets' network profiles for each independent scenario.
+    beforeEach(async () => {
+        issuer = await getLearnCardForUser('a');
+        holder = await getLearnCardForUser('b');
     }, 120_000);
 
     test('issues a provisional CLR and refreshes it in place to the final CLR', async () => {
@@ -188,7 +200,7 @@ describe('Credential Refresh (managed)', () => {
         // 5. Issuer publishes the final CLR: same credential ID, later effective
         //    date, materially changed content.
         const finalUnsigned = buildFinalTranscriptVariant(unsigned, {
-            validFrom: new Date(Date.now() + 60_000).toISOString(),
+            validFrom: new Date().toISOString(),
         });
 
         expect(finalUnsigned.id).toBe(credentialId);
@@ -356,21 +368,33 @@ describe('Credential Refresh (managed)', () => {
 
         // Collapse: exactly one in-app notification and exactly one push attempt.
         const inAppAfterCollapse = await waitFor(
-            () => getRefreshNotifications(holder),
+            async () =>
+                (
+                    await getRefreshNotifications(holder)
+                ).filter(
+                    notification => notification.data?.metadata?.refreshId === allocation.refreshId
+                ),
             notifications => notifications.length === 1
         );
 
         expect(inAppAfterCollapse).toHaveLength(1);
-        expect(inAppAfterCollapse[0]?.data?.metadata?.refreshId).toBe(allocation.refreshId);
 
         const attemptsAfterCollapse = await waitFor(
-            getPushAttempts,
+            async () =>
+                (
+                    await getPushAttempts()
+                ).filter(attempt => attempt.refreshId === allocation.refreshId),
             attempts => attempts.length === 1
         );
 
         expect(attemptsAfterCollapse).toHaveLength(1);
-        expect(attemptsAfterCollapse[0]?.type).toBe('CREDENTIAL_REFRESHED');
-        expect(attemptsAfterCollapse[0]?.toDid).toBe(holderDid);
+        const collapsedAttempt = attemptsAfterCollapse[0];
+
+        expect(collapsedAttempt).toMatchObject({
+            refreshId: allocation.refreshId,
+            toDid: holderDid,
+            type: 'CREDENTIAL_REFRESHED',
+        });
 
         // A publication in a new delivery window creates a second notification and
         // a second push attempt.
@@ -379,18 +403,27 @@ describe('Credential Refresh (managed)', () => {
         await publishMaterialUpdate('final grades posted');
 
         const inAppAfterNewWindow = await waitFor(
-            () => getRefreshNotifications(holder),
+            async () =>
+                (
+                    await getRefreshNotifications(holder)
+                ).filter(
+                    notification => notification.data?.metadata?.refreshId === allocation.refreshId
+                ),
             notifications => notifications.length === 2
         );
 
         expect(inAppAfterNewWindow).toHaveLength(2);
 
         const attemptsAfterNewWindow = await waitFor(
-            getPushAttempts,
+            async () =>
+                (
+                    await getPushAttempts()
+                ).filter(attempt => attempt.refreshId === allocation.refreshId),
             attempts => attempts.length === 2
         );
 
         expect(attemptsAfterNewWindow).toHaveLength(2);
+        expect(new Set(attemptsAfterNewWindow.map(attempt => attempt.deliveryKey)).size).toBe(2);
     }, 240_000);
 
     test('stops serving after revocation while local history remains available', async () => {

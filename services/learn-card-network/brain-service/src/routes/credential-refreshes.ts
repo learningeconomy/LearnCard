@@ -9,6 +9,7 @@ import {
     PublishCredentialRefreshResultValidator,
     VCValidator,
 } from '@learncard/types';
+import type { PublishCredentialRefreshInput } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
@@ -21,6 +22,7 @@ import {
     publishCredentialRefresh,
     sendRefreshableCredential,
 } from '@helpers/credential-refresh.helpers';
+import { getDidWeb } from '@helpers/did.helpers';
 
 export const credentialRefreshesRouter = t.router({
     allocateCredentialRefresh: profileRoute
@@ -50,6 +52,18 @@ export const credentialRefreshesRouter = t.router({
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            const holderDids = new Set([
+                holderProfile.did,
+                getDidWeb(ctx.domain, holderProfile.profileId),
+            ]);
+
+            if (!holderDids.has(holder.did)) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Holder DID does not belong to the supplied profile',
                 });
             }
 
@@ -113,7 +127,11 @@ export const credentialRefreshesRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
-            return publishCredentialRefresh({ issuerProfile: profile, input, domain: ctx.domain });
+            return publishCredentialRefresh({
+                issuerProfile: profile,
+                input: input as PublishCredentialRefreshInput,
+                domain: ctx.domain,
+            });
         }),
 
     getCredentialRefreshHistory: profileRoute

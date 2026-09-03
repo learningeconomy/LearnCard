@@ -56,25 +56,33 @@ The **New Fixture** button opens a form with:
 
 > Fixture creation uses a Vite dev server plugin (`src/vite-plugin-fixtures.ts`) and is only available during development.
 
+### Managed Transcript Refresh Demo
+
+Connect a network account with a profile, then open **Managed Refresh Demo**. The demo
+self-issues and accepts the provisional CLR fixture before allowing you to publish the
+final transcript with the same credential ID. It displays only safe lifecycle metadata:
+refresh ID, managed version, dates, and notification outcome.
+
 ## Architecture
 
-| File                                 | Purpose                                                               |
-| ------------------------------------ | --------------------------------------------------------------------- |
-| `src/App.tsx`                        | Main layout — search, filters, fixture grid, detail panel             |
-| `src/context/WalletContext.tsx`      | Wallet lifecycle, issue+store, and send operations                    |
-| `src/components/FilterBar.tsx`       | Multi-facet filter chips (spec, profile, validity, category)          |
-| `src/components/FixtureCard.tsx`     | Individual fixture card with checkbox and metadata badges             |
-| `src/components/DetailPanel.tsx`     | Slide-over panel with full JSON and metadata                          |
-| `src/components/IssuePanel.tsx`      | Bulk issue modal with progress tracking                               |
-| `src/components/SendPanel.tsx`       | Bulk send modal with recipient input and progress                     |
-| `src/components/NewFixturePanel.tsx` | Fixture creation form with JSON editor and auto-inference             |
-| `src/components/ConnectBar.tsx`      | Wallet connection UI with seed input and environment selector         |
-| `src/components/JsonViewer.tsx`      | Syntax-highlighted JSON display                                       |
-| `src/components/BulkActionBar.tsx`   | Floating action bar for selected fixtures                             |
-| `src/lib/category.ts`                | Credential categorization heuristics (Achievement, ID, Studies, etc.) |
-| `src/lib/colors.ts`                  | Spec/profile/category color mappings                                  |
-| `src/lib/infer-metadata.ts`          | Auto-infer fixture metadata from credential JSON                      |
-| `src/vite-plugin-fixtures.ts`        | Dev server middleware for reading/writing fixture files on disk       |
+| File                                     | Purpose                                                               |
+| ---------------------------------------- | --------------------------------------------------------------------- |
+| `src/App.tsx`                            | Main layout — search, filters, fixture grid, detail panel             |
+| `src/context/WalletContext.tsx`          | Wallet lifecycle, issue+store, and send operations                    |
+| `src/components/FilterBar.tsx`           | Multi-facet filter chips (spec, profile, validity, category)          |
+| `src/components/FixtureCard.tsx`         | Individual fixture card with checkbox and metadata badges             |
+| `src/components/DetailPanel.tsx`         | Slide-over panel with full JSON and metadata                          |
+| `src/components/IssuePanel.tsx`          | Bulk issue modal with progress tracking                               |
+| `src/components/SendPanel.tsx`           | Bulk send modal with recipient input and progress                     |
+| `src/components/NewFixturePanel.tsx`     | Fixture creation form with JSON editor and auto-inference             |
+| `src/components/ManagedRefreshPanel.tsx` | Provisional-to-final managed refresh issuer demo                      |
+| `src/components/ConnectBar.tsx`          | Wallet connection UI with seed input and environment selector         |
+| `src/components/JsonViewer.tsx`          | Syntax-highlighted JSON display                                       |
+| `src/components/BulkActionBar.tsx`       | Floating action bar for selected fixtures                             |
+| `src/lib/category.ts`                    | Credential categorization heuristics (Achievement, ID, Studies, etc.) |
+| `src/lib/colors.ts`                      | Spec/profile/category color mappings                                  |
+| `src/lib/infer-metadata.ts`              | Auto-infer fixture metadata from credential JSON                      |
+| `src/vite-plugin-fixtures.ts`            | Dev server middleware for reading/writing fixture files on disk       |
 
 ## Tech Stack
 

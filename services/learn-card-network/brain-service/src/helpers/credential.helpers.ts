@@ -133,7 +133,10 @@ export const acceptCredential = async (
     // must not break acceptance (dual-write safety); the holder refresh endpoint
     // lazily reconciles from the canonical CREDENTIAL_RECEIVED relationship.
     try {
-        await activateCredentialRefreshForAcceptedCredential(pendingVc.target.id, profile.did);
+        await activateCredentialRefreshForAcceptedCredential(
+            pendingVc.target.id,
+            profile.profileId
+        );
     } catch (error) {
         console.error(
             'Credential Helpers - Failed to activate credential refresh on acceptance:',

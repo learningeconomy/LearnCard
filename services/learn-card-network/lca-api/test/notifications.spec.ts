@@ -359,6 +359,10 @@ describe('Notifications', () => {
                     LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED
                 );
                 expect(attempt.toDid).toBe(userA.learnCard.id.did());
+                expect(attempt.refreshId).toBe('opaque-refresh-id');
+                expect(attempt.routeKey).toBe('opaque-route-key');
+                expect(attempt.deliveryKey).toBe('window-1');
+                expect(attempt.version).toBe(1);
                 expect(typeof attempt.at).toBe('string');
 
                 // A new delivery window produces a new push attempt.

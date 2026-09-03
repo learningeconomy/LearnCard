@@ -344,6 +344,7 @@ describe('Credential Refresh Endpoint', () => {
             expect(body.format).toEqual('jwe');
             expect(JWEValidator.safeParse(body.jwe).success).toBe(true);
             expect(typeof body.etag).toBe('string');
+            expect(body.version).toBe(1);
             expect(res.headers.etag).toContain(body.etag);
 
             // The payload is decryptable only by the holder and matches the original
@@ -391,6 +392,7 @@ describe('Credential Refresh Endpoint', () => {
 
             expect(res.statusCode).toBe(200);
 
+            expect(res.json().version).toBe(2);
             const decrypted = await holder.learnCard.invoke.decryptDagJwe(res.json().jwe as JWE);
             expect((decrypted as VC).name).toEqual('Final Transcript');
         });
@@ -427,6 +429,7 @@ describe('Credential Refresh Endpoint', () => {
 
             expect(res.statusCode).toBe(200);
             expect(res.json().format).toEqual('jwe');
+            expect(res.json().version).toBe(1);
 
             const decrypted = await holder.learnCard.invoke.decryptDagJwe(res.json().jwe as JWE);
             expect((decrypted as VC).name).toEqual('Original Transcript');

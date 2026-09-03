@@ -24,7 +24,19 @@ export const testRouter = t.router({
             },
         })
         .input(z.void())
-        .output(z.array(z.object({ type: z.string(), toDid: z.string(), at: z.string() })))
+        .output(
+            z.array(
+                z.object({
+                    type: z.string(),
+                    toDid: z.string(),
+                    at: z.string(),
+                    refreshId: z.string().optional(),
+                    routeKey: z.string().optional(),
+                    deliveryKey: z.string().optional(),
+                    version: z.number().optional(),
+                })
+            )
+        )
         .query(async () => {
             const keys = await cache.keys(`${E2E_PUSH_ATTEMPT_CACHE_PREFIX}*`);
 
@@ -37,7 +49,15 @@ export const testRouter = t.router({
                     if (!raw) return null;
 
                     try {
-                        return JSON.parse(raw) as { type: string; toDid: string; at: string };
+                        return JSON.parse(raw) as {
+                            type: string;
+                            toDid: string;
+                            at: string;
+                            refreshId?: string;
+                            routeKey?: string;
+                            deliveryKey?: string;
+                            version?: number;
+                        };
                     } catch {
                         return null;
                     }

@@ -504,6 +504,7 @@ describe('refreshCredential', () => {
 
             expect(fetchMock).toHaveBeenCalledTimes(2);
             expect(learnCard.invoke.getDidAuthVp).toHaveBeenCalledWith({
+                proofFormat: 'jwt',
                 challenge: 'srv-challenge-1',
                 domain: 'refresh.example.com',
             });
@@ -541,6 +542,7 @@ describe('refreshCredential', () => {
             const result = await runRefresh();
 
             expect(learnCard.invoke.getDidAuthVp).toHaveBeenCalledWith({
+                proofFormat: 'jwt',
                 challenge: 'srv-challenge-1',
                 domain: 'refresh.example.com',
             });

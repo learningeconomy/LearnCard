@@ -10,6 +10,7 @@ import * as Notifications from '@helpers/notifications.helpers';
 import { getLearnCard, SeedLearnCard } from '@helpers/learnCard.helpers';
 import { getCredentialByUri } from '@accesslayer/credential/read';
 import { getCredentialRefresh, getCredentialRefreshHead } from '@accesslayer/credential-refresh';
+import { getDidWeb } from '@helpers/did.helpers';
 
 const noAuthClient = getClient();
 
@@ -22,6 +23,7 @@ const ISSUER_PROFILE_ID = 'refresh-issuer';
 const HOLDER_PROFILE_ID = 'refresh-holder';
 const OUTSIDER_PROFILE_ID = 'refresh-outsider';
 const CREDENTIAL_ID = 'urn:uuid:refreshable-credential-1';
+const DOMAIN = 'localhost%3A3000';
 
 type AllocationResult = {
     refreshId: string;
@@ -160,6 +162,18 @@ describe('Credential Refresh Allocation', () => {
             ).rejects.toMatchObject({ code: 'NOT_FOUND' });
         });
 
+        it('rejects a holder DID that does not belong to the supplied profile', async () => {
+            await expect(
+                issuer.clients.fullAuth.credentialRefresh.allocateCredentialRefresh({
+                    holder: {
+                        profileId: HOLDER_PROFILE_ID,
+                        did: outsider.learnCard.id.did(),
+                    },
+                    credentialId: CREDENTIAL_ID,
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
         it('requires a stable nonempty credential ID', async () => {
             await expect(
                 issuer.clients.fullAuth.credentialRefresh.allocateCredentialRefresh({
@@ -195,7 +209,7 @@ describe('Credential Refresh Allocation', () => {
             expect(aggregate).toBeTruthy();
             expect(aggregate?.state).toEqual('awaiting_claim');
             expect(aggregate?.issuerProfileId).toEqual(ISSUER_PROFILE_ID);
-            expect(aggregate?.issuerDid).toEqual(issuer.learnCard.id.did());
+            expect(aggregate?.issuerDid).toEqual(getDidWeb(DOMAIN, ISSUER_PROFILE_ID));
             expect(aggregate?.holderProfileId).toEqual(HOLDER_PROFILE_ID);
             expect(aggregate?.holderDid).toEqual(holder.learnCard.id.did());
             expect(aggregate?.credentialId).toEqual(CREDENTIAL_ID);

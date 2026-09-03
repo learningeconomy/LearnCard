@@ -93,11 +93,75 @@ export type PublishSigningAuthorityRefresh = z.infer<
     typeof PublishSigningAuthorityRefreshValidator
 >;
 
-export const PublishCredentialRefreshInputValidator = z.discriminatedUnion('mode', [
-    PublishIssuerSignedRefreshValidator,
-    PublishSigningAuthorityRefreshValidator,
-]);
-export type PublishCredentialRefreshInput = z.infer<typeof PublishCredentialRefreshInputValidator>;
+/**
+ * Top-level object form required by trpc-to-openapi.
+ *
+ * Keep the public TypeScript type discriminated even though the runtime object has
+ * optional fields for both modes. The refinement preserves the same required-field
+ * behavior as the former z.discriminatedUnion without crashing OpenAPI generation.
+ */
+export const PublishCredentialRefreshInputValidator = z
+    .object({
+        ...PublishCredentialRefreshBaseFields,
+        mode: CredentialRefreshSigningModeValidator,
+        signedCredential: VCValidator.optional(),
+        credential: UnsignedVCValidator.optional(),
+        signingAuthority: z
+            .object({
+                type: z.string().min(1),
+            })
+            .catchall(z.any())
+            .optional(),
+    })
+    .superRefine((input, ctx) => {
+        if (input.mode === 'issuer-signed' && !input.signedCredential) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['signedCredential'],
+                message: 'signedCredential is required for issuer-signed publication',
+            });
+        }
+
+        if (
+            input.mode === 'issuer-signed' &&
+            (input.credential !== undefined || input.signingAuthority !== undefined)
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['mode'],
+                message: 'issuer-signed publication cannot include signing-authority fields',
+            });
+        }
+
+        if (input.mode === 'signing-authority') {
+            if (input.signedCredential !== undefined) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['signedCredential'],
+                    message: 'signing-authority publication cannot include signedCredential',
+                });
+            }
+
+            if (!input.credential) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['credential'],
+                    message: 'credential is required for signing-authority publication',
+                });
+            }
+
+            if (!input.signingAuthority) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['signingAuthority'],
+                    message: 'signingAuthority is required for signing-authority publication',
+                });
+            }
+        }
+    });
+export type PublishCredentialRefreshInput =
+    | PublishIssuerSignedRefresh
+    | PublishSigningAuthorityRefresh;
 
 export const PublishCredentialRefreshNotificationValidator = z.enum([
     'queued',
@@ -181,6 +245,8 @@ export const JweCredentialRefreshEnvelopeValidator = z.object({
     format: z.literal('jwe'),
     jwe: JWEValidator,
     etag: z.string().optional(),
+    /** Present on LearnCard-managed endpoints; optional for interoperable JWE services. */
+    version: z.number().int().positive().optional(),
 });
 export type JweCredentialRefreshEnvelope = z.infer<typeof JweCredentialRefreshEnvelopeValidator>;
 
