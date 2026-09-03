@@ -8,6 +8,7 @@ import {
     phonePortraitOutline,
     chevronBackOutline,
     mailOutline,
+    checkmarkCircleOutline,
 } from 'ionicons/icons';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -28,6 +29,12 @@ interface RecoveryFlowModalProps {
     onRecoverWithBackup: (fileContents: string, password: string) => Promise<void>;
     onRecoverWithDevice?: (deviceShare: string, shareVersion?: number) => Promise<void>;
     onRecoverWithEmail?: (emailShare: string) => Promise<void>;
+    identityPhase?: 'enter_email' | 'verify_email' | 'choose_method' | 'new_login' | 'success';
+    identityEmail?: string;
+    onSendIdentityCode?: (email: string) => Promise<void>;
+    onVerifyIdentityCode?: (code: string) => Promise<void>;
+    onContinueWithNewLogin?: () => void;
+    onFinishIdentityRecovery?: () => void;
     onCancel: () => void;
 }
 
@@ -38,7 +45,15 @@ const friendlyError = (e: unknown): string => {
             return m['recovery.connectionIssue']();
         if (e.message.includes('phrase') || e.message.includes('mnemonic'))
             return m['recovery.phraseInvalid']();
-        return e.message;
+        if (e.message.toLowerCase().includes('too many')) {
+            return m['recovery.identity.tooManyAttempts']();
+        }
+        if (e.message.toLowerCase().includes('code')) {
+            return m['recovery.identity.invalidCode']();
+        }
+        if (e.message.toLowerCase().includes('incorrect key')) {
+            return m['recovery.identity.invalidRecoveryMethod']();
+        }
     }
 
     return m['recovery.somethingWrong']();
@@ -73,6 +88,12 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     onRecoverWithBackup,
     onRecoverWithDevice,
     onRecoverWithEmail,
+    identityPhase,
+    identityEmail,
+    onSendIdentityCode,
+    onVerifyIdentityCode,
+    onContinueWithNewLogin,
+    onFinishIdentityRecovery,
     onCancel,
 }) => {
     const [activeMethod, setActiveMethod] = useState<RecoveryFlowType | null>(null);
@@ -83,6 +104,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     const [backupFile, setBackupFile] = useState<string | null>(null);
     const [backupPassword, setBackupPassword] = useState('');
     const [emailShare, setEmailShare] = useState('');
+    const [recoveryEmail, setRecoveryEmail] = useState(identityEmail ?? '');
+    const [verificationCode, setVerificationCode] = useState('');
 
     const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
     const webAuthnSupported = isWebAuthnSupported();
@@ -223,6 +246,180 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
     const phraseWordCount = phrase.trim() ? phrase.trim().split(/\s+/).length : 0;
 
+    const identityError = error && (
+        <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
+            <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+            <span className="text-sm text-red-700 leading-relaxed">{error}</span>
+        </div>
+    );
+
+    if (identityPhase === 'enter_email') {
+        return (
+            <div className="p-6 max-w-md mx-auto font-poppins">
+                <div className="text-center mb-6">
+                    <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                        <IonIcon icon={mailOutline} className="text-2xl" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                        {m['recovery.identity.title']()}
+                    </h2>
+                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                        {m['recovery.identity.emailDescription']()}
+                    </p>
+                </div>
+
+                {identityError}
+
+                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                    {m['recovery.identity.recoveryEmailLabel']()}
+                </label>
+                <input
+                    type="email"
+                    value={recoveryEmail}
+                    onChange={event => setRecoveryEmail(event.target.value)}
+                    placeholder={m['recovery.identity.recoveryEmailPlaceholder']()}
+                    autoComplete="email"
+                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                />
+
+                <button
+                    onClick={async () => {
+                        if (!recoveryEmail.trim() || !onSendIdentityCode) return;
+                        setLoading(true);
+                        setError(null);
+                        try {
+                            await onSendIdentityCode(recoveryEmail.trim());
+                        } catch (e) {
+                            setError(friendlyError(e));
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
+                    disabled={loading || !recoveryEmail.trim()}
+                    className="w-full mt-5 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                    {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            {m['recovery.identity.sendingCode']()}
+                        </span>
+                    ) : (
+                        m['recovery.identity.sendCode']()
+                    )}
+                </button>
+                <button
+                    onClick={onCancel}
+                    className="w-full mt-3 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                >
+                    {m['common.cancel']()}
+                </button>
+            </div>
+        );
+    }
+
+    if (identityPhase === 'verify_email') {
+        return (
+            <div className="p-6 max-w-md mx-auto font-poppins">
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                    {m['recovery.identity.checkEmail']()}
+                </h2>
+                <p className="text-sm text-grayscale-600 leading-relaxed mb-5">
+                    {m['recovery.identity.codeDescription']()}
+                </p>
+                {identityError}
+                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                    {m['recovery.identity.codeLabel']()}
+                </label>
+                <input
+                    type="text"
+                    inputMode="numeric"
+                    value={verificationCode}
+                    onChange={event =>
+                        setVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                    }
+                    placeholder="000000"
+                    autoComplete="one-time-code"
+                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-center tracking-[0.3em] text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                />
+                <button
+                    onClick={async () => {
+                        if (verificationCode.length !== 6 || !onVerifyIdentityCode) return;
+                        setLoading(true);
+                        setError(null);
+                        try {
+                            await onVerifyIdentityCode(verificationCode);
+                        } catch (e) {
+                            setError(friendlyError(e));
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
+                    disabled={loading || verificationCode.length !== 6}
+                    className="w-full mt-5 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                    {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            {m['common.verifying']()}
+                        </span>
+                    ) : (
+                        m['recovery.identity.verifyCode']()
+                    )}
+                </button>
+                <button
+                    onClick={onCancel}
+                    className="w-full mt-3 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                >
+                    {m['common.cancel']()}
+                </button>
+            </div>
+        );
+    }
+
+    if (identityPhase === 'new_login') {
+        return (
+            <div className="p-8 max-w-md mx-auto text-center font-poppins">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <IonIcon icon={checkmarkCircleOutline} className="text-2xl" />
+                </div>
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                    {m['recovery.identity.keyVerified']()}
+                </h2>
+                <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
+                    {m['recovery.identity.newLoginDescription']()}
+                </p>
+                <button
+                    onClick={onContinueWithNewLogin}
+                    className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                >
+                    {m['recovery.identity.continueToLogin']()}
+                </button>
+            </div>
+        );
+    }
+
+    if (identityPhase === 'success') {
+        return (
+            <div className="p-8 max-w-md mx-auto text-center font-poppins">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <IonIcon icon={checkmarkCircleOutline} className="text-3xl" />
+                </div>
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                    {m['recovery.identity.successTitle']()}
+                </h2>
+                <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
+                    {m['recovery.identity.successDescription']()}
+                </p>
+                <button
+                    onClick={onFinishIdentityRecovery}
+                    className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                >
+                    {m['common.done']()}
+                </button>
+            </div>
+        );
+    }
+
     // ── Method picker ────────────────────────────────────────────
 
     if (!activeMethod) {
@@ -232,12 +429,16 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
                         {recoveryReason
                             ? getRecoveryCopy()[recoveryReason].title
+                            : identityPhase === 'choose_method'
+                            ? m['recovery.identity.chooseMethod']()
                             : getDefaultCopy().title}
                     </h2>
 
                     <p className="text-sm text-grayscale-600 leading-relaxed">
                         {recoveryReason
                             ? getRecoveryCopy()[recoveryReason].description
+                            : identityPhase === 'choose_method'
+                            ? m['recovery.identity.chooseMethodDescription']()
                             : getDefaultCopy().description}
                     </p>
                 </div>
