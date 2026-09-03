@@ -1918,6 +1918,16 @@
         "updateCheckFailed": "Connection issue. Please check your internet and try again.",
         "updatedCredentialUnavailable": "This credential isn't available yet. Please try again later."
     },
+    "credentialHistory": {
+        "title": "Previous Versions",
+        "empty": "No previous versions are stored on this device.",
+        "unavailable": "This version isn't available on this device.",
+        "view": "View",
+        "loadingVersion": "Loading version…",
+        "done": "Done",
+        "updatedOn": "Updated {{date}}",
+        "versionFrom": "Version from {{date}}"
+    },
     "share": {
         "addContact": "Add contact",
         "generateLinkFailed": "Failed to generate invite link",
@@ -2633,7 +2643,8 @@
         "workHistory": "Work History",
         "menu": {
             "manageIssuances": "Manage Issuances",
-            "viewData": "View Data"
+            "viewData": "View Data",
+            "viewPreviousVersions": "View Previous Versions"
         },
         "shortBoost": {
             "selectRecipient": "Select Recipient",

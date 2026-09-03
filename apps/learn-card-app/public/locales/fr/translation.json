@@ -1918,6 +1918,16 @@
         "updateCheckFailed": "Problème de connexion. Vérifiez votre connexion internet et réessayez.",
         "updatedCredentialUnavailable": "Ce titre n'est pas encore disponible. Veuillez réessayer plus tard."
     },
+    "credentialHistory": {
+        "title": "Versions précédentes",
+        "empty": "Aucune version précédente n'est enregistrée sur cet appareil.",
+        "unavailable": "Cette version n'est pas disponible sur cet appareil.",
+        "view": "Voir",
+        "loadingVersion": "Chargement de la version…",
+        "done": "Terminé",
+        "updatedOn": "Mis à jour le {{date}}",
+        "versionFrom": "Version du {{date}}"
+    },
     "share": {
         "addContact": "Ajouter un contact",
         "generateLinkFailed": "Échec de la génération du lien d'invitation",
@@ -2343,7 +2353,8 @@
         },
         "menu": {
             "manageIssuances": "Gérer les émissions",
-            "viewData": "Voir les données"
+            "viewData": "Voir les données",
+            "viewPreviousVersions": "Voir les versions précédentes"
         },
         "shortBoost": {
             "selectRecipient": "Sélectionner le destinataire",
