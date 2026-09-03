@@ -81,7 +81,7 @@ When filing an issue, make sure to answer these five questions:
 3.  What did you expect to see?
 4.  What did you see instead?
 
-General questions should go to the #general channel on Discord can help with your issue.
+General questions: open a [❓ Question issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) — see [SUPPORT.md](./SUPPORT.md) for all the ways to get help.
 
 # Feature Suggestions & Enhancements
 
