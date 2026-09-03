@@ -6,6 +6,7 @@ on:
             - 'docs/**'
             - 'docs/.gitbook.yaml'
             - 'scripts/check-docs-links.mjs'
+            - 'scripts/check-docs-snippets.mjs'
             - 'scripts/docs-links-allowlist.json'
             - '.github/workflows/docs-links.yml'
     push:
@@ -15,6 +16,7 @@ on:
             - 'docs/**'
             - 'docs/.gitbook.yaml'
             - 'scripts/check-docs-links.mjs'
+            - 'scripts/check-docs-snippets.mjs'
             - 'scripts/docs-links-allowlist.json'
             - '.github/workflows/docs-links.yml'
 
@@ -30,3 +32,4 @@ jobs:
               with:
                   node-version: 20
             - run: node scripts/check-docs-links.mjs
+            - run: node scripts/check-docs-snippets.mjs
