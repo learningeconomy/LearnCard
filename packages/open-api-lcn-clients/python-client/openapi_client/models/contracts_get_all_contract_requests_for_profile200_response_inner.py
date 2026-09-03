@@ -19,17 +19,18 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_get_paginated_boost_recipients200_response_records_inner_to import BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.models.contracts_get_all_contract_requests_for_profile200_response_inner_contract import ContractsGetAllContractRequestsForProfile200ResponseInnerContract
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
     """
     ContractsGetAllContractRequestsForProfile200ResponseInner
     """ # noqa: E501
     contract: ContractsGetAllContractRequestsForProfile200ResponseInnerContract
-    profile: BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
+    profile: BoostGetBoostRecipients200ResponseInnerToAnyOf3
     status: Optional[StrictStr]
     read_status: Optional[StrictStr] = Field(default=None, alias="readStatus")
     additional_properties: Dict[str, Any] = {}
@@ -56,7 +57,8 @@ class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -68,8 +70,7 @@ class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -130,7 +131,7 @@ class ContractsGetAllContractRequestsForProfile200ResponseInner(BaseModel):
 
         _obj = cls.model_validate({
             "contract": ContractsGetAllContractRequestsForProfile200ResponseInnerContract.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
-            "profile": BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo.from_dict(obj["profile"]) if obj.get("profile") is not None else None,
+            "profile": BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(obj["profile"]) if obj.get("profile") is not None else None,
             "status": obj.get("status"),
             "readStatus": obj.get("readStatus")
         })

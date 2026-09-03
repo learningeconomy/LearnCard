@@ -38,7 +38,9 @@ class TestInboxClaimRequest(unittest.TestCase):
                 credential = None,
                 configuration = openapi_client.models.inbox_claim_request_configuration.inbox_claim_request_configuration(
                     publishable_key = '', 
-                    signing_authority_name = '', )
+                    signing_authority_name = '', 
+                    listing_id = '', 
+                    listing_slug = '', )
             )
         else:
             return InboxClaimRequest(

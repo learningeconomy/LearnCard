@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **skip_notification** | **bool** |  | [optional] [default to False]
-**metadata** | **Dict[str, object]** |  | [optional] 
+**metadata** | **Dict[str, Optional[object]]** |  | [optional] 
 
 ## Example
 

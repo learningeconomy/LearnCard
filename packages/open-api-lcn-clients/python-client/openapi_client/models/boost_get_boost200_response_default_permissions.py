@@ -21,12 +21,14 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetBoost200ResponseDefaultPermissions(BaseModel):
     """
     BoostGetBoost200ResponseDefaultPermissions
     """ # noqa: E501
     role: Optional[StrictStr]
+    can_view: StrictBool = Field(alias="canView")
     can_edit: StrictBool = Field(alias="canEdit")
     can_issue: StrictBool = Field(alias="canIssue")
     can_revoke: StrictBool = Field(alias="canRevoke")
@@ -39,10 +41,11 @@ class BoostGetBoost200ResponseDefaultPermissions(BaseModel):
     can_manage_children_profiles: Optional[StrictBool] = Field(default=None, alias="canManageChildrenProfiles")
     can_view_analytics: StrictBool = Field(alias="canViewAnalytics")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["role", "canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
+    __properties: ClassVar[List[str]] = ["role", "canView", "canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -54,8 +57,7 @@ class BoostGetBoost200ResponseDefaultPermissions(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -130,6 +132,7 @@ class BoostGetBoost200ResponseDefaultPermissions(BaseModel):
 
         _obj = cls.model_validate({
             "role": obj.get("role"),
+            "canView": obj.get("canView") if obj.get("canView") is not None else True,
             "canEdit": obj.get("canEdit"),
             "canIssue": obj.get("canIssue"),
             "canRevoke": obj.get("canRevoke"),
