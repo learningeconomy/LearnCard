@@ -15,6 +15,7 @@ export function TrustRegistries({ session }: { session: DashboardSession }) {
             searchPlaceholder="Search trust registries..."
             emptyMessage="No registry subscriptions yet — subscriptions arrive via bundle installs."
             fetchTargets={listRegistrySubscriptions}
+            browseCapability="registry-adapter"
         />
     );
 }

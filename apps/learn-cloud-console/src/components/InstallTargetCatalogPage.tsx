@@ -10,6 +10,7 @@ import { trpc } from '../trpc';
 import {
     getCatalogBundleMembers,
     getCatalogEnablement,
+    getCatalogIntegrationManifestSummary,
     getCatalogListing,
     type CatalogBundleMember,
     type CatalogEnablement,
@@ -22,20 +23,23 @@ import type { InstallIntent } from '@learncard/types';
 type CatalogTargetType = 'WORKLOAD_DEPLOYMENT' | 'REGISTRY_SUBSCRIPTION';
 
 // Prototype (Plugins.tsx / RegistryCatalogPage.tsx) renders these as browsable
-// catalogs. There is no first-class catalog primitive for either target type:
-// ADR-009 A5 rejected workloads as a listing kind (own package registry, not built),
-// ADR-015 D2 says registry subscriptions never carry manifests/surfaces, and
-// ADR-015 Q7 tracks the listing-kind enum gap. The only real path to either
-// target today is a bundle member (ADR-008 §3.6), so "Browse" here is exactly the
-// set of not-yet-installed bundle members of the requested type. Quick Start,
-// category chips, the issuer hero, and member requests are prototype mocks and
-// are omitted, not faked.
+// catalogs. Two real catalog sources feed "Browse":
+//  - ADR-015 D2: registry-adapter INTEGRATION listings — a signed manifest that
+//    declares the REGISTRY_SUBSCRIPTION(s) a singleton install establishes. These
+//    are individually installable (`browseCapability`).
+//  - ADR-008 §3.6: not-yet-installed bundle members of the requested target type,
+//    installable via their bundle. This is the only path for workloads: ADR-009 A5
+//    rejected workloads as a listing kind and their package registry is not built.
+// Quick Start, category chips, the issuer hero, and member requests are prototype
+// mocks and are omitted, not faked.
 interface CatalogEntry {
     listingId: string;
     listing: CatalogListing | null;
     memberDisplayName?: string;
     target?: InstallTargetSummary;
     viaBundles: CatalogListing[];
+    installable: boolean;
+    subscribes: string[];
 }
 
 interface Props {
@@ -48,6 +52,7 @@ interface Props {
     searchPlaceholder: string;
     emptyMessage: string;
     fetchTargets: (input: { ecosystemId: string }) => Promise<InstallTargetSummary[]>;
+    browseCapability?: string;
 }
 
 export function InstallTargetCatalogPage({
@@ -60,6 +65,7 @@ export function InstallTargetCatalogPage({
     searchPlaceholder,
     emptyMessage,
     fetchTargets,
+    browseCapability,
 }: Props) {
     const ecosystemId = session.effectiveAccess.ecosystemRoles[0]?.ecosystemId;
     const [search, setSearch] = useState('');
@@ -100,7 +106,13 @@ export function InstallTargetCatalogPage({
             const ensure = (listingId: string): CatalogEntry => {
                 const existing = byListing.get(listingId);
                 if (existing) return existing;
-                const created: CatalogEntry = { listingId, listing: null, viaBundles: [] };
+                const created: CatalogEntry = {
+                    listingId,
+                    listing: null,
+                    viaBundles: [],
+                    installable: false,
+                    subscribes: [],
+                };
                 byListing.set(listingId, created);
                 return created;
             };
@@ -119,6 +131,31 @@ export function InstallTargetCatalogPage({
                         entry.viaBundles.push(bundle);
                     });
             });
+
+            if (browseCapability) {
+                const integrations = listingsRes.records.filter(l => l.kind === 'INTEGRATION');
+                const summaries = await Promise.all(
+                    integrations.map(async listing => {
+                        try {
+                            return [
+                                listing,
+                                await getCatalogIntegrationManifestSummary({
+                                    listingId: listing.listing_id,
+                                }),
+                            ] as const;
+                        } catch {
+                            return [listing, null] as const;
+                        }
+                    })
+                );
+                summaries.forEach(([listing, summary]) => {
+                    if (!summary?.capabilities.provided.includes(browseCapability)) return;
+                    const entry = ensure(listing.listing_id);
+                    entry.listing = listing;
+                    entry.installable = true;
+                    entry.subscribes = summary.subscribes.map(sub => sub.displayName);
+                });
+            }
 
             const listingDetails = await Promise.all(
                 [...byListing.keys()].map(async listingId => {
@@ -143,7 +180,7 @@ export function InstallTargetCatalogPage({
         } finally {
             setLoading(false);
         }
-    }, [ecosystemId, targetType, fetchTargets]);
+    }, [ecosystemId, targetType, fetchTargets, browseCapability]);
 
     useEffect(() => {
         void Promise.resolve().then(load);
@@ -232,6 +269,15 @@ export function InstallTargetCatalogPage({
                         className="text-sm text-muted-foreground"
                     />
                 </div>
+                {entry.subscribes.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                        {entry.subscribes.map(label => (
+                            <Badge key={label} variant="outline" className="text-[10px]">
+                                {label}
+                            </Badge>
+                        ))}
+                    </div>
+                )}
                 {entry.viaBundles.length > 0 && (
                     <p className="text-xs text-muted-foreground mb-3">
                         via{' '}
@@ -257,13 +303,13 @@ export function InstallTargetCatalogPage({
                         unrestricted={enablement?.unrestricted ?? true}
                         onChanged={load}
                     />
-                    {installed ? (
+                    {installed || entry.installable ? (
                         <InstallActions
                             ecosystemId={ecosystemId}
                             itemId={entry.listingId}
                             itemName={name}
                             category={sectionLabel}
-                            isInstalled
+                            isInstalled={installed}
                             existingIntentId={ownIntent?.intentId}
                             className="flex-1"
                             onChanged={load}

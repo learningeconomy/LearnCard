@@ -16,6 +16,12 @@
  *   bun run seed:dev-integration --app-name "Acme SIS" --slug acme-sis
  *   bun run seed:dev-integration --category lms --capabilities-provided roster-source
  *   bun run seed:dev-integration --capabilities-provided insight-source --record-classes
+ *   bun run seed:dev-integration --capabilities-provided registry-adapter --record-classes \
+ *     --subscribes "ebsi|ebsi-tir|EBSI Trusted Issuers Registry|https://api-pilot.ebsi.eu/tir"
+ *
+ * `--subscribes` takes `declarationId|registryId|Display Name[|registryUrl]` entries separated
+ * by `;`. ADR-015 D2: a registry-adapter Integration's signed manifest declares the
+ * REGISTRY_SUBSCRIPTION(s) a singleton install of it establishes.
  *   bun run seed:dev-integration --profile my-owner --version 1.1.0
  *   bun run seed:dev-integration --ecosystem eco_dev_root
  *
@@ -99,16 +105,13 @@ const main = async (): Promise<void> => {
     const { createProfile } = await import('@accesslayer/profile/create');
     const { getProfileByProfileId } = await import('@accesslayer/profile/read');
     const { createIntegration } = await import('@accesslayer/integration/create');
-    const { associateIntegrationWithProfile } = await import(
-        '@accesslayer/integration/relationships/create'
-    );
+    const { associateIntegrationWithProfile } =
+        await import('@accesslayer/integration/relationships/create');
     const { createAppStoreListing } = await import('@accesslayer/app-store-listing/create');
-    const { readAppStoreListingById, readAppStoreListingBySlug } = await import(
-        '@accesslayer/app-store-listing/read'
-    );
-    const { associateListingWithIntegration } = await import(
-        '@accesslayer/app-store-listing/relationships/create'
-    );
+    const { readAppStoreListingById, readAppStoreListingBySlug } =
+        await import('@accesslayer/app-store-listing/read');
+    const { associateListingWithIntegration } =
+        await import('@accesslayer/app-store-listing/relationships/create');
     const { createListingVersion } = await import('@accesslayer/listing-version/create');
     const { readListingVersionById } = await import('@accesslayer/listing-version/read');
 
@@ -126,6 +129,26 @@ const main = async (): Promise<void> => {
     const consumed = listArg('capabilities-consumed', []);
     const recordClasses = listArg('record-classes', ['academic']);
     const consentRequirements = listArg('consent-requirements', ['directory']);
+    const subscribes = arg('subscribes', '')
+        .split(';')
+        .map(entry => entry.trim())
+        .filter(Boolean)
+        .map(entry => {
+            const [declarationId, registryId, displayName, registryUrl] = entry.split('|');
+
+            if (!declarationId || !registryId || !displayName) {
+                throw new Error(
+                    `--subscribes entry "${entry}" must be declarationId|registryId|Display Name[|registryUrl]`
+                );
+            }
+
+            return {
+                declarationId,
+                registryId,
+                displayName,
+                ...(registryUrl ? { registryUrl } : {}),
+            };
+        });
     const ecosystemId = arg('ecosystem', '');
 
     console.log('\n🔧 Seeding dev INTEGRATION listing...\n');
@@ -204,8 +227,7 @@ const main = async (): Promise<void> => {
         { listingId }
     );
     const existingIntegrationId = existingIntegration.records[0]?.get('integrationId') as
-        | string
-        | undefined;
+        string | undefined;
 
     if (existingIntegrationId) {
         console.log(`  Integration node:    ${existingIntegrationId} (exists)`);
@@ -245,6 +267,7 @@ const main = async (): Promise<void> => {
         },
         supportedRecordClasses: recordClasses as IntegrationManifest['supportedRecordClasses'],
         extensionPoints: [],
+        subscribes,
         endpoints: { healthUrl, connectUrl },
     };
 
@@ -263,8 +286,7 @@ const main = async (): Promise<void> => {
         { listingId, version: manifestVersion }
     );
     const existingVersionId = existingVersionResult.records[0]?.get('versionId') as
-        | string
-        | undefined;
+        string | undefined;
 
     let versionId: string;
 

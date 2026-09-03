@@ -218,6 +218,20 @@ export type IntegrationExtensionPointDeclaration = z.infer<
     typeof IntegrationExtensionPointDeclarationValidator
 >;
 
+// ADR-015 D2: a registry-centric feature is declared on its registry-adapter Integration.
+// Each entry is a REGISTRY_SUBSCRIPTION the adapter establishes when installed on its own,
+// so the subscription always derives from a signed manifest rather than existing alone.
+export const RegistrySubscriptionDeclarationValidator = z.object({
+    declarationId: z.string().min(1),
+    registryId: z.string().min(1),
+    displayName: z.string().min(1),
+    description: z.string().optional(),
+    registryUrl: z.string().url().optional(),
+});
+export type RegistrySubscriptionDeclaration = z.infer<
+    typeof RegistrySubscriptionDeclarationValidator
+>;
+
 export const IntegrationManifestValidator = z
     .object({
         apiVersion: z.enum(['lc.integration/v1', 'lc.integration/v1.1', 'lc.integration/v1.2']),
@@ -241,6 +255,7 @@ export const IntegrationManifestValidator = z
         }),
         supportedRecordClasses: z.array(RecordClassEnum).default([]),
         extensionPoints: z.array(IntegrationExtensionPointDeclarationValidator).default([]),
+        subscribes: z.array(RegistrySubscriptionDeclarationValidator).default([]),
         endpoints: z
             .object({
                 connectUrl: z.string().url().optional(),
@@ -259,6 +274,17 @@ export const IntegrationManifestValidator = z
             ctx,
             ['capabilities']
         );
+
+        if (
+            manifest.subscribes.length > 0 &&
+            !manifest.capabilities.provided.includes('registry-adapter')
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                message: 'subscribes requires the registry-adapter capability to be provided.',
+                path: ['subscribes'],
+            });
+        }
 
         if (
             manifest.apiVersion !== 'lc.integration/v1.2' &&

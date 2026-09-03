@@ -10,6 +10,7 @@ import {
     LCNNotificationTypeEnumValidator,
     RecordClassEnum,
     SendNotificationEventValidator,
+    RegistrySubscriptionDeclarationValidator,
 } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
@@ -1137,8 +1138,8 @@ const handleGetTemplateRecipientsEvent = async (
                     sent.status === 'suspended'
                         ? ('suspended' as const)
                         : received
-                        ? ('claimed' as const)
-                        : ('pending' as const),
+                          ? ('claimed' as const)
+                          : ('pending' as const),
             };
         })
         .filter(
@@ -1174,10 +1175,10 @@ const handleGetTemplateRecipientsEvent = async (
                 record.status === 'revoked'
                     ? ('revoked' as const)
                     : record.status === 'suspended'
-                    ? ('suspended' as const)
-                    : record.received
-                    ? ('claimed' as const)
-                    : ('pending' as const),
+                      ? ('suspended' as const)
+                      : record.received
+                        ? ('claimed' as const)
+                        : ('pending' as const),
         })),
     ]
         .filter(record => Boolean(record.credentialUri))
@@ -2372,6 +2373,7 @@ export const appStoreRouter = t.router({
                     provided: z.array(CapabilityEnum),
                     consumed: z.array(CapabilityEnum),
                 }),
+                subscribes: z.array(RegistrySubscriptionDeclarationValidator),
             })
         )
         .query(async ({ input }) => {
@@ -2411,6 +2413,7 @@ export const appStoreRouter = t.router({
                 category: manifest.category,
                 supportedRecordClasses: manifest.supportedRecordClasses,
                 capabilities: manifest.capabilities,
+                subscribes: manifest.subscribes,
             };
         }),
 

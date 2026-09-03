@@ -7,6 +7,7 @@ import {
     BindingValidator,
     BundleManifestValidator,
     InstallIntentSpecValidator,
+    IntegrationManifestValidator,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -206,12 +207,46 @@ const RevokeBindingInputValidator = z.object({
 });
 const GetBindingInputValidator = z.object({ bindingId: z.string() });
 
+// ADR-015 D2: a registry-adapter Integration's signed manifest is the trust root for
+// the REGISTRY_SUBSCRIPTION(s) it establishes, so a singleton install of the adapter
+// fans out into one subscription target per `subscribes` entry. Only read after the
+// caller has run assertSignedListingVersionOrThrow on the version.
+const registrySubscriptionTargetsFromSignedManifest = (
+    listingId: string,
+    versionId: string,
+    manifestJson: string | null | undefined
+): InstallIntentSpec['targets'] => {
+    if (!manifestJson) return [];
+
+    const parsed = IntegrationManifestValidator.safeParse(JSON.parse(manifestJson));
+    if (!parsed.success || !parsed.data.capabilities.provided.includes('registry-adapter')) {
+        return [];
+    }
+
+    return parsed.data.subscribes.map(subscription => ({
+        targetType: 'REGISTRY_SUBSCRIPTION' as const,
+        listingId,
+        versionId,
+        scopes: [],
+        consentTiers: [],
+        config: {
+            declarationId: subscription.declarationId,
+            registryId: subscription.registryId,
+            displayName: subscription.displayName,
+            ...(subscription.description ? { description: subscription.description } : {}),
+            ...(subscription.registryUrl ? { registryUrl: subscription.registryUrl } : {}),
+        },
+        entitlementRequirements: [],
+    }));
+};
+
 const buildSingletonSpec = (
     listingId: string,
     versionId: string,
     targetType: ReturnType<typeof getInstallTargetTypeForListing>,
     requestedConfig: Record<string, unknown>,
-    proposedBindings: BindingProposal[]
+    proposedBindings: BindingProposal[],
+    additionalTargets: InstallIntentSpec['targets'] = []
 ): InstallIntentSpec => ({
     apiVersion: 'lc.install-spec/v1',
     targets: [
@@ -224,6 +259,7 @@ const buildSingletonSpec = (
             config: { declarationId: 'root', ...requestedConfig },
             entitlementRequirements: [],
         },
+        ...additionalTargets,
     ],
     bindings: proposedBindings,
     pinnedVersionIds: [versionId],
@@ -356,6 +392,24 @@ const buildSpecForIntent = async (input: {
             listingVersionsById,
             requestedConfig: input.requestedConfig,
         });
+        const adapterSubscriptionTargets = materialized.targets
+            .filter(target => target.targetType === 'INTEGRATION_INSTALL')
+            .flatMap(target =>
+                registrySubscriptionTargetsFromSignedManifest(
+                    target.listingId,
+                    target.versionId,
+                    listingVersionsById[target.versionId]?.manifest_json
+                ).map(subscription => ({
+                    ...subscription,
+                    config: {
+                        ...subscription.config,
+                        declarationId: `${String(target.config.declarationId)}:${String(
+                            subscription.config.declarationId
+                        )}`,
+                    },
+                }))
+            );
+        materialized.targets.push(...adapterSubscriptionTargets);
         const scopes = Array.from(
             new Set(materialized.targets.flatMap(target => target.scopes))
         ).sort();
@@ -382,6 +436,15 @@ const buildSpecForIntent = async (input: {
         };
     }
 
+    const subscriptionTargets =
+        listing.kind === 'INTEGRATION'
+            ? registrySubscriptionTargetsFromSignedManifest(
+                  input.listingId,
+                  input.versionId,
+                  version.manifest_json
+              )
+            : [];
+
     return {
         listingKind: listing.kind,
         spec: buildSingletonSpec(
@@ -389,9 +452,15 @@ const buildSpecForIntent = async (input: {
             input.versionId,
             getInstallTargetTypeForListing(listing),
             input.requestedConfig,
-            bindEcosystem(input.ecosystemId, input.proposedBindings)
+            bindEcosystem(input.ecosystemId, input.proposedBindings),
+            subscriptionTargets
         ),
-        infrastructureEffects: [`Materialize ${listing.kind} target for ${listing.listing_id}`],
+        infrastructureEffects: [
+            `Materialize ${listing.kind} target for ${listing.listing_id}`,
+            ...subscriptionTargets.map(
+                target => `Subscribe to registry ${String(target.config.displayName)}`
+            ),
+        ],
     };
 };
 

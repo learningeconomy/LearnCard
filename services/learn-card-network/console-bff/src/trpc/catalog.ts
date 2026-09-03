@@ -43,6 +43,13 @@ export type CatalogIntegrationManifestSummary = {
     category: string;
     supportedRecordClasses: string[];
     capabilities: { provided: string[]; consumed: string[] };
+    subscribes: {
+        declarationId: string;
+        registryId: string;
+        displayName: string;
+        description?: string;
+        registryUrl?: string;
+    }[];
 };
 
 /**
