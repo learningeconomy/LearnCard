@@ -1,6 +1,6 @@
 /**
  * Auth Coordinator Module
- * 
+ *
  * Exports the unified auth + key derivation orchestration layer.
  */
 
@@ -51,6 +51,7 @@ export type {
     RecoveryReason,
     RecoverySetupInput,
     RecoverySetupResult,
+    RecoveryConfirmationInput,
     SSSKeyDerivationStrategy,
     UnifiedAuthState,
 } from './types';

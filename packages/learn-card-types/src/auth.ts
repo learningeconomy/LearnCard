@@ -200,6 +200,8 @@ export interface RecoveryMethodInfo {
     type: string;
     createdAt: Date;
     credentialId?: string;
+    shareVersion?: number;
+    confirmedAt?: Date;
 }
 
 /**
@@ -211,9 +213,16 @@ export interface RecoveryResult {
     did: string;
 }
 
+export interface IdentityRecoverySession {
+    recoverySessionToken: string;
+    recoveryMethods: RecoveryMethodInfo[];
+}
+
 // ---------------------------------------------------------------------------
 // Server Key Status
 // ---------------------------------------------------------------------------
+
+export type SssActivationState = 'provisional' | 'active';
 
 /**
  * Server key status returned by the strategy's fetchServerKeyStatus.
@@ -228,7 +237,11 @@ export interface ServerKeyStatus {
     authShare: string | null;
     shareVersion: number | null;
     maskedRecoveryEmail?: string | null;
+    sssActivationState?: SssActivationState | null;
 }
+
+/** Signs a DID-Auth VP. A supplied challenge must be embedded as the VP nonce. */
+export type DidAuthVpSigner = (privateKey: string, challenge?: string) => Promise<string>;
 
 // ---------------------------------------------------------------------------
 // Key Derivation Capabilities
@@ -306,6 +319,7 @@ export interface KeyDerivationStrategy<
     TRecoveryInput = unknown,
     TRecoverySetupInput = unknown,
     TRecoverySetupResult = unknown,
+    TRecoveryConfirmationInput = unknown
 > {
     readonly name: string;
 
@@ -340,16 +354,57 @@ export interface KeyDerivationStrategy<
         didFromPrivateKey: (pk: string) => Promise<string>
     ): Promise<boolean>;
 
+    /**
+     * Atomically split and persist a private key's local and remote components.
+     * Strategies that implement this use it for initial setup and rotations so
+     * callers never have to coordinate device/server writes themselves.
+     */
+    atomicUpdateShares?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        did: string;
+        signDidAuthVp?: DidAuthVpSigner;
+    }): Promise<void>;
+
+    /**
+     * Repair local/server share-version skew after an ambiguous write. Returns
+     * the recovered key when reconciliation was needed, otherwise null.
+     */
+    reconcileShares?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        expectedDid: string;
+        didFromPrivateKey: (privateKey: string) => Promise<string>;
+        signDidAuthVp?: DidAuthVpSigner;
+    }): Promise<RecoveryResult | null>;
+
+    /** Obtain a short-lived, single-use challenged DID-Auth VP for a write. */
+    getFreshDidAuthVp?(
+        privateKey: string,
+        did: string,
+        signDidAuthVp: DidAuthVpSigner
+    ): Promise<string>;
+
     // --- Server communication ---
 
     /** Fetch the server-side key status for the authenticated user */
     fetchServerKeyStatus(token: string, providerType: AuthProviderType): Promise<ServerKeyStatus>;
 
     /** Store the remote key component on the server */
-    storeAuthShare(token: string, providerType: AuthProviderType, remoteKey: string, did: string, didAuthVp?: string): Promise<void>;
+    storeAuthShare(
+        token: string,
+        providerType: AuthProviderType,
+        remoteKey: string,
+        did: string,
+        didAuthVp?: string
+    ): Promise<void>;
 
     /** Mark migration complete on the server (optional — only needed for migration-capable strategies) */
     markMigrated?(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void>;
+
+    /** Commit a provisioned key after the server verifies recovery enrollment. */
+    activate?(token: string, providerType: AuthProviderType, didAuthVp?: string): Promise<void>;
 
     // --- Recovery ---
 
@@ -360,6 +415,8 @@ export interface KeyDerivationStrategy<
         input: TRecoveryInput;
         /** Optional: validate the reconstructed key's DID before rotating shares */
         didFromPrivateKey?: (privateKey: string) => Promise<string>;
+        /** Optional: sign the fresh challenge required to persist rotated shares */
+        signDidAuthVp?: DidAuthVpSigner;
     }): Promise<RecoveryResult>;
 
     /** Set up a new recovery method */
@@ -370,11 +427,51 @@ export interface KeyDerivationStrategy<
         input: TRecoverySetupInput;
         authUser?: AuthUser;
         /** Optional: sign a DID-Auth VP JWT for server write operations */
-        signDidAuthVp?: (privateKey: string) => Promise<string>;
+        signDidAuthVp?: DidAuthVpSigner;
     }): Promise<TRecoverySetupResult>;
 
+    /** Confirm a pending method after the strategy verifies proof of receipt locally. */
+    confirmRecoveryMethod?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        input: TRecoveryConfirmationInput;
+        signDidAuthVp?: DidAuthVpSigner;
+    }): Promise<void>;
+
     /** Get configured recovery methods for the authenticated user */
-    getAvailableRecoveryMethods?(token: string, providerType: AuthProviderType): Promise<RecoveryMethodInfo[]>;
+    getAvailableRecoveryMethods?(
+        token: string,
+        providerType: AuthProviderType
+    ): Promise<RecoveryMethodInfo[]>;
+
+    // --- Lost login identity recovery ---
+
+    /** Send an OTP to the verified recovery email without requiring provider auth. */
+    startIdentityRecovery?(email: string): Promise<void>;
+
+    /** Verify the OTP and receive a one-use, recovery-scoped session. */
+    verifyIdentityRecovery?(email: string, code: string): Promise<IdentityRecoverySession>;
+
+    /** Reconstruct and hard-validate the key before the replacement login is bound. */
+    prepareIdentityRecovery?(params: {
+        recoverySessionToken: string;
+        input: TRecoveryInput;
+        didFromPrivateKey: (privateKey: string) => Promise<string>;
+    }): Promise<RecoveryResult>;
+
+    /** Whether reconstructed identity recovery is waiting for a replacement login. */
+    hasPendingIdentityRecovery?(): boolean;
+
+    /** Discard any reconstructed identity recovery that has not been rebound. */
+    cancelIdentityRecovery?(): void;
+
+    /** Bind the current provider identity and commit a full share rotation. */
+    completeIdentityRecovery?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        signDidAuthVp?: DidAuthVpSigner;
+    }): Promise<RecoveryResult>;
 
     // --- Contact method management ---
 
@@ -416,7 +513,8 @@ export interface KeyDerivationStrategy<
         token: string,
         providerType: AuthProviderType,
         privateKey: string,
-        email: string
+        email: string,
+        didAuthVp?: string
     ): Promise<void>;
 
     // --- Share versioning ---

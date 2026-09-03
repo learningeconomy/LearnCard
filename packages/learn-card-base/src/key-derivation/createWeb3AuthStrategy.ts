@@ -121,7 +121,9 @@ export const createWeb3AuthStrategy = (
 
         const web3auth = new Web3Auth({
             clientId: config.clientId,
-            web3AuthNetwork: config.web3AuthNetwork as Parameters<typeof Web3Auth>[0]['web3AuthNetwork'],
+            web3AuthNetwork: config.web3AuthNetwork as Parameters<
+                typeof Web3Auth
+            >[0]['web3AuthNetwork'],
             privateKeyProvider,
             usePnPKey: config.usePnPKey ?? true,
         });
@@ -200,7 +202,10 @@ export const createWeb3AuthStrategy = (
 
         // --- Server communication ---
 
-        fetchServerKeyStatus: async (token: string, _providerType: string): Promise<ServerKeyStatus> => {
+        fetchServerKeyStatus: async (
+            token: string,
+            _providerType: string
+        ): Promise<ServerKeyStatus> => {
             // Cache the token and decode the uid for use in reconstructKey
             cachedToken = token;
             cachedUid = decodeJwtSub(token);
@@ -213,6 +218,8 @@ export const createWeb3AuthStrategy = (
                 primaryDid: null,
                 recoveryMethods: [],
                 authShare: 'web3auth', // placeholder — coordinator requires non-null to proceed
+                shareVersion: null,
+                sssActivationState: null,
             };
         },
 
@@ -224,7 +231,7 @@ export const createWeb3AuthStrategy = (
         executeRecovery: async (): Promise<never> => {
             throw new Error(
                 'Recovery is not supported with the Web3Auth strategy. ' +
-                'Web3Auth handles key availability internally via its MPC network.'
+                    'Web3Auth handles key availability internally via its MPC network.'
             );
         },
 
