@@ -1,13 +1,14 @@
 {
     "name": "learn-card-base",
-    "version": "0.4.4",
+    "version": "0.4.5",
     "private": true,
     "description": "LearnCard Apps shared components",
     "main": "src/index.ts",
     "scripts": {
         "test": "vitest run",
         "test:watch": "vitest",
-        "test:coverage": "vitest run --coverage"
+        "test:coverage": "vitest run --coverage",
+        "lint": "eslint src"
     },
     "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",

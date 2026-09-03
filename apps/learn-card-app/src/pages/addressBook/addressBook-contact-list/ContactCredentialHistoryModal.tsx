@@ -1,0 +1,160 @@
+import React, { useMemo, useState } from 'react';
+import { IonIcon, IonSpinner } from '@ionic/react';
+import { alertCircleOutline } from 'ionicons/icons';
+
+import type { LCNProfile } from '@learncard/types';
+import X from 'learn-card-base/svgs/X';
+import { CredentialGeneralIcon } from 'learn-card-base/svgs/CredentialGeneralIcon';
+
+import * as m from '../../../paraglide/messages.js';
+import ContactCredentialCard from './ContactCredentialCard';
+import {
+    type ContactCredentialDirection,
+    type ContactCredentialHistoryItem,
+    useContactCredentialHistory,
+} from './useContactCredentialHistory';
+
+type ContactCredentialHistoryModalProps = {
+    contact: Pick<LCNProfile, 'profileId' | 'displayName'>;
+    onClose: () => void;
+};
+
+type HistoryTab = Extract<ContactCredentialDirection, 'received' | 'sent'>;
+
+const CredentialGrid: React.FC<{
+    items: ContactCredentialHistoryItem[];
+}> = ({ items }) => (
+    <div className="flex flex-wrap justify-center gap-3 sm:justify-start">
+        {items.map(item => (
+            <ContactCredentialCard
+                key={`${item.direction}-${item.uri}`}
+                item={item}
+                useWrapper={false}
+            />
+        ))}
+    </div>
+);
+
+const ContactCredentialHistoryModal: React.FC<ContactCredentialHistoryModalProps> = ({
+    contact,
+    onClose,
+}) => {
+    const [activeTab, setActiveTab] = useState<HistoryTab>('received');
+    const contactName = contact.displayName || contact.profileId;
+    const { data, isLoading, isError } = useContactCredentialHistory(contact.profileId, {
+        limit: null,
+    });
+
+    const itemsByDirection = useMemo(
+        () => ({
+            received: data?.items.filter(item => item.direction === 'received') ?? [],
+            sent: data?.items.filter(item => item.direction === 'sent') ?? [],
+        }),
+        [data?.items]
+    );
+
+    const tabs: Array<{ id: HistoryTab; label: string; count: number }> = [
+        {
+            id: 'received',
+            label: m['contacts.credentialHistory.sharedWithMe'](),
+            count: data?.receivedCount ?? 0,
+        },
+        {
+            id: 'sent',
+            label: m['contacts.credentialHistory.sharedWithContact']({ name: contactName }),
+            count: data?.sentCount ?? 0,
+        },
+    ];
+
+    const activeItems = itemsByDirection[activeTab];
+    const emptyMessage =
+        activeTab === 'received'
+            ? m['contacts.credentialHistory.receivedEmpty']({ name: contactName })
+            : m['contacts.credentialHistory.sentEmpty']({ name: contactName });
+
+    return (
+        <section className="flex h-full w-full flex-col bg-white font-poppins">
+            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-grayscale-200 px-5 py-4">
+                <div className="min-w-0">
+                    <h2 className="text-xl font-semibold text-grayscale-900">
+                        {m['contacts.credentialHistory.title']()}
+                    </h2>
+                    <p className="mt-1 truncate text-sm text-grayscale-600">
+                        {m['contacts.credentialHistory.withContact']({ name: contactName })}
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label={m['contacts.credentialHistory.close']()}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-grayscale-200 bg-white text-grayscale-700 shadow-box-bottom transition-colors hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                    <X className="h-5 w-5" />
+                </button>
+            </header>
+
+            <div className="shrink-0 bg-white px-3 pt-[10px]">
+                <div className="flex items-center justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {tabs.map(tab => {
+                        const isActive = tab.id === activeTab;
+
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`z-10 shrink-0 py-[5px] pl-[15px] pr-4 text-grayscale-600 subpixel-antialiased ${
+                                    isActive
+                                        ? 'rounded-[10px] border-[1px] border-solid border-[rgba(99,102,241,0.4)] font-semibold text-indigo-600'
+                                        : ''
+                                }`}
+                                aria-pressed={isActive}
+                            >
+                                {tab.count} {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+                {isLoading && (
+                    <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-3 text-sm text-grayscale-600">
+                        <IonSpinner className="h-6 w-6" />
+                        {m['contacts.credentialHistory.loading']()}
+                    </div>
+                )}
+
+                {isError && (
+                    <div className="flex items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 p-3">
+                        <IonIcon
+                            icon={alertCircleOutline}
+                            className="mt-0.5 shrink-0 text-lg text-red-400"
+                        />
+                        <span className="text-sm leading-relaxed text-red-700">
+                            {m['contacts.credentialHistory.loadError']()}
+                        </span>
+                    </div>
+                )}
+
+                {!isLoading && !isError && activeItems.length === 0 && (
+                    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-[20px] border border-grayscale-200 bg-grayscale-10 px-6 text-center">
+                        <CredentialGeneralIcon className="mb-3 h-9 w-9 text-grayscale-400" />
+                        <p className="text-sm font-medium text-grayscale-900">
+                            {m['contacts.credentialHistory.nothingShared']()}
+                        </p>
+                        <p className="mt-1 max-w-sm text-xs leading-relaxed text-grayscale-500">
+                            {emptyMessage}
+                        </p>
+                    </div>
+                )}
+
+                {!isLoading && !isError && activeItems.length > 0 && (
+                    <CredentialGrid items={activeItems} />
+                )}
+            </div>
+        </section>
+    );
+};
+
+export default ContactCredentialHistoryModal;

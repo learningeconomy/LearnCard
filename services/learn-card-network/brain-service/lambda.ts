@@ -1,13 +1,11 @@
-import http from 'node:http';
-
 import serverlessHttp from 'serverless-http';
 import type {
     Context,
     APIGatewayProxyResultV2,
     APIGatewayProxyEventV2,
+    SQSBatchResponse,
     SQSHandler,
 } from 'aws-lambda';
-import { LCNNotificationValidator } from '@learncard/types';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
 import * as Sentry from '@sentry/serverless';
 
@@ -15,7 +13,7 @@ import app from './src/openapi';
 import skillsViewerApp from './src/skills-viewer';
 import statusListsApp from './src/status-lists';
 import { appRouter, createContext } from './src/app';
-import { sendNotification } from './src/helpers/notifications.helpers';
+import { deliverQueuedNotification } from './src/helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
 import {
@@ -23,11 +21,13 @@ import {
     sentryBeforeSend,
     getTracesSampleRate,
 } from './src/helpers/sentry.helpers';
+import { environment } from './src/config/environment';
+import { toServerlessApplication } from './src/helpers/serverlessApplication';
 
 Sentry.AWSLambda.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV,
-    enabled: Boolean(process.env.SENTRY_DSN),
+    dsn: environment.SENTRY_DSN,
+    environment: environment.SENTRY_ENV,
+    enabled: Boolean(environment.SENTRY_DSN),
     tracesSampleRate: getTracesSampleRate(),
     beforeSend: sentryBeforeSend,
     integrations: [
@@ -41,11 +41,13 @@ startSkillEmbeddingBackfill().catch(err =>
     console.error('Skill embedding backfill startup error:', err)
 );
 
-export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
+export const swaggerUiHandler = serverlessHttp(toServerlessApplication(app), {
+    basePath: '/docs',
+});
 
-export const skillsViewerHandler = serverlessHttp(skillsViewerApp);
+export const skillsViewerHandler = serverlessHttp(toServerlessApplication(skillsViewerApp));
 
-export const statusListsHandler = serverlessHttp(statusListsApp);
+export const statusListsHandler = serverlessHttp(toServerlessApplication(statusListsApp));
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
@@ -112,20 +114,27 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
     }
 );
 
-export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(
-    async (event, context) => {
-        await Promise.all(
-            event.Records.map(async record => {
-                try {
-                    const _notification = JSON.parse(record.body);
+export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(async event => {
+    const batchItemFailures = await Promise.all(
+        event.Records.map(async record => {
+            try {
+                await deliverQueuedNotification(record.body);
 
-                    const notification = await LCNNotificationValidator.parseAsync(_notification);
+                return undefined;
+            } catch (error) {
+                console.error('Notification queue record failed', {
+                    messageId: record.messageId,
+                    error,
+                });
 
-                    await sendNotification(notification);
-                } catch (error) {
-                    console.error('Invalid Notification Object', record.body);
-                }
-            })
-        );
-    }
-);
+                return { itemIdentifier: record.messageId };
+            }
+        })
+    );
+
+    return {
+        batchItemFailures: batchItemFailures.filter(
+            (failure): failure is { itemIdentifier: string } => failure !== undefined
+        ),
+    } satisfies SQSBatchResponse;
+});

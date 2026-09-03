@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { randomUUID } from 'crypto';
 
 import { captureBenchEvent, flushBenchEvents } from '@helpers/posthog.helpers';
@@ -148,7 +149,7 @@ export const runBench = async (params: {
 
     await flushBenchEvents();
 
-    const posthogHost = process.env.POSTHOG_HOST;
+    const posthogHost = environment.POSTHOG_HOST;
     const posthogDashboardUrl = posthogHost
         ? `${posthogHost}/events?eventFilter=bench.appevent&runId=${runId}`
         : undefined;

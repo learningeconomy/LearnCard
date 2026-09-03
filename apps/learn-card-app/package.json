@@ -1,7 +1,11 @@
 {
     "name": "learn-card-app",
-    "version": "1.98.3",
+    "version": "1.98.4",
     "private": true,
+    "engines": {
+        "node": ">=24.12 <25"
+    },
+    "packageManager": "bun@1.3.14",
     "dependencies": {
         "@capacitor-community/in-app-review": "^8.0.0",
         "@capacitor-community/media": "9.1.0",
@@ -132,6 +136,7 @@
         "userflow.js": "^2.12.1",
         "uuid": "^14.0.0",
         "web-vitals": "^0.2.4",
+        "zod": "4.4.3",
         "zustand": "^3.7.2"
     },
     "scripts": {
@@ -142,7 +147,7 @@
         "dev-console": "docker compose -f compose-local.yaml --profile console up --build",
         "dev-console:down": "docker compose -f compose-local.yaml --profile console down",
         "start": "vite --host",
-        "i18n:check-ast": "eslint --no-eslintrc -c .eslintrc-i18n.cjs --resolve-plugins-relative-to ../.. --ext .tsx,.ts src/pages/appStoreDeveloper src/pages/appStoreAdmin",
+        "i18n:check-ast": "eslint --config eslint-i18n.config.mjs src/pages/appStoreDeveloper src/pages/appStoreAdmin",
         "i18n:check-guides": "node scripts/check-i18n-guides.mjs",
         "i18n:check-untranslated": "node scripts/check-i18n-untranslated.mjs",
         "start-p-4000": "vite --port=4000",
@@ -151,7 +156,7 @@
         "i18n:check-keys": "node scripts/check-i18n-keys.mjs",
         "test-storybook": "test-storybook --url http://localhost:6007",
         "test-storybook:ci": "concurrently -k -s first -n \"SB,TEST\" -c \"magenta,blue\" \"http-server storybook-static --port 6099 --silent\" \"wait-on tcp:127.0.0.1:6099 && test-storybook --url http://127.0.0.1:6099\"",
-        "test:e2e:mock": "playwright test --config=playwright.mock.config.ts",
+        "test-mock": "playwright test --config=playwright.mock.config.ts",
         "test:e2e:mock:record": "PWHAR=update playwright test --config=playwright.mock-record.config.ts",
         "test:a11y": "playwright test --config=playwright.a11y.config.ts tests/accessibility.spec.ts",
         "prepare-config": "bun scripts/prepare-native-config.ts",
@@ -191,7 +196,7 @@
         "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH",
         "bench:learner-context": "playwright test tests/learner-context-perf.spec.ts --config=playwright.learner-context.config.ts --reporter=line",
         "i18n:check-markers": "node scripts/check-i18n-markers.mjs",
-        "i18n:check-memos": "eslint --no-eslintrc --no-inline-config -c .eslintrc-i18n-memo.cjs --rulesdir eslint-rules --resolve-plugins-relative-to ../.. --ext .tsx,.ts src"
+        "i18n:check-memos": "eslint --config eslint-i18n-memo.config.mjs src"
     },
     "browserslist": {
         "production": [
@@ -211,7 +216,7 @@
         "@capacitor/cli": "^8.3.1",
         "@capgo/cli": "^7.2.10",
         "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-        "@inlang/paraglide-js": "^2.18.1",
+        "@inlang/paraglide-js": "2.20.2",
         "@ionic/cli": "^7.2.1",
         "@learncard/learn-cloud-service": "workspace:^",
         "@learncard/network-brain-service": "workspace:^",
@@ -223,8 +228,8 @@
         "@storybook/react-vite": "8.6.18",
         "@storybook/test": "8.6.18",
         "@storybook/test-runner": "0.22.0",
-        "@tailwindcss/line-clamp": "^0.4.4",
         "@tailwindcss/typography": "^0.5.16",
+        "@tailwindcss/line-clamp": "^0.4.4",
         "@testing-library/react": "^14.3.1",
         "@types/async": "^3.2.24",
         "@types/lodash": "^4.17.15",

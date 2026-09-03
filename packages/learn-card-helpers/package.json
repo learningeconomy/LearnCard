@@ -1,6 +1,6 @@
 {
     "name": "@learncard/helpers",
-    "version": "1.3.12",
+    "version": "1.3.13",
     "description": "Shared helpers for LearnCard packages",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -9,11 +9,11 @@
         ".": {
             "development": "./src/index.ts",
             "import": {
-                "types": "./dist/helpers.d.ts",
+                "types": "./dist/index.d.ts",
                 "default": "./dist/helpers.esm.js"
             },
             "require": {
-                "types": "./dist/helpers.d.cts",
+                "types": "./dist/index.d.cts",
                 "default": "./dist/index.cjs"
             }
         }
@@ -23,9 +23,10 @@
         "src"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && dts-bundle-generator src/index.ts -o dist/helpers.d.ts --no-check && shx cp ./dist/helpers.d.ts ./dist/helpers.d.cts",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
+        "typecheck": "tsc --noEmit -p tsconfig.json",
         "start": "aqu watch",
-        "lint": "aqu lint",
+        "lint": "bun run --cwd ../.. lint",
         "lint:fix": "aqu lint --fix",
         "test": "vitest run",
         "test:watch": "vitest",
@@ -46,11 +47,10 @@
         "@types/node": "^18.7.19",
         "@types/react": "^18.0.0",
         "aqu": "0.4.3",
-        "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.27.1",
         "shx": "^0.3.4"
     },
-    "types": "./dist/helpers.d.ts",
+    "types": "./dist/index.d.ts",
     "dependencies": {
         "@noble/hashes": "^1.8.0",
         "@sd-jwt/decode": "^0.19.0",

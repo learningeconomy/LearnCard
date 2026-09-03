@@ -3,6 +3,8 @@ import {
     LCNProfile,
     LCNVisibleProfile,
     LCNProfileConnectionStatusEnum,
+    LCNConnectionPrompt,
+    LCNConnectionPromptActionResult,
     LCNProfileManager,
     UnsignedVC,
     VC,
@@ -185,6 +187,10 @@ export type LearnCardNetworkPluginMethods = {
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
+    getPendingConnectionPrompts: () => Promise<LCNConnectionPrompt[]>;
+    getConnectionPromptStatus: (promptId: string) => Promise<LCNConnectionPromptActionResult>;
+    skipConnectionPrompt: (promptId: string) => Promise<LCNConnectionPromptActionResult>;
+    connectWithConnectionPrompt: (promptId: string) => Promise<LCNConnectionPromptActionResult>;
     /** @deprecated Use getPaginatedConnections */
     getConnections: () => Promise<LCNVisibleProfile[]>;
     getPaginatedConnections: (

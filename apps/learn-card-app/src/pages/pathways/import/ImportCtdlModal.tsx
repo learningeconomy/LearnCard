@@ -303,8 +303,8 @@ const ImportCtdlModal: React.FC<ImportCtdlModalProps> = ({ ownerDid, onImport, o
                 err instanceof CtdlFetchError
                     ? friendlyFetchMessage(err, trimmed)
                     : err instanceof Error
-                    ? err.message
-                    : 'Something went wrong while importing. Please try again.';
+                      ? err.message
+                      : 'Something went wrong while importing. Please try again.';
 
             setView({
                 kind: 'error',

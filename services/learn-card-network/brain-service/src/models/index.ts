@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { neogma } from '@instance';
 
 import { Boost } from './Boost';
@@ -153,8 +154,7 @@ Ecosystem.addRelationships({
 });
 
 const shouldCreateIndices =
-    process.env.NODE_ENV === 'production' ||
-    (process.env.NEO4J_SKIP_INDICES !== 'true' && process.env.NEO4J_SKIP_INDICES !== '1');
+    environment.NODE_ENV === 'production' || !environment.NEO4J_SKIP_INDICES;
 
 const indexQueries = [
     'CREATE INDEX profileId_idx IF NOT EXISTS FOR (p:Profile) ON (p.profileId)',
@@ -297,7 +297,7 @@ if (shouldCreateIndices)
                 await runIndexQuery(query);
             }
 
-            if (process.env.NODE_ENV !== 'test') console.log('Ensured indices!');
+            if (environment.NODE_ENV !== 'test') console.log('Ensured indices!');
         } catch (err) {
             console.error('Error creating indices:', err);
         }

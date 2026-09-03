@@ -93,7 +93,7 @@ const renderCategoryPermissions = (
                 return (
                     <div
                         key={key}
-                        className="grid w-full min-w-0 grid-cols-[40px,minmax(0,1fr)] items-start gap-3 rounded-[16px] border border-grayscale-200 bg-white px-3 py-3"
+                        className="grid w-full min-w-0 grid-cols-[40px_minmax(0,1fr)] items-start gap-3 rounded-[16px] border border-grayscale-200 bg-white px-3 py-3"
                     >
                         {CategoryIcon ? (
                             <CategoryIcon className="h-10 w-10 shrink-0" />

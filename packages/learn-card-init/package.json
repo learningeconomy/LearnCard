@@ -1,6 +1,6 @@
 {
     "name": "@learncard/init",
-    "version": "2.4.11",
+    "version": "2.4.12",
     "description": "Primary initialization of LearnCard SDK",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -29,7 +29,7 @@
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
         "start": "aqu watch",
-        "lint": "aqu lint",
+        "lint": "bun run --cwd ../.. lint",
         "lint:fix": "aqu lint --fix",
         "test": "vitest run",
         "test:watch": "vitest",

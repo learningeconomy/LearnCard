@@ -13,11 +13,7 @@ import {
     sqliteInit,
     QRCodeScannerOverlay,
     PushNotificationListener,
-    SCOUTPASS_NETWORK_URL,
-    networkStore,
-    SCOUTPASS_API_ENDPOINT,
     useIsLoggedIn,
-    SCOUTCLOUD_URL,
     sqliteStore,
     ensureReactQueryTableExists,
     ModalsProvider,
@@ -96,10 +92,6 @@ const persister = createAsyncStoragePersister({
 });
 
 setupIonicReact({ swipeBackEnabled: false });
-
-networkStore.set.networkUrl(SCOUTPASS_NETWORK_URL);
-networkStore.set.cloudUrl(SCOUTCLOUD_URL);
-networkStore.set.apiEndpoint(SCOUTPASS_API_ENDPOINT);
 
 const FullApp: React.FC = () => {
     useSQLiteInitWeb(); // initializes SQLite on web

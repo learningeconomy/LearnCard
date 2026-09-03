@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 2.13.15
+
+### Patch Changes
+
+-   [#1491](https://github.com/learningeconomy/LearnCard/pull/1491) [`69102b041690d8d161379ce9343c50a3dec0c50e`](https://github.com/learningeconomy/LearnCard/commit/69102b041690d8d161379ce9343c50a3dec0c50e) Thanks [@goblincore](https://github.com/goblincore)! - Prompt credential claimers and senders to create an explicit LearnCard connection, with durable and idempotent actionable notification delivery.
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.31
+    -   @learncard/helpers@1.3.13
+    -   @learncard/network-brain-client@2.5.52
+
 ## 2.13.14
 
 ### Patch Changes

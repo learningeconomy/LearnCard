@@ -94,7 +94,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
             ? existingChild?.learnCardID
             : getLearnCardIDStyleDefaults(LearnCardIDCMSTabsEnum.dark)
     );
-    const [dob, setDob] = useState<string>(isInEditMode ? existingChild?.dob ?? '' : '');
+    const [dob, setDob] = useState<string>(isInEditMode ? (existingChild?.dob ?? '') : '');
     const [country, setCountry] = useState<string | undefined>(
         isInEditMode ? existingChild?.country : undefined
     );

@@ -1,11 +1,11 @@
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { useWallet } from 'learn-card-base';
-import { useGetPreferencesForDid } from 'learn-card-base';
+import { useGetPreferencesForDid, useWallet } from 'learn-card-base';
 import { configureSentryTransport, configureLoggerContext } from 'learn-card-base';
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { getLogger } from 'learn-card-base';
+import { useFeedbackReportingEligibility } from '../feedback/reporting/eligibility';
 const log = getLogger('sentry');
 
 export type UseSentryIdentifyOptions = {
@@ -13,41 +13,22 @@ export type UseSentryIdentifyOptions = {
 };
 
 /**
- * Initialize Sentry from the resolved TenantConfig.
+ * Initialize Sentry from the already validated TenantConfig.
  *
  * Call this after bootstrapTenantConfig() has resolved.
- * Falls back to Vite-injected globals if TenantConfig is not yet available.
  */
 const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export const initSentryFromTenant = (): void => {
-    let dsn: string | undefined;
-    let env: string | undefined;
-    let traceDomains: (string | RegExp)[] = ['localhost'];
-
-    try {
-        const config = getResolvedTenantConfig();
-        dsn = config.observability.sentryDsn;
-        env = config.observability.sentryEnv;
-
-        if (config.observability.sentryTraceDomains) {
-            traceDomains = [
-                'localhost',
-                ...config.observability.sentryTraceDomains.map(
-                    d => new RegExp(`^https://${escapeRegExp(d)}`)
-                ),
-            ];
-        }
-    } catch {
-        dsn = typeof SENTRY_DSN !== 'undefined' ? SENTRY_DSN : undefined;
-        env = typeof SENTRY_ENV !== 'undefined' ? SENTRY_ENV : undefined;
-        traceDomains = [
-            'localhost',
-            /^https:\/\/network\.learncard\.com\/trpc/,
-            /^https:\/\/api\.learncard\.app\/trpc/,
-            /^https:\/\/cloud\.learncard\.com\/trpc/,
-        ];
-    }
+    const config = getResolvedTenantConfig();
+    const dsn = config.observability.sentryDsn;
+    const env = config.observability.sentryEnv;
+    const traceDomains: (string | RegExp)[] = [
+        'localhost',
+        ...(config.observability.sentryTraceDomains ?? []).map(
+            domain => new RegExp(`^https://${escapeRegExp(domain)}`)
+        ),
+    ];
 
     if (!env || env === 'development' || !dsn) return;
 
@@ -80,11 +61,14 @@ export const initSentryFromTenant = (): void => {
     // single event and don't bleed into unrelated events on the global scope.
     configureSentryTransport({
         // Errors: attach logger tags (scope, tenantId) + meta as extras, then capture.
+        // Returns Sentry's event ID so callers (e.g. GenericErrorBoundary) can
+        // attach the report to the originating event (LC-2086).
         captureException: (err, tags, extra) =>
             Sentry.withScope(scope => {
-                if (tags) Object.entries(tags).forEach(([k, v]) => scope.setTag(k, v));
-                if (extra) Object.entries(extra).forEach(([k, v]) => scope.setExtra(k, v));
-                Sentry.captureException(err);
+                if (tags) Object.entries(tags).forEach(([key, value]) => scope.setTag(key, value));
+                if (extra)
+                    Object.entries(extra).forEach(([key, value]) => scope.setExtra(key, value));
+                return Sentry.captureException(err);
             }),
         // Warnings / string errors: same tag/extra injection, level forwarded as-is.
         captureMessage: (msg, level, tags, extra) =>
@@ -106,13 +90,24 @@ export const initSentryFromTenant = (): void => {
 export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
     const currentUser = useCurrentUser();
     const { getDID } = useWallet();
-    const { data: preferences } = useGetPreferencesForDid();
-    // Default true so existing users without stored preferences are unaffected
-    const bugReportsEnabled = preferences?.bugReportsEnabled ?? true;
+    const { data: preferences, isLoading: preferencesLoading } = useGetPreferencesForDid();
+    const reportingEligibility = useFeedbackReportingEligibility();
+    // Remote crash reporting preserves the existing preference semantics so
+    // login/onboarding/logout failures remain observable. Cached preferences
+    // are trusted only for a fully resolved authenticated profile; only the
+    // user-attachable diagnostic buffer uses the stricter adult eligibility.
+    const canTrustPreferences = Boolean(
+        currentUser && reportingEligibility.profileId && !preferencesLoading
+    );
+    const bugReportsEnabled = canTrustPreferences ? (preferences?.bugReportsEnabled ?? true) : true;
 
     useEffect(() => {
         // Keep logger privacy gate in sync with user preferences
-        configureLoggerContext({ bugReportsEnabled });
+        configureLoggerContext({
+            bugReportsEnabled,
+            diagnosticLogCollectionEnabled: reportingEligibility.bug,
+            diagnosticIdentity: reportingEligibility.profileId ?? null,
+        });
 
         if (Sentry.getClient()) {
             if (currentUser && bugReportsEnabled) {
@@ -144,5 +139,5 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
                 Sentry.setTag('packageVersion', __PACKAGE_VERSION__);
             }
         }
-    }, [currentUser, bugReportsEnabled]);
+    }, [currentUser, bugReportsEnabled, reportingEligibility.bug, reportingEligibility.profileId]);
 };

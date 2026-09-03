@@ -303,10 +303,10 @@ export const AchievementsListSection: React.FC<AchievementsListSectionProps> = (
                                     isDragging
                                         ? 'opacity-40 border-dashed border-indigo-300'
                                         : isDragOver
-                                        ? 'border-indigo-500 ring-2 ring-indigo-200'
-                                        : entryHasErrors
-                                        ? 'border-red-400'
-                                        : 'border-gray-200'
+                                          ? 'border-indigo-500 ring-2 ring-indigo-200'
+                                          : entryHasErrors
+                                            ? 'border-red-400'
+                                            : 'border-gray-200'
                                 }`}
                             >
                                 {/* Entry Header */}

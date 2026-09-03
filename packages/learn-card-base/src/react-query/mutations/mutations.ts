@@ -8,6 +8,7 @@ import { deleteCredentialFromAllContracts } from './pruneConsentFlowDeletedCrede
 import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 import { ToastTypeEnum, useToast } from '../../hooks/useToast';
 import { getLogger } from '../../logging/logger';
+import { connectionPromptKeys } from '../connectionPrompts';
 const log = getLogger('mutations');
 
 export const getDeletedUrisForCredentialRecord = (record: LCR): string[] => {
@@ -148,6 +149,7 @@ export const useBlockProfileMutation = () => {
 // ** CREDENTIAL MUTATIONS **
 export const useAcceptCredentialMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async ({
@@ -163,6 +165,12 @@ export const useAcceptCredentialMutation = () => {
             });
 
             return data;
+        },
+        onSuccess: async () => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all }),
+                queryClient.invalidateQueries({ queryKey: ['contactCredentialHistory'] }),
+            ]);
         },
     });
 };

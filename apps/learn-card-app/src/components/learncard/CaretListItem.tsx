@@ -8,6 +8,8 @@ type CaretListItemProps = {
     caretText?: string;
     onClick?: () => void;
     caretOverride?: React.ReactNode;
+    disabled?: boolean;
+    ariaBusy?: boolean;
 };
 
 const CaretListItem: React.FC<CaretListItemProps> = ({
@@ -17,6 +19,8 @@ const CaretListItem: React.FC<CaretListItemProps> = ({
     caretText,
     onClick,
     caretOverride,
+    disabled = false,
+    ariaBusy = false,
 }) => {
     const content = (
         <>
@@ -52,12 +56,19 @@ const CaretListItem: React.FC<CaretListItemProps> = ({
         </>
     );
 
-    const className =
-        'flex w-full gap-[10px] items-center py-[12px] border-grayscale-200 text-left';
+    const className = `flex w-full gap-[10px] items-center py-[12px] border-grayscale-200 text-left ${
+        disabled ? 'cursor-wait opacity-60' : ''
+    }`;
 
     if (onClick) {
         return (
-            <button type="button" className={className} onClick={onClick}>
+            <button
+                type="button"
+                className={className}
+                onClick={onClick}
+                disabled={disabled}
+                aria-busy={ariaBusy || undefined}
+            >
                 {content}
             </button>
         );

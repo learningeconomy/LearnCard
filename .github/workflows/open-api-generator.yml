@@ -43,9 +43,17 @@ jobs:
                   generator: ${{ matrix.generator-name }}
                   openapi-url: https://network.learncard.com/docs/openapi.json
                   command-args: -o ${{ env.working-directory }}/${{ matrix.generator-name }}-client/ --skip-validate-spec
+            - name: Remove generated GitHub metadata
+              run: rm -rf ${{ env.working-directory }}/${{ matrix.generator-name }}-client/.github
+
+            - name: Re-apply security dependency floors
+              if: matrix.generator-name == 'python'
+              run: bash ${{ env.working-directory }}/apply-security-floors.sh
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
 
             - name: Get version from package.json
               id: package-version
