@@ -34,6 +34,9 @@ export interface AutoSetupConfig {
 
     /** Whether `needs_setup` should auto-generate a new key (default: true) */
     autoSetupNeedsSetup?: boolean;
+
+    /** Whether provisional SSS migration is enabled for this tenant/cohort. */
+    autoMigrate?: boolean;
 }
 
 export const useAuthCoordinatorAutoSetup = (
@@ -55,6 +58,7 @@ export const useAuthCoordinatorAutoSetup = (
 
     const enabled = config.enabled ?? true;
     const autoSetupNeedsSetup = config.autoSetupNeedsSetup ?? true;
+    const autoMigrate = config.autoMigrate ?? true;
 
     // Auto-handle needs_setup
     useEffect(() => {
@@ -98,7 +102,8 @@ export const useAuthCoordinatorAutoSetup = (
             : undefined;
 
     useEffect(() => {
-        if (!enabled || state.status !== 'needs_migration' || handlingRef.current) return;
+        if (!enabled || !autoMigrate || state.status !== 'needs_migration' || handlingRef.current)
+            return;
 
         if (!migrationKey) return;
 
@@ -123,7 +128,7 @@ export const useAuthCoordinatorAutoSetup = (
         };
 
         handleMigration();
-    }, [state.status, enabled, migrationKey]);
+    }, [state.status, enabled, autoMigrate, migrationKey]);
 
     // Notify when ready
     useEffect(() => {
