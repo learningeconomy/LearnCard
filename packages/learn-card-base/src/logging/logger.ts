@@ -130,6 +130,9 @@ const parseArgs = (args: unknown[]): Parsed => {
 // Keys are checked case-insensitively as substrings, catching common variants:
 //   email → userEmail, emailAddress   phone → phoneNumber, mobilePhone
 //   name  → firstName, lastName       token → accessToken, bearerToken, authToken
+//   share → authShare, emailShare, encryptedShare   recoverykey → recoveryKey
+// P0-4: 'authtoken' is NOT listed separately — 'token' already substring-matches
+// it (see above), so adding it would be redundant.
 const PII_SUBSTRINGS = [
     'email',
     'phone',
@@ -140,6 +143,8 @@ const PII_SUBSTRINGS = [
     'accesstoken',
     'idtoken',
     'token',
+    'share',
+    'recoverykey',
 ];
 // 'did' is too short for safe substring matching (would match "additional", "edited"), so exact only.
 const PII_EXACT_LC = new Set(['did']);
