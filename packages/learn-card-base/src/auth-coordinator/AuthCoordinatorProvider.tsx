@@ -33,6 +33,7 @@ export interface AuthCoordinatorContextValue {
     isLoading: boolean;
     needsSetup: boolean;
     needsMigration: boolean;
+    needsActivation: boolean;
     needsRecovery: boolean;
     hasError: boolean;
     error: string | null;
@@ -55,8 +56,16 @@ export interface AuthCoordinatorContextValue {
     initialize: () => Promise<void>;
     setupNewKey: (privateKey: string, did: string) => Promise<void>;
     migrate: (privateKey: string, did: string) => Promise<void>;
+    activate: () => Promise<void>;
     setMigrationData: (data: Record<string, unknown>) => void;
     recover: (input: unknown) => Promise<void>;
+    beginIdentityRecovery: () => void;
+    sendIdentityRecoveryCode: (email: string) => Promise<void>;
+    verifyIdentityRecoveryCode: (code: string) => Promise<void>;
+    prepareIdentityRecovery: (input: unknown) => Promise<void>;
+    continueIdentityRecoveryLogin: () => void;
+    finishIdentityRecovery: () => void;
+    cancelIdentityRecovery: () => void;
     logout: () => Promise<void>;
     forgetDevice: () => Promise<void>;
     retry: () => Promise<void>;
@@ -109,7 +118,7 @@ export interface AuthCoordinatorProviderProps {
     didFromPrivateKey?: (privateKey: string) => Promise<string>;
 
     /** Function to sign a DID-Auth VP JWT proving private key ownership for server write ops */
-    signDidAuthVp?: (privateKey: string) => Promise<string>;
+    signDidAuthVp?: (privateKey: string, challenge?: string) => Promise<string>;
 
     /** Optional: retrieve a cached private key for private-key-first init */
     getCachedPrivateKey?: () => Promise<string | null>;
@@ -325,6 +334,13 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         await coordinatorRef.current.migrate(privateKey, did);
     }, []);
 
+    const activate = useCallback(async () => {
+        if (!coordinatorRef.current) {
+            throw new Error('Coordinator not initialized');
+        }
+        await coordinatorRef.current.activate();
+    }, []);
+
     const setMigrationData = useCallback((data: Record<string, unknown>) => {
         if (!coordinatorRef.current) {
             throw new Error('Coordinator not initialized');
@@ -337,6 +353,41 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             throw new Error('Coordinator not initialized');
         }
         await coordinatorRef.current.recover(input);
+    }, []);
+
+    const beginIdentityRecovery = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.beginIdentityRecovery();
+    }, []);
+
+    const sendIdentityRecoveryCode = useCallback(async (email: string) => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        await coordinatorRef.current.sendIdentityRecoveryCode(email);
+    }, []);
+
+    const verifyIdentityRecoveryCode = useCallback(async (code: string) => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        await coordinatorRef.current.verifyIdentityRecoveryCode(code);
+    }, []);
+
+    const prepareIdentityRecovery = useCallback(async (input: unknown) => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        await coordinatorRef.current.prepareIdentityRecovery(input);
+    }, []);
+
+    const continueIdentityRecoveryLogin = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.continueIdentityRecoveryLogin();
+    }, []);
+
+    const finishIdentityRecovery = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.finishIdentityRecovery();
+    }, []);
+
+    const cancelIdentityRecovery = useCallback(() => {
+        if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
+        coordinatorRef.current.cancelIdentityRecovery();
     }, []);
 
     const logout = useCallback(async () => {
@@ -378,6 +429,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     );
     const needsSetup = state.status === 'needs_setup';
     const needsMigration = state.status === 'needs_migration';
+    const needsActivation = state.status === 'ready' && state.sssActivationState === 'provisional';
     const needsRecovery = state.status === 'needs_recovery';
     const hasError = state.status === 'error';
     const error = state.status === 'error' ? state.error : null;
@@ -393,6 +445,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             isLoading,
             needsSetup,
             needsMigration,
+            needsActivation,
             needsRecovery,
             hasError,
             error,
@@ -404,8 +457,16 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             initialize,
             setupNewKey,
             migrate,
+            activate,
             setMigrationData,
             recover,
+            beginIdentityRecovery,
+            sendIdentityRecoveryCode,
+            verifyIdentityRecoveryCode,
+            prepareIdentityRecovery,
+            continueIdentityRecoveryLogin,
+            finishIdentityRecovery,
+            cancelIdentityRecovery,
             logout,
             forgetDevice,
             retry,
@@ -418,6 +479,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             isLoading,
             needsSetup,
             needsMigration,
+            needsActivation,
             needsRecovery,
             hasError,
             error,
@@ -428,8 +490,16 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             initialize,
             setupNewKey,
             migrate,
+            activate,
             setMigrationData,
             recover,
+            beginIdentityRecovery,
+            sendIdentityRecoveryCode,
+            verifyIdentityRecoveryCode,
+            prepareIdentityRecovery,
+            continueIdentityRecoveryLogin,
+            finishIdentityRecovery,
+            cancelIdentityRecovery,
             logout,
             forgetDevice,
             retry,

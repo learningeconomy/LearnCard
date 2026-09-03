@@ -19,6 +19,8 @@ const log = getLogger('auth-config');
  *   VITE_AUTH_PROVIDER / REACT_APP_AUTH_PROVIDER                             — 'firebase' (default) [config wins]
  *   VITE_KEY_DERIVATION / REACT_APP_KEY_DERIVATION_PROVIDER                  — 'sss' (default)      [config wins]
  *   VITE_SSS_SERVER_URL / REACT_APP_SSS_SERVER_URL                           — providerConfig.sss.serverUrl               [ENV wins]
+ *   VITE_ESCROW_RELAY_PUBLIC_KEY / REACT_APP_ESCROW_RELAY_PUBLIC_KEY         — providerConfig.sss.escrowRelayPublicKey    [ENV wins]
+ *   VITE_ESCROW_RELAY_KEY_ID / REACT_APP_ESCROW_RELAY_KEY_ID                 — providerConfig.sss.escrowRelayKeyId        [ENV wins]
  *   VITE_ENABLE_EMAIL_BACKUP_SHARE / REACT_APP_ENABLE_EMAIL_BACKUP_SHARE     — providerConfig.sss.enableEmailBackupShare   [ENV wins]
  *   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS / REACT_APP_REQUIRE_EMAIL_FOR_PHONE_USERS — providerConfig.sss.requireEmailForPhoneUsers [ENV wins]
  *   VITE_WEB3AUTH_CLIENT_ID / VITE_WEB3AUTH_NETWORK / VITE_WEB3AUTH_VERIFIER_ID / VITE_WEB3AUTH_RPC_TARGET
@@ -36,6 +38,9 @@ export interface AuthConfig {
 
     /** Which key derivation strategy to use (open string matching providerRegistry factories) */
     keyDerivation: string;
+
+    /** Whether this tenant/cohort may migrate legacy users to provisional SSS. */
+    sssCohortEnabled: boolean;
 
     /**
      * Provider- and strategy-specific config blocks from the tenant config.
@@ -56,6 +61,8 @@ export interface AuthConfig {
  */
 export interface SSSConfig {
     serverUrl: string;
+    escrowRelayPublicKey: string;
+    escrowRelayKeyId: string;
     enableEmailBackupShare: boolean;
     requireEmailForPhoneUsers: boolean;
 }
@@ -95,7 +102,14 @@ export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
     }
 
     // Forward any other provider blocks that arrived via .passthrough()
-    const knownKeys = new Set(['provider', 'keyDerivation', 'firebase', 'sss', 'web3Auth']);
+    const knownKeys = new Set([
+        'provider',
+        'keyDerivation',
+        'sssCohortEnabled',
+        'firebase',
+        'sss',
+        'web3Auth',
+    ]);
 
     for (const [key, value] of Object.entries(tenant.auth)) {
         if (!knownKeys.has(key) && value && typeof value === 'object' && !Array.isArray(value)) {
@@ -106,6 +120,7 @@ export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
     _authConfigOverrides = {
         authProvider: tenant.auth.provider as AuthProviderType,
         keyDerivation: tenant.auth.keyDerivation,
+        sssCohortEnabled: tenant.auth.sssCohortEnabled,
         providerConfig,
     };
 };
@@ -192,6 +207,8 @@ export const getAuthConfig = (): AuthConfig => {
         readEnv('KEY_DERIVATION', 'KEY_DERIVATION_PROVIDER') ??
         'sss';
 
+    const sssCohortEnabled = _authConfigOverrides?.sssCohortEnabled ?? false;
+
     // Build providerConfig — start with tenant config, then overlay ENV vars.
     //
     // Split-precedence: ENV vars override operational values (URLs, keys,
@@ -211,6 +228,15 @@ export const getAuthConfig = (): AuthConfig => {
             readEnv('SSS_SERVER_URL', 'SSS_SERVER_URL') ??
             (tenantSss.serverUrl as string | undefined) ??
             'http://localhost:5100/api';
+
+        const escrowRelayPublicKey =
+            readEnv('ESCROW_RELAY_PUBLIC_KEY', 'ESCROW_RELAY_PUBLIC_KEY') ??
+            (tenantSss.escrowRelayPublicKey as string | undefined) ??
+            '';
+        const escrowRelayKeyId =
+            readEnv('ESCROW_RELAY_KEY_ID', 'ESCROW_RELAY_KEY_ID') ??
+            (tenantSss.escrowRelayKeyId as string | undefined) ??
+            '';
 
         const enableEmailBackupShareEnv = readEnv(
             'ENABLE_EMAIL_BACKUP_SHARE',
@@ -233,6 +259,8 @@ export const getAuthConfig = (): AuthConfig => {
         providerConfig.sss = {
             ...tenantSss,
             serverUrl,
+            escrowRelayPublicKey,
+            escrowRelayKeyId,
             enableEmailBackupShare,
             requireEmailForPhoneUsers,
         };
@@ -267,6 +295,7 @@ export const getAuthConfig = (): AuthConfig => {
     return {
         authProvider,
         keyDerivation,
+        sssCohortEnabled,
         providerConfig,
     };
 };
@@ -283,6 +312,8 @@ export const getSSSConfig = (): SSSConfig => {
 
     return {
         serverUrl: (sss.serverUrl as string) ?? 'http://localhost:5100/api',
+        escrowRelayPublicKey: (sss.escrowRelayPublicKey as string) ?? '',
+        escrowRelayKeyId: (sss.escrowRelayKeyId as string) ?? '',
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean) ?? true,
     };

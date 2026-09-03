@@ -59,6 +59,8 @@ export const tenantFirebaseConfigSchema = z
 export const tenantSSSConfigSchema = z
     .object({
         serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
+        escrowRelayPublicKey: z.string().default(''),
+        escrowRelayKeyId: z.string().default(''),
         enableEmailBackupShare: z.boolean().default(true),
         requireEmailForPhoneUsers: z.boolean().default(true),
     })
@@ -78,6 +80,7 @@ export const tenantAuthConfigSchema = z
         // Open strings — must match a registered factory in providerRegistry.ts.
         provider: z.string().default('firebase'),
         keyDerivation: z.string().default('sss'),
+        sssCohortEnabled: z.boolean().default(false),
 
         // Provider-specific config blocks — only the one matching `provider`
         // is used at runtime. Each block is self-contained with its own schema.

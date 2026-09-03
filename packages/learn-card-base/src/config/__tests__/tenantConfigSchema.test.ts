@@ -72,6 +72,8 @@ describe('tenantConfigSchema', () => {
         expect(result.auth.provider).toBe('firebase');
         expect(result.auth.keyDerivation).toBe('sss');
         expect(result.auth.sss?.enableEmailBackupShare).toBe(true);
+        expect(result.auth.sss?.escrowRelayPublicKey).toBe('');
+        expect(result.auth.sss?.escrowRelayKeyId).toBe('');
         expect(result.auth.sss?.requireEmailForPhoneUsers).toBe(true);
         expect(result.branding.defaultTheme).toBe('colorful');
         expect(result.branding.loginRedirectPath).toBe('/waitingsofa?loginCompleted=true');

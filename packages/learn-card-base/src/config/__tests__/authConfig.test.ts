@@ -42,6 +42,8 @@ const clearAuthEnvVars = () => {
         'KEY_DERIVATION',
         'KEY_DERIVATION_PROVIDER',
         'SSS_SERVER_URL',
+        'ESCROW_RELAY_PUBLIC_KEY',
+        'ESCROW_RELAY_KEY_ID',
         'ENABLE_EMAIL_BACKUP_SHARE',
         'REQUIRE_EMAIL_FOR_PHONE_USERS',
     ];
@@ -74,12 +76,21 @@ describe('getAuthConfig', () => {
 
             expect(config.authProvider).toBe('firebase');
             expect(config.keyDerivation).toBe('sss');
+            expect(config.sssCohortEnabled).toBe(false);
 
             const sss = getSSSConfig();
             expect(sss.serverUrl).toBe('http://localhost:5100/api');
+            expect(sss.escrowRelayPublicKey).toBe('');
+            expect(sss.escrowRelayKeyId).toBe('');
             expect(sss.enableEmailBackupShare).toBe(true);
             expect(sss.requireEmailForPhoneUsers).toBe(true);
         });
+    });
+
+    it('allows tenant overrides to enable the SSS cohort', () => {
+        setAuthConfigOverrides({ sssCohortEnabled: true });
+
+        expect(getAuthConfig().sssCohortEnabled).toBe(true);
     });
 
     describe('VITE_ prefix reading', () => {
@@ -105,12 +116,21 @@ describe('getAuthConfig', () => {
             expect(getSSSConfig().serverUrl).toBe('https://custom.server/api');
         });
 
+        it('reads the pinned escrow relay key', () => {
+            setEnv({
+                VITE_ESCROW_RELAY_PUBLIC_KEY: 'relay-public-key',
+                VITE_ESCROW_RELAY_KEY_ID: 'relay-key-2026-09',
+            });
+
+            expect(getSSSConfig().escrowRelayPublicKey).toBe('relay-public-key');
+            expect(getSSSConfig().escrowRelayKeyId).toBe('relay-key-2026-09');
+        });
+
         it('reads VITE_ENABLE_EMAIL_BACKUP_SHARE=false', () => {
             setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
 
             expect(getSSSConfig().enableEmailBackupShare).toBe(false);
         });
-
     });
 
     describe('REACT_APP_ prefix fallback', () => {
@@ -192,7 +212,6 @@ describe('getAuthConfig', () => {
             setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'yes' });
             expect(getSSSConfig().enableEmailBackupShare).toBe(true);
         });
-
     });
 });
 
@@ -272,6 +291,24 @@ describe('split-precedence: ENV wins for operational values', () => {
         setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
 
         expect(getSSSConfig().enableEmailBackupShare).toBe(false);
+    });
+
+    it('ENV escrow relay key overrides tenant config values', () => {
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: {
+                    escrowRelayPublicKey: 'tenant-public-key',
+                    escrowRelayKeyId: 'tenant-key-id',
+                },
+            },
+        });
+        setEnv({
+            VITE_ESCROW_RELAY_PUBLIC_KEY: 'env-public-key',
+            VITE_ESCROW_RELAY_KEY_ID: 'env-key-id',
+        });
+
+        expect(getSSSConfig().escrowRelayPublicKey).toBe('env-public-key');
+        expect(getSSSConfig().escrowRelayKeyId).toBe('env-key-id');
     });
 
     it('falls back to tenant config enableEmailBackupShare when no ENV var', () => {
@@ -400,5 +437,4 @@ describe('helper functions', () => {
             expect(isEmailBackupShareEnabled()).toBe(false);
         });
     });
-
 });
