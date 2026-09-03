@@ -28,7 +28,7 @@ interface RecoverySetupModalProps {
     onSetupBackup: (password: string) => Promise<string>;
     onAddRecoveryEmail: (email: string) => Promise<void>;
     onVerifyRecoveryEmail: (code: string) => Promise<{ maskedEmail: string }>;
-    onSetupEmailRecovery: () => Promise<void>;
+    onSetupEmailRecovery: (email: string) => Promise<void>;
     existingMethods: { type: string; createdAt: string }[];
     maskedRecoveryEmail?: string | null;
     onClose: () => void;
@@ -276,7 +276,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         setError(null);
 
         try {
-            await onSetupEmailRecovery();
+            await onSetupEmailRecovery(emailInput);
             setEmailShareSent(true);
             markConfigured('email');
             setSuccess(m['recovery.setup.success.email']());

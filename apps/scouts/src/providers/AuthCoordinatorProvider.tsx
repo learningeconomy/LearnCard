@@ -255,16 +255,24 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 registerKeyDerivationFactory('sss', () => {
     const sss = getSSSConfig();
     let tenantId: string | undefined;
+    let emailBranding: ReturnType<typeof getResolvedTenantConfig>['email'];
 
     try {
-        tenantId = getResolvedTenantConfig().tenantId;
+        const tenant = getResolvedTenantConfig();
+
+        tenantId = tenant.tenantId;
+        emailBranding = tenant.email;
     } catch {
         tenantId = undefined;
+        emailBranding = undefined;
     }
 
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
         tenantId,
+        escrowRelayPublicKey: sss.escrowRelayPublicKey,
+        escrowRelayKeyId: sss.escrowRelayKeyId,
+        emailBranding,
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
         // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
         // On web, use adaptive storage that routes to sessionStorage when the
@@ -609,25 +617,28 @@ const AuthSessionManager: React.FC<{
     }, []);
 
     // --- DID-Auth VP signing (for recovery setup write ops) ---
-    const signDidAuthVp = useCallback(async (privateKey: string): Promise<string> => {
-        try {
-            const lc = await getSigningLearnCard(privateKey);
+    const signDidAuthVp = useCallback(
+        async (privateKey: string, challenge?: string): Promise<string> => {
+            try {
+                const lc = await getSigningLearnCard(privateKey);
 
-            const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+                const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-            if (!vpJwt || typeof vpJwt !== 'string') {
-                log.error('[signDidAuthVp] getDidAuthVp returned non-string', {
-                    type: typeof vpJwt,
-                });
-                throw new Error('Failed to sign DID-Auth VP JWT');
+                if (!vpJwt || typeof vpJwt !== 'string') {
+                    log.error('[signDidAuthVp] getDidAuthVp returned non-string', {
+                        type: typeof vpJwt,
+                    });
+                    throw new Error('Failed to sign DID-Auth VP JWT');
+                }
+
+                return vpJwt;
+            } catch (e) {
+                log.error('[signDidAuthVp] error', e);
+                throw e instanceof Error ? e : new Error(String(e));
             }
-
-            return vpJwt;
-        } catch (e) {
-            log.error('[signDidAuthVp] error', e);
-            throw e instanceof Error ? e : new Error(String(e));
-        }
-    }, []);
+        },
+        []
+    );
 
     // --- Web3Auth key extraction for migration ---
     const migrationKeyFetchedRef = useRef(false);
@@ -1186,19 +1197,29 @@ const AuthSessionManager: React.FC<{
                                 const freshToken = await authProvider.getIdToken();
                                 const pk = coordinator.state.privateKey;
                                 const did = coordinator.state.did;
-                                const vpJwt = await signDidAuthVp(pk);
+                                if (keyDerivation.atomicUpdateShares) {
+                                    await keyDerivation.atomicUpdateShares({
+                                        token: freshToken,
+                                        providerType: authProvider.getProviderType(),
+                                        privateKey: pk,
+                                        did,
+                                        signDidAuthVp,
+                                    });
+                                } else {
+                                    const vpJwt = await signDidAuthVp(pk);
+                                    const { localKey, remoteKey } = await keyDerivation.splitKey(
+                                        pk
+                                    );
 
-                                const { localKey, remoteKey } = await keyDerivation.splitKey(pk);
-
-                                await keyDerivation.storeLocalKey(localKey);
-
-                                await keyDerivation.storeAuthShare(
-                                    freshToken,
-                                    authProvider.getProviderType(),
-                                    remoteKey,
-                                    did,
-                                    vpJwt
-                                );
+                                    await keyDerivation.storeLocalKey(localKey);
+                                    await keyDerivation.storeAuthShare(
+                                        freshToken,
+                                        authProvider.getProviderType(),
+                                        remoteKey,
+                                        did,
+                                        vpJwt
+                                    );
+                                }
 
                                 await keyDerivation.sendEmailBackupShare(
                                     freshToken,
@@ -1349,7 +1370,14 @@ const AuthSessionManager: React.FC<{
                     };
 
                     const getDidAuthHeaders = async (): Promise<Record<string, string>> => {
-                        const vpJwt = await signDidAuthVp(currentPrivateKey);
+                        const did = await didFromPrivateKey(currentPrivateKey);
+                        const vpJwt = keyDerivation.getFreshDidAuthVp
+                            ? await keyDerivation.getFreshDidAuthVp(
+                                  currentPrivateKey,
+                                  did,
+                                  signDidAuthVp
+                              )
+                            : await signDidAuthVp(currentPrivateKey);
 
                         return {
                             'Content-Type': 'application/json',
@@ -1445,9 +1473,9 @@ const AuthSessionManager: React.FC<{
 
                                     return res.json();
                                 }}
-                                onSetupEmailRecovery={async () => {
+                                onSetupEmailRecovery={async email => {
                                     const authUser = await authProvider.getCurrentUser();
-                                    await setupMethod({ method: 'email' }, authUser);
+                                    await setupMethod({ method: 'email', email }, authUser);
                                     setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                 }}
                                 onClose={() => setShowRecoverySetup(false)}
@@ -1506,15 +1534,19 @@ export const AuthCoordinatorProvider: React.FC<ScoutsAuthCoordinatorProviderProp
 
     // DID-Auth VP signing — proves private key ownership to the server on write ops.
     // Uses getSigningLearnCard (no network) so did:key is used deterministically.
-    const signDidAuthVp = useCallback(async (privateKey: string): Promise<string> => {
-        const lc = await getSigningLearnCard(privateKey);
+    const signDidAuthVp = useCallback(
+        async (privateKey: string, challenge?: string): Promise<string> => {
+            const lc = await getSigningLearnCard(privateKey);
 
-        const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+            const vpJwt = await lc.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-        if (!vpJwt || typeof vpJwt !== 'string') throw new Error('Failed to sign DID-Auth VP JWT');
+            if (!vpJwt || typeof vpJwt !== 'string')
+                throw new Error('Failed to sign DID-Auth VP JWT');
 
-        return vpJwt;
-    }, []);
+            return vpJwt;
+        },
+        []
+    );
 
     // Resolve key derivation strategy from the provider registry (env-var driven)
     const keyDerivation = useMemo(
