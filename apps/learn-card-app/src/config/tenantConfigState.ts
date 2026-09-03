@@ -38,6 +38,9 @@ export const getTenantBootstrapState = (): TenantBootstrapState => {
 // Module-level cache backed by global state so HMR does not clear the resolved config.
 let _resolvedConfig: TenantConfig | null = getTenantBootstrapState().resolvedConfig;
 
+/**
+ * @internal Bootstrap-only state mutation. Call `bootstrapTenantConfig()` instead.
+ */
 export const setResolvedTenantConfig = (config: TenantConfig): void => {
     _resolvedConfig = config;
     getTenantBootstrapState().resolvedConfig = config;
@@ -61,6 +64,7 @@ export const getResolvedTenantConfig = (): TenantConfig => {
 
 /**
  * Get headers that identify the current tenant to backend services.
+ * Falls back to the global bootstrap state so HMR and duplicate module instances retain the tenant.
  * Merges with any existing headers object so callers can spread or pass directly.
  */
 export const getTenantHeaders = (): Record<string, string> => {

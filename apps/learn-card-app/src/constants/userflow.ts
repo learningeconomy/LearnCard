@@ -5,7 +5,7 @@ const log = getLogger('userflow');
 import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useWallet } from 'learn-card-base';
-import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { getResolvedTenantConfig } from '../config/tenantConfigState';
 
 export type UseUserflowIdentifyOptions = {
     debug?: boolean;

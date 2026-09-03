@@ -1,6 +1,6 @@
 import { createStore } from '@udecode/zustood';
 
-import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
+import { getResolvedTenantConfig } from '../../config/tenantConfigState';
 import type { TenantConfig } from 'learn-card-base';
 import { emitConfigDebugEvent, emitConfigWarning } from '../../components/debug/configDebugEvents';
 import { isRegisteredThemeId, resolveThemeId } from '../helpers/loadTheme';

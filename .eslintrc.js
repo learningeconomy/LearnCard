@@ -176,5 +176,29 @@ module.exports = {
                 ],
             },
         },
+        {
+            // bootstrapTenantConfig imports these modules while initializing the app. Importing the
+            // bootstrap module back from here creates a cycle; read resolved state from the leaf module.
+            files: [
+                'apps/learn-card-app/src/analytics/**/*.{ts,tsx}',
+                'apps/learn-card-app/src/constants/sentry.ts',
+                'apps/learn-card-app/src/constants/userflow.ts',
+                'apps/learn-card-app/src/theme/store/themeStore.ts',
+            ],
+            rules: {
+                'no-restricted-imports': [
+                    'error',
+                    {
+                        patterns: [
+                            {
+                                group: ['**/config/bootstrapTenantConfig'],
+                                message:
+                                    'Modules loaded by bootstrapTenantConfig must read resolved config from config/tenantConfigState instead.',
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
     ],
 };
