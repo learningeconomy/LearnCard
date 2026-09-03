@@ -14,37 +14,11 @@ const lintPatterns = requestedPatterns.length > 0 ? requestedPatterns : [APP_SOU
 // showing actionable locations for explicitly requested files or verbose runs.
 const showWarnings = process.env.A11Y_VERBOSE === '1' || requestedPatterns.length > 0;
 
-const rootConfig = require('../.eslintrc.js');
-
-// Treat the root override as the source of truth for rule selection and
-// severity. This keeps rules promoted from warning to error in one place.
-const a11yOverride = rootConfig.overrides?.find(override => override.plugins?.includes('jsx-a11y'));
-
-if (!a11yOverride) {
-    throw new Error('Could not find the LearnCard app jsx-a11y override in .eslintrc.js.');
-}
-
-const a11yRules = Object.fromEntries(
-    Object.entries(a11yOverride.rules ?? {}).filter(([ruleName]) =>
-        ruleName.startsWith(A11Y_RULE_PREFIX)
-    )
-);
-
 // Run an isolated ESLint instance so unrelated legacy lint findings do not
 // hide accessibility regressions or prevent the warning-first rollout.
 const eslint = new ESLint({
     cwd: ROOT_DIR,
-    useEslintrc: false,
-    overrideConfig: {
-        parser: require.resolve('@typescript-eslint/parser'),
-        parserOptions: {
-            ecmaFeatures: { jsx: true },
-            ecmaVersion: 2020,
-            sourceType: 'module',
-        },
-        plugins: ['jsx-a11y'],
-        rules: a11yRules,
-    },
+    overrideConfigFile: path.join(ROOT_DIR, 'eslint.a11y.config.mjs'),
 });
 
 const run = async () => {

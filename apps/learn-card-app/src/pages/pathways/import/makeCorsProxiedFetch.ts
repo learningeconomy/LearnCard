@@ -13,15 +13,13 @@
  * fetch-shaped callable that `fetchCtdlPathway` consumes. The import
  * pipeline itself stays platform-agnostic.
  *
- * If the CORS proxy key is unset (dev environments without
- * `CORS_PROXY_API_KEY`), we fall back to direct `fetch` and let the
+ * If the tenant has no CORS proxy key, we fall back to direct `fetch` and let the
  * browser do its thing — handy for local testing against mock servers
  * or when the registry happens to allow the origin.
  */
 
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
-
-declare const CORS_PROXY_API_KEY: string | undefined;
+import { getResolvedTenantConfig } from '../../../config/bootstrapTenantConfig';
 
 export interface MakeCorsProxiedFetchOptions {
     /**
@@ -31,20 +29,27 @@ export interface MakeCorsProxiedFetchOptions {
     forceWeb?: boolean;
 
     /**
-     * Override the CORS-proxy key. Defaults to the bundler-injected
-     * `CORS_PROXY_API_KEY` constant.
+     * Override the CORS-proxy key. Defaults to the validated tenant API config.
      */
     corsProxyKey?: string;
 }
+
+const resolveCorsProxyKey = (override: string | undefined): string | undefined => {
+    if (override !== undefined) return override;
+
+    try {
+        return getResolvedTenantConfig().apis.corsProxyApiKey;
+    } catch {
+        return undefined;
+    }
+};
 
 /**
  * Build a `typeof fetch` that tunnels through the appropriate channel
  * for the current runtime.
  */
-export const makeCorsProxiedFetch = (
-    opts: MakeCorsProxiedFetchOptions = {},
-): typeof fetch => {
-    const { forceWeb = false, corsProxyKey = CORS_PROXY_API_KEY } = opts;
+export const makeCorsProxiedFetch = (opts: MakeCorsProxiedFetchOptions = {}): typeof fetch => {
+    const { forceWeb = false } = opts;
 
     const isNative = !forceWeb && Capacitor.isNativePlatform();
 
@@ -53,13 +58,16 @@ export const makeCorsProxiedFetch = (
             typeof input === 'string'
                 ? input
                 : input instanceof URL
-                    ? input.toString()
-                    : (input as Request).url;
+                  ? input.toString()
+                  : (input as Request).url;
+
+        const corsProxyKey = resolveCorsProxyKey(opts.corsProxyKey);
 
         // Resolve the URL we actually send the request to.
-        const resolvedUrl = isNative || !corsProxyKey
-            ? originalUrl
-            : `https://corsproxy.io/?key=${corsProxyKey}&url=${encodeURIComponent(originalUrl)}`;
+        const resolvedUrl =
+            isNative || !corsProxyKey
+                ? originalUrl
+                : `https://corsproxy.io/?key=${corsProxyKey}&url=${encodeURIComponent(originalUrl)}`;
 
         if (isNative) {
             // CapacitorHttp on native platforms — bypasses CORS entirely

@@ -6,12 +6,18 @@ import * as Sentry from '@sentry/serverless';
 import app from './src/openapi';
 import { appRouter, createContext } from './src/app';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
-import { handleTrpcError, sentryBeforeSend, getTracesSampleRate } from './src/helpers/sentry.helpers';
+import {
+    handleTrpcError,
+    sentryBeforeSend,
+    getTracesSampleRate,
+} from './src/helpers/sentry.helpers';
+import { environment } from './src/config/environment';
+import { toServerlessApplication } from './src/helpers/serverlessApplication';
 
 Sentry.AWSLambda.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV,
-    enabled: Boolean(process.env.SENTRY_DSN),
+    dsn: environment.SENTRY_DSN,
+    environment: environment.SENTRY_ENV,
+    enabled: Boolean(environment.SENTRY_DSN),
     tracesSampleRate: getTracesSampleRate(),
     beforeSend: sentryBeforeSend,
     integrations: [
@@ -22,7 +28,9 @@ Sentry.AWSLambda.init({
     ],
 });
 
-export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
+export const swaggerUiHandler = serverlessHttp(toServerlessApplication(app), {
+    basePath: '/docs',
+});
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,

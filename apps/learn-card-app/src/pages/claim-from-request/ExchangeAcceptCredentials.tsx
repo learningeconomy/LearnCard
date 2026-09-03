@@ -634,8 +634,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const claimBtnText = isClaimed
         ? m['claim.accept.claimed']()
         : isCheckingDuplicate || claiming
-        ? m['common.loading']()
-        : m['common.accept']();
+          ? m['common.loading']()
+          : m['common.accept']();
 
     const claimLoadingOverlay = (claiming || isCheckingDuplicate) && (
         <div

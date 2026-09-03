@@ -53,9 +53,7 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({
             <div className="flex-1 min-w-0">
                 <p className={`text-sm font-medium ${styles.text}`}>{label}</p>
 
-                {description && (
-                    <p className="text-xs text-gray-500 mt-0.5">{description}</p>
-                )}
+                {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
             </div>
 
             {action && (

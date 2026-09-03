@@ -26,6 +26,7 @@ import {
     getAiPassportUrl,
     waitForAiPassportAuthMode,
 } from '../../helpers/aiPassportAuth';
+import { createDeferred } from '../../helpers/deferred';
 
 export const messages = atom<ChatMessage[]>([]);
 export const streamingMessage = atom<ChatMessage | null>(null);
@@ -1329,7 +1330,7 @@ const waitForSocketConnection = (): Promise<void> => {
         return Promise.reject(new Error('WebSocket connection cancelled'));
     }
 
-    const { promise, reject, resolve } = Promise.withResolvers<void>();
+    const { promise, reject, resolve } = createDeferred<void>();
     let unsubscribe = () => {};
     const timeout = window.setTimeout(() => {
         unsubscribe();

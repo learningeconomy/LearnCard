@@ -32,7 +32,7 @@ export function bufferToBase64(buf: ArrayBuffer): string {
     return btoa(binary);
 }
 
-export function base64ToBuffer(b64: string): Uint8Array {
+export function base64ToBuffer(b64: string): Uint8Array<ArrayBuffer> {
     const binary = atob(b64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
@@ -41,7 +41,7 @@ export function base64ToBuffer(b64: string): Uint8Array {
     return bytes;
 }
 
-export function hexToBytes(hex: string): Uint8Array {
+export function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
     const bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < hex.length; i += 2) {
         bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
@@ -59,7 +59,7 @@ export async function deriveKeyFromPassword(
     password: string,
     salt: Uint8Array,
     params: KdfParams = DEFAULT_KDF_PARAMS
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
     const hash = await argon2id({
         password,
         salt: salt as unknown as Uint8Array,
@@ -69,7 +69,7 @@ export async function deriveKeyFromPassword(
         hashLength: ARGON2_HASH_LENGTH,
         outputType: 'binary',
     });
-    return new Uint8Array(hash as ArrayBuffer);
+    return Uint8Array.from(hash);
 }
 
 export async function encryptWithPassword(
@@ -148,11 +148,7 @@ export async function encryptShare(
         encryptParams.additionalData = encoder.encode(aad);
     }
 
-    const ciphertextBuffer = await crypto.subtle.encrypt(
-        encryptParams,
-        key,
-        encoder.encode(share) as ArrayBuffer
-    );
+    const ciphertextBuffer = await crypto.subtle.encrypt(encryptParams, key, encoder.encode(share));
 
     return {
         encryptedData: bufferToBase64(ciphertextBuffer),
@@ -186,11 +182,10 @@ export async function decryptShare(
 }
 
 export async function generateAesKey(): Promise<CryptoKey> {
-    return crypto.subtle.generateKey(
-        { name: 'AES-GCM', length: 256 },
-        true,
-        ['encrypt', 'decrypt']
-    );
+    return crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, [
+        'encrypt',
+        'decrypt',
+    ]);
 }
 
 export function generateRandomBytes(length: number): Uint8Array {

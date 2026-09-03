@@ -1003,11 +1003,11 @@ const learnCard = await initLearnCard({
 const result = await learnCard.invoke.send({
     type: 'boost',
     recipient: '${recipientExample}', // profile ID, DID, email, or phone${
-            integrationId
-                ? `
+        integrationId
+            ? `
     integrationId: '${integrationId}', // Track activity for this integration`
-                : ''
-        },
+            : ''
+    },
     templateUri: '${boostUri}',
     templateData: {
 ${templateDataCode}

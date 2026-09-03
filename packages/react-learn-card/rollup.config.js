@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import glob from 'glob';
 import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
@@ -10,7 +11,7 @@ import dts from 'rollup-plugin-dts';
 import svgr from '@svgr/rollup';
 import styles from 'rollup-plugin-styles';
 
-const packageJson = require('./package.json');
+const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 /**
  * Force singleton-bearing modules into their own shared chunk. With multiple

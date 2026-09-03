@@ -7,6 +7,7 @@ import {
 } from 'learn-card-base';
 
 import { RegistryClient } from '@digitalcredentials/issuer-registry-client';
+import { isProductionEnvironment } from '../config/isProduction';
 
 export const useRegistry = () => {
     return useQuery<RegistryEntry[]>({
@@ -15,7 +16,7 @@ export const useRegistry = () => {
         queryFn: async () => {
             const data = await (
                 await fetch(
-                    process.env.NODE_ENV === 'production'
+                    isProductionEnvironment()
                         ? 'https://raw.githubusercontent.com/WeLibraryOS/metaversity-registry/main/registry.json'
                         : 'https://raw.githubusercontent.com/WeLibraryOS/metaversity-registry/main/dev-registry.json'
                 )
@@ -34,7 +35,7 @@ export const useJobsRegistry = () => {
         queryFn: async () => {
             const data = await (
                 await fetch(
-                    process.env.NODE_ENV === 'production'
+                    isProductionEnvironment()
                         ? 'https://raw.githubusercontent.com/WeLibraryOS/metaversity-registry/main/jobs-registry.json'
                         : 'https://raw.githubusercontent.com/WeLibraryOS/metaversity-registry/main/dev-jobs-registry.json'
                 )

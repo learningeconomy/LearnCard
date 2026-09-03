@@ -1,5 +1,5 @@
 # Use an official Node runtime as the base image
-FROM node:20.10.0-slim
+FROM node:24.12.0-slim
 
 # Skip native DIDKit build (not needed for browser apps, uses WASM fallback)
 ENV SKIP_DIDKIT_NAPI=1

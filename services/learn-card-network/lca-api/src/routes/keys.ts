@@ -3,6 +3,7 @@
  * Provider-agnostic routes for managing SSS shares
  */
 
+import { environment } from '@environment';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import admin from 'firebase-admin';
@@ -28,8 +29,9 @@ import {
     type ContactMethod,
 } from '@models';
 
-const RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS = process.env.POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS ?? '';
-const RECOVERY_KEY_TEMPLATE_ALIAS = process.env.POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS ?? '';
+const RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS =
+    environment.POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS ?? '';
+const RECOVERY_KEY_TEMPLATE_ALIAS = environment.POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS ?? '';
 
 const RECOVERY_EMAIL_CODE_PREFIX = 'recovery_email_code:';
 const RECOVERY_EMAIL_CODE_TTL_SECS = 15 * 60; // 15 minutes
@@ -48,7 +50,10 @@ const AuthInputValidator = z.object({
     providerType: AuthProviderTypeValidator,
 });
 
-async function verifyAndGetContactMethod(input: { authToken: string; providerType: AuthProviderType }): Promise<{
+async function verifyAndGetContactMethod(input: {
+    authToken: string;
+    providerType: AuthProviderType;
+}): Promise<{
     user: { id: string; email?: string; phone?: string; providerType: string };
     contactMethod: ContactMethod;
 }> {
@@ -75,26 +80,30 @@ export const keysRouter = t.router({
                 summary: 'Get auth share for authenticated user',
             },
         })
-        .input(AuthInputValidator.extend({
-            shareVersion: z.number().optional(),
-        }))
+        .input(
+            AuthInputValidator.extend({
+                shareVersion: z.number().optional(),
+            })
+        )
         .output(
-            z.object({
-                authShare: ServerEncryptedShareValidator.nullable(),
-                primaryDid: z.string().nullable(),
-                securityLevel: z.enum(['basic', 'enhanced', 'advanced']),
-                recoveryMethods: z.array(
-                    z.object({
-                        type: z.enum(['passkey', 'backup', 'phrase', 'email']),
-                        createdAt: z.string(),
-                        credentialId: z.string().optional(),
-                        shareVersion: z.number().optional(),
-                    })
-                ),
-                keyProvider: z.enum(['web3auth', 'sss']),
-                shareVersion: z.number(),
-                maskedRecoveryEmail: z.string().nullable(),
-            }).nullable()
+            z
+                .object({
+                    authShare: ServerEncryptedShareValidator.nullable(),
+                    primaryDid: z.string().nullable(),
+                    securityLevel: z.enum(['basic', 'enhanced', 'advanced']),
+                    recoveryMethods: z.array(
+                        z.object({
+                            type: z.enum(['passkey', 'backup', 'phrase', 'email']),
+                            createdAt: z.string(),
+                            credentialId: z.string().optional(),
+                            shareVersion: z.number().optional(),
+                        })
+                    ),
+                    keyProvider: z.enum(['web3auth', 'sss']),
+                    shareVersion: z.number(),
+                    maskedRecoveryEmail: z.string().nullable(),
+                })
+                .nullable()
         )
         .mutation(async ({ input }) => {
             const { user, contactMethod } = await verifyAndGetContactMethod(input);
@@ -112,20 +121,22 @@ export const keysRouter = t.router({
 
             // If a specific shareVersion is requested, look it up from history
             const requestedVersion = input.shareVersion;
-            const rawAuthShare = requestedVersion != null
-                ? findAuthShareByVersion(userKey, requestedVersion)
-                : userKey.authShare ?? null;
+            const rawAuthShare =
+                requestedVersion != null
+                    ? findAuthShareByVersion(userKey, requestedVersion)
+                    : (userKey.authShare ?? null);
 
             // Decrypt the auth share before returning to client
             let authShare = rawAuthShare;
 
             if (rawAuthShare) {
-                const seed = process.env.SEED;
+                const seed = environment.SEED;
 
                 if (!seed) {
                     throw new TRPCError({
                         code: 'INTERNAL_SERVER_ERROR',
-                        message: 'Server misconfiguration: SEED is required for auth share encryption',
+                        message:
+                            'Server misconfiguration: SEED is required for auth share encryption',
                     });
                 }
 
@@ -136,7 +147,10 @@ export const keysRouter = t.router({
                 .filter(rm => rm && rm.type && rm.createdAt)
                 .map(rm => ({
                     type: rm.type,
-                    createdAt: rm.createdAt instanceof Date ? rm.createdAt.toISOString() : String(rm.createdAt),
+                    createdAt:
+                        rm.createdAt instanceof Date
+                            ? rm.createdAt.toISOString()
+                            : String(rm.createdAt),
                     ...(rm.credentialId ? { credentialId: rm.credentialId } : {}),
                     ...(rm.shareVersion != null ? { shareVersion: rm.shareVersion } : {}),
                 }));
@@ -148,7 +162,9 @@ export const keysRouter = t.router({
                 recoveryMethods,
                 keyProvider: userKey.keyProvider ?? 'sss',
                 shareVersion: userKey.shareVersion ?? 1,
-                maskedRecoveryEmail: userKey.recoveryEmail ? maskEmail(userKey.recoveryEmail) : null,
+                maskedRecoveryEmail: userKey.recoveryEmail
+                    ? maskEmail(userKey.recoveryEmail)
+                    : null,
             };
         }),
 
@@ -186,7 +202,7 @@ export const keysRouter = t.router({
             const { user, contactMethod } = await verifyAndGetContactMethod(input);
 
             // Encrypt the auth share at rest using the server SEED
-            const seed = process.env.SEED;
+            const seed = environment.SEED;
 
             if (!seed) {
                 throw new TRPCError({
@@ -273,10 +289,12 @@ export const keysRouter = t.router({
             })
         )
         .output(
-            z.object({
-                encryptedShare: EncryptedShareValidator.optional(),
-                shareVersion: z.number().optional(),
-            }).nullable()
+            z
+                .object({
+                    encryptedShare: EncryptedShareValidator.optional(),
+                    shareVersion: z.number().optional(),
+                })
+                .nullable()
         )
         .query(async ({ input }) => {
             const { contactMethod } = await verifyAndGetContactMethod(input);
@@ -372,7 +390,11 @@ export const keysRouter = t.router({
             const cacheKey = `${RECOVERY_EMAIL_CODE_PREFIX}${contactMethod.type}:${contactMethod.value}`;
 
             // Store: code + target email so verify can confirm both
-            await cache.set(cacheKey, JSON.stringify({ code, email: input.email }), RECOVERY_EMAIL_CODE_TTL_SECS);
+            await cache.set(
+                cacheKey,
+                JSON.stringify({ code, email: input.email }),
+                RECOVERY_EMAIL_CODE_TTL_SECS
+            );
 
             try {
                 // Always render locally via @learncard/email-templates for
@@ -482,7 +504,8 @@ export const keysRouter = t.router({
                 method: 'POST',
                 path: '/keys/email-backup',
                 tags: ['Keys'],
-                summary: 'Send email backup share to the authenticated user (fire-and-forget relay, share is NEVER persisted)',
+                summary:
+                    'Send email backup share to the authenticated user (fire-and-forget relay, share is NEVER persisted)',
             },
         })
         .input(
@@ -524,7 +547,10 @@ export const keysRouter = t.router({
 
             // IMPORTANT: The emailShare is NEVER written to the database.
             // It is only held in memory for the duration of this request.
-            const brandName = ctx.tenant?.emailBranding?.brandName || process.env.POSTMARK_BRAND_NAME || 'LearnCard';
+            const brandName =
+                ctx.tenant?.emailBranding?.brandName ||
+                environment.POSTMARK_BRAND_NAME ||
+                'LearnCard';
 
             try {
                 // Always render locally via @learncard/email-templates for
@@ -554,7 +580,8 @@ export const keysRouter = t.router({
                 method: 'POST',
                 path: '/keys/upgrade-contact-method',
                 tags: ['Keys'],
-                summary: 'Verify email OTP, link email to auth account, and upgrade UserKey contact method',
+                summary:
+                    'Verify email OTP, link email to auth account, and upgrade UserKey contact method',
             },
         })
         .input(
@@ -564,11 +591,13 @@ export const keysRouter = t.router({
                 code: z.string().length(6),
             })
         )
-        .output(z.object({
-            success: z.boolean(),
-            message: z.string().optional(),
-            customToken: z.string().optional(),
-        }))
+        .output(
+            z.object({
+                success: z.boolean(),
+                message: z.string().optional(),
+                customToken: z.string().optional(),
+            })
+        )
         .mutation(async ({ input }) => {
             const user = await verifyAuthToken(input.authToken, input.providerType);
             const email = input.email.toLowerCase();
@@ -600,7 +629,7 @@ export const keysRouter = t.router({
 
             // 3. Verify the authenticated user owns this UserKey
             const ownsKey = existingKey.authProviders.some(
-                (ap) => ap.type === input.providerType && ap.id === user.id
+                ap => ap.type === input.providerType && ap.id === user.id
             );
 
             if (!ownsKey) {
@@ -616,7 +645,7 @@ export const keysRouter = t.router({
             let customToken: string | undefined;
 
             if (input.providerType === 'firebase') {
-                if (process.env.IS_E2E_TEST === 'true') {
+                if (environment.IS_E2E_TEST) {
                     // E2E bypass — no Firebase Admin SDK available
                     customToken = `e2e-custom-token-${user.id}`;
                 } else {
