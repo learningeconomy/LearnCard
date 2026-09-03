@@ -8,7 +8,10 @@ import { deletePushNotificationRegistration } from '@accesslayer/pushtokens/dele
 import { LCNNotificationValidator } from '@learncard/types';
 import { sendPushNotification } from '@helpers/pushNotifications.helpers';
 import { isDidOwnerOfNotification } from '@helpers/notifications.helpers';
-import { createNotification } from '@accesslayer/notifications/create';
+import {
+    createNotification,
+    upsertCredentialRefreshNotification,
+} from '@accesslayer/notifications/create';
 import {
     getPaginatedNotificationsForDid,
     getNotificationById,
@@ -274,11 +277,41 @@ export const notificationsRouter = t.router({
                 return true;
             }
 
+            let sendNotificationResponse: unknown;
+
+            // Managed credential refresh deliveries (LC-2117/LC-2136) collapse
+            // atomically per delivery window: persist first, push only when the
+            // upsert inserted a new window record. Other notification types keep
+            // the existing behavior to limit regression scope.
+            if (notificationType === 'CREDENTIAL_REFRESHED') {
+                const refreshResult = await upsertCredentialRefreshNotification(input);
+
+                if (!refreshResult) return false;
+
+                if (refreshResult.created) {
+                    try {
+                        sendNotificationResponse = await sendPushNotification(input);
+                    } catch (error) {
+                        console.error(
+                            'Failed to send push notification after durable storage',
+                            error
+                        );
+                    }
+                }
+
+                if (ctx.debug)
+                    console.log(
+                        '✅ Send Notification Completed',
+                        sendNotificationResponse,
+                        refreshResult
+                    );
+                return true;
+            }
+
             const creationResult = await createNotification(input);
 
             if (!creationResult) return false;
 
-            let sendNotificationResponse: unknown;
             if (creationResult.created) {
                 try {
                     sendNotificationResponse = await sendPushNotification(input);

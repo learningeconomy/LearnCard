@@ -1,10 +1,19 @@
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
-import { LCNNotification } from '@learncard/types';
+import { LCNNotification, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { createWebhookSentRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import cache from '@cache';
 import { randomUUID } from 'crypto';
+
+import type { ProfileType } from 'types/profile';
+
+import {
+    computeCredentialRefreshDeliveryKey,
+    computeCredentialRefreshRouteKey,
+} from './credential-refresh-materiality.helpers';
+import { getNotificationMessage } from './notificationMessages';
+import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
@@ -131,6 +140,66 @@ export const resolveNotificationWebhookUrl = (
     }
 
     return envWebhook;
+};
+
+// --- Managed credential refresh events (LC-2136) ----------------------------------
+
+/**
+ * A privacy-safe `CREDENTIAL_REFRESHED` event ready for `addNotificationToQueue`.
+ *
+ * The event carries opaque routing metadata only — the managed refreshId, the
+ * published version, a stable server-keyed route key, and the delivery-window
+ * collapse key. No credential subject, body, title, evidence, or issuer-authored
+ * update summary ever leaves brain-service: the copy is a generic translated
+ * message and the holder's app fetches the credential itself after
+ * authenticating.
+ */
+export type CredentialRefreshedNotificationEvent = {
+    /** The notification to enqueue */
+    notification: LCNNotification;
+    /** Local observability reference for the emission (logged/recorded, not sent) */
+    notificationId: string;
+    /** Stable opaque per-refresh routing key */
+    routeKey: string;
+    /** Opaque delivery-window collapse key */
+    deliveryKey: string;
+    /** Emission time (ISO), recorded on the aggregate for observability */
+    notifiedAt: string;
+};
+
+export type BuildCredentialRefreshedNotificationParams = {
+    holderProfile: ProfileType;
+    issuerProfile: ProfileType;
+    refreshId: string;
+    /** Published managed version carried by the event */
+    version: number;
+};
+
+export const buildCredentialRefreshedNotification = (
+    params: BuildCredentialRefreshedNotificationParams
+): CredentialRefreshedNotificationEvent => {
+    const { holderProfile, issuerProfile, refreshId, version } = params;
+
+    const routeKey = computeCredentialRefreshRouteKey(refreshId);
+    const deliveryKey = computeCredentialRefreshDeliveryKey(refreshId);
+
+    return {
+        notification: {
+            type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED,
+            to: holderProfile,
+            from: issuerProfile,
+            message: getNotificationMessage(
+                'credentialRefreshed',
+                resolveRecipientLocale(holderProfile),
+                { from: issuerProfile.displayName }
+            ),
+            data: { metadata: { refreshId, version, routeKey, deliveryKey } },
+        },
+        notificationId: randomUUID(),
+        routeKey,
+        deliveryKey,
+        notifiedAt: new Date().toISOString(),
+    };
 };
 
 const pollUrl = process.env.NOTIFICATIONS_QUEUE_POLL_URL;

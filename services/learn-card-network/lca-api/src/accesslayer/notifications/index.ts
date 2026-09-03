@@ -13,3 +13,17 @@ Notifications.createIndex({
     type: 1,
     'data.metadata.connectionPrompt.promptId': 1,
 });
+// Collapse managed credential refresh deliveries: one record per
+// (recipient, type, opaque delivery-window key). Partial so notifications
+// without a delivery key are unaffected.
+Notifications.createIndex(
+    {
+        'to.did': 1,
+        type: 1,
+        'data.metadata.deliveryKey': 1,
+    },
+    {
+        unique: true,
+        partialFilterExpression: { 'data.metadata.deliveryKey': { $exists: true } },
+    }
+);

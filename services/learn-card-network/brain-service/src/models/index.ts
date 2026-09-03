@@ -11,11 +11,23 @@ import { Tag } from './Tag';
 import { AppStoreListing } from './AppStoreListing';
 import { Integration } from './Integration';
 import { CredentialActivity } from './CredentialActivity';
+import { CredentialRefresh } from './CredentialRefresh';
 import { StatusList } from './StatusList';
 import { ContactMethod } from './ContactMethod';
 
 // Ensure CredentialActivity model is registered by referencing it
 void CredentialActivity;
+
+CredentialRefresh.addRelationships({
+    issuer: { model: Profile, direction: 'in', name: 'ISSUED_REFRESH' },
+    holder: { model: Profile, direction: 'in', name: 'HELD_REFRESH' },
+    root: { model: Credential, direction: 'out', name: 'ROOT' },
+    head: { model: Credential, direction: 'out', name: 'HEAD' },
+});
+
+// (Credential)-[:REFRESHED_TO]->(Credential) version-chain edges are created by the
+// credential-refresh access layer via raw Cypher so version nodes can carry refresh
+// metadata that is intentionally not part of the shared Credential schema.
 
 Credential.addRelationships({
     credentialReceived: {
@@ -170,6 +182,10 @@ const indexQueries = [
     'CREATE INDEX bitstring_status_list_url_idx IF NOT EXISTS FOR (s:BitstringStatusList) ON (s.statusListCredential)',
     'CREATE CONSTRAINT contact_method_type_value_unique IF NOT EXISTS FOR (c:ContactMethod) REQUIRE (c.type, c.value) IS UNIQUE',
     'CREATE INDEX contact_method_primary_idx IF NOT EXISTS FOR (c:ContactMethod) ON (c.isPrimary)',
+    'CREATE CONSTRAINT credential_refresh_id_unique IF NOT EXISTS FOR (r:CredentialRefresh) REQUIRE (r.refreshId) IS UNIQUE',
+    'CREATE INDEX credential_refresh_credential_id_idx IF NOT EXISTS FOR (r:CredentialRefresh) ON (r.credentialId)',
+    'CREATE CONSTRAINT credential_refresh_version_key_unique IF NOT EXISTS FOR (c:Credential) REQUIRE (c.refreshVersionKey) IS UNIQUE',
+    'CREATE INDEX credential_refresh_version_refresh_id_idx IF NOT EXISTS FOR (c:Credential) ON (c.refreshId)',
 ];
 
 const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -233,4 +249,5 @@ export * from './Tag';
 export * from './Integration';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
+export * from './CredentialRefresh';
 export * from './StatusList';
