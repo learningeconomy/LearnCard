@@ -57,6 +57,12 @@ const createMockKeyDerivation = (
     overrides?: Partial<KeyDerivationStrategy>
 ): KeyDerivationStrategy => ({
     name: 'mock-sss',
+    capabilities: {
+        recovery: true,
+        deviceLinking: true,
+        localKeyPersistence: true,
+        contactMethodUpgrade: false,
+    },
     hasLocalKey: vi.fn().mockResolvedValue(true),
     getLocalKey: vi.fn().mockResolvedValue('local-key-abc'),
     storeLocalKey: vi.fn().mockResolvedValue(undefined),
@@ -66,6 +72,7 @@ const createMockKeyDerivation = (
     fetchServerKeyStatus: vi.fn().mockResolvedValue(defaultServerStatus),
     storeAuthShare: vi.fn().mockResolvedValue(undefined),
     markMigrated: vi.fn().mockResolvedValue(undefined),
+    activate: vi.fn().mockResolvedValue(undefined),
     executeRecovery: vi.fn().mockResolvedValue({ privateKey: 'recovered-pk', did: 'did:key:z123' }),
     getPreservedStorageKeys: vi.fn().mockReturnValue(['lcb-sss-keys']),
     cleanup: vi.fn().mockResolvedValue(undefined),
@@ -575,6 +582,32 @@ describe('AuthCoordinator', () => {
             }
         });
 
+        it('sends a stale old device to needs_recovery when rebind history was purged', async () => {
+            const reconcileShares = vi.fn();
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(true),
+                    getLocalKey: vi.fn().mockResolvedValue('stale-version-one-device-share'),
+                    reconcileShares,
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        exists: true,
+                        needsMigration: false,
+                        primaryDid: 'did:key:z123',
+                        recoveryMethods: [{ type: 'phrase', createdAt: new Date() }],
+                        // A post-rebind server cannot resolve the stale device's purged version.
+                        authShare: null,
+                        shareVersion: 2,
+                    } satisfies ServerKeyStatus),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result.status).toBe('needs_recovery');
+            expect(result).toMatchObject({ recoveryReason: 'missing_server_data' });
+            expect(reconcileShares).not.toHaveBeenCalled();
+        });
+
         it('reaches ready when both local and server keys are present', async () => {
             const { coordinator, stateChanges } = setup();
 
@@ -750,6 +783,7 @@ describe('AuthCoordinator', () => {
             if (result.status === 'ready') {
                 expect(result.privateKey).toBe('new-private-key');
                 expect(result.did).toBe('did:key:zNew');
+                expect(result.sssActivationState).toBe('provisional');
             }
 
             expect(keyDerivation.splitKey).toHaveBeenCalledWith('new-private-key');
@@ -829,7 +863,7 @@ describe('AuthCoordinator', () => {
             }
         });
 
-        it('calls sendEmailBackupShare when strategy supports it and user has email', async () => {
+        it('does not silently enroll the login email for recovery', async () => {
             const sendEmailBackupShare = vi.fn().mockResolvedValue(undefined);
 
             const { coordinator } = setup({
@@ -850,12 +884,7 @@ describe('AuthCoordinator', () => {
 
             await coordinator.setupNewKey('new-private-key', 'did:key:zNew');
 
-            expect(sendEmailBackupShare).toHaveBeenCalledWith(
-                'mock-token',
-                'firebase',
-                'new-private-key',
-                'test@example.com'
-            );
+            expect(sendEmailBackupShare).not.toHaveBeenCalled();
         });
 
         it('does not call sendEmailBackupShare when user has no email', async () => {
@@ -915,6 +944,9 @@ describe('AuthCoordinator', () => {
             const result = await coordinator.migrate('web3auth-key', 'did:key:zOld');
 
             expect(result.status).toBe('ready');
+            if (result.status === 'ready') {
+                expect(result.sssActivationState).toBe('provisional');
+            }
             expect(keyDerivation.storeAuthShare).toHaveBeenCalled();
             expect(keyDerivation.markMigrated).toHaveBeenCalledWith(
                 'mock-token',
@@ -928,6 +960,42 @@ describe('AuthCoordinator', () => {
 
             await expect(coordinator.migrate('key', 'did')).rejects.toThrow(
                 'Cannot migrate in state: idle'
+            );
+        });
+    });
+
+    describe('activate()', () => {
+        it('commits a provisional ready state and marks it active', async () => {
+            const activate = vi.fn().mockResolvedValue(undefined);
+            const signDidAuthVp = vi.fn().mockResolvedValue('did-auth-vp');
+            const { coordinator } = setup({
+                config: { signDidAuthVp },
+                keyDerivation: {
+                    activate,
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        sssActivationState: 'provisional',
+                    } satisfies ServerKeyStatus),
+                },
+            });
+
+            const initialized = await coordinator.initialize();
+            expect(initialized.status).toBe('ready');
+
+            const activated = await coordinator.activate();
+
+            expect(activate).toHaveBeenCalledWith('mock-token', 'firebase', 'did-auth-vp');
+            expect(activated).toMatchObject({
+                status: 'ready',
+                sssActivationState: 'active',
+            });
+        });
+
+        it('rejects activation outside a provisional ready state', async () => {
+            const { coordinator } = setup();
+
+            await expect(coordinator.activate()).rejects.toThrow(
+                'Cannot activate key in state: idle'
             );
         });
     });
@@ -1492,6 +1560,94 @@ describe('AuthCoordinator', () => {
             if (state.status === 'ready') {
                 expect(state.authUser?.email).toBe('updated@example.com');
             }
+        });
+    });
+
+    describe('lost login identity recovery', () => {
+        it('moves from recovery email verification to awaiting a replacement login', async () => {
+            const recoveryMethods = [{ type: 'phrase', createdAt: new Date() }];
+            const startIdentityRecovery = vi.fn().mockResolvedValue(undefined);
+            const verifyIdentityRecovery = vi.fn().mockResolvedValue({
+                recoverySessionToken: 'recovery-session-token',
+                recoveryMethods,
+            });
+            const prepareIdentityRecovery = vi.fn().mockResolvedValue({
+                privateKey: 'recovered-private-key',
+                did: 'did:key:z123',
+            });
+            const { coordinator } = setup({
+                keyDerivation: {
+                    startIdentityRecovery,
+                    verifyIdentityRecovery,
+                    prepareIdentityRecovery,
+                },
+            });
+
+            coordinator.beginIdentityRecovery();
+            expect(coordinator.getState()).toMatchObject({
+                status: 'identity_recovery',
+                phase: 'enter_email',
+            });
+
+            await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+            expect(coordinator.getState()).toMatchObject({
+                status: 'identity_recovery',
+                phase: 'verify_email',
+                email: 'recovery@example.com',
+            });
+
+            await coordinator.verifyIdentityRecoveryCode('123456');
+            expect(coordinator.getState()).toMatchObject({
+                status: 'identity_recovery',
+                phase: 'choose_method',
+                recoveryMethods,
+            });
+
+            await coordinator.prepareIdentityRecovery({ method: 'phrase', phrase: 'word' });
+            expect(prepareIdentityRecovery).toHaveBeenCalledWith({
+                recoverySessionToken: 'recovery-session-token',
+                input: { method: 'phrase', phrase: 'word' },
+                didFromPrivateKey: expect.any(Function),
+            });
+            expect(coordinator.getState()).toMatchObject({
+                status: 'identity_recovery',
+                phase: 'new_login',
+                recoveredDid: 'did:key:z123',
+            });
+
+            coordinator.continueIdentityRecoveryLogin();
+            expect(coordinator.getState()).toEqual({
+                status: 'awaiting_rebind',
+                did: 'did:key:z123',
+            });
+        });
+
+        it('binds the replacement login and exposes the recovered key only after rotation', async () => {
+            const completeIdentityRecovery = vi.fn().mockResolvedValue({
+                privateKey: 'rotated-private-key',
+                did: 'did:key:z123',
+            });
+            const { coordinator, authProvider } = setup({
+                keyDerivation: {
+                    hasPendingIdentityRecovery: vi.fn().mockReturnValue(true),
+                    completeIdentityRecovery,
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result.status).toBe('identity_recovery_success');
+            expect(completeIdentityRecovery).toHaveBeenCalledWith({
+                token: 'mock-token',
+                providerType: 'firebase',
+                signDidAuthVp: undefined,
+            });
+            expect(authProvider.getCurrentUser).toHaveBeenCalled();
+            expect(result).toMatchObject({
+                privateKey: 'rotated-private-key',
+                did: 'did:key:z123',
+                authUser: mockUser,
+            });
         });
     });
 
