@@ -23,6 +23,7 @@ import { AppStoreListingType } from 'types/app-store-listing';
 import { processClaimHooks } from './claim-hooks.helpers';
 import { ensureConnectionsForCredentialAcceptance } from './connection.helpers';
 import { handleConnectionPromptsForCredentialClaim } from './connectionPrompt.helpers';
+import { activateCredentialRefreshForAcceptedCredential } from '@accesslayer/credential-refresh';
 
 const isProfileType = (source: ProfileType | AppStoreListingType): source is ProfileType => {
     return 'profileId' in source;
@@ -125,6 +126,19 @@ export const acceptCredential = async (
         await processClaimHooks(profile, pendingVc.target);
 
         await setDefaultClaimedRole(profile, pendingVc.target);
+    }
+
+    // Managed credential refresh coupling (LC-2117/LC-2135): acceptance activates a
+    // matching `awaiting_claim` aggregate. Idempotent and best-effort — a failed write
+    // must not break acceptance (dual-write safety); the holder refresh endpoint
+    // lazily reconciles from the canonical CREDENTIAL_RECEIVED relationship.
+    try {
+        await activateCredentialRefreshForAcceptedCredential(pendingVc.target.id, profile.did);
+    } catch (error) {
+        console.error(
+            'Credential Helpers - Failed to activate credential refresh on acceptance:',
+            error
+        );
     }
 
     // Automatic connection batches can partially commit because every target pair owns an

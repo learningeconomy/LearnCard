@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import { getUser } from './helpers/getClient';
 import { Notifications } from '@accesslayer/notifications';
 import * as PushNotifications from '@helpers/pushNotifications.helpers';
+import cache from '@cache';
 import {
     LCNProfile,
     LCNNotification,
@@ -340,6 +341,36 @@ describe('Notifications', () => {
                 })
             ).resolves.toBe(1);
             expect(pushSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('records exactly one E2E push attempt per delivery window', async () => {
+            vi.stubEnv('IS_E2E_TEST', 'true');
+
+            try {
+                await expect(sendRefresh('window-1', 1)).resolves.toBe(true);
+                await expect(sendRefresh('window-1', 2)).resolves.toBe(true);
+
+                // Two collapsed deliveries in one window = exactly one push attempt.
+                const firstWindowKeys = await cache.keys('e2e:push-attempt:*');
+                expect(firstWindowKeys).toHaveLength(1);
+
+                const attempt = JSON.parse((await cache.get(firstWindowKeys![0]!)) as string);
+                expect(attempt.type).toBe(
+                    LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REFRESHED
+                );
+                expect(attempt.toDid).toBe(userA.learnCard.id.did());
+                expect(typeof attempt.at).toBe('string');
+
+                // A new delivery window produces a new push attempt.
+                await expect(sendRefresh('window-2', 3)).resolves.toBe(true);
+
+                expect(await cache.keys('e2e:push-attempt:*')).toHaveLength(2);
+            } finally {
+                vi.unstubAllEnvs();
+
+                const keys = await cache.keys('e2e:push-attempt:*');
+                if (keys && keys.length > 0) await cache.delete(keys);
+            }
         });
 
         it('leaves non-refresh notification semantics unchanged', async () => {

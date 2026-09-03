@@ -75,7 +75,13 @@ export const credentialRefreshesRouter = t.router({
             },
             requiredScope: 'credentials:write',
         })
-        .input(z.object({ refreshId: z.string().min(1), credential: VCValidator }))
+        .input(
+            z.object({
+                refreshId: z.string().min(1),
+                credential: VCValidator,
+                boostUri: z.string().optional(),
+            })
+        )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
@@ -84,6 +90,7 @@ export const credentialRefreshesRouter = t.router({
                 issuerProfile: profile,
                 refreshId: input.refreshId,
                 credential: input.credential,
+                boostUri: input.boostUri,
                 domain: ctx.domain,
             });
         }),

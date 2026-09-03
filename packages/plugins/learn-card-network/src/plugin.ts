@@ -1420,12 +1420,13 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.credentialRefresh.allocateCredentialRefresh.mutate(input);
             },
-            sendRefreshableCredential: async (_learnCard, refreshId, credential) => {
+            sendRefreshableCredential: async (_learnCard, refreshId, credential, boostUri) => {
                 await ensureUser();
 
                 return client.credentialRefresh.sendRefreshableCredential.mutate({
                     refreshId,
                     credential,
+                    boostUri,
                 });
             },
             publishCredentialRefresh: async (_learnCard, input) => {
@@ -1586,9 +1587,12 @@ export async function getLearnCardNetworkPlugin(
                     // Dedicated managed send: brain-service verifies the proof and
                     // persists ONLY a holder-encrypted JWE. Legacy credential storage
                     // (issuer/LCN-readable JWE or plaintext) is intentionally bypassed.
+                    // The boost URI is forwarded so the credential stays linked
+                    // INSTANCE_OF the boost for canonical recipient management.
                     return client.credentialRefresh.sendRefreshableCredential.mutate({
                         refreshId: managedRefreshId,
                         credential: vc,
+                        boostUri,
                     });
                 }
 

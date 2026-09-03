@@ -432,9 +432,15 @@ export type LearnCardNetworkPluginMethods = {
     /**
      * Binds a signed credential to its allocated refresh aggregate. The plaintext VC is
      * verified server-side and persisted only as a holder-encrypted JWE — the issuer
-     * and the service never retain a readable copy.
+     * and the service never retain a readable copy. When the credential was issued from
+     * a boost, pass `boostUri` so the stored instance stays linked INSTANCE_OF the
+     * boost for canonical recipient management (including revocation).
      */
-    sendRefreshableCredential: (refreshId: string, credential: VC) => Promise<string>;
+    sendRefreshableCredential: (
+        refreshId: string,
+        credential: VC,
+        boostUri?: string
+    ) => Promise<string>;
     /**
      * Publishes a new immutable version of a refreshable credential and atomically
      * advances the refresh head. Issuer-signed mode takes a fully signed VC;

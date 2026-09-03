@@ -3,9 +3,11 @@ import fastifyCors from '@fastify/cors';
 
 import {
     getCredentialRefresh,
+    getCredentialRefreshCanonicalLifecycle,
     getCredentialRefreshHead,
     getCredentialRefreshVersion,
     getCredentialRefreshVersions,
+    setCredentialRefreshState,
 } from '@accesslayer/credential-refresh';
 import type { CredentialRefreshRecord } from 'types/credential-refresh';
 import { getCredentialRefreshDigestSecret } from '@helpers/credential-refresh-materiality.helpers';
@@ -155,18 +157,49 @@ const authenticateRefreshRequest = async (
         return null;
     }
 
-    // Wrong holder and awaiting-claim deliberately share one non-disclosing
-    // authorization response — neither reveals lifecycle state.
-    if (aggregate.holderDid !== auth.holderDid || aggregate.state === 'awaiting_claim') {
+    // Wrong holder deliberately shares one non-disclosing authorization response with
+    // awaiting-claim below — neither reveals lifecycle state.
+    if (aggregate.holderDid !== auth.holderDid) {
         logRefreshRequest(refreshId, 'unauthorized', startedAt);
         await reply.status(403).send({ code: 'CREDENTIAL_REFRESH_UNAUTHORIZED' });
         return null;
     }
 
-    if (aggregate.state === 'revoked') {
+    // Canonical lifecycle cross-check (LC-2117/LC-2135, plan Task 8): serving never
+    // depends solely on the aggregate's cached state. The CREDENTIAL_SENT/RECEIVED
+    // relationships are authoritative; a stale aggregate is repaired lazily.
+    const lifecycle = await getCredentialRefreshCanonicalLifecycle(refreshId);
+
+    if (lifecycle?.revoked || aggregate.state === 'revoked') {
+        if (aggregate.state !== 'revoked') {
+            try {
+                await setCredentialRefreshState(refreshId, 'revoked');
+            } catch {
+                // Repair is best-effort; the refusal above is driven by canonical state.
+            }
+        }
+
         logRefreshRequest(refreshId, 'revoked', startedAt);
         await reply.status(410).send({ code: 'CREDENTIAL_REVOKED' });
         return null;
+    }
+
+    if (aggregate.state === 'awaiting_claim') {
+        if (!lifecycle?.received) {
+            logRefreshRequest(refreshId, 'unauthorized', startedAt);
+            await reply.status(403).send({ code: 'CREDENTIAL_REFRESH_UNAUTHORIZED' });
+            return null;
+        }
+
+        // The canonical CREDENTIAL_RECEIVED relationship exists but the activation
+        // write was lost — repair the aggregate and serve.
+        try {
+            await setCredentialRefreshState(refreshId, 'active');
+        } catch {
+            // Repair is best-effort; canonical state already authorizes serving.
+        }
+
+        return { holderDid: auth.holderDid, aggregate: { ...aggregate, state: 'active' } };
     }
 
     return { holderDid: auth.holderDid, aggregate };

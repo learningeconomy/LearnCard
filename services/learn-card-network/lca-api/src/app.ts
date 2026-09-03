@@ -11,6 +11,7 @@ export { createContext } from '@routes';
 import { preferencesRouter } from '@routes/preferences';
 import { keysRouter } from '@routes/keys';
 import { qrLoginRouter } from '@routes/qr-login';
+import { testRouter } from '@routes/test';
 
 export const appRouter = t.router({
     notifications: notificationsRouter,
@@ -24,5 +25,7 @@ export const appRouter = t.router({
     preferences: preferencesRouter,
     keys: keysRouter,
     qrLogin: qrLoginRouter,
+    // E2E-only observability routes (see routes/test.ts); undefined in production.
+    test: process.env.IS_E2E_TEST ? testRouter : undefined,
 });
 export type AppRouter = typeof appRouter;

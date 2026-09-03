@@ -1,11 +1,13 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 
 import { t, didAndChallengeRoute, authorizedDidRoute } from '@routes';
 
+import cache from '@cache';
 import { createPushNotificationRegistration } from '@accesslayer/pushtokens/create';
 import { deletePushNotificationRegistration } from '@accesslayer/pushtokens/delete';
-import { LCNNotificationValidator } from '@learncard/types';
+import { LCNNotification, LCNNotificationValidator } from '@learncard/types';
 import { sendPushNotification } from '@helpers/pushNotifications.helpers';
 import { isDidOwnerOfNotification } from '@helpers/notifications.helpers';
 import {
@@ -30,6 +32,33 @@ import {
     PaginatedNotificationsOptionsValidator,
     NotificationsSortEnumValidator,
 } from 'types/notifications';
+
+export const E2E_PUSH_ATTEMPT_CACHE_PREFIX = 'e2e:push-attempt:';
+
+/**
+ * E2E-only observability probe (LC-2117/LC-2136): records that the route decided to
+ * attempt a push for a notification. Mirrors the brain-service `e2e:notification-queue`
+ * pattern so cross-service tests can assert push throttling without real FCM delivery.
+ * No-op outside IS_E2E_TEST; never blocks or alters delivery behavior.
+ */
+const recordE2ePushAttempt = async (notification: LCNNotification): Promise<void> => {
+    if (process.env.IS_E2E_TEST !== 'true') return;
+
+    try {
+        const toDid = typeof notification.to === 'string' ? notification.to : notification.to.did;
+
+        await cache.set(
+            `${E2E_PUSH_ATTEMPT_CACHE_PREFIX}${uuidv4()}`,
+            JSON.stringify({
+                type: notification.type,
+                toDid,
+                at: new Date().toISOString(),
+            })
+        );
+    } catch (error) {
+        console.error('Failed to record E2E push attempt', error);
+    }
+};
 
 export const notificationsRouter = t.router({
     notifications: didAndChallengeRoute
@@ -289,6 +318,8 @@ export const notificationsRouter = t.router({
                 if (!refreshResult) return false;
 
                 if (refreshResult.created) {
+                    await recordE2ePushAttempt(input);
+
                     try {
                         sendNotificationResponse = await sendPushNotification(input);
                     } catch (error) {

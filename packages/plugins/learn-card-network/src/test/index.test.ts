@@ -284,6 +284,32 @@ describe('credential refresh methods', () => {
         expect(client.credentialRefresh.sendRefreshableCredential.mutate).toHaveBeenCalledWith({
             refreshId: REFRESH_ID,
             credential: signedCredential,
+            boostUri: undefined,
+        });
+    });
+
+    it('forwards the optional boostUri to the managed send procedure', async () => {
+        const client = getMockClient();
+        vi.mocked(getBrainClient).mockResolvedValue(client as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+
+        const signedCredential = {
+            ...getUnsignedBoostTemplate({ id: 'urn:uuid:credential-1' }),
+            proof: { type: 'DataIntegrityProof' },
+        };
+
+        await plugin.methods?.sendRefreshableCredential(
+            learnCard,
+            REFRESH_ID,
+            signedCredential as any,
+            'did:example:boost:9'
+        );
+
+        expect(client.credentialRefresh.sendRefreshableCredential.mutate).toHaveBeenCalledWith({
+            refreshId: REFRESH_ID,
+            credential: signedCredential,
+            boostUri: 'did:example:boost:9',
         });
     });
 
@@ -429,7 +455,9 @@ describe('credential refresh methods', () => {
         );
 
         // Dedicated managed-send procedure is used instead of legacy credential storage,
-        // with holder-only server-side encryption (no client-side JWE, no LCN recipient)
+        // with holder-only server-side encryption (no client-side JWE, no LCN recipient).
+        // The boost URI is forwarded so the issued credential stays linked INSTANCE_OF
+        // the boost for canonical recipient management (including revocation).
         expect(client.credentialRefresh.sendRefreshableCredential.mutate).toHaveBeenCalledWith({
             refreshId: REFRESH_ID,
             credential: expect.objectContaining({
@@ -437,6 +465,7 @@ describe('credential refresh methods', () => {
                 refreshService: ALLOCATION.refreshService,
                 proof: { type: 'DataIntegrityProof' },
             }),
+            boostUri: 'did:example:boost:1',
         });
         expect(client.boost.sendBoost.mutate).not.toHaveBeenCalled();
         expect(learnCard.invoke.createDagJwe).not.toHaveBeenCalled();

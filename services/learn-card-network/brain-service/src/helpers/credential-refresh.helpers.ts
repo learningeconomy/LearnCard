@@ -17,6 +17,8 @@ import { neogma } from '@instance';
 
 import { storeCredential } from '@accesslayer/credential/create';
 import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
+import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
+import { getBoostByUri } from '@accesslayer/boost/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import {
     advanceCredentialRefreshHead,
@@ -151,6 +153,12 @@ export type SendRefreshableCredentialParams = {
     issuerProfile: ProfileType;
     refreshId: string;
     credential: VC;
+    /**
+     * Optional boost the credential was issued from. When present, the stored
+     * credential instance is linked INSTANCE_OF the boost so canonical boost
+     * recipient management (recipient lists, revocation) sees it.
+     */
+    boostUri?: string;
     domain: string;
 };
 
@@ -165,7 +173,7 @@ export type SendRefreshableCredentialParams = {
 export const sendRefreshableCredential = async (
     params: SendRefreshableCredentialParams
 ): Promise<string> => {
-    const { issuerProfile, refreshId, credential, domain } = params;
+    const { issuerProfile, refreshId, credential, boostUri, domain } = params;
 
     const aggregate = await getCredentialRefresh(refreshId);
 
@@ -231,6 +239,13 @@ export const sendRefreshableCredential = async (
         });
     }
 
+    // Resolve the optional boost anchor up front so an unknown boost fails before any write.
+    const boost = boostUri ? await getBoostByUri(decodeURIComponent(boostUri)) : undefined;
+
+    if (boostUri && !boost) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+    }
+
     // Transient plaintext verification — the result is never persisted.
     const learnCard = await getLearnCard();
     const verification = await learnCard.invoke.verifyCredential(credential);
@@ -275,6 +290,12 @@ export const sendRefreshableCredential = async (
         holderProfile,
         credentialInstance
     );
+
+    // Boost-issued refreshable credentials stay visible to canonical boost recipient
+    // management (getBoostRecipients, revokeBoostRecipient) via the INSTANCE_OF edge.
+    if (boost) {
+        await createBoostInstanceOfRelationship(credentialInstance, boost);
+    }
 
     const uri = getCredentialUri(credentialInstance.id, domain);
 

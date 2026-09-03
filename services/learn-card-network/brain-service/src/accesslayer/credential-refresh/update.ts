@@ -218,3 +218,48 @@ export const setCredentialRefreshState = async (
 
     return CredentialRefreshRecordValidator.parse(normalizeProps(node.properties));
 };
+
+/**
+ * Idempotently activates the `awaiting_claim` aggregate whose ROOT is the accepted
+ * credential, only when the accepting DID is the intended holder. Returns true when a
+ * transition happened. Called after canonical acceptance succeeds; failures are safe
+ * to swallow because the holder endpoint lazily reconciles from the canonical
+ * CREDENTIAL_RECEIVED relationship.
+ */
+export const activateCredentialRefreshForAcceptedCredential = async (
+    credentialNodeId: string,
+    holderDid: string
+): Promise<boolean> => {
+    const now = new Date().toISOString();
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (refresh:CredentialRefresh)-[:ROOT]->(root:Credential {id: $credentialNodeId})
+         WHERE refresh.state = 'awaiting_claim' AND refresh.holderDid = $holderDid
+         SET refresh.state = 'active', refresh.updatedAt = $now
+         RETURN refresh.refreshId AS refreshId`,
+        { credentialNodeId, holderDid, now }
+    );
+
+    return result.records.length > 0;
+};
+
+/**
+ * Idempotently revokes the aggregate whose ROOT is the revoked credential. Revocation
+ * of the original sent credential invalidates the whole refresh chain: no current or
+ * historical version may be served afterward. Returns true when a transition happened.
+ */
+export const revokeCredentialRefreshForCredential = async (
+    credentialNodeId: string
+): Promise<boolean> => {
+    const now = new Date().toISOString();
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (refresh:CredentialRefresh)-[:ROOT]->(root:Credential {id: $credentialNodeId})
+         WHERE refresh.state <> 'revoked'
+         SET refresh.state = 'revoked', refresh.updatedAt = $now
+         RETURN refresh.refreshId AS refreshId`,
+        { credentialNodeId, now }
+    );
+
+    return result.records.length > 0;
+};

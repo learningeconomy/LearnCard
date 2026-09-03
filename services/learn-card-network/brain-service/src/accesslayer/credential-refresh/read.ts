@@ -146,3 +146,42 @@ export const getCredentialRefreshVersions = async (
             hasMore && last ? Buffer.from(String(last.version)).toString('base64url') : undefined,
     };
 };
+
+export type CredentialRefreshCanonicalLifecycle = {
+    /** The holder has a canonical CREDENTIAL_RECEIVED relationship to the root credential */
+    received: boolean;
+    /** The canonical CREDENTIAL_SENT or CREDENTIAL_RECEIVED relationship is revoked */
+    revoked: boolean;
+};
+
+/**
+ * Reads the canonical claim/revocation lifecycle for an aggregate from the credential
+ * relationships on the ROOT credential node — never from the aggregate itself.
+ *
+ * The holder endpoint cross-checks this on every authenticated request so serving
+ * never depends solely on the aggregate's cached lifecycle state (which may lag
+ * behind a failed activation or revocation write).
+ */
+export const getCredentialRefreshCanonicalLifecycle = async (
+    refreshId: string
+): Promise<CredentialRefreshCanonicalLifecycle | null> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
+         OPTIONAL MATCH (root)-[received:CREDENTIAL_RECEIVED]->(holder:Profile)
+         WHERE holder.profileId = refresh.holderProfileId
+         OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT]->(root)
+         WHERE (sender:Profile OR sender:AppStoreListing) AND sent.to = refresh.holderProfileId
+         RETURN {
+             received: count(DISTINCT received) > 0,
+             revoked: any(status IN collect(DISTINCT received.status) WHERE status = 'revoked')
+                  OR any(status IN collect(DISTINCT sent.status) WHERE status = 'revoked')
+         } AS lifecycle`,
+        { refreshId }
+    );
+
+    const row = result.records[0]?.get('lifecycle');
+
+    if (!row) return null;
+
+    return { received: Boolean(row.received), revoked: Boolean(row.revoked) };
+};
