@@ -49,8 +49,14 @@ const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
     },
     'account-approved': { user: { displayName: 'New User' } },
     'account-approved-email': { user: { displayName: 'New User' } },
-    'recovery-key': { recoveryKey: 'mango-delta-fox-echo-bravo-seven-lima-niner' },
-    'recovery-key-backup': { recoveryKey: 'mango-delta-fox-echo-bravo-seven-lima-niner' },
+    'recovery-key': {
+        recoveryKey: 'mango-delta-fox-echo-bravo-seven-lima-niner',
+        confirmationCode: '123456',
+    },
+    'recovery-key-backup': {
+        recoveryKey: 'mango-delta-fox-echo-bravo-seven-lima-niner',
+        confirmationCode: '123456',
+    },
     'endorsement-request': {
         shareLink: 'https://learncard.app/share/xyz',
         recipient: { name: 'Dr. Emily Chen' },

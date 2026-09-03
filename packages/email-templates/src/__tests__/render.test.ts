@@ -83,10 +83,12 @@ const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
 
     'recovery-key': {
         recoveryKey: 'ABCD-EFGH-1234-5678',
+        confirmationCode: '123456',
     },
 
     'recovery-key-backup': {
         recoveryKey: 'WXYZ-9876-LMNO-4321',
+        confirmationCode: '654321',
     },
 
     'endorsement-request': {
@@ -130,6 +132,8 @@ const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         credential: { name: 'Diploma' },
         recipient: { email: 'student@example.com' },
     },
+
+    'account-sign-in-changed': {},
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(TEMPLATE_FIXTURES) as TemplateId[];
@@ -139,38 +143,40 @@ const ALL_TEMPLATE_IDS = Object.keys(TEMPLATE_FIXTURES) as TemplateId[];
 // ---------------------------------------------------------------------------
 
 describe('renderEmail — smoke tests', () => {
-    it.each(ALL_TEMPLATE_IDS)(
-        '"%s" renders with default branding',
-        async (templateId) => {
-            const result = await renderEmail(templateId, DEFAULT_BRANDING, TEMPLATE_FIXTURES[templateId]);
+    it.each(ALL_TEMPLATE_IDS)('"%s" renders with default branding', async templateId => {
+        const result = await renderEmail(
+            templateId,
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES[templateId]
+        );
 
-            expect(result.html).toBeTruthy();
-            expect(result.html).toContain('<!DOCTYPE');
-            expect(result.text).toBeTruthy();
-            expect(result.subject).toBeTruthy();
-            expect(result.subject.length).toBeGreaterThan(0);
-        },
-    );
+        expect(result.html).toBeTruthy();
+        expect(result.html).toContain('<!DOCTYPE');
+        expect(result.text).toBeTruthy();
+        expect(result.subject).toBeTruthy();
+        expect(result.subject.length).toBeGreaterThan(0);
+    });
 
-    it.each(ALL_TEMPLATE_IDS)(
-        '"%s" renders with custom (VetPass) branding',
-        async (templateId) => {
-            const result = await renderEmail(templateId, VETPASS_BRANDING, TEMPLATE_FIXTURES[templateId]);
+    it.each(ALL_TEMPLATE_IDS)('"%s" renders with custom (VetPass) branding', async templateId => {
+        const result = await renderEmail(
+            templateId,
+            VETPASS_BRANDING,
+            TEMPLATE_FIXTURES[templateId]
+        );
 
-            expect(result.html).toBeTruthy();
-            expect(result.text).toBeTruthy();
-            expect(result.subject).toBeTruthy();
-        },
-    );
+        expect(result.html).toBeTruthy();
+        expect(result.text).toBeTruthy();
+        expect(result.subject).toBeTruthy();
+    });
 
     it.each(ALL_TEMPLATE_IDS)(
         '"%s" renders with empty branding (falls back to defaults)',
-        async (templateId) => {
+        async templateId => {
             const result = await renderEmail(templateId, {}, TEMPLATE_FIXTURES[templateId]);
 
             expect(result.html).toBeTruthy();
             expect(result.subject).toBeTruthy();
-        },
+        }
     );
 });
 
@@ -244,6 +250,7 @@ describe('renderEmail — content assertions', () => {
         const { html } = await renderEmail('recovery-key', DEFAULT_BRANDING, data);
 
         expect(html).toContain('ABCD-EFGH-1234-5678');
+        expect(html).toContain('123456');
     });
 
     it('endorsement-request includes the share link and message', async () => {
@@ -369,7 +376,11 @@ describe('renderEmail — subjects', () => {
     it('Postmark alias pairs produce the same subject', async () => {
         const [a, b] = await Promise.all([
             renderEmail('inbox-claim', DEFAULT_BRANDING, TEMPLATE_FIXTURES['inbox-claim']),
-            renderEmail('universal-inbox-claim', DEFAULT_BRANDING, TEMPLATE_FIXTURES['inbox-claim']),
+            renderEmail(
+                'universal-inbox-claim',
+                DEFAULT_BRANDING,
+                TEMPLATE_FIXTURES['inbox-claim']
+            ),
         ]);
 
         expect(a.subject).toBe(b.subject);
@@ -382,13 +393,21 @@ describe('renderEmail — subjects', () => {
 
 describe('renderEmail — plain text', () => {
     it('plain text output does not contain HTML tags', async () => {
-        const { text } = await renderEmail('inbox-claim', DEFAULT_BRANDING, TEMPLATE_FIXTURES['inbox-claim']);
+        const { text } = await renderEmail(
+            'inbox-claim',
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES['inbox-claim']
+        );
 
         expect(text).not.toMatch(/<[a-z][\s\S]*>/i);
     });
 
     it('plain text includes key content', async () => {
-        const { text } = await renderEmail('recovery-key', DEFAULT_BRANDING, TEMPLATE_FIXTURES['recovery-key']);
+        const { text } = await renderEmail(
+            'recovery-key',
+            DEFAULT_BRANDING,
+            TEMPLATE_FIXTURES['recovery-key']
+        );
 
         expect(text).toContain('ABCD-EFGH-1234-5678');
     });
