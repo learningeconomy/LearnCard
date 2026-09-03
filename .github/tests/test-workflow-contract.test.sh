@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-ruby - "$REPO_ROOT/.github/workflows/test.yml" "$REPO_ROOT/.github/workflows/lint.yml" <<'RUBY'
+ruby - "$REPO_ROOT/.github/workflows/test.yml" "$REPO_ROOT/.github/workflows/lint.yml" "$REPO_ROOT/scripts/lint-workspace.ts" <<'RUBY'
 require 'yaml'
 
 workflow = YAML.load_file(ARGV.fetch(0), aliases: true)
@@ -27,6 +27,25 @@ abort 'runner reset must precede LearnCard sync' unless reset_index < sync_index
 abort 'stateful git pull must not select the runner revision' if script_lines.include?('git pull origin main')
 
 lint_workflow = YAML.load_file(ARGV.fetch(1), aliases: true)
+lint_jobs = lint_workflow.fetch('jobs')
+
+workspace_lint_job = lint_jobs.fetch('WorkspaceLint')
+workspace_lint_step = workspace_lint_job.fetch('steps').find do |step|
+    step['run'] == 'bun run lint:workspace'
+end
+abort 'dedicated workspace lint CI step missing' unless workspace_lint_step
+
+accessibility_job = lint_jobs.fetch('Accessibility')
+accessibility_step = accessibility_job.fetch('steps').find do |step|
+    step['run'] == 'bun run lint:a11y'
+end
+abort 'accessibility job must run only the accessibility lint' unless accessibility_step
+
+lint_script = File.read(ARGV.fetch(2))
+abort 'lint fingerprints must normalize the checkout path' unless lint_script.include?(
+    "REPOSITORY_PATH_PLACEHOLDER"
+)
+
 contracts_job = lint_workflow.fetch('jobs').fetch('RepositoryContracts')
 contract_step = contracts_job.fetch('steps').find do |step|
     step['name'] == 'Run repository shell contracts'

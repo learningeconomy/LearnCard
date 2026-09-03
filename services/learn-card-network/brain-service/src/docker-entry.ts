@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
@@ -17,10 +18,9 @@ import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { statusListsFastifyPlugin } from './status-lists';
-import { sendNotification } from '@helpers/notifications.helpers';
+import { deliverQueuedNotification } from '@helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from '@helpers/skill-embedding.helpers';
 import { maybeAutoSeedSkillFrameworks } from './seed/seedSkillFrameworks';
-import { LCNNotificationValidator } from '@learncard/types';
 
 const server = Fastify({ routerOptions: { maxParamLength: 5000 } });
 
@@ -112,8 +112,8 @@ server.register(statusListsFastifyPlugin);
 
 (async () => {
     try {
-        console.log('Server starting on port ', process.env.PORT || 3000);
-        await server.listen({ host: '0.0.0.0', port: Number(process.env.PORT || 3000) });
+        console.log('Server starting on port ', environment.PORT || 3000);
+        await server.listen({ host: '0.0.0.0', port: Number(environment.PORT || 3000) });
 
         try {
             await maybeAutoSeedSkillFrameworks(neogma.queryRunner.run.bind(neogma.queryRunner), {
@@ -134,7 +134,7 @@ server.register(statusListsFastifyPlugin);
     }
 })();
 
-const pollUrl = process.env.NOTIFICATIONS_QUEUE_POLL_URL;
+const pollUrl = environment.NOTIFICATIONS_QUEUE_POLL_URL;
 
 if (pollUrl) {
     (async () => {
@@ -145,7 +145,7 @@ if (pollUrl) {
 
         const sqs = new SQSClient({
             apiVersion: 'latest',
-            region: process.env.AWS_REGION,
+            region: environment.AWS_REGION,
             endpoint: baseUrl,
         });
 
@@ -164,13 +164,7 @@ if (pollUrl) {
                 await Promise.all(
                     messages.map(async message => {
                         try {
-                            const _notification = JSON.parse(message.Body ?? '');
-
-                            const notification = await LCNNotificationValidator.parseAsync(
-                                _notification
-                            );
-
-                            await sendNotification(notification);
+                            await deliverQueuedNotification(message.Body ?? '');
 
                             const deleteCommand = new DeleteMessageCommand({
                                 QueueUrl: pollUrl,
@@ -179,7 +173,11 @@ if (pollUrl) {
 
                             return await sqs.send(deleteCommand);
                         } catch (error) {
-                            console.error('Invalid Notification Object', message.Body);
+                            console.error('Notification queue record failed', {
+                                messageId: message.MessageId,
+                                error,
+                            });
+
                             return;
                         }
                     })

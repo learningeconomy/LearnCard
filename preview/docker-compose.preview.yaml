@@ -164,7 +164,7 @@ services:
             METABASE_SECRET_KEY: test-key
 
     test-embed-app:
-        image: node:20-alpine
+        image: node:24.12.0-alpine
         working_dir: /app
         volumes:
             - ../tests/test-embed-app:/app:ro

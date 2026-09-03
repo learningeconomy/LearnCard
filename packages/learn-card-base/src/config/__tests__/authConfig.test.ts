@@ -1,89 +1,32 @@
-/**
- * authConfig Unit Tests
- *
- * Tests the split-precedence auth configuration model:
- * - Provider/strategy selection: config > ENV > default
- * - Operational values (URLs, keys): ENV > config > default
- * - Default values when no env vars or config overrides are set
- * - VITE_ prefix reading
- * - REACT_APP_ prefix fallback
- * - VITE_ takes precedence over REACT_APP_
- * - Helper functions: shouldUseSSS, isEmailBackupShareEnabled
- */
-
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
-    getAuthConfig,
-    getSSSConfig,
-    shouldUseSSS,
-    isEmailBackupShareEnabled,
-    setAuthConfigOverrides,
     clearAuthConfigOverrides,
+    getAuthConfig,
+    getConfigCapabilities,
+    getSSSConfig,
+    isEmailBackupShareEnabled,
+    setAuthConfigFromTenant,
+    setAuthConfigOverrides,
+    shouldUseSSS,
 } from '../authConfig';
+import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../tenantDefaults';
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+describe('authConfig', () => {
+    beforeEach(() => clearAuthConfigOverrides());
 
-const originalEnv = { ...process.env };
-
-const setEnv = (vars: Record<string, string>) => {
-    for (const [key, value] of Object.entries(vars)) {
-        process.env[key] = value;
-    }
-};
-
-const clearAuthEnvVars = () => {
-    const prefixes = ['VITE_', 'REACT_APP_'];
-
-    const suffixes = [
-        'AUTH_PROVIDER',
-        'KEY_DERIVATION',
-        'KEY_DERIVATION_PROVIDER',
-        'SSS_SERVER_URL',
-        'ESCROW_RELAY_PUBLIC_KEY',
-        'ESCROW_RELAY_KEY_ID',
-        'ENABLE_EMAIL_BACKUP_SHARE',
-        'REQUIRE_EMAIL_FOR_PHONE_USERS',
-    ];
-
-    for (const prefix of prefixes) {
-        for (const suffix of suffixes) {
-            delete process.env[`${prefix}${suffix}`];
-        }
-    }
-};
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-describe('getAuthConfig', () => {
-    beforeEach(() => {
-        clearAuthEnvVars();
-        clearAuthConfigOverrides();
-    });
-
-    afterEach(() => {
-        clearAuthConfigOverrides();
-        process.env = { ...originalEnv };
-    });
-
-    describe('defaults', () => {
-        it('returns correct defaults when no env vars are set', () => {
-            const config = getAuthConfig();
-
-            expect(config.authProvider).toBe('firebase');
-            expect(config.keyDerivation).toBe('sss');
-            expect(config.sssCohortEnabled).toBe(false);
-
-            const sss = getSSSConfig();
-            expect(sss.serverUrl).toBe('http://localhost:5100/api');
-            expect(sss.escrowRelayPublicKey).toBe('');
-            expect(sss.escrowRelayKeyId).toBe('');
-            expect(sss.enableEmailBackupShare).toBe(true);
-            expect(sss.requireEmailForPhoneUsers).toBe(true);
+    it('uses deterministic isolated-consumer defaults', () => {
+        expect(getAuthConfig()).toMatchObject({
+            authProvider: 'firebase',
+            keyDerivation: 'sss',
+            sssCohortEnabled: false,
+        });
+        expect(getSSSConfig()).toEqual({
+            serverUrl: 'http://localhost:5100/api',
+            escrowRelayPublicKey: '',
+            escrowRelayKeyId: '',
+            enableEmailBackupShare: true,
+            requireEmailForPhoneUsers: true,
         });
     });
 
@@ -93,348 +36,119 @@ describe('getAuthConfig', () => {
         expect(getAuthConfig().sssCohortEnabled).toBe(true);
     });
 
-    describe('VITE_ prefix reading', () => {
-        it('reads VITE_AUTH_PROVIDER', () => {
-            setEnv({ VITE_AUTH_PROVIDER: 'supertokens' });
-
-            const config = getAuthConfig();
-
-            expect(config.authProvider).toBe('supertokens');
-        });
-
-        it('reads VITE_KEY_DERIVATION', () => {
-            setEnv({ VITE_KEY_DERIVATION: 'web3auth' });
-
-            const config = getAuthConfig();
-
-            expect(config.keyDerivation).toBe('web3auth');
-        });
-
-        it('reads VITE_SSS_SERVER_URL', () => {
-            setEnv({ VITE_SSS_SERVER_URL: 'https://custom.server/api' });
-
-            expect(getSSSConfig().serverUrl).toBe('https://custom.server/api');
-        });
-
-        it('reads the pinned escrow relay key', () => {
-            setEnv({
-                VITE_ESCROW_RELAY_PUBLIC_KEY: 'relay-public-key',
-                VITE_ESCROW_RELAY_KEY_ID: 'relay-key-2026-09',
-            });
-
-            expect(getSSSConfig().escrowRelayPublicKey).toBe('relay-public-key');
-            expect(getSSSConfig().escrowRelayKeyId).toBe('relay-key-2026-09');
-        });
-
-        it('reads VITE_ENABLE_EMAIL_BACKUP_SHARE=false', () => {
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
-
-            expect(getSSSConfig().enableEmailBackupShare).toBe(false);
-        });
-    });
-
-    describe('REACT_APP_ prefix fallback', () => {
-        it('falls back to REACT_APP_AUTH_PROVIDER', () => {
-            setEnv({ REACT_APP_AUTH_PROVIDER: 'supertokens' });
-
-            const config = getAuthConfig();
-
-            expect(config.authProvider).toBe('supertokens');
-        });
-
-        it('falls back to REACT_APP_KEY_DERIVATION_PROVIDER', () => {
-            setEnv({ REACT_APP_KEY_DERIVATION_PROVIDER: 'web3auth' });
-
-            const config = getAuthConfig();
-
-            expect(config.keyDerivation).toBe('web3auth');
-        });
-
-        it('falls back to REACT_APP_SSS_SERVER_URL', () => {
-            setEnv({ REACT_APP_SSS_SERVER_URL: 'https://react-app.server/api' });
-
-            expect(getSSSConfig().serverUrl).toBe('https://react-app.server/api');
-        });
-    });
-
-    describe('VITE_ takes precedence over REACT_APP_', () => {
-        it('prefers VITE_AUTH_PROVIDER over REACT_APP_AUTH_PROVIDER', () => {
-            setEnv({
-                VITE_AUTH_PROVIDER: 'vite-provider',
-                REACT_APP_AUTH_PROVIDER: 'react-provider',
-            });
-
-            const config = getAuthConfig();
-
-            expect(config.authProvider).toBe('vite-provider');
-        });
-
-        it('prefers VITE_SSS_SERVER_URL over REACT_APP_SSS_SERVER_URL', () => {
-            setEnv({
-                VITE_SSS_SERVER_URL: 'https://vite.server/api',
-                REACT_APP_SSS_SERVER_URL: 'https://react.server/api',
-            });
-
-            expect(getSSSConfig().serverUrl).toBe('https://vite.server/api');
-        });
-    });
-
-    describe('key derivation passthrough', () => {
-        it('passes through unknown key derivation values (open string)', () => {
-            setEnv({ VITE_KEY_DERIVATION: 'unknown-provider' });
-
-            const config = getAuthConfig();
-
-            expect(config.keyDerivation).toBe('unknown-provider');
-        });
-
-        it('accepts web3auth explicitly', () => {
-            setEnv({ VITE_KEY_DERIVATION: 'web3auth' });
-
-            const config = getAuthConfig();
-
-            expect(config.keyDerivation).toBe('web3auth');
-        });
-    });
-
-    describe('boolean parsing', () => {
-        it('enableEmailBackupShare defaults to true', () => {
-            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
-        });
-
-        it('enableEmailBackupShare is true for any value except "false"', () => {
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'true' });
-            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
-
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: '1' });
-            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
-
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'yes' });
-            expect(getSSSConfig().enableEmailBackupShare).toBe(true);
-        });
-    });
-});
-
-describe('split-precedence: config wins for provider/strategy selection', () => {
-    beforeEach(() => {
-        clearAuthEnvVars();
-        clearAuthConfigOverrides();
-    });
-
-    afterEach(() => {
-        clearAuthConfigOverrides();
-        process.env = { ...originalEnv };
-    });
-
-    it('tenant config authProvider overrides ENV var', () => {
-        setEnv({ VITE_AUTH_PROVIDER: 'env-provider' });
-        setAuthConfigOverrides({ authProvider: 'tenant-provider' as never });
-
-        expect(getAuthConfig().authProvider).toBe('tenant-provider');
-    });
-
-    it('tenant config keyDerivation overrides ENV var', () => {
-        setEnv({ VITE_KEY_DERIVATION: 'env-strategy' });
-        setAuthConfigOverrides({ keyDerivation: 'tenant-strategy' });
-
-        expect(getAuthConfig().keyDerivation).toBe('tenant-strategy');
-    });
-
-    it('falls back to ENV var when config does not set authProvider', () => {
-        setEnv({ VITE_AUTH_PROVIDER: 'env-provider' });
-        setAuthConfigOverrides({ keyDerivation: 'sss' });
-
-        expect(getAuthConfig().authProvider).toBe('env-provider');
-    });
-});
-
-describe('split-precedence: ENV wins for operational values', () => {
-    beforeEach(() => {
-        clearAuthEnvVars();
-        clearAuthConfigOverrides();
-    });
-
-    afterEach(() => {
-        clearAuthConfigOverrides();
-        process.env = { ...originalEnv };
-    });
-
-    it('ENV SSS_SERVER_URL overrides tenant config sss.serverUrl', () => {
-        setAuthConfigOverrides({
-            providerConfig: {
-                sss: { serverUrl: 'https://tenant-sss.example.com/api' },
-            },
-        });
-
-        setEnv({ VITE_SSS_SERVER_URL: 'https://env-sss.example.com/api' });
-
-        expect(getSSSConfig().serverUrl).toBe('https://env-sss.example.com/api');
-    });
-
-    it('falls back to tenant config sss.serverUrl when no ENV var', () => {
-        setAuthConfigOverrides({
-            providerConfig: {
-                sss: { serverUrl: 'https://tenant-sss.example.com/api' },
-            },
-        });
-
-        expect(getSSSConfig().serverUrl).toBe('https://tenant-sss.example.com/api');
-    });
-
-    it('ENV ENABLE_EMAIL_BACKUP_SHARE overrides tenant config value', () => {
-        setAuthConfigOverrides({
-            providerConfig: {
-                sss: { enableEmailBackupShare: true },
-            },
-        });
-
-        setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
-
-        expect(getSSSConfig().enableEmailBackupShare).toBe(false);
-    });
-
-    it('ENV escrow relay key overrides tenant config values', () => {
+    it('reads the pinned escrow relay key from tenant SSS config', () => {
         setAuthConfigOverrides({
             providerConfig: {
                 sss: {
-                    escrowRelayPublicKey: 'tenant-public-key',
-                    escrowRelayKeyId: 'tenant-key-id',
+                    escrowRelayPublicKey: 'relay-public-key',
+                    escrowRelayKeyId: 'relay-key-2026-09',
                 },
             },
         });
-        setEnv({
-            VITE_ESCROW_RELAY_PUBLIC_KEY: 'env-public-key',
-            VITE_ESCROW_RELAY_KEY_ID: 'env-key-id',
-        });
 
-        expect(getSSSConfig().escrowRelayPublicKey).toBe('env-public-key');
-        expect(getSSSConfig().escrowRelayKeyId).toBe('env-key-id');
+        expect(getSSSConfig().escrowRelayPublicKey).toBe('relay-public-key');
+        expect(getSSSConfig().escrowRelayKeyId).toBe('relay-key-2026-09');
     });
 
-    it('falls back to tenant config enableEmailBackupShare when no ENV var', () => {
+    it('uses explicit validated overrides without consulting environment variables', () => {
         setAuthConfigOverrides({
+            authProvider: 'keycloak',
+            keyDerivation: 'custom-strategy',
             providerConfig: {
-                sss: { enableEmailBackupShare: false },
+                customStrategy: { endpoint: 'https://auth.example.com' },
             },
         });
 
-        expect(getSSSConfig().enableEmailBackupShare).toBe(false);
-    });
-
-    it('ENV REQUIRE_EMAIL_FOR_PHONE_USERS overrides tenant config value', () => {
-        setAuthConfigOverrides({
+        expect(getAuthConfig()).toMatchObject({
+            authProvider: 'keycloak',
+            keyDerivation: 'custom-strategy',
             providerConfig: {
-                sss: { requireEmailForPhoneUsers: true },
+                customStrategy: { endpoint: 'https://auth.example.com' },
             },
         });
-
-        setEnv({ VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: 'false' });
-
-        expect(getSSSConfig().requireEmailForPhoneUsers).toBe(false);
     });
 
-    it('falls back to tenant config requireEmailForPhoneUsers when no ENV var', () => {
-        setAuthConfigOverrides({
-            providerConfig: {
-                sss: { requireEmailForPhoneUsers: false },
-            },
-        });
-
-        expect(getSSSConfig().requireEmailForPhoneUsers).toBe(false);
-    });
-
-    it('preserves extra tenant SSS config fields when ENV overrides specific values', () => {
-        setAuthConfigOverrides({
-            providerConfig: {
+    it('bridges the complete validated TenantConfig auth section', () => {
+        setAuthConfigFromTenant({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            auth: {
+                ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                keyDerivation: 'web3auth',
                 sss: {
-                    serverUrl: 'https://tenant.example.com/api',
+                    serverUrl: 'https://tenant.example.com/trpc',
+                    enableEmailBackupShare: false,
+                    requireEmailForPhoneUsers: false,
                     customTenantField: 'preserved',
                 },
+                web3Auth: {
+                    clientId: 'tenant-client-id',
+                    network: 'cyan',
+                    verifierId: 'tenant-verifier',
+                    rpcTarget: 'https://rpc.example.com',
+                },
+                keycloak: {
+                    issuer: 'https://keycloak.example.com',
+                },
             },
         });
-
-        setEnv({ VITE_SSS_SERVER_URL: 'https://env.example.com/api' });
 
         const config = getAuthConfig();
-        const sss = config.providerConfig.sss!;
 
-        expect(sss.serverUrl).toBe('https://env.example.com/api');
-        expect(sss.customTenantField).toBe('preserved');
+        expect(config.authProvider).toBe('firebase');
+        expect(config.keyDerivation).toBe('web3auth');
+        expect(config.providerConfig.sss).toMatchObject({
+            serverUrl: 'https://tenant.example.com/trpc',
+            enableEmailBackupShare: false,
+            requireEmailForPhoneUsers: false,
+            customTenantField: 'preserved',
+        });
+        expect(config.providerConfig.web3Auth).toEqual({
+            clientId: 'tenant-client-id',
+            network: 'cyan',
+            verifierId: 'tenant-verifier',
+            rpcTarget: 'https://rpc.example.com',
+        });
+        expect(config.providerConfig.keycloak).toEqual({
+            issuer: 'https://keycloak.example.com',
+        });
     });
 
-    it('ENV Web3Auth values override tenant config', () => {
+    it('clears host overrides back to deterministic defaults', () => {
+        setAuthConfigOverrides({ keyDerivation: 'web3auth' });
+        clearAuthConfigOverrides();
+
+        expect(getAuthConfig().keyDerivation).toBe('sss');
+    });
+
+    it('reports SSS selection and email-backup state from resolved config', () => {
         setAuthConfigOverrides({
+            keyDerivation: 'sss',
             providerConfig: {
-                web3Auth: {
-                    clientId: 'tenant-client-id',
-                    network: 'tenant-network',
-                    verifierId: 'tenant-verifier',
-                    rpcTarget: 'https://tenant-rpc.example.com',
+                sss: {
+                    serverUrl: 'https://tenant.example.com/trpc',
+                    enableEmailBackupShare: false,
+                    requireEmailForPhoneUsers: true,
                 },
             },
         });
 
-        setEnv({ VITE_WEB3AUTH_CLIENT_ID: 'env-client-id' });
-
-        const w3a = getAuthConfig().providerConfig.web3Auth!;
-
-        expect(w3a.clientId).toBe('env-client-id');
-        expect(w3a.network).toBe('tenant-network');
-        expect(w3a.verifierId).toBe('tenant-verifier');
-        expect(w3a.rpcTarget).toBe('https://tenant-rpc.example.com');
-    });
-
-    it('falls back to tenant Web3Auth config when no ENV vars', () => {
-        setAuthConfigOverrides({
-            providerConfig: {
-                web3Auth: {
-                    clientId: 'tenant-client-id',
-                    network: 'tenant-network',
-                    verifierId: 'tenant-verifier',
-                },
-            },
-        });
-
-        const w3a = getAuthConfig().providerConfig.web3Auth!;
-
-        expect(w3a.clientId).toBe('tenant-client-id');
-        expect(w3a.network).toBe('tenant-network');
-        expect(w3a.verifierId).toBe('tenant-verifier');
-    });
-});
-
-describe('helper functions', () => {
-    beforeEach(() => {
-        clearAuthEnvVars();
-        clearAuthConfigOverrides();
-    });
-
-    afterEach(() => {
-        clearAuthConfigOverrides();
-        process.env = { ...originalEnv };
-    });
-
-    describe('shouldUseSSS', () => {
-        it('returns true by default', () => {
-            expect(shouldUseSSS()).toBe(true);
-        });
-
-        it('returns false when key derivation is web3auth', () => {
-            setEnv({ VITE_KEY_DERIVATION: 'web3auth' });
-
-            expect(shouldUseSSS()).toBe(false);
+        expect(shouldUseSSS()).toBe(true);
+        expect(isEmailBackupShareEnabled()).toBe(false);
+        expect(getConfigCapabilities()).toMatchObject({
+            recovery: true,
+            deviceLinking: true,
         });
     });
 
-    describe('isEmailBackupShareEnabled', () => {
-        it('returns true by default', () => {
-            expect(isEmailBackupShareEnabled()).toBe(true);
-        });
+    it('reports Web3Auth capabilities from explicit resolved config', () => {
+        setAuthConfigOverrides({ keyDerivation: 'web3auth' });
 
-        it('returns false when explicitly disabled', () => {
-            setEnv({ VITE_ENABLE_EMAIL_BACKUP_SHARE: 'false' });
-
-            expect(isEmailBackupShareEnabled()).toBe(false);
+        expect(shouldUseSSS()).toBe(false);
+        expect(getConfigCapabilities()).toEqual({
+            recovery: false,
+            deviceLinking: false,
+            localKeyPersistence: false,
+            contactMethodUpgrade: false,
         });
     });
 });

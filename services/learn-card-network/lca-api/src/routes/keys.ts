@@ -3,6 +3,7 @@
  * Provider-agnostic routes for managing SSS shares
  */
 
+import { environment } from '@environment';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import admin from 'firebase-admin';
@@ -55,7 +56,7 @@ import {
 } from '@models';
 
 const RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS =
-    process.env.POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS ?? '';
+    environment.POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS ?? '';
 
 const RECOVERY_EMAIL_CODE_PREFIX = 'recovery_email_code:';
 const RECOVERY_EMAIL_CODE_TTL_SECS = 15 * 60; // 15 minutes
@@ -67,7 +68,7 @@ const ESCROW_RELAY_TIMEOUT_MS = 15_000;
 const generate6DigitCode = (): string => randomInt(100000, 1000000).toString();
 
 const hashRecoveryConfirmationCode = (code: string): string => {
-    const seed = process.env.SEED;
+    const seed = environment.SEED;
 
     if (!seed) {
         throw new TRPCError({
@@ -121,8 +122,8 @@ const sendRecoveryKeyToEscrowRelay = async (
     payload: EmailRelayEnvelope,
     expectedRecipient: string
 ): Promise<void> => {
-    const relayUrl = process.env.ESCROW_RELAY_URL?.replace(/\/$/, '');
-    const relayAuthToken = process.env.ESCROW_RELAY_AUTH_TOKEN;
+    const relayUrl = environment.ESCROW_RELAY_URL?.replace(/\/$/, '');
+    const relayAuthToken = environment.ESCROW_RELAY_AUTH_TOKEN;
 
     if (!relayUrl || !relayAuthToken) {
         throw new TRPCError({
@@ -448,7 +449,7 @@ export const keysRouter = t.router({
             }
 
             const encryptedAuthShare = findAuthShareByVersion(userKey, recoveryMethod.shareVersion);
-            const seed = process.env.SEED;
+            const seed = environment.SEED;
 
             if (!encryptedAuthShare || !seed) {
                 throw new TRPCError({
@@ -525,7 +526,7 @@ export const keysRouter = t.router({
                 });
             }
 
-            const seed = process.env.SEED;
+            const seed = environment.SEED;
             if (!seed) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
@@ -639,13 +640,13 @@ export const keysRouter = t.router({
             const rawAuthShare =
                 requestedVersion != null
                     ? findAuthShareByVersion(userKey, requestedVersion)
-                    : userKey.authShare ?? null;
+                    : (userKey.authShare ?? null);
 
             // Decrypt the auth share before returning to client
             let authShare = rawAuthShare;
 
             if (rawAuthShare) {
-                const seed = process.env.SEED;
+                const seed = environment.SEED;
 
                 if (!seed) {
                     throw new TRPCError({
@@ -732,11 +733,11 @@ export const keysRouter = t.router({
             const shouldRemainProvisional =
                 !existing || isMigration || existing.sssActivationState === 'provisional';
             const provisionalCreatedAt = shouldRemainProvisional
-                ? existing?.provisionalCreatedAt ?? new Date()
+                ? (existing?.provisionalCreatedAt ?? new Date())
                 : undefined;
 
             // Encrypt the auth share at rest using the server SEED
-            const seed = process.env.SEED;
+            const seed = environment.SEED;
 
             if (!seed) {
                 throw new TRPCError({
@@ -751,7 +752,7 @@ export const keysRouter = t.router({
                 authShare: authShareToStore,
                 primaryDid: authenticatedDid,
                 securityLevel: input.securityLevel ?? 'basic',
-                keyProvider: isMigration ? 'web3auth' : existing?.keyProvider ?? 'sss',
+                keyProvider: isMigration ? 'web3auth' : (existing?.keyProvider ?? 'sss'),
                 sssActivationState: shouldRemainProvisional ? 'provisional' : 'active',
                 ...(provisionalCreatedAt ? { provisionalCreatedAt } : {}),
             });
@@ -1349,7 +1350,7 @@ export const keysRouter = t.router({
             let customToken: string | undefined;
 
             if (input.providerType === 'firebase') {
-                if (process.env.IS_E2E_TEST === 'true') {
+                if (environment.IS_E2E_TEST) {
                     // E2E bypass — no Firebase Admin SDK available
                     customToken = `e2e-custom-token-${user.id}`;
                 } else {

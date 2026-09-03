@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -8,8 +9,8 @@ import type { EmptyLearnCard, LearnCardFromSeed, DidWebLearnCardFromSeed } from 
 import { getSigningAuthorityForDid } from '@accesslayer/signing-authority/read';
 import { getLRUCache } from '@cache/in-memory-lru';
 
-const cloud = process.env.LEARN_CLOUD_URL
-    ? { url: process.env.LEARN_CLOUD_URL }
+const cloud = environment.LEARN_CLOUD_URL
+    ? { url: environment.LEARN_CLOUD_URL }
     : { url: 'https://cloud.learncard.com/trpc' };
 
 let emptyLearnCard: EmptyLearnCard['returnValue'];
@@ -58,7 +59,7 @@ const getDidKitInit = async (): Promise<'node' | Buffer> => {
     if (didKitInitPromise) return didKitInitPromise;
 
     didKitInitPromise = (async () => {
-        if (process.env.SKIP_DIDKIT_NAPI) {
+        if (environment.SKIP_DIDKIT_NAPI) {
             const wasmBuffer = await readFile(resolveDidkitWasmPath());
             didKitEngine = 'wasm';
             return wasmBuffer;
@@ -93,7 +94,7 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard['returnValue']
 };
 
 export const getLearnCard = async (): Promise<LearnCardFromSeed['returnValue']> => {
-    const seed = process.env.SEED;
+    const seed = environment.SEED;
 
     if (!seed) throw new Error('No seed set!');
 
@@ -159,10 +160,10 @@ export const getSigningAuthorityLearnCard = async (
 };
 
 export const getServerDidWebDID = (): string => {
-    const domainName = process.env.DOMAIN_NAME;
+    const domainName = environment.DOMAIN_NAME;
     const domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost%3A${process.env.PORT || 3000}`
+        !domainName || environment.IS_OFFLINE
+            ? `localhost%3A${environment.PORT || 3000}`
             : domainName;
     return `did:web:${domain}`;
 };
@@ -171,7 +172,7 @@ export const getDidWebLearnCard = async (
     seed?: string,
     didWeb?: string
 ): Promise<DidWebLearnCardFromSeed['returnValue']> => {
-    const _seed = seed || process.env.SEED;
+    const _seed = seed || environment.SEED;
     const _didWeb = didWeb || getServerDidWebDID();
     if (!_seed) throw new Error('No seed set!');
     if (!_didWeb) throw new Error('No didWeb set!');

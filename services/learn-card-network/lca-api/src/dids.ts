@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import Fastify, { FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import _sodium from 'libsodium-wrappers';
@@ -51,8 +52,8 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         const domainName: string = request.hostname || (request as any).requestContext.domainName;
         const domain =
-            !domainName || process.env.IS_OFFLINE
-                ? `localhost%3A${process.env.PORT || 3000}`
+            !domainName || environment.IS_OFFLINE
+                ? `localhost%3A${environment.PORT || 3000}`
                 : domainName.replace(/:/g, '%3A');
 
         const did = learnCard.id.did();
@@ -86,7 +87,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
     });
 
     fastify.get('/test/clear-cache', async (_request, reply) => {
-        if (!process.env.IS_OFFLINE) return reply.status(403).send();
+        if (!environment.IS_OFFLINE) return reply.status(403).send();
 
         const learnCard = await getEmptyLearnCard();
 

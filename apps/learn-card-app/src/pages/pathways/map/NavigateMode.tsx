@@ -59,11 +59,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react';
 
 import { mcpRegistryStore } from '../../../stores/pathways';
-import {
-    getNodeEarnLink,
-    policyLabel,
-    resolveNodeCallToAction,
-} from '../today/presentation';
+import { getNodeEarnLink, policyLabel, resolveNodeCallToAction } from '../today/presentation';
 import type { Pathway, PathwayNode } from '../types';
 
 import type { SuggestedRoute } from './route';
@@ -120,10 +116,7 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
     // line. The learner can exit or tap the destination to review it.
     const allComplete = yourIndex === null;
 
-    const nodeById = React.useMemo(
-        () => new Map(pathway.nodes.map(n => [n.id, n])),
-        [pathway],
-    );
+    const nodeById = React.useMemo(() => new Map(pathway.nodes.map(n => [n.id, n])), [pathway]);
 
     return (
         <AnimatePresence>
@@ -189,15 +182,12 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                                 {allComplete
                                     ? 'Route complete'
                                     : yourIndex !== null
-                                        ? `Step ${yourIndex + 1} of ${route.nodeIds.length}`
-                                        : ''}
+                                      ? `Step ${yourIndex + 1} of ${route.nodeIds.length}`
+                                      : ''}
                             </span>
 
                             {!allComplete && (
-                                <span
-                                    aria-hidden
-                                    className="text-grayscale-300"
-                                >
+                                <span aria-hidden className="text-grayscale-300">
                                     ·
                                 </span>
                             )}
@@ -234,8 +224,8 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                                                 isDone
                                                     ? 'bg-emerald-500'
                                                     : isYou
-                                                        ? 'bg-emerald-300'
-                                                        : 'bg-grayscale-200'
+                                                      ? 'bg-emerald-300'
+                                                      : 'bg-grayscale-200'
                                             } group-hover:opacity-80`}
                                         />
 
@@ -268,8 +258,8 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                                 node={currentNode}
                                 mcpLabel={
                                     currentNode.stage.policy.kind === 'external'
-                                        ? mcpServers[currentNode.stage.policy.mcp.serverId]
-                                              ?.label ?? null
+                                        ? (mcpServers[currentNode.stage.policy.mcp.serverId]
+                                              ?.label ?? null)
                                         : null
                                 }
                                 onOpen={onOpen}
@@ -301,10 +291,7 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                                 <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-grayscale-400">
                                     Then
                                 </span>
-                                <span
-                                    aria-hidden
-                                    className="text-grayscale-300 text-[10px]"
-                                >
+                                <span aria-hidden className="text-grayscale-300 text-[10px]">
                                     ·
                                 </span>
                                 <span className="text-[10px] font-medium uppercase tracking-wide text-grayscale-500">
@@ -335,7 +322,11 @@ const NavigateMode: React.FC<NavigateModeProps> = ({
                         Matches Headspace's whisper-level affordances.
                     */}
                     <div className="hidden sm:block mt-6 text-[10px] font-medium text-grayscale-400 tracking-wide">
-                        Press <kbd className="px-1.5 py-0.5 rounded bg-white/70 border border-grayscale-200 text-grayscale-600">Esc</kbd> to return to the map
+                        Press{' '}
+                        <kbd className="px-1.5 py-0.5 rounded bg-white/70 border border-grayscale-200 text-grayscale-600">
+                            Esc
+                        </kbd>{' '}
+                        to return to the map
                     </div>
                 </div>
             </motion.div>
@@ -374,8 +365,7 @@ const CurrentStepCard: React.FC<{
         </>
     );
 
-    const ctaClass =
-        `group mt-5 w-full py-3.5 px-5 rounded-full
+    const ctaClass = `group mt-5 w-full py-3.5 px-5 rounded-full
          bg-emerald-600 text-white text-base font-semibold
          shadow-lg shadow-emerald-600/30
          hover:bg-emerald-700 transition-colors
@@ -403,9 +393,7 @@ const CurrentStepCard: React.FC<{
                 </div>
             </div>
 
-            <h2 className="text-xl font-semibold text-grayscale-900 leading-snug">
-                {node.title}
-            </h2>
+            <h2 className="text-xl font-semibold text-grayscale-900 leading-snug">{node.title}</h2>
 
             {earnLink ? (
                 <motion.a
@@ -452,19 +440,14 @@ const RouteCompleteCard: React.FC<{
                    bg-white shadow-xl shadow-grayscale-900/10 border border-white"
     >
         <div className="mx-auto w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-            <IonIcon
-                icon={checkmarkCircle}
-                className="text-emerald-600 text-4xl"
-                aria-hidden
-            />
+            <IonIcon icon={checkmarkCircle} className="text-emerald-600 text-4xl" aria-hidden />
         </div>
 
-        <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-            You made it.
-        </h2>
+        <h2 className="text-xl font-semibold text-grayscale-900 mb-1">You made it.</h2>
 
         <p className="text-sm text-grayscale-600 leading-relaxed mb-5">
-            Every step on this route is complete. Take a look at the destination to review what you earned.
+            Every step on this route is complete. Take a look at the destination to review what you
+            earned.
         </p>
 
         <button

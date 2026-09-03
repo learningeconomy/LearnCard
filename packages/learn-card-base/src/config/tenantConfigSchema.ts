@@ -1,5 +1,3 @@
-import { getLogger } from '../logging/logger';
-const log = getLogger('tenant-config-schema');
 /**
  * TenantConfig Zod Schema — single source of truth for:
  *   - Runtime validation of config from edge functions, localStorage, baked JSON
@@ -92,7 +90,32 @@ export const tenantAuthConfigSchema = z
         sss: tenantSSSConfigSchema.optional(),
         web3Auth: tenantWeb3AuthConfigSchema.optional(),
     })
-    .passthrough();
+    .passthrough()
+    .superRefine((auth, context) => {
+        if (auth.provider === 'firebase' && !auth.firebase) {
+            context.addIssue({
+                code: 'custom',
+                path: ['firebase'],
+                message: 'Required when auth.provider is firebase',
+            });
+        }
+
+        if (auth.keyDerivation === 'sss' && !auth.sss) {
+            context.addIssue({
+                code: 'custom',
+                path: ['sss'],
+                message: 'Required when auth.keyDerivation is sss',
+            });
+        }
+
+        if (auth.keyDerivation === 'web3auth' && !auth.web3Auth) {
+            context.addIssue({
+                code: 'custom',
+                path: ['web3Auth'],
+                message: 'Required when auth.keyDerivation is web3auth',
+            });
+        }
+    });
 
 export const tenantFilestackStorageConfigSchema = z
     .object({
@@ -362,45 +385,45 @@ export type TenantEcosystemConfig = z.infer<typeof tenantEcosystemConfigSchema>;
 // Validation helpers
 // -----------------------------------------------------------------
 
-/**
- * Parse and validate a raw config object. Returns the validated config
- * with defaults applied, or null + logs errors.
- */
-export const parseTenantConfig = (raw: unknown, source: string): TenantConfig | null => {
-    const result = tenantConfigSchema.safeParse(raw);
+export class TenantConfigValidationError extends Error {
+    readonly source: string;
 
-    if (result.success) {
-        return result.data;
+    readonly issues: readonly ZodIssue[];
+
+    constructor(source: string, issues: readonly ZodIssue[]) {
+        const details = issues
+            .map(issue => {
+                const path = issue.path.length ? issue.path.map(String).join('.') : '(config)';
+
+                return `${path}\n  ${issue.message}`;
+            })
+            .join('\n\n');
+
+        super(`Invalid TenantConfig from ${source}\n\n${details}`);
+        this.name = 'TenantConfigValidationError';
+        this.source = source;
+        this.issues = issues;
     }
+}
 
-    log.warn(
-        `[TenantConfig] Invalid config from ${source}:`,
-        result.error.issues.map((i: ZodIssue) => `${i.path.join('.')}: ${i.message}`).join(', ')
-    );
-
-    return null;
-};
-
-/**
- * Parse a partial config (e.g. from an edge function that only sends overrides).
- * Uses `.partial()` on the root so top-level sections are optional.
- */
-const partialTenantConfigSchema = tenantConfigSchema.partial();
-
-export const parsePartialTenantConfig = (
+const parseWithSource = <Schema extends z.ZodType>(
+    schema: Schema,
     raw: unknown,
     source: string
-): Partial<TenantConfig> | null => {
-    const result = partialTenantConfigSchema.safeParse(raw);
+): z.output<Schema> => {
+    const result = schema.safeParse(raw);
 
-    if (result.success) {
-        return result.data as Partial<TenantConfig>;
-    }
+    if (result.success) return result.data;
 
-    log.warn(
-        `[TenantConfig] Invalid partial config from ${source}:`,
-        result.error.issues.map((i: ZodIssue) => `${i.path.join('.')}: ${i.message}`).join(', ')
-    );
-
-    return null;
+    throw new TenantConfigValidationError(source, result.error.issues);
 };
+
+/** Parse and validate a complete tenant config. Invalid explicit config throws. */
+export const parseTenantConfig = (raw: unknown, source: string): TenantConfig =>
+    parseWithSource(tenantConfigSchema, raw, source);
+
+/** Parse and validate a root-level tenant overlay. Invalid explicit config throws. */
+const partialTenantConfigSchema = tenantConfigSchema.partial();
+
+export const parsePartialTenantConfig = (raw: unknown, source: string): Partial<TenantConfig> =>
+    parseWithSource(partialTenantConfigSchema, raw, source);

@@ -122,6 +122,8 @@ jobs:
             - name: Set up Bun
               if: matrix.package-manager == 'bun'
               uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.3.14
 
             - name: Wait for npm CDN propagation
               env:

@@ -207,9 +207,8 @@ describe('privacy gate', () => {
             configureSentryTransport: configureIsolatedSentryTransport,
             logger: isolatedLogger,
         } = await import('./logger');
-        const { getDiagnosticLogs: getIsolatedDiagnosticLogs } = await import(
-            './diagnosticLogBuffer'
-        );
+        const { getDiagnosticLogs: getIsolatedDiagnosticLogs } =
+            await import('./diagnosticLogBuffer');
         const sentryCalls: string[] = [];
         configureIsolatedSentryTransport({
             captureException: () => undefined,
@@ -781,12 +780,13 @@ describe('diagnostic buffer integration', () => {
     it('does not record production-dropped debug calls', () => {
         const transport = makeMockTransport();
         configureSentryTransport(transport);
-        vi.stubEnv('NODE_ENV', 'production');
+        vi.stubGlobal('IS_PRODUCTION', true);
+
         try {
             logger.debug('verbose detail');
             expect(getDiagnosticLogs()).toEqual([]);
         } finally {
-            vi.unstubAllEnvs();
+            vi.unstubAllGlobals();
         }
     });
 });

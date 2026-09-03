@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import path from 'path';
 
 import Fastify from 'fastify';
@@ -103,8 +104,8 @@ server.register(didFastifyPlugin);
 
 (async () => {
     try {
-        console.log('Server starting on port ', process.env.PORT || 3000);
-        await server.listen({ host: '0.0.0.0', port: Number(process.env.PORT || 3000) });
+        console.log('Server starting on port ', environment.PORT || 3000);
+        await server.listen({ host: '0.0.0.0', port: Number(environment.PORT || 3000) });
     } catch (err) {
         console.error(err);
         process.exit(1);

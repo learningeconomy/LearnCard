@@ -1,5 +1,3 @@
-import http from 'node:http';
-
 import serverlessHttp from 'serverless-http';
 import type {
     Context,
@@ -8,7 +6,6 @@ import type {
     SQSBatchResponse,
     SQSHandler,
 } from 'aws-lambda';
-import { LCNNotificationValidator } from '@learncard/types';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
 import * as Sentry from '@sentry/serverless';
 
@@ -16,8 +13,7 @@ import app from './src/openapi';
 import skillsViewerApp from './src/skills-viewer';
 import statusListsApp from './src/status-lists';
 import { appRouter, createContext } from './src/app';
-import { sendNotification } from './src/helpers/notifications.helpers';
-import { acknowledgeConnectionPromptNotificationDelivery } from './src/helpers/connectionPrompt.helpers';
+import { deliverQueuedNotification } from './src/helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
 import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
 import {
@@ -25,11 +21,13 @@ import {
     sentryBeforeSend,
     getTracesSampleRate,
 } from './src/helpers/sentry.helpers';
+import { environment } from './src/config/environment';
+import { toServerlessApplication } from './src/helpers/serverlessApplication';
 
 Sentry.AWSLambda.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.SENTRY_ENV,
-    enabled: Boolean(process.env.SENTRY_DSN),
+    dsn: environment.SENTRY_DSN,
+    environment: environment.SENTRY_ENV,
+    enabled: Boolean(environment.SENTRY_DSN),
     tracesSampleRate: getTracesSampleRate(),
     beforeSend: sentryBeforeSend,
     integrations: [
@@ -43,11 +41,13 @@ startSkillEmbeddingBackfill().catch(err =>
     console.error('Skill embedding backfill startup error:', err)
 );
 
-export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
+export const swaggerUiHandler = serverlessHttp(toServerlessApplication(app), {
+    basePath: '/docs',
+});
 
-export const skillsViewerHandler = serverlessHttp(skillsViewerApp);
+export const skillsViewerHandler = serverlessHttp(toServerlessApplication(skillsViewerApp));
 
-export const statusListsHandler = serverlessHttp(statusListsApp);
+export const statusListsHandler = serverlessHttp(toServerlessApplication(statusListsApp));
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
@@ -118,31 +118,7 @@ export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(asyn
     const batchItemFailures = await Promise.all(
         event.Records.map(async record => {
             try {
-                const _notification = JSON.parse(record.body);
-
-                const notification = await LCNNotificationValidator.parseAsync(_notification);
-
-                const stored = await sendNotification(notification, {
-                    propagateDirectWebhookTransportErrors: true,
-                });
-
-                if (!stored) throw new Error('Notification was not durably stored');
-
-                const connectionPrompt = notification.data?.metadata?.connectionPrompt;
-                if (connectionPrompt) {
-                    const viewerProfileId = notification.to.profileId;
-
-                    if (!viewerProfileId) {
-                        throw new Error(
-                            'Actionable notification is missing its recipient profile id'
-                        );
-                    }
-
-                    await acknowledgeConnectionPromptNotificationDelivery(
-                        viewerProfileId,
-                        connectionPrompt.promptId
-                    );
-                }
+                await deliverQueuedNotification(record.body);
 
                 return undefined;
             } catch (error) {

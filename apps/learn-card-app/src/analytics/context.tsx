@@ -10,27 +10,19 @@ import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { setAnalyticsProvider as setSendCredentialFlowProvider } from '../helpers/sendCredentialFlow.helpers';
 
 /**
- * Lazily load and instantiate the appropriate analytics provider.
- *
- * Reads from TenantConfig.observability first, falling back to VITE_* env vars
- * for backward compatibility during migration.
+ * Lazily load and instantiate the analytics provider from the already validated TenantConfig.
  */
 async function loadProvider(): Promise<AnalyticsProvider> {
-    let providerName: AnalyticsProviderName = 'noop';
-    let posthogKey: string | undefined;
-    let posthogHost: string | undefined;
+    let config;
 
     try {
-        const config = getResolvedTenantConfig();
-        providerName = config.observability.analyticsProvider ?? 'noop';
-        posthogKey = config.observability.posthogKey;
-        posthogHost = config.observability.posthogHost;
+        config = getResolvedTenantConfig();
     } catch {
-        // TenantConfig not yet resolved — fall back to env vars
-        providerName = (import.meta.env.VITE_ANALYTICS_PROVIDER || 'noop') as AnalyticsProviderName;
-        posthogKey = import.meta.env.VITE_POSTHOG_KEY;
-        posthogHost = import.meta.env.VITE_POSTHOG_HOST;
+        return new NoopProvider();
     }
+    const providerName: AnalyticsProviderName = config.observability.analyticsProvider ?? 'noop';
+    const posthogKey = config.observability.posthogKey;
+    const posthogHost = config.observability.posthogHost;
 
     switch (providerName) {
         case 'posthog': {
