@@ -84,6 +84,18 @@ export const brainServiceEnvironmentShape = {
     BITSTRING_STATUS_LIST_ALLOW_SMALL: optionalEnvironmentBoolean.default(false),
     AUTHORIZED_SERVICE_DIDS: optionalEnvironmentString,
     INSTALL_INTENT_RECONCILER_SCHEDULER_DISABLED: optionalEnvironmentBoolean.default(false),
+    INSTALL_INTENT_RECONCILER_ALLOW_LOCAL_COORDINATION: optionalEnvironmentBoolean,
+    INSTALL_INTENT_RECONCILER_DISABLED: optionalEnvironmentBoolean.default(false),
+    INSTALL_INTENT_RECONCILER_DISABLED_ECOSYSTEM_IDS: optionalEnvironmentString,
+    INSTALL_INTENT_RECONCILER_MAX_RETRIES: optionalEnvironmentString,
+    INSTALL_INTENT_RECONCILER_BACKOFF_MS: optionalEnvironmentString,
+    INSTALL_INTENT_RECONCILER_STUCK_THRESHOLD_MS: optionalEnvironmentString,
+    INSTALL_INTENT_RECONCILER_ALERT_MAX_STUCK_INTENTS: optionalEnvironmentString,
+    INSTALL_INTENT_RECONCILER_ALERT_MAX_DEGRADED_INTENTS: optionalEnvironmentString,
+    INSTALL_INTENT_RECONCILER_ALERT_MAX_FAILED_INTENTS: optionalEnvironmentString,
+    INSTALL_INTENT_RECONCILER_TENANT_CONCURRENCY: optionalEnvironmentString,
+    INSTALL_INTENT_RECONCILER_INTERVAL_MS: optionalEnvironmentString,
+    INSTALL_INTENT_RECONCILER_HEALTH_INTERVAL_MS: optionalEnvironmentString,
 } satisfies z.ZodRawShape;
 
 export const brainServiceEnvironmentSchema = z

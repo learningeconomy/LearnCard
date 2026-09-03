@@ -1,4 +1,5 @@
 import cache from '@cache';
+import { environment } from '@environment';
 import { TRPCError } from '@trpc/server';
 import { traceInternal } from '@tracing';
 import { WalletManifestValidator } from '@learncard/types';
@@ -12,8 +13,8 @@ import {
     ensureInstallTargetInternal,
     listInstallTargetsByIntentId,
 } from '@accesslayer/install-target/internal';
-import { listBindingsByEcosystem } from '@accesslayer/binding/read';
-import { revokeBinding as revokeBindingRecord } from '@accesslayer/binding/write';
+import { listBindingsByEcosystem, readBindingById } from '@accesslayer/binding/read';
+import { createBinding, revokeBinding as revokeBindingRecord } from '@accesslayer/binding/write';
 import type { InstallIntentRecordType } from 'types/install-intent';
 
 import { getIntentTargetId } from '@helpers/install-intent.helpers';
@@ -104,12 +105,11 @@ const getRedisClient = () => cache.redis ?? cache.node;
 let warnedAboutLocalCoordination = false;
 
 const allowLocalCoordination = (): boolean => {
-    const flag = process.env.INSTALL_INTENT_RECONCILER_ALLOW_LOCAL_COORDINATION;
+    const flag = environment.INSTALL_INTENT_RECONCILER_ALLOW_LOCAL_COORDINATION;
 
-    if (flag === 'true') return true;
-    if (flag === 'false') return false;
+    if (flag !== undefined) return flag;
 
-    return process.env.NODE_ENV !== 'production';
+    return environment.NODE_ENV !== 'production';
 };
 
 /**
@@ -150,12 +150,12 @@ const getInjectedFailureKey = (intentId: string, pass: string): string =>
     `install-intent-reconciler:inject-failure:${intentId}:${pass}`;
 
 const getMaxRetries = (): number => {
-    const parsed = Number.parseInt(process.env.INSTALL_INTENT_RECONCILER_MAX_RETRIES ?? '', 10);
+    const parsed = Number.parseInt(environment.INSTALL_INTENT_RECONCILER_MAX_RETRIES ?? '', 10);
     return Number.isFinite(parsed) ? parsed : DEFAULT_MAX_RETRIES;
 };
 
 const getBackoffMs = (): number => {
-    const parsed = Number.parseInt(process.env.INSTALL_INTENT_RECONCILER_BACKOFF_MS ?? '', 10);
+    const parsed = Number.parseInt(environment.INSTALL_INTENT_RECONCILER_BACKOFF_MS ?? '', 10);
     return Number.isFinite(parsed) ? parsed : DEFAULT_BACKOFF_MS;
 };
 
@@ -173,14 +173,14 @@ const recordLatency = (durationMs: number): void => {
 const iso = (date: Date): string => date.toISOString();
 
 const isGlobalKillSwitchEnabled = async (): Promise<boolean> => {
-    if (process.env.INSTALL_INTENT_RECONCILER_DISABLED === 'true') return true;
+    if (environment.INSTALL_INTENT_RECONCILER_DISABLED) return true;
 
     const flag = await cache.get(KILL_SWITCH_KEY);
     return flag === '1' || flag === 'true';
 };
 
 const isTenantKillSwitchEnabled = async (ecosystemId: string): Promise<boolean> => {
-    const perTenantEnv = process.env.INSTALL_INTENT_RECONCILER_DISABLED_ECOSYSTEM_IDS?.split(',')
+    const perTenantEnv = environment.INSTALL_INTENT_RECONCILER_DISABLED_ECOSYSTEM_IDS?.split(',')
         .map(value => value.trim())
         .filter(Boolean);
     if (perTenantEnv?.includes(ecosystemId)) return true;
@@ -197,7 +197,7 @@ const isKillSwitchEnabled = async (ecosystemId?: string): Promise<boolean> => {
 
 export const getStuckThresholdMs = (): number => {
     const parsed = Number.parseInt(
-        process.env.INSTALL_INTENT_RECONCILER_STUCK_THRESHOLD_MS ?? '',
+        environment.INSTALL_INTENT_RECONCILER_STUCK_THRESHOLD_MS ?? '',
         10
     );
     return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_STUCK_THRESHOLD_MS;
@@ -205,7 +205,7 @@ export const getStuckThresholdMs = (): number => {
 
 const getMaxStuckIntentsAlertThreshold = (): number => {
     const parsed = Number.parseInt(
-        process.env.INSTALL_INTENT_RECONCILER_ALERT_MAX_STUCK_INTENTS ?? '',
+        environment.INSTALL_INTENT_RECONCILER_ALERT_MAX_STUCK_INTENTS ?? '',
         10
     );
     return Number.isFinite(parsed) && parsed >= 0
@@ -215,7 +215,7 @@ const getMaxStuckIntentsAlertThreshold = (): number => {
 
 const getMaxDegradedIntentsAlertThreshold = (): number => {
     const parsed = Number.parseInt(
-        process.env.INSTALL_INTENT_RECONCILER_ALERT_MAX_DEGRADED_INTENTS ?? '',
+        environment.INSTALL_INTENT_RECONCILER_ALERT_MAX_DEGRADED_INTENTS ?? '',
         10
     );
     return Number.isFinite(parsed) && parsed >= 0
@@ -225,7 +225,7 @@ const getMaxDegradedIntentsAlertThreshold = (): number => {
 
 const getMaxFailedIntentsAlertThreshold = (): number => {
     const parsed = Number.parseInt(
-        process.env.INSTALL_INTENT_RECONCILER_ALERT_MAX_FAILED_INTENTS ?? '',
+        environment.INSTALL_INTENT_RECONCILER_ALERT_MAX_FAILED_INTENTS ?? '',
         10
     );
     return Number.isFinite(parsed) && parsed >= 0
@@ -239,7 +239,7 @@ const getTenantConcurrencyLimit = async (ecosystemId: string): Promise<number> =
     if (Number.isFinite(parsedConfigured) && parsedConfigured > 0) return parsedConfigured;
 
     const parsedEnv = Number.parseInt(
-        process.env.INSTALL_INTENT_RECONCILER_TENANT_CONCURRENCY ?? '',
+        environment.INSTALL_INTENT_RECONCILER_TENANT_CONCURRENCY ?? '',
         10
     );
     if (Number.isFinite(parsedEnv) && parsedEnv > 0) return parsedEnv;
@@ -571,7 +571,47 @@ const runInstallPass = async (
         });
     }
 
+    await proposeSpecBindings(current, actor);
+
     return current;
+};
+
+// ADR-008 §3.6: a bundle may PROPOSE bindings between its members; only an accountable
+// approver activates them. The approved spec carries the resolved proposals (targets already
+// materialized above), so each becomes a PROPOSED Binding record. Deterministic ids keep
+// re-reconciliation idempotent, mirroring getIntentTargetId for targets.
+const proposeSpecBindings = async (
+    intent: InstallIntentRecordType,
+    actor?: Pick<ReconcileOptions, 'actorDid' | 'actorProfileId'>
+): Promise<void> => {
+    const proposals = intent.spec?.bindings ?? [];
+
+    for (const [index, proposal] of proposals.entries()) {
+        const bindingId = `bind_${intent.intentId}_${index}`;
+
+        if (await readBindingById(bindingId)) continue;
+
+        const created = await createBinding({
+            apiVersion: 'lc.binding/v1',
+            bindingId,
+            ecosystemId: intent.ecosystemId,
+            capability: proposal.capability,
+            provider: proposal.provider,
+            consumer: proposal.consumer,
+            status: 'PROPOSED',
+        });
+
+        await createInstallIntentAuditEvent({
+            action: 'BINDING_PROPOSED',
+            actorProfileId: actor?.actorProfileId,
+            actorDid: actor?.actorDid,
+            ecosystemId: created.ecosystemId,
+            intentId: intent.intentId,
+            bindingId: created.bindingId,
+            authorityChangesSummary: proposal.reason,
+            afterSummary: { status: created.status, capability: created.capability },
+        });
+    }
 };
 
 const runAuthPass = async (

@@ -129,7 +129,7 @@ export type PlanBundleMaterialization = {
     infrastructureEffects: string[];
 };
 
-const BUNDLE_ECOSYSTEM_PROVIDER_SENTINEL = '$ecosystem';
+const BUNDLE_ECOSYSTEM_SENTINEL = '$ecosystem';
 
 export type EvaluateConsentPreflightInput = {
     ecosystemId: string;
@@ -258,7 +258,7 @@ export const expandBundle = (manifest: BundleManifest): BundleExpansion => {
 
     for (const binding of proposedBindings) {
         if (
-            binding.providerDeclarationId !== BUNDLE_ECOSYSTEM_PROVIDER_SENTINEL &&
+            binding.providerDeclarationId !== BUNDLE_ECOSYSTEM_SENTINEL &&
             !seenDeclarationIds.has(binding.providerDeclarationId)
         ) {
             throw new TRPCError({
@@ -267,7 +267,10 @@ export const expandBundle = (manifest: BundleManifest): BundleExpansion => {
             });
         }
 
-        if (!seenDeclarationIds.has(binding.consumerDeclarationId)) {
+        if (
+            binding.consumerDeclarationId !== BUNDLE_ECOSYSTEM_SENTINEL &&
+            !seenDeclarationIds.has(binding.consumerDeclarationId)
+        ) {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: `Bundle binding consumer ${binding.consumerDeclarationId} is unknown.`,
@@ -518,14 +521,7 @@ export const materializeBundlePlan = (input: {
         declarationId: string,
         endpoint: 'provider' | 'consumer'
     ): BindingEndpoint => {
-        if (declarationId === BUNDLE_ECOSYSTEM_PROVIDER_SENTINEL) {
-            if (endpoint !== 'provider') {
-                throw new TRPCError({
-                    code: 'BAD_REQUEST',
-                    message: 'Only bundle binding providers may reference $ecosystem.',
-                });
-            }
-
+        if (declarationId === BUNDLE_ECOSYSTEM_SENTINEL) {
             return {
                 resourceType: 'ECOSYSTEM',
                 resourceId: input.ecosystemId,
@@ -552,12 +548,15 @@ export const materializeBundlePlan = (input: {
     };
     const bindings = input.expandedBundle.proposedBindings.map(binding => {
         const providerMember =
-            binding.providerDeclarationId === BUNDLE_ECOSYSTEM_PROVIDER_SENTINEL
+            binding.providerDeclarationId === BUNDLE_ECOSYSTEM_SENTINEL
                 ? undefined
                 : memberByDeclarationId[binding.providerDeclarationId];
-        const consumerMember = memberByDeclarationId[binding.consumerDeclarationId];
+        const consumerMember =
+            binding.consumerDeclarationId === BUNDLE_ECOSYSTEM_SENTINEL
+                ? undefined
+                : memberByDeclarationId[binding.consumerDeclarationId];
 
-        if (!consumerMember) {
+        if (!consumerMember && binding.consumerDeclarationId !== BUNDLE_ECOSYSTEM_SENTINEL) {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: `Bundle binding consumer ${binding.consumerDeclarationId} is unknown.`,
@@ -572,11 +571,13 @@ export const materializeBundlePlan = (input: {
             );
         }
 
-        assertListingVersionSupportsCapability(
-            input.listingVersionsById[consumerMember.versionId]!,
-            binding.capability,
-            `Bundle binding consumer ${binding.consumerDeclarationId}`
-        );
+        if (consumerMember) {
+            assertListingVersionSupportsCapability(
+                input.listingVersionsById[consumerMember.versionId]!,
+                binding.capability,
+                `Bundle binding consumer ${binding.consumerDeclarationId}`
+            );
+        }
 
         return BindingProposalValidator.parse({
             capability: binding.capability,
@@ -611,7 +612,7 @@ export const requireEcosystemRole = async (
     const role =
         ecosystem.ownerProfileId === actorProfileId
             ? 'OWNER'
-            : (await getEcosystemMembershipRole(actorProfileId, ecosystemId)) ?? undefined;
+            : ((await getEcosystemMembershipRole(actorProfileId, ecosystemId)) ?? undefined);
 
     if (!role || !allowedRoles.includes(role)) {
         throw new TRPCError({

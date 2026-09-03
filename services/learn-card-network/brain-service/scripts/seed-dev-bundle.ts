@@ -32,6 +32,11 @@
  *   bun scripts/seed-dev-bundle.ts --bundle-name "Credential Engine" \
  *     --members "credential-registry=REGISTRY_SUBSCRIPTION,credential-finder"
  *
+ * `--default-bindings` declares ADR-008 §3.6 proposed bindings between members as
+ * `capability|providerDeclarationId|consumerDeclarationId|reason` entries separated by `;`.
+ * Use `$ecosystem` as the provider to bind from the installing ecosystem itself. Installing
+ * the bundle materializes each as a PROPOSED binding awaiting approval — never active.
+ *
  * Idempotent: re-running repairs the fixture (relisting, re-signing a stale or unsigned
  * manifest, re-pointing members) rather than duplicating it.
  */
@@ -108,13 +113,11 @@ const main = async (): Promise<void> => {
     const { createProfile } = await import('@accesslayer/profile/create');
     const { getProfileByProfileId } = await import('@accesslayer/profile/read');
     const { createAppStoreListing } = await import('@accesslayer/app-store-listing/create');
-    const { readAppStoreListingById, readAppStoreListingBySlug } = await import(
-        '@accesslayer/app-store-listing/read'
-    );
+    const { readAppStoreListingById, readAppStoreListingBySlug } =
+        await import('@accesslayer/app-store-listing/read');
     const { createListingVersion } = await import('@accesslayer/listing-version/create');
-    const { readListingVersionById, readListingVersionsForListing } = await import(
-        '@accesslayer/listing-version/read'
-    );
+    const { readListingVersionById, readListingVersionsForListing } =
+        await import('@accesslayer/listing-version/read');
 
     const bundleName = arg('bundle-name', 'Early Learning Starter');
     const slug = arg('slug', slugify(bundleName));
@@ -370,13 +373,35 @@ const main = async (): Promise<void> => {
         console.log(`  Listing:             ${listingId} (created)`);
     }
 
+    const defaultBindings: BundleManifest['defaultBindings'] = arg('default-bindings', '')
+        .split(';')
+        .map(entry => entry.trim())
+        .filter(Boolean)
+        .map(entry => {
+            const [capability, providerDeclarationId, consumerDeclarationId, reason] =
+                entry.split('|');
+
+            if (!capability || !providerDeclarationId || !consumerDeclarationId || !reason) {
+                throw new Error(
+                    `--default-bindings entry "${entry}" must be capability|provider|consumer|reason`
+                );
+            }
+
+            return {
+                capability: capability as BundleManifest['defaultBindings'][number]['capability'],
+                providerDeclarationId,
+                consumerDeclarationId,
+                reason,
+            };
+        });
+
     const unsignedManifest: Omit<BundleManifest, 'signature'> = {
         apiVersion: 'lc.bundle/v1',
         id: manifestId,
         version: manifestVersion,
         publisherDid,
         contains: members,
-        defaultBindings: [],
+        defaultBindings,
         preflight: [],
     };
 
@@ -392,8 +417,7 @@ const main = async (): Promise<void> => {
         { listingId, version: manifestVersion }
     );
     const existingVersionId = existingVersionResult.records[0]?.get('versionId') as
-        | string
-        | undefined;
+        string | undefined;
 
     let versionId: string;
 

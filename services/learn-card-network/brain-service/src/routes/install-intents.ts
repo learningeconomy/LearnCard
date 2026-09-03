@@ -276,6 +276,25 @@ const buildSingletonSpec = (
     entitlementRequirements: [],
 });
 
+// Re-planning feeds the previous proposal's bindings back in as `proposedBindings`, so the
+// bundle's own defaultBindings would otherwise be appended once per plan revision.
+const dedupeBindingProposals = (bindings: BindingProposal[]): BindingProposal[] => {
+    const seen = new Set<string>();
+
+    return bindings.filter(binding => {
+        const key = [
+            binding.capability,
+            binding.provider.resourceType,
+            binding.provider.resourceId,
+            binding.consumer.resourceType,
+            binding.consumer.resourceId,
+        ].join('|');
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+};
+
 const bindEcosystem = (ecosystemId: string, bindings: BindingProposal[]): BindingProposal[] => {
     return bindings.map(binding => ({
         ...binding,
@@ -429,10 +448,12 @@ const buildSpecForIntent = async (input: {
             spec: {
                 apiVersion: 'lc.install-spec/v1',
                 targets: materialized.targets,
-                bindings: bindEcosystem(input.ecosystemId, [
-                    ...materialized.bindings,
-                    ...input.proposedBindings,
-                ]),
+                bindings: dedupeBindingProposals(
+                    bindEcosystem(input.ecosystemId, [
+                        ...materialized.bindings,
+                        ...input.proposedBindings,
+                    ])
+                ),
                 pinnedVersionIds: materialized.pinnedVersionIds,
                 scopes,
                 consentTiers,
