@@ -3,7 +3,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('context');
 
 import type { AnalyticsProvider, AnalyticsProviderName } from './types';
-import type { AnalyticsEventName, EventPayload } from './events';
+import type { AnalyticsEventName, EventPayload, FeedbackIdeaPayload } from './events';
 import { NoopProvider } from './providers/noop';
 import { getSharedEventContext, shouldDropEvents } from './sharedContext';
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
@@ -86,6 +86,17 @@ function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
         track: async (event, properties) => {
             if (shouldDropEvents()) return;
             await provider.track(event, { ...properties, ...getSharedEventContext() });
+        },
+        submitFeedbackIdea: async properties => {
+            if (shouldDropEvents()) return;
+            await provider.submitFeedbackIdea({
+                source: properties.source,
+                message: properties.message,
+                currentRoute: properties.currentRoute,
+                ...(typeof properties.appVersion === 'string'
+                    ? { appVersion: properties.appVersion }
+                    : {}),
+            });
         },
         page: async (name, properties) => {
             if (shouldDropEvents()) return;
@@ -199,6 +210,13 @@ export function useAnalytics() {
         [provider]
     );
 
+    const submitFeedbackIdea = useCallback(
+        async (properties: FeedbackIdeaPayload) => {
+            await provider.submitFeedbackIdea(properties);
+        },
+        [provider]
+    );
+
     const page = useCallback(
         async (name: string, properties?: Record<string, unknown>) => {
             await provider.page(name, properties);
@@ -219,6 +237,7 @@ export function useAnalytics() {
 
     return {
         track,
+        submitFeedbackIdea,
         identify,
         page,
         reset,

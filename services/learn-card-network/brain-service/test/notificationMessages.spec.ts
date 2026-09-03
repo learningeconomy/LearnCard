@@ -11,6 +11,7 @@ import { getNotificationMessage, NotificationMessageKey } from '@helpers/notific
 const SUPPORTED_KEYS = [
     'boostReceived',
     'boostAccepted',
+    'boostAcceptedConnect',
     'credentialReceived',
     'endorsementReceived',
     'connectionAccepted',
@@ -71,6 +72,17 @@ describe('notificationMessages catalog', () => {
 });
 
 describe('getNotificationMessage — interpolation', () => {
+    it.each([
+        ['en', 'Ada claimed your credential — connect?'],
+        ['es', 'Ada reclamó tu credencial. ¿Conectar?'],
+        ['fr', 'Ada a réclamé votre justificatif — vous connecter ?'],
+        ['ar', 'استلم Ada اعتمادك — هل تريد التواصل؟'],
+    ])('renders the actionable boost-accepted message in %s', (locale, expectedBody) => {
+        const msg = getNotificationMessage('boostAcceptedConnect', locale, { name: 'Ada' });
+
+        expect(msg.body).toBe(expectedBody);
+    });
+
     it('interpolates {var} placeholders from params', () => {
         const msg = getNotificationMessage('boostReceived', 'en', { issuer: 'ACME' });
         expect(msg.title).toBe('Boost Received');

@@ -29,25 +29,8 @@ export const getCredentialSentToProfile = async (
       }
     | undefined
 > => {
-    // First check for Profile credentialSent relationships
-    const profileData = (
-        await Profile.findRelationships({
-            alias: 'credentialSent',
-            where: { relationship: { to: to.profileId }, target: { id } },
-        })
-    )[0];
-
-    if (profileData) {
-        return {
-            ...profileData,
-            source: inflateObject(profileData.source.dataValues as any),
-            relationship: inflateObject(
-                (profileData.relationship as any)?.dataValues ?? profileData.relationship
-            ),
-        };
-    }
-
-    // If not found, check for AppStoreListing credentialSent relationships
+    // Application issuance writes both listing and owner-profile attribution. Prefer the
+    // listing edge so downstream claim handling retains the real issuer provenance.
     const listingData = (
         await AppStoreListing.findRelationships({
             alias: 'credentialSent',
@@ -61,6 +44,23 @@ export const getCredentialSentToProfile = async (
             source: inflateObject(listingData.source.dataValues as any),
             relationship: inflateObject(
                 (listingData.relationship as any)?.dataValues ?? listingData.relationship
+            ),
+        };
+    }
+
+    const profileData = (
+        await Profile.findRelationships({
+            alias: 'credentialSent',
+            where: { relationship: { to: to.profileId }, target: { id } },
+        })
+    )[0];
+
+    if (profileData) {
+        return {
+            ...profileData,
+            source: inflateObject(profileData.source.dataValues as any),
+            relationship: inflateObject(
+                (profileData.relationship as any)?.dataValues ?? profileData.relationship
             ),
         };
     }

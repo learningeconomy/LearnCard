@@ -3,6 +3,8 @@
  * Add new events here with their corresponding payload types.
  */
 
+import type { FeedbackSource } from '../feedback/reporting/types';
+
 // ── LC-1853 Profile-building analytics ──────────────────────────────────────
 
 /** How the user added an item to their profile. Used by `profile_item_added` only. */
@@ -46,6 +48,9 @@ export interface ProfileSnapshot {
 /** Where a micro-feedback prompt was rendered. */
 export type FeedbackSurface = 'issue_success' | 'claim_interaction' | 'claim_oidc';
 
+/** Where the LC-2089 contacts invite was surfaced. */
+export type InviteSurface = 'empty_state' | 'menu';
+
 /** 3-point sentiment scale used by the SentimentStrip. */
 export type FeedbackSentiment = 'negative' | 'neutral' | 'positive';
 
@@ -60,6 +65,10 @@ export const AnalyticsEvents = {
     FEEDBACK_SENTIMENT_GIVEN: 'feedback_sentiment_given',
     FEEDBACK_FOLLOWUP_SUBMITTED: 'feedback_followup_submitted',
     FEEDBACK_FOLLOWUP_DISMISSED: 'feedback_followup_dismissed',
+
+    // LC-2086: explicit idea reports submitted from the feedback composer.
+    // Bugs route to Sentry; only ideas are tracked here.
+    FEEDBACK_IDEA_SUBMITTED: 'feedback_idea_submitted',
 
     // Advocacy asks earned by sustained positive sentiment.
     // NOTE: `store_review_requested` records that we *asked* the OS to show
@@ -79,6 +88,14 @@ export const AnalyticsEvents = {
     // Sharing & Link Generation
     GENERATE_SHARE_LINK: 'generate_share_link',
     GENERATE_CLAIM_LINK: 'generate_claim_link',
+
+    // LC-2089 contacts invite. `surface` separates the zero-contact empty
+    // state (an activation moment) from the "New +" menu row (a deliberate
+    // re-invite by someone who already has contacts). `method` records which share mechanism the
+    // platform actually offered — `clipboard` on desktop is expected, not a
+    // failure.
+    CONTACT_INVITE_SHARED: 'contact_invite_shared',
+    CONTACT_INVITE_QR_SHOWN: 'contact_invite_qr_shown',
 
     // Boost Sending
     SELF_BOOST: 'self_boost',
@@ -339,17 +356,21 @@ export interface AnalyticsEventPayloads {
         sentiment: FeedbackSentiment;
         reasons: string[];
         hasFreeText: boolean;
-        /**
-         * Optional free text. Only attached when the user's
-         * `bugReportsEnabled` preference allows it — treat as
-         * user-supplied PII downstream.
-         */
-        userNote?: string;
     };
 
     [AnalyticsEvents.FEEDBACK_FOLLOWUP_DISMISSED]: {
         surface: FeedbackSurface;
         sentiment: FeedbackSentiment;
+    };
+
+    /** LC-2086: explicit idea report routed through the analytics provider. */
+    [AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED]: {
+        /** Entry point that produced the report. */
+        source: FeedbackSource;
+        /** User-composed message — treat as user-supplied free text downstream. */
+        message: string;
+        currentRoute: string;
+        appVersion?: string;
     };
 
     [AnalyticsEvents.STORE_REVIEW_REQUESTED]: {
@@ -402,6 +423,18 @@ export interface AnalyticsEventPayloads {
         category?: string;
         boostType?: string;
         method: 'Claim Link' | string;
+    };
+
+    [AnalyticsEvents.CONTACT_INVITE_SHARED]: {
+        surface: InviteSurface;
+        /** `modal` = desktop web, which gets an in-app share modal, not an OS sheet. */
+        method: 'native' | 'web_share' | 'clipboard' | 'modal';
+        /** False when the user opened a share sheet and dismissed it. */
+        shared: boolean;
+    };
+
+    [AnalyticsEvents.CONTACT_INVITE_QR_SHOWN]: {
+        surface: InviteSurface;
     };
 
     [AnalyticsEvents.BOOST_CMS_DATA_ENTRY]: {
@@ -1263,3 +1296,7 @@ export interface AnalyticsEventPayloads {
 export type EventPayload<E extends AnalyticsEventName> = E extends keyof AnalyticsEventPayloads
     ? AnalyticsEventPayloads[E]
     : Record<string, unknown>;
+
+/** Runtime-allowlisted payload accepted by the stateless feedback idea operation. */
+export type FeedbackIdeaPayload =
+    AnalyticsEventPayloads[typeof AnalyticsEvents.FEEDBACK_IDEA_SUBMITTED];

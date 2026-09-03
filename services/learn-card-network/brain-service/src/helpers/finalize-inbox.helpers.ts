@@ -21,6 +21,7 @@ import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
+import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
 
 export async function finalizeInboxCredentialsForProfile(
     profile: ProfileType,
@@ -138,6 +139,18 @@ export async function finalizeInboxCredentialsForProfile(
                 await markInboxCredentialAsIssued(inboxCredential.id);
                 await markInboxCredentialAsIsAccepted(inboxCredential.id);
                 await createClaimedRelationship(profile.profileId, inboxCredential.id, 'finalize');
+
+                if (
+                    senderProfile &&
+                    !(inboxCredential.signingAuthority as { listingSlug?: string } | undefined)
+                        ?.listingSlug
+                ) {
+                    await handleConnectionPromptsForCredentialClaim({
+                        claimer: profile,
+                        sender: senderProfile,
+                        triggerId: `inbox:${inboxCredential.id}`,
+                    });
+                }
 
                 // Trigger webhook if configured
                 if (inboxCredential.webhookUrl) {

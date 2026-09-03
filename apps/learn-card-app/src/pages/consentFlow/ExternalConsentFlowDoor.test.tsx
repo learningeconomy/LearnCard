@@ -24,12 +24,14 @@ vi.mock('query-string', () => ({
             returnTo: 'https://example.com/callback',
             recipientToken: undefined,
         })),
+        stringify: vi.fn(() => 'uri=lc%3Anetwork%3Alocalhost%3Acontract%3Atest-123'),
     },
     parse: vi.fn(() => ({
         uri: 'lc:network:localhost:contract:test-123',
         returnTo: 'https://example.com/callback',
         recipientToken: undefined,
     })),
+    stringify: vi.fn(() => 'uri=lc%3Anetwork%3Alocalhost%3Acontract%3Atest-123'),
 }));
 
 // Mock Capacitor
@@ -91,6 +93,7 @@ const mockFns = {
     useConsentedContracts: vi.fn(),
     useCurrentUser: vi.fn(),
     initWallet: vi.fn(),
+    presentToast: vi.fn(),
 };
 
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
@@ -153,6 +156,8 @@ vi.mock('learn-card-base', () => ({
         Diploma: 'diploma',
         RawVC: 'raw-vc',
     },
+    ToastTypeEnum: { Error: 'error' },
+    useToast: () => ({ presentToast: mockFns.presentToast }),
     useModal: () => ({ newModal: vi.fn() }),
 }));
 

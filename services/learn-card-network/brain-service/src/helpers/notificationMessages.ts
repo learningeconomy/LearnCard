@@ -20,6 +20,7 @@
 export type NotificationMessageKey =
     | 'boostReceived'
     | 'boostAccepted'
+    | 'boostAcceptedConnect'
     | 'credentialReceived'
     | 'endorsementReceived'
     | 'connectionAccepted'
@@ -71,6 +72,10 @@ const en: LocaleCatalog = {
     boostAccepted: {
         title: 'Boost Accepted',
         body: '{name} has accepted your boost!',
+    },
+    boostAcceptedConnect: {
+        title: 'Boost Accepted',
+        body: '{name} claimed your credential — connect?',
     },
     credentialReceived: {
         title: 'Credential Received',
@@ -215,6 +220,10 @@ const es: LocaleCatalog = {
         title: 'Reconocimiento aceptado',
         body: '¡{name} ha aceptado tu reconocimiento!',
     },
+    boostAcceptedConnect: {
+        title: 'Reconocimiento aceptado',
+        body: '{name} reclamó tu credencial. ¿Conectar?',
+    },
     credentialReceived: {
         title: 'Credencial recibida',
         body: '{from} te ha enviado una credencial',
@@ -358,6 +367,10 @@ const fr: LocaleCatalog = {
         title: 'Reconnaissance acceptée',
         body: '{name} a accepté votre reconnaissance !',
     },
+    boostAcceptedConnect: {
+        title: 'Reconnaissance acceptée',
+        body: '{name} a réclamé votre justificatif — vous connecter ?',
+    },
     credentialReceived: {
         title: 'Titre reçu',
         body: '{from} vous a envoyé un titre',
@@ -500,6 +513,10 @@ const ar: LocaleCatalog = {
     boostAccepted: {
         title: 'تم قبول التحفيز',
         body: 'قام {name} بقبول التحفيز الخاص بك!',
+    },
+    boostAcceptedConnect: {
+        title: 'تم قبول التحفيز',
+        body: 'استلم {name} اعتمادك — هل تريد التواصل؟',
     },
     credentialReceived: {
         title: 'تم استلام شهادة',

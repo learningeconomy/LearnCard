@@ -1034,7 +1034,7 @@ const TestStep: React.FC<{
                         snippets={{
                             curl: `GET ${
                                 redirectUrl || 'https://your-app.com/api/learncard/callback'
-                            }?did=did:web:...&vp=eyJhbGciOiJFZDI1NTE5...`,
+                            }?challenge=...&vp=eyJhbGciOiJFZDI1NTE5...`,
                         }}
                     />
                 </div>

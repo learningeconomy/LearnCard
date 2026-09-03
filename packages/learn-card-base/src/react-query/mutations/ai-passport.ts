@@ -12,6 +12,7 @@ import {
 } from '../../stores/aiInsightRefreshStore';
 import { getLogger } from '../../logging/logger';
 import { addActiveLocaleToUrl } from '../../i18n';
+import { aiPassportFetch } from '../../helpers/aiPassportAuth';
 const log = getLogger('ai-passport');
 
 const aiInsightCredentialQueryKey = ['useAiInsightCredential'];
@@ -113,13 +114,14 @@ export const usePreloadAssessment = () => {
 
     return useMutation({
         mutationFn: async ({ did, summaryCredential }: { did: string; summaryCredential: any }) => {
-            const res = await fetch(
-                addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/assessment?did=${did}`),
+            const res = await aiPassportFetch(
+                addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/assessment`),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ summaryCredential }),
-                }
+                },
+                did
             );
 
             if (!res.ok) throw new Error('Failed to preload assessment');
@@ -146,15 +148,14 @@ type FinishAssessmentPayload = {
 export const useFinishAssessmentMutation = () => {
     return useMutation({
         mutationFn: async ({ did, assessmentQA, session, sessionUri }: FinishAssessmentPayload) => {
-            const response = await fetch(
-                addActiveLocaleToUrl(
-                    `${networkStore.get.aiServiceUrl()}/finish-assessment?did=${did}`
-                ),
+            const response = await aiPassportFetch(
+                addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/finish-assessment`),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ assessmentQA, session, sessionUri }),
-                }
+                },
+                did
             );
 
             if (!response.ok) {
@@ -178,18 +179,16 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
             fileType: UploadTypesEnum;
         }) => {
             try {
-                const response = await fetch(
-                    // parse-file runs the uploaded document through the AI to draft
-                    // credential prose, so it needs the locale like the other
-                    // generative routes.
+                const response = await aiPassportFetch(
                     addActiveLocaleToUrl(
-                        `${networkStore.get.aiServiceUrl()}/credentials/parse-file?did=${did}`
+                        `${networkStore.get.aiServiceUrl()}/credentials/parse-file`
                     ),
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ file, fileType }),
-                    }
+                    },
+                    did
                 );
 
                 const responseJson: {

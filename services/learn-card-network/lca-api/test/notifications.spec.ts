@@ -1,5 +1,8 @@
+import { vi } from 'vitest';
+
 import { getUser } from './helpers/getClient';
 import { Notifications } from '@accesslayer/notifications';
+import * as PushNotifications from '@helpers/pushNotifications.helpers';
 import {
     LCNProfile,
     LCNNotificationTypeEnumValidator,
@@ -63,6 +66,159 @@ describe('Notifications', () => {
                     getTestNotification(userA.learnCard.id.did(), userB.learnCard.id.did())
                 )
             ).rejects.toThrow();
+        });
+
+        it('reports a definitive failure when durable notification storage fails', async () => {
+            const notification = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+                undefined,
+                {
+                    metadata: {
+                        connectionPrompt: {
+                            promptId: '11111111-1111-4111-8111-111111111111',
+                            counterpartProfileId: 'userb',
+                        },
+                    },
+                }
+            );
+            const insertSpy = vi
+                .spyOn(Notifications, 'insertOne')
+                .mockRejectedValue(new Error('injected insert failure'));
+            const updateSpy = vi
+                .spyOn(Notifications, 'updateOne')
+                .mockRejectedValue(new Error('injected upsert failure'));
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userA.clients.authorizedDidAuth.notifications.sendNotification(notification)
+                ).resolves.toBe(false);
+                await expect(Notifications.countDocuments({})).resolves.toBe(0);
+            } finally {
+                consoleErrorSpy.mockRestore();
+                updateSpy.mockRestore();
+                insertSpy.mockRestore();
+            }
+        });
+
+        it('does not definitively reject after an ambiguous Mongo write failure', async () => {
+            const notification = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+                undefined,
+                {
+                    metadata: {
+                        connectionPrompt: {
+                            promptId: '44444444-4444-4444-8444-444444444444',
+                            counterpartProfileId: 'userb',
+                        },
+                    },
+                }
+            );
+            const ambiguousWriteError = Object.assign(
+                new Error('connection timed out after sending the write'),
+                { name: 'MongoNetworkTimeoutError' }
+            );
+            const updateSpy = vi
+                .spyOn(Notifications, 'updateOne')
+                .mockRejectedValue(ambiguousWriteError);
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userA.clients.authorizedDidAuth.notifications.sendNotification(notification)
+                ).rejects.toThrow('connection timed out after sending the write');
+                await expect(Notifications.countDocuments({})).resolves.toBe(0);
+            } finally {
+                consoleErrorSpy.mockRestore();
+                updateSpy.mockRestore();
+            }
+        });
+
+        it('accepts durable storage when push fails and retries without another insert or push', async () => {
+            const notification = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+                undefined,
+                {
+                    metadata: {
+                        connectionPrompt: {
+                            promptId: '22222222-2222-4222-8222-222222222222',
+                            counterpartProfileId: 'userb',
+                        },
+                    },
+                }
+            );
+            const pushSpy = vi
+                .spyOn(PushNotifications, 'sendPushNotification')
+                .mockRejectedValue(new Error('injected push failure'));
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            try {
+                await expect(
+                    userA.clients.authorizedDidAuth.notifications.sendNotification(notification)
+                ).resolves.toBe(true);
+                await expect(
+                    userA.clients.authorizedDidAuth.notifications.sendNotification(notification)
+                ).resolves.toBe(true);
+
+                await expect(
+                    Notifications.countDocuments({
+                        'to.did': userA.learnCard.id.did(),
+                        'data.metadata.connectionPrompt.promptId':
+                            '22222222-2222-4222-8222-222222222222',
+                    })
+                ).resolves.toBe(1);
+                expect(pushSpy).toHaveBeenCalledTimes(1);
+            } finally {
+                consoleErrorSpy.mockRestore();
+                pushSpy.mockRestore();
+            }
+        });
+
+        it('deduplicates actionable prompts by recipient and prompt id without changing legacy behavior', async () => {
+            const actionable = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+                undefined,
+                {
+                    metadata: {
+                        connectionPrompt: {
+                            promptId: '33333333-3333-4333-8333-333333333333',
+                            counterpartProfileId: 'userb',
+                        },
+                    },
+                }
+            );
+            const legacy = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+            );
+
+            await Promise.all([
+                userA.clients.authorizedDidAuth.notifications.sendNotification(actionable),
+                userA.clients.authorizedDidAuth.notifications.sendNotification(actionable),
+            ]);
+            await userA.clients.authorizedDidAuth.notifications.sendNotification(legacy);
+            await userA.clients.authorizedDidAuth.notifications.sendNotification(legacy);
+
+            await expect(
+                Notifications.countDocuments({
+                    'data.metadata.connectionPrompt.promptId':
+                        '33333333-3333-4333-8333-333333333333',
+                })
+            ).resolves.toBe(1);
+            await expect(
+                Notifications.countDocuments({
+                    'data.metadata.connectionPrompt.promptId': { $exists: false },
+                })
+            ).resolves.toBe(2);
         });
     });
 
@@ -569,9 +725,10 @@ describe('Notifications', () => {
                 LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
             ]);
 
-            const connectionRequests = await userA.clients.fullAuth.notifications.queryNotifications({
-                query: { type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST },
-            });
+            const connectionRequests =
+                await userA.clients.fullAuth.notifications.queryNotifications({
+                    query: { type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST },
+                });
             expect(connectionRequests.notifications).toHaveLength(2);
 
             const boostReceived = await userA.clients.fullAuth.notifications.queryNotifications({
@@ -579,9 +736,10 @@ describe('Notifications', () => {
             });
             expect(boostReceived.notifications).toHaveLength(1);
 
-            const credentialReceived = await userA.clients.fullAuth.notifications.queryNotifications({
-                query: { type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED },
-            });
+            const credentialReceived =
+                await userA.clients.fullAuth.notifications.queryNotifications({
+                    query: { type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED },
+                });
             expect(credentialReceived.notifications).toHaveLength(1);
         });
 
@@ -696,9 +854,11 @@ describe('Notifications', () => {
             // Archive one
             await updateSomeNotifications(userA, { archived: true }, 1);
 
-            const unarchivedResults = await userA.clients.fullAuth.notifications.queryNotifications({
-                query: { archived: false },
-            });
+            const unarchivedResults = await userA.clients.fullAuth.notifications.queryNotifications(
+                {
+                    query: { archived: false },
+                }
+            );
             expect(unarchivedResults.notifications).toHaveLength(2);
 
             const archivedResults = await userA.clients.fullAuth.notifications.queryNotifications({
@@ -818,9 +978,9 @@ describe('Notifications', () => {
 
             expect(result.notifications).toHaveLength(3);
             if (result.notifications[0]?.sent && result.notifications[2]?.sent) {
-                expect(
-                    new Date(result.notifications[0].sent).getTime()
-                ).toBeLessThan(new Date(result.notifications[2].sent).getTime());
+                expect(new Date(result.notifications[0].sent).getTime()).toBeLessThan(
+                    new Date(result.notifications[2].sent).getTime()
+                );
             }
         });
 
@@ -846,9 +1006,9 @@ describe('Notifications', () => {
 
             expect(result.notifications).toHaveLength(3);
             if (result.notifications[0]?.sent && result.notifications[2]?.sent) {
-                expect(
-                    new Date(result.notifications[0].sent).getTime()
-                ).toBeGreaterThan(new Date(result.notifications[2].sent).getTime());
+                expect(new Date(result.notifications[0].sent).getTime()).toBeGreaterThan(
+                    new Date(result.notifications[2].sent).getTime()
+                );
             }
         });
 

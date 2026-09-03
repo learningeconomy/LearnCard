@@ -12,6 +12,7 @@ export * from './components/learnCard/learn-card-activity-list/LearnCardActivity
 export * from './components/learnCard/LearnCardActivity';
 export * from './components/learnCard/learn-card/LearnCard';
 export * from './components/profilePicture/ProfilePicture';
+export * from './components/connection-prompts';
 export * from './components/social-logins/SocialLogins';
 export * from './components/sidemenu/SideMenu';
 export * from './components/Background/CurvedBackdrop';
@@ -44,6 +45,7 @@ export * from './components/launchpad-app-list/LaunchPadBecomeAnApp';
 export * from './components/wrappers/BoostGenericCardWrapper';
 export * from './components/modals/useModal';
 export * from './components/modals/ModalsContext';
+export * from './components/modals/ModalAccessibilityManager';
 export * from './components/modals/modals.helpers';
 export * from './components/modals/Modals';
 export * from './components/modals/CancelModal';
@@ -213,6 +215,7 @@ export {
 } from './stores/nanoStores/chatStore';
 
 export * from './helpers/aiErrors';
+export * from './helpers/aiPassportAuth';
 export * from './helpers/credentialHelpers';
 export * from './helpers/credentialIngestion';
 export * from './helpers/credentials/queries';
@@ -263,6 +266,7 @@ export * from './react-query/queries/queries';
 export * from './react-query/queries/vcQueries';
 export * from './react-query/queries/notifications';
 export * from './react-query/queries/aiPassport-queries';
+export * from './react-query/connectionPrompts';
 export * from './react-query/mutations/mutations';
 export * from './react-query/mutations/notifications';
 export * from './react-query/mutations/boosts';
@@ -303,3 +307,4 @@ export * from './svgs/ScoutsLogo';
 export * from './svgs/ScoutLogoAndText';
 export * from './svgs/Compass';
 export * from './logging/logger';
+export * from './logging/diagnosticLogBuffer';

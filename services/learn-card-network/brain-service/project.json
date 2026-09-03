@@ -84,6 +84,13 @@
                 "command": "bun run test:watch",
                 "cwd": "{root}/services/learn-card-network/brain-service"
             }
+        },
+        "test:integration": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "tests"],
+            "options": {
+                "script": "test:integration"
+            }
         }
     }
 }

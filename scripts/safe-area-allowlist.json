@@ -27,7 +27,6 @@
         "apps/learn-card-app/src/pages/consentFlow/ConsentFlowSyncCard.tsx",
         "apps/learn-card-app/src/pages/consentFlow/ConsentFlowSyncData.tsx",
         "apps/learn-card-app/src/pages/credentialStorage/vpr/VprQueryByExample.tsx",
-        "apps/learn-card-app/src/pages/dashboard/DashboardView.tsx",
         "apps/learn-card-app/src/pages/launchPad/AppListingPage.tsx",
         "apps/learn-card-app/src/pages/launchPad/ConsentFlowComingSoon.tsx",
         "apps/learn-card-app/src/pages/launchPad/useAppLaunch.tsx",
