@@ -31,7 +31,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
     // Handle both array and paginated object cases
     const contracts: ConsentFlowContractDetails[] = Array.isArray(contractsData)
         ? contractsData
-        : (contractsData as { records?: ConsentFlowContractDetails[] })?.records ?? [];
+        : ((contractsData as { records?: ConsentFlowContractDetails[] })?.records ?? []);
 
     const [isOpen, setIsOpen] = useState(false);
 

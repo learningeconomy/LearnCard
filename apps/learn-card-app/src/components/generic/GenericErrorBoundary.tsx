@@ -8,6 +8,7 @@ import {
 } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 import { m } from '../../paraglide/messages.js';
+import { environment } from '../../config/environment';
 const log = getLogger('generic-error-boundary');
 
 import SpilledCup from 'learn-card-base/svgs/SpilledCup';
@@ -46,7 +47,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
 
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const showError = process.env.NODE_ENV === 'development' || isLocalhost;
+    const showError = environment.DEV || isLocalhost;
 
     const isChunkError = isStaleChunkError(error);
 

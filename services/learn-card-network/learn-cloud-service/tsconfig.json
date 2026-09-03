@@ -1,25 +1,17 @@
 {
+    "extends": "../../../tsconfig.node.json",
     "compilerOptions": {
-        "lib": ["es2022"],
-        "module": "esnext",
-        "moduleResolution": "node",
+        "noEmit": false,
         "resolveJsonModule": true,
         "removeComments": true,
         "preserveConstEnums": true,
-        "strict": true,
-        "alwaysStrict": true,
-        "strictNullChecks": true,
         "noUncheckedIndexedAccess": true,
-
-        "noImplicitAny": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "allowUnreachableCode": false,
         "noFallthroughCasesInSwitch": true,
-
-        "target": "es2022",
         "outDir": "dist",
         "declaration": true,
         "declarationMap": true,
@@ -31,6 +23,7 @@
             "@accesslayer/*": ["src/accesslayer/*"],
             "@cache": ["src/cache/index.ts"],
             "@cache/*": ["src/cache/*"],
+            "@environment": ["src/config/environment.ts"],
             "@helpers/*": ["src/helpers/*"],
             "@models": ["src/models/index.ts"],
             "@mongo": ["src/mongo.ts"],
@@ -38,12 +31,7 @@
             "@routes/*": ["src/routes/*"],
             "types/*": ["src/types/*"]
         },
-
-        "esModuleInterop": true,
-        "allowSyntheticDefaultImports": true,
-        "allowJs": false,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
+        "allowJs": false
     },
     "include": ["src", "test"],
     "exclude": ["./dist/**/*", "./node_modules/**/*"]

@@ -222,10 +222,10 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                                 index === 0
                                     ? 'translate-x-0 text-left'
                                     : index === tickValues.length - 1
-                                    ? '-translate-x-full text-right'
-                                    : index === 2
-                                    ? '-translate-x-1/2 text-center'
-                                    : '-translate-x-1/2 text-center'
+                                      ? '-translate-x-full text-right'
+                                      : index === 2
+                                        ? '-translate-x-1/2 text-center'
+                                        : '-translate-x-1/2 text-center'
                             }`}
                             style={{ left: `${getPositionFromValue(tickValue)}%` }}
                         >
@@ -254,8 +254,8 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                                     markerLeft <= 0
                                         ? 'translate(0, -50%)'
                                         : markerLeft >= 100
-                                        ? 'translate(calc(-100% + 4px), -50%)'
-                                        : 'translate(-50%, -50%)',
+                                          ? 'translate(calc(-100% + 4px), -50%)'
+                                          : 'translate(-50%, -50%)',
                             }}
                             aria-hidden="true"
                         >

@@ -1,3 +1,8 @@
+import {
+    environment,
+    getNotificationRuntimeEnvironment,
+    type NotificationRuntimeEnvironment,
+} from '@environment';
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { LCNNotification } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -8,8 +13,6 @@ import { randomUUID } from 'crypto';
 
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
-
-const isTestEnvironment = (): boolean => String(process.env.NODE_ENV) === 'test';
 
 type NotificationDeliveryOptions = {
     propagateDirectWebhookTransportErrors?: boolean;
@@ -56,10 +59,10 @@ const isLocalWebhookUrl = (value: string): boolean => {
     }
 };
 
-const getLocalNotificationsWebhookUrl = (): string => {
-    const port = process.env.NOTIFICATIONS_SERVICE_PORT ?? '5100';
-
-    return `http://localhost:${port}/api/notifications/send`;
+const getLocalNotificationsWebhookUrl = (
+    runtimeEnvironment: NotificationRuntimeEnvironment
+): string => {
+    return `http://localhost:${runtimeEnvironment.NOTIFICATIONS_SERVICE_PORT}/api/notifications/send`;
 };
 
 const extractNotificationWebhookSuccess = (value: unknown): boolean | null => {
@@ -103,8 +106,9 @@ export const parseNotificationWebhookResponse = (
     return false;
 };
 
-export const resolveNotificationWebhookUrl = (
-    notification: LCNNotification
+const resolveNotificationWebhookUrlForEnvironment = (
+    notification: LCNNotification,
+    runtimeEnvironment: NotificationRuntimeEnvironment
 ): string | undefined => {
     if (typeof notification.webhookUrl === 'string') {
         return notification.webhookUrl;
@@ -112,9 +116,9 @@ export const resolveNotificationWebhookUrl = (
 
     const profileWebhook =
         typeof notification.to !== 'string' ? notification.to.notificationsWebhook : undefined;
-    const envWebhook = process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
+    const envWebhook = runtimeEnvironment.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
 
-    if (process.env.IS_OFFLINE) {
+    if (runtimeEnvironment.IS_OFFLINE) {
         if (typeof envWebhook === 'string' && isLocalWebhookUrl(envWebhook)) {
             return envWebhook;
         }
@@ -123,7 +127,7 @@ export const resolveNotificationWebhookUrl = (
             return profileWebhook;
         }
 
-        return getLocalNotificationsWebhookUrl();
+        return getLocalNotificationsWebhookUrl(runtimeEnvironment);
     }
 
     if (typeof profileWebhook === 'string') {
@@ -133,11 +137,20 @@ export const resolveNotificationWebhookUrl = (
     return envWebhook;
 };
 
-const pollUrl = process.env.NOTIFICATIONS_QUEUE_POLL_URL;
+export const resolveNotificationWebhookUrl = (
+    notification: LCNNotification
+): string | undefined => {
+    return resolveNotificationWebhookUrlForEnvironment(
+        notification,
+        getNotificationRuntimeEnvironment()
+    );
+};
+
+const pollUrl = environment.NOTIFICATIONS_QUEUE_POLL_URL;
 
 const sqs = new SQSClient({
     apiVersion: 'latest',
-    region: process.env.AWS_REGION,
+    region: environment.AWS_REGION,
     ...(pollUrl && { endpoint: pollUrl.split('/').slice(0, -1).join('/') }),
 });
 
@@ -145,7 +158,9 @@ export async function addNotificationToQueue(
     notification: LCNNotification,
     options: NotificationDeliveryOptions = {}
 ) {
-    if (process.env.IS_E2E_TEST) {
+    const runtimeEnvironment = getNotificationRuntimeEnvironment();
+
+    if (runtimeEnvironment.IS_E2E_TEST) {
         /**
          * For end-to-end tests, store the last delivery in cache
          */
@@ -153,12 +168,12 @@ export async function addNotificationToQueue(
     }
 
     // If running unit tests, do not attempt to deliver (keep legacy behavior for tests)
-    if (isTestEnvironment()) {
+    if (runtimeEnvironment.NODE_ENV === 'test') {
         return;
     }
 
     // In local development (offline or missing SQS URL), deliver directly via webhook
-    if (process.env.IS_OFFLINE || !process.env.NOTIFICATIONS_QUEUE_URL) {
+    if (runtimeEnvironment.IS_OFFLINE || !runtimeEnvironment.NOTIFICATIONS_QUEUE_URL) {
         console.log(
             'Notifications Helpers - Local dev fallback: sending directly via sendNotification'
         );
@@ -167,7 +182,7 @@ export async function addNotificationToQueue(
     }
 
     const command = new SendMessageCommand({
-        QueueUrl: process.env.NOTIFICATIONS_QUEUE_URL,
+        QueueUrl: runtimeEnvironment.NOTIFICATIONS_QUEUE_URL,
         MessageBody: JSON.stringify(notification),
     });
 
@@ -178,10 +193,15 @@ export async function sendNotification(
     notification: LCNNotification,
     options: NotificationDeliveryOptions = {}
 ) {
+    const runtimeEnvironment = getNotificationRuntimeEnvironment();
+
     let directWebhookRequestStarted = false;
 
     try {
-        const notificationsWebhook = resolveNotificationWebhookUrl(notification);
+        const notificationsWebhook = resolveNotificationWebhookUrlForEnvironment(
+            notification,
+            runtimeEnvironment
+        );
 
         if (!notificationsWebhook) {
             return false;
@@ -189,7 +209,7 @@ export async function sendNotification(
 
         if (typeof notification.to !== 'string') {
             notification.to.did = getDidWeb(
-                process.env.DOMAIN_NAME ?? 'network.learncard.com',
+                runtimeEnvironment.DOMAIN_NAME ?? 'network.learncard.com',
                 notification.to.profileId ?? ''
             );
         }
@@ -199,7 +219,7 @@ export async function sendNotification(
             notification.from.profileId
         ) {
             notification.from.did = getDidWeb(
-                process.env.DOMAIN_NAME ?? 'network.learncard.com',
+                runtimeEnvironment.DOMAIN_NAME ?? 'network.learncard.com',
                 notification.from.profileId
             );
         }
@@ -288,7 +308,7 @@ export async function sendNotification(
             return notificationDelivered;
         }
     } catch (error) {
-        if (!isTestEnvironment()) {
+        if (runtimeEnvironment.NODE_ENV !== 'test') {
             console.error('Notifications Helpers - Error While Sending:', error);
         }
 

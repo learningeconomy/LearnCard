@@ -92,8 +92,8 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onSte
                                 isCurrent
                                     ? 'bg-cyan-100 text-cyan-700 font-medium'
                                     : isComplete
-                                    ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 cursor-pointer'
-                                    : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                      ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 cursor-pointer'
+                                      : 'bg-gray-50 text-gray-400 cursor-not-allowed'
                             }`}
                         >
                             <div
@@ -101,8 +101,8 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onSte
                                     isCurrent
                                         ? 'bg-cyan-500 text-white'
                                         : isComplete
-                                        ? 'bg-emerald-500 text-white'
-                                        : 'bg-gray-200 text-gray-500'
+                                          ? 'bg-emerald-500 text-white'
+                                          : 'bg-gray-200 text-gray-500'
                                 }`}
                             >
                                 {isComplete ? <Check className="w-3.5 h-3.5" /> : index + 1}
@@ -221,8 +221,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                 const integrationData = await wallet.invoke.getIntegration(integrationId);
                 const isActive = integrationData?.status === 'active';
                 const guideState = integrationData?.guideState as
-                    | PartnerOnboardingGuideState
-                    | undefined;
+                    PartnerOnboardingGuideState | undefined;
 
                 // Ensure guideType is set to 'course-catalog' for this wizard
                 if (integrationData && integrationData.guideType !== 'course-catalog') {
@@ -244,7 +243,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                     isLive: isActive,
                     currentStep: isActive
                         ? ONBOARDING_STEPS.length - 1
-                        : guideState?.setupStep ?? 0,
+                        : (guideState?.setupStep ?? 0),
                 }));
             } catch (err) {
                 log.error('Failed to load integration:', err);
@@ -277,8 +276,7 @@ const PartnerOnboardingWizard: React.FC = () => {
             // Track setup progress on the server (fire-and-forget with error logging)
             if (prev.project?.id) {
                 const currentGuideState = currentIntegration?.guideState as
-                    | PartnerOnboardingGuideState
-                    | undefined;
+                    PartnerOnboardingGuideState | undefined;
                 updateIntegrationMutation.mutate(
                     {
                         id: prev.project.id,
@@ -360,8 +358,7 @@ const PartnerOnboardingWizard: React.FC = () => {
 
         try {
             const currentGuideState = currentIntegration?.guideState as
-                | PartnerOnboardingGuideState
-                | undefined;
+                PartnerOnboardingGuideState | undefined;
             await updateIntegrationMutation.mutateAsync({
                 id: state.project.id,
                 updates: {
@@ -683,8 +680,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
                 const integrationData = await wallet.invoke.getIntegration(integrationId);
                 const isActive = integrationData?.status === 'active';
                 const guideState = integrationData?.guideState as
-                    | PartnerOnboardingGuideState
-                    | undefined;
+                    PartnerOnboardingGuideState | undefined;
 
                 // Ensure guideType is set to 'course-catalog'
                 if (integrationData && integrationData.guideType !== 'course-catalog') {
@@ -706,7 +702,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
                     isLive: isActive,
                     currentStep: isActive
                         ? ONBOARDING_STEPS.length - 1
-                        : guideState?.setupStep ?? 0,
+                        : (guideState?.setupStep ?? 0),
                 }));
             } catch (err) {
                 log.error('Failed to load integration:', err);
@@ -737,8 +733,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
 
             if (prev.project?.id) {
                 const currentGuideState = currentIntegration?.guideState as
-                    | PartnerOnboardingGuideState
-                    | undefined;
+                    PartnerOnboardingGuideState | undefined;
 
                 updateIntegrationMutation.mutate(
                     {
@@ -820,8 +815,7 @@ export const PartnerOnboardingWizardContent: React.FC<{
 
         try {
             const currentGuideState = currentIntegration?.guideState as
-                | PartnerOnboardingGuideState
-                | undefined;
+                PartnerOnboardingGuideState | undefined;
 
             await updateIntegrationMutation.mutateAsync({
                 id: state.project.id,
