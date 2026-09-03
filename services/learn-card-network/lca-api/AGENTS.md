@@ -41,23 +41,23 @@ Every request goes through `createContext` in `src/routes/index.ts`, which:
 
 The `keysRouter` implements the server side of Shamir Secret Sharing key management used by `@learncard/sss-key-manager`:
 
-| Route                               | Purpose                                                                                                                                             |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST /keys/auth-share`             | Fetch the encrypted auth share for a user by contact method + provider                                                                              |
-| `PUT /keys/auth-share`              | Store / rotate the auth share; manages `shareVersion` for historical lookup                                                                         |
-| `GET /keys/recovery`                | Fetch an encrypted recovery share (passkey / phrase / backup)                                                                                       |
-| `POST /keys/recovery`               | Register a recovery method (passkey / phrase / backup / email)                                                                                      |
-| `POST /keys/recovery-email`         | Start recovery email verification (sends 6-digit OTP)                                                                                               |
-| `POST /keys/recovery-email/verify`  | Verify the OTP and persist the recovery email on the UserKey                                                                                        |
-| `POST /keys/email-backup`           | Relay the emailed recovery share to the user's primary or recovery email. **Share is never persisted** — in-memory for the duration of the request. |
-| `POST /keys/upgrade-contact-method` | Upgrade phone-only users to email + phone                                                                                                           |
-| `POST /keys/migrate`                | Mark a UserKey as migrated from the legacy Web3Auth pathway                                                                                         |
+| Route                               | Purpose                                                                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `POST /keys/auth-share`             | Fetch the encrypted auth share for a user by contact method + provider                                          |
+| `PUT /keys/auth-share`              | Store / rotate the auth share; manages `shareVersion` for historical lookup                                     |
+| `GET /keys/recovery`                | Fetch an encrypted recovery share (passkey / phrase / backup)                                                   |
+| `POST /keys/recovery`               | Register a recovery method (passkey / phrase / backup / email)                                                  |
+| `POST /keys/recovery-email`         | Start recovery email verification (sends 6-digit OTP)                                                           |
+| `POST /keys/recovery-email/verify`  | Verify the OTP and persist the recovery email on the UserKey                                                    |
+| `POST /keys/email-backup`           | Proxy a client-encrypted recovery payload to the isolated email relay. The share is never visible to `lca-api`. |
+| `POST /keys/upgrade-contact-method` | Upgrade phone-only users to email + phone                                                                       |
+| `POST /keys/migrate`                | Mark a UserKey as migrated from the legacy Web3Auth pathway                                                     |
 
 ### Important Invariants
 
 -   **Auth shares are encrypted at rest** with a KEK derived from `SEED`. Losing `SEED` means every stored auth share is permanently unrecoverable.
 -   **Recovery shares are encrypted client-side** (except the phrase method, which stores only shareVersion metadata).
--   **Email share is never written to the DB.** The `sendEmailBackup` route holds it in memory only for the duration of the request; Postmark receives it but never stores it.
+-   **Email share is encrypted before leaving the client.** The `sendEmailBackup` route receives only a relay-key ciphertext envelope and a confirmation code, then waits for isolated relay acceptance before recording pending recovery metadata.
 -   **`shareVersion` pairs a device share with a matching auth share.** On rotation, previous versions are kept in `previousAuthShares` so users with stale device shares can still recover.
 
 ## Email Delivery & Tenant Branding

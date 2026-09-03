@@ -1,6 +1,6 @@
 /**
  * Atomic Share Operations
- * 
+ *
  * Provides verified split operations and atomic updates with rollback capability.
  * These functions ensure that private keys can NEVER be lost due to partial failures.
  */
@@ -22,6 +22,7 @@ export interface AtomicUpdateOptions {
 export interface StorageOperations {
     storeDevice: (share: string) => Promise<void>;
     storeAuth: (share: string) => Promise<void>;
+    clearDevice?: () => Promise<void>;
     getDevice?: () => Promise<string | null>;
     getAuth?: () => Promise<string | null>;
 }
@@ -52,10 +53,10 @@ export class AtomicUpdateError extends Error {
 
 /**
  * Split a private key into shares and verify ALL combinations reconstruct correctly.
- * 
+ *
  * This function will NOT return until verification passes. If verification fails,
  * it throws an error - no shares are ever returned that don't reconstruct the key.
- * 
+ *
  * @param privateKey - The private key to split (hex string)
  * @returns Verified shares that are guaranteed to reconstruct the key
  * @throws ShareVerificationError if any share combination fails verification
@@ -95,17 +96,17 @@ export async function splitAndVerify(privateKey: string): Promise<AtomicSplitRes
 
 /**
  * Atomically update shares with rollback on failure.
- * 
+ *
  * This function ensures that either:
  * 1. Both device and auth shares are updated successfully, OR
  * 2. The previous state is restored (rollback)
- * 
+ *
  * The operation flow:
  * 1. Generate and verify new shares
  * 2. Store device share locally
  * 3. Store auth share on server
  * 4. If step 3 fails, rollback step 2
- * 
+ *
  * @param privateKey - The private key to split
  * @param storage - Storage operations for device and auth shares
  * @param options - Options including previous shares for rollback
@@ -150,22 +151,35 @@ export async function atomicShareUpdate(
         // Phase 3: Store auth share on server
         await storage.storeAuth(newShares.authShare);
     } catch (e) {
-        // ROLLBACK: Restore previous device share if we have it
-        if (options.previousDeviceShare && deviceStored) {
+        let rolledBack = false;
+
+        // ROLLBACK: restore the previous share, or remove the newly-written
+        // share when this was an initial setup with no previous local state.
+        if (deviceStored) {
             try {
-                await storage.storeDevice(options.previousDeviceShare);
-                options.onRollback?.('Server storage failed, restored previous device share');
+                if (options.previousDeviceShare !== undefined) {
+                    await storage.storeDevice(options.previousDeviceShare);
+                    options.onRollback?.('Server storage failed, restored previous device share');
+                    rolledBack = true;
+                } else if (storage.clearDevice) {
+                    await storage.clearDevice();
+                    options.onRollback?.('Server storage failed, removed new device share');
+                    rolledBack = true;
+                }
             } catch (rollbackError) {
                 // Rollback failed - this is a critical error
                 // The user may be in an inconsistent state
-                console.error('CRITICAL: Rollback failed after auth share storage failure', rollbackError);
+                console.error(
+                    'CRITICAL: Rollback failed after auth share storage failure',
+                    rollbackError
+                );
             }
         }
 
         throw new AtomicUpdateError(
             'Failed to store auth share on server, rolled back device share',
             'store_auth',
-            !!options.previousDeviceShare,
+            rolledBack,
             e instanceof Error ? e : undefined
         );
     }
@@ -175,10 +189,10 @@ export async function atomicShareUpdate(
 
 /**
  * Verify that stored shares can reconstruct the expected private key.
- * 
+ *
  * This is a health check that should be run after recovery or on login
  * to ensure the user's shares are in a consistent state.
- * 
+ *
  * @param storage - Storage operations to retrieve shares
  * @param expectedDid - The expected DID (used to verify the reconstructed key)
  * @param didFromPrivateKey - Function to derive DID from private key
@@ -243,10 +257,10 @@ export async function verifyStoredShares(
 
 /**
  * Create a recovery operation that atomically updates all shares.
- * 
+ *
  * This is used during recovery when we reconstruct from recovery+auth shares
  * and need to generate a new device share.
- * 
+ *
  * @param recoveryShare - The decrypted recovery share
  * @param authShareData - The auth share from server
  * @param storage - Storage operations
