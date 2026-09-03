@@ -89,6 +89,36 @@ describe('PII scrubbing', () => {
         expect(extra.safeField).toBe('visible');
     });
 
+    it('scrubs share/token/recoveryKey fields (P0-4: SSS key material)', () => {
+        const transport = makeMockTransport();
+        configureSentryTransport(transport);
+
+        logger.error('x', new Error('boom'), {
+            authShare: 'SENTINEL_SHARE_XYZ',
+            emailShare: 'SENTINEL_SHARE_XYZ',
+            encryptedShare: 'SENTINEL_SHARE_XYZ',
+            authToken: 'SENTINEL_TOKEN_XYZ',
+            recoveryKey: 'SENTINEL_RECOVERYKEY_XYZ',
+            credentialId: 'not-a-secret',
+        });
+
+        const call = transport.calls.find(c => c.method === 'captureException');
+        expect(call).toBeDefined();
+        const extra = call!.args[2] as Record<string, unknown>;
+        expect(extra.authShare).toBe('[scrubbed]');
+        expect(extra.emailShare).toBe('[scrubbed]');
+        expect(extra.encryptedShare).toBe('[scrubbed]');
+        expect(extra.authToken).toBe('[scrubbed]');
+        expect(extra.recoveryKey).toBe('[scrubbed]');
+        // Non-matching keys must survive untouched
+        expect(extra.credentialId).toBe('not-a-secret');
+
+        const serialized = JSON.stringify(extra);
+        expect(serialized).not.toContain('SENTINEL_SHARE_XYZ');
+        expect(serialized).not.toContain('SENTINEL_TOKEN_XYZ');
+        expect(serialized).not.toContain('SENTINEL_RECOVERYKEY_XYZ');
+    });
+
     it('scrubs bearer token strings in values', () => {
         const transport = makeMockTransport();
         configureSentryTransport(transport);

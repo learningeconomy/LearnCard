@@ -147,6 +147,8 @@ Field names are matched **case-insensitively as substrings**, so common variants
 | `accesstoken`   | `accessToken`, `accesstoken`                               |
 | `idtoken`       | `idToken`, `idtoken`                                       |
 | `token`         | `token`, `bearerToken`, `authToken`, `refreshToken`        |
+| `share`         | `share`, `authShare`, `emailShare`, `encryptedShare`       |
+| `recoverykey`   | `recoveryKey`, `recoverykey`                               |
 
 Scrubbing is **recursive** — nested objects and arrays are walked automatically, with a depth cap of 10 and cycle detection. Any string **value** starting with `Bearer ` (case-insensitive) is also scrubbed regardless of key name.
 
