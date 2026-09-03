@@ -1911,7 +1911,12 @@
         "loadingNotifications": "Chargement des notifications...",
         "refresh": "Actualiser",
         "restored": "Rétabli",
-        "unableToLoad": "Impossible de charger la notification"
+        "unableToLoad": "Impossible de charger la notification",
+        "credentialUpdated": "Titre mis à jour",
+        "updated": "Mis à jour",
+        "checkingForUpdate": "Recherche de mises à jour…",
+        "updateCheckFailed": "Problème de connexion. Vérifiez votre connexion internet et réessayez.",
+        "updatedCredentialUnavailable": "Ce titre n'est pas encore disponible. Veuillez réessayer plus tard."
     },
     "share": {
         "addContact": "Ajouter un contact",

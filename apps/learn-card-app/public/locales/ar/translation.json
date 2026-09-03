@@ -1911,7 +1911,12 @@
         "loadingNotifications": "جاري تحميل الإشعارات...",
         "refresh": "تحديث",
         "restored": "تمت الاستعادة",
-        "unableToLoad": "تعذر تحميل الإشعار"
+        "unableToLoad": "تعذر تحميل الإشعار",
+        "credentialUpdated": "تم تحديث الشهادة",
+        "updated": "تم التحديث",
+        "checkingForUpdate": "جارٍ البحث عن تحديثات…",
+        "updateCheckFailed": "مشكلة في الاتصال. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.",
+        "updatedCredentialUnavailable": "هذه الشهادة غير متوفرة بعد. يرجى المحاولة مرة أخرى لاحقًا."
     },
     "share": {
         "addContact": "إضافة جهة اتصال",

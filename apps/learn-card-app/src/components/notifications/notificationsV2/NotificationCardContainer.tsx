@@ -21,6 +21,7 @@ import NotificationGuardianApprovalCard from './NotificationGuardianApprovalCard
 import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import NotificationCredentialStatusCard from './NotificationCredentialStatusCard';
+import NotificationCredentialRefreshedCard from './NotificationCredentialRefreshedCard';
 import { useQueryClient } from '@tanstack/react-query';
 
 type NotificationCardProps = {
@@ -47,6 +48,7 @@ export const NOTIFICATION_TYPES = {
     CREDENTIAL_REVOKED: 'CREDENTIAL_REVOKED',
     CREDENTIAL_SUSPENDED: 'CREDENTIAL_SUSPENDED',
     CREDENTIAL_UNSUSPENDED: 'CREDENTIAL_UNSUSPENDED',
+    CREDENTIAL_REFRESHED: 'CREDENTIAL_REFRESHED',
 };
 
 import { getLogger } from 'learn-card-base';
@@ -419,6 +421,16 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
             <NotificationCredentialStatusCard
                 notification={notification}
                 variant="unsuspended"
+                onRead={handleMarkAsRead}
+            />
+        );
+    }
+
+    /* A credential you hold was updated by its issuer (managed refresh) */
+    if (type === NOTIFICATION_TYPES.CREDENTIAL_REFRESHED) {
+        return (
+            <NotificationCredentialRefreshedCard
+                notification={notification}
                 onRead={handleMarkAsRead}
             />
         );

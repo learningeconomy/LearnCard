@@ -46,6 +46,7 @@ vi.mock('./NotificationGuardianApprovalCard', () => ({ default: () => null }));
 vi.mock('./NotificationGuardianOutcomeCard', () => ({ default: () => null }));
 vi.mock('./NotificationAppNotificationCard', () => ({ default: () => null }));
 vi.mock('./NotificationCredentialStatusCard', () => ({ default: () => null }));
+vi.mock('./NotificationCredentialRefreshedCard', () => ({ default: () => null }));
 vi.mock('../../../paraglide/messages.js', () => ({
     'connectionPrompts.title': ({ name }: { name: string }) => `Connect with ${name}?`,
     'connectionPrompts.description': () => 'Stay in touch and recognize what comes next.',

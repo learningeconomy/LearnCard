@@ -1911,7 +1911,12 @@
         "loadingNotifications": "Loading Notifications...",
         "refresh": "Refresh",
         "restored": "Restored",
-        "unableToLoad": "Unable to load notification"
+        "unableToLoad": "Unable to load notification",
+        "credentialUpdated": "Credential updated",
+        "updated": "Updated",
+        "checkingForUpdate": "Checking for updates…",
+        "updateCheckFailed": "Connection issue. Please check your internet and try again.",
+        "updatedCredentialUnavailable": "This credential isn't available yet. Please try again later."
     },
     "share": {
         "addContact": "Add contact",

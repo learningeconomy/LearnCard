@@ -1911,7 +1911,12 @@
         "loadingNotifications": "Cargando notificaciones...",
         "refresh": "Actualizar",
         "restored": "Restaurada",
-        "unableToLoad": "No se pudo cargar la notificación"
+        "unableToLoad": "No se pudo cargar la notificación",
+        "credentialUpdated": "Credencial actualizada",
+        "updated": "Actualizada",
+        "checkingForUpdate": "Buscando actualizaciones…",
+        "updateCheckFailed": "Problema de conexión. Comprueba tu conexión a internet e inténtalo de nuevo.",
+        "updatedCredentialUnavailable": "Esta credencial aún no está disponible. Inténtalo de nuevo más tarde."
     },
     "share": {
         "addContact": "Agregar contacto",
