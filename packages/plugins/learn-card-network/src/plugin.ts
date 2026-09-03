@@ -14,6 +14,7 @@ import {
     VC,
     BitstringCredentialStatusEntry,
     BitstringCredentialStatusPurpose,
+    ManagedCredentialRefreshService,
     StoredCredentialEnvelope,
     StoredCredentialEnvelopeValidator,
     isStoredCredentialEnvelope,
@@ -310,6 +311,51 @@ const issueCredentialWithNetworkStatus = async (
     return learnCard.invoke.issueCredential(
         await appendNetworkCredentialStatus(client, credential, statusPurposes)
     );
+};
+
+/**
+ * Inline JSON-LD context fragment required to sign credentials carrying a
+ * LearnCard-managed `1EdTechCredentialRefresh` refresh service.
+ *
+ * Neither VCDM 1.1 (which defines only `ManualRefreshService2018`), VCDM 2.0, nor the
+ * live OBv3 contexts define the term `1EdTechCredentialRefresh` (nor the LearnCard
+ * `authorization` / `LearnCardDIDAuth` extension terms), so DIDKit's data-loss
+ * detection refuses to sign unless issuers define these terms inline.
+ */
+const MANAGED_REFRESH_SERVICE_CONTEXT = {
+    '1EdTechCredentialRefresh': 'https://purl.imsglobal.org/spec/ob/v3p0#1EdTechCredentialRefresh',
+    authorization: {
+        '@id': 'https://purl.imsglobal.org/spec/ob/v3p0#authorization',
+        '@context': {
+            LearnCardDIDAuth: 'https://docs.learncard.com/definitions#LearnCardDIDAuth',
+        },
+    },
+};
+
+/**
+ * Injects an allocated managed refresh service into an unsigned credential so the
+ * service becomes part of the signed payload. Appends the inline context fragment
+ * unless an equivalent mapping is already present.
+ */
+const injectManagedRefreshService = (
+    credential: UnsignedVC,
+    refreshService: ManagedCredentialRefreshService
+): UnsignedVC => {
+    const existingContext = (credential as Record<string, unknown>)['@context'];
+    const contextList = Array.isArray(existingContext) ? existingContext : [existingContext];
+
+    const hasMapping = contextList.some(
+        entry =>
+            !!entry &&
+            typeof entry === 'object' &&
+            '1EdTechCredentialRefresh' in (entry as Record<string, unknown>)
+    );
+
+    return {
+        ...credential,
+        '@context': hasMapping ? contextList : [...contextList, MANAGED_REFRESH_SERVICE_CONTEXT],
+        refreshService,
+    } as UnsignedVC;
 };
 
 export * from './types';
@@ -1369,6 +1415,29 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.boost.allocateCredentialStatus.mutate(options);
             },
+            allocateCredentialRefresh: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.credentialRefresh.allocateCredentialRefresh.mutate(input);
+            },
+            sendRefreshableCredential: async (_learnCard, refreshId, credential) => {
+                await ensureUser();
+
+                return client.credentialRefresh.sendRefreshableCredential.mutate({
+                    refreshId,
+                    credential,
+                });
+            },
+            publishCredentialRefresh: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.credentialRefresh.publishCredentialRefresh.mutate(input);
+            },
+            getCredentialRefreshHistory: async (_learnCard, input) => {
+                await ensureUser();
+
+                return client.credentialRefresh.getCredentialRefreshHistory.query(input);
+            },
             revokeBoostRecipient: async (
                 _learnCard,
                 boostUri,
@@ -1483,6 +1552,27 @@ export async function getLearnCardNetworkPlugin(
                     boost = options.overideFn(boost);
                 }
 
+                const enableRefresh = typeof options === 'object' && options.enableRefresh === true;
+
+                let managedRefreshId: string | undefined;
+
+                if (enableRefresh) {
+                    // Generate a stable UUID credential ID when the template has none;
+                    // the allocation is permanently bound to this ID.
+                    if (!boost.id) boost.id = `urn:uuid:${crypto.randomUUID()}`;
+
+                    // Allocate BEFORE signing: the refresh service must be part of the
+                    // signed payload, so it is injected before proof creation.
+                    const allocation =
+                        await client.credentialRefresh.allocateCredentialRefresh.mutate({
+                            holder: { profileId, did: targetProfile.did },
+                            credentialId: boost.id,
+                        });
+
+                    managedRefreshId = allocation.refreshId;
+                    boost = injectManagedRefreshService(boost, allocation.refreshService);
+                }
+
                 const statusPurposes =
                     typeof options === 'object' ? options.statusPurposes : undefined;
                 const vc = await issueCredentialWithNetworkStatus(
@@ -1491,6 +1581,16 @@ export async function getLearnCardNetworkPlugin(
                     boost,
                     statusPurposes
                 );
+
+                if (managedRefreshId) {
+                    // Dedicated managed send: brain-service verifies the proof and
+                    // persists ONLY a holder-encrypted JWE. Legacy credential storage
+                    // (issuer/LCN-readable JWE or plaintext) is intentionally bypassed.
+                    return client.credentialRefresh.sendRefreshableCredential.mutate({
+                        refreshId: managedRefreshId,
+                        credential: vc,
+                    });
+                }
 
                 // options is allowed to be a boolean to maintain backwards compatibility
                 if ((typeof options === 'object' && !options.encrypt) || !options) {
