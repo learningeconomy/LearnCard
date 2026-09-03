@@ -1,0 +1,28 @@
+{
+    "name": "@learncard/escrow-relay-service",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Isolated, transient recovery-key email relay",
+    "scripts": {
+        "build": "tsc --project tsconfig.build.json",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "dev": "bun --watch src/server.ts",
+        "start": "bun src/server.ts",
+        "serverless-deploy": "serverless deploy"
+    },
+    "dependencies": {
+        "@learncard/email-templates": "workspace:*",
+        "@learncard/sss-key-manager": "workspace:*",
+        "postmark": "^4.0.5"
+    },
+    "devDependencies": {
+        "@types/aws-lambda": "^8.10.106",
+        "@types/node": "^18.19.68",
+        "serverless": "3.40.0",
+        "serverless-esbuild": "1.55.0",
+        "typescript": "^5.9.3",
+        "vitest": "4.1.10"
+    }
+}
