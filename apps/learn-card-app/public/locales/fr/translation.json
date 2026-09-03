@@ -1712,6 +1712,30 @@
         }
     },
     "recovery": {
+        "prompt": {
+            "openAria": "Configurer un moyen de se reconnecter",
+            "snoozeAria": "Me le rappeler dans 7 jours",
+            "calm": {
+                "title": "Ajoutez un moyen de vous reconnecter",
+                "body": "Si vous perdez cet appareil, vous pourrez ainsi vous reconnecter. Cela prend une minute."
+            },
+            "urgent": {
+                "title": "Cette session se termine lorsque vous fermez l’onglet",
+                "body": "Configurez un moyen de vous reconnecter, sinon vous perdrez l’accès à votre compte."
+            },
+            "activation": {
+                "title": "Terminez la sécurisation de votre compte",
+                "body": "La mise à niveau de votre compte ne sera terminée que lorsque vous aurez ajouté un moyen de vous reconnecter."
+            },
+            "success": {
+                "title": "Votre compte est protégé",
+                "body": "Vous pouvez vous reconnecter depuis n’importe quel appareil."
+            },
+            "action": {
+                "passkey": "Utiliser Face ID ou Touch ID",
+                "phrase": "Obtenir une phrase de récupération"
+            }
+        },
         "protectAccount": "Protégez votre compte",
         "accountRecovery": "Récupération de compte",
         "restoreAccess": "Restaurer l'accès",

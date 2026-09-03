@@ -84,10 +84,13 @@ import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
 import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 const DashboardPage: React.FC = () => {
     const history = useHistory();
     const { track } = useAnalytics();
+    const { capabilities, recoveryMethodCount, recoveryActivationPending, openRecoverySetup } =
+        useAppAuth();
     const { getIconSet, getColorSet } = useTheme();
     const brandingConfig = useBrandingConfig();
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
@@ -204,7 +207,7 @@ const DashboardPage: React.FC = () => {
         const skillsMap = mapBoostsToSkills(skillsCredentials, globalSkillFrameworkIds);
         const categorizedSkills = Object.entries(skillsMap) as [
             string,
-            RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
+            RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number },
         ][];
         const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
 
@@ -532,6 +535,13 @@ const DashboardPage: React.FC = () => {
         onReviewGoal: goToReviews,
         primaryButtonClass,
         slots: resolvedSlots,
+        recoveryPrompt: {
+            recoverySupported: capabilities.recovery,
+            recoveryMethodCount,
+            activationPending: recoveryActivationPending,
+            totalCredentialCount,
+            onSetup: openRecoverySetup,
+        },
         dataTrust,
         activity: {
             notifications: unreadNotifications,

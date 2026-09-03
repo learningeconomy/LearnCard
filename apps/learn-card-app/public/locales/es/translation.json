@@ -1712,6 +1712,30 @@
         }
     },
     "recovery": {
+        "prompt": {
+            "openAria": "Configurar una forma de volver a iniciar sesión",
+            "snoozeAria": "Recordármelo en 7 días",
+            "calm": {
+                "title": "Añade una forma de volver a entrar",
+                "body": "Si pierdes este dispositivo, así volverás a iniciar sesión. Solo toma un minuto."
+            },
+            "urgent": {
+                "title": "Esta sesión termina cuando cierres la pestaña",
+                "body": "Configura una forma de volver a iniciar sesión o perderás el acceso a tu cuenta."
+            },
+            "activation": {
+                "title": "Termina de proteger tu cuenta",
+                "body": "La actualización de tu cuenta no estará completa hasta que agregues una forma de volver a iniciar sesión."
+            },
+            "success": {
+                "title": "Tu cuenta está protegida",
+                "body": "Puedes volver a iniciar sesión desde cualquier dispositivo."
+            },
+            "action": {
+                "passkey": "Usa Face ID o Touch ID",
+                "phrase": "Obtén una frase de recuperación"
+            }
+        },
         "protectAccount": "Protege tu cuenta",
         "accountRecovery": "Recuperación de cuenta",
         "restoreAccess": "Restaurar acceso",

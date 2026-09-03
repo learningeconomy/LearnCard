@@ -315,6 +315,9 @@ export const AnalyticsEvents = {
     // completion needs no event (derivable from the funnel events).
     DASHBOARD_GET_STARTED_INTERACTED: 'dashboard_get_started_interacted',
 
+    // Dashboard account-recovery prompt funnel.
+    DASHBOARD_RECOVERY_PROMPT_INTERACTED: 'dashboard_recovery_prompt_interacted',
+
     // ConsentFlow terminal states — distinguish deliberate exits and
     // technical failures from silent abandonment.
     CONSENT_FLOW_DECLINED: 'consent_flow_declined',
@@ -660,10 +663,7 @@ export interface AnalyticsEventPayloads {
         agent: string;
         tier: 'low' | 'medium' | 'high';
         cappedAt:
-            | 'per-invocation'
-            | 'per-learner-daily'
-            | 'per-learner-monthly'
-            | 'per-tenant-monthly';
+            'per-invocation' | 'per-learner-daily' | 'per-learner-monthly' | 'per-tenant-monthly';
     };
 
     [AnalyticsEvents.PATHWAYS_LEARNER_COST_SNAPSHOT]: {
@@ -834,12 +834,7 @@ export interface AnalyticsEventPayloads {
         outcome: 'succeeded' | 'failed';
         duration_ms: number;
         error_kind?:
-            | 'format_gap'
-            | 'trust_gap'
-            | 'transport'
-            | 'request_invalid'
-            | 'wallet'
-            | 'unknown';
+            'format_gap' | 'trust_gap' | 'transport' | 'request_invalid' | 'wallet' | 'unknown';
         counterparty?: string;
     };
 
@@ -867,12 +862,7 @@ export interface AnalyticsEventPayloads {
         transport_retries: number;
         trust_gaps_accepted: number;
         final_error_kind?:
-            | 'format_gap'
-            | 'trust_gap'
-            | 'transport'
-            | 'request_invalid'
-            | 'wallet'
-            | 'unknown';
+            'format_gap' | 'trust_gap' | 'transport' | 'request_invalid' | 'wallet' | 'unknown';
         counterparty?: string;
         total_duration_ms: number;
     };
@@ -1134,12 +1124,7 @@ export interface AnalyticsEventPayloads {
         counterparty?: string;
         error_code?: string;
         error_kind?:
-            | 'format_gap'
-            | 'trust_gap'
-            | 'transport'
-            | 'request_invalid'
-            | 'wallet'
-            | 'unknown';
+            'format_gap' | 'trust_gap' | 'transport' | 'request_invalid' | 'wallet' | 'unknown';
         total_attempts?: number;
         duration_ms?: number;
     };
@@ -1256,6 +1241,12 @@ export interface AnalyticsEventPayloads {
         action: 'item_clicked' | 'dismissed';
         item_key?: string;
         hero_action_id?: string;
+    };
+
+    [AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED]: {
+        action: 'shown' | 'clicked' | 'snoozed' | 'completed';
+        weight: 'calm' | 'urgent';
+        method?: 'passkey' | 'phrase' | 'backup' | 'email';
     };
 
     [AnalyticsEvents.CONSENT_FLOW_DECLINED]: {

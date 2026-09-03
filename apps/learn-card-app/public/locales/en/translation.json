@@ -1712,6 +1712,30 @@
         }
     },
     "recovery": {
+        "prompt": {
+            "openAria": "Set up a way to sign back in",
+            "snoozeAria": "Remind me in 7 days",
+            "calm": {
+                "title": "Add a way back in",
+                "body": "If you lose this device, this is how you sign back in. Takes a minute."
+            },
+            "urgent": {
+                "title": "This session ends when you close the tab",
+                "body": "Set up a way to sign back in, or you'll lose access to your account."
+            },
+            "activation": {
+                "title": "Finish securing your account",
+                "body": "Your account upgrade isn't complete until you add a way to sign back in."
+            },
+            "success": {
+                "title": "You're covered",
+                "body": "You can sign back in from any device."
+            },
+            "action": {
+                "passkey": "Use Face ID or Touch ID",
+                "phrase": "Get a recovery phrase"
+            }
+        },
         "accountRecovery": "Account Recovery",
         "action.downloadAgain": "Download Again",
         "action.downloadBackup": "Download Backup File",

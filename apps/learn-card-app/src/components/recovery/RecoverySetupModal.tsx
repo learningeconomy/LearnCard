@@ -35,6 +35,8 @@ interface RecoverySetupModalProps {
     existingMethods: { type: string; createdAt: string }[];
     maskedRecoveryEmail?: string | null;
     isActivationPending?: boolean;
+    initialMethod?: RecoverySetupType;
+    onCompleted?: (method: RecoverySetupType) => void;
     onClose: () => void;
 }
 
@@ -51,6 +53,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     existingMethods,
     maskedRecoveryEmail,
     isActivationPending = false,
+    initialMethod,
+    onCompleted,
     onClose,
 }) => {
     const webAuthnSupported = isWebAuthnSupported();
@@ -69,6 +73,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     // Default to the first unconfigured method in priority order:
     // email > phrase > backup > passkey
     const [activeTab, setActiveTab] = useState<RecoverySetupType>(() => {
+        if (initialMethod && !isConfigured(initialMethod)) return initialMethod;
         if (!isConfigured('email')) return 'email';
         if (!isConfigured('phrase')) return 'phrase';
         if (!isConfigured('backup')) return 'backup';
@@ -129,6 +134,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             markConfigured('passkey');
             setSuccess(m['recovery.success.passkeySetup']());
             setShowUpdateForm(false);
+            onCompleted?.('passkey');
         } catch (e) {
             log.error('handlePasskeySetup error', e);
             setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
@@ -174,6 +180,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setPhraseChallengeStarted(false);
             setSuccess(m['recovery.success.phraseSaved']());
             setShowUpdateForm(false);
+            onCompleted?.('phrase');
         } catch (e) {
             log.error('handleConfirmPhrase error', e);
             setError(e instanceof Error ? e.message : m['recovery.phraseWordsMismatch']());
@@ -264,6 +271,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setSuccess(m['recovery.success.backupSaved']());
             setBackupVerificationPassword('');
             setShowUpdateForm(false);
+            onCompleted?.('backup');
         } catch (e) {
             log.error('handleConfirmBackup error', e);
             setError(e instanceof Error ? e.message : m['recovery.incorrectPassword']());
@@ -339,6 +347,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             markConfigured('email');
             setSuccess(m['recovery.success.recoveryKeySent']());
             setShowUpdateForm(false);
+            onCompleted?.('email');
         } catch (e) {
             log.error('handleConfirmEmailRecovery error', e);
             setError(e instanceof Error ? e.message : m['recovery.incorrectCode']());

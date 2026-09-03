@@ -111,7 +111,11 @@ import {
 const WALLET_INIT_TIMEOUT_MS = 15000;
 
 import { auth } from '../firebase/firebase';
-import { mergeAuthUserIntoCurrentUser, shouldResetWalletOnStatus } from './authCoordinator.helpers';
+import {
+    countUserConfiguredRecoveryMethods,
+    mergeAuthUserIntoCurrentUser,
+    shouldResetWalletOnStatus,
+} from './authCoordinator.helpers';
 import {
     getAppBaseUrl,
     getFirebaseRedirectDomain,
@@ -131,11 +135,19 @@ import {
 import { Overlay, ErrorOverlay, StalledMigrationOverlay, EmailLinkOverlay } from 'learn-card-base';
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
-import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
+import {
+    RecoverySetupModal,
+    type RecoverySetupType,
+} from '../components/recovery/RecoverySetupModal';
 import { DeviceLinkModal } from '../components/device-link/DeviceLinkModal';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
 const log = getLogger('auth-coordinator');
+
+export interface RecoverySetupOptions {
+    initialMethod?: RecoverySetupType;
+    onCompleted?: (method: RecoverySetupType) => void;
+}
 
 // ---------------------------------------------------------------------------
 // DeviceLinkOverlay — fetches the device share then renders the approver modal
@@ -410,8 +422,11 @@ export interface AppAuthContextValue extends AuthCoordinatorContextValue {
     /** Number of recovery methods configured (null = not yet checked) */
     recoveryMethodCount: number | null;
 
+    /** Migration is provisional until a recovery method is confirmed */
+    recoveryActivationPending: boolean;
+
     /** Open the recovery setup modal */
-    openRecoverySetup: () => void;
+    openRecoverySetup: (options?: RecoverySetupOptions) => void;
 
     /** Provider-agnostic auth provider for token/user operations (null if no session) */
     authProvider: AuthProvider | null;
@@ -523,7 +538,34 @@ const AuthSessionManager: React.FC<{
 
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
+    const recoverySetupOptionsRef = useRef<RecoverySetupOptions>({});
     const wasNewUserRef = useRef(false);
+
+    const openRecoverySetup = useCallback((options: RecoverySetupOptions = {}) => {
+        recoverySetupOptionsRef.current = options;
+        setShowRecoverySetup(true);
+    }, []);
+
+    const closeRecoverySetup = useCallback(() => {
+        recoverySetupOptionsRef.current = {};
+        setShowRecoverySetup(false);
+    }, []);
+
+    const completeRecoverySetup = useCallback((method: RecoverySetupType) => {
+        setRecoveryMethodCount(previousCount => (previousCount ?? 0) + 1);
+
+        const onCompleted = recoverySetupOptionsRef.current.onCompleted;
+
+        // Prompt-owned setup is a single-action flow, so return to the Dashboard.
+        // Existing callers keep the modal's prior behavior: only passkey setup
+        // closes immediately, while other methods stay open for adding another.
+        if (onCompleted || method === 'passkey') {
+            recoverySetupOptionsRef.current = {};
+            setShowRecoverySetup(false);
+        }
+
+        onCompleted?.(method);
+    }, []);
 
     // --- Proactive auth session check state (effect is below, after authProvider) ---
     const [recoverySessionValid, setRecoverySessionValid] = useState<boolean | null>(null);
@@ -1043,15 +1085,17 @@ const AuthSessionManager: React.FC<{
                                 providerType
                             );
 
-                            const userConfiguredCount = methods.filter(
-                                m => m.type !== 'email'
-                            ).length;
+                            const status = keyDerivation.fetchServerKeyStatus
+                                ? await keyDerivation
+                                      .fetchServerKeyStatus(token, providerType)
+                                      .catch(() => null)
+                                : null;
+                            const userConfiguredCount = countUserConfiguredRecoveryMethods(
+                                methods,
+                                status?.maskedRecoveryEmail
+                            );
 
                             setRecoveryMethodCount(userConfiguredCount);
-
-                            if (userConfiguredCount === 0 && isPublicComputerMode()) {
-                                setShowRecoverySetup(true);
-                            }
                         } catch {
                             // Non-critical — don't block the user
                         }
@@ -1131,8 +1175,16 @@ const AuthSessionManager: React.FC<{
                     providerType
                 );
 
+                const status = keyDerivation.fetchServerKeyStatus
+                    ? await keyDerivation
+                          .fetchServerKeyStatus(token, providerType)
+                          .catch(() => null)
+                    : null;
+
                 if (!cancelled) {
-                    setRecoveryMethodCount(methods.filter(m => m.type !== 'email').length);
+                    setRecoveryMethodCount(
+                        countUserConfiguredRecoveryMethods(methods, status?.maskedRecoveryEmail)
+                    );
                 }
             } catch {
                 // Non-critical — same best-effort semantics as the wallet-build tail
@@ -1285,7 +1337,8 @@ const AuthSessionManager: React.FC<{
 
             // Recovery
             recoveryMethodCount,
-            openRecoverySetup: () => setShowRecoverySetup(true),
+            recoveryActivationPending: coordinator.needsActivation,
+            openRecoverySetup,
 
             // Provider-agnostic auth provider (consumers should use this
             // instead of importing Firebase directly)
@@ -1303,6 +1356,7 @@ const AuthSessionManager: React.FC<{
             showDeviceLinkModal,
             deviceLinkVisible,
             recoveryMethodCount,
+            openRecoverySetup,
             authProvider,
         ]
     );
@@ -1369,8 +1423,8 @@ const AuthSessionManager: React.FC<{
                             coordinator.state.status === 'identity_recovery_success'
                                 ? 'success'
                                 : coordinator.state.status === 'identity_recovery'
-                                ? coordinator.state.phase
-                                : undefined
+                                  ? coordinator.state.phase
+                                  : undefined
                         }
                         identityEmail={
                             coordinator.state.status === 'identity_recovery'
@@ -1522,9 +1576,8 @@ const AuthSessionManager: React.FC<{
                                     });
                                 } else {
                                     const vpJwt = await signDidAuthVp(pk);
-                                    const { localKey, remoteKey } = await keyDerivation.splitKey(
-                                        pk
-                                    );
+                                    const { localKey, remoteKey } =
+                                        await keyDerivation.splitKey(pk);
 
                                     await keyDerivation.storeLocalKey(localKey);
                                     await keyDerivation.storeAuthShare(
@@ -1627,7 +1680,7 @@ const AuthSessionManager: React.FC<{
                             <Overlay>
                                 <ReAuthOverlay
                                     onSuccess={() => setRecoverySessionValid(true)}
-                                    onCancel={() => setShowRecoverySetup(false)}
+                                    onCancel={closeRecoverySetup}
                                 />
                             </Overlay>
                         );
@@ -1729,19 +1782,14 @@ const AuthSessionManager: React.FC<{
                             <RecoverySetupModal
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
+                                initialMethod={recoverySetupOptionsRef.current.initialMethod}
+                                onCompleted={completeRecoverySetup}
                                 onSetupPasskey={async () => {
                                     const authUser = await authProvider.getCurrentUser();
                                     const result = await setupMethod(
                                         { method: 'passkey' },
                                         authUser
                                     );
-
-                                    if (coordinator.needsActivation) {
-                                        await coordinator.activate();
-                                    }
-
-                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
-                                    setShowRecoverySetup(false);
                                     return result.method === 'passkey' ? result.credentialId : '';
                                 }}
                                 onGeneratePhrase={async () => {
@@ -1761,7 +1809,6 @@ const AuthSessionManager: React.FC<{
                                 }}
                                 onConfirmPhrase={async challengeWords => {
                                     await confirmMethod({ method: 'phrase', challengeWords });
-                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                 }}
                                 onSetupBackup={async (backupPw: string) => {
                                     const authUser = await authProvider.getCurrentUser();
@@ -1783,7 +1830,6 @@ const AuthSessionManager: React.FC<{
                                         fileContents,
                                         password,
                                     });
-                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                 }}
                                 onAddRecoveryEmail={async (email: string) => {
                                     const { token, providerType } = await getTokenAndProvider();
@@ -1839,10 +1885,9 @@ const AuthSessionManager: React.FC<{
                                 }}
                                 onConfirmEmailRecovery={async code => {
                                     await confirmMethod({ method: 'email', code });
-                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                 }}
                                 isActivationPending={coordinator.needsActivation}
-                                onClose={() => setShowRecoverySetup(false)}
+                                onClose={closeRecoverySetup}
                             />
                         </Overlay>
                     );
