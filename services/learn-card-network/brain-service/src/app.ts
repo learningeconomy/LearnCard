@@ -4,6 +4,7 @@ import { claimHooksRouter, ClaimHooksRouter } from '@routes/claim-hooks';
 import { profilesRouter, ProfilesRouter } from '@routes/profiles';
 import { profileManagersRouter, ProfileManagersRouter } from '@routes/profile-manager';
 import { credentialsRouter, CredentialsRouter } from '@routes/credentials';
+import { credentialRefreshesRouter, CredentialRefreshesRouter } from '@routes/credential-refreshes';
 import { presentationsRouter, PresentationsRouter } from '@routes/presentations';
 import { storageRouter, StorageRouter } from '@routes/storage';
 import { utilitiesRouter, UtilitiesRouter } from '@routes/utilities';
@@ -34,6 +35,7 @@ export const appRouter = t.router<{
     profile: ProfilesRouter;
     profileManager: ProfileManagersRouter;
     credential: CredentialsRouter;
+    credentialRefresh: CredentialRefreshesRouter;
     presentation: PresentationsRouter;
     storage: StorageRouter;
     utilities: UtilitiesRouter;
@@ -57,6 +59,7 @@ export const appRouter = t.router<{
     profile: profilesRouter,
     profileManager: profileManagersRouter,
     credential: credentialsRouter,
+    credentialRefresh: credentialRefreshesRouter,
     presentation: presentationsRouter,
     storage: storageRouter,
     utilities: utilitiesRouter,
