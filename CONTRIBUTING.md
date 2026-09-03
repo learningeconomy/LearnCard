@@ -6,7 +6,7 @@ Following these guidelines helps to communicate that you respect the time of the
 
 LearnCard is an open source project and we love to receive contributions from our community — you! There are many ways to contribute, from writing tutorials or blog posts, improving the documentation, submitting bug reports and feature requests or writing code which can be incorporated into LearnCard itself.
 
-Please, don't use the issue tracker for support questions. Check whether the #support channel on Discord can help with your issue. Stack Overflow is also worth considering.
+Bugs and technical questions go in the [issue tracker](https://github.com/learningeconomy/LearnCard/issues/new/choose) — pick the Bug or Question template. Feature ideas go on the [roadmap](https://roadmap.learncard.com). See [SUPPORT.md](./SUPPORT.md) for the full list.
 
 # Ground Rules
 
@@ -93,4 +93,4 @@ The core team looks at Pull Requests on a regular basis. After two weeks we may 
 
 # Community
 
-You can chat with the core team on Discord - come say hello!
+Questions for the core team? Open a [Question issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) or email [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).

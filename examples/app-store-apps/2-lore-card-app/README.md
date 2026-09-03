@@ -10,11 +10,11 @@ By helping to track personal growth within tabletop games, LoreCard serves as a 
 
 ## Features
 
--   🎲 **8 Pre-configured Badges** - Award meaningful credentials for key social-emotional skills
--   🎨 **Themed RPG UI** - Beautiful parchment-style interface with fantasy typography
--   ⚡ **One-Click Awards** - Simple click-to-award interface powered by the Partner Connect SDK
--   🔒 **Verifiable Credentials** - Players receive permanent, portable credentials in their LearnCard wallet
--   👥 **Bulk Issuance** - Award badges to multiple players at once
+- 🎲 **8 Pre-configured Badges** - Award meaningful credentials for key social-emotional skills
+- 🎨 **Themed RPG UI** - Beautiful parchment-style interface with fantasy typography
+- ⚡ **One-Click Awards** - Simple click-to-award interface powered by the Partner Connect SDK
+- 🔒 **Verifiable Credentials** - Players receive permanent, portable credentials in their LearnCard wallet
+- 👥 **Bulk Issuance** - Award badges to multiple players at once
 
 ## Badge Types
 
@@ -33,11 +33,11 @@ By helping to track personal growth within tabletop games, LoreCard serves as a 
 
 ## Technology Stack
 
--   **Framework**: Astro 5
--   **SDK**: `@learncard/partner-connect` (workspace)
--   **Deployment**: Netlify (SSR)
--   **Styling**: Custom CSS with fantasy/medieval theme
--   **Fonts**: Cinzel (headings), Lora (body)
+- **Framework**: Astro 5
+- **SDK**: `@learncard/partner-connect` (workspace)
+- **Deployment**: Netlify (SSR)
+- **Styling**: Custom CSS with fantasy/medieval theme
+- **Fonts**: Cinzel (headings), Lora (body)
 
 ## Setup
 
@@ -108,10 +108,10 @@ bun run build
 
 Players receive badges as verifiable credentials that:
 
--   ✅ Are permanently stored in their LearnCard wallet
--   ✅ Can be shared with others to demonstrate skills
--   ✅ Are cryptographically verifiable and tamper-proof
--   ✅ Belong to them forever, regardless of platform
+- ✅ Are permanently stored in their LearnCard wallet
+- ✅ Can be shared with others to demonstrate skills
+- ✅ Are cryptographically verifiable and tamper-proof
+- ✅ Belong to them forever, regardless of platform
 
 ## SDK Integration
 
@@ -146,10 +146,10 @@ async function awardBadge(templateId, recipients) {
 
 The app handles common errors gracefully:
 
--   **`UNAUTHORIZED`** - User is not an admin of the badge template
--   **`TEMPLATE_NOT_FOUND`** - Badge template URI is invalid or doesn't exist
--   **`LC_UNAUTHENTICATED`** - User needs to log in to LearnCard
--   **User cancellation** - User closed the modal without completing issuance
+- **`UNAUTHORIZED`** - User is not an admin of the badge template
+- **`TEMPLATE_NOT_FOUND`** - Badge template URI is invalid or doesn't exist
+- **`LC_UNAUTHENTICATED`** - User needs to log in to LearnCard
+- **User cancellation** - User closed the modal without completing issuance
 
 ## Creating Badge Templates
 
@@ -240,10 +240,10 @@ publish = "dist/"
 
 **Environment Variables** - Set these in your Netlify dashboard:
 
--   `LEARNCARD_HOST_ORIGIN`
--   `BADGE_TEAMWORK_URI`
--   `BADGE_LEADERSHIP_URI`
--   (... all other badge URIs)
+- `LEARNCARD_HOST_ORIGIN`
+- `BADGE_TEAMWORK_URI`
+- `BADGE_LEADERSHIP_URI`
+- (... all other badge URIs)
 
 ### Other Platforms
 
@@ -257,41 +257,41 @@ The app uses Astro's SSR mode with the Netlify adapter. To deploy to other platf
 
 ### Educational Settings
 
--   **After-school programs** - Reward students for demonstrating SEL skills
--   **Summer camps** - Track personal growth throughout camp sessions
--   **Library programs** - Award badges for D&D leagues and game clubs
+- **After-school programs** - Reward students for demonstrating SEL skills
+- **Summer camps** - Track personal growth throughout camp sessions
+- **Library programs** - Award badges for D&D leagues and game clubs
 
 ### Community Play
 
--   **Gaming cafes** - Recognize regular players' social development
--   **Convention games** - Award memorable credentials from special sessions
--   **Online campaigns** - Digital badges for remote play groups
+- **Gaming cafes** - Recognize regular players' social development
+- **Convention games** - Award memorable credentials from special sessions
+- **Online campaigns** - Digital badges for remote play groups
 
 ### Professional Development
 
--   **Team building** - Document collaboration skills in corporate RPG sessions
--   **Training programs** - Gamified credential system for soft skills training
--   **Educational research** - Track SEL outcomes in game-based learning studies
+- **Team building** - Document collaboration skills in corporate RPG sessions
+- **Training programs** - Gamified credential system for soft skills training
+- **Educational research** - Track SEL outcomes in game-based learning studies
 
 ## Benefits
 
 ### For Game Masters
 
--   **Quick & Easy** - Award badges with a single click
--   **Meaningful Recognition** - Give players permanent, verifiable credentials
--   **Track Growth** - Help players see their development over time
+- **Quick & Easy** - Award badges with a single click
+- **Meaningful Recognition** - Give players permanent, verifiable credentials
+- **Track Growth** - Help players see their development over time
 
 ### For Players
 
--   **Portable Credentials** - Take your achievements anywhere
--   **Skill Demonstration** - Show evidence of soft skills to educators, employers
--   **Motivation** - Clear recognition of personal growth
+- **Portable Credentials** - Take your achievements anywhere
+- **Skill Demonstration** - Show evidence of soft skills to educators, employers
+- **Motivation** - Clear recognition of personal growth
 
 ### For Organizations
 
--   **Promote SEL** - Encourage social-emotional learning through play
--   **Community Building** - Create shared achievement systems
--   **Data & Insights** - Track skill development across player populations
+- **Promote SEL** - Encourage social-emotional learning through play
+- **Community Building** - Create shared achievement systems
+- **Data & Insights** - Track skill development across player populations
 
 ## Architecture
 
@@ -313,9 +313,9 @@ src/pages/index.astro
 
 ## Browser Support
 
--   Chrome/Edge 90+
--   Firefox 88+
--   Safari 14+
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
 
 Requires `postMessage` API and `Promise` support.
 
@@ -331,9 +331,9 @@ For issues or contributions to the SDK itself, see the [main LearnCard repositor
 
 ## Support
 
--   **Documentation**: See the Partner Connect SDK README
--   **Issues**: [GitHub Issues](https://github.com/learningeconomy/LearnCard/issues)
--   **Community**: Join the LearnCard Discord
+- **Documentation**: See the Partner Connect SDK README
+- **Issues**: [GitHub Issues](https://github.com/learningeconomy/LearnCard/issues)
+- **Feature requests**: [roadmap.learncard.com](https://roadmap.learncard.com)
 
 ---
 
