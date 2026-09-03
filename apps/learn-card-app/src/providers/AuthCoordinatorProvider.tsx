@@ -110,6 +110,7 @@ import { auth } from '../firebase/firebase';
 import {
     countUserConfiguredRecoveryMethods,
     mergeAuthUserIntoCurrentUser,
+    registerRecoveryMethodCompletion,
     shouldResetWalletOnStatus,
 } from './authCoordinator.helpers';
 import {
@@ -524,20 +525,28 @@ const AuthSessionManager: React.FC<{
     // --- Recovery setup prompt (shown after first-time setup with no recovery methods) ---
     const [showRecoverySetup, setShowRecoverySetup] = useState(false);
     const recoverySetupOptionsRef = useRef<RecoverySetupOptions>({});
+    const completedRecoveryMethodsRef = useRef<Set<RecoverySetupType>>(new Set());
     const wasNewUserRef = useRef(false);
+
+    // null = recovery method status has not been checked yet
+    const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
 
     const openRecoverySetup = useCallback((options: RecoverySetupOptions = {}) => {
         recoverySetupOptionsRef.current = options;
+        completedRecoveryMethodsRef.current.clear();
         setShowRecoverySetup(true);
     }, []);
 
     const closeRecoverySetup = useCallback(() => {
         recoverySetupOptionsRef.current = {};
+        completedRecoveryMethodsRef.current.clear();
         setShowRecoverySetup(false);
     }, []);
 
     const completeRecoverySetup = useCallback((method: RecoverySetupType) => {
-        setRecoveryMethodCount(previousCount => (previousCount ?? 0) + 1);
+        if (registerRecoveryMethodCompletion(completedRecoveryMethodsRef.current, method)) {
+            setRecoveryMethodCount(previousCount => (previousCount ?? 0) + 1);
+        }
 
         const onCompleted = recoverySetupOptionsRef.current.onCompleted;
 
@@ -554,9 +563,6 @@ const AuthSessionManager: React.FC<{
 
     // --- Proactive auth session check state (effect is below, after authProvider) ---
     const [recoverySessionValid, setRecoverySessionValid] = useState<boolean | null>(null);
-
-    // --- Recovery method count (null = not yet checked) ---
-    const [recoveryMethodCount, setRecoveryMethodCount] = useState<number | null>(null);
 
     // --- Phone→email upgrade gate ---
     // Phone-only users must link an email before proceeding, but only when:
