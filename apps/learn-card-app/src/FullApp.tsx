@@ -27,6 +27,7 @@ import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
 import CredentialSyncListener from './components/credential-sync-listener/CredentialSyncListener';
+import CredentialRefreshListener from './components/credential-refresh-listener/CredentialRefreshListener';
 import NotificationToastListener from './components/notification-toast-listener/NotificationToastListener';
 import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgressReactorMount';
 import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGlobals';
@@ -221,6 +222,10 @@ const FullApp: React.FC = () => {
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
                                         <CredentialSyncListener />
+                                        {/* Foreground refresh of stale refreshable
+                                            credentials; gated by the LaunchDarkly
+                                            credentialRefreshForegroundEnabled flag. */}
+                                        <CredentialRefreshListener />
                                         <NotificationToastListener />
                                         <ConnectionPromptCoordinator
                                             copy={getConnectionPromptCopy()}

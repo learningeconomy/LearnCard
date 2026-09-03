@@ -72,6 +72,9 @@ vi.mock('./components/network-listener/NetworkListener', () => ({ default: () =>
 vi.mock('./components/credential-sync-listener/CredentialSyncListener', () => ({
     default: () => null,
 }));
+vi.mock('./components/credential-refresh-listener/CredentialRefreshListener', () => ({
+    default: () => null,
+}));
 vi.mock('./components/notification-toast-listener/NotificationToastListener', () => ({
     default: () => null,
 }));
