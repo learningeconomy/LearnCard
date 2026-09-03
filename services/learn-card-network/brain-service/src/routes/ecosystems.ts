@@ -16,6 +16,7 @@ import {
     grantEcosystemMembership,
     getEcosystemMembershipRole,
     getEcosystemMembers,
+    listEcosystemMembershipsForProfile,
     revokeEcosystemMembership,
 } from '@accesslayer/ecosystem/membership';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
@@ -217,6 +218,22 @@ export const ecosystemsRouter = t.router({
 
             return inflateEcosystem(created.dataValues as FlatEcosystemType);
         }),
+
+    listMyMemberships: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/ecosystem/my-memberships',
+                tags: ['Ecosystems'],
+                summary: "List the caller's Ecosystem memberships",
+                description:
+                    'Lists every Ecosystem the calling Profile has a MEMBER_OF edge to, with the role on that edge. This is the enforced source of truth for ecosystem authority (ADR-001 §3.9).',
+            },
+        })
+        .input(z.void())
+        .output(z.array(z.object({ ecosystemId: z.string(), role: EcosystemRoleEnum })))
+        .query(async ({ ctx }) => listEcosystemMembershipsForProfile(ctx.user.profile.profileId)),
 
     listMembers: profileRoute
         .meta({

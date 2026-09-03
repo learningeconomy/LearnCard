@@ -6,10 +6,11 @@ import { catalogRouter } from './catalog';
 import { skillFrameworksRouter } from './skill-frameworks';
 import { infraRouter, registriesRouter } from './install-targets';
 import { activityRouter, bindingsRouter, installTargetsRouter } from './bindings';
+import { withLiveEcosystemRoles } from './session';
 
 export const consoleRouter = router({
     session: router({
-        get: protectedProcedure.query(({ ctx }) => ctx.session),
+        get: protectedProcedure.query(({ ctx }) => withLiveEcosystemRoles(ctx)),
     }),
     installIntents: installIntentsRouter,
     ecosystem: ecosystemRouter,

@@ -30,6 +30,22 @@ export const getEcosystemMembershipRole = async (
     return record ? (record.get('role') as EcosystemRole) : null;
 };
 
+export const listEcosystemMembershipsForProfile = async (
+    profileId: string
+): Promise<{ ecosystemId: string; role: EcosystemRole }[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (:Profile { profileId: $profileId })-[r:MEMBER_OF]->(e:Ecosystem)
+         RETURN e.id AS ecosystemId, r.role AS role
+         ORDER BY e.id`,
+        { profileId }
+    );
+
+    return result.records.map(record => ({
+        ecosystemId: record.get('ecosystemId') as string,
+        role: record.get('role') as EcosystemRole,
+    }));
+};
+
 export type EcosystemMember = {
     profileId: string;
     displayName: string;
