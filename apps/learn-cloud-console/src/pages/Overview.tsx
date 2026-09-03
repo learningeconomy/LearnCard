@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import {
+    Activity,
     AppWindow,
     BookMarked,
     Building2,
@@ -10,7 +11,8 @@ import {
     TrendingUp,
     Users,
 } from 'lucide-react';
-import { DashboardSession, getEcosystemDetail, listEcosystems } from '../api';
+import { Badge } from '../components/ui/badge';
+import { DashboardSession, EcosystemAuditEvent, getEcosystemDetail, listEcosystems } from '../api';
 import { trpc } from '../trpc';
 import type { InstallIntent } from '@learncard/types';
 
@@ -45,6 +47,48 @@ const quickActions: { title: string; desc: string; icon: LucideIcon; href: strin
     },
 ];
 
+// Install-intent audit actions (brain install-intents.ts createInstallIntentAuditEvent
+// call sites + reconciler STATUS_* transitions) → operator-readable labels.
+const ACTION_LABELS: Record<
+    string,
+    { label: string; tone: 'default' | 'success' | 'warning' | 'destructive' }
+> = {
+    PLAN_CREATED: { label: 'Install planned', tone: 'default' },
+    APPROVED: { label: 'Install approved', tone: 'success' },
+    REJECTED: { label: 'Install rejected', tone: 'destructive' },
+    APPLIED: { label: 'Install applied', tone: 'success' },
+    REVOKED: { label: 'Install revoked', tone: 'destructive' },
+    POLICY_SUSPENDED: { label: 'Suspended by policy', tone: 'warning' },
+    STATUS_APPLYING: { label: 'Applying', tone: 'default' },
+    STATUS_READY: { label: 'Ready', tone: 'success' },
+    STATUS_FAILED: { label: 'Failed', tone: 'destructive' },
+    STATUS_DEGRADED: { label: 'Degraded', tone: 'warning' },
+    BINDING_PROPOSED: { label: 'Binding proposed', tone: 'default' },
+    BINDING_APPROVED: { label: 'Binding approved', tone: 'success' },
+    BINDING_ACTIVATED: { label: 'Binding activated', tone: 'success' },
+    BINDING_REVOKED: { label: 'Binding revoked', tone: 'destructive' },
+};
+
+const describeAction = (action: string) =>
+    ACTION_LABELS[action] ?? {
+        label: action.toLowerCase().replace(/_/g, ' '),
+        tone: 'default' as const,
+    };
+
+const badgeVariant = (tone: 'default' | 'success' | 'warning' | 'destructive') =>
+    tone === 'default' ? 'outline' : tone;
+
+const relativeTime = (iso: string): string => {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const minutes = Math.round(diffMs / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.round(hours / 24);
+    return `${days}d ago`;
+};
+
 interface StatTile {
     label: string;
     value: string;
@@ -58,6 +102,7 @@ export function Overview({ session }: { session: DashboardSession }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [stats, setStats] = useState<StatTile[]>([]);
+    const [events, setEvents] = useState<EcosystemAuditEvent[]>([]);
 
     const ecosystemIds = useMemo(
         () => [...new Set(session.effectiveAccess.ecosystemRoles.map(grant => grant.ecosystemId))],
@@ -67,15 +112,28 @@ export function Overview({ session }: { session: DashboardSession }) {
     const load = useCallback(async () => {
         setError(null);
         try {
-            const [ecosystems, details, intentsPerEcosystem] = await Promise.all([
-                listEcosystems(),
-                Promise.all(ecosystemIds.map(id => getEcosystemDetail(id))),
-                Promise.all(
-                    ecosystemIds.map(id =>
-                        trpc.installIntents.listInstallIntents.query({ ecosystemId: id })
-                    )
-                ),
-            ]);
+            const [ecosystems, details, intentsPerEcosystem, eventsPerEcosystem] =
+                await Promise.all([
+                    listEcosystems(),
+                    Promise.all(ecosystemIds.map(id => getEcosystemDetail(id))),
+                    Promise.all(
+                        ecosystemIds.map(id =>
+                            trpc.installIntents.listInstallIntents.query({ ecosystemId: id })
+                        )
+                    ),
+                    Promise.all(
+                        ecosystemIds.map(id =>
+                            trpc.activity.list.query({ ecosystemId: id, limit: 12 })
+                        )
+                    ),
+                ]);
+
+            setEvents(
+                eventsPerEcosystem
+                    .flat()
+                    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+                    .slice(0, 12)
+            );
 
             // Members = unique profiles across every ecosystem this session can see
             // (ADR-001: profiles are the real primitive behind the prototype's
@@ -126,7 +184,7 @@ export function Overview({ session }: { session: DashboardSession }) {
     }, [ecosystemIds]);
 
     useEffect(() => {
-        void load();
+        void Promise.resolve().then(load);
     }, [load]);
 
     if (loading) {
@@ -177,6 +235,46 @@ export function Overview({ session }: { session: DashboardSession }) {
                     </div>
                 ))}
             </div>
+
+            {/* Activity — real ADR-008 install-intent / binding audit events */}
+            {events.length > 0 && (
+                <div>
+                    <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-emerald" /> Recent Activity
+                    </h2>
+                    <div className="bg-card border border-border rounded-xl shadow-card divide-y divide-border/60">
+                        {events.map(event => {
+                            const { label, tone } = describeAction(event.action);
+                            return (
+                                <div
+                                    key={event.id}
+                                    className="flex items-center justify-between gap-3 px-4 py-3"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <Badge
+                                            variant={badgeVariant(tone)}
+                                            className="text-[10px] shrink-0"
+                                        >
+                                            {label}
+                                        </Badge>
+                                        <span className="text-sm text-muted-foreground truncate font-mono">
+                                            {event.bindingId ?? event.intentId}
+                                        </span>
+                                        {event.actorProfileId && (
+                                            <span className="text-xs text-muted-foreground hidden sm:inline truncate">
+                                                by {event.actorProfileId}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-muted-foreground shrink-0">
+                                        {relativeTime(event.timestamp)}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Quick Actions */}
             <div>

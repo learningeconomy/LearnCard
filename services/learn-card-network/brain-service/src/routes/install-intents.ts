@@ -33,17 +33,24 @@ import {
     createBinding,
     revokeBinding as revokeBindingRecord,
 } from '@accesslayer/binding/write';
-import { readBindingById } from '@accesslayer/binding/read';
+import { listBindingsByEcosystem, readBindingById } from '@accesslayer/binding/read';
 import { getConsentDecisionRecordsForBinding } from '@accesslayer/consent-decision-record/store';
 import {
+    listInstallTargetsByEcosystemId,
     listRegistrySubscriptionsByEcosystemId,
     listWorkloadDeploymentsByEcosystemId,
 } from '@accesslayer/install-target/internal';
 import { BindingRecordValidator } from 'types/binding';
 import {
+    AppAvailabilityValidator,
     EnrichedRegistrySubscriptionValidator,
     EnrichedWorkloadDeploymentValidator,
+    IntegrationInstallValidator,
+    RegistrySubscriptionValidator,
+    WalletEnablementValidator,
+    WorkloadDeploymentValidator,
 } from 'types/install-target';
+import { InstallIntentAuditEventValidator } from 'types/install-intent-audit';
 import { InstallIntentRecordValidator, type InstallIntentRecordType } from 'types/install-intent';
 import { AppStoreListingValidator } from 'types/app-store-listing';
 import {
@@ -817,6 +824,76 @@ export const installIntentsRouter = t.router({
             return enrichInstallTargetsWithListingMetadata(
                 await listRegistrySubscriptionsByEcosystemId(input.ecosystemId)
             );
+        }),
+
+    listInstallTargets: profileRoute
+        .meta({ requiredScope: 'app-store:read' })
+        .input(ListEcosystemInstallTargetsInputValidator)
+        .output(
+            z.array(
+                z
+                    .union([
+                        IntegrationInstallValidator,
+                        AppAvailabilityValidator,
+                        WalletEnablementValidator,
+                        WorkloadDeploymentValidator,
+                        RegistrySubscriptionValidator,
+                    ])
+                    .and(
+                        z.object({
+                            displayName: z.string().optional(),
+                            tagline: z.string().optional(),
+                        })
+                    )
+            )
+        )
+        .query(async ({ ctx, input }) => {
+            await requireEcosystemRole(input.ecosystemId, ctx.user.profile.profileId, [
+                'OWNER',
+                'ADMIN',
+                'MEMBER',
+                'VIEWER',
+            ]);
+
+            return enrichInstallTargetsWithListingMetadata(
+                await listInstallTargetsByEcosystemId(input.ecosystemId)
+            );
+        }),
+
+    listBindings: profileRoute
+        .meta({ requiredScope: 'app-store:read' })
+        .input(ListEcosystemInstallTargetsInputValidator)
+        .output(z.array(BindingRecordValidator))
+        .query(async ({ ctx, input }) => {
+            await requireEcosystemRole(input.ecosystemId, ctx.user.profile.profileId, [
+                'OWNER',
+                'ADMIN',
+                'MEMBER',
+                'VIEWER',
+            ]);
+
+            return listBindingsByEcosystem(input.ecosystemId);
+        }),
+
+    listEcosystemAuditEvents: profileRoute
+        .meta({ requiredScope: 'app-store:read' })
+        .input(
+            ListEcosystemInstallTargetsInputValidator.extend({
+                limit: z.number().int().positive().max(200).default(50),
+            })
+        )
+        .output(z.array(InstallIntentAuditEventValidator))
+        .query(async ({ ctx, input }) => {
+            await requireEcosystemRole(input.ecosystemId, ctx.user.profile.profileId, [
+                'OWNER',
+                'ADMIN',
+                'MEMBER',
+                'VIEWER',
+            ]);
+
+            const events = await getInstallIntentAuditEvents({ ecosystemId: input.ecosystemId });
+
+            return events.slice(-input.limit).reverse();
         }),
 
     getInstallIntentReconcilerHealth: profileRoute

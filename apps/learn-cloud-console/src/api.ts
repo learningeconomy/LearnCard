@@ -26,6 +26,10 @@ export type WorkloadDeployment =
     inferRouterOutputs<ConsoleRouter>['infra']['listDeployments'][number];
 export type RegistrySubscription =
     inferRouterOutputs<ConsoleRouter>['registries']['listSubscriptions'][number];
+export type BindingRecord = inferRouterOutputs<ConsoleRouter>['bindings']['list'][number];
+export type EcosystemInstallTarget =
+    inferRouterOutputs<ConsoleRouter>['installTargets']['list'][number];
+export type EcosystemAuditEvent = inferRouterOutputs<ConsoleRouter>['activity']['list'][number];
 
 const TENANT_ID = 'learncard';
 const PROVIDER_ID = 'lef-wallet';

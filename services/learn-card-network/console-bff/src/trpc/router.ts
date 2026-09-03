@@ -5,6 +5,7 @@ import { groupRouter } from './group';
 import { catalogRouter } from './catalog';
 import { skillFrameworksRouter } from './skill-frameworks';
 import { infraRouter, registriesRouter } from './install-targets';
+import { activityRouter, bindingsRouter, installTargetsRouter } from './bindings';
 
 export const consoleRouter = router({
     session: router({
@@ -17,6 +18,9 @@ export const consoleRouter = router({
     skillFrameworks: skillFrameworksRouter,
     infra: infraRouter,
     registries: registriesRouter,
+    bindings: bindingsRouter,
+    installTargets: installTargetsRouter,
+    activity: activityRouter,
 });
 
 export type ConsoleRouter = typeof consoleRouter;

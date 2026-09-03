@@ -80,6 +80,32 @@ export const listInstallTargetsByIntentId = async (
     ];
 };
 
+export const listInstallTargetsByEcosystemId = async (
+    ecosystemId: string
+): Promise<InstallTargetRecord[]> => {
+    const [
+        integrationInstalls,
+        appAvailabilities,
+        walletEnablements,
+        workloadDeployments,
+        registrySubscriptions,
+    ] = await Promise.all([
+        IntegrationInstall.findMany({ where: { ecosystemId }, plain: true }),
+        AppAvailability.findMany({ where: { ecosystemId }, plain: true }),
+        WalletEnablement.findMany({ where: { ecosystemId }, plain: true }),
+        WorkloadDeployment.findMany({ where: { ecosystemId }, plain: true }),
+        RegistrySubscription.findMany({ where: { ecosystemId }, plain: true }),
+    ]);
+
+    return [
+        ...(integrationInstalls as IntegrationInstallType[]),
+        ...(appAvailabilities as AppAvailabilityType[]),
+        ...(walletEnablements as WalletEnablementType[]),
+        ...(workloadDeployments as WorkloadDeploymentType[]),
+        ...(registrySubscriptions as RegistrySubscriptionType[]),
+    ];
+};
+
 export const listWorkloadDeploymentsByEcosystemId = async (
     ecosystemId: string
 ): Promise<WorkloadDeploymentType[]> =>

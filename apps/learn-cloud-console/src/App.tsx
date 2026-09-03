@@ -19,6 +19,7 @@ import { Users } from './pages/Users';
 import { SkillsRegistries } from './pages/SkillsRegistries';
 import { Infrastructure } from './pages/Infrastructure';
 import { TrustRegistries } from './pages/TrustRegistries';
+import { Bindings } from './pages/Bindings';
 import { ComingSoon } from './pages/ComingSoon';
 import { allRoutes } from './routes';
 
@@ -30,16 +31,19 @@ export function App() {
     const [error, setError] = useState<string | null>(null);
 
     const refresh = useCallback(async () => {
-        setError(null);
         try {
-            setSession(await getSession());
+            const next = await getSession();
+            setError(null);
+            setSession(next);
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         }
     }, []);
 
     useEffect(() => {
-        void refresh().finally(() => setStatus('idle'));
+        void Promise.resolve()
+            .then(refresh)
+            .finally(() => setStatus('idle'));
     }, [refresh]);
 
     const run = async (action: () => Promise<unknown>) => {
@@ -143,6 +147,9 @@ export function App() {
                         <Route path="/trust-registries">
                             <TrustRegistries session={session} />
                         </Route>
+                        <Route path="/bindings">
+                            <Bindings session={session} />
+                        </Route>
                         {allRoutes
                             .filter(
                                 r =>
@@ -157,7 +164,8 @@ export function App() {
                                     r.path !== '/users' &&
                                     r.path !== '/skills-registries' &&
                                     r.path !== '/plugins' &&
-                                    r.path !== '/trust-registries'
+                                    r.path !== '/trust-registries' &&
+                                    r.path !== '/bindings'
                             )
                             .map(route => (
                                 <Route key={route.path} path={route.path}>
