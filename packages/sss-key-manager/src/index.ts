@@ -44,6 +44,22 @@ export {
 } from './crypto';
 
 export {
+    EMAIL_RELAY_ALGORITHM,
+    EMAIL_RELAY_ENVELOPE_VERSION,
+    encryptEmailRelayPayload,
+    decryptEmailRelayPayload,
+    generateEmailRelayConfirmationCode,
+    parseEmailRelayEnvelope,
+    parseEmailRelayPlaintext,
+} from './email-relay-crypto';
+
+export type {
+    EmailRelayBranding,
+    EmailRelayEnvelope,
+    EmailRelayPlaintext,
+} from './email-relay-crypto';
+
+export {
     createPasskeyCredential,
     deriveKeyFromPasskey,
     encryptShareWithPasskey,
@@ -125,6 +141,7 @@ export type {
     AuthProvider,
     AuthUser,
     AuthProviderType,
+    DidAuthVpSigner,
     ContactMethod,
     ContactMethodType,
     RecoveryMethod,
@@ -134,6 +151,7 @@ export type {
     RecoveryResult,
     RecoverySetupInput,
     RecoverySetupResult,
+    RecoveryConfirmationInput,
     PasskeyRecoveryMethod,
     BackupFileRecoveryMethod,
     RecoveryPhraseRecoveryMethod,
