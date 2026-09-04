@@ -17,6 +17,7 @@ import { Share } from '@capacitor/share';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
+import { toFriendlyRecoveryError } from './recoveryErrors';
 
 const log = getLogger('recovery-setup-modal');
 
@@ -182,8 +183,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setShowUpdateForm(false);
             onCompleted?.('phrase');
         } catch (e) {
-            log.error('handleConfirmPhrase error', e);
-            setError(e instanceof Error ? e.message : m['recovery.phraseWordsMismatch']());
+            setError(toFriendlyRecoveryError(e));
         } finally {
             setLoading(false);
         }
@@ -273,8 +273,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setShowUpdateForm(false);
             onCompleted?.('backup');
         } catch (e) {
-            log.error('handleConfirmBackup error', e);
-            setError(e instanceof Error ? e.message : m['recovery.incorrectPassword']());
+            setError(toFriendlyRecoveryError(e));
         } finally {
             setLoading(false);
         }
@@ -349,8 +348,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setShowUpdateForm(false);
             onCompleted?.('email');
         } catch (e) {
-            log.error('handleConfirmEmailRecovery error', e);
-            setError(e instanceof Error ? e.message : m['recovery.incorrectCode']());
+            setError(toFriendlyRecoveryError(e));
         } finally {
             setLoading(false);
         }
@@ -544,50 +542,6 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         configuredRow(m['recovery.method.passkeySetup'](), () =>
                             setShowUpdateForm(true)
                         )
-                    ) : phraseChallengeStarted ? (
-                        <>
-                            <div>
-                                <h3 className="text-sm font-semibold text-grayscale-900 mb-1">
-                                    {m['recovery.verifyPhraseTitle']()}
-                                </h3>
-                                <p className="text-sm text-grayscale-600 leading-relaxed">
-                                    {m['recovery.verifyPhraseDescription']()}
-                                </p>
-                            </div>
-
-                            {phraseChallengeWordIndices.map((wordIndex, challengeIndex) => (
-                                <div key={wordIndex}>
-                                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                        {m['recovery.wordNumber']({ number: wordIndex + 1 })}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        autoCapitalize="none"
-                                        autoCorrect="off"
-                                        value={phraseChallengeWords[challengeIndex] ?? ''}
-                                        onChange={event =>
-                                            setPhraseChallengeWords(words =>
-                                                words.map((word, index) =>
-                                                    index === challengeIndex
-                                                        ? event.target.value
-                                                              .trimStart()
-                                                              .toLowerCase()
-                                                        : word
-                                                )
-                                            )
-                                        }
-                                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                                    />
-                                </div>
-                            ))}
-
-                            {primaryButton(
-                                m['recovery.confirmPhrase'](),
-                                handleConfirmPhrase,
-                                loading || phraseChallengeWords.some(word => !word.trim()),
-                                m['common.verifying']()
-                            )}
-                        </>
                     ) : (
                         <>
                             {isUpdate && updateWarning(m['recovery.replacePasskey']())}
@@ -646,6 +600,50 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         configuredRow(m['recovery.method.phraseSaved'](), () =>
                             setShowUpdateForm(true)
                         )
+                    ) : phraseChallengeStarted ? (
+                        <>
+                            <div>
+                                <h3 className="text-sm font-semibold text-grayscale-900 mb-1">
+                                    {m['recovery.verifyPhraseTitle']()}
+                                </h3>
+                                <p className="text-sm text-grayscale-600 leading-relaxed">
+                                    {m['recovery.verifyPhraseDescription']()}
+                                </p>
+                            </div>
+
+                            {phraseChallengeWordIndices.map((wordIndex, challengeIndex) => (
+                                <div key={wordIndex}>
+                                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                        {m['recovery.wordNumber']({ number: wordIndex + 1 })}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        autoCapitalize="none"
+                                        autoCorrect="off"
+                                        value={phraseChallengeWords[challengeIndex] ?? ''}
+                                        onChange={event =>
+                                            setPhraseChallengeWords(words =>
+                                                words.map((word, index) =>
+                                                    index === challengeIndex
+                                                        ? event.target.value
+                                                              .trimStart()
+                                                              .toLowerCase()
+                                                        : word
+                                                )
+                                            )
+                                        }
+                                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                    />
+                                </div>
+                            ))}
+
+                            {primaryButton(
+                                m['recovery.confirmPhrase'](),
+                                handleConfirmPhrase,
+                                loading || phraseChallengeWords.some(word => !word.trim()),
+                                m['common.verifying']()
+                            )}
+                        </>
                     ) : !recoveryPhrase ? (
                         <>
                             {isUpdate && updateWarning(m['recovery.generateNewPhrase']())}

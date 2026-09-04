@@ -8,9 +8,12 @@ import {
     setValidChallengeForDid,
 } from '@cache/challenges';
 import {
+    activateUserKeyByAuthProvider,
     createUserKeysIndexes,
     getUserKeysCollection,
     PROVISIONAL_MIGRATION_TTL_MS,
+    upsertUserKeyByAuthProvider,
+    UserKeyVersionConflictError,
     type MongoUserKeyType,
 } from '@models';
 
@@ -112,6 +115,108 @@ describe('P0-6 immutable provider identity', () => {
             ).toMatchObject({ encryptedData: 'existing-auth-share' });
             expect(storedNewResult?.authShare?.encryptedData).toBe('new-auth-share');
             expect(storedNewResult?.sssActivationState).toBe('provisional');
+        } finally {
+            await collection.deleteMany({ 'contactMethod.value': email });
+        }
+    });
+});
+
+describe('share version concurrency', () => {
+    it('allows exactly one auth-share update from the same starting version', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const email = `auth-share-cas-${suffix}@example.com`;
+        const uid = `uid-${suffix}`;
+        const { learnCard } = await getUser('9'.repeat(64));
+        const collection = getUserKeysCollection();
+        const authProvider = { type: 'firebase' as const, id: uid };
+        const key = makeUserKey(email, uid, learnCard.id.did());
+
+        await collection.insertOne(key);
+
+        try {
+            const updates = await Promise.allSettled([
+                upsertUserKeyByAuthProvider(
+                    key.contactMethod,
+                    authProvider,
+                    {
+                        authShare: { encryptedData: 'candidate-a', encryptedDek: 'dek', iv: 'iv' },
+                    },
+                    1
+                ),
+                upsertUserKeyByAuthProvider(
+                    key.contactMethod,
+                    authProvider,
+                    {
+                        authShare: { encryptedData: 'candidate-b', encryptedDek: 'dek', iv: 'iv' },
+                    },
+                    1
+                ),
+            ]);
+            const fulfilled = updates.filter(result => result.status === 'fulfilled');
+            const rejected = updates.filter(result => result.status === 'rejected');
+            const stored = await collection.findOne({
+                authProviders: { $elemMatch: authProvider },
+            });
+
+            expect(fulfilled).toHaveLength(1);
+            expect(rejected).toHaveLength(1);
+            expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(
+                UserKeyVersionConflictError
+            );
+            expect(stored?.shareVersion).toBe(2);
+            expect(stored?.previousAuthShares.map(entry => entry.shareVersion)).toEqual([1]);
+            expect([
+                ...(stored?.previousAuthShares.map(entry => entry.shareVersion) ?? []),
+                stored?.shareVersion,
+            ]).toEqual([1, 2]);
+        } finally {
+            await collection.deleteMany({ 'contactMethod.value': email });
+        }
+    });
+
+    it('rejects activation from a stale version after a concurrent share rotation', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const email = `activation-cas-${suffix}@example.com`;
+        const uid = `uid-${suffix}`;
+        const { learnCard } = await getUser('8'.repeat(64));
+        const collection = getUserKeysCollection();
+        const authProvider = { type: 'firebase' as const, id: uid };
+        const key = makeUserKey(email, uid, learnCard.id.did());
+
+        key.keyProvider = 'web3auth';
+        key.sssActivationState = 'provisional';
+        key.provisionalCreatedAt = new Date();
+        key.recoveryMethods = [
+            {
+                type: 'backup',
+                createdAt: new Date(),
+                confirmationStatus: 'confirmed',
+                confirmedAt: new Date(),
+                shareVersion: 1,
+            },
+        ];
+        await collection.insertOne(key);
+
+        try {
+            await upsertUserKeyByAuthProvider(
+                key.contactMethod,
+                authProvider,
+                {
+                    authShare: { encryptedData: 'rotated-share', encryptedDek: 'dek', iv: 'iv' },
+                },
+                1
+            );
+
+            await expect(activateUserKeyByAuthProvider(authProvider, 1, true)).resolves.toBe(false);
+
+            const stored = await collection.findOne({
+                authProviders: { $elemMatch: authProvider },
+            });
+
+            expect(stored?.shareVersion).toBe(2);
+            expect(stored?.previousAuthShares.map(entry => entry.shareVersion)).toEqual([1]);
+            expect(stored?.sssActivationState).toBe('provisional');
+            expect(stored?.keyProvider).toBe('web3auth');
         } finally {
             await collection.deleteMany({ 'contactMethod.value': email });
         }
@@ -339,6 +444,12 @@ describe('P0-6 fresh DID authorization', () => {
                         authToken: token,
                         providerType: 'firebase',
                         code: '000000',
+                    }),
+                () =>
+                    caller.keys.deleteUserKey({
+                        authToken: token,
+                        providerType: 'firebase',
+                        challenge: 'untrusted-challenge',
                     }),
             ];
 

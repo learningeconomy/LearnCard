@@ -1712,6 +1712,11 @@
         }
     },
     "recovery": {
+        "error.invalidPhrase": "Esas palabras no coinciden con tu frase de recuperación. Revísalas e inténtalo de nuevo.",
+        "error.invalidPassword": "Contraseña incorrecta o no se pudo leer el archivo. Por favor, inténtalo de nuevo.",
+        "error.invalidCode": "Ese código es incorrecto o ha expirado. Solicita uno nuevo e inténtalo de nuevo.",
+        "error.network": "Problema de conexión. Por favor, comprueba tu internet e inténtalo de nuevo.",
+        "error.default": "Algo salió mal. Por favor, inténtalo de nuevo.",
         "prompt": {
             "openAria": "Configurar una forma de volver a iniciar sesión",
             "snoozeAria": "Recordármelo en 7 días",

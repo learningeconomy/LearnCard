@@ -1712,6 +1712,11 @@
         }
     },
     "recovery": {
+        "error.invalidPhrase": "Ces mots ne correspondent pas à votre phrase de récupération. Vérifiez-les et réessayez.",
+        "error.invalidPassword": "Mot de passe incorrect ou le fichier n'a pas pu être lu. Veuillez réessayer.",
+        "error.invalidCode": "Ce code est incorrect ou a expiré. Demandez-en un nouveau et réessayez.",
+        "error.network": "Problème de connexion. Veuillez vérifier votre internet et réessayer.",
+        "error.default": "Quelque chose s'est mal passé. Veuillez réessayer.",
         "prompt": {
             "openAria": "Configurer un moyen de se reconnecter",
             "snoozeAria": "Me le rappeler dans 7 jours",

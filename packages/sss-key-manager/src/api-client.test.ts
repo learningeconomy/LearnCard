@@ -1,32 +1,11 @@
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SSSApiClient } from './api-client';
-import { bufferToBase64 } from './crypto';
-import { decryptEmailRelayPayload } from './email-relay-crypto';
+
 import type { AuthProvider } from './types';
 
-// P0-4: SSSApiClient must never place tokens/shares in a URL query string —
-// only in headers or the POST/PUT/DELETE body. See sss-key-manager AGENTS.md
-// / sss-prod-cutover-p0.md P0-4.
-
 const SENTINEL_TOKEN = 'SENTINEL_TOKEN_XYZ';
-const SENTINEL_SHARE = 'SENTINEL_SHARE_XYZ';
-const EMAIL_SHARE = `0001${'ab'.repeat(48)}`;
-let relayPublicKey = '';
-let relayPrivateKey = '';
-
-beforeAll(async () => {
-    const keyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, [
-        'deriveBits',
-    ]);
-    const [publicKey, privateKey] = await Promise.all([
-        crypto.subtle.exportKey('spki', keyPair.publicKey),
-        crypto.subtle.exportKey('pkcs8', keyPair.privateKey),
-    ]);
-
-    relayPublicKey = bufferToBase64(publicKey);
-    relayPrivateKey = bufferToBase64(privateKey);
-});
+const DID_CHALLENGE_ERROR = 'This operation requires the DID-challenge flow; use createSSSStrategy';
 
 const createMockAuthProvider = (): AuthProvider => ({
     getIdToken: vi.fn().mockResolvedValue(SENTINEL_TOKEN),
@@ -39,7 +18,7 @@ const createMockAuthProvider = (): AuthProvider => ({
     signOut: vi.fn().mockResolvedValue(undefined),
 });
 
-describe('SSSApiClient — no secrets in URLs (P0-4)', () => {
+describe('SSSApiClient', () => {
     let client: SSSApiClient;
     let calls: { url: string; init?: RequestInit }[];
 
@@ -50,9 +29,16 @@ describe('SSSApiClient — no secrets in URLs (P0-4)', () => {
             calls.push({ url: url.toString(), init });
             return new Response(
                 JSON.stringify({
-                    success: true,
+                    authShare: null,
+                    primaryDid: null,
+                    securityLevel: 'basic',
+                    recoveryMethods: [],
+                    keyProvider: 'sss',
                     shareVersion: 1,
-                    maskedEmail: 're***@example.com',
+                    sssActivationState: 'active',
+                    recoverySessionToken: 'recovery-session-token',
+                    rebindSessionToken: 'rebind-session-token',
+                    recoveryMethodsRequireConfirmation: [],
                 }),
                 { status: 200 }
             );
@@ -61,8 +47,6 @@ describe('SSSApiClient — no secrets in URLs (P0-4)', () => {
         client = new SSSApiClient({
             serverUrl: 'http://test-server:5100/api',
             authProvider: createMockAuthProvider(),
-            escrowRelayPublicKey: relayPublicKey,
-            escrowRelayKeyId: 'api-client-test-key',
         });
     });
 
@@ -70,110 +54,69 @@ describe('SSSApiClient — no secrets in URLs (P0-4)', () => {
         vi.restoreAllMocks();
     });
 
-    const assertUrlIsClean = (url: string): void => {
-        expect(url).not.toContain(SENTINEL_TOKEN);
-        expect(url).not.toContain(SENTINEL_SHARE);
-
-        const queryString = url.split('?')[1] ?? '';
-        expect(queryString.toLowerCase()).not.toMatch(/token=/);
-        expect(queryString.toLowerCase()).not.toMatch(/share=/);
-    };
-
-    it('getAuthShare', async () => {
+    it('uses X-Auth-Token rather than Authorization for provider-authenticated reads', async () => {
         await client.getAuthShare();
-        expect(calls).toHaveLength(1);
-        assertUrlIsClean(calls[0]!.url);
-    });
 
-    it('storeAuthShare', async () => {
-        await client.storeAuthShare({
-            authShare: { encryptedData: SENTINEL_SHARE, encryptedDek: '', iv: 'iv' },
-            primaryDid: 'did:key:zTest',
-        });
-        expect(calls).toHaveLength(1);
-        assertUrlIsClean(calls[0]!.url);
-    });
-
-    it('addRecoveryMethod', async () => {
-        await client.addRecoveryMethod({
-            type: 'backup',
-            encryptedShare: { encryptedData: SENTINEL_SHARE, iv: 'iv' },
-        });
-        expect(calls).toHaveLength(1);
-        assertUrlIsClean(calls[0]!.url);
-    });
-
-    it('getRecoveryShare sends the token via header, not the URL', async () => {
-        await client.getRecoveryShare('passkey', 'cred-1');
-        expect(calls).toHaveLength(1);
-        assertUrlIsClean(calls[0]!.url);
-
-        // Confirm the token is actually transmitted — just not via the URL.
         const headers = calls[0]!.init?.headers as Record<string, string>;
+        expect(headers['X-Auth-Token']).toBe(SENTINEL_TOKEN);
+        expect(headers.Authorization).toBeUndefined();
+        expect(calls[0]!.url).not.toContain(SENTINEL_TOKEN);
+    });
+
+    it('keeps recovery read credentials out of the URL', async () => {
+        await client.getRecoveryShare('passkey', 'credential-1');
+
+        const headers = calls[0]!.init?.headers as Record<string, string>;
+        expect(headers['X-Auth-Token']).toBe(SENTINEL_TOKEN);
+        expect(calls[0]!.url).not.toContain(SENTINEL_TOKEN);
+        expect(calls[0]!.url).not.toMatch(/[?&](token|share)=/i);
+    });
+
+    it('retains the valid unauthenticated identity-recovery helpers', async () => {
+        await client.startIdentityRecovery('recovery@example.com');
+        await client.verifyIdentityRecovery('recovery@example.com', '123456');
+        await client.useIdentityRecoverySession('recovery-session-token', 'phrase');
+
+        expect(calls.map(call => call.url)).toEqual([
+            'http://test-server:5100/api/keys/recovery-session/start',
+            'http://test-server:5100/api/keys/recovery-session/verify',
+            'http://test-server:5100/api/keys/recovery-session/recover',
+        ]);
+    });
+
+    it('retains identity rebind because it supplies both DID proof and the auth token', async () => {
+        await client.completeIdentityRecoveryRebind({
+            recoverySessionToken: 'rebind-session-token',
+            newAuthToken: SENTINEL_TOKEN,
+            providerType: 'firebase',
+            primaryDid: 'did:key:zTest',
+            authShare: { encryptedData: 'encrypted-share', encryptedDek: '', iv: '' },
+            didAuthVp: 'did-auth-vp',
+        });
+
+        const headers = calls[0]!.init?.headers as Record<string, string>;
+        expect(headers.Authorization).toBe('Bearer did-auth-vp');
         expect(headers['X-Auth-Token']).toBe(SENTINEL_TOKEN);
     });
 
-    it('markMigrated', async () => {
-        await client.markMigrated();
-        expect(calls).toHaveLength(1);
-        assertUrlIsClean(calls[0]!.url);
-    });
-
-    it('activate', async () => {
-        await client.activate();
-        expect(calls).toHaveLength(1);
-        assertUrlIsClean(calls[0]!.url);
-    });
-
-    it('sendEmailBackupShare', async () => {
-        await client.sendEmailBackupShare(EMAIL_SHARE, 'recovery@example.com');
-        expect(calls).toHaveLength(1);
-        assertUrlIsClean(calls[0]!.url);
-
-        const body = JSON.parse(calls[0]!.init?.body as string);
-        const decrypted = await decryptEmailRelayPayload(body.relayPayload, relayPrivateKey);
-
-        expect(calls[0]!.init?.body).not.toContain(EMAIL_SHARE);
-        expect(body.emailShare).toBeUndefined();
-        expect(decrypted.recoveryKey).toBe(EMAIL_SHARE);
-        expect(decrypted.targetEmail).toBe('recovery@example.com');
-        expect(decrypted.confirmationCode).toBe(body.confirmationCode);
-    });
-
-    it('addRecoveryEmail', async () => {
-        await client.addRecoveryEmail('recovery@example.com');
-        expect(calls).toHaveLength(1);
-        assertUrlIsClean(calls[0]!.url);
-    });
-
-    it('verifyRecoveryEmail', async () => {
-        await client.verifyRecoveryEmail('123456');
-        expect(calls).toHaveLength(1);
-        assertUrlIsClean(calls[0]!.url);
-    });
-
-    it('deleteUserKey', async () => {
-        await client.deleteUserKey();
-        expect(calls).toHaveLength(1);
-        assertUrlIsClean(calls[0]!.url);
-    });
-
-    it('grep-able guarantee: no "token=" or "share=" in any constructed URL across every method', async () => {
-        await client.getAuthShare();
-        await client.storeAuthShare({
-            authShare: { encryptedData: SENTINEL_SHARE, encryptedDek: '', iv: 'iv' },
-            primaryDid: 'did:key:zTest',
-        });
-        await client.addRecoveryMethod({ type: 'phrase' });
-        await client.getRecoveryShare('phrase');
-        await client.markMigrated();
-        await client.activate();
-        await client.sendEmailBackupShare(EMAIL_SHARE, 'recovery@example.com');
-        await client.addRecoveryEmail('recovery@example.com');
-        await client.verifyRecoveryEmail('123456');
-        await client.deleteUserKey();
-
-        expect(calls.length).toBeGreaterThanOrEqual(10);
-        calls.forEach(call => assertUrlIsClean(call.url));
+    it.each([
+        [
+            'storeAuthShare',
+            () =>
+                client.storeAuthShare({
+                    authShare: { encryptedData: 'share', encryptedDek: '', iv: '' },
+                    primaryDid: 'did:key:zTest',
+                }),
+        ],
+        ['addRecoveryMethod', () => client.addRecoveryMethod({ type: 'phrase' })],
+        ['markMigrated', () => client.markMigrated()],
+        ['activate', () => client.activate()],
+        ['sendEmailBackupShare', () => client.sendEmailBackupShare('email-share')],
+        ['addRecoveryEmail', () => client.addRecoveryEmail('recovery@example.com')],
+        ['verifyRecoveryEmail', () => client.verifyRecoveryEmail('123456')],
+        ['deleteUserKey', () => client.deleteUserKey()],
+    ])('%s fails closed instead of calling a route without DID proof', async (_name, call) => {
+        await expect(call()).rejects.toThrow(DID_CHALLENGE_ERROR);
+        expect(calls).toHaveLength(0);
     });
 });

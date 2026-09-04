@@ -15,6 +15,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { AuthCoordinator, createAuthCoordinator } from '../AuthCoordinator';
+import { IdentityRecoverySessionConsumedError } from '@learncard/sss-key-manager';
 import { AuthSessionError } from '../types';
 
 import type {
@@ -1647,6 +1648,80 @@ describe('AuthCoordinator', () => {
                 privateKey: 'rotated-private-key',
                 did: 'did:key:z123',
                 authUser: mockUser,
+            });
+        });
+
+        it('returns to email entry when the one-shot recovery session was consumed', async () => {
+            const recoveryMethods = [{ type: 'phrase', createdAt: new Date() }];
+            const cancelIdentityRecovery = vi.fn();
+            const { coordinator } = setup({
+                keyDerivation: {
+                    startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                    verifyIdentityRecovery: vi.fn().mockResolvedValue({
+                        recoverySessionToken: 'recovery-session-token',
+                        recoveryMethods,
+                    }),
+                    prepareIdentityRecovery: vi
+                        .fn()
+                        .mockRejectedValue(
+                            new IdentityRecoverySessionConsumedError(
+                                'Request a new recovery code and try again.'
+                            )
+                        ),
+                    cancelIdentityRecovery,
+                },
+            });
+
+            coordinator.beginIdentityRecovery();
+            await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+            await coordinator.verifyIdentityRecoveryCode('123456');
+
+            const result = await coordinator.prepareIdentityRecovery({
+                method: 'phrase',
+                phrase: 'valid phrase input',
+            });
+
+            expect(result).toEqual({
+                status: 'identity_recovery',
+                phase: 'enter_email',
+                email: 'recovery@example.com',
+                recoveryMethods: [],
+                error: 'Request a new recovery code and try again.',
+            });
+            expect(result).not.toHaveProperty('recoverySessionToken');
+            expect(cancelIdentityRecovery).toHaveBeenCalledOnce();
+        });
+
+        it('keeps a valid session available after local recovery input validation fails', async () => {
+            const recoveryMethods = [{ type: 'phrase', createdAt: new Date() }];
+            const { coordinator } = setup({
+                keyDerivation: {
+                    startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                    verifyIdentityRecovery: vi.fn().mockResolvedValue({
+                        recoverySessionToken: 'recovery-session-token',
+                        recoveryMethods,
+                    }),
+                    prepareIdentityRecovery: vi
+                        .fn()
+                        .mockRejectedValue(new Error('Invalid recovery phrase')),
+                },
+            });
+
+            coordinator.beginIdentityRecovery();
+            await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+            await coordinator.verifyIdentityRecoveryCode('123456');
+
+            const result = await coordinator.prepareIdentityRecovery({
+                method: 'phrase',
+                phrase: 'invalid phrase input',
+            });
+
+            expect(result).toMatchObject({
+                status: 'identity_recovery',
+                phase: 'choose_method',
+                recoverySessionToken: 'recovery-session-token',
+                recoveryMethods,
+                error: 'Invalid recovery phrase',
             });
         });
     });

@@ -18,6 +18,7 @@ const log = getLogger('auth-coordinator');
 
 import { withDeadline, withDeadlineOr, isDeadlineError } from '../helpers/withDeadline';
 import { withNetworkFault } from '../helpers/networkFault';
+import { IdentityRecoverySessionConsumedError } from '@learncard/sss-key-manager';
 
 import { AuthSessionError } from './types';
 
@@ -738,21 +739,48 @@ export class AuthCoordinator {
             throw new Error('Identity recovery is not ready for a recovery method');
         }
 
-        const result = await this.keyDerivation.prepareIdentityRecovery({
-            recoverySessionToken: this.state.recoverySessionToken,
-            input,
-            didFromPrivateKey: this.config.didFromPrivateKey,
-        });
         const email = this.state.email;
         const recoveryMethods = this.state.recoveryMethods;
 
-        this.setState({
-            status: 'identity_recovery',
-            phase: 'new_login',
-            email,
-            recoveryMethods,
-            recoveredDid: result.did,
-        });
+        try {
+            const result = await this.keyDerivation.prepareIdentityRecovery({
+                recoverySessionToken: this.state.recoverySessionToken,
+                input,
+                didFromPrivateKey: this.config.didFromPrivateKey,
+            });
+
+            this.setState({
+                status: 'identity_recovery',
+                phase: 'new_login',
+                email,
+                recoveryMethods,
+                recoveredDid: result.did,
+            });
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error ? error.message : 'Identity recovery failed';
+
+            if (error instanceof IdentityRecoverySessionConsumedError) {
+                this.keyDerivation.cancelIdentityRecovery?.();
+                this.setState({
+                    status: 'identity_recovery',
+                    phase: 'enter_email',
+                    email,
+                    recoveryMethods: [],
+                    error: errorMessage,
+                });
+            } else {
+                this.setState({
+                    status: 'identity_recovery',
+                    phase: 'choose_method',
+                    email,
+                    recoverySessionToken: this.state.recoverySessionToken,
+                    recoveryMethods,
+                    error: errorMessage,
+                });
+            }
+        }
+
         return this.state;
     }
 

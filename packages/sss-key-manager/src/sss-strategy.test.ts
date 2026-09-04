@@ -20,7 +20,9 @@ import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vite
 import {
     createSSSStrategy,
     formatVersionedEmailShare,
+    IdentityRecoverySessionConsumedError,
     parseVersionedEmailShare,
+    selectRecoveryPhraseChallengeIndices,
 } from './sss-strategy';
 import { reconstructFromShares } from './sss';
 import { AtomicUpdateError, splitAndVerify, verifyStoredShares } from './atomic-operations';
@@ -966,6 +968,37 @@ describe('createSSSStrategy', () => {
     });
 
     describe('lost login identity recovery', () => {
+        it('rejects an invalid phrase before submitting the one-shot session token', async () => {
+            const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+            await expect(
+                strategy.prepareIdentityRecovery!({
+                    recoverySessionToken: 'recovery-session-token',
+                    input: { method: 'phrase', phrase: 'not a valid recovery phrase' },
+                    didFromPrivateKey: async () => 'did:key:zExpected',
+                })
+            ).rejects.toThrow('Invalid recovery phrase');
+
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        it('marks failures after session submission as consumed', async () => {
+            vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+                new Response(JSON.stringify({ message: 'Recovery session expired' }), {
+                    status: 401,
+                    statusText: 'Unauthorized',
+                })
+            );
+
+            await expect(
+                strategy.prepareIdentityRecovery!({
+                    recoverySessionToken: 'recovery-session-token',
+                    input: { method: 'email', emailShare: '0001deadbeef' },
+                    didFromPrivateKey: async () => 'did:key:zExpected',
+                })
+            ).rejects.toBeInstanceOf(IdentityRecoverySessionConsumedError);
+        });
+
         it('hard-fails a DID mismatch before retaining rebind state or rotating shares', async () => {
             const originalKey = 'e1f2a3b4c5d6'.padEnd(64, '0');
             const { localKey, remoteKey } = await strategy.splitKey(originalKey);
@@ -2631,6 +2664,24 @@ describe('createSSSStrategy', () => {
     // -----------------------------------------------------------------------
     // Versioned email share format edge cases
     // -----------------------------------------------------------------------
+
+    describe('selectRecoveryPhraseChallengeIndices', () => {
+        it('rejects values in the partial tail before accepting uniform-range values', () => {
+            const randomValues = [0xffff_ffff, 3, 7, 9];
+            const getRandomValues = vi
+                .spyOn(crypto, 'getRandomValues')
+                .mockImplementation(array => {
+                    (array as Uint32Array)[0] = randomValues.shift()!;
+                    return array;
+                });
+
+            const indices = selectRecoveryPhraseChallengeIndices(10, 3);
+
+            expect(indices).toEqual([3, 7, 9]);
+            expect(indices.every(index => index >= 0 && index < 10)).toBe(true);
+            expect(getRandomValues.mock.calls.length).toBeGreaterThan(3);
+        });
+    });
 
     describe('formatVersionedEmailShare / parseVersionedEmailShare', () => {
         it('round-trip: format then parse recovers the original share and version', () => {

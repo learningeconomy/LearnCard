@@ -5,7 +5,6 @@
 import type {
     AuthProvider,
     AuthProviderType,
-    ContactMethod,
     ServerEncryptedShare,
     RecoveryMethodInfo,
     EncryptedShare,
@@ -13,11 +12,14 @@ import type {
     SssActivationState,
     IdentityRecoverySession,
 } from './types';
-import {
-    encryptEmailRelayPayload,
-    generateEmailRelayConfirmationCode,
-    type EmailRelayBranding,
-} from './email-relay-crypto';
+import type { EmailRelayBranding } from './email-relay-crypto';
+
+const DID_CHALLENGE_REQUIRED_ERROR =
+    'This operation requires the DID-challenge flow; use createSSSStrategy';
+
+const throwDidChallengeRequired = (): never => {
+    throw new Error(DID_CHALLENGE_REQUIRED_ERROR);
+};
 
 export interface GetAuthShareResponse {
     authShare: ServerEncryptedShare | null;
@@ -60,40 +62,22 @@ export interface ApiClientConfig {
     emailBranding?: EmailRelayBranding;
 }
 
+/** @deprecated Use `createSSSStrategy`, which implements the hardened DID-challenge flow. */
 export class SSSApiClient {
     private serverUrl: string;
     private authProvider: AuthProvider;
-    private escrowRelayPublicKey: string;
-    private escrowRelayKeyId: string;
-    private emailBranding?: EmailRelayBranding;
 
     constructor(config: ApiClientConfig) {
         this.serverUrl = config.serverUrl.replace(/\/$/, '');
         this.authProvider = config.authProvider;
-        this.escrowRelayPublicKey = config.escrowRelayPublicKey ?? '';
-        this.escrowRelayKeyId = config.escrowRelayKeyId ?? '';
-        this.emailBranding = config.emailBranding;
     }
 
     private async getAuthHeaders(): Promise<Record<string, string>> {
         const token = await this.authProvider.getIdToken();
         return {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            'X-Auth-Token': token,
         };
-    }
-
-    private async getContactMethodFromUser(): Promise<ContactMethod | null> {
-        const user = await this.authProvider.getCurrentUser();
-        if (!user) return null;
-
-        if (user.email) {
-            return { type: 'email' as const, value: user.email.toLowerCase() };
-        }
-        if (user.phone) {
-            return { type: 'phone' as const, value: user.phone };
-        }
-        return null;
     }
 
     async getAuthShare(): Promise<GetAuthShareResponse | null> {
@@ -116,40 +100,14 @@ export class SSSApiClient {
         return response.json();
     }
 
-    async storeAuthShare(input: StoreAuthShareInput): Promise<void> {
-        const headers = await this.getAuthHeaders();
-        const providerType = this.authProvider.getProviderType();
-
-        const response = await fetch(`${this.serverUrl}/keys/auth-share`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify({
-                ...input,
-                providerType,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to store auth share: ${response.statusText}`);
-        }
+    /** @deprecated Requires DID-challenge authorization. Use `createSSSStrategy`. */
+    async storeAuthShare(_input: StoreAuthShareInput): Promise<void> {
+        throwDidChallengeRequired();
     }
 
-    async addRecoveryMethod(input: StoreRecoveryShareInput): Promise<void> {
-        const headers = await this.getAuthHeaders();
-        const providerType = this.authProvider.getProviderType();
-
-        const response = await fetch(`${this.serverUrl}/keys/recovery`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                ...input,
-                providerType,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to add recovery method: ${response.statusText}`);
-        }
+    /** @deprecated Requires DID-challenge authorization. Use `createSSSStrategy`. */
+    async addRecoveryMethod(_input: StoreRecoveryShareInput): Promise<void> {
+        throwDidChallengeRequired();
     }
 
     async getRecoveryShare(
@@ -258,129 +216,33 @@ export class SSSApiClient {
         return response.json();
     }
 
+    /** @deprecated Requires DID-challenge authorization. Use `createSSSStrategy`. */
     async markMigrated(): Promise<void> {
-        const headers = await this.getAuthHeaders();
-        const providerType = this.authProvider.getProviderType();
-
-        const response = await fetch(`${this.serverUrl}/keys/migrate`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ providerType }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to mark as migrated: ${response.statusText}`);
-        }
+        throwDidChallengeRequired();
     }
 
+    /** @deprecated Requires DID-challenge authorization. Use `createSSSStrategy`. */
     async activate(): Promise<void> {
-        const headers = await this.getAuthHeaders();
-        const providerType = this.authProvider.getProviderType();
-
-        const response = await fetch(`${this.serverUrl}/keys/activate`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ providerType }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to activate SSS key: ${response.statusText}`);
-        }
+        throwDidChallengeRequired();
     }
 
-    async sendEmailBackupShare(emailShare: string, overrideEmail?: string): Promise<void> {
-        const headers = await this.getAuthHeaders();
-        const providerType = this.authProvider.getProviderType();
-
-        let email = overrideEmail;
-
-        if (!email) {
-            const user = await this.authProvider.getCurrentUser();
-            email = user?.email;
-        }
-
-        if (!email) {
-            throw new Error('Cannot send email backup share: no email address available');
-        }
-
-        const confirmationCode = generateEmailRelayConfirmationCode();
-        const relayPayload = await encryptEmailRelayPayload(
-            {
-                targetEmail: email,
-                recoveryKey: emailShare,
-                confirmationCode,
-                branding: this.emailBranding,
-            },
-            this.escrowRelayPublicKey,
-            this.escrowRelayKeyId
-        );
-
-        const response = await fetch(`${this.serverUrl}/keys/email-backup`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                providerType,
-                relayPayload,
-                confirmationCode,
-                email,
-            }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to send email backup share: ${response.statusText}`);
-        }
+    /** @deprecated Requires DID-challenge authorization. Use `createSSSStrategy`. */
+    async sendEmailBackupShare(_emailShare: string, _overrideEmail?: string): Promise<void> {
+        throwDidChallengeRequired();
     }
 
-    async addRecoveryEmail(email: string): Promise<void> {
-        const token = await this.authProvider.getIdToken();
-        const providerType = this.authProvider.getProviderType();
-
-        const response = await fetch(`${this.serverUrl}/keys/recovery-email/add`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ authToken: token, providerType, email }),
-        });
-
-        if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            throw new Error(
-                data?.message || `Failed to add recovery email: ${response.statusText}`
-            );
-        }
+    /** @deprecated Requires DID-challenge authorization. Use `createSSSStrategy`. */
+    async addRecoveryEmail(_email: string): Promise<void> {
+        throwDidChallengeRequired();
     }
 
-    async verifyRecoveryEmail(code: string): Promise<{ maskedEmail: string }> {
-        const token = await this.authProvider.getIdToken();
-        const providerType = this.authProvider.getProviderType();
-
-        const response = await fetch(`${this.serverUrl}/keys/recovery-email/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ authToken: token, providerType, code }),
-        });
-
-        if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            throw new Error(
-                data?.message || `Failed to verify recovery email: ${response.statusText}`
-            );
-        }
-
-        return response.json();
+    /** @deprecated Requires DID-challenge authorization. Use `createSSSStrategy`. */
+    async verifyRecoveryEmail(_code: string): Promise<{ maskedEmail: string }> {
+        return throwDidChallengeRequired();
     }
 
+    /** @deprecated Requires DID-challenge authorization. Use `createSSSStrategy`. */
     async deleteUserKey(): Promise<void> {
-        const headers = await this.getAuthHeaders();
-        const providerType = this.authProvider.getProviderType();
-
-        const response = await fetch(`${this.serverUrl}/keys`, {
-            method: 'DELETE',
-            headers,
-            body: JSON.stringify({ providerType }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to delete user key: ${response.statusText}`);
-        }
+        throwDidChallengeRequired();
     }
 }

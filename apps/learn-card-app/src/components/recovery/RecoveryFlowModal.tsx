@@ -31,6 +31,8 @@ interface RecoveryFlowModalProps {
     onRecoverWithEmail?: (emailShare: string) => Promise<void>;
     identityPhase?: 'enter_email' | 'verify_email' | 'choose_method' | 'new_login' | 'success';
     identityEmail?: string;
+    /** Error surfaced by the coordinator (e.g. a consumed one-shot session). Shown alongside local errors. */
+    identityError?: string;
     onSendIdentityCode?: (email: string) => Promise<void>;
     onVerifyIdentityCode?: (code: string) => Promise<void>;
     onContinueWithNewLogin?: () => void;
@@ -90,6 +92,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     onRecoverWithEmail,
     identityPhase,
     identityEmail,
+    identityError: coordinatorIdentityError,
     onSendIdentityCode,
     onVerifyIdentityCode,
     onContinueWithNewLogin,
@@ -246,10 +249,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
     const phraseWordCount = phrase.trim() ? phrase.trim().split(/\s+/).length : 0;
 
-    const identityError = error && (
+    const identityErrorMessage = error ?? coordinatorIdentityError ?? null;
+    const identityError = identityErrorMessage && (
         <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
             <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
-            <span className="text-sm text-red-700 leading-relaxed">{error}</span>
+            <span className="text-sm text-red-700 leading-relaxed">{identityErrorMessage}</span>
         </div>
     );
 

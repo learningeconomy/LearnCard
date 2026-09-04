@@ -1712,6 +1712,11 @@
         }
     },
     "recovery": {
+        "error.invalidPhrase": "Those words don't match your recovery phrase. Check them and try again.",
+        "error.invalidPassword": "Incorrect password or the file couldn't be read. Please try again.",
+        "error.invalidCode": "That code is incorrect or has expired. Request a new one and try again.",
+        "error.network": "Connection issue. Please check your internet and try again.",
+        "error.default": "Something went wrong. Please try again.",
         "prompt": {
             "openAria": "Set up a way to sign back in",
             "snoozeAria": "Remind me in 7 days",

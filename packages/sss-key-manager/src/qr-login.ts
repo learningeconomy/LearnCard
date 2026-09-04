@@ -55,21 +55,19 @@ export interface QrPayload {
 /** Result of polling — either still waiting or the device share is ready */
 export type PollResult =
     | { status: 'pending' }
-    | { status: 'approved'; deviceShare: string; approverDid: string; accountHint?: string; shareVersion?: number };
+    | {
+          status: 'approved';
+          deviceShare: string;
+          approverDid: string;
+          accountHint?: string;
+          shareVersion?: number;
+      };
 
 // ---------------------------------------------------------------------------
 // API helpers
 // ---------------------------------------------------------------------------
 
-const buildHeaders = (token?: string): Record<string, string> => {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-
-    if (token) {
-        headers.Authorization = `Bearer ${token}`;
-    }
-
-    return headers;
-};
+const buildHeaders = (): Record<string, string> => ({ 'Content-Type': 'application/json' });
 
 // ---------------------------------------------------------------------------
 // Requester (Device B — the new device)
@@ -180,7 +178,12 @@ export const pollUntilApproved = async (
         onPoll?: (attempt: number) => void;
         signal?: AbortSignal;
     }
-): Promise<{ deviceShare: string; approverDid: string; accountHint?: string; shareVersion?: number }> => {
+): Promise<{
+    deviceShare: string;
+    approverDid: string;
+    accountHint?: string;
+    shareVersion?: number;
+}> => {
     const intervalMs = options?.intervalMs ?? 2000;
     const timeoutMs = options?.timeoutMs ?? 120_000;
 
@@ -211,10 +214,14 @@ export const pollUntilApproved = async (
             const timer = setTimeout(resolve, intervalMs);
 
             if (options?.signal) {
-                options.signal.addEventListener('abort', () => {
-                    clearTimeout(timer);
-                    reject(new Error('QR login polling aborted'));
-                }, { once: true });
+                options.signal.addEventListener(
+                    'abort',
+                    () => {
+                        clearTimeout(timer);
+                        reject(new Error('QR login polling aborted'));
+                    },
+                    { once: true }
+                );
             }
         });
     }

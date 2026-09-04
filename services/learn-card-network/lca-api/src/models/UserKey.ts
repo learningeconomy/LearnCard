@@ -105,6 +105,13 @@ export type PreviousAuthShare = z.infer<typeof PreviousAuthShareValidator>;
 export const MAX_PREVIOUS_AUTH_SHARES = 5;
 export const PROVISIONAL_MIGRATION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
+export class UserKeyVersionConflictError extends Error {
+    constructor() {
+        super('User key share version changed during update');
+        this.name = 'UserKeyVersionConflictError';
+    }
+}
+
 /**
  * Records created before activation state tracking are grandfathered as active.
  * This preserves existing SSS users while new writes use the explicit state machine.
@@ -137,17 +144,60 @@ export const getUserKeysCollection = () => {
     return mongodb.collection<MongoUserKeyType>(USER_KEYS_COLLECTION);
 };
 
-export const createUserKeysIndexes = async () => {
+const getMongoErrorCode = (error: unknown): number | undefined => {
+    if (typeof error !== 'object' || error === null || !('code' in error)) return undefined;
+
+    return typeof error.code === 'number' ? error.code : undefined;
+};
+
+const runIndexMigrationOperation = async (
+    operationName: string,
+    operation: () => Promise<unknown>,
+    options: { duplicateRequiresManualDedupe?: boolean } = {}
+): Promise<void> => {
+    try {
+        await operation();
+    } catch (error) {
+        const code = getMongoErrorCode(error);
+
+        if (code === 11000) {
+            if (options.duplicateRequiresManualDedupe) {
+                console.error(
+                    `[UserKey indexes] ${operationName} found duplicate provider identities; ` +
+                        'manual dedupe is required before the unique index can be created.',
+                    { code }
+                );
+            } else {
+                console.error(
+                    `[UserKey indexes] ${operationName} encountered duplicate data; continuing startup.`,
+                    { code }
+                );
+            }
+
+            return;
+        }
+
+        // IndexNotFound and index option/spec conflicts are expected when cold starts race.
+        if (code === 27 || code === 85 || code === 86) {
+            console.warn(
+                `[UserKey indexes] ${operationName} raced another index migration; continuing startup.`,
+                { code }
+            );
+            return;
+        }
+
+        throw error;
+    }
+};
+
+export const createUserKeysIndexes = async (): Promise<void> => {
     const collection = getUserKeysCollection();
 
     const indexes = await collection
         .listIndexes()
         .toArray()
         .catch((error: unknown) => {
-            const code =
-                typeof error === 'object' && error !== null && 'code' in error
-                    ? error.code
-                    : undefined;
+            const code = getMongoErrorCode(error);
 
             if (code === 26) return [];
             throw error;
@@ -160,13 +210,17 @@ export const createUserKeysIndexes = async () => {
     // Contact methods are mutable and can be recycled. They remain searchable,
     // but are deliberately non-unique and never serve as account identity.
     if (contactIndex?.unique && contactIndex.name) {
-        await collection.dropIndex(contactIndex.name);
+        await runIndexMigrationOperation('drop unique contact-method index', () =>
+            collection.dropIndex(contactIndex.name!)
+        );
     }
 
     if (!contactIndex || contactIndex.unique) {
-        await collection.createIndex(
-            { 'contactMethod.type': 1, 'contactMethod.value': 1 },
-            { name: 'contact_method_lookup' }
+        await runIndexMigrationOperation('create contact-method lookup index', () =>
+            collection.createIndex(
+                { 'contactMethod.type': 1, 'contactMethod.value': 1 },
+                { name: 'contact_method_lookup' }
+            )
         );
     }
 
@@ -175,21 +229,49 @@ export const createUserKeysIndexes = async () => {
     );
 
     if (providerIndex && !providerIndex.unique && providerIndex.name) {
-        await collection.dropIndex(providerIndex.name);
-    }
-
-    if (!providerIndex || !providerIndex.unique) {
-        await collection.createIndex(
-            { 'authProviders.type': 1, 'authProviders.id': 1 },
-            { name: 'auth_provider_identity_unique', unique: true }
+        await runIndexMigrationOperation('drop non-unique provider identity index', () =>
+            collection.dropIndex(providerIndex.name!)
         );
     }
 
-    await collection.createIndex({ primaryDid: 1 });
-    await collection.createIndex(
-        { recoveryEmail: 1, recoveryEmailVerifiedAt: 1 },
-        { name: 'verified_recovery_email_lookup' }
+    if (!providerIndex || !providerIndex.unique) {
+        await runIndexMigrationOperation(
+            'create unique provider identity index',
+            () =>
+                collection.createIndex(
+                    { 'authProviders.type': 1, 'authProviders.id': 1 },
+                    { name: 'auth_provider_identity_unique', unique: true }
+                ),
+            { duplicateRequiresManualDedupe: true }
+        );
+    }
+
+    await runIndexMigrationOperation('create primary DID index', () =>
+        collection.createIndex({ primaryDid: 1 })
     );
+    await runIndexMigrationOperation('create verified recovery email index', () =>
+        collection.createIndex(
+            { recoveryEmail: 1, recoveryEmailVerifiedAt: 1 },
+            { name: 'verified_recovery_email_lookup' }
+        )
+    );
+};
+
+let userKeysIndexesPromise: Promise<void> | undefined;
+
+/** Runs the production index migration at most once per warm process. */
+export const ensureUserKeysIndexes = (): Promise<void> => {
+    // Never let an index-migration failure take the API down: log it, and clear the
+    // memo so the next request/boot retries instead of failing on a poisoned promise.
+    userKeysIndexesPromise ??= createUserKeysIndexes().catch((error: unknown) => {
+        console.error(
+            '[UserKey indexes] migration failed; requests will proceed and the migration will retry.',
+            error
+        );
+        userKeysIndexesPromise = undefined;
+    });
+
+    return userKeysIndexesPromise;
 };
 
 export const findUserKeyByContactMethod = async (
@@ -363,7 +445,8 @@ export const upsertUserKey = async (
 export const upsertUserKeyByAuthProvider = async (
     contactMethod: ContactMethod,
     authProvider: AuthProviderMapping,
-    data: Partial<Omit<MongoUserKeyType, '_id' | 'contactMethod' | 'createdAt' | 'authProviders'>>
+    data: Partial<Omit<MongoUserKeyType, '_id' | 'contactMethod' | 'createdAt' | 'authProviders'>>,
+    expectedVersion?: number
 ): Promise<MongoUserKeyType> => {
     const collection = getUserKeysCollection();
     const now = new Date();
@@ -373,6 +456,12 @@ export const upsertUserKeyByAuthProvider = async (
     const existing = await collection.findOne(providerFilter);
 
     if (existing) {
+        const currentVersion = existing.shareVersion ?? 1;
+
+        if (expectedVersion != null && expectedVersion !== currentVersion) {
+            throw new UserKeyVersionConflictError();
+        }
+
         const updateOps: Record<string, unknown> = {
             $set: {
                 ...data,
@@ -406,11 +495,17 @@ export const upsertUserKeyByAuthProvider = async (
             (updateOps.$set as Record<string, unknown>).shareUpdatedAt = now;
         }
 
-        const result = await collection.findOneAndUpdate(providerFilter, updateOps, {
-            returnDocument: 'after',
-        });
+        const result = await collection.findOneAndUpdate(
+            { ...providerFilter, shareVersion: expectedVersion ?? currentVersion },
+            updateOps,
+            {
+                returnDocument: 'after',
+            }
+        );
 
-        return result!;
+        if (!result) throw new UserKeyVersionConflictError();
+
+        return result;
     }
 
     const newDoc: MongoUserKeyType = {
@@ -482,45 +577,43 @@ const addRecoveryMethodWithFilter = async (
     const collection = getUserKeysCollection();
     const now = new Date();
 
-    // Atomic: pull any existing method of the same type, then push the new one.
-    // Uses bulkWrite so both ops execute in a single server round-trip / batch,
-    // preventing a crash between $pull and $push from losing the method.
-    //
     // For passkeys, scope the $pull by credentialId so multiple passkeys
     // (each with a unique credentialId) can coexist. For other types
     // (backup, phrase, email) there is at most one per type.
-    const pullFilter: Record<string, unknown> = { type: recoveryMethod.type };
+    const keepExistingMethod =
+        recoveryMethod.type === 'passkey'
+            ? {
+                  $or: [
+                      { $ne: ['$$method.type', recoveryMethod.type] },
+                      {
+                          $ne: [
+                              { $ifNull: ['$$method.credentialId', null] },
+                              recoveryMethod.credentialId ?? null,
+                          ],
+                      },
+                  ],
+              }
+            : { $ne: ['$$method.type', recoveryMethod.type] };
 
-    if (recoveryMethod.type === 'passkey') {
-        pullFilter.credentialId = recoveryMethod.credentialId ?? null;
-    }
-
-    await collection.bulkWrite(
-        [
-            {
-                updateOne: {
-                    filter: {
-                        ...filter,
-                    },
-                    update: {
-                        $pull: { recoveryMethods: pullFilter },
-                    },
+    await collection.updateOne(filter, [
+        {
+            $set: {
+                recoveryMethods: {
+                    $concatArrays: [
+                        {
+                            $filter: {
+                                input: { $ifNull: ['$recoveryMethods', []] },
+                                as: 'method',
+                                cond: keepExistingMethod,
+                            },
+                        },
+                        [{ $literal: recoveryMethod }],
+                    ],
                 },
+                updatedAt: now,
             },
-            {
-                updateOne: {
-                    filter: {
-                        ...filter,
-                    },
-                    update: {
-                        $push: { recoveryMethods: recoveryMethod },
-                        $set: { updatedAt: now },
-                    },
-                },
-            },
-        ],
-        { ordered: true }
-    );
+        },
+    ]);
 };
 
 export const addRecoveryMethodToUserKeyByAuthProvider = async (
@@ -675,6 +768,7 @@ export const activateUserKeyByAuthProvider = async (
     const result = await getUserKeysCollection().updateOne(
         {
             ...getAuthProviderFilter(authProvider),
+            shareVersion,
             sssActivationState: 'provisional',
             recoveryMethods: { $elemMatch: { shareVersion, confirmedAt: { $exists: true } } },
         },
@@ -865,12 +959,16 @@ export const completeIdentityRebind = async (
 
     const now = new Date();
     const shareVersion = (existing.shareVersion ?? 1) + 1;
-    const authProviders = [
-        ...(existing.authProviders ?? []).filter(
-            provider => provider.type !== input.newAuthProvider.type
-        ),
-        input.newAuthProvider,
-    ];
+    const remainingAuthProviders = (existing.authProviders ?? []).filter(
+        provider =>
+            provider.type !== input.oldAuthProvider.type || provider.id !== input.oldAuthProvider.id
+    );
+    const authProviders = remainingAuthProviders.some(
+        provider =>
+            provider.type === input.newAuthProvider.type && provider.id === input.newAuthProvider.id
+    )
+        ? remainingAuthProviders
+        : [...remainingAuthProviders, input.newAuthProvider];
     const recoveryMethods = (existing.recoveryMethods ?? []).map(method => ({
         type: method.type,
         createdAt: now,
