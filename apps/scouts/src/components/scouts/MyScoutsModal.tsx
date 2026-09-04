@@ -76,16 +76,14 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     const flags = useFlags();
     const enableAdminTools = flags.enableAdminTools;
 
-    const { initWallet } = useWallet();
-    const history = useHistory();
-    const currentUser = useCurrentUser();
-
     const {
         keyDerivation,
         capabilities,
         showDeviceLinkModal,
         authProvider: contextAuthProvider,
         refreshAuthSession,
+        needsActivation,
+        activate,
     } = useAppAuth();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
 
@@ -356,6 +354,46 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                       }
                     : null;
 
+                const confirmMethod = async (
+                    input: import('@learncard/sss-key-manager').RecoveryConfirmationInput
+                ) => {
+                    if (!keyDerivation.confirmRecoveryMethod) {
+                        throw new Error('Recovery confirmation is unavailable.');
+                    }
+
+                    const token = await contextAuthProvider.getIdToken();
+                    const providerType = contextAuthProvider.getProviderType();
+
+                    const signVp = async (
+                        privateKey: string,
+                        challenge?: string
+                    ): Promise<string> => {
+                        const signingLc = await getSigningLearnCard(privateKey);
+                        const jwt = await signingLc.invoke.getDidAuthVp({
+                            proofFormat: 'jwt',
+                            challenge,
+                        });
+
+                        if (!jwt || typeof jwt !== 'string') {
+                            throw new Error('Failed to sign DID-Auth VP');
+                        }
+
+                        return jwt;
+                    };
+
+                    await keyDerivation.confirmRecoveryMethod({
+                        token,
+                        providerType,
+                        privateKey: currentUser.privateKey!,
+                        input,
+                        signDidAuthVp: signVp,
+                    });
+
+                    if (needsActivation) {
+                        await activate();
+                    }
+                };
+
                 const requireAuth = async () => {
                     throw new Error(
                         'Your session has expired. Please close this dialog and sign in again.'
@@ -413,6 +451,8 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                                     : String(m.createdAt),
                         }))}
                         maskedRecoveryEmail={fetchedMaskedRecoveryEmail}
+                        isActivationPending={needsActivation}
+                        onCompleted={closeModal}
                         onSetupPasskey={
                             setupMethod
                                 ? async () => {
@@ -435,10 +475,19 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                                           { method: 'phrase' },
                                           authUser
                                       );
-                                      return result?.method === 'phrase' ? result.phrase : '';
+                                      if (result?.method !== 'phrase') {
+                                          throw new Error('Could not generate recovery words.');
+                                      }
+                                      return {
+                                          phrase: result.phrase,
+                                          challengeWordIndices: result.challengeWordIndices,
+                                      };
                                   }
                                 : requireAuth
                         }
+                        onConfirmPhrase={async challengeWords => {
+                            await confirmMethod({ method: 'phrase', challengeWords });
+                        }}
                         onSetupBackup={
                             setupMethod
                                 ? async (backupPw: string) => {
@@ -455,6 +504,13 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                                   }
                                 : requireAuth
                         }
+                        onConfirmBackup={async (fileContents, password) => {
+                            await confirmMethod({
+                                method: 'backup',
+                                fileContents,
+                                password,
+                            });
+                        }}
                         onAddRecoveryEmail={async (email: string) => {
                             const { token, providerType } = await getTokenAndProvider();
                             const headers = await getDidAuthHeaders();
@@ -497,6 +553,9 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                                   }
                                 : requireAuth
                         }
+                        onConfirmEmailRecovery={async code => {
+                            await confirmMethod({ method: 'email', code });
+                        }}
                         onClose={closeModal}
                     />,
                     { sectionClassName: '!max-w-[480px]' },

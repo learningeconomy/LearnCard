@@ -2,7 +2,13 @@ import { randomUUID } from 'crypto';
 
 import { client } from '@mongo';
 import cache from '@cache';
-import { getRecoverySessionCacheKey } from '@cache/recoverySessions';
+import {
+    getRecoveryOtpAttemptsCacheKey,
+    getRecoveryOtpCacheKey,
+    getRecoveryOtpLockCacheKey,
+    getRecoverySessionCacheKey,
+    MAX_RECOVERY_OTP_ATTEMPTS,
+} from '@cache/recoverySessions';
 import { createUserKeysIndexes, getUserKeysCollection, type MongoUserKeyType } from '@models';
 import * as delivery from '../src/services/delivery';
 
@@ -114,6 +120,76 @@ describe('P0-3 lost-identity recovery sessions', () => {
             vi.restoreAllMocks();
             await collection.deleteMany({ recoveryEmail });
         }
+    });
+
+    it('atomically caps concurrent incorrect OTP attempts and engages the lock', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const recoveryEmail = `recovery-concurrent-lock-${suffix}@example.com`;
+        const loginEmail = `old-concurrent-lock-${suffix}@example.edu`;
+        const { learnCard } = await getUser(`0${'f'.repeat(63)}`);
+        const collection = getUserKeysCollection();
+
+        await collection.insertOne(
+            makeRecoverableUser(loginEmail, recoveryEmail, `old-${suffix}`, learnCard.id.did())
+        );
+
+        try {
+            await startAndReadCode(recoveryEmail);
+
+            const guesses = await Promise.allSettled(
+                Array.from({ length: 10 }, () =>
+                    getClient().keys.verifyRecoverySession({
+                        email: recoveryEmail,
+                        code: '000000',
+                    })
+                )
+            );
+            const errorCodes = guesses.map(result =>
+                result.status === 'rejected'
+                    ? (result.reason as { code?: string }).code
+                    : 'fulfilled'
+            );
+            const attempts = Number(
+                await cache.node.get(getRecoveryOtpAttemptsCacheKey(recoveryEmail))
+            );
+
+            expect(errorCodes).not.toContain('fulfilled');
+            expect(errorCodes).toContain('TOO_MANY_REQUESTS');
+            expect(attempts).toBe(MAX_RECOVERY_OTP_ATTEMPTS);
+            expect(attempts).toBeLessThanOrEqual(MAX_RECOVERY_OTP_ATTEMPTS);
+            await expect(cache.node.get(getRecoveryOtpLockCacheKey(recoveryEmail))).resolves.toBe(
+                'locked'
+            );
+            await expect(cache.node.get(getRecoveryOtpCacheKey(recoveryEmail))).resolves.toBeNull();
+        } finally {
+            vi.restoreAllMocks();
+            await collection.deleteMany({ recoveryEmail });
+            await cache.node.flushall();
+        }
+    });
+
+    it('does not count or lock incorrect guesses when no OTP exists', async () => {
+        const recoveryEmail = `recovery-no-otp-${Date.now()}-${randomUUID()}@example.com`;
+        const guesses = await Promise.allSettled(
+            Array.from({ length: 10 }, () =>
+                getClient().keys.verifyRecoverySession({
+                    email: recoveryEmail,
+                    code: '000000',
+                })
+            )
+        );
+
+        expect(
+            guesses.every(
+                result =>
+                    result.status === 'rejected' &&
+                    (result.reason as { code?: string }).code === 'BAD_REQUEST'
+            )
+        ).toBe(true);
+        await expect(
+            cache.node.get(getRecoveryOtpAttemptsCacheKey(recoveryEmail))
+        ).resolves.toBeNull();
+        await expect(cache.node.get(getRecoveryOtpLockCacheKey(recoveryEmail))).resolves.toBeNull();
     });
 
     it('enforces token expiry, one-use replay protection, and route scope', async () => {
@@ -230,6 +306,71 @@ describe('P0-3 lost-identity recovery sessions', () => {
             expect(oldStatus).toBeNull();
             expect(newStatus?.authShare?.encryptedData).toBe('rotated-auth-share');
             expect(newStatus?.recoveryMethods).toEqual([]);
+        } finally {
+            vi.restoreAllMocks();
+            await collection.deleteMany({ recoveryEmail });
+            await cache.node.flushall();
+        }
+    });
+
+    it('removes the exact old mapping during a cross-provider rebind', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const recoveryEmail = `recovery-cross-provider-${suffix}@example.com`;
+        const oldLoginEmail = `old-cross-provider-${suffix}@example.edu`;
+        const newLoginEmail = `new-cross-provider-${suffix}@example.com`;
+        const oldProviderId = `oidc-${suffix}`;
+        const newProviderId = `firebase-${suffix}`;
+        const { learnCard } = await getUser('2'.repeat(64));
+        const collection = getUserKeysCollection();
+        const userKey = makeRecoverableUser(
+            oldLoginEmail,
+            recoveryEmail,
+            oldProviderId,
+            learnCard.id.did()
+        );
+
+        userKey.authProviders = [
+            { type: 'oidc', id: oldProviderId },
+            { type: 'firebase', id: `preserved-${suffix}` },
+        ];
+        await collection.insertOne(userKey);
+
+        try {
+            const code = await startAndReadCode(recoveryEmail);
+            const verified = await getClient().keys.verifyRecoverySession({
+                email: recoveryEmail,
+                code,
+            });
+            const recovered = await getClient().keys.useRecoverySession({
+                recoverySessionToken: verified.recoverySessionToken,
+                type: 'phrase',
+            });
+
+            await getClient({
+                did: learnCard.id.did(),
+                isChallengeValid: true,
+            }).keys.completeRecoveryRebind({
+                recoverySessionToken: recovered.rebindSessionToken,
+                newAuthToken: makeMockToken(newLoginEmail, newProviderId),
+                providerType: 'firebase',
+                primaryDid: learnCard.id.did(),
+                authShare: { encryptedData: 'cross-provider-share', encryptedDek: '', iv: '' },
+            });
+
+            const stored = await collection.findOne({ primaryDid: learnCard.id.did() });
+
+            expect(stored?.authProviders).not.toContainEqual({
+                type: 'oidc',
+                id: oldProviderId,
+            });
+            expect(stored?.authProviders).toContainEqual({
+                type: 'firebase',
+                id: newProviderId,
+            });
+            expect(stored?.authProviders).toContainEqual({
+                type: 'firebase',
+                id: `preserved-${suffix}`,
+            });
         } finally {
             vi.restoreAllMocks();
             await collection.deleteMany({ recoveryEmail });

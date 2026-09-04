@@ -131,26 +131,19 @@ log.warn('UID mismatch', { expected, got });
 
 ---
 
-## PII scrubbing
+## PII and secret scrubbing
 
-Field names are matched **case-insensitively as substrings**, so common variants are caught automatically:
+Field names are matched **case-insensitively as substrings**. PII and secrets have different policies:
 
-| Keyword matched | Examples scrubbed                                          |
-| --------------- | ---------------------------------------------------------- |
-| `email`         | `email`, `userEmail`, `emailAddress`, `contactEmail`       |
-| `phone`         | `phone`, `phoneNumber`, `mobilePhone`                      |
-| `name`          | `name`, `firstName`, `lastName`, `displayName`, `fullName` |
-| `did`           | `did` (exact match only — too short for safe substring)    |
-| `seed`          | `seed`                                                     |
-| `password`      | `password`, `hashedPassword`                               |
-| `privatekey`    | `privateKey`, `privatekey`                                 |
-| `accesstoken`   | `accessToken`, `accesstoken`                               |
-| `idtoken`       | `idToken`, `idtoken`                                       |
-| `token`         | `token`, `bearerToken`, `authToken`, `refreshToken`        |
-| `share`         | `share`, `authShare`, `emailShare`, `encryptedShare`       |
-| `recoverykey`   | `recoveryKey`, `recoverykey`                               |
+- **PII** (`email`, `phone`, `name`, and exact key `did`) is scrubbed by default. Internal debug tooling may opt out with `allowPii: true`.
+- **Secrets** are always scrubbed. `allowPii` can never expose them.
 
-Scrubbing is **recursive** — nested objects and arrays are walked automatically, with a depth cap of 10 and cycle detection. Any string **value** starting with `Bearer ` (case-insensitive) is also scrubbed regardless of key name.
+| Class      | Keywords / examples                                                                             | `allowPii` behavior |
+| ---------- | ----------------------------------------------------------------------------------------------- | ------------------- |
+| **PII**    | `email`, `phone`, `name`; exact key `did`                                                       | May be bypassed     |
+| **Secret** | `seed`, `password`, `privateKey`, any `token`, any `share`, `recoveryKey`, `mnemonic`, `phrase` | Never bypassed      |
+
+Scrubbing is **recursive** — nested objects and arrays are walked automatically, with a depth cap of 10 and cycle detection. Positional strings, metadata string values, and `Error.message` are also scanned for obvious secret shapes: JWTs, `Bearer <token>`, hex blobs of at least 32 characters, and base64url blobs of at least 40 characters. Matching content is replaced with `[REDACTED]`; the first positional log message remains intact unless it contains one of those shapes.
 
 ```ts
 // Top-level field
@@ -168,6 +161,10 @@ log.error('lookup failed', { userEmail: 'user@example.com', code: 404 });
 // Bypass scrubbing for internal debug tooling only
 log.warn('debug identity', { email: 'user@example.com', allowPii: true });
 // Sentry extra → { email: 'user@example.com' }  (allowPii itself is stripped)
+
+// Secret fields remain protected even with allowPii
+log.warn('debug identity', { seed: '...', allowPii: true });
+// Sentry extra → { seed: '[scrubbed]' }
 ```
 
 > Never use `allowPii: true` in production code paths.

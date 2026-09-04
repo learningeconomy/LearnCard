@@ -5,7 +5,7 @@ import type { TenantBranding } from '../branding';
 import { DEFAULT_BRANDING } from '../branding';
 import { Layout } from '../components/Layout';
 import type { NotificationLocale } from '../i18n';
-import { interpolate, resolveCatalogLocale } from '../i18n';
+import { interpolate, resolveCatalogLocale, SHARED } from '../i18n';
 
 export interface AccountSignInChangedProps {
     branding: TenantBranding;
@@ -14,7 +14,14 @@ export interface AccountSignInChangedProps {
 
 const STRINGS: Record<
     NotificationLocale,
-    { preview: string; heading: string; body: string; warning: string; subject: string }
+    {
+        preview: string;
+        heading: string;
+        body: string;
+        warning: string;
+        subject: string;
+        sincerely: string;
+    }
 > = {
     en: {
         preview: 'Your account sign-in was changed',
@@ -22,6 +29,7 @@ const STRINGS: Record<
         body: 'Your {brandName} account was restored and connected to a new sign-in.',
         warning: 'If this was not you, contact support immediately.',
         subject: 'Your account sign-in was changed',
+        sincerely: 'Sincerely,',
     },
     es: {
         preview: 'Se cambió el inicio de sesión de tu cuenta',
@@ -29,6 +37,7 @@ const STRINGS: Record<
         body: 'Tu cuenta de {brandName} se restauró y se conectó a un nuevo inicio de sesión.',
         warning: 'Si no fuiste tú, comunícate con soporte de inmediato.',
         subject: 'Se cambió el inicio de sesión de tu cuenta',
+        sincerely: 'Atentamente,',
     },
     fr: {
         preview: 'La connexion à votre compte a été modifiée',
@@ -37,6 +46,7 @@ const STRINGS: Record<
         warning:
             'Si vous n’êtes pas à l’origine de cette action, contactez immédiatement l’assistance.',
         subject: 'La connexion à votre compte a été modifiée',
+        sincerely: 'Cordialement,',
     },
     ar: {
         preview: 'تم تغيير تسجيل الدخول إلى حسابك',
@@ -44,6 +54,7 @@ const STRINGS: Record<
         body: 'تمت استعادة حسابك في {brandName} وربطه بتسجيل دخول جديد.',
         warning: 'إذا لم تكن أنت من أجرى هذا التغيير، فتواصل مع الدعم فورًا.',
         subject: 'تم تغيير تسجيل الدخول إلى حسابك',
+        sincerely: 'مع التحيات،',
     },
 };
 
@@ -57,6 +68,13 @@ export const AccountSignInChanged: React.FC<AccountSignInChangedProps> = ({ bran
                 {interpolate(strings.body, { brandName: branding.brandName })}
             </Text>
             <Text style={warning}>{strings.warning}</Text>
+            <Text style={signOff}>
+                {strings.sincerely}
+                <br />
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
+            </Text>
         </Layout>
     );
 };
@@ -83,6 +101,11 @@ const paragraph: React.CSSProperties = {
 const warning: React.CSSProperties = {
     ...paragraph,
     fontWeight: 600,
+};
+
+const signOff: React.CSSProperties = {
+    ...paragraph,
+    marginTop: '24px',
 };
 
 export default function Preview(): React.ReactElement {

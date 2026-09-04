@@ -95,7 +95,7 @@ export type {
     StorageOperations,
 } from './atomic-operations';
 
-export { createSSSStrategy } from './sss-strategy';
+export { createSSSStrategy, IdentityRecoverySessionConsumedError } from './sss-strategy';
 
 export type { SSSStorageFunctions, SSSStrategyConfig } from './sss-strategy';
 

@@ -1372,7 +1372,7 @@ const AuthSessionManager: React.FC<{
             {children}
 
             {/* ── Recovery overlay ─────────────────────────────── */}
-            {showRecovery && authProvider && (
+            {showRecovery && (
                 <Overlay>
                     <RecoveryFlowModal
                         availableMethods={availableMethods}
@@ -1386,17 +1386,79 @@ const AuthSessionManager: React.FC<{
                                 ? coordinator.state.maskedRecoveryEmail
                                 : null
                         }
+                        identityPhase={
+                            coordinator.state.status === 'identity_recovery'
+                                ? coordinator.state.phase
+                                : coordinator.state.status === 'identity_recovery_success'
+                                  ? 'success'
+                                  : undefined
+                        }
+                        identityEmail={
+                            coordinator.state.status === 'identity_recovery'
+                                ? coordinator.state.email
+                                : undefined
+                        }
+                        identityError={
+                            coordinator.state.status === 'identity_recovery'
+                                ? coordinator.state.error
+                                : undefined
+                        }
+                        onSendIdentityCode={async (email: string) => {
+                            await coordinator.sendIdentityRecoveryCode(email);
+                        }}
+                        onVerifyIdentityCode={async (code: string) => {
+                            await coordinator.verifyIdentityRecoveryCode(code);
+                        }}
+                        onContinueWithNewLogin={() => {
+                            coordinator.continueIdentityRecoveryLogin();
+                        }}
+                        onFinishIdentityRecovery={() => {
+                            coordinator.finishIdentityRecovery();
+                        }}
                         onRecoverWithPasskey={async (credentialId: string) => {
-                            await coordinator.recover({ method: 'passkey', credentialId });
+                            if (coordinator.state.status === 'identity_recovery') {
+                                await coordinator.prepareIdentityRecovery({
+                                    method: 'passkey',
+                                    credentialId,
+                                });
+                            } else {
+                                await coordinator.recover({ method: 'passkey', credentialId });
+                            }
                         }}
                         onRecoverWithPhrase={async (phrase: string) => {
-                            await coordinator.recover({ method: 'phrase', phrase });
+                            if (coordinator.state.status === 'identity_recovery') {
+                                await coordinator.prepareIdentityRecovery({
+                                    method: 'phrase',
+                                    phrase,
+                                });
+                            } else {
+                                await coordinator.recover({ method: 'phrase', phrase });
+                            }
                         }}
                         onRecoverWithBackup={async (fileContents: string, password: string) => {
-                            await coordinator.recover({ method: 'backup', fileContents, password });
+                            if (coordinator.state.status === 'identity_recovery') {
+                                await coordinator.prepareIdentityRecovery({
+                                    method: 'backup',
+                                    fileContents,
+                                    password,
+                                });
+                            } else {
+                                await coordinator.recover({
+                                    method: 'backup',
+                                    fileContents,
+                                    password,
+                                });
+                            }
                         }}
                         onRecoverWithEmail={async (emailShare: string) => {
-                            await coordinator.recover({ method: 'email', emailShare });
+                            if (coordinator.state.status === 'identity_recovery') {
+                                await coordinator.prepareIdentityRecovery({
+                                    method: 'email',
+                                    emailShare,
+                                });
+                            } else {
+                                await coordinator.recover({ method: 'email', emailShare });
+                            }
                         }}
                         onRecoverWithDevice={async (deviceShare: string, shareVersion?: number) => {
                             // Store the received device share locally, then
@@ -1414,9 +1476,22 @@ const AuthSessionManager: React.FC<{
                                 );
                             }
 
-                            await coordinator.initialize();
+                            if (coordinator.state.status === 'identity_recovery') {
+                                await coordinator.prepareIdentityRecovery({ method: 'device' });
+                            } else {
+                                await coordinator.initialize();
+                            }
                         }}
-                        onCancel={handleLogout}
+                        onCancel={() => {
+                            if (
+                                coordinator.state.status === 'identity_recovery' ||
+                                coordinator.state.status === 'identity_recovery_success'
+                            ) {
+                                coordinator.cancelIdentityRecovery();
+                            } else {
+                                handleLogout();
+                            }
+                        }}
                     />
                 </Overlay>
             )}

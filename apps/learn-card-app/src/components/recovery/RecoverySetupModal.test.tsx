@@ -70,6 +70,22 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(onCompleted).not.toHaveBeenCalled();
 
         fireEvent.click(screen.getByRole('button', { name: "I've Saved It Somewhere Safe" }));
+        expect(onCompleted).not.toHaveBeenCalled();
+
+        const challengeInputs = screen.getAllByRole('textbox');
+        expect(challengeInputs).toHaveLength(2);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Passkey' }));
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Phrase' }));
+
+        const phraseInputs = screen.getAllByRole('textbox');
+        fireEvent.change(phraseInputs[0], { target: { value: 'one' } });
+        fireEvent.change(phraseInputs[1], { target: { value: 'three' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm Recovery Phrase' }));
+
+        await waitFor(() => expect(props.onConfirmPhrase).toHaveBeenCalledWith(['one', 'three']));
         expect(onCompleted).toHaveBeenCalledWith('phrase');
     });
 

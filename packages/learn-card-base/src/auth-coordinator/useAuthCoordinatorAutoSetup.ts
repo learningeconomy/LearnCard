@@ -14,6 +14,7 @@ const log = getLogger('use-auth-coordinator-auto-setup');
 
 import { useEffect, useRef } from 'react';
 
+import { getAuthConfig } from '../config/authConfig';
 import type { AuthCoordinatorContextValue } from './AuthCoordinatorProvider';
 
 export interface AutoSetupConfig {
@@ -35,7 +36,10 @@ export interface AutoSetupConfig {
     /** Whether `needs_setup` should auto-generate a new key (default: true) */
     autoSetupNeedsSetup?: boolean;
 
-    /** Whether provisional SSS migration is enabled for this tenant/cohort. */
+    /**
+     * Whether provisional SSS migration is enabled. Defaults to the tenant's
+     * `sssCohortEnabled` flag, which is false when no tenant override is set.
+     */
     autoMigrate?: boolean;
 }
 
@@ -61,7 +65,7 @@ export const useAuthCoordinatorAutoSetup = (
 
     const enabled = config.enabled ?? true;
     const autoSetupNeedsSetup = config.autoSetupNeedsSetup ?? true;
-    const autoMigrate = config.autoMigrate ?? true;
+    const autoMigrate = config.autoMigrate ?? getAuthConfig().sssCohortEnabled;
 
     // Auto-handle needs_setup
     useEffect(() => {

@@ -288,6 +288,17 @@ interface IdentityRecoveryMaterialResponse {
     rebindSessionToken: string;
 }
 
+/**
+ * Signals that an identity-recovery attempt failed after the one-shot server
+ * session was submitted and must be restarted with a new verification code.
+ */
+export class IdentityRecoverySessionConsumedError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'IdentityRecoverySessionConsumedError';
+    }
+}
+
 const postJson = async <T>(
     url: string,
     body: Record<string, unknown>,
@@ -1572,27 +1583,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         async prepareIdentityRecovery(params): Promise<RecoveryResult> {
             const { input } = params;
-            const material = await postJson<IdentityRecoveryMaterialResponse>(
-                `${serverUrl}/keys/recovery-session/recover`,
-                {
-                    recoverySessionToken: params.recoverySessionToken,
-                    type: input.method,
-                    ...(input.method === 'passkey' ? { credentialId: input.credentialId } : {}),
-                },
-                buildHeaders('', undefined, tenantId)
-            );
-            let recoveryShare: string;
+            let recoveryShare: string | undefined;
 
             switch (input.method) {
                 case 'passkey':
-                    if (!material.encryptedShare) {
-                        throw new Error('No passkey recovery data found');
-                    }
-                    recoveryShare = await decryptShareWithPasskey({
-                        encryptedData: material.encryptedShare.encryptedData,
-                        iv: material.encryptedShare.iv,
-                        credentialId: input.credentialId,
-                    });
+                    // Passkey decryption requires the encrypted server material.
                     break;
                 case 'phrase':
                     if (!(await validateRecoveryPhrase(input.phrase))) {
@@ -1617,29 +1612,62 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     break;
             }
 
-            const authShare = material.authShare.encryptedData;
-            let privateKey: string;
-
             try {
-                privateKey = await reconstructFromShares([recoveryShare, authShare]);
-            } catch {
-                throw new Error('Recovery produced an incorrect key. Try another recovery method.');
+                const material = await postJson<IdentityRecoveryMaterialResponse>(
+                    `${serverUrl}/keys/recovery-session/recover`,
+                    {
+                        recoverySessionToken: params.recoverySessionToken,
+                        type: input.method,
+                        ...(input.method === 'passkey' ? { credentialId: input.credentialId } : {}),
+                    },
+                    buildHeaders('', undefined, tenantId)
+                );
+
+                if (input.method === 'passkey') {
+                    if (!material.encryptedShare) {
+                        throw new Error('No passkey recovery data found');
+                    }
+                    recoveryShare = await decryptShareWithPasskey({
+                        encryptedData: material.encryptedShare.encryptedData,
+                        iv: material.encryptedShare.iv,
+                        credentialId: input.credentialId,
+                    });
+                }
+
+                if (!recoveryShare) throw new Error('Recovery data was empty');
+
+                const authShare = material.authShare.encryptedData;
+                let privateKey: string;
+
+                try {
+                    privateKey = await reconstructFromShares([recoveryShare, authShare]);
+                } catch {
+                    throw new Error(
+                        'Recovery produced an incorrect key. Try another recovery method.'
+                    );
+                }
+
+                const derivedDid = await params.didFromPrivateKey(privateKey);
+                if (!derivedDid || derivedDid !== material.primaryDid) {
+                    throw new Error(
+                        'Recovery produced an incorrect key. Try another recovery method.'
+                    );
+                }
+
+                pendingIdentityRecovery = {
+                    privateKey,
+                    primaryDid: material.primaryDid,
+                    recoveryShare,
+                    authShare,
+                    rebindSessionToken: material.rebindSessionToken,
+                };
+
+                return { privateKey, did: material.primaryDid };
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Identity recovery failed';
+
+                throw new IdentityRecoverySessionConsumedError(message);
             }
-
-            const derivedDid = await params.didFromPrivateKey(privateKey);
-            if (!derivedDid || derivedDid !== material.primaryDid) {
-                throw new Error('Recovery produced an incorrect key. Try another recovery method.');
-            }
-
-            pendingIdentityRecovery = {
-                privateKey,
-                primaryDid: material.primaryDid,
-                recoveryShare,
-                authShare,
-                rebindSessionToken: material.rebindSessionToken,
-            };
-
-            return { privateKey, did: material.primaryDid };
         },
 
         hasPendingIdentityRecovery(): boolean {
