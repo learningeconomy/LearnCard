@@ -4,7 +4,13 @@
 
 Under the hood, LearnCard is an open-source wallet, SDK, and network built on [W3C Verifiable Credentials](core-concepts/credentials-and-data/verifiable-credentials-vcs.md) and [Decentralized Identifiers (DIDs)](core-concepts/identities-and-keys/decentralized-identifiers-dids.md) — but you don't need to know those standards to ship your first integration. (New terms? See the [Glossary](introduction/glossary.md).)
 
-[**LearnCard**](https://www.learncard.com) is maintained by [**Learning Economy Foundation**](https://www.learningeconomy.io).&#x20;
+**See it work in 60 seconds** — this sends a real badge to your inbox:
+
+```bash
+npx @learncard/cli send you@example.com
+```
+
+Prefer code, or no keys at all? The [Quickstart](quick-start/your-first-integration.md) has both.
 
 ---
 
@@ -29,37 +35,19 @@ LearnCard is already used to:
 
 ---
 
-### Docs Structure at a Glance
+### Where to Go Next
 
-This documentation is organized around what you're trying to do:
+The docs are organized around what you're trying to do:
 
-- 🚀 **Start Here** — [What Do You Want to Build?](introduction/what-do-you-want-to-build.md) picks one of five integration paths; the [Quickstart](quick-start/your-first-integration.md) sends your first credential in ~15 lines of code.
+- 🚀 **Start Here** — the [Quickstart](quick-start/your-first-integration.md), then [What Do You Want to Build?](introduction/what-do-you-want-to-build.md) to pick a path, and [How LearnCard Works](introduction/how-learncard-works.md) for the two-minute mental model.
 - 🛠️ **Build** — outcome-driven guides and tutorials: [send & issue credentials](how-to-guides/send-credentials.md), [publish your app](how-to-guides/publish-your-app.md), [add LearnCard to your product](how-to-guides/connect-systems/README.md), [consent & guardianship](tutorials/create-a-consentflow.md), and [going deep on the SDK](how-to-guides/deploy-infrastructure/README.md).
 - 🧠 **Understand** — the concepts behind it all: [credentials](core-concepts/credentials-and-data/README.md), [identities & keys](core-concepts/identities-and-keys/README.md), [consent](core-concepts/consent-and-permissions/README.md), [the network](core-concepts/network-and-interactions/README.md), and [architecture](core-concepts/architecture-and-principles/README.md).
 - 📖 **Reference** — [which SDK do I need?](sdks/which-sdk.md), then full API docs for the [Wallet SDK](sdks/learncard-core/README.md), [Network API](sdks/learncard-network/README.md), [Storage API](sdks/learncloud-storage-api/README.md), [Partner Connect](sdks/partner-connect.md), [Embed SDK](sdks/embed-sdk.md), and [plugins](sdks/official-plugins/README.md).
 - 📱 **Products** — the [apps built on LearnCard](apps/README.md): the [LearnCard App](apps/learn-card-app/README.md), [ScoutPass](apps/scouts/README.md), and [contributing](development/contributing.md).
 
-If you're new, start with the [**Quickstart**](quick-start/your-first-integration.md).
-
 ---
 
-### How to Implement LearnCard
-
-1. **Pick your flow**: Issue credentials, verify them, or manage a user's wallet.
-2. **Install the SDK**:
-    ```bash
-    npm install @learncard/init
-    ```
-3. **Use open standards**: LearnCard supports [Open Badges 3.0](https://www.imsglobal.org/spec/ob/v3p0/), W3C Verifiable Credentials, and more.
-4. **Scale up**: Add consent flows, network features, and advanced cryptography as needed.
-
-Whether you're building a web app, mobile experience, backend service, or bot, LearnCard has the primitives and integrations to make it seamless.
-
----
-
-### You're in Good Hands
-
-This stack was built by developers, for developers. It supports open standards and real-world interoperability from day one. We’re glad you’re here—let’s build a more learner-friendly future together.
+LearnCard is open source and maintained by [**Learning Economy Foundation**](https://www.learningeconomy.io), a non-profit.
 
 ### Get Help
 

@@ -115,12 +115,12 @@ End-to-end encrypted personal credential storage, with cross-device sync and plu
 
 The passport is data. The AI API turns that data into something useful, on demand, across every product the learner uses.
 
--   **Ingest** — CLRs, transcripts, badges, and work history flow into a unified learner context — a single source of truth the AI grounds every interaction in.
--   **Assess** — Skill assessments calibrated against the learner's actual record, not generic rubrics.
--   **Analyze** — Insights, skill gaps, and goal mapping against frameworks like CTDL, O\*NET, and ESCO.
--   **Tutor** — AI tutors that know the learner — their goals, their history, their level — instead of starting from a blank prompt every session.
--   **Award** — Auto-issue credentials when assessment criteria are met, closing the loop from learning to recognition.
--   **MCP** — A Model Context Protocol server that exposes learner context to external AI agents with explicit, scoped consent.
+- **Ingest** — CLRs, transcripts, badges, and work history flow into a unified learner context — a single source of truth the AI grounds every interaction in.
+- **Assess** — Skill assessments calibrated against the learner's actual record, not generic rubrics.
+- **Analyze** — Insights, skill gaps, and goal mapping against frameworks like CTDL, O\*NET, and ESCO.
+- **Tutor** — AI tutors that know the learner — their goals, their history, their level — instead of starting from a blank prompt every session.
+- **Award** — Auto-issue credentials when assessment criteria are met, closing the loop from learning to recognition.
+- **MCP** — A Model Context Protocol server that exposes learner context to external AI agents with explicit, scoped consent.
 
 Because the learner context is a first-class API, **AI sessions are portable**: a tutoring relationship that begins in one product can continue in another, with the learner's history and consent intact.
 
@@ -168,9 +168,9 @@ flowchart LR
 
 The plugin and app-store layers are how the rest of the world plugs in _without_ changes to the core:
 
--   **Plugin layer** — protocol-level integrations. Custom DID methods, custom signing, custom credential types, custom AI providers, custom storage backends. A partner like an **Open Awarding Service** can issue credentials into LearnCard by speaking VC-API. **LIF** can map data into the network through its own JSON-LD context. **SCD** consumers can render credentials from any provider that publishes the right metadata. **KYC** providers can attach identity proofs as endorsements without touching the credential subject. None of these require code in this repo.
+- **Plugin layer** — protocol-level integrations. Custom DID methods, custom signing, custom credential types, custom AI providers, custom storage backends. A partner like an **Open Awarding Service** can issue credentials into LearnCard by speaking VC-API. **LIF** can map data into the network through its own JSON-LD context. **SCD** consumers can render credentials from any provider that publishes the right metadata. **KYC** providers can attach identity proofs as endorsements without touching the credential subject. None of these require code in this repo.
 
--   **App store** — application-level integrations. Partner apps embed LearnCard (or are embedded by it) and exchange credentials through the **Partner Connect SDK** with origin-validated postMessage. The app store is the front door for the broader ecosystem of products learners actually use.
+- **App store** — application-level integrations. Partner apps embed LearnCard (or are embedded by it) and exchange credentials through the **Partner Connect SDK** with origin-validated postMessage. The app store is the front door for the broader ecosystem of products learners actually use.
 
 This is the same model that makes any conformant wallet — DCC, MATTR, Procivis, Microsoft Entra Verified ID — readable by LearnCard verifiers and vice versa. Standards are the wire; plugins and the app store are the connectors.
 
@@ -249,11 +249,11 @@ You don't need every layer. Most teams start with one and grow into others.
 
 If you're...
 
--   **Building an app** → start with the [Wallet SDK](../sdks/learncard-core/README.md)
--   **Working cloud-side** → start with the [Network API](../sdks/learncard-network/README.md) or [Storage API](../sdks/learncloud-storage-api/README.md)
--   **Issuing credentials** → start with [Boost Credentials](../core-concepts/credentials-and-data/boost-credentials.md)
--   **Building consent flows** → start with [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
--   **Connecting an AI agent** → start with [Connect AI Agent](../how-to-guides/connect-systems/connect-ai-agent.md)
--   **Integrating into a school or state** → start with [Use Cases & Possibilities](use-cases-and-possibilities.md)
+- **Building an app** → start with the [Wallet SDK](../sdks/learncard-core/README.md)
+- **Working cloud-side** → start with the [Network API](../sdks/learncard-network/README.md) or [Storage API](../sdks/learncloud-storage-api/README.md)
+- **Issuing credentials** → start with [Boost Credentials](../core-concepts/credentials-and-data/boost-credentials.md)
+- **Building consent flows** → start with [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
+- **Connecting an AI agent** → start with [Connect AI Agent](../how-to-guides/connect-systems/connect-ai-agent.md)
+- **Integrating into a school or state** → start with [What Do You Want to Build?](what-do-you-want-to-build.md)
 
 Or jump straight into [the Quickstart](../quick-start/your-first-integration.md).

@@ -169,7 +169,9 @@ node --env-file=.env send.mjs you@example.com
 
 ## What you should see
 
-One of two lines, depending on whether that email address already has a LearnCard account:
+<figure><img src="../.gitbook/assets/quickstart-complete-badge.png" alt="The Quickstart Complete badge as it appears in the recipient's LearnCard wallet: a certificate reading Quickstart Complete, awarded on today's date, certified by My Organization." width="420"><figcaption>What the recipient sees after claiming.</figcaption></figure>
+
+In your terminal, one of two lines, depending on whether that email address already has a LearnCard account:
 
 ```
 Sent. you@example.com will get an email with this claim link:

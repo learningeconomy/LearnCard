@@ -10,6 +10,8 @@ Most LearnCard integrations are one of five jobs. Pick yours — each path start
 
 Issue badges, certificates, or credentials to your users — by email, phone, or directly to their LearnCard profile.
 
+_In the wild:_ universities issuing diplomas and micro-credentials, bootcamps certifying skills, employers recognizing training — all verifiable anywhere.
+
 - **No code**: issue directly from the [LearnCard app](https://learncard.app)
 - **One API call**: [send a credential to an email](../quick-start/your-first-integration.md) (~15 lines)
 - **At scale**: [reusable credential templates with Boosts](../tutorials/create-a-boost.md)
@@ -19,12 +21,16 @@ Issue badges, certificates, or credentials to your users — by email, phone, or
 
 Put your product inside the LearnCard app store, where users can install and launch it. Your app gets single sign-on, credential issuance, notifications, and learner context via the Partner Connect SDK.
 
+_In the wild:_ AI tutors that read a learner's real history (with consent), games that turn achievements into portable badges, career tools that build a skills profile from the wallet.
+
 - Start here: [Publish Your App in LearnCard](../how-to-guides/publish-your-app.md) — local mock mode to published listing
 - Full API surface: [Partner Connect SDK](../sdks/partner-connect.md)
 
 ## 🌐 Add LearnCard to your site
 
 Let users claim credentials from your website or app — from a one-script claim button to a full embedded experience.
+
+_In the wild:_ an LMS that awards completions into the learner's wallet; a conference site with a one-click "claim your attendance badge."
 
 - **One script tag**: [Embed SDK claim button](../sdks/embed-sdk.md)
 - **Full integration**: [connect a website](../how-to-guides/connect-systems/connect-a-website.md) or [an embedded app](../how-to-guides/connect-systems/connect-an-embedded-app.md)
@@ -33,12 +39,16 @@ Let users claim credentials from your website or app — from a one-script claim
 
 Request user consent to read or write data, with built-in guardian approval flows for minors.
 
+_In the wild:_ a K-12 platform where parents approve what a school app can see; a scouting organization issuing to minors with guardian sign-off.
+
 - Start here: [Create a ConsentFlow](../tutorials/create-a-consentflow.md)
 - Concepts: [ConsentFlow overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
 
 ## 🔬 Go deep: build on the SDK
 
 For products where LearnCard is core infrastructure: run your own wallet instances, write plugins, manage keys, or deploy your own network.
+
+_In the wild:_ a state agency running its own credential network; a wallet vendor adding a LearnCard plugin so its users can receive LearnCard-issued credentials.
 
 - [LearnCard Wallet SDK](../sdks/learncard-core/README.md)
 - [Build a plugin](../how-to-guides/deploy-infrastructure/the-simplest-plugin.md)

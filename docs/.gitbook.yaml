@@ -113,8 +113,8 @@ redirects:
     how-to-guides/verify-my-issuer: how-to-guides/verify-my-issuer.md
     introduction/ecosystem-architecture: introduction/ecosystem-architecture.md
     introduction/interoperability: introduction/interoperability.md
-    introduction/use-cases-and-possibilities: introduction/use-cases-and-possibilities.md
-    quick-start/setup-and-prerequisites: quick-start/setup-and-prerequisites.md
+    introduction/use-cases-and-possibilities: introduction/what-do-you-want-to-build.md
+    quick-start/setup-and-prerequisites: quick-start/your-first-integration.md
     quick-start/your-first-integration: quick-start/your-first-integration.md
     sdks/auth-types: sdks/auth-types.md
     sdks/embed-sdk: sdks/embed-sdk.md

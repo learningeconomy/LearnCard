@@ -3,12 +3,9 @@
 ## 🚀 Start Here
 
 - [What is LearnCard?](README.md)
-- [What Do You Want to Build?](introduction/what-do-you-want-to-build.md)
 - [Quickstart: Send a Credential](quick-start/your-first-integration.md)
-- [Setup & Prerequisites](quick-start/setup-and-prerequisites.md)
-- [Use Cases & Possibilities](introduction/use-cases-and-possibilities.md)
-- [Ecosystem Architecture](introduction/ecosystem-architecture.md)
-- [Interoperability](introduction/interoperability.md)
+- [What Do You Want to Build?](introduction/what-do-you-want-to-build.md)
+- [How LearnCard Works](introduction/how-learncard-works.md)
 - [Glossary](introduction/glossary.md)
 
 ## 🛠️ Build
@@ -84,6 +81,8 @@
     - [Network Architecture](core-concepts/network-and-interactions/network-architecture.md)
     - [Universal Inbox](core-concepts/network-and-interactions/universal-inbox.md)
 - [Architecture & Principles](core-concepts/architecture-and-principles/README.md)
+    - [Ecosystem Architecture](introduction/ecosystem-architecture.md)
+    - [Interoperability](introduction/interoperability.md)
     - [Control Planes](core-concepts/architecture-and-principles/control-planes.md)
     - [Plugin System](core-concepts/architecture-and-principles/plugins.md)
     - [Auth Coordinator](core-concepts/architecture-and-principles/auth-coordinator.md)
