@@ -500,15 +500,19 @@ const defaultMakeId = (): string => {
         return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    return Math.random().toString(36).slice(2, 18);
+    // Fallback for environments without crypto - should not happen in modern runtimes
+    // Throw error instead of using insecure Math.random() for security-sensitive IDs
+    throw new Error(
+        'crypto.getRandomValues is required but not available. ' +
+            'Ensure you are running in a modern browser or Node.js environment.'
+    );
 };
 
 /**
  * Build a v4 UUID string using the caller-supplied random generator
- * (so tests can inject deterministic output). Falls back to a coarse
- * Math.random-based generator if the supplied id isn't hex-shaped —
- * the presentation id only needs to be unique per submission, not
- * cryptographically strong.
+ * (so tests can inject deterministic output). Pads non-hex input to
+ * 32 hex chars — the presentation id only needs to be unique per
+ * submission, not cryptographically strong.
  */
 const makeUuidV4 = (makeId: () => string): string => {
     const hex = makeId().replace(/[^0-9a-f]/gi, '');
