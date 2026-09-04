@@ -37,8 +37,8 @@ Some scenarios are mathematically unrecoverable by design. Support **cannot** by
 
 ## 4. What Support Must NEVER Do
 
--   **NEVER ask for or handle a user's recovery phrase, backup file, or password.**
--   **NEVER manually edit `authProviders` or `recoveryMethods` in the database.** (Identity rebinds and method enrollments require cryptographic DID challenges).
--   **NEVER attempt to manually change `sssActivationState` to `active`.** (This requires a single-update commit with a version-matched, confirmed method).
--   **NEVER ask for or handle a user's device share or auth share.**
--   **NEVER bypass the email OTP requirement for identity rebinds.**
+- **NEVER ask for or handle a user's recovery phrase, backup file, or password.**
+- **NEVER manually edit `authProviders` or `recoveryMethods` in the database.** (Identity rebinds and method enrollments require cryptographic DID challenges).
+- **NEVER attempt to manually change `sssActivationState` to `active`.** (This requires a single-update commit with a version-matched, confirmed method).
+- **NEVER ask for or handle a user's device share or auth share.**
+- **NEVER bypass the email OTP requirement for identity rebinds.**

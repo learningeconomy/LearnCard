@@ -29,11 +29,11 @@ Publish the second output and matching key ID to clients as
 
 ## Environment
 
--   `ESCROW_RELAY_PRIVATE_KEYS_JSON` — key ID to PKCS#8 private-key map (supports overlap during rotation)
--   `ESCROW_RELAY_AUTH_TOKEN` — high-entropy bearer token shared only with the `lca-api` proxy
--   `POSTMARK_SERVER_TOKEN` — relay-only Postmark server token
--   `POSTMARK_FROM_DOMAIN` — safe fallback sender domain
--   `ALLOWED_FROM_DOMAINS` — comma-separated Postmark-verified tenant sender domains
--   `POSTMARK_MESSAGE_STREAM` — optional Postmark stream (default `outbound`)
+- `ESCROW_RELAY_PRIVATE_KEYS_JSON` — key ID to PKCS#8 private-key map (supports overlap during rotation)
+- `ESCROW_RELAY_AUTH_TOKEN` — high-entropy bearer token shared only with the `lca-api` proxy
+- `POSTMARK_SERVER_TOKEN` — relay-only Postmark server token
+- `POSTMARK_FROM_DOMAIN` — safe fallback sender domain
+- `ALLOWED_FROM_DOMAINS` — comma-separated Postmark-verified tenant sender domains
+- `POSTMARK_MESSAGE_STREAM` — optional Postmark stream (default `outbound`)
 
 The service has no MongoDB/Redis dependency, no `SEED`, and no imports from `lca-api`.

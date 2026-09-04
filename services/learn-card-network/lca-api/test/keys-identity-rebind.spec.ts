@@ -76,8 +76,7 @@ describe('P0-3 lost-identity recovery sessions', () => {
         await getClient().keys.startRecoverySession({ email: recoveryEmail });
 
         const call = send.mock.calls[0]?.[0] as
-            | { templateModel?: { verificationCode?: string } }
-            | undefined;
+            { templateModel?: { verificationCode?: string } } | undefined;
         const code = call?.templateModel?.verificationCode;
 
         if (!code) throw new Error('Recovery OTP was not delivered in the test');

@@ -319,7 +319,7 @@ export interface KeyDerivationStrategy<
     TRecoveryInput = unknown,
     TRecoverySetupInput = unknown,
     TRecoverySetupResult = unknown,
-    TRecoveryConfirmationInput = unknown
+    TRecoveryConfirmationInput = unknown,
 > {
     readonly name: string;
 

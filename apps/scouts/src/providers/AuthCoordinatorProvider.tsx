@@ -209,21 +209,23 @@ const ScoutsDeviceLinkOverlay: React.FC<{
                 }
             }
 
-            return new Promise(async resolve => {
-                const listener = await BarcodeScanner.addListener(
-                    'barcodeScanned',
-                    async result => {
-                        await listener.remove();
-                        await BarcodeScanner.stopScan();
-                        resolve(result.barcode?.rawValue ?? null);
-                    }
-                );
-
-                await BarcodeScanner.startScan({
-                    formats: [BarcodeFormat.QrCode],
-                    lensFacing: LensFacing.Back,
-                });
+            let resolveScan: (value: string | null) => void = () => {};
+            const scanResult = new Promise<string | null>(resolve => {
+                resolveScan = resolve;
             });
+
+            const listener = await BarcodeScanner.addListener('barcodeScanned', async result => {
+                await listener.remove();
+                await BarcodeScanner.stopScan();
+                resolveScan(result.barcode?.rawValue ?? null);
+            });
+
+            await BarcodeScanner.startScan({
+                formats: [BarcodeFormat.QrCode],
+                lensFacing: LensFacing.Back,
+            });
+
+            return scanResult;
         } catch (e) {
             log.warn('QR scan failed', e);
             await BarcodeScanner.removeAllListeners();
@@ -1207,9 +1209,8 @@ const AuthSessionManager: React.FC<{
                                     });
                                 } else {
                                     const vpJwt = await signDidAuthVp(pk);
-                                    const { localKey, remoteKey } = await keyDerivation.splitKey(
-                                        pk
-                                    );
+                                    const { localKey, remoteKey } =
+                                        await keyDerivation.splitKey(pk);
 
                                     await keyDerivation.storeLocalKey(localKey);
                                     await keyDerivation.storeAuthShare(

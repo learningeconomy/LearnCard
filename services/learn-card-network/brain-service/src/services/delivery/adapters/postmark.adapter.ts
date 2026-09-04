@@ -172,7 +172,10 @@ export class PostmarkAdapter implements DeliveryService {
                 };
 
             case 'recovery-key':
-                return { recoveryKey: model.recoveryKey };
+                return {
+                    recoveryKey: model.recoveryKey,
+                    confirmationCode: model.confirmationCode,
+                };
 
             case 'endorsement-request':
                 return {
