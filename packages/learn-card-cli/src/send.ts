@@ -52,7 +52,14 @@ export const toProfileId = (displayName: string): string => {
     return `${base || 'issuer'}-${Math.random().toString(36).slice(2, 6)}`;
 };
 
-export const quickstartCredential = (issuerDid: string) => ({
+export type Badge = { name: string; description: string };
+
+export const DEFAULT_BADGE: Badge = {
+    name: 'Quickstart Complete',
+    description: 'Sent a verifiable credential with LearnCard.',
+};
+
+export const quickstartCredential = (issuerDid: string, badge: Badge = DEFAULT_BADGE) => ({
     '@context': [
         'https://www.w3.org/ns/credentials/v2',
         'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
@@ -60,14 +67,14 @@ export const quickstartCredential = (issuerDid: string) => ({
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
     issuer: issuerDid,
     validFrom: new Date().toISOString(),
-    name: 'Quickstart Complete',
+    name: badge.name,
     credentialSubject: {
         type: ['AchievementSubject'],
         achievement: {
             id: `urn:uuid:${randomUUID()}`,
             type: ['Achievement'],
-            name: 'Quickstart Complete',
-            description: 'Sent a verifiable credential with LearnCard.',
+            name: badge.name,
+            description: badge.description,
             criteria: { narrative: 'Ran the LearnCard quickstart.' },
         },
     },
@@ -131,7 +138,28 @@ if (result.inbox?.status === 'PENDING') {
 console.log(\`Reusable template for this badge: \${result.uri}\`);
 `;
 
-type SendOptions = { yes?: boolean; name?: string; network?: string; didkit?: Promise<Buffer> };
+type SendOptions = {
+    yes?: boolean;
+    name?: string;
+    badge?: string;
+    description?: string;
+    profileId?: string;
+    network?: string;
+    didkit?: Promise<Buffer>;
+};
+
+/** Substitute the user's choices into the template that the docs snippet uses. */
+export const personalizeSendMjs = (displayName: string, badge: Badge): string =>
+    SEND_MJS.replace(
+        "displayName: 'My Organization'",
+        `displayName: ${JSON.stringify(displayName)}`
+    )
+        .split("'Quickstart Complete'")
+        .join(JSON.stringify(badge.name))
+        .replace(
+            "'Sent a verifiable credential with LearnCard.'",
+            JSON.stringify(badge.description)
+        );
 
 export const runSend = async (recipientEmail: string, options: SendOptions): Promise<void> => {
     const cwd = process.cwd();
@@ -150,11 +178,13 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
 
     const displayName =
         options.name ?? (await ask('Display name for your issuer profile', 'My Organization'));
-    const seed = env.SECURE_SEED || generateRandomSeed();
-    const profileId =
-        env.PROFILE_ID ||
-        (await ask('Profile ID (public handle, 3–40 chars)', toProfileId(displayName)));
+    const badge: Badge = {
+        name: options.badge ?? (await ask('Badge name', DEFAULT_BADGE.name)),
+        description: options.description ?? DEFAULT_BADGE.description,
+    };
     rl?.close();
+    const seed = env.SECURE_SEED || generateRandomSeed();
+    const profileId = env.PROFILE_ID || options.profileId || toProfileId(displayName);
 
     const updates: Record<string, string> = {};
     if (!env.SECURE_SEED) updates.SECURE_SEED = seed;
@@ -183,7 +213,7 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
     }
 
     const credential = await learnCard.invoke.issueCredential(
-        quickstartCredential(learnCard.id.did())
+        quickstartCredential(learnCard.id.did(), badge)
     );
     const result = await learnCard.invoke.send({
         type: 'boost',
@@ -205,13 +235,7 @@ export const runSend = async (recipientEmail: string, options: SendOptions): Pro
 
     const sendPath = path.join(cwd, 'send.mjs');
     if (!(await fs.stat(sendPath).catch(() => null))) {
-        await fs.writeFile(
-            sendPath,
-            SEND_MJS.replace(
-                "displayName: 'My Organization'",
-                `displayName: ${JSON.stringify(displayName)}`
-            )
-        );
+        await fs.writeFile(sendPath, personalizeSendMjs(displayName, badge));
         console.log(
             `\nThe code that just ran is in ./send.mjs — run it yourself:\n  npm install @learncard/init\n  node --env-file=.env send.mjs ${recipientEmail}`
         );

@@ -23,7 +23,7 @@ npx @learncard/cli send you@example.com
 
 Use **a real email address you can open** — this sends a real email. It will:
 
-1. Ask for a display name for your issuer profile (Enter accepts the default)
+1. Ask for your issuer name and a badge name (Enter accepts the defaults)
 2. Generate a secret seed and write it to `.env` (and add `.env` to `.gitignore`)
 3. Create your profile on the LearnCard Network
 4. Sign a "Quickstart Complete" badge and send it

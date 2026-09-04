@@ -24,7 +24,7 @@ https://docs.learncard.com
 npx @learncard/cli send you@example.com
 ```
 
-Generates a seed into `.env`, creates your issuer profile, sends a "Quickstart Complete" badge to the address, and writes the code it ran to `./send.mjs`. Pass `--yes` to accept defaults, `--name "Acme"` to set the display name. Walkthrough: https://docs.learncard.com/start-here/your-first-integration
+Generates a seed into `.env`, creates your issuer profile, sends a "Quickstart Complete" badge to the address, and writes the code it ran to `./send.mjs`. Pass `--yes` to accept defaults; `--name "Acme"`, `--badge "Welcome to Acme"`, `--description`, and `--profile-id` set them explicitly. Walkthrough: https://docs.learncard.com/start-here/your-first-integration
 
 ### Interactive REPL
 

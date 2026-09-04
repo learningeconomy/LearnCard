@@ -29,3 +29,17 @@ describe('send command', () => {
         expect(toProfileId('x'.repeat(60)).length).toBeLessThanOrEqual(40);
     });
 });
+
+describe('personalizeSendMjs', () => {
+    it('substitutes the display name, badge name, and description', async () => {
+        const { personalizeSendMjs } = await import('./send');
+        const out = personalizeSendMjs('Acme Learning', {
+            name: 'Welcome to Acme',
+            description: 'You joined.',
+        });
+        expect(out).toContain('displayName: "Acme Learning"');
+        expect(out).toContain('name: "Welcome to Acme"');
+        expect(out).not.toContain('Quickstart Complete');
+        expect(out).toContain('description: "You joined."');
+    });
+});

@@ -334,23 +334,41 @@ program
     )
     .option('-y, --yes', 'accept defaults without prompting')
     .option('--name <displayName>', 'display name for your issuer profile')
+    .option('--badge <name>', 'name of the badge to send (default: "Quickstart Complete")')
+    .option('--description <text>', 'badge description')
+    .option(
+        '--profile-id <id>',
+        'public handle for your profile (default: derived from the display name)'
+    )
     .option('--network <url>', 'network tRPC URL (default: production)')
-    .action(async (email: string, opts: { yes?: boolean; name?: string; network?: string }) => {
-        const didkit = fs.readFile(
-            require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
-        );
-        try {
-            await runSend(email, { ...opts, didkit });
-            process.exit(0);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            console.error(`\n${message.split('\n')[0]}`);
-            console.error(
-                'Troubleshooting: https://docs.learncard.com/start-here/your-first-integration#if-something-goes-wrong'
+    .action(
+        async (
+            email: string,
+            opts: {
+                yes?: boolean;
+                name?: string;
+                badge?: string;
+                description?: string;
+                profileId?: string;
+                network?: string;
+            }
+        ) => {
+            const didkit = fs.readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
             );
-            process.exit(1);
+            try {
+                await runSend(email, { ...opts, didkit });
+                process.exit(0);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                console.error(`\n${message.split('\n')[0]}`);
+                console.error(
+                    'Troubleshooting: https://docs.learncard.com/start-here/your-first-integration#if-something-goes-wrong'
+                );
+                process.exit(1);
+            }
         }
-    });
+    );
 
 program
     .version(packageJson.version)
