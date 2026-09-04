@@ -91,6 +91,7 @@ const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         credential: { name: 'Perfect Attendance Award' },
         recipient: { email: 'student@example.com' },
     },
+    'account-sign-in-changed': {},
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(FIXTURES) as TemplateId[];

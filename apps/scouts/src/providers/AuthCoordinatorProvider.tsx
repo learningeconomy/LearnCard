@@ -784,6 +784,7 @@ const AuthSessionManager: React.FC<{
     useAuthCoordinatorAutoSetup(coordinator, {
         generatePrivateKey: generateEd25519PrivateKey,
         didFromPrivateKey,
+        autoMigrate: getAuthConfig().sssCohortEnabled,
 
         onReady: (_privateKey, did) => {
             emitAuthSuccess(
@@ -1364,6 +1365,31 @@ const AuthSessionManager: React.FC<{
                         });
                     };
 
+                    const confirmMethod = async (
+                        input: import('@learncard/sss-key-manager').RecoveryConfirmationInput
+                    ) => {
+                        if (!keyDerivation.confirmRecoveryMethod) {
+                            throw new Error('Recovery confirmation is unavailable.');
+                        }
+
+                        const token = await authProvider.getIdToken();
+                        const providerType = authProvider.getProviderType();
+
+                        await keyDerivation.confirmRecoveryMethod({
+                            token,
+                            providerType,
+                            privateKey: currentPrivateKey,
+                            input,
+                            signDidAuthVp,
+                        });
+
+                        setRecoveryMethodCount(prev => (prev ?? 0) + 1);
+
+                        if (coordinator.needsActivation) {
+                            await coordinator.activate();
+                        }
+                    };
+
                     const getTokenAndProvider = async () => {
                         const token = await authProvider.getIdToken();
                         const providerType = authProvider.getProviderType();
@@ -1391,6 +1417,8 @@ const AuthSessionManager: React.FC<{
                             <RecoverySetupModal
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
+                                isActivationPending={coordinator.needsActivation}
+                                onCompleted={() => setShowRecoverySetup(false)}
                                 onSetupPasskey={async () => {
                                     const authUser = await authProvider.getCurrentUser();
                                     const result = await setupMethod(
@@ -1399,7 +1427,6 @@ const AuthSessionManager: React.FC<{
                                     );
 
                                     setRecoveryMethodCount(prev => (prev ?? 0) + 1);
-                                    setShowRecoverySetup(false);
                                     return result.method === 'passkey' ? result.credentialId : '';
                                 }}
                                 onGeneratePhrase={async () => {
@@ -1408,7 +1435,17 @@ const AuthSessionManager: React.FC<{
                                         { method: 'phrase' },
                                         authUser
                                     );
-                                    return result.method === 'phrase' ? result.phrase : '';
+                                    if (result.method !== 'phrase') {
+                                        throw new Error('Could not generate recovery words.');
+                                    }
+
+                                    return {
+                                        phrase: result.phrase,
+                                        challengeWordIndices: result.challengeWordIndices,
+                                    };
+                                }}
+                                onConfirmPhrase={async challengeWords => {
+                                    await confirmMethod({ method: 'phrase', challengeWords });
                                 }}
                                 onSetupBackup={async (backupPw: string) => {
                                     const authUser = await authProvider.getCurrentUser();
@@ -1421,10 +1458,16 @@ const AuthSessionManager: React.FC<{
                                         authUser
                                     );
 
-                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
                                     return result.method === 'backup'
                                         ? JSON.stringify(result.backupFile, null, 2)
                                         : '';
+                                }}
+                                onConfirmBackup={async (fileContents, password) => {
+                                    await confirmMethod({
+                                        method: 'backup',
+                                        fileContents,
+                                        password,
+                                    });
                                 }}
                                 onAddRecoveryEmail={async (email: string) => {
                                     const { token, providerType } = await getTokenAndProvider();
@@ -1477,7 +1520,9 @@ const AuthSessionManager: React.FC<{
                                 onSetupEmailRecovery={async email => {
                                     const authUser = await authProvider.getCurrentUser();
                                     await setupMethod({ method: 'email', email }, authUser);
-                                    setRecoveryMethodCount(prev => (prev ?? 0) + 1);
+                                }}
+                                onConfirmEmailRecovery={async code => {
+                                    await confirmMethod({ method: 'email', code });
                                 }}
                                 onClose={() => setShowRecoverySetup(false)}
                             />
