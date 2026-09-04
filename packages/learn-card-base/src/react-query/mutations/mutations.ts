@@ -43,7 +43,9 @@ export const useConnectWithMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY });
+        },
     });
 };
 
@@ -62,7 +64,9 @@ export const useDisconnectWithMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY });
+        },
     });
 };
 
@@ -81,7 +85,9 @@ export const useCancelConnectionRequestMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY });
+        },
     });
 };
 
@@ -100,7 +106,9 @@ export const useAcceptConnectionRequestMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY });
+        },
     });
 };
 
@@ -119,7 +127,9 @@ export const useUnblockProfileMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY });
+        },
     });
 };
 
@@ -138,7 +148,9 @@ export const useBlockProfileMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY });
+        },
     });
 };
 

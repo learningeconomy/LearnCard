@@ -143,16 +143,17 @@ describe('useIssuerContext relationship refresh', () => {
         });
 
         await waitFor(() => expect(refreshCalls).toBe(2));
+        await act(async () => {
+            await disconnectPromise;
+        });
 
+        expect(result.current.disconnect.isPending).toBe(false);
         expect(result.current.demo.isLoading).toBe(false);
         expect(result.current.demo.issuerContext?.state).toBe('connection');
         expect(result.current.other.isLoading).toBe(false);
         expect(result.current.other.issuerContext?.mutualConnectionCount).toBe(2);
 
         releaseRefresh?.();
-        await act(async () => {
-            await disconnectPromise;
-        });
 
         await waitFor(() => {
             expect(result.current.demo.issuerContext?.state).toBe('unclaimed');
