@@ -45,3 +45,142 @@ jobs:
                     echo 'run_e2e=false' >> "$GITHUB_OUTPUT"
                     echo 'reason=draft-pr' >> "$GITHUB_OUTPUT"
                   fi
+
+    browser_e2e:
+        name: Hosted browser E2E and accessibility
+        needs: eligibility
+        if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
+        runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
+        timeout-minutes: 60
+        env:
+            E2E_ARTIFACT_DIR: ${{ github.workspace }}/e2e-artifacts/browser
+            E2E_TEST_FILES: ${{ github.event.inputs.test_files || 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts' }}
+        steps:
+            - name: Checkout tested revision
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
+                  fetch-depth: 0
+
+            - name: Capture runner preflight
+              run: |
+                  mkdir -p "$E2E_ARTIFACT_DIR"
+                  {
+                    echo 'filesystem:'
+                    df -h /
+                    echo 'memory:'
+                    head -5 /proc/meminfo
+                    echo 'docker:'
+                    docker system df -v 2>&1 || true
+                  } > "$E2E_ARTIFACT_DIR/runner-preflight.txt"
+
+            - name: Setup Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - name: Setup Bun and dependencies
+              uses: ./.github/actions/setup
+
+            - name: Run hosted browser suites
+              run: bash scripts/e2e-hosted/run-browser.sh
+
+            - name: Publish browser diagnostic summary
+              if: always()
+              run: |
+                  if [[ -f "$E2E_ARTIFACT_DIR/summary.md" ]]; then
+                    cat "$E2E_ARTIFACT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
+                  else
+                    echo 'Hosted browser diagnostics were not created.' >> "$GITHUB_STEP_SUMMARY"
+                  fi
+
+            - name: Upload browser E2E artifacts
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: hosted-browser-e2e-${{ github.run_id }}
+                  path: ${{ env.E2E_ARTIFACT_DIR }}
+                  if-no-files-found: error
+                  retention-days: 30
+
+    service_e2e:
+        name: Hosted service E2E
+        needs: eligibility
+        if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
+        runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
+        timeout-minutes: 60
+        env:
+            E2E_ARTIFACT_DIR: ${{ github.workspace }}/e2e-artifacts/service
+        steps:
+            - name: Checkout tested revision
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
+                  fetch-depth: 0
+
+            - name: Capture runner preflight
+              run: |
+                  mkdir -p "$E2E_ARTIFACT_DIR"
+                  {
+                    echo 'filesystem:'
+                    df -h /
+                    echo 'memory:'
+                    head -5 /proc/meminfo
+                    echo 'docker:'
+                    docker system df -v 2>&1 || true
+                  } > "$E2E_ARTIFACT_DIR/runner-preflight.txt"
+
+            - name: Setup Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - name: Setup Bun and dependencies
+              uses: ./.github/actions/setup
+
+            - name: Run hosted service suite
+              run: bash scripts/e2e-hosted/run-service.sh
+
+            - name: Publish service diagnostic summary
+              if: always()
+              run: |
+                  if [[ -f "$E2E_ARTIFACT_DIR/summary.md" ]]; then
+                    cat "$E2E_ARTIFACT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
+                  else
+                    echo 'Hosted service diagnostics were not created.' >> "$GITHUB_STEP_SUMMARY"
+                  fi
+
+            - name: Upload service E2E artifacts
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: hosted-service-e2e-${{ github.run_id }}
+                  path: ${{ env.E2E_ARTIFACT_DIR }}
+                  if-no-files-found: error
+                  retention-days: 30
+
+    hosted_e2e_shadow:
+        name: Hosted E2E shadow
+        needs: [eligibility, browser_e2e, service_e2e]
+        if: ${{ always() }}
+        runs-on: ubuntu-latest
+        steps:
+            - name: Evaluate hosted E2E result
+              env:
+                  ELIGIBLE: ${{ needs.eligibility.outputs.run_e2e }}
+                  ELIGIBILITY_REASON: ${{ needs.eligibility.outputs.reason }}
+                  BROWSER_RESULT: ${{ needs.browser_e2e.result }}
+                  SERVICE_RESULT: ${{ needs.service_e2e.result }}
+              run: |
+                  if [[ "$ELIGIBLE" != "true" ]]; then
+                    echo "Hosted E2E skipped: $ELIGIBILITY_REASON"
+                    exit 0
+                  fi
+
+                  if [[ "$BROWSER_RESULT" == "success" && "$SERVICE_RESULT" == "success" ]]; then
+                    echo 'Both hosted E2E suites passed.'
+                    exit 0
+                  fi
+
+                  echo "Hosted E2E failed: browser=$BROWSER_RESULT service=$SERVICE_RESULT" >&2
+                  exit 1

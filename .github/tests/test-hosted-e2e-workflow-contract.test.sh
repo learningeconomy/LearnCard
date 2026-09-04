@@ -35,6 +35,34 @@ outputs = eligibility.fetch('outputs')
 abort 'run_e2e output missing' unless outputs.key?('run_e2e')
 abort 'eligibility reason output missing' unless outputs.key?('reason')
 
+browser = jobs.fetch('browser_e2e')
+service = jobs.fetch('service_e2e')
+aggregate = jobs.fetch('hosted_e2e_shadow')
+
+[browser, service].each do |job|
+  abort 'heavy job must depend on eligibility' unless job.fetch('needs') == 'eligibility'
+  abort 'heavy job must honor eligibility output' unless job.fetch('if').include?(
+    "needs.eligibility.outputs.run_e2e == 'true'"
+  )
+  abort 'runner label must remain configurable' unless job.fetch('runs-on').include?(
+    'vars.E2E_HOSTED_RUNNER'
+  )
+end
+
+abort 'aggregate must inspect all job results' unless aggregate.fetch('needs') == [
+  'eligibility', 'browser_e2e', 'service_e2e'
+]
+abort 'aggregate must run after failures/skips' unless aggregate.fetch('if').include?('always()')
+
+browser_steps = browser.fetch('steps')
+service_steps = service.fetch('steps')
+abort 'browser runner invocation missing' unless browser_steps.any? do |step|
+  step['run'] == 'bash scripts/e2e-hosted/run-browser.sh'
+end
+abort 'service runner invocation missing' unless service_steps.any? do |step|
+  step['run'] == 'bash scripts/e2e-hosted/run-service.sh'
+end
+
 legacy = YAML.load_file(legacy_path, aliases: true)
 legacy_jobs = legacy.fetch('jobs')
 abort 'legacy EC2 gate must remain during shadow phase' unless legacy_jobs.key?('e2e-tests')
