@@ -954,6 +954,26 @@ describe('Consent Flow Contracts', () => {
             expect(data.records[0]?.credentials).toHaveLength(4);
             expect(data.records[0]?.personal).toEqual(normalFullTerms.read.personal);
             expect(data.records[0]?.contractUri).toEqual(contractUri);
+            expect(data.records[0]?.status).toBe('live');
+            expect(data.records[0]?.termsUri).toMatch(/^lc:network:/);
+            expect(data.records[0]?.terms).toEqual(normalFullTerms);
+        });
+
+        it('should omit withdrawn consent before returning provider-facing data', async () => {
+            const activeData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+            const termsUri = activeData.records[0]?.termsUri;
+
+            expect(termsUri).toBeDefined();
+            if (!termsUri) throw new Error('Expected active consent terms URI');
+
+            await userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+            const withdrawnData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+
+            expect(withdrawnData.records).toEqual([]);
         });
 
         it('should error for non-existent did', async () => {
