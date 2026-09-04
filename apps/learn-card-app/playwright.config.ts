@@ -97,7 +97,6 @@ const config: PlaywrightTestConfig = {
     // outputDir: 'test-results/',
 
     /* Run your local dev server before starting the tests */
-    // webServer: useExternalE2EStack ? undefined :
     webServer: useExternalE2EStack
         ? undefined
         : {

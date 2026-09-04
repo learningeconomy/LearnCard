@@ -6,7 +6,7 @@ PLAYWRIGHT_CONFIG="$REPO_ROOT/apps/learn-card-app/playwright.config.ts"
 
 grep -Fq "process.env.E2E_EXTERNAL_STACK === 'true'" "$PLAYWRIGHT_CONFIG" \
     || { echo 'explicit Playwright external-stack flag missing' >&2; exit 1; }
-grep -Fq 'webServer: useExternalE2EStack ? undefined :' "$PLAYWRIGHT_CONFIG" \
+perl -0ne 'exit !/(?m)^\s*webServer:\s*useExternalE2EStack\s*\?\s*undefined\s*:/s' "$PLAYWRIGHT_CONFIG" \
     || { echo 'Playwright must disable its webServer only for external-stack mode' >&2; exit 1; }
 
 echo 'Hosted E2E script contracts passed'
