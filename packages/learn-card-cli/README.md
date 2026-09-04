@@ -18,6 +18,16 @@ https://docs.learncard.com
 
 ## Usage
 
+### Send your first credential
+
+```bash
+npx @learncard/cli send you@example.com
+```
+
+Generates a seed into `.env`, creates your issuer profile, sends a "Quickstart Complete" badge to the address, and writes the code it ran to `./send.mjs`. Pass `--yes` to accept defaults, `--name "Acme"` to set the display name. Walkthrough: https://docs.learncard.com/start-here/your-first-integration
+
+### Interactive REPL
+
 ```bash
 npx @learncard/cli
 

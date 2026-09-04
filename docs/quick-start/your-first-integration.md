@@ -1,5 +1,5 @@
 ---
-description: Send a verifiable credential to any email address in about 15 lines of code.
+description: Send a verifiable credential to any email address — one command, a curl, or ~15 lines of code.
 ---
 
 # Quickstart: Send a Credential
@@ -10,8 +10,67 @@ The fastest way to see LearnCard work: send a badge to an email address. The rec
 No code at all? You can issue credentials directly from the [LearnCard app](https://learncard.app). This guide is for sending programmatically.
 {% endhint %}
 
-## 1. Set up
+Two ways to do it. Pick one.
 
+{% tabs %}
+{% tab title="Fastest: one command" %}
+
+You need **Node.js 20 or newer**. In an empty folder, run:
+
+```bash
+npx @learncard/cli send you@example.com
+```
+
+Use **a real email address you can open** — this sends a real email. It will:
+
+1. Ask for a display name for your issuer profile (Enter accepts the default)
+2. Generate a secret seed and write it to `.env` (and add `.env` to `.gitignore`)
+3. Create your profile on the LearnCard Network
+4. Sign a "Quickstart Complete" badge and send it
+5. Write the code it just ran to `./send.mjs` so you can read and modify it
+
+Then skip to [What you should see](#what-you-should-see).
+
+{% endtab %}
+
+{% tab title="No keys: Developer Portal + curl" %}
+
+Nothing to install and no cryptography on your machine — LearnCard signs for you.
+
+1. Sign in at [learncard.app](https://learncard.app) and open **[learncard.app/app-store/developer](https://learncard.app/app-store/developer)**. Create an Integration if you don't have one.
+2. Open **Guides → Issue Credentials** and work down the steps:
+    - **API Token** — create one and copy it. It's shown once.
+    - **Signing Authority** — one click; LearnCard hosts it for you.
+    - **Create Templates** — make a badge (any name). Its **template URI** (`boost:…`) appears under the template selector.
+3. Send it:
+
+```bash
+export TOKEN=...            # from the API Token step
+export TEMPLATE_URI=boost:… # from the Create Templates step
+export RECIPIENT_EMAIL=you@example.com
+```
+
+<!-- snippet: quickstart/send-from-template.sh -->
+
+```bash
+curl -X POST https://network.learncard.com/api/inbox/issue \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"recipient\": { \"type\": \"email\", \"value\": \"$RECIPIENT_EMAIL\" },
+    \"templateUri\": \"$TEMPLATE_URI\"
+  }"
+```
+
+<!-- /snippet -->
+
+The response is JSON with a `status` of `PENDING` (new person — they get an email with `claimUrl`) or `ISSUED` (already a LearnCard user — it's in their wallet). Then skip to [What you should see](#what-you-should-see).
+
+{% endtab %}
+
+{% tab title="Own your keys: ~15 lines of code" %}
+
+**Set up.**
 You need **Node.js 20 or newer**. In an empty folder:
 
 ```bash
@@ -33,9 +92,7 @@ PROFILE_ID=acme-quickstart
 The seed **is** your issuer identity. Anyone with it can issue credentials as you. Never commit it or share it.
 {% endhint %}
 
-## 2. Send a credential
-
-Save this as `send.mjs`:
+**Send a credential.** Save this as `send.mjs`:
 
 <!-- snippet: quickstart/send.mjs -->
 
@@ -103,7 +160,10 @@ Run it with **a real email address you can open** (your own is ideal) — this s
 node --env-file=.env send.mjs you@example.com
 ```
 
-## 3. What you should see
+{% endtab %}
+{% endtabs %}
+
+## What you should see
 
 One of two lines, depending on whether that email address already has a LearnCard account:
 
@@ -135,9 +195,9 @@ Run it again — it's safe. The profile is only created the first time.
 | `Failed to send email via Postmark: … marked as inactive`                                           | The address is a placeholder (`example.com`) or has bounced before | Use a real address you can open                                                                          |
 | `Unsigned credentials require a signing authority`                                                  | You removed `issueCredential(...)`                                 | Sign the credential first, or set up a [signing authority](../how-to-guides/create-signing-authority.md) |
 
-## Prefer raw HTTP?
+## Send your own signed credential over HTTP
 
-Create an API token once, then send from any language. This script creates the token and writes the exact request body to `request.json`:
+The no-keys tab lets LearnCard sign from a template. If you sign credentials yourself but want to deliver them from any language, create an API token once and POST the signed credential. This script creates the token and writes the exact request body to `request.json`:
 
 <!-- snippet: quickstart/api-token.mjs -->
 

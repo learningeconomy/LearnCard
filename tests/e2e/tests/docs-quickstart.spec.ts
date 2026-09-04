@@ -14,6 +14,9 @@ import { randomBytes } from 'node:crypto';
 import { join, resolve } from 'node:path';
 
 import { getLearnCardForUser } from './helpers/learncard.helpers';
+import { testUnsignedBoost } from './helpers/credential.helpers';
+
+const CLI = resolve(__dirname, '../../../packages/learn-card-cli/dist/index.js');
 
 const SNIPPETS = resolve(__dirname, '../../../docs/snippets/quickstart');
 const LOCAL_NETWORK = 'http://localhost:4000/trpc';
@@ -64,11 +67,13 @@ describe('Docs: Quickstart — Send a Credential', () => {
     let sendMjs: string;
     let apiTokenMjs: string;
     let sendSh: string;
+    let sendFromTemplateSh: string;
 
     beforeAll(() => {
         sendMjs = localize('send.mjs');
         apiTokenMjs = localize('api-token.mjs');
         sendSh = localize('send.sh');
+        sendFromTemplateSh = localize('send-from-template.sh');
     });
 
     afterAll(() => rmSync(RUN_DIR, { recursive: true, force: true }));
@@ -134,5 +139,88 @@ describe('Docs: Quickstart — Send a Credential', () => {
             status: expect.stringMatching(/PENDING|ISSUED/),
             recipient: { type: 'email', value: recipient },
         });
+    });
+    test('send-from-template.sh: the no-keys path signs server-side from a template', async () => {
+        const issuer = await getLearnCardForUser('a');
+        const sa = await issuer.invoke.createSigningAuthority('quickstart-sa');
+        if (!sa) throw new Error('signing authority creation failed');
+        await issuer.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
+        await issuer.invoke.setPrimaryRegisteredSigningAuthority(sa.endpoint!, sa.name);
+        const templateUri = await issuer.invoke.createBoost(testUnsignedBoost, {
+            name: 'Quickstart Complete',
+            type: 'achievement',
+            category: 'Achievement',
+        });
+        const grantId = await issuer.invoke.addAuthGrant({
+            name: 'quickstart-http',
+            scope: 'inbox:write',
+        });
+        const token = await issuer.invoke.getAPITokenForAuthGrant(grantId);
+        const recipient = freshEmail('template');
+
+        const response = execFileSync('sh', [sendFromTemplateSh], {
+            cwd: RUN_DIR,
+            env: {
+                ...process.env,
+                TOKEN: token,
+                TEMPLATE_URI: templateUri,
+                RECIPIENT_EMAIL: recipient,
+            },
+            encoding: 'utf8',
+            timeout: 30_000,
+        });
+        expect(JSON.parse(response)).toMatchObject({
+            issuanceId: expect.any(String),
+            status: 'PENDING',
+            claimUrl: expect.stringMatching(/^https?:\/\//),
+            recipient: { type: 'email', value: recipient },
+        });
+    });
+
+    test('npx @learncard/cli send: one command creates .env, sends, and writes send.mjs', async () => {
+        if (!existsSync(CLI))
+            throw new Error('build @learncard/cli first: bunx nx build learn-card-cli');
+        const cliDir = join(RUN_DIR, 'cli');
+        execFileSync('mkdir', ['-p', cliDir]);
+        writeFileSync(join(cliDir, '.gitignore'), 'node_modules\n');
+        const recipient = freshEmail('cli');
+
+        const output = execFileSync(
+            process.execPath,
+            [
+                CLI,
+                'send',
+                recipient,
+                '--yes',
+                '--name',
+                'Quickstart Org',
+                '--network',
+                LOCAL_NETWORK,
+            ],
+            { cwd: cliDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120_000 }
+        );
+
+        expect(output).toMatch(/^Sent\. /m);
+        expect(readFileSync(join(cliDir, '.env'), 'utf8')).toMatch(/^SECURE_SEED=[0-9a-f]{64}$/m);
+        expect(readFileSync(join(cliDir, '.env'), 'utf8')).toMatch(
+            /^PROFILE_ID=quickstart-org-[a-z0-9]{4}$/m
+        );
+        expect(readFileSync(join(cliDir, '.gitignore'), 'utf8')).toMatch(/^\.env$/m);
+        expect(readFileSync(join(cliDir, 'send.mjs'), 'utf8')).toContain(
+            'displayName: "Quickstart Org"'
+        );
+
+        expect(
+            execFileSync(
+                process.execPath,
+                [CLI, 'send', recipient, '--yes', '--network', LOCAL_NETWORK],
+                {
+                    cwd: cliDir,
+                    encoding: 'utf8',
+                    stdio: ['ignore', 'pipe', 'pipe'],
+                    timeout: 120_000,
+                }
+            )
+        ).toMatch(/^Sent\. /m);
     });
 });
