@@ -423,7 +423,8 @@ const IssueCredentialPage: React.FC = () => {
         const previewCategory =
             getDefaultCategoryForCredential(filledJson as UnsignedVC) || 'Achievement';
         const fallbackImage = getFallBackImage(previewCategory);
-        const selfIssuedDid = getCurrentLCNUserDid(currentLCNUser?.profileId);
+        const currentIssuerDid =
+            getCurrentLCNUserDid(currentLCNUser?.profileId) ?? currentLCNUser?.did;
 
         let credentialSubjectName: string | undefined;
         let showIssuerImage = true;
@@ -463,14 +464,14 @@ const IssueCredentialPage: React.FC = () => {
 
         if (subjectObject) {
             const previewSubjectDid =
-                recipientMode === 'self' ? selfIssuedDid : specificProfileRecipient?.did;
+                recipientMode === 'self' ? currentIssuerDid : specificProfileRecipient?.did;
             if (previewSubjectDid) subjectObject.id = previewSubjectDid;
         }
 
         return {
             ...filledJson,
             issuer: {
-                id: recipientMode === 'self' && selfIssuedDid ? selfIssuedDid : 'did:web:preview',
+                id: currentIssuerDid ?? 'did:web:preview',
                 name: issuerName,
                 ...(showIssuerImage && issuerImage ? { image: issuerImage } : {}),
             },
@@ -489,6 +490,7 @@ const IssueCredentialPage: React.FC = () => {
         issuerImage,
         currentLCNUser?.displayName,
         currentLCNUser?.profileId,
+        currentLCNUser?.did,
         recipientMode,
         recipients,
         previewValues,

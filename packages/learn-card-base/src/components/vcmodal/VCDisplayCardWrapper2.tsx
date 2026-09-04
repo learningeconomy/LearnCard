@@ -21,7 +21,13 @@ import {
     CredentialSubjectDisplay,
 } from 'learn-card-base';
 
-import type { CredentialRecord, IssuerTrustProfile, VC, VerificationItem } from '@learncard/types';
+import type {
+    CredentialRecord,
+    IssuerContext,
+    IssuerTrustProfile,
+    VC,
+    VerificationItem,
+} from '@learncard/types';
 import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
@@ -67,6 +73,7 @@ type VCDisplayCardWrapper2Props = {
     customBodyContentSlot?: React.ReactNode;
     verifierLabelOverride?: string;
     issuerTrustProfile?: IssuerTrustProfile;
+    issuerContextOverride?: IssuerContext;
     issueeOverride?: string;
     issuerOverride?: string;
     issueHistory?: any[];
@@ -121,6 +128,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     customBodyContentSlot,
     verifierLabelOverride,
     issuerTrustProfile,
+    issuerContextOverride,
     issueeOverride,
     issuerOverride,
     issueHistory,
@@ -298,11 +306,15 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     const isCertificate = displayType === 'certificate';
     const isFamily = category === BoostCategoryOptionsEnum.family;
     const t = useT();
-    const { issuerContext, registryIssuerName } = useIssuerContext(credential, {
-        trustProfile:
-            issuerTrustProfile ??
-            (category === BoostCategoryOptionsEnum.socialBadge ? 'social' : 'credential'),
-    });
+    const { issuerContext: resolvedIssuerContext, registryIssuerName } = useIssuerContext(
+        credential,
+        {
+            trustProfile:
+                issuerTrustProfile ??
+                (category === BoostCategoryOptionsEnum.socialBadge ? 'social' : 'credential'),
+        }
+    );
+    const issuerContext = issuerContextOverride ?? resolvedIssuerContext;
     const issuerLabelName = issuerContext
         ? getIssuerContextName(issuerContext, issuerName ?? registryIssuerName)
         : undefined;

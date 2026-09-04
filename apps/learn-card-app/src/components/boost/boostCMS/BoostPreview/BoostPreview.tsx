@@ -20,7 +20,7 @@ import ReactCredentialIssuerPopover, {
     useReactCredentialIssuerPopover,
 } from 'learn-card-base/components/CredentialBadge/ReactCredentialIssuerPopover';
 
-import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
+import { IssuerContext, VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
     useModal,
     useWallet,
@@ -88,6 +88,7 @@ export type BoostPreviewProps = {
     isClrChildCredential?: boolean;
     issuancesSummaryComponent?: React.ReactNode;
     isPreview?: boolean;
+    issuerContextOverride?: IssuerContext;
 };
 
 export const useVerification = (credential: VC) => {
@@ -184,6 +185,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     isClrChildCredential = false,
     issuancesSummaryComponent,
     isPreview = false,
+    issuerContextOverride,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const { track } = useAnalytics();
@@ -209,10 +211,14 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         useReactCredentialIssuerPopover();
 
     const t = useT();
-    const { issuerContext, registryIssuerName } = useIssuerContext(credential, {
-        trustProfile:
-            categoryType === BoostCategoryOptionsEnum.socialBadge ? 'social' : 'credential',
-    });
+    const { issuerContext: resolvedIssuerContext, registryIssuerName } = useIssuerContext(
+        credential,
+        {
+            trustProfile:
+                categoryType === BoostCategoryOptionsEnum.socialBadge ? 'social' : 'credential',
+        }
+    );
+    const issuerContext = issuerContextOverride ?? resolvedIssuerContext;
     const issuerLabelName = issuerContext
         ? getIssuerContextName(issuerContext, issuerOverride ?? registryIssuerName)
         : undefined;

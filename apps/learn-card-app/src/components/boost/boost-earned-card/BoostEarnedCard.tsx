@@ -47,7 +47,7 @@ import {
     isBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
-import { VC, VerificationItem } from '@learncard/types';
+import { IssuerContext, VC, VerificationItem } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
@@ -82,6 +82,9 @@ type BoostEarnedCardProps = {
     isPreview?: boolean;
     relativeDate?: boolean;
     compact?: boolean;
+    verifierLabelOverride?: string;
+    issuerDisplayName?: string;
+    issuerContextOverride?: IssuerContext;
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
@@ -110,6 +113,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     isPreview = false,
     relativeDate = false,
     compact = false,
+    verifierLabelOverride,
+    issuerDisplayName,
+    issuerContextOverride,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -324,6 +330,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             formattedDisplayType: formattedAchievementType,
             isEarnedBoost: true,
             isPreview,
+            issuerContextOverride,
             isClrChildCredential,
         };
 
@@ -357,6 +364,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             isEarnedBoost: true,
             isClrChildCredential,
             isClrCredential,
+            issuerContextOverride,
             isPreview,
         };
 
@@ -436,12 +444,16 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     dateDisplay={issueDate}
                     issuerName={issuerName}
                     customIssuerName={
-                        <CustomIssuerName
-                            issuerName={issuerName}
-                            subjectName={issueeName}
-                            isLoading={showSkeleton}
-                            isClrCredential={isClrCredential}
-                        />
+                        verifierLabelOverride ? (
+                            <></>
+                        ) : (
+                            <CustomIssuerName
+                                issuerName={issuerName}
+                                subjectName={issueeName}
+                                isLoading={showSkeleton}
+                                isClrCredential={isClrCredential}
+                            />
+                        )
                     }
                     customThumbComponent={
                         showSkeleton ? (
@@ -488,7 +500,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     relativeDate={relativeDate}
                     compact={compact}
                     isCLR={isClrCredential}
-                    trustedVerifierOnly
+                    verifierLabelOverride={verifierLabelOverride}
+                    issuerDisplayName={issuerDisplayName}
+                    issuerContextOverride={issuerContextOverride}
+                    trustedVerifierOnly={!issuerContextOverride}
                 />
             </ErrorBoundary>
         );

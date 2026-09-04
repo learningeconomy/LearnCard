@@ -53,6 +53,7 @@ type CredentialVerificationDisplayProps = {
     issuerTrustProfile?: IssuerTrustProfile;
     lifecycleStatus?: CredentialLifecycleStatus;
     trustedOnly?: boolean;
+    issuerContextOverride?: IssuerContext;
 };
 
 const IssuerAvatar: React.FC<{
@@ -139,13 +140,18 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     issuerPopoverEnabled = true,
     lifecycleStatus = 'active',
     trustedOnly = false,
+    issuerContextOverride,
 }) => {
     const t = useT();
     const popoverId = useId().replace(/:/g, '');
-    const { issuerContext, registryIssuerName } = useIssuerContext(credential, {
-        managedBoost,
-        trustProfile: issuerTrustProfile,
-    });
+    const { issuerContext: resolvedIssuerContext, registryIssuerName } = useIssuerContext(
+        credential,
+        {
+            managedBoost,
+            trustProfile: issuerTrustProfile,
+        }
+    );
+    const issuerContext = issuerContextOverride ?? resolvedIssuerContext;
     const resolvedIssuerName = issuerContext
         ? getIssuerContextName(issuerContext, issuerDisplayName ?? registryIssuerName)
         : undefined;

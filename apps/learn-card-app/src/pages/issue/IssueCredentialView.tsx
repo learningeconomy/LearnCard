@@ -352,6 +352,8 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                     credentialType={credentialType}
                                     cardTitle={ach?.name?.value ?? ''}
                                     hasImage={Boolean(ach?.image?.value)}
+                                    recipientMode={recipientMode}
+                                    recipients={recipients}
                                 />
                             </div>
                         </div>

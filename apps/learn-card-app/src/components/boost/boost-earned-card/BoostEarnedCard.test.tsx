@@ -7,6 +7,9 @@ import type { VC } from '@learncard/types';
 type CardWrapperProps = {
     innerOnClick?: () => void;
     optionsTriggerOnClick?: () => void;
+    verifierLabelOverride?: string;
+    issuerName?: string;
+    customIssuerName?: React.ReactNode;
 };
 
 type PreviewProps = {
@@ -56,7 +59,13 @@ vi.mock('learn-card-base', () => ({
         },
     },
     BoostPageViewMode: { Card: 'card' },
-    BoostGenericCardWrapper: ({ innerOnClick, optionsTriggerOnClick }: CardWrapperProps) => (
+    BoostGenericCardWrapper: ({
+        innerOnClick,
+        optionsTriggerOnClick,
+        verifierLabelOverride,
+        issuerName,
+        customIssuerName,
+    }: CardWrapperProps) => (
         <div>
             <button type="button" onClick={innerOnClick}>
                 Open credential
@@ -66,6 +75,8 @@ vi.mock('learn-card-base', () => ({
                     Card options
                 </button>
             )}
+            {verifierLabelOverride}
+            {customIssuerName || issuerName}
         </div>
     ),
     resetIonicModalBackground: vi.fn(),
@@ -214,5 +225,28 @@ describe('BoostEarnedCard', () => {
         expect(preview).toBeDefined();
         expect(preview!.props.onDotsClick).toBeUndefined();
         expect(mocks.presentOptions).not.toHaveBeenCalled();
+    });
+
+    it('shows the relationship preview label without repeating the issuer name', () => {
+        render(
+            <BoostEarnedCard
+                credential={credential}
+                categoryType="Achievement"
+                useWrapper={false}
+                verifierLabelOverride="You created this"
+                issuerDisplayName="Example University"
+                issuerContextOverride={{
+                    issuerDid: 'did:example:issuer',
+                    trustProfile: 'social',
+                    state: 'self',
+                    connectionStatus: 'NOT_CONNECTED',
+                    mutualConnectionCount: 0,
+                    hasVerifiedContactMethod: false,
+                }}
+            />
+        );
+
+        expect(screen.getByText('You created this')).toBeInTheDocument();
+        expect(screen.queryByText('Example University')).not.toBeInTheDocument();
     });
 });

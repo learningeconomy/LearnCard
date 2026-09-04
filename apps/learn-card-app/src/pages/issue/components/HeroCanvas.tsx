@@ -1,10 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ImageIcon } from 'lucide-react';
+import type { LCNVisibleProfile, VC } from '@learncard/types';
 
-import { BoostCategoryOptionsEnum, BoostPageViewMode } from 'learn-card-base';
-import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { BoostCategoryOptionsEnum, BoostPageViewMode, useGetConnections } from 'learn-card-base';
+import {
+    getIssuerContextLabel,
+    getIssuerContextName,
+} from 'learn-card-base/helpers/issuerContext.helpers';
+import {
+    getDefaultCategoryForCredential,
+    getProfileIdFromLCNDidWeb,
+} from 'learn-card-base/helpers/credentialHelpers';
+import { deriveIssuerTrustProfile } from 'learn-card-base/hooks/useIssuerContext';
+import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
+import { useT } from 'learn-card-base/i18n';
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import type { SimpleCredentialType } from '../../../components/simple-send/simpleSend.helpers';
+import type { Recipient, RecipientMode } from './recipientTypes';
+import { createPreviewIssuerContext, type PreviewRegistrySource } from './previewIssuerContext';
 import * as m from '../../../paraglide/messages.js';
 
 interface HeroCanvasProps {
@@ -12,6 +25,8 @@ interface HeroCanvasProps {
     credentialType: SimpleCredentialType | null;
     cardTitle?: string;
     hasImage?: boolean;
+    recipientMode?: RecipientMode;
+    recipients?: Recipient[];
 }
 
 const useChangePulse = (value: string): boolean => {
@@ -48,10 +63,71 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
     credentialType,
     cardTitle = '',
     hasImage = false,
+    recipientMode,
+    recipients = [],
 }) => {
     const popping = useChangePulse(cardTitle);
     const glowing = useChangePulse(hasImage ? 'has-image' : '');
+    const t = useT();
+    const { data: connections = [] } = useGetConnections();
+    const issuer =
+        credential?.issuer && typeof credential.issuer === 'object'
+            ? (credential.issuer as Record<string, unknown>)
+            : undefined;
+    const issuerDid =
+        typeof credential?.issuer === 'string'
+            ? credential.issuer
+            : typeof issuer?.id === 'string'
+            ? issuer.id
+            : '';
+    const issuerName = typeof issuer?.name === 'string' ? issuer.name : undefined;
+    const issuerImage = typeof issuer?.image === 'string' ? issuer.image : undefined;
+    const registry = useKnownDIDRegistry(issuerDid || undefined);
+    const registrySource =
+        registry.data?.source === 'trusted' ||
+        registry.data?.source === 'untrusted' ||
+        registry.data?.source === 'unknown'
+            ? (registry.data.source as PreviewRegistrySource)
+            : undefined;
+    const category =
+        credential &&
+        (getDefaultCategoryForCredential(credential as unknown as VC) ||
+            BoostCategoryOptionsEnum.achievement);
+    const issuerContext = useMemo(() => {
+        if (!credential || !issuerDid || !recipientMode) return undefined;
 
+        const issuerProfile: LCNVisibleProfile = {
+            profileId: getProfileIdFromLCNDidWeb(issuerDid) ?? issuerDid,
+            displayName: issuerName ?? issuerDid,
+            shortBio: '',
+            ...(issuerImage ? { image: issuerImage } : {}),
+        };
+
+        return createPreviewIssuerContext({
+            issuerDid,
+            issuerProfile,
+            trustProfile: deriveIssuerTrustProfile(credential as unknown as VC),
+            registrySource,
+            recipientMode,
+            recipients,
+            connections,
+        });
+    }, [
+        connections,
+        credential,
+        issuerDid,
+        issuerImage,
+        issuerName,
+        recipientMode,
+        recipients,
+        registrySource,
+    ]);
+    const issuerLabelName = issuerContext
+        ? getIssuerContextName(issuerContext, issuerName)
+        : undefined;
+    const issuerLabel = issuerContext
+        ? getIssuerContextLabel(issuerContext, t, issuerLabelName)
+        : undefined;
     return (
         <div className="w-full flex flex-col items-center gap-4">
             {credentialType && credential ? (
@@ -65,14 +141,14 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
                         className={hasImage ? 'motion-safe:animate-image-drop' : ''}
                     >
                         <BoostEarnedCard
-                            credential={credential as any}
-                            categoryType={
-                                getDefaultCategoryForCredential(credential as any) ||
-                                BoostCategoryOptionsEnum.achievement
-                            }
+                            credential={credential as unknown as VC}
+                            categoryType={category}
                             boostPageViewMode={BoostPageViewMode.Card}
                             useWrapper={false}
                             verifierState={false}
+                            verifierLabelOverride={issuerLabel}
+                            issuerDisplayName={issuerLabelName}
+                            issuerContextOverride={issuerContext}
                             hideOptionsMenu
                             isPreview
                             className="shadow-xl"

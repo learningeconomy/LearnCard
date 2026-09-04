@@ -24,7 +24,7 @@ import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers
 import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
 import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 
-import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
+import { IssuerContext, VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
     BoostCategoryOptionsEnum,
     useWallet,
@@ -78,6 +78,7 @@ type NonBoostPreviewProps = {
     displayType?: DisplayTypeEnum;
     isPreview?: boolean;
     lifecycleStatus?: 'active' | 'revoked' | 'suspended';
+    issuerContextOverride?: IssuerContext;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -114,6 +115,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isClrCredential = false,
     displayType,
     isPreview = false,
+    issuerContextOverride,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const { track } = useAnalytics();
@@ -313,6 +315,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
             customIssueHistoryComponent={customIssueHistoryComponent}
             enableLightbox
             titleOverride={titleOverride}
+            issuerContextOverride={issuerContextOverride}
             handleClose={isCertificate ? handleCloseModal : undefined}
             hideNavButtons
             setIsFrontOverride={setIsFront}
