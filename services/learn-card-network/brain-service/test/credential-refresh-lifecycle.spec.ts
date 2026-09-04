@@ -73,7 +73,7 @@ const buildUnsignedCredential = (
         credentialSubject: { id: holder.learnCard.id.did() },
         refreshService: allocation.refreshService,
         ...overrides,
-    } as UnsignedVC);
+    }) as UnsignedVC;
 
 /** Allocates, signs, and sends the original credential (version 1, awaiting_claim). */
 const sendOriginal = async (): Promise<{
@@ -311,6 +311,20 @@ describe('Credential Refresh Lifecycle', () => {
     });
 
     describe('revocation coupling', () => {
+        it('does not let conditional activation overwrite a terminal revoked state', async () => {
+            const { allocation } = await sendOriginal();
+            await setCredentialRefreshState(allocation.refreshId, 'revoked');
+
+            const transition = await setCredentialRefreshState(
+                allocation.refreshId,
+                'active',
+                'awaiting_claim'
+            );
+
+            expect(transition).toBeNull();
+            expect((await getCredentialRefresh(allocation.refreshId))?.state).toBe('revoked');
+        });
+
         it('stops serving current, history, and versions after canonical revocation', async () => {
             const { allocation, uri } = await sendOriginal();
 

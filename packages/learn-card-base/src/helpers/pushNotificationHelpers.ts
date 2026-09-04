@@ -73,7 +73,7 @@ export const getNotificationToastCopy = (
     notification: LCNNotification
 ): { title: string; body: string } => {
     const fromName =
-        typeof notification.from === 'string' ? '' : notification.from?.displayName ?? '';
+        typeof notification.from === 'string' ? '' : (notification.from?.displayName ?? '');
 
     if (notification.message?.title || notification.message?.body) {
         return {

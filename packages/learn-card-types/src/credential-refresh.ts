@@ -160,13 +160,14 @@ export const PublishCredentialRefreshInputValidator = z
         }
     });
 export type PublishCredentialRefreshInput =
-    | PublishIssuerSignedRefresh
-    | PublishSigningAuthorityRefresh;
+    PublishIssuerSignedRefresh | PublishSigningAuthorityRefresh;
 
 export const PublishCredentialRefreshNotificationValidator = z.enum([
     'queued',
     'suppressed',
     'not-applicable',
+    /** Publication succeeded, but the post-commit notification enqueue must be retried. */
+    'delivery-failed',
 ]);
 export type PublishCredentialRefreshNotification = z.infer<
     typeof PublishCredentialRefreshNotificationValidator

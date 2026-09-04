@@ -74,6 +74,9 @@ const failed = (
 
 const inFlightRefreshes = new Map<string, Promise<LearnCloudCredentialRefreshResult>>();
 
+const getInFlightRefreshKey = (wallet: BespokeLearnCard, recordId: string): string =>
+    JSON.stringify([wallet.id.did(), recordId]);
+
 const readRecord = async (wallet: BespokeLearnCard, id: string): Promise<LCR | undefined> => {
     const records = await wallet.index.LearnCloud.get({ id });
 
@@ -312,25 +315,28 @@ const performRefresh = async (
 };
 
 /**
- * Refreshes one LearnCloud credential in place. Concurrent calls for the same index
- * record ID are coalesced: callers share the in-flight promise.
+ * Refreshes one LearnCloud credential in place. Concurrent calls for the same wallet
+ * DID and index record ID are coalesced: callers share the in-flight promise.
  */
 export const refreshLearnCloudCredential = ({
     wallet,
     record,
     force = false,
 }: RefreshLearnCloudCredentialParams): Promise<LearnCloudCredentialRefreshResult> => {
-    const existing = inFlightRefreshes.get(record.id);
+    const inFlightKey = getInFlightRefreshKey(wallet, record.id);
+    const existing = inFlightRefreshes.get(inFlightKey);
 
     if (existing) return existing;
 
     const promise = performRefresh(wallet, record, force);
 
-    inFlightRefreshes.set(record.id, promise);
+    inFlightRefreshes.set(inFlightKey, promise);
 
     // The performed refresh never rejects; release the mutex once it settles.
     void promise.finally(() => {
-        inFlightRefreshes.delete(record.id);
+        if (inFlightRefreshes.get(inFlightKey) === promise) {
+            inFlightRefreshes.delete(inFlightKey);
+        }
     });
 
     return promise;

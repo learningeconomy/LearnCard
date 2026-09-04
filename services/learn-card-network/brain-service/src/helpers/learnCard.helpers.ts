@@ -220,7 +220,7 @@ export const getLearnCard = async (
 export const createDagJweForRecipients = async <T>(
     cleartext: T,
     recipients: string[],
-    seed = process.env.SEED
+    seed = environment.SEED
 ): Promise<JWE> => {
     await getLearnCard(seed);
 

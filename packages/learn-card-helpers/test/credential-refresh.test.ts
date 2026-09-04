@@ -31,40 +31,42 @@ const vcdm2Credential = {
 
 describe('getCredentialIssuerId', () => {
     it('returns a string issuer unchanged', () => {
-        expect(getCredentialIssuerId(vcdm11Credential as any)).toBe(issuerDid);
+        expect(getCredentialIssuerId(vcdm11Credential)).toBe(issuerDid);
     });
 
     it('normalizes an object issuer to its id', () => {
-        expect(getCredentialIssuerId(vcdm2Credential as any)).toBe(issuerDid);
+        expect(getCredentialIssuerId(vcdm2Credential)).toBe(issuerDid);
     });
 
     it('returns undefined for a missing issuer', () => {
-        expect(getCredentialIssuerId({} as any)).toBeUndefined();
+        expect(getCredentialIssuerId({})).toBeUndefined();
     });
 });
 
 describe('getCredentialEffectiveTime', () => {
     it('reads issuanceDate from a VCDM 1.1 credential', () => {
-        expect(getCredentialEffectiveTime(vcdm11Credential as any)).toBe(
+        expect(getCredentialEffectiveTime(vcdm11Credential)).toBe(
             Date.parse('2026-01-01T00:00:00Z')
         );
     });
 
     it('prefers validFrom from a VCDM 2.0 credential', () => {
-        expect(getCredentialEffectiveTime(vcdm2Credential as any)).toBe(
+        expect(getCredentialEffectiveTime(vcdm2Credential)).toBe(
             Date.parse('2026-02-01T00:00:00Z')
         );
     });
 
     it('falls back to issuanceDate when validFrom is absent', () => {
-        const vc = { ...vcdm2Credential, issuanceDate: '2026-01-15T00:00:00Z' };
-        delete (vc as any).validFrom;
+        const { validFrom: _validFrom, ...vc } = {
+            ...vcdm2Credential,
+            issuanceDate: '2026-01-15T00:00:00Z',
+        };
 
-        expect(getCredentialEffectiveTime(vc as any)).toBe(Date.parse('2026-01-15T00:00:00Z'));
+        expect(getCredentialEffectiveTime(vc)).toBe(Date.parse('2026-01-15T00:00:00Z'));
     });
 
     it('returns undefined when no effective timestamp exists', () => {
-        expect(getCredentialEffectiveTime({} as any)).toBeUndefined();
+        expect(getCredentialEffectiveTime({})).toBeUndefined();
     });
 });
 
@@ -78,13 +80,13 @@ describe('getSupportedRefreshService', () => {
     it('returns the single supported refresh service', () => {
         const vc = { ...vcdm2Credential, refreshService: managedService };
 
-        expect(getSupportedRefreshService(vc as any)).toEqual(managedService);
+        expect(getSupportedRefreshService(vc)).toEqual(managedService);
     });
 
     it('returns the single supported refresh service from a one-item array', () => {
         const vc = { ...vcdm2Credential, refreshService: [managedService] };
 
-        expect(getSupportedRefreshService(vc as any)).toEqual(managedService);
+        expect(getSupportedRefreshService(vc)).toEqual(managedService);
     });
 
     it('skips an unsupported first entry and selects the supported second entry', () => {
@@ -93,17 +95,17 @@ describe('getSupportedRefreshService', () => {
             refreshService: [unsupportedService, managedService],
         };
 
-        expect(getSupportedRefreshService(vc as any)).toEqual(managedService);
+        expect(getSupportedRefreshService(vc)).toEqual(managedService);
     });
 
     it('returns undefined when no service is supported', () => {
         const vc = { ...vcdm2Credential, refreshService: unsupportedService };
 
-        expect(getSupportedRefreshService(vc as any)).toBeUndefined();
+        expect(getSupportedRefreshService(vc)).toBeUndefined();
     });
 
     it('returns undefined when no refreshService exists', () => {
-        expect(getSupportedRefreshService(vcdm2Credential as any)).toBeUndefined();
+        expect(getSupportedRefreshService(vcdm2Credential)).toBeUndefined();
     });
 });
 
@@ -162,7 +164,7 @@ describe('credentialContentsEqual', () => {
             },
         };
 
-        expect(credentialContentsEqual(base as any, other as any)).toBe(true);
+        expect(credentialContentsEqual(base, other)).toBe(true);
     });
 
     it('detects content changes beneath the proof', () => {
@@ -171,13 +173,12 @@ describe('credentialContentsEqual', () => {
             credentialSubject: { id: 'did:example:holder', status: 'final' },
         };
 
-        expect(credentialContentsEqual(base as any, other as any)).toBe(false);
+        expect(credentialContentsEqual(base, other)).toBe(false);
     });
 
     it('treats a missing proof and a present proof as equal content', () => {
-        const withoutProof = { ...base };
-        delete (withoutProof as any).proof;
+        const { proof: _proof, ...withoutProof } = base;
 
-        expect(credentialContentsEqual(base as any, withoutProof as any)).toBe(true);
+        expect(credentialContentsEqual(base, withoutProof)).toBe(true);
     });
 });

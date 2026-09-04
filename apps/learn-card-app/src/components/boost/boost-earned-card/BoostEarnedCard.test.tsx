@@ -191,8 +191,7 @@ describe('BoostEarnedCard', () => {
 
             expect(mocks.newModal).toHaveBeenCalledOnce();
             const preview = mocks.newModal.mock.calls[0]?.[0] as
-                | React.ReactElement<PreviewProps>
-                | undefined;
+                React.ReactElement<PreviewProps> | undefined;
             expect(preview).toBeDefined();
             expect(preview!.type).toBe(expectedPreview);
             expect(typeof preview!.props.onDotsClick).toBe('function');
@@ -219,8 +218,7 @@ describe('BoostEarnedCard', () => {
 
         expect(mocks.newModal).toHaveBeenCalledOnce();
         const preview = mocks.newModal.mock.calls[0]?.[0] as
-            | React.ReactElement<PreviewProps>
-            | undefined;
+            React.ReactElement<PreviewProps> | undefined;
         expect(preview).toBeDefined();
         expect(preview!.props.onDotsClick).toBeUndefined();
         expect(mocks.presentOptions).not.toHaveBeenCalled();

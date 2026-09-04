@@ -12,6 +12,7 @@ import { preferencesRouter } from '@routes/preferences';
 import { keysRouter } from '@routes/keys';
 import { qrLoginRouter } from '@routes/qr-login';
 import { testRouter, type TestRouter } from '@routes/test';
+import { environment } from '@environment';
 
 const routes = {
     notifications: notificationsRouter,
@@ -30,6 +31,6 @@ const routes = {
 export const appRouter = t.router<typeof routes & { test?: TestRouter }>({
     ...routes,
     // E2E-only observability routes (see routes/test.ts); undefined in production.
-    test: process.env.IS_E2E_TEST ? testRouter : undefined,
+    test: environment.IS_E2E_TEST ? testRouter : undefined,
 });
 export type AppRouter = typeof appRouter;

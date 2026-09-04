@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- cross-package E2E assertions inspect dynamic credential and index payloads */
 import { describe, test, expect, beforeAll, beforeEach } from 'vitest';
 
 import { prepareFixtureById, buildFinalTranscriptVariant } from '@learncard/credential-library';
@@ -37,13 +38,12 @@ const DELIVERY_WINDOW_MS = 0.005 * 3_600_000; // 18 seconds
 /**
  * SSRF guard opt-ins for the local docker endpoint: it is plain HTTP on a loopback
  * host, so the holder primitive needs the explicit local-development opt-in, plus a
- * resolution override — Node DNS resolves `localhost` to a private address, which the
- * guard rejects by default. The override only satisfies the guard; the request itself
- * still goes to the original URL.
+ * private-address opt-in. Both exceptions are deliberately scoped to this local test.
  */
 const LOCAL_REFRESH_OPTIONS = {
     allowInsecureHttp: true,
-    resolveHost: async () => ['93.184.216.34'],
+    allowPrivateAddresses: true,
+    resolveHost: async () => ['127.0.0.1'],
 } as const;
 
 const waitForFreshDeliveryWindow = async (): Promise<void> => {
@@ -191,9 +191,8 @@ describe('Credential Refresh (managed)', () => {
 
         // 4. Holder stores it in their encrypted LearnCloud wallet index.
         const recordId = 'e2e-managed-refresh-transcript';
-        const provisionalLearnCloudUri = await holder.store.LearnCloud.uploadEncrypted!(
-            heldProvisional
-        );
+        const provisionalLearnCloudUri =
+            await holder.store.LearnCloud.uploadEncrypted!(heldProvisional);
 
         await holder.index.LearnCloud.add({ id: recordId, uri: provisionalLearnCloudUri });
 
@@ -222,7 +221,7 @@ describe('Credential Refresh (managed)', () => {
             LOCAL_REFRESH_OPTIONS
         );
 
-        expect(refreshed.status).toBe('updated');
+        expect(refreshed.status, JSON.stringify(refreshed)).toBe('updated');
 
         if (refreshed.status !== 'updated') throw new Error('Expected updated result');
 
@@ -369,9 +368,7 @@ describe('Credential Refresh (managed)', () => {
         // Collapse: exactly one in-app notification and exactly one push attempt.
         const inAppAfterCollapse = await waitFor(
             async () =>
-                (
-                    await getRefreshNotifications(holder)
-                ).filter(
+                (await getRefreshNotifications(holder)).filter(
                     notification => notification.data?.metadata?.refreshId === allocation.refreshId
                 ),
             notifications => notifications.length === 1
@@ -381,9 +378,9 @@ describe('Credential Refresh (managed)', () => {
 
         const attemptsAfterCollapse = await waitFor(
             async () =>
-                (
-                    await getPushAttempts()
-                ).filter(attempt => attempt.refreshId === allocation.refreshId),
+                (await getPushAttempts()).filter(
+                    attempt => attempt.refreshId === allocation.refreshId
+                ),
             attempts => attempts.length === 1
         );
 
@@ -404,9 +401,7 @@ describe('Credential Refresh (managed)', () => {
 
         const inAppAfterNewWindow = await waitFor(
             async () =>
-                (
-                    await getRefreshNotifications(holder)
-                ).filter(
+                (await getRefreshNotifications(holder)).filter(
                     notification => notification.data?.metadata?.refreshId === allocation.refreshId
                 ),
             notifications => notifications.length === 2
@@ -416,9 +411,9 @@ describe('Credential Refresh (managed)', () => {
 
         const attemptsAfterNewWindow = await waitFor(
             async () =>
-                (
-                    await getPushAttempts()
-                ).filter(attempt => attempt.refreshId === allocation.refreshId),
+                (await getPushAttempts()).filter(
+                    attempt => attempt.refreshId === allocation.refreshId
+                ),
             attempts => attempts.length === 2
         );
 
@@ -455,7 +450,7 @@ describe('Credential Refresh (managed)', () => {
         // Active aggregate: authenticated refresh succeeds and reports no changes.
         const beforeRevoke = await holder.invoke.refreshCredential(held, LOCAL_REFRESH_OPTIONS);
 
-        expect(beforeRevoke.status).toBe('unchanged');
+        expect(beforeRevoke.status, JSON.stringify(beforeRevoke)).toBe('unchanged');
 
         // Issuer revokes through the canonical boost revocation path.
         await expect(issuer.invoke.revokeBoostRecipient(boostUri, USERS.b.profileId)).resolves.toBe(

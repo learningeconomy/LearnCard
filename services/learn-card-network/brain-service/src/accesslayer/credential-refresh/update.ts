@@ -59,8 +59,9 @@ const isUniqueConstraintViolation = (error: unknown): boolean => {
  * is the hard single-writer guarantee: a concurrent loser fails with a constraint
  * violation and its whole statement rolls back, so HEAD can never fork.
  *
- * Idempotency: the key that produced the current version is stored on the aggregate.
- * A retry with the same key short-circuits and returns the prior successful result.
+ * Idempotency: every key is stored on the immutable version it produced. A retry
+ * with any historical key short-circuits and returns that prior successful result;
+ * the aggregate's latest-key fields remain only as a compatibility fallback.
  */
 export const advanceCredentialRefreshHead = async (
     params: AdvanceCredentialRefreshHeadParams
@@ -73,16 +74,22 @@ export const advanceCredentialRefreshHead = async (
         encryptedCredential,
         signingMode,
         idempotencyKey,
+        expectedState,
         etag,
         materialDigest,
         updateSummary,
         effectiveAt,
         notificationOutcome,
+        notificationId,
+        notificationDeliveryKey,
+        notificationCreatedAt,
+        notificationPendingAfterClaim,
     } = validated;
 
     const publishedAt = validated.publishedAt ?? new Date().toISOString();
     const now = new Date().toISOString();
     const nextVersion = expectedVersion + 1;
+    const refreshIdempotencyKey = idempotencyKey ? `${refreshId}:${idempotencyKey}` : undefined;
 
     const versionProps = Object.fromEntries(
         Object.entries({
@@ -96,17 +103,54 @@ export const advanceCredentialRefreshHead = async (
             etag,
             signingMode,
             updateSummary,
+            idempotencyKey,
+            refreshIdempotencyKey,
             notificationOutcome,
+            notificationId,
+            notificationDeliveryKey,
+            notificationCreatedAt,
+            notificationPendingAfterClaim,
         }).filter(([, value]) => value !== undefined)
     );
 
+    if (refreshIdempotencyKey) {
+        const replay = await neogma.queryRunner.run(
+            `MATCH (version:Credential {refreshIdempotencyKey: $refreshIdempotencyKey})
+             RETURN version.version AS version, version.publishedAt AS publishedAt
+             LIMIT 1`,
+            { refreshIdempotencyKey }
+        );
+
+        if (replay.records.length > 0) {
+            return {
+                status: 'replay',
+                refreshId,
+                version: Number(replay.records[0]?.get('version')),
+                publishedAt: replay.records[0]?.get('publishedAt') ?? undefined,
+            };
+        }
+    }
+
     try {
         const result = await neogma.queryRunner.run(
-            `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+            `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
              WHERE refresh.currentVersion = $expectedVersion
-               AND ($idempotencyKey IS NULL
-                    OR refresh.idempotencyKey IS NULL
-                    OR refresh.idempotencyKey <> $idempotencyKey)
+               AND refresh.state <> 'revoked'
+               AND ($expectedState IS NULL OR refresh.state = $expectedState)
+               AND NOT EXISTS {
+                   MATCH (sender)-[sent:CREDENTIAL_SENT]->(root)
+                   WHERE (sender:Profile OR sender:AppStoreListing)
+                     AND sent.to = refresh.holderProfileId
+                     AND sent.status = 'revoked'
+               }
+               AND NOT EXISTS {
+                   MATCH (root)-[received:CREDENTIAL_RECEIVED]->(holder:Profile)
+                   WHERE holder.profileId = refresh.holderProfileId
+                     AND received.status = 'revoked'
+               }
+               AND ($refreshIdempotencyKey IS NULL OR NOT EXISTS {
+                   MATCH (:Credential {refreshIdempotencyKey: $refreshIdempotencyKey})
+               })
              MATCH (refresh)-[oldHead:HEAD]->(prev:Credential)
              CREATE (next:Credential $versionProps)
              CREATE (prev)-[:REFRESHED_TO]->(next)
@@ -125,6 +169,8 @@ export const advanceCredentialRefreshHead = async (
                 refreshId,
                 expectedVersion,
                 idempotencyKey: idempotencyKey ?? null,
+                refreshIdempotencyKey: refreshIdempotencyKey ?? null,
+                expectedState: expectedState ?? null,
                 versionProps,
                 nextVersion,
                 etag: etag ?? null,
@@ -147,6 +193,24 @@ export const advanceCredentialRefreshHead = async (
 
     // Nothing was written (stale expectedVersion, lost race, or idempotent retry).
     // Re-read the aggregate to distinguish replay from conflict.
+    if (refreshIdempotencyKey) {
+        const replay = await neogma.queryRunner.run(
+            `MATCH (version:Credential {refreshIdempotencyKey: $refreshIdempotencyKey})
+             RETURN version.version AS version, version.publishedAt AS publishedAt
+             LIMIT 1`,
+            { refreshIdempotencyKey }
+        );
+
+        if (replay.records.length > 0) {
+            return {
+                status: 'replay',
+                refreshId,
+                version: Number(replay.records[0]?.get('version')),
+                publishedAt: replay.records[0]?.get('publishedAt') ?? undefined,
+            };
+        }
+    }
+
     const current = await getRecord(refreshId);
 
     if (
@@ -179,37 +243,53 @@ export const advanceCredentialRefreshHead = async (
  */
 export const recordCredentialRefreshNotification = async (params: {
     refreshId: string;
+    version: number;
     /** Local observability reference generated at emission time */
     notificationId: string;
     /** Opaque delivery-window collapse key carried by the event */
     deliveryKey: string;
     notifiedAt: string;
 }): Promise<void> => {
-    const { refreshId, notificationId, deliveryKey, notifiedAt } = params;
+    const { refreshId, version, notificationId, deliveryKey, notifiedAt } = params;
     const now = new Date().toISOString();
 
     await neogma.queryRunner.run(
         `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
-         SET refresh.notificationWindowKey = $deliveryKey,
+         MATCH (publication:Credential {refreshVersionKey: $refreshVersionKey})
+         SET publication.notificationId = $notificationId,
+             publication.notificationDeliveryKey = $deliveryKey,
+             publication.notificationCreatedAt = coalesce(publication.notificationCreatedAt, $notifiedAt),
+             publication.notificationDeliveredAt = $notifiedAt,
+             publication.notificationPendingAfterClaim = false,
+             refresh.notificationWindowKey = $deliveryKey,
              refresh.lastNotificationId = $notificationId,
              refresh.lastNotificationAt = $notifiedAt,
              refresh.updatedAt = $now`,
-        { refreshId, notificationId, deliveryKey, notifiedAt, now }
+        {
+            refreshId,
+            refreshVersionKey: `${refreshId}:${version}`,
+            notificationId,
+            deliveryKey,
+            notifiedAt,
+            now,
+        }
     );
 };
 
 /** Transitions the aggregate lifecycle state (awaiting_claim → active → revoked). */
 export const setCredentialRefreshState = async (
     refreshId: string,
-    state: CredentialRefreshState
+    state: CredentialRefreshState,
+    expectedState?: CredentialRefreshState
 ): Promise<CredentialRefreshRecord | null> => {
     const now = new Date().toISOString();
 
     const result = await neogma.queryRunner.run(
         `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+         WHERE $expectedState IS NULL OR refresh.state = $expectedState
          SET refresh.state = $state, refresh.updatedAt = $now
          RETURN refresh`,
-        { refreshId, state, now }
+        { refreshId, state, expectedState: expectedState ?? null, now }
     );
 
     const node = result.records[0]?.get('refresh');

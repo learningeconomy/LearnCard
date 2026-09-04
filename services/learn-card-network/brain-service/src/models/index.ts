@@ -15,6 +15,7 @@ import { CredentialActivity } from './CredentialActivity';
 import { CredentialRefresh } from './CredentialRefresh';
 import { StatusList } from './StatusList';
 import { ContactMethod } from './ContactMethod';
+import { ensureCredentialRefreshConstraints } from './credential-refresh-constraints';
 
 // Ensure CredentialActivity model is registered by referencing it
 void CredentialActivity;
@@ -182,9 +183,7 @@ const indexQueries = [
     'CREATE INDEX bitstring_status_list_url_idx IF NOT EXISTS FOR (s:BitstringStatusList) ON (s.statusListCredential)',
     'CREATE CONSTRAINT contact_method_type_value_unique IF NOT EXISTS FOR (c:ContactMethod) REQUIRE (c.type, c.value) IS UNIQUE',
     'CREATE INDEX contact_method_primary_idx IF NOT EXISTS FOR (c:ContactMethod) ON (c.isPrimary)',
-    'CREATE CONSTRAINT credential_refresh_id_unique IF NOT EXISTS FOR (r:CredentialRefresh) REQUIRE (r.refreshId) IS UNIQUE',
     'CREATE INDEX credential_refresh_credential_id_idx IF NOT EXISTS FOR (r:CredentialRefresh) ON (r.credentialId)',
-    'CREATE CONSTRAINT credential_refresh_version_key_unique IF NOT EXISTS FOR (c:Credential) REQUIRE (c.refreshVersionKey) IS UNIQUE',
     'CREATE INDEX credential_refresh_version_refresh_id_idx IF NOT EXISTS FOR (c:Credential) ON (c.refreshId)',
 ];
 
@@ -215,7 +214,11 @@ const runIndexQuery = async (query: string): Promise<void> => {
     }
 };
 
-if (shouldCreateIndices)
+if (shouldCreateIndices) {
+    void ensureCredentialRefreshConstraints().catch(err => {
+        console.error('Error creating credential refresh constraints:', err);
+    });
+
     (async function createIndices() {
         try {
             for (const query of indexQueries) {
@@ -227,6 +230,7 @@ if (shouldCreateIndices)
             console.error('Error creating indices:', err);
         }
     })();
+}
 
 export * from './AuthGrant';
 export * from './Role';

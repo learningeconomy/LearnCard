@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
+import { environment } from '@environment';
 
 import { t, didAndChallengeRoute, authorizedDidRoute } from '@routes';
 
@@ -12,6 +13,7 @@ import { sendPushNotification } from '@helpers/pushNotifications.helpers';
 import { isDidOwnerOfNotification } from '@helpers/notifications.helpers';
 import {
     createNotification,
+    isManagedCredentialRefreshNotification,
     upsertCredentialRefreshNotification,
 } from '@accesslayer/notifications/create';
 import {
@@ -42,7 +44,7 @@ export const E2E_PUSH_ATTEMPT_CACHE_PREFIX = 'e2e:push-attempt:';
  * No-op outside IS_E2E_TEST; never blocks or alters delivery behavior.
  */
 const recordE2ePushAttempt = async (notification: LCNNotification): Promise<void> => {
-    if (process.env.IS_E2E_TEST !== 'true') return;
+    if (!environment.IS_E2E_TEST) return;
 
     try {
         const toDid = typeof notification.to === 'string' ? notification.to : notification.to.did;
@@ -318,7 +320,7 @@ export const notificationsRouter = t.router({
             // atomically per delivery window: persist first, push only when the
             // upsert inserted a new window record. Other notification types keep
             // the existing behavior to limit regression scope.
-            if (notificationType === 'CREDENTIAL_REFRESHED') {
+            if (isManagedCredentialRefreshNotification(input)) {
                 const refreshResult = await upsertCredentialRefreshNotification(input);
 
                 if (!refreshResult) return false;

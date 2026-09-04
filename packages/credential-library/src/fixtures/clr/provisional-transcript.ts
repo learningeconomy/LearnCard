@@ -152,7 +152,10 @@ export const buildFinalTranscriptVariant = (
     provisional: UnsignedVC,
     options: { validFrom?: string } = {}
 ): UnsignedVC => {
-    const final = JSON.parse(JSON.stringify(provisional)) as Record<string, any>;
+    const isRecord = (value: unknown): value is Record<string, unknown> =>
+        typeof value === 'object' && value !== null;
+
+    const final = JSON.parse(JSON.stringify(provisional)) as Record<string, unknown>;
 
     final.name = 'Final Official Transcript — Ridgeview Community College';
     final.description =
@@ -162,9 +165,9 @@ export const buildFinalTranscriptVariant = (
 
     const subject = final.credentialSubject;
 
-    if (subject && Array.isArray(subject.verifiableCredential)) {
-        subject.verifiableCredential = subject.verifiableCredential.map((nested: any) => {
-            if (!nested || typeof nested !== 'object') return nested;
+    if (isRecord(subject) && Array.isArray(subject.verifiableCredential)) {
+        subject.verifiableCredential = subject.verifiableCredential.map((nested: unknown) => {
+            if (!isRecord(nested)) return nested;
 
             const next = { ...nested };
 
@@ -172,13 +175,11 @@ export const buildFinalTranscriptVariant = (
                 next.name = next.name.replace('(In Progress)', '(Completed)');
             }
 
-            if (next.credentialSubject && Array.isArray(next.credentialSubject.result)) {
+            if (isRecord(next.credentialSubject) && Array.isArray(next.credentialSubject.result)) {
                 next.credentialSubject = {
                     ...next.credentialSubject,
-                    result: next.credentialSubject.result.map((result: any) =>
-                        result && typeof result === 'object'
-                            ? { ...result, status: 'Completed', value: 'A' }
-                            : result
+                    result: next.credentialSubject.result.map((result: unknown) =>
+                        isRecord(result) ? { ...result, status: 'Completed', value: 'A' } : result
                     ),
                 };
             }
@@ -187,5 +188,5 @@ export const buildFinalTranscriptVariant = (
         });
     }
 
-    return final as UnsignedVC;
+    return final as unknown as UnsignedVC;
 };

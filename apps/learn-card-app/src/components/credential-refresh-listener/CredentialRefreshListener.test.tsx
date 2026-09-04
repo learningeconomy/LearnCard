@@ -26,6 +26,7 @@ const appHost = vi.hoisted(() => ({
 }));
 
 const walletHost = vi.hoisted(() => ({
+    did: 'did:example:account-a',
     indexGet: vi.fn(),
     readGet: vi.fn(),
 }));
@@ -60,6 +61,13 @@ vi.mock('learn-card-base/logging/logger', () => ({
     }),
 }));
 
+vi.mock('learn-card-base/stores/newCredsStore', () => ({
+    newCredsStore: {
+        get: { state: () => ({ newCreds: {} }) },
+        set: { removeCreds: vi.fn(), addNewCreds: vi.fn() },
+    },
+}));
+
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({
         debug: vi.fn(),
@@ -70,10 +78,15 @@ vi.mock('learn-card-base', () => ({
     switchedProfileStore: { use: { switchedDid: () => null } },
     useIsLoggedIn: () => authState.isLoggedIn,
     useWallet: () => ({
-        initWallet: async () => ({
-            index: { LearnCloud: { get: walletHost.indexGet } },
-            read: { get: walletHost.readGet },
-        }),
+        initWallet: async () => {
+            const accountDid = walletHost.did;
+
+            return {
+                id: { did: () => accountDid },
+                index: { LearnCloud: { get: walletHost.indexGet } },
+                read: { get: walletHost.readGet },
+            };
+        },
     }),
     useRefreshLearnCloudCredentialMutation: () => ({ mutateAsync: mutationHost.mutateAsync }),
 }));
@@ -94,7 +107,7 @@ const makeRecord = (overrides: Record<string, unknown> = {}): LCR =>
         uri: 'lc:cloud:cred-1',
         category: 'Achievement',
         ...overrides,
-    } as unknown as LCR);
+    }) as unknown as LCR;
 
 const staleMetadata = (overrides: Record<string, unknown> = {}) => ({
     serviceId: 'https://refresh.example.com/refresh/abc',
@@ -146,16 +159,19 @@ describe('CredentialRefreshListener', () => {
         authState.isLoggedIn = true;
         appStateChangeCallback = undefined;
         appHost.handles.length = 0;
+        walletHost.did = 'did:example:account-a';
 
-        appHost.addListener.mockImplementation((event: string, callback: any) => {
-            if (event === 'appStateChange') appStateChangeCallback = callback;
+        appHost.addListener.mockImplementation(
+            (event: string, callback: (state: { isActive: boolean }) => void) => {
+                if (event === 'appStateChange') appStateChangeCallback = callback;
 
-            const handle = { remove: vi.fn(async () => undefined) };
+                const handle = { remove: vi.fn(async () => undefined) };
 
-            appHost.handles.push(handle);
+                appHost.handles.push(handle);
 
-            return Promise.resolve(handle);
-        });
+                return Promise.resolve(handle);
+            }
+        );
 
         walletHost.indexGet.mockResolvedValue([]);
         walletHost.readGet.mockResolvedValue(undefined);
@@ -201,6 +217,49 @@ describe('CredentialRefreshListener', () => {
 
         expect(walletHost.indexGet).toHaveBeenCalledTimes(1);
         expect(mutationHost.mutateAsync).toHaveBeenCalledTimes(1);
+    });
+
+    it('runs one ordinary scan for each account in the same app session', async () => {
+        walletHost.indexGet.mockResolvedValue([makeRecord({ refresh: staleMetadata() })]);
+
+        const firstAccount = render(<CredentialRefreshListener />);
+
+        await waitFor(() => expect(mutationHost.mutateAsync).toHaveBeenCalledTimes(1));
+
+        firstAccount.unmount();
+        walletHost.did = 'did:example:account-b';
+
+        render(<CredentialRefreshListener />);
+
+        await waitFor(() => expect(mutationHost.mutateAsync).toHaveBeenCalledTimes(2));
+        expect(walletHost.indexGet).toHaveBeenCalledTimes(2);
+    });
+
+    it('binds in-flight scan refreshes to the wallet that discovered the records', async () => {
+        const staleRecord = makeRecord({ refresh: staleMetadata() });
+        let finishDiscovery: ((records: LCR[]) => void) | undefined;
+
+        walletHost.indexGet.mockReturnValueOnce(
+            new Promise<LCR[]>(resolve => {
+                finishDiscovery = resolve;
+            })
+        );
+
+        render(<CredentialRefreshListener />);
+        await waitFor(() => expect(walletHost.indexGet).toHaveBeenCalledTimes(1));
+
+        walletHost.did = 'did:example:account-b';
+
+        await act(async () => {
+            finishDiscovery?.([staleRecord]);
+        });
+
+        await waitFor(() => expect(mutationHost.mutateAsync).toHaveBeenCalledTimes(1));
+
+        const [variables] = mutationHost.mutateAsync.mock.calls[0];
+
+        expect(variables.wallet.id.did()).toBe('did:example:account-a');
+        expect(variables.record).toEqual(staleRecord);
     });
 
     it('only refreshes records stale by 24 hours', async () => {

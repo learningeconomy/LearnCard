@@ -68,7 +68,7 @@ const buildUnsignedCredential = (
         credentialSubject: { id: holder.learnCard.id.did() },
         refreshService: allocation.refreshService,
         ...overrides,
-    } as UnsignedVC);
+    }) as UnsignedVC;
 
 /** Allocates, signs, and sends the original credential (version 1, awaiting_claim) */
 const sendOriginal = async (): Promise<{ allocation: AllocationResult; credential: VC }> => {
@@ -289,6 +289,20 @@ describe('Credential Refresh Endpoint', () => {
             expect(replay.statusCode).toBe(401);
         });
 
+        it('allows only one concurrent request to consume a challenge', async () => {
+            const { allocation } = await sendOriginal();
+            await setCredentialRefreshState(allocation.refreshId, 'active');
+            const path = `/refresh/${allocation.refreshId}`;
+            const headers = await getAuthHeaders(holder, path);
+
+            const responses = await Promise.all([
+                app.inject({ method: 'GET', url: path, headers }),
+                app.inject({ method: 'GET', url: path, headers }),
+            ]);
+
+            expect(responses.map(response => response.statusCode).sort()).toEqual([200, 401]);
+        });
+
         it('rejects a valid VP from the wrong holder without disclosing state', async () => {
             const { allocation } = await sendOriginal();
             await setCredentialRefreshState(allocation.refreshId, 'active');
@@ -299,6 +313,19 @@ describe('Credential Refresh Endpoint', () => {
             expect(res.statusCode).toBe(403);
             expect(res.json().jwe).toBeUndefined();
             expect(res.json().credential).toBeUndefined();
+        });
+
+        it('does not distinguish a missing refresh from a holder mismatch after DID auth', async () => {
+            const { allocation } = await sendOriginal();
+            await setCredentialRefreshState(allocation.refreshId, 'active');
+
+            const missing = await authedGet(holder, '/refresh/does-not-exist');
+            const wrongHolder = await authedGet(outsider, `/refresh/${allocation.refreshId}`);
+
+            expect({ statusCode: missing.statusCode, body: missing.json() }).toEqual({
+                statusCode: wrongHolder.statusCode,
+                body: wrongHolder.json(),
+            });
         });
 
         it('authenticates before ETag, revocation, or not-found distinctions', async () => {
@@ -473,10 +500,11 @@ describe('Credential Refresh Endpoint', () => {
             expect(res.json().jwe).toBeUndefined();
         });
 
-        it('returns 404 after authentication for unknown refresh IDs', async () => {
+        it('returns the non-disclosing authorization response for unknown refresh IDs', async () => {
             const res = await authedGet(holder, '/refresh/definitely-not-real');
 
-            expect(res.statusCode).toBe(404);
+            expect(res.statusCode).toBe(403);
+            expect(res.json()).toEqual({ code: 'CREDENTIAL_REFRESH_UNAUTHORIZED' });
         });
 
         it('rejects a non-numeric version', async () => {

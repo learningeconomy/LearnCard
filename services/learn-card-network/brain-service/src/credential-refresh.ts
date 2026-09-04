@@ -1,17 +1,19 @@
 import Fastify, { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import fastifyCors from '@fastify/cors';
+import { getCredentialRefreshRuntimeEnvironment } from '@environment';
 
 import {
     getCredentialRefresh,
     getCredentialRefreshCanonicalLifecycle,
-    getCredentialRefreshHead,
-    getCredentialRefreshVersion,
-    getCredentialRefreshVersions,
+    getCredentialRefreshHeadForHolder,
+    getCredentialRefreshVersionForHolder,
+    getCredentialRefreshVersionsForHolder,
     setCredentialRefreshState,
 } from '@accesslayer/credential-refresh';
 import type { CredentialRefreshRecord } from 'types/credential-refresh';
 import { getCredentialRefreshDigestSecret } from '@helpers/credential-refresh-materiality.helpers';
 import { computeRefreshEtag } from '@helpers/credential-refresh.helpers';
+import { getStatusListBaseUrl } from '@helpers/status-list.helpers';
 import {
     CREDENTIAL_REFRESH_AUTH_SCHEME,
     issueCredentialRefreshChallenge,
@@ -35,7 +37,7 @@ import {
 export { CREDENTIAL_REFRESH_AUTH_SCHEME };
 
 export const isCredentialRefreshEnabled = (): boolean =>
-    process.env.CREDENTIAL_REFRESH_ENABLED === 'true';
+    getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_ENABLED;
 
 export type CredentialRefreshPluginOptions = {
     /** Coarse per-(sourceIp, refreshId) pre-auth limit per minute */
@@ -76,8 +78,14 @@ const ifNoneMatchIncludes = (header: string | undefined, etag: string): boolean 
         .some(candidate => candidate === '*' || candidate === etag);
 };
 
-const getRequestDomain = (request: FastifyRequest): string =>
-    process.env.DOMAIN_NAME || request.host;
+const getRequestDomain = (request: FastifyRequest): string => {
+    const configuredDomain = getCredentialRefreshRuntimeEnvironment().DOMAIN_NAME;
+
+    // DOMAIN_NAME uses did:web encoding in local/serverless environments (for
+    // example `localhost%3A4000`), while DID-auth `domain`/`aud` is the HTTP origin
+    // host. Bind the challenge to the same host holders see in refreshService.id.
+    return configuredDomain ? new URL(getStatusListBaseUrl(configuredDomain)).host : request.host;
+};
 
 const setCorsHeaders = (reply: FastifyReply) => {
     reply.header('Access-Control-Allow-Origin', '*');
@@ -96,7 +104,7 @@ type AuthenticatedAggregate = {
  * holder DID and active aggregate on success.
  *
  * Order is privacy-significant: rate limit → authenticate (401 challenge) →
- * holder rate limit → existence (404) → holder match (403, non-disclosing) →
+ * holder rate limit → existence/holder match (same non-disclosing 403) →
  * awaiting_claim (403, non-disclosing) → revoked (410).
  */
 const authenticateRefreshRequest = async (
@@ -152,13 +160,13 @@ const authenticateRefreshRequest = async (
     const aggregate = await getCredentialRefresh(refreshId);
 
     if (!aggregate) {
-        logRefreshRequest(refreshId, 'not-found', startedAt);
-        await reply.status(404).send({ code: 'CREDENTIAL_REFRESH_NOT_FOUND' });
+        logRefreshRequest(refreshId, 'unauthorized', startedAt);
+        await reply.status(403).send({ code: 'CREDENTIAL_REFRESH_UNAUTHORIZED' });
         return null;
     }
 
-    // Wrong holder deliberately shares one non-disclosing authorization response with
-    // awaiting-claim below — neither reveals lifecycle state.
+    // Missing aggregates, wrong holders, and awaiting-claim aggregates deliberately
+    // share one response so a valid DID cannot use the endpoint as an existence oracle.
     if (aggregate.holderDid !== auth.holderDid) {
         logRefreshRequest(refreshId, 'unauthorized', startedAt);
         await reply.status(403).send({ code: 'CREDENTIAL_REFRESH_UNAUTHORIZED' });
@@ -194,9 +202,26 @@ const authenticateRefreshRequest = async (
         // The canonical CREDENTIAL_RECEIVED relationship exists but the activation
         // write was lost — repair the aggregate and serve.
         try {
-            await setCredentialRefreshState(refreshId, 'active');
+            await setCredentialRefreshState(refreshId, 'active', 'awaiting_claim');
         } catch {
             // Repair is best-effort; canonical state already authorizes serving.
+        }
+
+        // Revocation may have committed after the lifecycle read above. Recheck before
+        // returning an authenticated aggregate so no current or historical payload is
+        // served from a request that raced the terminal transition.
+        const repairedLifecycle = await getCredentialRefreshCanonicalLifecycle(refreshId);
+
+        if (repairedLifecycle?.revoked) {
+            try {
+                await setCredentialRefreshState(refreshId, 'revoked');
+            } catch {
+                // Best-effort cache repair; canonical state drives the refusal.
+            }
+
+            logRefreshRequest(refreshId, 'revoked', startedAt);
+            await reply.status(410).send({ code: 'CREDENTIAL_REVOKED' });
+            return null;
         }
 
         return { holderDid: auth.holderDid, aggregate: { ...aggregate, state: 'active' } };
@@ -258,12 +283,19 @@ export const credentialRefreshFastifyPlugin: FastifyPluginAsync<
 
         if (!auth) return reply;
 
-        const head = await getCredentialRefreshHead(refreshId);
+        const headRead = await getCredentialRefreshHeadForHolder(refreshId);
 
-        if (!head) {
+        if (headRead.status === 'revoked') {
+            logRefreshRequest(refreshId, 'revoked', startedAt);
+            return reply.status(410).send({ code: 'CREDENTIAL_REVOKED' });
+        }
+
+        if (headRead.status === 'not-found') {
             logRefreshRequest(refreshId, 'not-found', startedAt);
             return reply.status(404).send({ code: 'CREDENTIAL_REFRESH_NOT_FOUND' });
         }
+
+        const head = headRead.value;
 
         // The original (v1) version is bound at send time without a stored ETag;
         // derive it lazily from the stored encrypted bytes (identical to the
@@ -300,11 +332,22 @@ export const credentialRefreshFastifyPlugin: FastifyPluginAsync<
             }
 
             try {
-                const {
-                    records,
-                    hasMore,
-                    cursor: nextCursor,
-                } = await getCredentialRefreshVersions(refreshId, { cursor, limit: parsedLimit });
+                const historyRead = await getCredentialRefreshVersionsForHolder(refreshId, {
+                    cursor,
+                    limit: parsedLimit,
+                });
+
+                if (historyRead.status === 'revoked') {
+                    logRefreshRequest(refreshId, 'revoked', startedAt);
+                    return reply.status(410).send({ code: 'CREDENTIAL_REVOKED' });
+                }
+
+                if (historyRead.status === 'not-found') {
+                    logRefreshRequest(refreshId, 'not-found', startedAt);
+                    return reply.status(404).send({ code: 'CREDENTIAL_REFRESH_NOT_FOUND' });
+                }
+
+                const { records, hasMore, cursor: nextCursor } = historyRead.value;
 
                 logRefreshRequest(refreshId, 'history-served', startedAt);
 
@@ -343,12 +386,19 @@ export const credentialRefreshFastifyPlugin: FastifyPluginAsync<
             return reply.status(400).send({ code: 'CREDENTIAL_REFRESH_INVALID_VERSION' });
         }
 
-        const versionNode = await getCredentialRefreshVersion(refreshId, version);
+        const versionRead = await getCredentialRefreshVersionForHolder(refreshId, version);
 
-        if (!versionNode) {
+        if (versionRead.status === 'revoked') {
+            logRefreshRequest(refreshId, 'revoked', startedAt, version);
+            return reply.status(410).send({ code: 'CREDENTIAL_REVOKED' });
+        }
+
+        if (versionRead.status === 'not-found') {
             logRefreshRequest(refreshId, 'not-found', startedAt, version);
             return reply.status(404).send({ code: 'CREDENTIAL_REFRESH_NOT_FOUND' });
         }
+
+        const versionNode = versionRead.value;
 
         const versionEtag = versionNode.etag ?? computeRefreshEtag(versionNode.credential);
 

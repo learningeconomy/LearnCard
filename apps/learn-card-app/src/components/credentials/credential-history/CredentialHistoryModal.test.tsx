@@ -124,6 +124,7 @@ vi.mock('learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton', (
 vi.mock('learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons', () => ({
     default: () => null,
 }));
+
 vi.mock('learn-card-base/components/id/IDDisplayCard', () => ({ default: () => null }));
 vi.mock('learn-card-base/components/CredentialBadge/CredentialBadgeNew', () => ({
     default: () => null,
@@ -237,7 +238,7 @@ const makeRecord = (overrides: Record<string, unknown> = {}): LCR =>
         category: 'Achievement',
         refresh: makeRefreshMetadata(),
         ...overrides,
-    } as unknown as LCR);
+    }) as unknown as LCR;
 
 const makeQueryClient = () =>
     new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });

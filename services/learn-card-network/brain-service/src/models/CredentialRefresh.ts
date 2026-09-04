@@ -50,6 +50,9 @@ export const CredentialRefresh = ModelFactory<
             currentVersion: { type: 'number', required: true },
             etag: { type: 'string', required: false },
             materialDigest: { type: 'string', required: false },
+            rootMaterialDigest: { type: 'string', required: false },
+            credentialStatusDigest: { type: 'string', required: false },
+            boostId: { type: 'string', required: false },
             signingMode: {
                 type: 'string',
                 required: false,
@@ -61,6 +64,8 @@ export const CredentialRefresh = ModelFactory<
             notificationWindowKey: { type: 'string', required: false },
             lastNotificationId: { type: 'string', required: false },
             lastNotificationAt: { type: 'string', required: false },
+            initialNotificationSentAt: { type: 'string', required: false },
+            initialNotificationSuppressed: { type: 'boolean', required: false },
             createdAt: { type: 'string', required: true },
             updatedAt: { type: 'string', required: true },
         },

@@ -16,20 +16,20 @@ This starts a Vite dev server (typically at `http://localhost:5173`).
 
 ### Browse & Filter
 
--   **Search** — Full-text search across fixture ID, name, description, tags, and features
--   **Filter chips** — Filter by spec (VC v1, v2, OBv3, CLR, Boost), profile, validity, and inferred category
--   **Stats bar** — Real-time counts of valid/invalid/total fixtures
+- **Search** — Full-text search across fixture ID, name, description, tags, and features
+- **Filter chips** — Filter by spec (VC v1, v2, OBv3, CLR, Boost), profile, validity, and inferred category
+- **Stats bar** — Real-time counts of valid/invalid/total fixtures
 
 ### Inspect Fixtures
 
--   **Fixture cards** — Color-coded by spec with validity badges
--   **Detail panel** — Full JSON viewer with syntax highlighting, metadata summary, and inferred category
+- **Fixture cards** — Color-coded by spec with validity badges
+- **Detail panel** — Full JSON viewer with syntax highlighting, metadata summary, and inferred category
 
 ### Wallet Connection
 
--   **Seed-based** — Generate a random seed or enter your own
--   **Network environments** — Production, Staging, Local, or Custom (configurable network + cloud URLs)
--   **Persisted** — Seed and environment are saved to localStorage
+- **Seed-based** — Generate a random seed or enter your own
+- **Network environments** — Production, Staging, Local, or Custom (configurable network + cloud URLs)
+- **Persisted** — Seed and environment are saved to localStorage
 
 ### Bulk Issue
 
@@ -47,12 +47,12 @@ This starts a Vite dev server (typically at `http://localhost:5173`).
 
 The **New Fixture** button opens a form with:
 
--   **Folder + filename** selection (or create a new folder)
--   **Metadata fields** — Name, description, spec, profile, source, validity, features, tags
--   **JSON editor** — Edit the credential JSON directly, or upload a `.json` file
--   **Auto-inference** — Metadata fields are auto-populated based on the credential JSON content
--   **Test Issue** — Verify the credential can be issued before saving (requires wallet connection)
--   **Save to Disk** — Writes the `.ts` fixture file and updates `src/fixtures/index.ts` automatically
+- **Folder + filename** selection (or create a new folder)
+- **Metadata fields** — Name, description, spec, profile, source, validity, features, tags
+- **JSON editor** — Edit the credential JSON directly, or upload a `.json` file
+- **Auto-inference** — Metadata fields are auto-populated based on the credential JSON content
+- **Test Issue** — Verify the credential can be issued before saving (requires wallet connection)
+- **Save to Disk** — Writes the `.ts` fixture file and updates `src/fixtures/index.ts` automatically
 
 > Fixture creation uses a Vite dev server plugin (`src/vite-plugin-fixtures.ts`) and is only available during development.
 
@@ -86,9 +86,9 @@ refresh ID, managed version, dates, and notification outcome.
 
 ## Tech Stack
 
--   **React 18** + TypeScript
--   **Tailwind CSS** for styling
--   **Vite** for dev server and bundling
--   `@learncard/credential-library` for fixtures and preparation
--   `@learncard/init` for wallet instantiation
--   `@learncard/types` for VC types
+- **React 18** + TypeScript
+- **Tailwind CSS** for styling
+- **Vite** for dev server and bundling
+- `@learncard/credential-library` for fixtures and preparation
+- `@learncard/init` for wallet instantiation
+- `@learncard/types` for VC types

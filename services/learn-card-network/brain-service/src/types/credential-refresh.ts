@@ -32,6 +32,12 @@ export const CredentialRefreshRecordValidator = z.object({
     etag: z.string().optional(),
     /** Server-keyed digest of the canonical user-visible content projection */
     materialDigest: z.string().optional(),
+    /** Stable keyed digest of version 1, used to authenticate initial-send retries. */
+    rootMaterialDigest: z.string().optional(),
+    /** Server-keyed fingerprint of the original credentialStatus descriptor */
+    credentialStatusDigest: z.string().optional(),
+    /** Optional boost permanently associated with the initial credential bind. */
+    boostId: z.string().optional(),
     signingMode: CredentialRefreshSigningModeValidator.optional(),
     /** Idempotency key that produced the current version */
     idempotencyKey: z.string().optional(),
@@ -42,6 +48,10 @@ export const CredentialRefreshRecordValidator = z.object({
     notificationWindowKey: z.string().optional(),
     lastNotificationId: z.string().optional(),
     lastNotificationAt: z.string().optional(),
+    /** Initial CREDENTIAL_RECEIVED delivery completed; retries must not duplicate it. */
+    initialNotificationSentAt: z.string().optional(),
+    /** First-bind policy for suppressing the initial CREDENTIAL_RECEIVED notification. */
+    initialNotificationSuppressed: z.boolean().optional(),
     createdAt: z.string().min(1),
     updatedAt: z.string().min(1),
 });
@@ -64,9 +74,11 @@ export const CreateCredentialRefreshParamsValidator = z.object({
 export type CreateCredentialRefreshParams = z.infer<typeof CreateCredentialRefreshParamsValidator>;
 
 /**
- * An immutable credential version node. `credential` holds holder-encrypted JWE JSON
- * (stringified), never plaintext VC JSON. `refreshVersionKey` enforces one node per
- * (refreshId, version) pair, which is what guarantees a single concurrent writer.
+ * A credential version node whose encrypted payload and publication metadata are
+ * immutable. Delivery bookkeeping may advance after publication. `credential` holds
+ * holder-encrypted JWE JSON (stringified), never plaintext VC JSON.
+ * `refreshVersionKey` enforces one node per (refreshId, version) pair, which is what
+ * guarantees a single concurrent writer.
  */
 export const CredentialRefreshVersionNodeValidator = z.object({
     id: z.string().min(1),
@@ -79,11 +91,22 @@ export const CredentialRefreshVersionNodeValidator = z.object({
     etag: z.string().optional(),
     signingMode: CredentialRefreshSigningModeValidator,
     updateSummary: z.string().optional(),
+    /** Caller-provided key for replaying this exact historical publication */
+    idempotencyKey: z.string().optional(),
+    /** Aggregate-scoped unique key used to enforce historical idempotency */
+    refreshIdempotencyKey: z.string().optional(),
     /**
      * Notification decision recorded at publication. Brain-internal (used to return
      * the exact prior result on idempotent replay) — never exposed by history APIs.
      */
     notificationOutcome: PublishCredentialRefreshNotificationValidator.optional(),
+    /** Notification delivery metadata is persisted on the immutable publication. */
+    notificationId: z.string().optional(),
+    notificationDeliveryKey: z.string().optional(),
+    notificationCreatedAt: z.string().optional(),
+    notificationDeliveredAt: z.string().optional(),
+    /** A pre-claim material update that must notify once the holder accepts. */
+    notificationPendingAfterClaim: z.boolean().optional(),
 });
 export type CredentialRefreshVersionNode = z.infer<typeof CredentialRefreshVersionNodeValidator>;
 
@@ -108,8 +131,14 @@ export const AdvanceCredentialRefreshHeadParamsValidator = z.object({
     signingMode: CredentialRefreshSigningModeValidator,
     updateSummary: z.string().optional(),
     idempotencyKey: z.string().optional(),
+    /** Aggregate state observed by the caller; prevents claim/revocation races. */
+    expectedState: CredentialRefreshStateValidator.optional(),
     /** Notification decision to record on the new immutable version node */
     notificationOutcome: PublishCredentialRefreshNotificationValidator.optional(),
+    notificationId: z.string().optional(),
+    notificationDeliveryKey: z.string().optional(),
+    notificationCreatedAt: z.string().optional(),
+    notificationPendingAfterClaim: z.boolean().optional(),
 });
 export type AdvanceCredentialRefreshHeadParams = z.infer<
     typeof AdvanceCredentialRefreshHeadParamsValidator

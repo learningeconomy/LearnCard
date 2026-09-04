@@ -66,8 +66,7 @@ export const issueCredentialRefreshChallenge = async (
 };
 
 export type CredentialRefreshAuthResult =
-    | { authenticated: true; holderDid: string }
-    | { authenticated: false };
+    { authenticated: true; holderDid: string } | { authenticated: false };
 
 type DidAuthJwtPayload = {
     iss?: string;
@@ -114,11 +113,10 @@ export const verifyCredentialRefreshAuthorization = async (
 
     if (!audiences.includes(domain)) return { authenticated: false };
 
-    // The nonce must be a live challenge this endpoint issued for this refreshId.
+    // The nonce must be a challenge this endpoint issued for this refreshId. It is
+    // consumed atomically only after proof verification so invalid presentations
+    // cannot burn a holder's challenge and concurrent valid replays cannot both win.
     const cacheKey = getCredentialRefreshChallengeCacheKey(refreshId, challenge);
-    const cached = await cache.get(cacheKey);
-
-    if (!cached) return { authenticated: false };
 
     try {
         const learnCard = await getEmptyLearnCard();
@@ -140,8 +138,9 @@ export const verifyCredentialRefreshAuthorization = async (
         return { authenticated: false };
     }
 
-    // Single-use: invalidate only after the presentation fully verifies.
-    await cache.delete([cacheKey]);
+    const consumed = await cache.getdel(cacheKey);
+
+    if (!consumed) return { authenticated: false };
 
     return { authenticated: true, holderDid };
 };

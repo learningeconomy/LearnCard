@@ -38,6 +38,10 @@ import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/Crede
 import CustomBoostTitleDisplay from './helpers/CustomBoostTitleDisplay';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
+import type {
+    ClrAchievement,
+    ClrAssociation,
+} from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
 import { getClrTranscriptKind, getClrTranscriptIssuerInfo } from '../../clr-transcript';
 
@@ -59,8 +63,8 @@ type BoostEarnedCardProps = {
     credential?: VC;
     record?: Partial<LCR>;
     defaultImg?: string;
-    onCheckMarkClick?: any;
-    selectAll?: any;
+    onCheckMarkClick?: () => void;
+    selectAll?: boolean;
     initialCheckmarkState?: boolean;
     categoryType: CredentialCategory;
     sizeLg?: number;
@@ -143,7 +147,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         categoryMetadata[categoryType] ?? categoryMetadata['Achievement' as CredentialCategory];
     const type = categoryInfo.walletSubtype;
 
-    let {
+    const {
         issuerName,
         issuerProfileImageElement,
 
@@ -238,7 +242,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             }
         } else if (click === 'onCheckClick') {
             hasBeenClicked = true;
-            onCheckMarkClick();
+            onCheckMarkClick?.();
         }
     };
 
@@ -246,13 +250,13 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         handlePresentBoostMenuModal();
     };
 
-    const clrAchievements: any[] =
+    const clrAchievements: ClrAchievement[] =
         isClrCredential && Array.isArray(cred?.credentialSubject?.achievement)
-            ? cred.credentialSubject.achievement
+            ? (cred.credentialSubject.achievement as ClrAchievement[])
             : [];
-    const clrAssociations: any[] =
+    const clrAssociations: ClrAssociation[] =
         isClrCredential && Array.isArray(cred?.credentialSubject?.association)
-            ? cred.credentialSubject.association
+            ? (cred.credentialSubject.association as ClrAssociation[])
             : [];
 
     const customLinkedCredentialsComponent =

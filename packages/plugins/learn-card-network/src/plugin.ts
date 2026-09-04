@@ -1420,13 +1420,20 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.credentialRefresh.allocateCredentialRefresh.mutate(input);
             },
-            sendRefreshableCredential: async (_learnCard, refreshId, credential, boostUri) => {
+            sendRefreshableCredential: async (
+                _learnCard,
+                refreshId,
+                credential,
+                boostUri,
+                skipNotification
+            ) => {
                 await ensureUser();
 
                 return client.credentialRefresh.sendRefreshableCredential.mutate({
                     refreshId,
                     credential,
                     boostUri,
+                    ...(skipNotification ? { skipNotification: true } : {}),
                 });
             },
             publishCredentialRefresh: async (_learnCard, input) => {
@@ -1593,6 +1600,9 @@ export async function getLearnCardNetworkPlugin(
                         refreshId: managedRefreshId,
                         credential: vc,
                         boostUri,
+                        ...(typeof options === 'object' && options.skipNotification
+                            ? { skipNotification: true }
+                            : {}),
                     });
                 }
 

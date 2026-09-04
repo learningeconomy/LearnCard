@@ -81,8 +81,7 @@ const CredentialHistoryModal: React.FC<CredentialHistoryModalProps> = ({
 
             const unwrapped = resolved && unwrapBoostCredential(resolved);
             const historical = (Array.isArray(unwrapped) ? unwrapped[0] : unwrapped) as
-                | VC
-                | undefined;
+                VC | undefined;
 
             if (!historical) throw new Error('historical credential unavailable');
 

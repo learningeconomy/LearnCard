@@ -61,7 +61,7 @@ const updatedResult = (
     ...overrides,
 });
 
-const makeWallet = () => {
+const makeWallet = (did = 'did:example:wallet-a') => {
     const indexGet = vi.fn(async () => [baseRecord()]);
     const indexUpdate = vi.fn(async () => true);
     const readGet = vi.fn(async () => currentVc);
@@ -70,6 +70,7 @@ const makeWallet = () => {
     const refreshCredential = vi.fn(async (): Promise<CredentialRefreshResult> => updatedResult());
 
     const wallet = {
+        id: { did: () => did },
         index: { LearnCloud: { get: indexGet, update: indexUpdate } },
         read: { get: readGet },
         store: { LearnCloud: { uploadEncrypted, delete: storeDelete } },
@@ -298,6 +299,44 @@ describe('refreshLearnCloudCredential', () => {
             await first;
 
             expect(refreshCredential).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not coalesce the same record ID across different wallets', async () => {
+            const firstWallet = makeWallet('did:example:wallet-a');
+            const secondWallet = makeWallet('did:example:wallet-b');
+
+            let resolveFirst: (result: CredentialRefreshResult) => void = () => {};
+            firstWallet.refreshCredential.mockImplementation(
+                () =>
+                    new Promise<CredentialRefreshResult>(resolve => {
+                        resolveFirst = resolve;
+                    })
+            );
+            secondWallet.refreshCredential.mockResolvedValue({
+                status: 'unchanged',
+                checkedAt: NOW_ISO,
+            });
+
+            const first = refreshLearnCloudCredential({
+                wallet: firstWallet.wallet,
+                record: baseRecord(),
+            });
+
+            while (firstWallet.refreshCredential.mock.calls.length === 0) {
+                await Promise.resolve();
+            }
+
+            const second = refreshLearnCloudCredential({
+                wallet: secondWallet.wallet,
+                record: baseRecord(),
+            });
+
+            expect(second).not.toBe(first);
+            await expect(second).resolves.toMatchObject({ status: 'unchanged' });
+            expect(secondWallet.refreshCredential).toHaveBeenCalledTimes(1);
+
+            resolveFirst({ status: 'unchanged', checkedAt: NOW_ISO });
+            await first;
         });
     });
 

@@ -1,7 +1,5 @@
 import {
     ManagedCredentialRefreshServiceValidator,
-    UnsignedVC,
-    VC,
     type ManagedCredentialRefreshService,
 } from '@learncard/types';
 
@@ -14,7 +12,13 @@ import {
  * brain-service publication pipeline.
  */
 
-type RefreshableCredential = Partial<UnsignedVC & VC> & Record<string, any>;
+type RefreshableCredential = Record<string, unknown> & {
+    refreshService?: unknown;
+    issuer?: string | { id?: unknown } | null;
+    validFrom?: unknown;
+    issuanceDate?: unknown;
+    proof?: unknown;
+};
 
 /**
  * Selects the first supported refresh service from a credential's `refreshService`.

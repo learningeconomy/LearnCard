@@ -439,7 +439,8 @@ export type LearnCardNetworkPluginMethods = {
     sendRefreshableCredential: (
         refreshId: string,
         credential: VC,
-        boostUri?: string
+        boostUri?: string,
+        skipNotification?: boolean
     ) => Promise<string>;
     /**
      * Publishes a new immutable version of a refreshable credential and atomically

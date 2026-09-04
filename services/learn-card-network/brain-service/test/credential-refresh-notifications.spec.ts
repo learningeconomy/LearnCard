@@ -13,7 +13,11 @@ import {
     decideCredentialRefreshNotification,
     getCredentialRefreshNotificationWindowHours,
 } from '@helpers/credential-refresh-materiality.helpers';
-import { getCredentialRefresh, setCredentialRefreshState } from '@accesslayer/credential-refresh';
+import {
+    getCredentialRefresh,
+    getCredentialRefreshHead,
+    setCredentialRefreshState,
+} from '@accesslayer/credential-refresh';
 
 /**
  * Task 12 (LC-2136): materiality classification and privacy-safe refresh events.
@@ -239,7 +243,9 @@ describe('credential refresh materiality (unit)', () => {
             expect(getCredentialRefreshNotificationWindowHours()).toEqual(12);
 
             process.env.CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS = 'not-a-number';
-            expect(getCredentialRefreshNotificationWindowHours()).toEqual(24);
+            expect(() => getCredentialRefreshNotificationWindowHours()).toThrow(
+                /CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS/
+            );
         } finally {
             if (previous === undefined) {
                 delete process.env.CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS;
@@ -272,7 +278,7 @@ type PublishResult = {
     refreshId: string;
     version: number;
     publishedAt: string;
-    notification: 'queued' | 'suppressed' | 'not-applicable';
+    notification: 'queued' | 'suppressed' | 'not-applicable' | 'delivery-failed';
 };
 
 let issuer: Awaited<ReturnType<typeof getUser>>;
@@ -312,23 +318,27 @@ const buildUnsignedCredential = (
         credentialSubject: { id: holder.learnCard.id.did() },
         refreshService: allocation.refreshService,
         ...overrides,
-    } as UnsignedVC);
+    }) as UnsignedVC;
 
 const signAs = async (
     user: Awaited<ReturnType<typeof getUser>>,
     unsigned: UnsignedVC
 ): Promise<VC> => user.learnCard.invoke.issueCredential(unsigned);
 
-const sendOriginal = async (): Promise<{ allocation: AllocationResult; credential: VC }> => {
+const sendOriginal = async (): Promise<{
+    allocation: AllocationResult;
+    credential: VC;
+    uri: string;
+}> => {
     const allocation = await allocate();
     const credential = await signAs(issuer, buildUnsignedCredential(allocation));
 
-    await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+    const uri = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
         refreshId: allocation.refreshId,
         credential,
     });
 
-    return { allocation, credential };
+    return { allocation, credential, uri };
 };
 
 const publishIssuerSigned = async (
@@ -619,5 +629,108 @@ describe('credential refresh notification events', () => {
 
         const aggregate = await getCredentialRefresh(allocation.refreshId);
         expect(aggregate?.lastNotificationAt).toBeUndefined();
+    });
+
+    it('retries a failed post-commit enqueue on the same idempotency key', async () => {
+        const { allocation } = await sendOriginal();
+        await setCredentialRefreshState(allocation.refreshId, 'active');
+        addNotificationToQueueSpy.mockRejectedValueOnce(new Error('queue unavailable'));
+
+        const updated = await signAs(
+            issuer,
+            buildUnsignedCredential(allocation, {
+                validFrom: '2026-02-01T00:00:00Z',
+                name: 'Retryable Notification Update',
+            })
+        );
+        const first = await publishIssuerSigned(allocation.refreshId, updated, {
+            idempotencyKey: 'notification-retry',
+        });
+
+        expect(first.version).toEqual(2);
+        expect(first.notification).toEqual('delivery-failed');
+        expect(
+            (await getCredentialRefreshHead(allocation.refreshId))?.notificationDeliveredAt
+        ).toBeUndefined();
+
+        const retry = await publishIssuerSigned(allocation.refreshId, updated, {
+            idempotencyKey: 'notification-retry',
+        });
+
+        expect(retry).toMatchObject({
+            version: 2,
+            publishedAt: first.publishedAt,
+            notification: 'queued',
+        });
+        expect(addNotificationToQueueSpy).toHaveBeenCalledTimes(3); // initial delivery + two attempts
+        expect(
+            (await getCredentialRefreshHead(allocation.refreshId))?.notificationDeliveredAt
+        ).toBeTruthy();
+    });
+
+    it('uses the persisted notification outcome when concurrent same-key publications race', async () => {
+        const { allocation } = await sendOriginal();
+        await setCredentialRefreshState(allocation.refreshId, 'active');
+
+        const updated = await signAs(
+            issuer,
+            buildUnsignedCredential(allocation, {
+                validFrom: '2026-02-01T00:00:00Z',
+                name: 'Concurrent Notification Update',
+            })
+        );
+
+        const [first, second] = await Promise.all([
+            publishIssuerSigned(allocation.refreshId, updated, {
+                idempotencyKey: 'concurrent-notification-outcome',
+                notifyHolder: true,
+            }),
+            publishIssuerSigned(allocation.refreshId, updated, {
+                idempotencyKey: 'concurrent-notification-outcome',
+                notifyHolder: false,
+            }),
+        ]);
+
+        expect(first.version).toEqual(2);
+        expect(second.version).toEqual(2);
+        expect(second.publishedAt).toEqual(first.publishedAt);
+        expect(second.notification).toEqual(first.notification);
+
+        const persisted = await getCredentialRefreshHead(allocation.refreshId);
+        expect(first.notification).toEqual(persisted?.notificationOutcome);
+    });
+
+    it('enqueues one latest-version event when a holder accepts after pre-claim updates', async () => {
+        const { allocation, uri } = await sendOriginal();
+
+        const v2 = await signAs(
+            issuer,
+            buildUnsignedCredential(allocation, {
+                validFrom: '2026-02-01T00:00:00Z',
+                name: 'Pre-Claim Material Update',
+            })
+        );
+        await publishIssuerSigned(allocation.refreshId, v2);
+
+        const v3 = await signAs(
+            issuer,
+            buildUnsignedCredential(allocation, {
+                validFrom: '2026-03-01T00:00:00Z',
+                name: 'Pre-Claim Material Update',
+            })
+        );
+        await publishIssuerSigned(allocation.refreshId, v3);
+        expect(getRefreshEvents()).toHaveLength(0);
+
+        await holder.clients.fullAuth.credential.acceptCredential({ uri });
+
+        expect(getRefreshEvents()).toHaveLength(1);
+        expect(getRefreshEvents()[0]?.data?.metadata).toMatchObject({
+            refreshId: allocation.refreshId,
+            version: 3,
+        });
+
+        await holder.clients.fullAuth.credential.acceptCredential({ uri });
+        expect(getRefreshEvents()).toHaveLength(1);
     });
 });

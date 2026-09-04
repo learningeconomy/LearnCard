@@ -188,7 +188,9 @@ describe('Query API', () => {
 
             if (!isCredentialFixture(fixture)) throw new Error('Expected W3C VC fixture');
 
-            const refreshService = (fixture.credential as Record<string, any>).refreshService;
+            const refreshService = (
+                fixture.credential as { refreshService?: { type?: unknown; id?: unknown } }
+            ).refreshService;
 
             expect(refreshService?.type).toBe('1EdTechCredentialRefresh');
             expect(typeof refreshService?.id).toBe('string');
@@ -586,8 +588,7 @@ describe('prepareFixture', () => {
             ? (programAchievement?.resultDescription as UnknownArrayRecord[])
             : [];
         const programResultDescriptionId = programResults[0]?.resultDescription as
-            | string
-            | undefined;
+            string | undefined;
         const programResultDescription = programResultDescriptions[0]?.id as string | undefined;
 
         expect(programResultDescriptionId).toBe(programResultDescription);

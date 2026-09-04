@@ -343,6 +343,51 @@ describe('Notifications', () => {
             expect(pushSpy).toHaveBeenCalledTimes(1);
         });
 
+        it('deduplicates managed initial credential deliveries without changing generic received notifications', async () => {
+            const managedInitial = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                undefined,
+                {
+                    vcUris: ['lc:network:credential:root'],
+                    metadata: {
+                        managedCredentialRefreshInitial: true,
+                        routeKey: 'opaque-route-key',
+                        deliveryKey: 'opaque-initial-delivery-key',
+                    },
+                }
+            );
+            const genericReceived = getTestNotification(
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+                LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                undefined,
+                { vcUris: ['lc:network:credential:legacy'] }
+            );
+
+            await Promise.all([
+                userA.clients.authorizedDidAuth.notifications.sendNotification(managedInitial),
+                userA.clients.authorizedDidAuth.notifications.sendNotification(managedInitial),
+            ]);
+            await userA.clients.authorizedDidAuth.notifications.sendNotification(genericReceived);
+            await userA.clients.authorizedDidAuth.notifications.sendNotification(genericReceived);
+
+            await expect(
+                Notifications.countDocuments({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                    'data.metadata.managedCredentialRefreshInitial': true,
+                })
+            ).resolves.toBe(1);
+            await expect(
+                Notifications.countDocuments({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                    'data.metadata.managedCredentialRefreshInitial': { $exists: false },
+                })
+            ).resolves.toBe(2);
+            expect(pushSpy).toHaveBeenCalledTimes(3);
+        });
+
         it('records exactly one E2E push attempt per delivery window', async () => {
             vi.stubEnv('IS_E2E_TEST', 'true');
 

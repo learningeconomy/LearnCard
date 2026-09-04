@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- plugin integration mocks intentionally expose dynamic method bags */
 import { generateLearnCard } from '@learncard/core';
 import { getDidKitPlugin } from '@learncard/didkit-plugin';
 import { getDidKeyPlugin } from '@learncard/didkey-plugin';
@@ -76,7 +77,7 @@ const getMockLearnCard = () =>
         id: { did: () => PROFILE.did },
         invoke: { getDidAuthVp: vi.fn() },
         debug: vi.fn(),
-    } as any);
+    }) as any;
 
 const getMockClient = (profile: typeof PROFILE | null = PROFILE) => ({
     profile: {
@@ -156,7 +157,7 @@ const getMockIssuingLearnCard = () => {
     return { learnCard, issuedCredentials };
 };
 
-let learnCards: Record<string, { learnCard: any }> = {};
+const learnCards: Record<string, { learnCard: any }> = {};
 
 const getLearnCard = async (seed = 'a'.repeat(64)) => {
     if (!learnCards[seed]) {
@@ -288,7 +289,7 @@ describe('credential refresh methods', () => {
         });
     });
 
-    it('forwards the optional boostUri to the managed send procedure', async () => {
+    it('forwards optional boostUri and notification suppression to the managed send procedure', async () => {
         const client = getMockClient();
         vi.mocked(getBrainClient).mockResolvedValue(client as never);
         const learnCard = getMockLearnCard();
@@ -303,13 +304,15 @@ describe('credential refresh methods', () => {
             learnCard,
             REFRESH_ID,
             signedCredential as any,
-            'did:example:boost:9'
+            'did:example:boost:9',
+            true
         );
 
         expect(client.credentialRefresh.sendRefreshableCredential.mutate).toHaveBeenCalledWith({
             refreshId: REFRESH_ID,
             credential: signedCredential,
             boostUri: 'did:example:boost:9',
+            skipNotification: true,
         });
     });
 
@@ -427,6 +430,7 @@ describe('credential refresh methods', () => {
 
         const uri = await plugin.methods?.sendBoost(learnCard, 'userb', 'did:example:boost:1', {
             enableRefresh: true,
+            skipNotification: true,
         });
 
         expect(uri).toEqual('managed-credential-uri');
@@ -466,6 +470,7 @@ describe('credential refresh methods', () => {
                 proof: { type: 'DataIntegrityProof' },
             }),
             boostUri: 'did:example:boost:1',
+            skipNotification: true,
         });
         expect(client.boost.sendBoost.mutate).not.toHaveBeenCalled();
         expect(learnCard.invoke.createDagJwe).not.toHaveBeenCalled();

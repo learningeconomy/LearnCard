@@ -8,8 +8,8 @@ Credentials describe the world as it was when they were signed — but the world
 
 LearnCard implements refresh on **both sides** of the exchange, following open standards so third-party wallets and issuers can participate:
 
--   **[W3C Verifiable Credentials Data Model 2.0 — Refreshing](https://www.w3.org/TR/vc-data-model-2.0/#refreshing)**: a credential may carry a `refreshService` property describing how a wallet can obtain a fresher version.
--   **[1EdTech Credential Refresh Service 1.0](https://www.imsglobal.org/spec/vccr/v1p0/)**: the concrete service type (`1EdTechCredentialRefresh`) and interaction (a simple `GET` that returns the refreshed credential). Used by Open Badges 3.0 and CLR 2.0 ecosystems.
+- **[W3C Verifiable Credentials Data Model 2.0 — Refreshing](https://www.w3.org/TR/vc-data-model-2.0/#refreshing)**: a credential may carry a `refreshService` property describing how a wallet can obtain a fresher version.
+- **[1EdTech Credential Refresh Service 1.0](https://www.imsglobal.org/spec/vccr/v1p0/)**: the concrete service type (`1EdTechCredentialRefresh`) and interaction (a simple `GET` that returns the refreshed credential). Used by Open Badges 3.0 and CLR 2.0 ecosystems.
 
 Refresh works for VCDM 1.1, VCDM 2.0, Open Badges 3.0, and CLR 2.0 credentials.
 
@@ -43,11 +43,11 @@ The `authorization` extension tells compatible wallets to authenticate with a DI
 
 Managed refresh is built around a dedicated **refresh aggregate** — a small record that owns authorization and concurrency for one refreshable credential:
 
--   a cryptographically random, unguessable `refreshId` used in the public URL
--   the issuer (publication authority) and the intended holder (read authority)
--   the stable credential ID shared by every version
--   an immutable chain of **versions**, with a single mutable **head** pointer
--   a lifecycle state: `awaiting_claim` → `active` → `revoked`
+- a cryptographically random, unguessable `refreshId` used in the public URL
+- the issuer (publication authority) and the intended holder (read authority)
+- the stable credential ID shared by every version
+- an immutable chain of **versions**, with a single mutable **head** pointer
+- a lifecycle state: `awaiting_claim` → `active` → `revoked`
 
 Credential versions themselves are immutable. Publishing creates a new version and moves the head — history is never rewritten.
 
@@ -61,32 +61,32 @@ Credential versions themselves are immutable. Publishing creates a new version a
 
 ### Holder-side in-place replacement
 
-When a wallet refreshes a credential, it does **not** add a new entry. It updates the same wallet record atomically:
+When a wallet refreshes a credential, it does **not** add a new entry. It updates the same wallet record in one index write:
 
--   the record's URI points at the newly verified, re-encrypted credential
--   the previous URI is appended to an encrypted, holder-only **history** so old versions stay viewable ("View Previous Versions")
--   on any failure mid-flight, the current credential is left untouched — a failed refresh can never damage what the holder already has
+- the record's URI points at the newly verified, re-encrypted credential
+- the previous URI is appended to an encrypted, holder-only **history** so old versions stay viewable ("View Previous Versions")
+- on a failure before that index write, the current credential is left untouched; cross-device races follow the eventual-convergence limitation below
 
-Refresh checks run **in the foreground only**: on app launch/resume, when a stale credential's detail is opened, and when a refresh notification is tapped. By default a credential is checked at most once per **24 hours** (a named, configurable interval — `CREDENTIAL_REFRESH_CHECK_INTERVAL_MS`) and at most once per foreground session. There is no native background scheduler in Phase 1.
+Refresh checks run **in the foreground only**: on app launch/resume and when a refresh notification is tapped. By default a credential is checked at most once per **24 hours** (a named, configurable interval — `CREDENTIAL_REFRESH_CHECK_INTERVAL_MS`) and at most once per foreground session. There is no native background scheduler in Phase 1.
 
 ## Privacy model
 
 Managed refresh is designed so the network never holds plaintext credential content at rest:
 
--   **Holder-encrypted at rest**: every stored version is a JWE encrypted to the holder's key. The brain service's own DID is deliberately **not** a recipient.
--   **Transient plaintext only**: during publication the server briefly sees plaintext to verify proofs and compute materiality, but plaintext is never written to databases, caches, queues, logs, metrics, or error responses.
--   **Non-disclosing endpoint**: the unauthenticated `401` challenge reveals nothing about whether a `refreshId` exists; authorization, existence, and lifecycle distinctions are only made _after_ authentication, to the authenticated holder alone.
--   **Opaque identifiers**: ETags are derived from the encrypted payload; materiality digests are keyed with a server secret; logs and metrics carry only opaque IDs and safe outcome codes.
--   **SSRF-hardened fetching**: the wallet treats `refreshService.id` as untrusted input — HTTPS-only, private/loopback/metadata IP rejection after DNS resolution, revalidated redirects, strict timeouts, bounded response size, and no credential forwarding across origins.
+- **Holder-encrypted at rest**: every stored version is a JWE encrypted to the holder's key. The brain service's own DID is deliberately **not** a recipient.
+- **Transient plaintext only**: during publication the server briefly sees plaintext to verify proofs and compute materiality, but plaintext is never written to databases, caches, queues, logs, metrics, or error responses.
+- **Non-disclosing endpoint**: the unauthenticated `401` challenge reveals nothing about whether a `refreshId` exists; authorization, existence, and lifecycle distinctions are only made _after_ authentication, to the authenticated holder alone.
+- **Opaque identifiers**: ETags are derived from the encrypted payload; materiality digests are keyed with a server secret; logs and metrics carry only opaque IDs and safe outcome codes.
+- **SSRF-hardened fetching**: the wallet treats `refreshService.id` as untrusted input — HTTPS-only, private/loopback/metadata IP rejection after DNS resolution, revalidated redirects, strict timeouts, bounded response size, and no credential forwarding across origins.
 
 ## Notification model
 
 Issuers shouldn't spam holders, and holders shouldn't miss meaningful changes:
 
--   After each publication, the service decides whether the change is **material** by comparing a canonical projection of user-visible content (subject claims, titles, evidence, results, expiration) — ignoring proofs, identifiers, timestamps, and the refresh machinery itself.
--   The issuer can force (`notifyHolder: true`) or suppress (`notifyHolder: false`) notification.
--   The first material update sends a push and creates an in-app notification. Repeat updates inside a configurable **24-hour delivery window** (`CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS`) update the same unread in-app record instead of stacking new ones; a new window starts a new record.
--   Revocation stays on its own lifecycle path — a status-only change never masquerades as an "updated" notification.
+- After each publication, the service decides whether the change is **material** by comparing a canonical projection of user-visible content (subject claims, titles, evidence, results, expiration) — ignoring proofs, identifiers, timestamps, and the refresh machinery itself.
+- The issuer can force (`notifyHolder: true`) or suppress (`notifyHolder: false`) notification.
+- The first material update sends a push and creates an in-app notification. Repeat updates inside a configurable **24-hour delivery window** (`CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS`) update the same unread in-app record instead of stacking new ones; a new window starts a new record.
+- Revocation stays on its own lifecycle path — a status-only change never masquerades as an "updated" notification.
 
 ## Error semantics
 
@@ -103,14 +103,14 @@ Failure codes: `UNAVAILABLE`, `TIMEOUT`, `UNSUPPORTED_SERVICE`, `UNAUTHORIZED`, 
 
 ## Phase 1 limitations
 
--   **Foreground-only**: no native background refresh; checks happen on launch/resume, detail views, and notification taps. A manual/pull-to-refresh control is a planned follow-up (the underlying mutation is already reusable).
--   **Allocate-before-signing only**: managed refresh cannot be retrofitted onto credentials that were already signed, because `refreshService` is part of the signed payload.
--   **Transient server-side plaintext**: publication validates proofs and computes materiality in memory on the server. A detached signed-manifest design may remove this in a later phase.
--   **Cross-device convergence is eventual**: a pre-write comparison prevents obvious stale writes, but a true compare-and-swap across devices is future work; devices converge on their next foreground check.
--   **24-hour defaults**: both the staleness interval and the notification collapse window are named, configurable values to be reviewed against real usage.
+- **Foreground-only**: no native background refresh; checks happen on launch/resume and notification taps. A credential-detail or pull-to-refresh control is a planned follow-up (the underlying forced-refresh mutation is already reusable).
+- **Allocate-before-signing only**: managed refresh cannot be retrofitted onto credentials that were already signed, because `refreshService` is part of the signed payload.
+- **Transient server-side plaintext**: publication validates proofs and computes materiality in memory on the server. A detached signed-manifest design may remove this in a later phase.
+- **Cross-device convergence is eventual**: a pre-write comparison prevents obvious stale writes, but a true compare-and-swap across devices is future work; devices converge on their next foreground check.
+- **24-hour defaults**: both the staleness interval and the notification collapse window are named, configurable values to be reviewed against real usage.
 
 ## Where to go next
 
--   [Issue and Refresh a Managed Credential (How-To)](../how-to-guides/issue-and-refresh-a-managed-credential.md)
--   [Credential Lifecycle](credentials-and-data/credential-lifecycle.md)
--   [Credential Status & Bitstring Status Lists](credentials-and-data/credential-status-and-bitstring-status-lists.md)
+- [Issue and Refresh a Managed Credential (How-To)](../how-to-guides/issue-and-refresh-a-managed-credential.md)
+- [Credential Lifecycle](credentials-and-data/credential-lifecycle.md)
+- [Credential Status & Bitstring Status Lists](credentials-and-data/credential-status-and-bitstring-status-lists.md)

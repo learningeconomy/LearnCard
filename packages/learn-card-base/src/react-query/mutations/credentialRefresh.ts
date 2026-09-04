@@ -7,6 +7,7 @@ import {
 } from '../../helpers/credentialRefresh';
 import { getLogger } from '../../logging/logger';
 import { LCR } from '../../types/credential-records';
+import type { BespokeLearnCard } from '../../types/learn-card';
 
 const log = getLogger('credential-refresh-mutation');
 
@@ -15,6 +16,7 @@ export type RefreshLearnCloudCredentialVariables = {
     record: LCR;
     /** Bypass the staleness guard (credential detail views, refresh notification taps) */
     force?: boolean;
+    wallet?: BespokeLearnCard;
 };
 
 /**
@@ -34,8 +36,8 @@ export const useRefreshLearnCloudCredentialMutation = () => {
         Error,
         RefreshLearnCloudCredentialVariables
     >({
-        mutationFn: async ({ record, force }) => {
-            const wallet = await initWallet();
+        mutationFn: async ({ record, force, wallet: capturedWallet }) => {
+            const wallet = capturedWallet ?? (await initWallet());
 
             return refreshLearnCloudCredential({ wallet, record, force });
         },

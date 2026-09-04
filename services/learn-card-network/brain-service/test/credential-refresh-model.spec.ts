@@ -393,6 +393,73 @@ describe('CredentialRefresh model', () => {
             expect(await countVersionNodes(record.refreshId)).toBe(2);
         });
 
+        it('replays the original version when an older idempotency key is retried', async () => {
+            const { record } = await setupAggregate();
+
+            const first = await advanceCredentialRefreshHead({
+                refreshId: record.refreshId,
+                expectedVersion: 1,
+                encryptedCredential: jweFor('v2'),
+                signingMode: 'issuer-signed',
+                idempotencyKey: 'pub-historical',
+            });
+
+            await advanceCredentialRefreshHead({
+                refreshId: record.refreshId,
+                expectedVersion: 2,
+                encryptedCredential: jweFor('v3'),
+                signingMode: 'issuer-signed',
+                idempotencyKey: 'pub-latest',
+            });
+
+            const replay = await advanceCredentialRefreshHead({
+                refreshId: record.refreshId,
+                expectedVersion: 3,
+                encryptedCredential: jweFor('must-not-be-written'),
+                signingMode: 'issuer-signed',
+                idempotencyKey: 'pub-historical',
+            });
+
+            expect(first.status).toBe('advanced');
+            expect(replay).toMatchObject({
+                status: 'replay',
+                version: 2,
+                publishedAt: first.publishedAt,
+            });
+            expect(await countVersionNodes(record.refreshId)).toBe(3);
+
+            const head = await getCredentialRefreshHead(record.refreshId);
+            expect(head?.version).toBe(3);
+            expect(head?.credential).toBe(jweFor('v3'));
+        });
+
+        it('does not advance when the canonical sent relationship is revoked', async () => {
+            const { root, record } = await setupAggregate();
+
+            await runQuery(
+                `MATCH (issuer:Profile {profileId: $issuerProfileId})
+                 MATCH (root:Credential {id: $rootId})
+                 CREATE (issuer)-[:CREDENTIAL_SENT {to: $holderProfileId, status: 'revoked'}]->(root)`,
+                {
+                    issuerProfileId: ISSUER_PROFILE_ID,
+                    holderProfileId: HOLDER_PROFILE_ID,
+                    rootId: root.id,
+                }
+            );
+
+            const result = await advanceCredentialRefreshHead({
+                refreshId: record.refreshId,
+                expectedVersion: 1,
+                encryptedCredential: jweFor('revoked-update'),
+                signingMode: 'issuer-signed',
+                idempotencyKey: 'pub-after-revocation',
+            });
+
+            expect(result.status).toBe('conflict');
+            expect(await countVersionNodes(record.refreshId)).toBe(1);
+            expect((await getCredentialRefreshHead(record.refreshId))?.id).toBe(root.id);
+        });
+
         it('permits exactly one writer under concurrent compare-and-advance', async () => {
             const { record } = await setupAggregate();
 

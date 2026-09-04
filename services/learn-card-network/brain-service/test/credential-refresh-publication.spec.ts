@@ -1,6 +1,15 @@
 import { vi } from 'vitest';
 import { JWEValidator, VCValidator, VC, UnsignedVC, JWE } from '@learncard/types';
 
+const signingAuthorityMocks = vi.hoisted(() => ({
+    issueCredential: vi.fn(),
+}));
+
+vi.mock('@helpers/signingAuthority.helpers', async importOriginal => ({
+    ...(await importOriginal<Record<string, unknown>>()),
+    issueCredentialWithSigningAuthority: signingAuthorityMocks.issueCredential,
+}));
+
 import { neogma } from '@instance';
 
 import { getClient, getUser } from './helpers/getClient';
@@ -36,7 +45,7 @@ type PublishResult = {
     refreshId: string;
     version: number;
     publishedAt: string;
-    notification: 'queued' | 'suppressed' | 'not-applicable';
+    notification: 'queued' | 'suppressed' | 'not-applicable' | 'delivery-failed';
 };
 
 const toNum = (value: unknown): number =>
@@ -118,7 +127,7 @@ const buildUnsignedCredential = (
         credentialSubject: { id: holder.learnCard.id.did() },
         refreshService: allocation.refreshService,
         ...overrides,
-    } as UnsignedVC);
+    }) as UnsignedVC;
 
 /** An updated credential body: material change (name) and a newer effective time */
 const buildUpdatedUnsignedCredential = (
@@ -137,9 +146,11 @@ const signAs = async (
 ): Promise<VC> => user.learnCard.invoke.issueCredential(unsigned);
 
 /** Allocates, signs, and sends the original credential (version 1) */
-const sendOriginal = async (): Promise<{ allocation: AllocationResult; credential: VC }> => {
+const sendOriginal = async (
+    overrides: Record<string, unknown> = {}
+): Promise<{ allocation: AllocationResult; credential: VC }> => {
     const allocation = await allocate();
-    const credential = await signAs(issuer, buildUnsignedCredential(allocation));
+    const credential = await signAs(issuer, buildUnsignedCredential(allocation, overrides));
 
     await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
         refreshId: allocation.refreshId,
@@ -204,6 +215,10 @@ describe('Credential Refresh Publication', () => {
         await outsider.clients.fullAuth.profile.createProfile({ profileId: OUTSIDER_PROFILE_ID });
 
         addNotificationToQueueSpy.mockReset();
+        signingAuthorityMocks.issueCredential.mockImplementation(
+            async (_issuer, credential: UnsignedVC) =>
+                issuer.learnCard.invoke.issueCredential(credential)
+        );
     });
 
     describe('publishCredentialRefresh (issuer-signed mode)', () => {
@@ -456,6 +471,34 @@ describe('Credential Refresh Publication', () => {
             expect(aggregate?.currentVersion).toEqual(2);
         });
 
+        it('replays a historical idempotency key after later publications', async () => {
+            const { allocation } = await sendOriginal();
+
+            const v2 = await signAs(issuer, buildUpdatedUnsignedCredential(allocation));
+            const first = await publishIssuerSigned(allocation.refreshId, v2, {
+                idempotencyKey: 'historical-publication',
+            });
+
+            const v3 = await signAs(
+                issuer,
+                buildUpdatedUnsignedCredential(allocation, {
+                    name: 'Later Transcript',
+                    validFrom: '2026-03-01T00:00:00Z',
+                })
+            );
+            await publishIssuerSigned(allocation.refreshId, v3, {
+                idempotencyKey: 'later-publication',
+            });
+
+            const replay = await publishIssuerSigned(allocation.refreshId, v2, {
+                idempotencyKey: 'historical-publication',
+            });
+
+            expect(replay).toEqual(first);
+            expect(await countCredentialNodes()).toEqual(3);
+            expect((await getCredentialRefreshHead(allocation.refreshId))?.version).toEqual(3);
+        });
+
         it('serializes concurrent publications to a single writer', async () => {
             const { allocation } = await sendOriginal();
 
@@ -564,6 +607,71 @@ describe('Credential Refresh Publication', () => {
             await expect(publishIssuerSigned(allocation.refreshId, updated)).rejects.toMatchObject({
                 code: 'CONFLICT',
             });
+
+            expect(await countCredentialNodes()).toEqual(1);
+        });
+
+        it('rejects publication when canonical revocation raced ahead of aggregate state', async () => {
+            const { allocation } = await sendOriginal();
+
+            await runQuery(
+                `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
+                 MATCH (issuer:Profile {profileId: $issuerProfileId})-[sent:CREDENTIAL_SENT]->(root)
+                 SET sent.status = 'revoked', refresh.state = 'active'`,
+                { refreshId: allocation.refreshId, issuerProfileId: ISSUER_PROFILE_ID }
+            );
+
+            const updated = await signAs(issuer, buildUpdatedUnsignedCredential(allocation));
+
+            await expect(publishIssuerSigned(allocation.refreshId, updated)).rejects.toMatchObject({
+                code: 'CONFLICT',
+            });
+            expect(await countCredentialNodes()).toEqual(1);
+        });
+
+        it('suppresses the first update when only non-material timestamps changed', async () => {
+            const { allocation } = await sendOriginal();
+            await setCredentialRefreshState(allocation.refreshId, 'active');
+
+            const timestampOnly = await signAs(
+                issuer,
+                buildUnsignedCredential(allocation, { validFrom: '2026-02-01T00:00:00Z' })
+            );
+            const result = await publishIssuerSigned(allocation.refreshId, timestampOnly);
+
+            expect(result.notification).toEqual('suppressed');
+            expect((await getCredentialRefresh(allocation.refreshId))?.materialDigest).toBeTruthy();
+        });
+
+        it('rejects removal or replacement of the original credentialStatus descriptor', async () => {
+            const credentialStatus = {
+                id: 'https://status.example.com/lists/42#7',
+                type: 'BitstringStatusListEntry',
+                statusPurpose: 'revocation',
+                statusListIndex: '7',
+                statusListCredential: 'https://status.example.com/lists/42',
+            };
+            const { allocation } = await sendOriginal({ credentialStatus });
+
+            const removed = await signAs(
+                issuer,
+                buildUpdatedUnsignedCredential(allocation, { credentialStatus: undefined })
+            );
+            await expect(publishIssuerSigned(allocation.refreshId, removed)).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+
+            const replaced = await signAs(
+                issuer,
+                buildUpdatedUnsignedCredential(allocation, {
+                    credentialStatus: { ...credentialStatus, statusListIndex: '8' },
+                })
+            );
+            await expect(publishIssuerSigned(allocation.refreshId, replaced)).rejects.toMatchObject(
+                {
+                    code: 'BAD_REQUEST',
+                }
+            );
 
             expect(await countCredentialNodes()).toEqual(1);
         });
@@ -778,7 +886,9 @@ describe('Credential Refresh Publication', () => {
                 credential,
                 signingAuthority,
                 ...extras,
-            } as Parameters<typeof issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh>[0]);
+            } as Parameters<
+                typeof issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh
+            >[0]);
 
         it('signs an unsigned body through an owned signing authority', async () => {
             const { allocation } = await sendOriginal();
@@ -815,6 +925,28 @@ describe('Credential Refresh Publication', () => {
             expect(verification.checks).toContain('proof');
         });
 
+        it('rechecks continuity invariants on the credential returned by the authority', async () => {
+            const { allocation } = await sendOriginal();
+            await registerIssuerSigningAuthority();
+
+            signingAuthorityMocks.issueCredential.mockImplementationOnce(
+                async (_issuer, credential: UnsignedVC) =>
+                    issuer.learnCard.invoke.issueCredential({
+                        ...credential,
+                        credentialSubject: { id: outsider.learnCard.id.did() },
+                    } as UnsignedVC)
+            );
+
+            await expect(
+                publishSigningAuthority(
+                    allocation.refreshId,
+                    buildUpdatedUnsignedCredential(allocation)
+                )
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+            expect(await countCredentialNodes()).toEqual(1);
+        });
+
         it('rejects a signing authority the issuer does not own', async () => {
             const { allocation } = await sendOriginal();
 
@@ -844,9 +976,6 @@ describe('Credential Refresh Publication', () => {
         });
 
         it('preserves an existing credentialStatus and allocates no new status-list entry', async () => {
-            const { allocation } = await sendOriginal();
-            await registerIssuerSigningAuthority();
-
             const credentialStatus = {
                 id: 'https://status.example.com/lists/42#7',
                 type: 'BitstringStatusListEntry',
@@ -854,6 +983,8 @@ describe('Credential Refresh Publication', () => {
                 statusListIndex: '7',
                 statusListCredential: 'https://status.example.com/lists/42',
             };
+            const { allocation } = await sendOriginal({ credentialStatus });
+            await registerIssuerSigningAuthority();
 
             const unsigned = buildUpdatedUnsignedCredential(allocation, { credentialStatus });
 

@@ -14,6 +14,7 @@ export default createVitestConfig(serviceIntegrationPreset, {
             // A domain keeps the production misconfiguration guard active without
             // disabling the in-process LearnCard cache as IS_OFFLINE would.
             DOMAIN_NAME: 'localhost%3A3000',
+            CREDENTIAL_REFRESH_ENABLED: 'true',
             LOGIN_PROVIDER_DID: 'did:key:z6Mko9uYxDPk2BetRRziLz1xHN8nR5zQWdNjytKNDPcygHJP',
             APP_STORE_ADMIN_PROFILE_IDS: 'app-store-admin',
             TRACE_CONSOLE: 'false',

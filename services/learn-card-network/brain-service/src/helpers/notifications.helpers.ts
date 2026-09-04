@@ -15,6 +15,7 @@ import type { ProfileType } from 'types/profile';
 
 import {
     computeCredentialRefreshDeliveryKey,
+    computeCredentialRefreshInitialDeliveryKey,
     computeCredentialRefreshRouteKey,
 } from './credential-refresh-materiality.helpers';
 import { getNotificationMessage } from './notificationMessages';
@@ -148,6 +149,34 @@ const resolveNotificationWebhookUrlForEnvironment = (
 
 // --- Managed credential refresh events (LC-2136) ----------------------------------
 
+export const buildInitialCredentialReceivedNotification = (params: {
+    holderProfile: ProfileType;
+    issuerProfile: ProfileType;
+    refreshId: string;
+    uri: string;
+}): LCNNotification => {
+    const { holderProfile, issuerProfile, refreshId, uri } = params;
+
+    return {
+        type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+        to: holderProfile,
+        from: issuerProfile,
+        message: getNotificationMessage(
+            'credentialReceived',
+            resolveRecipientLocale(holderProfile),
+            { from: issuerProfile.displayName }
+        ),
+        data: {
+            vcUris: [uri],
+            metadata: {
+                managedCredentialRefreshInitial: true,
+                routeKey: computeCredentialRefreshRouteKey(refreshId),
+                deliveryKey: computeCredentialRefreshInitialDeliveryKey(refreshId),
+            },
+        },
+    };
+};
+
 /**
  * A privacy-safe `CREDENTIAL_REFRESHED` event ready for `addNotificationToQueue`.
  *
@@ -177,6 +206,10 @@ export type BuildCredentialRefreshedNotificationParams = {
     refreshId: string;
     /** Published managed version carried by the event */
     version: number;
+    /** Persisted values make a post-commit retry reproduce the same delivery event. */
+    notificationId?: string;
+    deliveryKey?: string;
+    notifiedAt?: string;
 };
 
 export const buildCredentialRefreshedNotification = (
@@ -185,7 +218,7 @@ export const buildCredentialRefreshedNotification = (
     const { holderProfile, issuerProfile, refreshId, version } = params;
 
     const routeKey = computeCredentialRefreshRouteKey(refreshId);
-    const deliveryKey = computeCredentialRefreshDeliveryKey(refreshId);
+    const deliveryKey = params.deliveryKey ?? computeCredentialRefreshDeliveryKey(refreshId);
 
     return {
         notification: {
@@ -199,10 +232,10 @@ export const buildCredentialRefreshedNotification = (
             ),
             data: { metadata: { refreshId, version, routeKey, deliveryKey } },
         },
-        notificationId: randomUUID(),
+        notificationId: params.notificationId ?? randomUUID(),
         routeKey,
         deliveryKey,
-        notifiedAt: new Date().toISOString(),
+        notifiedAt: params.notifiedAt ?? new Date().toISOString(),
     };
 };
 

@@ -77,7 +77,7 @@ const makeNotification = (connectionPrompt?: unknown): NotificationType =>
         message: { body: 'Alice claimed your credential' },
         data: connectionPrompt === undefined ? {} : { metadata: { connectionPrompt } },
         sent: '2026-08-20T12:00:00.000Z',
-    } as NotificationType);
+    }) as NotificationType;
 
 const renderContainer = (notification: NotificationType) => {
     const queryClient = new QueryClient({

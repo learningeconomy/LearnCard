@@ -80,6 +80,11 @@ export type RefreshCredentialOptions = {
      */
     allowInsecureHttp?: boolean;
     /**
+     * Explicit local-development opt-in allowing private, loopback, or link-local
+     * endpoint addresses. Never enable this for credentials from untrusted issuers.
+     */
+    allowPrivateAddresses?: boolean;
+    /**
      * Hostname resolution override used for SSRF checks. Defaults to Node's DNS resolver
      * in Node runtimes; browsers skip DNS resolution and reject only unsafe host literals.
      */

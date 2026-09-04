@@ -1,5 +1,6 @@
 import { createHmac } from 'crypto';
 
+import { getCredentialRefreshRuntimeEnvironment } from '@environment';
 import { canonicalizeCredentialContent, canonicalizeCredentialJson } from '@learncard/helpers';
 import type { PublishCredentialRefreshNotification } from '@learncard/types';
 
@@ -18,19 +19,18 @@ import type { CredentialRefreshState } from 'types/credential-refresh';
  * projection, the digest, and the decision.
  */
 
-const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
-
 // Test-only fallback so integration specs do not need to provision the secret.
 // Production refuses to run without a dedicated, independently provisioned secret.
 const TEST_ONLY_DIGEST_SECRET = 'credential-refresh-test-only-digest-secret';
 
 /** Returns the dedicated HMAC secret for material digests. */
 export const getCredentialRefreshDigestSecret = (): string => {
-    const secret = process.env.CREDENTIAL_REFRESH_DIGEST_SECRET;
+    const runtimeEnvironment = getCredentialRefreshRuntimeEnvironment();
+    const secret = runtimeEnvironment.CREDENTIAL_REFRESH_DIGEST_SECRET;
 
     if (secret && secret.length > 0) return secret;
 
-    if (IS_TEST_ENVIRONMENT) return TEST_ONLY_DIGEST_SECRET;
+    if (runtimeEnvironment.NODE_ENV === 'test') return TEST_ONLY_DIGEST_SECRET;
 
     throw new Error(
         'CREDENTIAL_REFRESH_DIGEST_SECRET is required for managed credential refresh digests'
@@ -88,6 +88,19 @@ export const computeCredentialMaterialDigest = (
         .update(canonicalizeCredentialJson(getMaterialCredentialProjection(credential)))
         .digest('base64url');
 
+/**
+ * Keyed fingerprint of the complete credentialStatus descriptor. The descriptor is
+ * never persisted in plaintext, but every refresh version must preserve it exactly.
+ */
+export const computeCredentialStatusDigest = (
+    credentialStatus: unknown,
+    secret: string = getCredentialRefreshDigestSecret()
+): string =>
+    createHmac('sha256', secret)
+        .update('credential-status:v1\0')
+        .update(canonicalizeCredentialJson(credentialStatus ?? null))
+        .digest('base64url');
+
 export type DecideCredentialRefreshNotificationParams = {
     /** Aggregate lifecycle state at publication time */
     state: CredentialRefreshState;
@@ -106,9 +119,8 @@ export type DecideCredentialRefreshNotificationParams = {
  *   pre-claim publications are stored but not served and produce at most one
  *   notification after acceptance (handled by the claim lifecycle).
  * - `notifyHolder: true` forces `queued`; `false` forces `suppressed`.
- * - Otherwise the material comparison decides. A missing previous digest (the
- *   original version is bound holder-encrypted, so no digest could be computed for
- *   it) is conservatively treated as material.
+ * - Otherwise the material comparison decides. A missing previous digest is
+ *   conservatively treated as material for legacy/incomplete aggregates.
  */
 export const decideCredentialRefreshNotification = (
     params: DecideCredentialRefreshNotificationParams
@@ -133,20 +145,11 @@ export const decideCredentialRefreshNotification = (
 export const DEFAULT_CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS = 24;
 
 /**
- * The configured delivery window in hours. Invalid or unset configuration falls
- * back to the 24-hour default so notification collapse never breaks on a bad env.
+ * The configured delivery window in hours. The central environment schema supplies
+ * the 24-hour default and rejects invalid values.
  */
-export const getCredentialRefreshNotificationWindowHours = (): number => {
-    const raw = process.env.CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS;
-
-    if (!raw) return DEFAULT_CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS;
-
-    const parsed = Number(raw);
-
-    return Number.isFinite(parsed) && parsed > 0
-        ? parsed
-        : DEFAULT_CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS;
-};
+export const getCredentialRefreshNotificationWindowHours = (): number =>
+    getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS;
 
 const hmacBase64Url = (input: string, secret: string): string =>
     createHmac('sha256', secret).update(input).digest('base64url');
@@ -161,6 +164,16 @@ export const computeCredentialRefreshRouteKey = (
     refreshId: string,
     secret: string = getCredentialRefreshDigestSecret()
 ): string => hmacBase64Url(`credential-refresh-route:v1:${refreshId}`, secret);
+
+/** Stable one-shot delivery key for the managed credential's initial notification. */
+export const computeCredentialRefreshInitialDeliveryKey = (
+    refreshId: string,
+    secret: string = getCredentialRefreshDigestSecret()
+): string => {
+    const routeKey = computeCredentialRefreshRouteKey(refreshId, secret);
+
+    return hmacBase64Url(`credential-refresh-initial-delivery:v1:${routeKey}`, secret);
+};
 
 /**
  * Opaque delivery-window key: a server-keyed HMAC over (refreshId, configured

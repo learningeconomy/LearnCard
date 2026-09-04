@@ -11,6 +11,7 @@ import {
     useWallet,
 } from 'learn-card-base';
 import type { LCR } from 'learn-card-base/types/credential-records';
+import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import type { LearnCloudCredentialRefreshResult } from 'learn-card-base/helpers/credentialRefresh';
 import {
     CREDENTIAL_REFRESH_SCAN_CONCURRENCY,
@@ -28,17 +29,16 @@ const log = getLogger('credential-refresh-listener');
  */
 export const CREDENTIAL_REFRESH_FOREGROUND_FLAG = 'credentialRefreshForegroundEnabled';
 
-// Per-session scan state lives at module scope so React StrictMode double-effects
-// and listener remounts cannot start a second ordinary scan. There is no persisted
-// or server-side scheduler state — only this process memory plus the encrypted
-// record timestamps.
-let ordinaryScanCompletedThisSession = false;
-let scanInFlight: Promise<void> | undefined;
+// Per-session scan state is keyed by the active account DID. Module scope still
+// protects against React StrictMode double-effects and listener remounts, while the
+// DID key prevents one account's completed scan from suppressing another account.
+const ordinaryScansCompletedThisSession = new Set<string>();
+const scansInFlight = new Map<string, Promise<void>>();
 
 /** Test-only reset of the per-session ordinary scan state */
 export const resetCredentialRefreshSessionForTests = (): void => {
-    ordinaryScanCompletedThisSession = false;
-    scanInFlight = undefined;
+    ordinaryScansCompletedThisSession.clear();
+    scansInFlight.clear();
 };
 
 /**
@@ -48,11 +48,12 @@ export const resetCredentialRefreshSessionForTests = (): void => {
  */
 export const useForceRefreshLearnCloudCredential = () => {
     const mutation = useRefreshLearnCloudCredentialMutation();
+    const { mutateAsync } = mutation;
 
     const forceRefresh = useCallback(
-        (record: LCR): Promise<LearnCloudCredentialRefreshResult> =>
-            mutation.mutateAsync({ record, force: true }),
-        [mutation.mutateAsync]
+        (record: LCR, wallet?: BespokeLearnCard): Promise<LearnCloudCredentialRefreshResult> =>
+            mutateAsync({ record, force: true, wallet }),
+        [mutateAsync]
     );
 
     return { ...mutation, forceRefresh };
@@ -90,42 +91,55 @@ const CredentialRefreshListener: React.FC = () => {
         let disposed = false;
 
         const runOrdinaryScan = (): Promise<void> | undefined => {
-            if (disposed || ordinaryScanCompletedThisSession) return undefined;
-            if (scanInFlight) return scanInFlight;
+            if (disposed) return undefined;
 
             const scan = (async () => {
                 try {
                     const wallet = await dependenciesRef.current.initWallet();
-                    const candidates = await getCredentialRefreshCandidates(wallet);
+                    const accountDid = wallet.id.did();
 
-                    // Discovery succeeded: the session's one ordinary scan is spent,
-                    // even if individual records below fail.
-                    ordinaryScanCompletedThisSession = true;
+                    if (ordinaryScansCompletedThisSession.has(accountDid)) return;
 
-                    const staleCandidates = candidates.filter(record =>
-                        isCredentialRefreshCandidateStale(record)
-                    );
+                    const existingScan = scansInFlight.get(accountDid);
+                    if (existingScan) return existingScan;
 
-                    await processWithConcurrency(
-                        staleCandidates,
-                        CREDENTIAL_REFRESH_SCAN_CONCURRENCY,
-                        async record => {
-                            try {
-                                await dependenciesRef.current.mutateAsync({ record });
-                            } catch (error) {
-                                log.error('refresh.scan.record-failed', error);
+                    const accountScan = (async () => {
+                        const candidates = await getCredentialRefreshCandidates(wallet);
+
+                        // Discovery succeeded: the session's one ordinary scan is spent,
+                        // even if individual records below fail.
+                        ordinaryScansCompletedThisSession.add(accountDid);
+
+                        const staleCandidates = candidates.filter(record =>
+                            isCredentialRefreshCandidateStale(record)
+                        );
+
+                        await processWithConcurrency(
+                            staleCandidates,
+                            CREDENTIAL_REFRESH_SCAN_CONCURRENCY,
+                            async record => {
+                                try {
+                                    await dependenciesRef.current.mutateAsync({ record, wallet });
+                                } catch (error) {
+                                    log.error('refresh.scan.record-failed', error);
+                                }
                             }
+                        );
+                    })();
+
+                    scansInFlight.set(accountDid, accountScan);
+
+                    try {
+                        await accountScan;
+                    } finally {
+                        if (scansInFlight.get(accountDid) === accountScan) {
+                            scansInFlight.delete(accountDid);
                         }
-                    );
+                    }
                 } catch (error) {
                     log.error('refresh.scan.failed', error);
                 }
             })();
-
-            scanInFlight = scan;
-            void scan.finally(() => {
-                if (scanInFlight === scan) scanInFlight = undefined;
-            });
 
             return scan;
         };

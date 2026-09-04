@@ -17,7 +17,7 @@ import type { LCR } from 'learn-card-base/types/credential-records';
 import BoostClaimCard from '../../boost/claim-boost-card/BoostClaimCard';
 import { useForceRefreshLearnCloudCredential } from '../../credential-refresh-listener/CredentialRefreshListener';
 
-import { VC } from '@learncard/types';
+import { VC, type LCNNotification } from '@learncard/types';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import * as m from '../../../paraglide/messages.js';
 import { notificationCardStyles } from './types';
@@ -159,7 +159,7 @@ const NotificationCredentialRefreshedCard: React.FC<NotificationCredentialRefres
                 showFooter={false}
                 showBoostFooter
                 acceptCredentialCompleted
-                notification={notification as any}
+                notification={notification as unknown as LCNNotification}
                 onDismiss={() => closeModal()}
                 hideEndorsementRequestCard
                 lifecycleStatus="active"
@@ -196,7 +196,7 @@ const NotificationCredentialRefreshedCard: React.FC<NotificationCredentialRefres
                 return;
             }
 
-            const result = await forceRefresh(record);
+            const result = await forceRefresh(record, wallet);
 
             if (result.status === 'updated' || result.status === 'unchanged') {
                 await openCredential(wallet, result.record.uri);

@@ -1,7 +1,13 @@
 import { vi } from 'vitest';
-import { JWEValidator, VCValidator, VC, UnsignedVC } from '@learncard/types';
+import {
+    JWEValidator,
+    LCNNotificationTypeEnumValidator,
+    VCValidator,
+    VC,
+    UnsignedVC,
+} from '@learncard/types';
 
-import { Profile, Credential } from '@models';
+import { Profile, Credential, Boost } from '@models';
 import { neogma } from '@instance';
 
 import { getClient, getUser } from './helpers/getClient';
@@ -11,6 +17,7 @@ import { getLearnCard, SeedLearnCard } from '@helpers/learnCard.helpers';
 import { getCredentialByUri } from '@accesslayer/credential/read';
 import { getCredentialRefresh, getCredentialRefreshHead } from '@accesslayer/credential-refresh';
 import { getDidWeb } from '@helpers/did.helpers';
+import { testUnsignedBoost } from './helpers/send';
 
 const noAuthClient = getClient();
 
@@ -24,6 +31,7 @@ const HOLDER_PROFILE_ID = 'refresh-holder';
 const OUTSIDER_PROFILE_ID = 'refresh-outsider';
 const CREDENTIAL_ID = 'urn:uuid:refreshable-credential-1';
 const DOMAIN = 'localhost%3A3000';
+const PREVIOUS_CREDENTIAL_REFRESH_ENABLED = process.env.CREDENTIAL_REFRESH_ENABLED;
 
 type AllocationResult = {
     refreshId: string;
@@ -84,7 +92,7 @@ const buildUnsignedCredential = (
         credentialSubject: { id: holder.learnCard.id.did() },
         refreshService: allocation.refreshService,
         ...overrides,
-    } as UnsignedVC);
+    }) as UnsignedVC;
 
 const signAs = async (
     user: Awaited<ReturnType<typeof getUser>>,
@@ -100,6 +108,8 @@ const allocateAndSign = async (): Promise<{ allocation: AllocationResult; creden
 
 describe('Credential Refresh Allocation', () => {
     beforeAll(async () => {
+        process.env.CREDENTIAL_REFRESH_ENABLED = 'true';
+
         brain = await getLearnCard();
         issuer = await getUser('d'.repeat(64));
         holder = await getUser('b'.repeat(64));
@@ -117,9 +127,18 @@ describe('Credential Refresh Allocation', () => {
         );
     });
 
+    afterAll(() => {
+        if (PREVIOUS_CREDENTIAL_REFRESH_ENABLED === undefined) {
+            delete process.env.CREDENTIAL_REFRESH_ENABLED;
+        } else {
+            process.env.CREDENTIAL_REFRESH_ENABLED = PREVIOUS_CREDENTIAL_REFRESH_ENABLED;
+        }
+    });
+
     beforeEach(async () => {
         await runQuery('MATCH (r:CredentialRefresh) DETACH DELETE r');
         await runQuery('MATCH (c:Credential) DETACH DELETE c');
+        await Boost.delete({ detach: true, where: {} });
         await runQuery('MATCH (p:Profile) DETACH DELETE p');
 
         await issuer.clients.fullAuth.profile.createProfile({ profileId: ISSUER_PROFILE_ID });
@@ -130,6 +149,52 @@ describe('Credential Refresh Allocation', () => {
     });
 
     describe('allocateCredentialRefresh', () => {
+        it('gates issuer allocation, send, and publication when refresh is disabled', async () => {
+            const sendCandidate = await allocateAndSign();
+            const publishCandidate = await allocateAndSign();
+
+            await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                refreshId: publishCandidate.allocation.refreshId,
+                credential: publishCandidate.credential,
+            });
+
+            const updatedCredential = await signAs(
+                issuer,
+                buildUnsignedCredential(publishCandidate.allocation, {
+                    validFrom: '2026-02-01T00:00:00Z',
+                    name: 'Final Transcript',
+                })
+            );
+
+            process.env.CREDENTIAL_REFRESH_ENABLED = 'false';
+
+            try {
+                await expect(allocate()).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+                await expect(
+                    issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                        refreshId: sendCandidate.allocation.refreshId,
+                        credential: sendCandidate.credential,
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+                await expect(
+                    issuer.clients.fullAuth.credentialRefresh.publishCredentialRefresh({
+                        mode: 'issuer-signed',
+                        refreshId: publishCandidate.allocation.refreshId,
+                        signedCredential: updatedCredential,
+                    })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            } finally {
+                process.env.CREDENTIAL_REFRESH_ENABLED = 'true';
+            }
+
+            expect(await getCredentialRefreshHead(sendCandidate.allocation.refreshId)).toBeNull();
+            expect(
+                await getCredentialRefreshHead(publishCandidate.allocation.refreshId)
+            ).toMatchObject({ version: 1 });
+        });
+
         it('requires an authenticated issuer', async () => {
             await expect(
                 noAuthClient.credentialRefresh.allocateCredentialRefresh({
@@ -172,6 +237,12 @@ describe('Credential Refresh Allocation', () => {
                     credentialId: CREDENTIAL_ID,
                 })
             ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
+        it('hides a holder that has blocked the issuer', async () => {
+            await holder.clients.fullAuth.profile.blockProfile({ profileId: ISSUER_PROFILE_ID });
+
+            await expect(allocate()).rejects.toMatchObject({ code: 'NOT_FOUND' });
         });
 
         it('requires a stable nonempty credential ID', async () => {
@@ -252,6 +323,21 @@ describe('Credential Refresh Allocation', () => {
                     credential,
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            expect(await countCredentialNodes()).toEqual(0);
+            expect(await countSentRelationships()).toEqual(0);
+        });
+
+        it('refuses delivery when either profile blocks the other after allocation', async () => {
+            const { allocation, credential } = await allocateAndSign();
+            await holder.clients.fullAuth.profile.blockProfile({ profileId: ISSUER_PROFILE_ID });
+
+            await expect(
+                issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                    refreshId: allocation.refreshId,
+                    credential,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
 
             expect(await countCredentialNodes()).toEqual(0);
             expect(await countSentRelationships()).toEqual(0);
@@ -429,7 +515,152 @@ describe('Credential Refresh Allocation', () => {
             expect(await countSentRelationships()).toEqual(0);
         });
 
-        it('rejects a second send for an already-bound aggregate', async () => {
+        it('returns the original URI when the same initial send is retried', async () => {
+            const { allocation, credential } = await allocateAndSign();
+
+            const first = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential(
+                {
+                    refreshId: allocation.refreshId,
+                    credential,
+                }
+            );
+
+            const retry = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential(
+                {
+                    refreshId: allocation.refreshId,
+                    credential,
+                }
+            );
+
+            expect(retry).toEqual(first);
+            expect(await countCredentialNodes()).toEqual(1);
+            expect(await countSentRelationships()).toEqual(1);
+            expect(addNotificationToQueueSpy).toHaveBeenCalledTimes(1);
+            expect(addNotificationToQueueSpy.mock.calls[0]?.[0]).toMatchObject({
+                type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+                data: {
+                    vcUris: [first],
+                    metadata: {
+                        managedCredentialRefreshInitial: true,
+                        routeKey: expect.stringMatching(/^[A-Za-z0-9_-]+$/),
+                        deliveryKey: expect.stringMatching(/^[A-Za-z0-9_-]+$/),
+                    },
+                },
+            });
+        });
+
+        it('persists notification suppression from the first binding across retries', async () => {
+            const { allocation, credential } = await allocateAndSign();
+
+            const first = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential(
+                {
+                    refreshId: allocation.refreshId,
+                    credential,
+                    skipNotification: true,
+                }
+            );
+            const retry = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential(
+                {
+                    refreshId: allocation.refreshId,
+                    credential,
+                    skipNotification: false,
+                }
+            );
+
+            expect(retry).toEqual(first);
+            expect(
+                (await getCredentialRefresh(allocation.refreshId))?.initialNotificationSuppressed
+            ).toBe(true);
+            expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
+        });
+
+        it('does not let a suppressing retry override the first binding notification policy', async () => {
+            const { allocation, credential } = await allocateAndSign();
+
+            const first = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential(
+                {
+                    refreshId: allocation.refreshId,
+                    credential,
+                    skipNotification: false,
+                }
+            );
+            const retry = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential(
+                {
+                    refreshId: allocation.refreshId,
+                    credential,
+                    skipNotification: true,
+                }
+            );
+
+            expect(retry).toEqual(first);
+            expect(
+                (await getCredentialRefresh(allocation.refreshId))?.initialNotificationSuppressed
+            ).toBe(false);
+            expect(addNotificationToQueueSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('rejects an unowned boost and cannot change the boost on a retry', async () => {
+            const outsiderBoostUri = await outsider.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const { allocation, credential } = await allocateAndSign();
+
+            await expect(
+                issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                    refreshId: allocation.refreshId,
+                    credential,
+                    boostUri: outsiderBoostUri,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            const firstBoostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const secondBoostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                refreshId: allocation.refreshId,
+                credential,
+                boostUri: firstBoostUri,
+            });
+
+            await expect(
+                issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                    refreshId: allocation.refreshId,
+                    credential,
+                    boostUri: secondBoostUri,
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+
+            const associations = await runQuery(
+                `MATCH (:Credential {refreshId: $refreshId})-[:INSTANCE_OF]->(boost:Boost)
+                 RETURN collect(boost.id) AS boostIds`,
+                { refreshId: allocation.refreshId }
+            );
+            expect(associations.records[0]?.get('boostIds')).toHaveLength(1);
+        });
+
+        it('removes the losing encrypted node from concurrent identical initial sends', async () => {
+            const { allocation, credential } = await allocateAndSign();
+
+            const uris = await Promise.all([
+                issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                    refreshId: allocation.refreshId,
+                    credential,
+                }),
+                issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                    refreshId: allocation.refreshId,
+                    credential,
+                }),
+            ]);
+
+            expect(new Set(uris).size).toEqual(1);
+            expect(await countCredentialNodes()).toEqual(1);
+        });
+
+        it('rejects an initial-send retry whose credential material differs', async () => {
             const { allocation, credential } = await allocateAndSign();
 
             await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
@@ -437,15 +668,53 @@ describe('Credential Refresh Allocation', () => {
                 credential,
             });
 
+            const differentCredential = await signAs(
+                issuer,
+                buildUnsignedCredential(allocation, { name: 'Different Transcript' })
+            );
+
             await expect(
                 issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
                     refreshId: allocation.refreshId,
-                    credential,
+                    credential: differentCredential,
                 })
             ).rejects.toMatchObject({ code: 'CONFLICT' });
 
             expect(await countCredentialNodes()).toEqual(1);
             expect(await countSentRelationships()).toEqual(1);
+            expect(addNotificationToQueueSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('repairs a bound initial version whose sent relationship was not completed', async () => {
+            const { allocation, credential } = await allocateAndSign();
+
+            const uri = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                refreshId: allocation.refreshId,
+                credential,
+            });
+
+            await runQuery(
+                `MATCH (:Profile {profileId: $issuerProfileId})-[sent:CREDENTIAL_SENT]->
+                       (:Credential {refreshVersionKey: $versionKey})
+                 DELETE sent`,
+                {
+                    issuerProfileId: ISSUER_PROFILE_ID,
+                    versionKey: `${allocation.refreshId}:1`,
+                }
+            );
+            expect(await countSentRelationships()).toEqual(0);
+
+            const retry = await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential(
+                {
+                    refreshId: allocation.refreshId,
+                    credential,
+                }
+            );
+
+            expect(retry).toEqual(uri);
+            expect(await countCredentialNodes()).toEqual(1);
+            expect(await countSentRelationships()).toEqual(1);
+            expect(addNotificationToQueueSpy).toHaveBeenCalledTimes(1);
         });
     });
 });

@@ -35,10 +35,10 @@ sequenceDiagram
 
 ## Prerequisites
 
--   LearnCard SDK initialized with `network: true`
--   An issuer profile on the network (see [Send Credentials](send-credentials.md))
--   For signing-authority publication: a [signing authority](create-signing-authority.md) registered to the issuer
--   The managed refresh endpoint enabled on the network (`CREDENTIAL_REFRESH_ENABLED=true`)
+- LearnCard SDK initialized with `network: true`
+- An issuer profile on the network (see [Send Credentials](send-credentials.md))
+- For signing-authority publication: a [signing authority](create-signing-authority.md) registered to the issuer
+- The managed refresh endpoint enabled on the network (`CREDENTIAL_REFRESH_ENABLED=true`)
 
 ```typescript
 import { initLearnCard } from '@learncard/init';
@@ -74,6 +74,8 @@ The recipient's wallet now holds a credential whose signed `refreshService` poin
 If you construct and sign credentials yourself, allocate first, inject the returned service, then sign and send:
 
 ```typescript
+const holderDid = 'did:key:z6Mk…'; // resolve the recipient's DID first
+
 // 1. Allocate BEFORE signing — refreshService is part of the signed payload
 const allocation = await issuer.invoke.allocateCredentialRefresh({
     holder: { did: holderDid }, // or { profileId: 'student-123', did: holderDid }
@@ -88,10 +90,14 @@ const allocation = await issuer.invoke.allocateCredentialRefresh({
 // }
 
 // 2. Inject the service (and the required inline context) into the credential
+const credentialContexts = Array.isArray(credential['@context'])
+    ? credential['@context']
+    : [credential['@context']];
+
 const unsigned = {
     ...credential,
     '@context': [
-        ...credential['@context'],
+        ...credentialContexts,
         {
             '1EdTechCredentialRefresh':
                 'https://purl.imsglobal.org/spec/ob/v3p0#1EdTechCredentialRefresh',
@@ -137,7 +143,7 @@ const result = await issuer.invoke.publishCredentialRefresh({
     mode: 'issuer-signed',
     refreshId: allocation.refreshId,
     signedCredential: finalTranscriptVc, // fully signed, same id + issuer
-    updateSummary: 'Final grades posted', // optional, holder-visible
+    updateSummary: 'Final grades posted', // optional issuer/history audit metadata
     notifyHolder: true, // optional: force (true) / suppress (false)
     idempotencyKey: 'final-grades-2026-09', // optional: safe retries
 });
@@ -160,9 +166,9 @@ const result = await issuer.invoke.publishCredentialRefresh({
 
 Notes:
 
--   **Idempotency**: retrying with the same `refreshId` + `idempotencyKey` returns the original result instead of creating a duplicate version.
--   **Materiality**: when `notifyHolder` is unset, the network compares a canonical projection of user-visible content and notifies only on material change. The `notification` field in the result is the _decision_; delivery is fire-and-forget and never rolls back publication.
--   **Unclaimed credentials**: you can publish before the holder claims. Versions are stored but not served and not notified; on claim, the holder activates at the latest head with at most one notification.
+- **Idempotency**: retrying with the same `refreshId` + `idempotencyKey` returns the original result instead of creating a duplicate version.
+- **Materiality**: when `notifyHolder` is unset, the network compares a canonical projection of user-visible content and notifies only on material change. The `notification` field in the result is the _decision_; delivery is fire-and-forget and never rolls back publication.
+- **Unclaimed credentials**: you can publish before the holder claims. Versions are stored but not served and not notified; on claim, the holder activates at the latest head with at most one notification.
 
 ### Inspecting issuer history
 
@@ -208,15 +214,15 @@ switch (result.status) {
 
 The primitive:
 
--   verifies the **currently held** credential before contacting any endpoint
--   performs **one** refresh interaction (single object or first supported entry of an array)
--   answers a recognized `LearnCardDIDAuth` challenge by signing once and retrying
--   accepts plain VC or holder-encrypted JWE envelopes and decrypts with the holder's keys
--   never mutates storage — storage decisions belong to the wallet layer
+- verifies the **currently held** credential before contacting any endpoint
+- performs **one** refresh interaction (single object or first supported entry of an array)
+- answers a recognized `LearnCardDIDAuth` challenge by signing once and retrying
+- accepts plain VC or holder-encrypted JWE envelopes and decrypts with the holder's keys
+- never mutates storage — storage decisions belong to the wallet layer
 
 ### Safety rails
 
-The fetcher treats `refreshService.id` as untrusted input: HTTPS-only (unless `allowInsecureHttp: true` for local dev), private/loopback/link-local/metadata IP rejection after DNS resolution, at most `maxRedirects` (default 3) revalidated redirects, `timeoutMs` (default 10s), and a `maxResponseBytes` cap (default 1 MiB). Endpoints violating these fail with `UNSAFE_ENDPOINT`.
+The fetcher treats `refreshService.id` as untrusted input: HTTPS-only, at most `maxRedirects` (default 3) revalidated redirects, `timeoutMs` (default 10s), and a `maxResponseBytes` cap (default 1 MiB). In Node runtimes it also resolves and pins the destination address, rejecting private, loopback, link-local, and metadata ranges; browser JavaScript cannot inspect or pin DNS results, so browser requests reject unsafe IP literals and otherwise rely on browser networking and CORS. Endpoints violating the applicable checks fail with `UNSAFE_ENDPOINT`. Local development can explicitly opt into HTTP with `allowInsecureHttp: true` and private addresses with `allowPrivateAddresses: true`; never enable either exception for credentials from untrusted issuers.
 
 ### Failure codes
 
@@ -238,10 +244,10 @@ The fetcher treats `refreshService.id` as untrusted input: HTTPS-only (unless `a
 
 The app builds on the primitive so holders don't have to think about refresh:
 
--   **Foreground scanning**: on app launch/resume, stale refreshable records are checked (at most once per session and once per credential per **24 hours**, configurable via `CREDENTIAL_REFRESH_CHECK_INTERVAL_MS`). There is no background scheduler — all checks are foreground-only.
--   **In-place replacement**: an update replaces the wallet record's URI atomically and appends the previous encrypted URI to holder-only history. Any mid-flight failure leaves the current credential untouched.
--   **Notification tap**: tapping a "credential updated" notification forces a targeted refresh (bypassing the 24-hour guard) and opens the detail view; on failure the existing credential opens with friendly retry copy.
--   **Updated state & history**: the detail view shows an `Updated` pill until viewed, and `View Previous Versions` opens the holder-only version history.
+- **Foreground scanning**: on app launch/resume, stale refreshable records are checked (at most once per session and once per credential per **24 hours**, configurable via `CREDENTIAL_REFRESH_CHECK_INTERVAL_MS`). There is no background scheduler — all checks are foreground-only.
+- **In-place replacement**: an update replaces the wallet record's URI in one index write and appends the previous encrypted URI to holder-only history. A failure before that write leaves the current credential untouched; cross-device races converge on the next foreground check.
+- **Notification tap**: tapping a "credential updated" notification forces a targeted refresh (bypassing the 24-hour guard) and opens the detail view; on failure the existing credential opens with friendly retry copy.
+- **Updated state & history**: the detail view shows an `Updated` pill until viewed, and `View Previous Versions` opens the holder-only version history.
 
 ---
 
@@ -261,14 +267,14 @@ Issuer tRPC/OpenAPI routes (`/credential-refresh/allocate`, `/credential-refresh
 
 ## Limitations (Phase 1)
 
--   Managed refresh must be allocated **before signing** — it cannot be retrofitted onto already-signed credentials.
--   Refresh is **foreground-only**; manual pull-to-refresh is a planned follow-up.
--   The app replaces the wallet record in place, but exact cross-device compare-and-swap is out of scope; devices converge on their next foreground check.
--   Revocation stops the endpoint from serving versions; the holder's locally retained history is not remotely deleted.
+- Managed refresh must be allocated **before signing** — it cannot be retrofitted onto already-signed credentials.
+- Refresh is **foreground-only**; manual pull-to-refresh is a planned follow-up.
+- The app replaces the wallet record in place, but exact cross-device compare-and-swap is out of scope; devices converge on their next foreground check.
+- Revocation stops the endpoint from serving versions; the holder's locally retained history is not remotely deleted.
 
 ## See also
 
--   [Credential Refresh (Core Concepts)](../core-concepts/credential-refresh.md)
--   [Send Credentials](send-credentials.md)
--   [Create Signing Authority](create-signing-authority.md)
--   [1EdTech Credential Refresh Service 1.0](https://www.imsglobal.org/spec/vccr/v1p0/)
+- [Credential Refresh (Core Concepts)](../core-concepts/credential-refresh.md)
+- [Send Credentials](send-credentials.md)
+- [Create Signing Authority](create-signing-authority.md)
+- [1EdTech Credential Refresh Service 1.0](https://www.imsglobal.org/spec/vccr/v1p0/)

@@ -36,7 +36,7 @@ const refreshedNotification = (
         from: ISSUER,
         data: metadata === undefined ? {} : { metadata },
         ...overrides,
-    } as unknown as LCNNotification);
+    }) as unknown as LCNNotification;
 
 describe('resolveNotificationRoute — CREDENTIAL_REFRESHED', () => {
     it('maps to the claim-free refresh route carrying only the encoded refreshId', () => {

@@ -24,6 +24,7 @@ import { processClaimHooks } from './claim-hooks.helpers';
 import { ensureConnectionsForCredentialAcceptance } from './connection.helpers';
 import { handleConnectionPromptsForCredentialClaim } from './connectionPrompt.helpers';
 import { activateCredentialRefreshForAcceptedCredential } from '@accesslayer/credential-refresh';
+import { deliverPendingCredentialRefreshNotificationForAcceptedCredential } from './credential-refresh.helpers';
 
 const isProfileType = (source: ProfileType | AppStoreListingType): source is ProfileType => {
     return 'profileId' in source;
@@ -165,6 +166,19 @@ export const acceptCredential = async (
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Could not determine credential issuer',
         });
+    }
+
+    try {
+        await deliverPendingCredentialRefreshNotificationForAcceptedCredential({
+            credentialNodeId: pendingVc.target.id,
+            issuerProfile: sourceProfile,
+            holderProfile: profile,
+        });
+    } catch (error) {
+        console.error(
+            'Credential Helpers - Failed to deliver pending credential refresh notification:',
+            error
+        );
     }
 
     if (!alreadyReceived) {

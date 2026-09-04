@@ -121,7 +121,7 @@ const makeNotification = (
         },
         data: metadata === null ? {} : { metadata },
         sent: '2026-09-02T12:00:00.000Z',
-    } as unknown as NotificationType);
+    }) as unknown as NotificationType;
 
 const makeRecord = (overrides: Record<string, unknown> = {}): LCR =>
     ({
@@ -136,7 +136,7 @@ const makeRecord = (overrides: Record<string, unknown> = {}): LCR =>
             history: [],
         },
         ...overrides,
-    } as unknown as LCR);
+    }) as unknown as LCR;
 
 const makeVc = (id = 'urn:uuid:credential-1') => ({
     '@context': ['https://www.w3.org/ns/credentials/v2'],

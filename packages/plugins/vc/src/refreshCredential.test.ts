@@ -1,15 +1,30 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- refresh protocol tests use intentionally partial wallet and credential doubles */
 import { vi } from 'vitest';
 
 import type { CredentialRefreshResult, VC } from '@learncard/types';
 
 import { getVCPlugin } from './vc';
 import { refreshCredential } from './refreshCredential';
+import type { PinnedAddress } from './refreshCredential.fetch';
 import type { RefreshCredentialOptions } from './types';
 
+const guardedTransportMock = vi.hoisted(() =>
+    vi.fn((url: URL, init: RequestInit, _pinnedAddress?: PinnedAddress) =>
+        globalThis.fetch(url.href, init)
+    )
+);
+
+vi.mock('./refreshCredential.fetch', () => ({ fetchWithPinnedAddress: guardedTransportMock }));
+
 const PUBLIC_IP = '93.184.216.34';
+const SECOND_PUBLIC_IP = '142.250.72.14';
 const REFRESH_SERVICE_ID = 'https://refresh.example.com/refresh/refresh-1';
 
-const okCheck = { checks: ['proof'], warnings: [], errors: [] };
+const okCheck: { checks: string[]; warnings: string[]; errors: string[] } = {
+    checks: ['proof'],
+    warnings: [],
+    errors: [],
+};
 
 const makeCredential = (overrides: Record<string, any> = {}): Record<string, any> => ({
     '@context': ['https://www.w3.org/ns/credentials/v2'],
@@ -86,6 +101,7 @@ describe('refreshCredential', () => {
     beforeEach(() => {
         fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock);
+        guardedTransportMock.mockClear();
         learnCard = getLearnCard();
     });
 
@@ -121,6 +137,12 @@ describe('refreshCredential', () => {
             expect(url).toBe(REFRESH_SERVICE_ID);
             expect(init.method ?? 'GET').toBe('GET');
             expect((init.headers as Record<string, string>).accept).toContain('application/json');
+            expect((init.headers as Record<string, string>).accept).not.toContain(
+                'application/jwt'
+            );
+            expect((init.headers as Record<string, string>).accept).not.toContain(
+                'application/vc+jwt'
+            );
             expect((init.headers as Record<string, string>).authorization).toBeUndefined();
             expect(init.redirect).toBe('manual');
         });
@@ -211,6 +233,36 @@ describe('refreshCredential', () => {
             expect(result).toEqual({ status: 'failed', code: 'TIMEOUT', retryable: true });
         });
 
+        it('keeps the timeout active until the response body has been consumed', async () => {
+            fetchMock.mockImplementation((_url: string, init: RequestInit) => {
+                const stream = new ReadableStream<Uint8Array>({
+                    start(controller) {
+                        init.signal?.addEventListener('abort', () => {
+                            controller.error(
+                                new DOMException('The operation was aborted', 'AbortError')
+                            );
+                        });
+                    },
+                });
+
+                return Promise.resolve(
+                    new Response(stream, {
+                        status: 200,
+                        headers: { 'content-type': 'application/json' },
+                    })
+                );
+            });
+
+            const result = await Promise.race([
+                runRefresh(currentCredential, { timeoutMs: 25 }),
+                new Promise<'body-still-pending'>(resolve =>
+                    setTimeout(() => resolve('body-still-pending'), 100)
+                ),
+            ]);
+
+            expect(result).toEqual({ status: 'failed', code: 'TIMEOUT', retryable: true });
+        });
+
         it('returns MALFORMED_RESPONSE for invalid JSON', async () => {
             fetchMock.mockResolvedValue(jsonResponse('this is not json'));
 
@@ -236,6 +288,25 @@ describe('refreshCredential', () => {
                 retryable: false,
             });
         });
+
+        it.each(['application/jwt', 'application/vc+jwt'])(
+            'does not accept advertised compact JWT media type %s as JSON',
+            async contentType => {
+                fetchMock.mockResolvedValue(
+                    jsonResponse(updatedCredential, {
+                        headers: { 'content-type': contentType },
+                    })
+                );
+
+                const result = await runRefresh();
+
+                expect(result).toEqual({
+                    status: 'failed',
+                    code: 'MALFORMED_RESPONSE',
+                    retryable: false,
+                });
+            }
+        );
 
         it('returns MALFORMED_RESPONSE for an oversized streaming response', async () => {
             const stream = new ReadableStream<Uint8Array>({
@@ -288,6 +359,56 @@ describe('refreshCredential', () => {
 
             expect(result).toEqual({ status: 'failed', code: 'INVALID_PROOF', retryable: false });
             expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('requires the current credential verification to report a proof check', async () => {
+            learnCard.invoke.verifyCredential.mockResolvedValue({
+                checks: [],
+                warnings: [],
+                errors: [],
+            });
+
+            const result = await runRefresh();
+
+            expect(result).toEqual({ status: 'failed', code: 'INVALID_PROOF', retryable: false });
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('rejects a current credential whose proof verification reports a warning', async () => {
+            learnCard.invoke.verifyCredential.mockResolvedValue({
+                checks: ['proof'],
+                warnings: ['The issuer did not authorize this signing key'],
+                errors: [],
+            });
+
+            const result = await runRefresh();
+
+            expect(result).toEqual({ status: 'failed', code: 'INVALID_PROOF', retryable: false });
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('requires the replacement verification to report a proof check', async () => {
+            learnCard.invoke.verifyCredential
+                .mockResolvedValueOnce(okCheck)
+                .mockResolvedValueOnce({ checks: [], warnings: [], errors: [] });
+            fetchMock.mockResolvedValue(jsonResponse(updatedCredential));
+
+            const result = await runRefresh();
+
+            expect(result).toEqual({ status: 'failed', code: 'INVALID_PROOF', retryable: false });
+        });
+
+        it('rejects a replacement whose proof verification reports a warning', async () => {
+            learnCard.invoke.verifyCredential.mockResolvedValueOnce(okCheck).mockResolvedValueOnce({
+                checks: ['proof'],
+                warnings: ['The issuer did not authorize this signing key'],
+                errors: [],
+            });
+            fetchMock.mockResolvedValue(jsonResponse(updatedCredential));
+
+            const result = await runRefresh();
+
+            expect(result).toEqual({ status: 'failed', code: 'INVALID_PROOF', retryable: false });
         });
 
         it('returns ID_MISMATCH when the candidate changes the credential ID', async () => {
@@ -392,6 +513,14 @@ describe('refreshCredential', () => {
             ['link-local metadata', 'https://169.254.169.254/latest/meta-data'],
             ['private range', 'https://10.1.2.3/refresh/x'],
             ['ipv6 loopback', 'https://[::1]/refresh/x'],
+            ['IPv4-mapped IPv6 loopback', 'https://[::ffff:127.0.0.1]/refresh/x'],
+            [
+                'expanded IPv4-mapped IPv6 metadata address',
+                'https://[0:0:0:0:0:ffff:a9fe:a9fe]/latest/meta-data',
+            ],
+            ['NAT64 well-known prefix', 'https://[64:ff9b::a9fe:a9fe]/latest/meta-data'],
+            ['NAT64 local-use prefix', 'https://[64:ff9b:1::a9fe:a9fe]/latest/meta-data'],
+            ['6to4 transition prefix', 'https://[2002:a9fe:a9fe::]/latest/meta-data'],
         ])('rejects %s host literals as UNSAFE_ENDPOINT', async (_label, id) => {
             const credential = makeCredential({
                 refreshService: { id, type: '1EdTechCredentialRefresh' },
@@ -410,6 +539,103 @@ describe('refreshCredential', () => {
 
             expect(result).toEqual({ status: 'failed', code: 'UNSAFE_ENDPOINT', retryable: false });
             expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it('allows a private address only with the explicit local-development opt-in', async () => {
+            const credential = makeCredential({
+                refreshService: {
+                    id: 'http://localhost:4000/refresh/refresh-1',
+                    type: '1EdTechCredentialRefresh',
+                },
+            });
+
+            fetchMock.mockResolvedValue(jsonResponse(updatedCredential));
+
+            const result = await runRefresh(credential, {
+                allowInsecureHttp: true,
+                allowPrivateAddresses: true,
+                resolveHost: async () => ['127.0.0.1'],
+            });
+
+            expect(result.status).toBe('updated');
+            expect(guardedTransportMock).toHaveBeenCalledWith(
+                new URL('http://localhost:4000/refresh/refresh-1'),
+                expect.objectContaining({ method: 'GET' }),
+                { address: '127.0.0.1', family: 4 }
+            );
+        });
+
+        it('passes the validated DNS address to the connection transport', async () => {
+            const resolveHost = vi.fn(async () => [PUBLIC_IP]);
+
+            fetchMock.mockResolvedValue(jsonResponse(updatedCredential));
+
+            const result = await runRefresh(currentCredential, { resolveHost });
+
+            expect(result.status).toBe('updated');
+            expect(resolveHost).toHaveBeenCalledTimes(1);
+            expect(guardedTransportMock).toHaveBeenCalledWith(
+                new URL(REFRESH_SERVICE_ID),
+                expect.objectContaining({ method: 'GET' }),
+                { address: PUBLIC_IP, family: 4 }
+            );
+        });
+
+        it.each(['::ffff:7f00:1', '0:0:0:0:0:ffff:a9fe:a9fe'])(
+            'rejects a private IPv4-mapped DNS answer in canonical form (%s)',
+            async mappedAddress => {
+                const result = await runRefresh(currentCredential, {
+                    resolveHost: async () => [mappedAddress],
+                });
+
+                expect(result).toEqual({
+                    status: 'failed',
+                    code: 'UNSAFE_ENDPOINT',
+                    retryable: false,
+                });
+                expect(fetchMock).not.toHaveBeenCalled();
+            }
+        );
+
+        it.each(['64:ff9b::a9fe:a9fe', '64:ff9b:1::a9fe:a9fe', '2002:a9fe:a9fe::'])(
+            'rejects an IPv4 transition/translation DNS answer (%s)',
+            async translatedAddress => {
+                const result = await runRefresh(currentCredential, {
+                    resolveHost: async () => [translatedAddress],
+                });
+
+                expect(result).toEqual({
+                    status: 'failed',
+                    code: 'UNSAFE_ENDPOINT',
+                    retryable: false,
+                });
+                expect(fetchMock).not.toHaveBeenCalled();
+            }
+        );
+
+        it.each([
+            [
+                'literal',
+                makeCredential({
+                    refreshService: {
+                        id: 'https://[2606:4700:4700::1111]/refresh/x',
+                        type: '1EdTechCredentialRefresh',
+                    },
+                }),
+                {},
+            ],
+            [
+                'DNS answer',
+                currentCredential,
+                { resolveHost: async () => ['2606:4700:4700::1111'] },
+            ],
+        ])('allows an ordinary public IPv6 %s', async (_label, credential, options) => {
+            fetchMock.mockResolvedValue(jsonResponse(updatedCredential));
+
+            const result = await runRefresh(credential, options);
+
+            expect(result.status).toBe('updated');
+            expect(fetchMock).toHaveBeenCalledTimes(1);
         });
 
         it('allows plain HTTP only with the explicit local-development opt-in', async () => {
@@ -444,6 +670,30 @@ describe('refreshCredential', () => {
             expect(fetchMock.mock.calls[1][0]).toBe(
                 'https://refresh.example.com/refresh/refresh-2'
             );
+        });
+
+        it('pins the separately validated address for every redirect target', async () => {
+            const resolveHost = vi.fn(async (hostname: string) =>
+                hostname === 'refresh.example.com' ? [PUBLIC_IP] : [SECOND_PUBLIC_IP]
+            );
+
+            fetchMock
+                .mockResolvedValueOnce(
+                    new Response(null, {
+                        status: 302,
+                        headers: { location: 'https://other.example.com/refresh/refresh-2' },
+                    })
+                )
+                .mockResolvedValueOnce(jsonResponse(updatedCredential));
+
+            const result = await runRefresh(currentCredential, { resolveHost });
+
+            expect(result.status).toBe('updated');
+            expect(resolveHost).toHaveBeenCalledTimes(2);
+            expect(guardedTransportMock.mock.calls.map(call => call[2])).toEqual([
+                { address: PUBLIC_IP, family: 4 },
+                { address: SECOND_PUBLIC_IP, family: 4 },
+            ]);
         });
 
         it('rejects redirects to unsafe targets', async () => {
@@ -547,6 +797,61 @@ describe('refreshCredential', () => {
                 domain: 'refresh.example.com',
             });
             expect(result.status).toBe('updated');
+        });
+
+        it('rejects a challenge whose audience does not match the validated endpoint', async () => {
+            fetchMock.mockResolvedValue(
+                challengeResponse(
+                    {
+                        'www-authenticate':
+                            'LearnCardDIDAuth challenge="srv-challenge-1", domain="attacker.example"',
+                        'content-type': 'application/json',
+                    },
+                    { ...challengeBody, domain: 'attacker.example' }
+                )
+            );
+
+            const result = await runRefresh();
+
+            expect(result).toEqual({ status: 'failed', code: 'UNAUTHORIZED', retryable: false });
+            expect(learnCard.invoke.getDidAuthVp).not.toHaveBeenCalled();
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+        });
+
+        it('rejects conflicting header and body challenge audiences without signing', async () => {
+            fetchMock.mockResolvedValue(
+                challengeResponse(
+                    {
+                        'www-authenticate':
+                            'LearnCardDIDAuth challenge="srv-challenge-1", domain="refresh.example.com"',
+                        'content-type': 'application/json',
+                    },
+                    { ...challengeBody, domain: 'attacker.example' }
+                )
+            );
+
+            const result = await runRefresh();
+
+            expect(result).toEqual({ status: 'failed', code: 'UNAUTHORIZED', retryable: false });
+            expect(learnCard.invoke.getDidAuthVp).not.toHaveBeenCalled();
+        });
+
+        it('requires an exact LearnCardDIDAuth authentication scheme', async () => {
+            fetchMock.mockResolvedValue(
+                challengeResponse(
+                    {
+                        'www-authenticate':
+                            'LearnCardDIDAuthRelay challenge="srv-challenge-1", domain="refresh.example.com"',
+                        'content-type': 'application/json',
+                    },
+                    challengeBody
+                )
+            );
+
+            const result = await runRefresh();
+
+            expect(result).toEqual({ status: 'failed', code: 'UNAUTHORIZED', retryable: false });
+            expect(learnCard.invoke.getDidAuthVp).not.toHaveBeenCalled();
         });
 
         it('rejects a malformed challenge without signing', async () => {
@@ -666,6 +971,50 @@ describe('refreshCredential', () => {
             expect(
                 (crossOriginInit.headers as Record<string, string>).authorization
             ).toBeUndefined();
+            expect(result.status).toBe('updated');
+        });
+
+        it('binds a redirected challenge to the validated final endpoint origin', async () => {
+            const redirectedChallengeBody = {
+                ...challengeBody,
+                domain: 'other.example.com',
+            };
+            const redirectedChallengeHeaders = {
+                'www-authenticate':
+                    'LearnCardDIDAuth challenge="srv-challenge-1", domain="other.example.com"',
+                'content-type': 'application/json',
+            };
+
+            fetchMock
+                .mockResolvedValueOnce(
+                    new Response(null, {
+                        status: 302,
+                        headers: { location: 'https://other.example.com/refresh/refresh-1' },
+                    })
+                )
+                .mockResolvedValueOnce(
+                    challengeResponse(redirectedChallengeHeaders, redirectedChallengeBody)
+                )
+                .mockResolvedValueOnce(jsonResponse(updatedCredential));
+
+            const result = await runRefresh(currentCredential, {
+                resolveHost: async hostname => [
+                    hostname === 'refresh.example.com' ? PUBLIC_IP : SECOND_PUBLIC_IP,
+                ],
+            });
+
+            expect(learnCard.invoke.getDidAuthVp).toHaveBeenCalledWith({
+                proofFormat: 'jwt',
+                challenge: 'srv-challenge-1',
+                domain: 'other.example.com',
+            });
+
+            const [retryUrl, retryInit] = fetchMock.mock.calls[2] as [string, RequestInit];
+
+            expect(retryUrl).toBe('https://other.example.com/refresh/refresh-1');
+            expect((retryInit.headers as Record<string, string>).authorization).toBe(
+                'Bearer signed-vp:srv-challenge-1:other.example.com'
+            );
             expect(result.status).toBe('updated');
         });
     });

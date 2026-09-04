@@ -12,6 +12,7 @@ import {
 import type { PublishCredentialRefreshInput } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
+import { getCredentialRefreshRuntimeEnvironment } from '@environment';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import {
     getCredentialRefresh,
@@ -23,9 +24,24 @@ import {
     sendRefreshableCredential,
 } from '@helpers/credential-refresh.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
+import { isRelationshipBlocked } from '@helpers/connection.helpers';
+import { ensureCredentialRefreshConstraints } from '../models/credential-refresh-constraints';
+
+const credentialRefreshRoute = profileRoute.use(async ({ ctx, next }) => {
+    if (!getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_ENABLED) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Credential refresh is not available',
+        });
+    }
+
+    await ensureCredentialRefreshConstraints();
+
+    return next({ ctx });
+});
 
 export const credentialRefreshesRouter = t.router({
-    allocateCredentialRefresh: profileRoute
+    allocateCredentialRefresh: credentialRefreshRoute
         .meta({
             openapi: {
                 protect: true,
@@ -55,6 +71,13 @@ export const credentialRefreshesRouter = t.router({
                 });
             }
 
+            if (await isRelationshipBlocked(profile, holderProfile)) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
             const holderDids = new Set([
                 holderProfile.did,
                 getDidWeb(ctx.domain, holderProfile.profileId),
@@ -76,7 +99,7 @@ export const credentialRefreshesRouter = t.router({
             });
         }),
 
-    sendRefreshableCredential: profileRoute
+    sendRefreshableCredential: credentialRefreshRoute
         .meta({
             openapi: {
                 protect: true,
@@ -94,6 +117,7 @@ export const credentialRefreshesRouter = t.router({
                 refreshId: z.string().min(1),
                 credential: VCValidator,
                 boostUri: z.string().optional(),
+                skipNotification: z.boolean().optional(),
             })
         )
         .output(z.string())
@@ -105,11 +129,12 @@ export const credentialRefreshesRouter = t.router({
                 refreshId: input.refreshId,
                 credential: input.credential,
                 boostUri: input.boostUri,
+                skipNotification: input.skipNotification,
                 domain: ctx.domain,
             });
         }),
 
-    publishCredentialRefresh: profileRoute
+    publishCredentialRefresh: credentialRefreshRoute
         .meta({
             openapi: {
                 protect: true,
@@ -134,7 +159,7 @@ export const credentialRefreshesRouter = t.router({
             });
         }),
 
-    getCredentialRefreshHistory: profileRoute
+    getCredentialRefreshHistory: credentialRefreshRoute
         .meta({
             openapi: {
                 protect: true,

@@ -25,6 +25,7 @@ export const useMarkCredentialUpdateRead = (record?: Partial<LCR>) => {
     const queryClient = useQueryClient();
 
     const recordId = record?.id;
+    const recordUri = record?.uri;
     const refresh = record?.refresh;
 
     return useCallback(async (): Promise<boolean> => {
@@ -32,9 +33,23 @@ export const useMarkCredentialUpdateRead = (record?: Partial<LCR>) => {
 
         try {
             const wallet = await initWallet();
+            const records = await wallet.index.LearnCloud.get({ id: recordId });
+            const current = records?.[0] as LCR | undefined;
+            const currentRefresh = current?.refresh;
+
+            // The user viewed the version represented by `record`. If another refresh
+            // advanced the record before this callback persisted, leave the newer
+            // version unread and preserve its URI/history/ETag metadata.
+            const recordAdvanced =
+                !current ||
+                current.uri !== recordUri ||
+                (refresh.managedVersion !== undefined &&
+                    currentRefresh?.managedVersion !== refresh.managedVersion);
+
+            if (recordAdvanced || !currentRefresh?.unreadUpdate) return false;
 
             const updated = await wallet.index.LearnCloud.update(recordId, {
-                refresh: { ...refresh, unreadUpdate: false },
+                refresh: { ...currentRefresh, unreadUpdate: false },
             });
 
             if (!updated) {
@@ -56,5 +71,5 @@ export const useMarkCredentialUpdateRead = (record?: Partial<LCR>) => {
 
             return false;
         }
-    }, [recordId, refresh, initWallet, queryClient]);
+    }, [recordId, recordUri, refresh, initWallet, queryClient]);
 };
