@@ -53,18 +53,19 @@ export RECIPIENT_EMAIL=you@example.com
 <!-- snippet: quickstart/send-from-template.sh -->
 
 ```bash
-curl -X POST https://network.learncard.com/api/inbox/issue \
+curl -X POST https://network.learncard.com/api/send \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
-    \"recipient\": { \"type\": \"email\", \"value\": \"$RECIPIENT_EMAIL\" },
+    \"type\": \"boost\",
+    \"recipient\": \"$RECIPIENT_EMAIL\",
     \"templateUri\": \"$TEMPLATE_URI\"
   }"
 ```
 
 <!-- /snippet -->
 
-The response is JSON with a `status` of `PENDING` (new person — they get an email with `claimUrl`) or `ISSUED` (already a LearnCard user — it's in their wallet). Then skip to [What you should see](#what-you-should-see).
+This is the same request the portal shows in its **Issue & Verify** step. The response is JSON; `inbox.status` is `PENDING` (new person — they get an email with `inbox.claimUrl`) or `ISSUED` (already a LearnCard user — it's in their wallet). Then skip to [What you should see](#what-you-should-see).
 
 {% endtab %}
 
@@ -136,20 +137,23 @@ const credential = await learnCard.invoke.issueCredential({
     },
 });
 
-const result = await learnCard.invoke.sendCredentialViaInbox({
-    recipient: { type: 'email', value: recipientEmail },
-    credential,
+// Send it. The recipient can be an email, phone number, profile ID, or DID.
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: recipientEmail,
+    signedCredential: credential,
 });
 
-if (result.status === 'PENDING') {
+if (result.inbox?.status === 'PENDING') {
     console.log(
-        `Sent. ${recipientEmail} will get an email with this claim link:\n${result.claimUrl}`
+        `Sent. ${recipientEmail} will get an email with this claim link:\n${result.inbox.claimUrl}`
     );
 } else {
     console.log(
         `Delivered. ${recipientEmail} already uses LearnCard — the credential is in their wallet.`
     );
 }
+console.log(`Reusable template for this badge: ${result.uri}`);
 ```
 
 <!-- /snippet -->
@@ -180,24 +184,32 @@ Delivered. you@example.com already uses LearnCard — the credential is in their
 
 No email in this case: the recipient already has a verified account, so LearnCard delivered straight to it. Open the app and it's there.
 
+Both are followed by:
+
+```
+Reusable template for this badge: boost:…
+```
+
+Every `send` also saves the badge as a **template** (a Boost). To send the same badge to more people, pass `templateUri: result.uri` instead of `signedCredential` — LearnCard fills in and signs each one server-side once you've set up a [signing authority](../how-to-guides/create-signing-authority.md) (one call).
+
 Run it again — it's safe. The profile is only created the first time.
 
 ## If something goes wrong
 
-| You see                                                                                             | Why                                                                | Fix                                                                                                      |
-| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| `Cannot use import statement outside a module`                                                      | File is named `.js`                                                | Name it `send.mjs`                                                                                       |
-| `Key must be a hexadecimal string!`                                                                 | `SECURE_SEED` isn't 64 hex characters                              | Generate it with the command in step 1                                                                   |
-| `A LearnCard has been initialized with a seed that is less than 32 bytes`                           | Seed is too short                                                  | Same — generate a full 64-character seed                                                                 |
-| `Profile already exists!`                                                                           | Someone else already took your `PROFILE_ID`                        | Pick a more specific one                                                                                 |
-| `Usage: node --env-file=.env send.mjs you@example.com`                                              | No recipient given                                                 | Add the email address as the last argument                                                               |
-| `Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry` | You switched `type` to `phone`                                     | Email works for everyone; phone needs [issuer verification](../how-to-guides/verify-my-issuer.md)        |
-| `Failed to send email via Postmark: … marked as inactive`                                           | The address is a placeholder (`example.com`) or has bounced before | Use a real address you can open                                                                          |
-| `Unsigned credentials require a signing authority`                                                  | You removed `issueCredential(...)`                                 | Sign the credential first, or set up a [signing authority](../how-to-guides/create-signing-authority.md) |
+| You see                                                                                             | Why                                                                                | Fix                                                                                               |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `Cannot use import statement outside a module`                                                      | File is named `.js`                                                                | Name it `send.mjs`                                                                                |
+| `Key must be a hexadecimal string!`                                                                 | `SECURE_SEED` isn't 64 hex characters                                              | Generate it with the command in step 1                                                            |
+| `A LearnCard has been initialized with a seed that is less than 32 bytes`                           | Seed is too short                                                                  | Same — generate a full 64-character seed                                                          |
+| `Profile already exists!`                                                                           | Someone else already took your `PROFILE_ID`                                        | Pick a more specific one                                                                          |
+| `Usage: node --env-file=.env send.mjs you@example.com`                                              | No recipient given                                                                 | Add the email address as the last argument                                                        |
+| `Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry` | You switched `type` to `phone`                                                     | Email works for everyone; phone needs [issuer verification](../how-to-guides/verify-my-issuer.md) |
+| `Failed to send email via Postmark: … marked as inactive`                                           | The address is a placeholder (`example.com`) or has bounced before                 | Use a real address you can open                                                                   |
+| `You must register a signing authority before using send without a pre-signed credential`           | You passed `template` or `templateUri` (server-signed) without a signing authority | Sign locally (`signedCredential`) or [set one up](../how-to-guides/create-signing-authority.md)   |
 
 ## Send your own signed credential over HTTP
 
-The no-keys tab lets LearnCard sign from a template. If you sign credentials yourself but want to deliver them from any language, create an API token once and POST the signed credential. This script creates the token and writes the exact request body to `request.json`:
+The no-keys tab lets LearnCard sign from a template. If you sign credentials yourself but want to deliver them from any language, create an API token once and POST the signed credential to `/api/send`. This script creates the token (scope `boosts:write`) and writes the exact request body to `request.json`:
 
 <!-- snippet: quickstart/api-token.mjs -->
 
@@ -211,8 +223,8 @@ if (!recipientEmail) throw new Error('Usage: node --env-file=.env api-token.mjs 
 
 const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
 
-// 1. A token that can only send to inboxes. Create once, store like a password.
-const grantId = await learnCard.invoke.addAuthGrant({ name: 'inbox-sender', scope: 'inbox:write' });
+// 1. A token that can only send boosts. Create once, store like a password.
+const grantId = await learnCard.invoke.addAuthGrant({ name: 'sender', scope: 'boosts:write' });
 const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
 
 // 2. A signed credential to send — same shape as send.mjs.
@@ -240,7 +252,11 @@ const credential = await learnCard.invoke.issueCredential({
 // 3. The exact request body the HTTP API expects.
 writeFileSync(
     'request.json',
-    JSON.stringify({ recipient: { type: 'email', value: recipientEmail }, credential }, null, 2)
+    JSON.stringify(
+        { type: 'boost', recipient: recipientEmail, signedCredential: credential },
+        null,
+        2
+    )
 );
 
 console.log(`export TOKEN=${token}`);
@@ -257,7 +273,7 @@ node --env-file=.env api-token.mjs you@example.com
 <!-- snippet: quickstart/send.sh -->
 
 ```bash
-curl -X POST https://network.learncard.com/api/inbox/issue \
+curl -X POST https://network.learncard.com/api/send \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d @request.json
@@ -265,7 +281,7 @@ curl -X POST https://network.learncard.com/api/inbox/issue \
 
 <!-- /snippet -->
 
-The token has one permission (`inbox:write`). Store it like a password; [revoke it](../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md) any time. Full API reference, phone delivery, templates, and webhooks: [Send & Issue Credentials](../how-to-guides/send-credentials.md).
+The token has one permission (`boosts:write`). Store it like a password; [revoke it](../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md) any time. Full API reference, phone delivery, templates, and webhooks: [Send & Issue Credentials](../how-to-guides/send-credentials.md).
 
 ## Next steps
 

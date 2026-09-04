@@ -37,17 +37,20 @@ const credential = await learnCard.invoke.issueCredential({
     },
 });
 
-const result = await learnCard.invoke.sendCredentialViaInbox({
-    recipient: { type: 'email', value: recipientEmail },
-    credential,
+// Send it. The recipient can be an email, phone number, profile ID, or DID.
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: recipientEmail,
+    signedCredential: credential,
 });
 
-if (result.status === 'PENDING') {
+if (result.inbox?.status === 'PENDING') {
     console.log(
-        `Sent. ${recipientEmail} will get an email with this claim link:\n${result.claimUrl}`
+        `Sent. ${recipientEmail} will get an email with this claim link:\n${result.inbox.claimUrl}`
     );
 } else {
     console.log(
         `Delivered. ${recipientEmail} already uses LearnCard — the credential is in their wallet.`
     );
 }
+console.log(`Reusable template for this badge: ${result.uri}`);

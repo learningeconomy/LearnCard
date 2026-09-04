@@ -7,8 +7,8 @@ if (!recipientEmail) throw new Error('Usage: node --env-file=.env api-token.mjs 
 
 const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
 
-// 1. A token that can only send to inboxes. Create once, store like a password.
-const grantId = await learnCard.invoke.addAuthGrant({ name: 'inbox-sender', scope: 'inbox:write' });
+// 1. A token that can only send boosts. Create once, store like a password.
+const grantId = await learnCard.invoke.addAuthGrant({ name: 'sender', scope: 'boosts:write' });
 const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
 
 // 2. A signed credential to send — same shape as send.mjs.
@@ -36,7 +36,11 @@ const credential = await learnCard.invoke.issueCredential({
 // 3. The exact request body the HTTP API expects.
 writeFileSync(
     'request.json',
-    JSON.stringify({ recipient: { type: 'email', value: recipientEmail }, credential }, null, 2)
+    JSON.stringify(
+        { type: 'boost', recipient: recipientEmail, signedCredential: credential },
+        null,
+        2
+    )
 );
 
 console.log(`export TOKEN=${token}`);

@@ -87,7 +87,7 @@ describe('Docs: Quickstart — Send a Credential', () => {
             new RegExp(`^Sent\\. ${recipient} will get an email with this claim link:\\n\\S+`, 'm')
         );
 
-        const printedUrl = output.trim().split('\n').pop();
+        const printedUrl = output.split('\n')[1];
         const delivery = await lastDelivery();
         expect(delivery?.templateModel?.claimUrl).toBe(printedUrl);
     });
@@ -108,9 +108,10 @@ describe('Docs: Quickstart — Send a Credential', () => {
         await c.invoke.verifyContactMethod(verificationToken);
 
         const output = run(sendMjs, [email], freshEnv());
-        expect(output.trim()).toBe(
+        expect(output).toContain(
             `Delivered. ${email} already uses LearnCard — the credential is in their wallet.`
         );
+        expect(output).toMatch(/^Reusable template for this badge: \S+$/m);
 
         const incoming = await c.invoke.getIncomingCredentials();
         expect(incoming.length).toBeGreaterThan(0);
@@ -135,9 +136,12 @@ describe('Docs: Quickstart — Send a Credential', () => {
             timeout: 30_000,
         });
         expect(JSON.parse(response)).toMatchObject({
-            issuanceId: expect.any(String),
-            status: expect.stringMatching(/PENDING|ISSUED/),
-            recipient: { type: 'email', value: recipient },
+            type: 'boost',
+            uri: expect.any(String),
+            inbox: {
+                issuanceId: expect.any(String),
+                status: expect.stringMatching(/PENDING|ISSUED/),
+            },
         });
     });
     test('send-from-template.sh: the no-keys path signs server-side from a template', async () => {
@@ -153,7 +157,7 @@ describe('Docs: Quickstart — Send a Credential', () => {
         });
         const grantId = await issuer.invoke.addAuthGrant({
             name: 'quickstart-http',
-            scope: 'inbox:write',
+            scope: 'boosts:write',
         });
         const token = await issuer.invoke.getAPITokenForAuthGrant(grantId);
         const recipient = freshEmail('template');
@@ -170,10 +174,13 @@ describe('Docs: Quickstart — Send a Credential', () => {
             timeout: 30_000,
         });
         expect(JSON.parse(response)).toMatchObject({
-            issuanceId: expect.any(String),
-            status: 'PENDING',
-            claimUrl: expect.stringMatching(/^https?:\/\//),
-            recipient: { type: 'email', value: recipient },
+            type: 'boost',
+            uri: templateUri,
+            inbox: {
+                issuanceId: expect.any(String),
+                status: 'PENDING',
+                claimUrl: expect.stringMatching(/^https?:\/\//),
+            },
         });
     });
 
