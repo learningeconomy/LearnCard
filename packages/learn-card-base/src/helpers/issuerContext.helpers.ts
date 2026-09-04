@@ -5,6 +5,7 @@ import type {
 } from '@learncard/types';
 
 export type RegistrySource = 'trusted' | 'untrusted' | 'unknown';
+export const ISSUER_CONTEXT_QUERY_KEY = ['issuer-context'] as const;
 
 export type ResolveIssuerContextInput = {
     issuerDid: string;

@@ -4,6 +4,7 @@ import type { IssuerContext, IssuerTrustProfile, VC } from '@learncard/types';
 
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import {
+    ISSUER_CONTEXT_QUERY_KEY,
     resolveIssuerContext,
     type RegistrySource,
 } from 'learn-card-base/helpers/issuerContext.helpers';
@@ -55,6 +56,8 @@ type UseIssuerContextOptions = {
     trustProfile?: IssuerTrustProfile;
 };
 
+export const ISSUER_CONTEXT_REFRESH_INTERVAL_MS = 1000 * 60 * 5;
+
 export const useIssuerContext = (
     credential: VC,
     options: UseIssuerContextOptions = {}
@@ -93,14 +96,17 @@ export const useIssuerContext = (
         registrySource !== 'trusted' &&
         registrySource !== 'untrusted';
     const relationship = useQuery({
-        queryKey: ['issuer-context', holderDid, issuerDid],
+        queryKey: [...ISSUER_CONTEXT_QUERY_KEY, holderDid, issuerDid],
         queryFn: async () => {
             const wallet = await initWallet();
             return wallet.invoke.resolveIssuerContext(issuerDid);
         },
         enabled: relationshipRequired,
-        staleTime: 1000 * 60 * 60,
+        staleTime: ISSUER_CONTEXT_REFRESH_INTERVAL_MS,
         gcTime: 1000 * 60 * 60 * 24,
+        refetchInterval: ISSUER_CONTEXT_REFRESH_INTERVAL_MS,
+        refetchOnWindowFocus: 'always',
+        refetchOnReconnect: 'always',
         retry: 1,
     });
     const resolvedContext = resolveIssuerContext({

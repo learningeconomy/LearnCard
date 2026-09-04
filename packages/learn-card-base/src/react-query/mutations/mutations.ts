@@ -6,6 +6,7 @@ import { cloneDeep } from 'lodash';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
 import { deleteCredentialFromAllContracts } from './pruneConsentFlowDeletedCredentials';
 import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
+import { ISSUER_CONTEXT_QUERY_KEY } from '../../helpers/issuerContext.helpers';
 import { ToastTypeEnum, useToast } from '../../hooks/useToast';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('mutations');
@@ -29,6 +30,7 @@ type ProfileIdParam = { profileId: string };
 
 export const useConnectWithMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
 
     return useMutation<boolean, Error, ProfileIdParam>({
         mutationFn: async ({ profileId }) => {
@@ -41,11 +43,13 @@ export const useConnectWithMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
     });
 };
 
 export const useDisconnectWithMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
 
     return useMutation<boolean, Error, ProfileIdParam>({
         mutationFn: async ({ profileId }) => {
@@ -58,11 +62,13 @@ export const useDisconnectWithMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
     });
 };
 
 export const useCancelConnectionRequestMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
 
     return useMutation<boolean, Error, ProfileIdParam>({
         mutationFn: async ({ profileId }) => {
@@ -75,11 +81,13 @@ export const useCancelConnectionRequestMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
     });
 };
 
 export const useAcceptConnectionRequestMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
 
     return useMutation<boolean, Error, ProfileIdParam>({
         mutationFn: async ({ profileId }) => {
@@ -92,11 +100,13 @@ export const useAcceptConnectionRequestMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
     });
 };
 
 export const useUnblockProfileMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
 
     return useMutation<boolean, Error, ProfileIdParam>({
         mutationFn: async ({ profileId }) => {
@@ -109,11 +119,13 @@ export const useUnblockProfileMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
     });
 };
 
 export const useBlockProfileMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
 
     return useMutation<boolean, Error, ProfileIdParam>({
         mutationFn: async ({ profileId }) => {
@@ -126,6 +138,7 @@ export const useBlockProfileMutation = () => {
                 return Promise.reject(new Error(String(error)));
             }
         },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ISSUER_CONTEXT_QUERY_KEY }),
     });
 };
 
