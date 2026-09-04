@@ -15,6 +15,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { ProposeBindingDialog } from '../components/bindings/ProposeBindingDialog';
+import { BindingConsentTrail } from '../components/bindings/BindingConsentTrail';
 import { trpc } from '../trpc';
 import { TRPCClientError } from '@trpc/client';
 import type { DashboardSession, BindingRecord, EcosystemInstallTarget } from '../api';
@@ -306,6 +307,7 @@ export function Bindings({ session }: { session: DashboardSession }) {
                                         {' · '}
                                         rev {b.revision} · {when}
                                     </p>
+                                    <BindingConsentTrail bindingId={b.bindingId} />
                                 </div>
 
                                 {canManage && state !== 'revoked' && (

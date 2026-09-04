@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import type { Binding, BindingEndpoint, InstallTarget } from '@learncard/types';
+import type {
+    Binding,
+    BindingEndpoint,
+    ConsentDecisionRecord,
+    InstallTarget,
+} from '@learncard/types';
 
 import { DidAuthBearerFactory } from '../brain/did-auth';
 import { authorizedCall, type BrainServiceTransport } from '../brain';
@@ -139,6 +144,16 @@ export const bindingsRouter = router({
             const { mutate } = await makeCallers(ctx);
 
             return mutate<BindingRecord>('installIntent.revokeBinding', input);
+        }),
+
+    consentRecords: protectedProcedure
+        .input(z.object({ bindingId: z.string().min(1) }))
+        .query(async ({ ctx, input }) => {
+            const { query } = await makeCallers(ctx);
+
+            return asArray<ConsentDecisionRecord>(
+                await query('installIntent.getBindingConsentDecisionRecords', input)
+            );
         }),
 });
 
