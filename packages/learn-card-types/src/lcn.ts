@@ -698,21 +698,6 @@ export const PaginatedConsentFlowDataValidator = PaginationResponseValidator.ext
 });
 export type PaginatedConsentFlowData = z.infer<typeof PaginatedConsentFlowDataValidator>;
 
-export const ConsentFlowContractDataForDidValidator = z.object({
-    credentials: z.object({ category: z.string(), uri: z.string() }).array(),
-    personal: z.record(z.string(), z.string()).default({}),
-    date: z.string(),
-    contractUri: z.string(),
-});
-export type ConsentFlowContractDataForDid = z.infer<typeof ConsentFlowContractDataForDidValidator>;
-
-export const PaginatedConsentFlowDataForDidValidator = PaginationResponseValidator.extend({
-    records: ConsentFlowContractDataForDidValidator.array(),
-});
-export type PaginatedConsentFlowDataForDid = z.infer<
-    typeof PaginatedConsentFlowDataForDidValidator
->;
-
 export const ConsentFlowTermValidator = z.object({
     sharing: z.boolean().optional(),
     shared: z.string().array().optional(),
@@ -761,6 +746,25 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
         .array(),
 });
 export type PaginatedConsentFlowTerms = z.infer<typeof PaginatedConsentFlowTermsValidator>;
+
+export const ConsentFlowContractDataForDidValidator = z.object({
+    credentials: z.object({ category: z.string(), uri: z.string() }).array(),
+    personal: z.record(z.string(), z.string()).default({}),
+    date: z.string(),
+    contractUri: z.string(),
+    termsUri: z.string(),
+    status: ConsentFlowTermsStatusValidator,
+    expiresAt: z.string().optional(),
+    terms: ConsentFlowTermsValidator,
+});
+export type ConsentFlowContractDataForDid = z.infer<typeof ConsentFlowContractDataForDidValidator>;
+
+export const PaginatedConsentFlowDataForDidValidator = PaginationResponseValidator.extend({
+    records: ConsentFlowContractDataForDidValidator.array(),
+});
+export type PaginatedConsentFlowDataForDid = z.infer<
+    typeof PaginatedConsentFlowDataForDidValidator
+>;
 
 export const ConsentFlowContractQueryValidator = z.object({
     read: z
