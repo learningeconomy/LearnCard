@@ -4,6 +4,7 @@ import type {
     Binding,
     BindingEndpoint,
     ConsentDecisionRecord,
+    ConsoleSurface,
     InstallTarget,
 } from '@learncard/types';
 
@@ -163,6 +164,23 @@ export const installTargetsRouter = router({
 
         return asArray<EcosystemInstallTarget>(
             await query('installIntent.listInstallTargets', input)
+        );
+    }),
+});
+
+// Mirrors brain installIntent.listConsoleSurfaces output (ADR-015 D4 projection).
+export type ProjectedConsoleSurface = ConsoleSurface & {
+    listingId: string;
+    listingDisplayName: string;
+    installTargetId: string;
+};
+
+export const surfacesRouter = router({
+    list: protectedProcedure.input(EcosystemInput).query(async ({ ctx, input }) => {
+        const { query } = await makeCallers(ctx);
+
+        return asArray<ProjectedConsoleSurface>(
+            await query('installIntent.listConsoleSurfaces', input)
         );
     }),
 });

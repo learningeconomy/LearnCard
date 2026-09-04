@@ -6,13 +6,17 @@ import {
     BindingProposalValidator,
     BindingValidator,
     BundleManifestValidator,
+    ConsoleSurfaceValidator,
     InstallIntentSpecValidator,
     IntegrationManifestValidator,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
 import { getListedApps, readAppStoreListingById } from '@accesslayer/app-store-listing/read';
-import { readListingVersionById } from '@accesslayer/listing-version/read';
+import {
+    readListingVersionById,
+    readListingVersionsForListing,
+} from '@accesslayer/listing-version/read';
 import {
     createInstallIntentProposal,
     updateInstallIntentProposal,
@@ -915,6 +919,94 @@ export const installIntentsRouter = t.router({
             const events = await getInstallIntentAuditEvents({ ecosystemId: input.ecosystemId });
 
             return events.slice(-input.limit).reverse();
+        }),
+
+    // ADR-015 D4: surface visibility is a derived projection, never persisted state. A surface
+    // renders iff its Integration has a READY install target in the ecosystem, every
+    // requiredCapability has an ACTIVE binding, and the caller's role >= minimumRole.
+    // Only FIRST_PARTY surfaces project here; EMBEDDED_IFRAME needs the D7-D9 bridge.
+    listConsoleSurfaces: profileRoute
+        .meta({ requiredScope: 'app-store:read' })
+        .input(ListEcosystemInstallTargetsInputValidator)
+        .output(
+            z.array(
+                ConsoleSurfaceValidator.extend({
+                    listingId: z.string(),
+                    listingDisplayName: z.string(),
+                    installTargetId: z.string(),
+                })
+            )
+        )
+        .query(async ({ ctx, input }) => {
+            const callerRole = await requireEcosystemRole(
+                input.ecosystemId,
+                ctx.user.profile.profileId,
+                ['OWNER', 'ADMIN', 'MEMBER', 'VIEWER']
+            );
+            const roleRank = { VIEWER: 0, MEMBER: 1, ADMIN: 2, OWNER: 3 } as const;
+
+            const [targets, bindings] = await Promise.all([
+                listInstallTargetsByEcosystemId(input.ecosystemId),
+                listBindingsByEcosystem(input.ecosystemId),
+            ]);
+            const activeCapabilities = new Set(
+                bindings
+                    .filter(binding => binding.status === 'ACTIVE' || binding.status === 'APPROVED')
+                    .map(binding => binding.capability)
+            );
+
+            const readyIntegrationTargets = targets.filter(
+                target =>
+                    target.targetType === 'INTEGRATION_INSTALL' &&
+                    target.status === 'READY' &&
+                    target.listingId
+            );
+
+            const surfaces: Array<
+                z.infer<typeof ConsoleSurfaceValidator> & {
+                    listingId: string;
+                    listingDisplayName: string;
+                    installTargetId: string;
+                }
+            > = [];
+            const seenSurfaceIds = new Set<string>();
+
+            for (const target of readyIntegrationTargets) {
+                const listing = await readAppStoreListingById(target.listingId!);
+                if (!listing || listing.kind !== 'INTEGRATION') continue;
+
+                const version = (await readListingVersionsForListing(listing.listing_id)).find(
+                    candidate => candidate.status === 'LISTED'
+                );
+                if (!version) continue;
+
+                let manifest;
+                try {
+                    manifest = IntegrationManifestValidator.parse(
+                        await assertSignedListingVersionOrThrow(listing.kind, version)
+                    );
+                } catch {
+                    continue;
+                }
+
+                for (const surface of manifest.consoleSurfaces) {
+                    if (surface.renderer !== 'FIRST_PARTY') continue;
+                    if (seenSurfaceIds.has(surface.surfaceId)) continue;
+                    if (roleRank[callerRole] < roleRank[surface.minimumRole]) continue;
+                    if (!surface.requiredCapabilities.every(cap => activeCapabilities.has(cap)))
+                        continue;
+
+                    seenSurfaceIds.add(surface.surfaceId);
+                    surfaces.push({
+                        ...surface,
+                        listingId: listing.listing_id,
+                        listingDisplayName: listing.display_name,
+                        installTargetId: target.id,
+                    });
+                }
+            }
+
+            return surfaces;
         }),
 
     getInstallIntentReconcilerHealth: profileRoute

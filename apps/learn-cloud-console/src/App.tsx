@@ -20,6 +20,7 @@ import { SkillsRegistries } from './pages/SkillsRegistries';
 import { Infrastructure } from './pages/Infrastructure';
 import { TrustRegistries } from './pages/TrustRegistries';
 import { Bindings } from './pages/Bindings';
+import { CredentialFinder } from './pages/CredentialFinder';
 import { ComingSoon } from './pages/ComingSoon';
 import { allRoutes } from './routes';
 
@@ -150,6 +151,9 @@ export function App() {
                         <Route path="/bindings">
                             <Bindings session={session} />
                         </Route>
+                        <Route path="/credential-finder">
+                            <CredentialFinder session={session} />
+                        </Route>
                         {allRoutes
                             .filter(
                                 r =>
@@ -165,7 +169,8 @@ export function App() {
                                     r.path !== '/skills-registries' &&
                                     r.path !== '/plugins' &&
                                     r.path !== '/trust-registries' &&
-                                    r.path !== '/bindings'
+                                    r.path !== '/bindings' &&
+                                    r.path !== '/credential-finder'
                             )
                             .map(route => (
                                 <Route key={route.path} path={route.path}>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'wouter';
 import { Sidebar } from './Sidebar';
 import { DashboardSession } from '../api';
+import { useConsoleSurfaces } from '../hooks/useConsoleSurfaces';
 import { Crown } from 'lucide-react';
 import eduosHorizontal from '../assets/eduos-horizontal-black.png';
 
@@ -15,6 +16,7 @@ interface LayoutProps {
 
 export function Layout({ children, session, onLogin, onLogout, busy }: LayoutProps) {
     const [collapsed, setCollapsed] = useState(false);
+    const surfaces = useConsoleSurfaces(session);
 
     const handleToggle = () => {
         setCollapsed(prev => !prev);
@@ -22,7 +24,11 @@ export function Layout({ children, session, onLogin, onLogout, busy }: LayoutPro
 
     return (
         <div className="min-h-screen flex w-full overflow-x-hidden bg-background">
-            <Sidebar collapsed={collapsed} onToggle={handleToggle} />
+            <Sidebar
+                collapsed={collapsed}
+                onToggle={handleToggle}
+                activeSurfaceSlugs={surfaces.map(surface => surface.slug)}
+            />
             <div className="flex-1 flex flex-col min-w-0">
                 <header className="h-14 flex items-center border-b border-border px-2 sm:px-4 bg-card gap-1.5 sm:gap-2 md:gap-3">
                     <div className="flex items-center gap-2 flex-1 min-w-0">

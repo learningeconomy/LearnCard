@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ConsoleSurface } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import type { AppStoreListing, PaginatedAppStoreListings } from '@learncard/types';
 
@@ -50,6 +51,7 @@ export type CatalogIntegrationManifestSummary = {
         description?: string;
         registryUrl?: string;
     }[];
+    consoleSurfaces: ConsoleSurface[];
 };
 
 /**

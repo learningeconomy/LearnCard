@@ -11,6 +11,7 @@ import {
     RecordClassEnum,
     SendNotificationEventValidator,
     RegistrySubscriptionDeclarationValidator,
+    ConsoleSurfaceValidator,
 } from '@learncard/types';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
@@ -2374,6 +2375,7 @@ export const appStoreRouter = t.router({
                     consumed: z.array(CapabilityEnum),
                 }),
                 subscribes: z.array(RegistrySubscriptionDeclarationValidator),
+                consoleSurfaces: z.array(ConsoleSurfaceValidator),
             })
         )
         .query(async ({ input }) => {
@@ -2414,6 +2416,7 @@ export const appStoreRouter = t.router({
                 supportedRecordClasses: manifest.supportedRecordClasses,
                 capabilities: manifest.capabilities,
                 subscribes: manifest.subscribes,
+                consoleSurfaces: manifest.consoleSurfaces,
             };
         }),
 

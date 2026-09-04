@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 
 export interface RouteDefinition {
+    surfaceSlug?: string;
     title: string;
     path: string;
     icon: LucideIcon;
@@ -41,7 +42,13 @@ export const appsRoutes: RouteDefinition[] = [
     { title: 'Analytics', path: '/analytics', icon: BarChart3 },
     { title: 'Funding', path: '/funding', icon: HandCoins },
     { title: 'Admissions', path: '/admissions', icon: GraduationCap },
-    { title: 'Credential Finder', path: '/credential-finder', icon: Search },
+    // ADR-015 D4: rendered only while the Credential Engine registry-adapter surface projects.
+    {
+        title: 'Credential Finder',
+        path: '/credential-finder',
+        icon: Search,
+        surfaceSlug: 'credential-finder',
+    },
     { title: 'LER Test Suite', path: '/ler-test-suite', icon: FlaskConical },
 ];
 

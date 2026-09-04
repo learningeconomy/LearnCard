@@ -30,6 +30,7 @@ export type BindingRecord = inferRouterOutputs<ConsoleRouter>['bindings']['list'
 export type EcosystemInstallTarget =
     inferRouterOutputs<ConsoleRouter>['installTargets']['list'][number];
 export type EcosystemAuditEvent = inferRouterOutputs<ConsoleRouter>['activity']['list'][number];
+export type ProjectedConsoleSurface = inferRouterOutputs<ConsoleRouter>['surfaces']['list'][number];
 
 const TENANT_ID = 'learncard';
 const PROVIDER_ID = 'lef-wallet';

@@ -49,6 +49,7 @@ export const getCapabilitySetVersionForManifestApiVersion = (
         case 'lc.integration/v1.1':
             return 'v1.1';
         case 'lc.integration/v1.2':
+        case 'lc.integration/v1.3':
             return 'v1.2';
         default:
             throw new Error(`Unsupported manifest apiVersion: ${apiVersion}`);
@@ -218,6 +219,42 @@ export type IntegrationExtensionPointDeclaration = z.infer<
     typeof IntegrationExtensionPointDeclarationValidator
 >;
 
+// ADR-015 D1/D3/D5/D6: a console surface is a manifest property on a signed Integration, not a
+// resource. FIRST_PARTY surfaces are console-owned code activated by the signed manifest; the
+// EMBEDDED_IFRAME renderer is entitlement-gated and reserved here for the D7-D9 bridge work.
+// `slug` is a hint (the console allocates routes); `navIcon` is a console-owned token.
+export const ConsoleSurfaceRendererEnum = z.enum(['FIRST_PARTY', 'EMBEDDED_IFRAME']);
+export type ConsoleSurfaceRenderer = z.infer<typeof ConsoleSurfaceRendererEnum>;
+
+export const ConsoleSurfaceSectionEnum = z.enum(['GOVERNANCE', 'OPERATIONS', 'DATA', 'INSIGHTS']);
+export type ConsoleSurfaceSection = z.infer<typeof ConsoleSurfaceSectionEnum>;
+
+export const ConsoleIconTokenEnum = z.enum([
+    'search',
+    'bar-chart',
+    'graduation-cap',
+    'hand-coins',
+    'flask',
+    'book',
+    'globe',
+    'shield',
+]);
+export type ConsoleIconToken = z.infer<typeof ConsoleIconTokenEnum>;
+
+export const ConsoleSurfaceValidator = z.object({
+    renderer: ConsoleSurfaceRendererEnum,
+    surfaceId: z.string().regex(/^[a-z0-9]+(\.[a-z0-9-]+)+$/),
+    slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
+    navLabel: z.string().min(1).max(32),
+    navIcon: ConsoleIconTokenEnum,
+    navSection: ConsoleSurfaceSectionEnum,
+    minimumRole: z.enum(['OWNER', 'ADMIN', 'MEMBER', 'VIEWER']),
+    requiredCapabilities: z.array(CapabilityEnum).default([]),
+    requiredScopes: z.array(z.string()).default([]),
+    entryUrl: z.string().url().optional(),
+});
+export type ConsoleSurface = z.infer<typeof ConsoleSurfaceValidator>;
+
 // ADR-015 D2: a registry-centric feature is declared on its registry-adapter Integration.
 // Each entry is a REGISTRY_SUBSCRIPTION the adapter establishes when installed on its own,
 // so the subscription always derives from a signed manifest rather than existing alone.
@@ -234,7 +271,12 @@ export type RegistrySubscriptionDeclaration = z.infer<
 
 export const IntegrationManifestValidator = z
     .object({
-        apiVersion: z.enum(['lc.integration/v1', 'lc.integration/v1.1', 'lc.integration/v1.2']),
+        apiVersion: z.enum([
+            'lc.integration/v1',
+            'lc.integration/v1.1',
+            'lc.integration/v1.2',
+            'lc.integration/v1.3',
+        ]),
         id: z.string().min(1),
         version: z.string().regex(SEMVER_PATTERN, { message: 'Must be valid semver.' }),
         listingKind: z.literal('INTEGRATION'),
@@ -256,6 +298,7 @@ export const IntegrationManifestValidator = z
         supportedRecordClasses: z.array(RecordClassEnum).default([]),
         extensionPoints: z.array(IntegrationExtensionPointDeclarationValidator).default([]),
         subscribes: z.array(RegistrySubscriptionDeclarationValidator).default([]),
+        consoleSurfaces: z.array(ConsoleSurfaceValidator).default([]),
         endpoints: z
             .object({
                 connectUrl: z.string().url().optional(),
@@ -275,6 +318,14 @@ export const IntegrationManifestValidator = z
             ['capabilities']
         );
 
+        if (manifest.consoleSurfaces.length > 0 && manifest.apiVersion !== 'lc.integration/v1.3') {
+            ctx.addIssue({
+                code: 'custom',
+                message: 'consoleSurfaces is only available in lc.integration/v1.3.',
+                path: ['consoleSurfaces'],
+            });
+        }
+
         if (
             manifest.subscribes.length > 0 &&
             !manifest.capabilities.provided.includes('registry-adapter')
@@ -288,11 +339,12 @@ export const IntegrationManifestValidator = z
 
         if (
             manifest.apiVersion !== 'lc.integration/v1.2' &&
+            manifest.apiVersion !== 'lc.integration/v1.3' &&
             manifest.supportedRecordClasses.length > 0
         ) {
             ctx.addIssue({
                 code: 'custom',
-                message: 'supportedRecordClasses is only available in lc.integration/v1.2.',
+                message: 'supportedRecordClasses requires lc.integration/v1.2 or later.',
                 path: ['supportedRecordClasses'],
                 input: manifest.supportedRecordClasses,
             });

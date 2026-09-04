@@ -5,7 +5,7 @@ import { groupRouter } from './group';
 import { catalogRouter } from './catalog';
 import { skillFrameworksRouter } from './skill-frameworks';
 import { infraRouter, registriesRouter } from './install-targets';
-import { activityRouter, bindingsRouter, installTargetsRouter } from './bindings';
+import { activityRouter, bindingsRouter, installTargetsRouter, surfacesRouter } from './bindings';
 import { withLiveEcosystemRoles } from './session';
 
 export const consoleRouter = router({
@@ -22,6 +22,7 @@ export const consoleRouter = router({
     bindings: bindingsRouter,
     installTargets: installTargetsRouter,
     activity: activityRouter,
+    surfaces: surfacesRouter,
 });
 
 export type ConsoleRouter = typeof consoleRouter;

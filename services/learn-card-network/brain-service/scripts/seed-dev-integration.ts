@@ -22,6 +22,9 @@
  * `--subscribes` takes `declarationId|registryId|Display Name[|registryUrl]` entries separated
  * by `;`. ADR-015 D2: a registry-adapter Integration's signed manifest declares the
  * REGISTRY_SUBSCRIPTION(s) a singleton install of it establishes.
+ *
+ * `--console-surface` (requires --api-version lc.integration/v1.3) declares an ADR-015 FIRST_PARTY
+ * console surface as `surfaceId|slug|Nav Label|navIcon|navSection|minimumRole[|requiredCaps,csv[|entryUrl]]`.
  *   bun run seed:dev-integration --profile my-owner --version 1.1.0
  *   bun run seed:dev-integration --ecosystem eco_dev_root
  *
@@ -149,6 +152,37 @@ const main = async (): Promise<void> => {
                 ...(registryUrl ? { registryUrl } : {}),
             };
         });
+    const consoleSurfaces = arg('console-surface', '')
+        .split(';')
+        .map(entry => entry.trim())
+        .filter(Boolean)
+        .map(entry => {
+            const [surfaceId, slug, navLabel, navIcon, navSection, minimumRole, caps, entryUrl] =
+                entry.split('|');
+
+            if (!surfaceId || !slug || !navLabel || !navIcon || !navSection || !minimumRole) {
+                throw new Error(
+                    `--console-surface entry "${entry}" must be surfaceId|slug|Nav Label|navIcon|navSection|minimumRole[|caps[|entryUrl]]`
+                );
+            }
+
+            return {
+                renderer: 'FIRST_PARTY' as const,
+                surfaceId,
+                slug,
+                navLabel,
+                navIcon: navIcon as IntegrationManifest['consoleSurfaces'][number]['navIcon'],
+                navSection:
+                    navSection as IntegrationManifest['consoleSurfaces'][number]['navSection'],
+                minimumRole:
+                    minimumRole as IntegrationManifest['consoleSurfaces'][number]['minimumRole'],
+                requiredCapabilities: (caps
+                    ? caps.split(',').filter(Boolean)
+                    : []) as IntegrationManifest['consoleSurfaces'][number]['requiredCapabilities'],
+                requiredScopes: [],
+                ...(entryUrl ? { entryUrl } : {}),
+            };
+        });
     const ecosystemId = arg('ecosystem', '');
 
     console.log('\n🔧 Seeding dev INTEGRATION listing...\n');
@@ -268,6 +302,7 @@ const main = async (): Promise<void> => {
         supportedRecordClasses: recordClasses as IntegrationManifest['supportedRecordClasses'],
         extensionPoints: [],
         subscribes,
+        consoleSurfaces,
         endpoints: { healthUrl, connectUrl },
     };
 

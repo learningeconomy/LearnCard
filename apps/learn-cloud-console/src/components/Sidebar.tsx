@@ -16,6 +16,7 @@ import { topRoutes, appsRoutes, pluginsRoutes, dataRoutes, RouteDefinition } fro
 interface SidebarProps {
     collapsed: boolean;
     onToggle: () => void;
+    activeSurfaceSlugs?: string[];
 }
 
 function MenuItems({ items, collapsed }: { items: RouteDefinition[]; collapsed: boolean }) {
@@ -104,19 +105,23 @@ function CollapsibleGroup({
     );
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, activeSurfaceSlugs = [] }: SidebarProps) {
     const [openGroup, setOpenGroup] = useState<'apps' | 'plugins' | 'data' | null>(null);
+    const visibleAppsRoutes = appsRoutes.filter(
+        route => !route.surfaceSlug || activeSurfaceSlugs.includes(route.surfaceSlug)
+    );
     const [location] = useLocation();
 
     useEffect(() => {
-        const path = location;
-        if (appsRoutes.some(r => r.path === path)) {
-            setOpenGroup('apps');
-        } else if (pluginsRoutes.some(r => r.path === path)) {
-            setOpenGroup('plugins');
-        } else if (dataRoutes.some(r => r.path === path)) {
-            setOpenGroup('data');
-        }
+        const groupForPath = (path: string): 'apps' | 'plugins' | 'data' | null => {
+            if (appsRoutes.some(r => r.path === path)) return 'apps';
+            if (pluginsRoutes.some(r => r.path === path)) return 'plugins';
+            if (dataRoutes.some(r => r.path === path)) return 'data';
+            return null;
+        };
+        const group = groupForPath(location);
+        if (!group) return;
+        void Promise.resolve().then(() => setOpenGroup(group));
     }, [location]);
 
     const handleOpenChange = (group: 'apps' | 'plugins' | 'data') => (open: boolean) => {
@@ -175,7 +180,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 <div className="px-2">
                     <CollapsibleGroup
                         label="Apps"
-                        items={appsRoutes}
+                        items={visibleAppsRoutes}
                         collapsed={collapsed}
                         icon={LayoutGrid}
                         open={openGroup === 'apps'}
