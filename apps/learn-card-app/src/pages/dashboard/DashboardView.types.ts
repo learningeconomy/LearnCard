@@ -137,6 +137,7 @@ export type DashboardRecoveryPromptViewModel = {
     onSetup: (options: {
         initialMethod: RecoverySetupType;
         onCompleted: (method: RecoverySetupType) => void;
+        onClosed: () => void;
     }) => void;
 };
 

@@ -45,6 +45,21 @@ export const countUserConfiguredRecoveryMethods = (
 };
 
 /**
+ * Records a recovery method completed during the current setup session.
+ * Returns true only for the first completion of each method so updating the
+ * same method does not inflate the locally cached method count.
+ */
+export const registerRecoveryMethodCompletion = <T extends string>(
+    completedMethods: Set<T>,
+    method: T
+): boolean => {
+    if (completedMethods.has(method)) return false;
+
+    completedMethods.add(method);
+    return true;
+};
+
+/**
  * Backfill auth-session identity into the stored current user.
  *
  * On a hard refresh the wallet is built via the private-key-first path before
