@@ -7,6 +7,8 @@ import { devices } from '@playwright/test';
  */
 // require('dotenv').config();
 
+const useExternalE2EStack = process.env.E2E_EXTERNAL_STACK === 'true';
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -95,13 +97,16 @@ const config: PlaywrightTestConfig = {
     // outputDir: 'test-results/',
 
     /* Run your local dev server before starting the tests */
-    webServer: {
-        command: 'docker compose up --build',
-        url: 'http://localhost:3000',
-        timeout: 15 * 60 * 1000,
-        reuseExistingServer: !process.env.CI,
-        ignoreHTTPSErrors: true,
-    },
+    // webServer: useExternalE2EStack ? undefined :
+    webServer: useExternalE2EStack
+        ? undefined
+        : {
+              command: 'docker compose up --build',
+              url: 'http://localhost:3000',
+              timeout: 15 * 60 * 1000,
+              reuseExistingServer: !process.env.CI,
+              ignoreHTTPSErrors: true,
+          },
 };
 
 export default config;
