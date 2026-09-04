@@ -189,7 +189,10 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     // `state` to its deps (which would recreate the coordinator on every
     // state transition).
     const stateRef = useRef(state);
-    stateRef.current = state;
+
+    useEffect(() => {
+        stateRef.current = state;
+    }, [state]);
 
     // Helper to determine event level from state
     const getStateEventLevel = useCallback((newState: UnifiedAuthState): DebugEventLevel => {
@@ -247,7 +250,6 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     useEffect(() => {
         if (!enabled) {
             coordinatorRef.current = null;
-            setState({ status: 'idle' });
             return;
         }
 
@@ -422,25 +424,31 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         return coordinatorRef.current.refreshAuthSession();
     }, []);
 
-    // Derived state
-    const isReady = state.status === 'ready';
-    const isLoading = ['authenticating', 'checking_key_status', 'deriving_key'].includes(
-        state.status
-    );
-    const needsSetup = state.status === 'needs_setup';
-    const needsMigration = state.status === 'needs_migration';
-    const needsActivation = state.status === 'ready' && state.sssActivationState === 'provisional';
-    const needsRecovery = state.status === 'needs_recovery';
-    const hasError = state.status === 'error';
-    const error = state.status === 'error' ? state.error : null;
+    // When disabled, expose idle immediately rather than synchronously resetting
+    // state from the effect that tears down the coordinator.
+    const renderedState: UnifiedAuthState = enabled ? state : { status: 'idle' };
 
-    const privateKey = state.status === 'ready' ? state.privateKey : null;
-    const did = state.status === 'ready' ? state.did : null;
-    const authSessionValid = state.status === 'ready' ? state.authSessionValid : false;
+    // Derived state
+    const isReady = renderedState.status === 'ready';
+    const isLoading = ['authenticating', 'checking_key_status', 'deriving_key'].includes(
+        renderedState.status
+    );
+    const needsSetup = renderedState.status === 'needs_setup';
+    const needsMigration = renderedState.status === 'needs_migration';
+    const needsActivation =
+        renderedState.status === 'ready' && renderedState.sssActivationState === 'provisional';
+    const needsRecovery = renderedState.status === 'needs_recovery';
+    const hasError = renderedState.status === 'error';
+    const error = renderedState.status === 'error' ? renderedState.error : null;
+
+    const privateKey = renderedState.status === 'ready' ? renderedState.privateKey : null;
+    const did = renderedState.status === 'ready' ? renderedState.did : null;
+    const authSessionValid =
+        renderedState.status === 'ready' ? renderedState.authSessionValid : false;
 
     const value: AuthCoordinatorContextValue = useMemo(
         () => ({
-            state,
+            state: renderedState,
             isReady,
             isLoading,
             needsSetup,
@@ -474,7 +482,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             refreshAuthSession,
         }),
         [
-            state,
+            renderedState,
             isReady,
             isLoading,
             needsSetup,

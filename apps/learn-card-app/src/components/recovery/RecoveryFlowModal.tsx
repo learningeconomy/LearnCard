@@ -430,16 +430,16 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         {recoveryReason
                             ? getRecoveryCopy()[recoveryReason].title
                             : identityPhase === 'choose_method'
-                            ? m['recovery.identity.chooseMethod']()
-                            : getDefaultCopy().title}
+                              ? m['recovery.identity.chooseMethod']()
+                              : getDefaultCopy().title}
                     </h2>
 
                     <p className="text-sm text-grayscale-600 leading-relaxed">
                         {recoveryReason
                             ? getRecoveryCopy()[recoveryReason].description
                             : identityPhase === 'choose_method'
-                            ? m['recovery.identity.chooseMethodDescription']()
-                            : getDefaultCopy().description}
+                              ? m['recovery.identity.chooseMethodDescription']()
+                              : getDefaultCopy().description}
                     </p>
                 </div>
 

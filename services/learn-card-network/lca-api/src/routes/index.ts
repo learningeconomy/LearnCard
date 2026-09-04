@@ -199,8 +199,14 @@ export const redactSecretFields = (
     return value;
 };
 
+const sentryTrpcMiddleware = Sentry.Handlers.trpcMiddleware({ attachRpcInput: false });
+
 export const openRoute = t.procedure
-    .use(t.middleware(Sentry.Handlers.trpcMiddleware({ attachRpcInput: false }) as any))
+    .use(
+        t.middleware(({ path, type, next, getRawInput }) =>
+            sentryTrpcMiddleware({ path, type, next, rawInput: getRawInput })
+        )
+    )
     .use(({ ctx, next, path }) => {
         Sentry.configureScope(scope => {
             scope.setTransactionName(`trpc-${path}`);
