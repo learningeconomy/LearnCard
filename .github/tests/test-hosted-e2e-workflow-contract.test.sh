@@ -33,40 +33,44 @@ permissions = workflow.fetch('permissions')
 abort 'workflow must use read-only contents permission' unless permissions == { 'contents' => 'read' }
 
 jobs = workflow.fetch('jobs')
+expected_jobs = %w[eligibility browser_e2e hosted_e2e_shadow]
+abort 'hosted shadow workflow job set changed' unless jobs.keys.sort == expected_jobs.sort
+
 eligibility = jobs.fetch('eligibility')
 outputs = eligibility.fetch('outputs')
 abort 'run_e2e output missing' unless outputs.key?('run_e2e')
 abort 'eligibility reason output missing' unless outputs.key?('reason')
 
 browser = jobs.fetch('browser_e2e')
-service = jobs.fetch('service_e2e')
 aggregate = jobs.fetch('hosted_e2e_shadow')
 
-[browser, service].each do |job|
-  abort 'heavy job must depend on eligibility' unless job.fetch('needs') == 'eligibility'
-  abort 'heavy job must honor eligibility output' unless job.fetch('if').include?(
-    "needs.eligibility.outputs.run_e2e == 'true'"
-  )
-  abort 'runner label must remain configurable' unless job.fetch('runs-on').include?(
-    'vars.E2E_HOSTED_RUNNER'
-  )
-end
+expected_browser_specs = 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'
+dispatch_default = triggers.fetch('workflow_dispatch').fetch('inputs').fetch('test_files').fetch('default')
+abort 'manual browser spec default changed from the EC2 runner set' unless dispatch_default == expected_browser_specs
+expected_browser_env = "${{ github.event.inputs.test_files || '#{expected_browser_specs}' }}"
+abort 'browser job must use the selected specs with the EC2 defaults' unless browser.fetch('env').fetch(
+  'E2E_TEST_FILES'
+) == expected_browser_env
+
+abort 'browser job must depend on eligibility' unless browser.fetch('needs') == 'eligibility'
+abort 'browser job must honor eligibility output' unless browser.fetch('if').include?(
+  "needs.eligibility.outputs.run_e2e == 'true'"
+)
+abort 'runner label must remain configurable' unless browser.fetch('runs-on').include?(
+  'vars.E2E_HOSTED_RUNNER'
+)
 
 abort 'aggregate must inspect all job results' unless aggregate.fetch('needs') == [
-  'eligibility', 'browser_e2e', 'service_e2e'
+  'eligibility', 'browser_e2e'
 ]
 abort 'aggregate must run after failures/skips' unless aggregate.fetch('if').include?('always()')
 
 browser_steps = browser.fetch('steps')
-service_steps = service.fetch('steps')
 abort 'browser runner invocation missing' unless browser_steps.any? do |step|
   step['run'] == 'bash scripts/e2e-hosted/run-browser.sh'
 end
-abort 'service runner invocation missing' unless service_steps.any? do |step|
-  step['run'] == 'bash scripts/e2e-hosted/run-service.sh'
-end
 
-[browser_steps, service_steps].each do |steps|
+[browser_steps].each do |steps|
   checkout = steps.find { |step| step['id'] == 'checkout' }
   abort 'checkout must expose its outcome to diagnostics' unless checkout
 
@@ -95,30 +99,24 @@ aggregate_defaults = {
   'ELIGIBILITY_RESULT' => 'success',
   'ELIGIBLE' => 'true',
   'ELIGIBILITY_REASON' => 'non-draft-pr',
-  'BROWSER_RESULT' => 'success',
-  'SERVICE_RESULT' => 'success'
+  'BROWSER_RESULT' => 'success'
 }
 
 [
-  ['success', 'success', true],
-  ['failure', 'success', false], ['cancelled', 'success', false], ['skipped', 'success', false],
-  ['success', 'failure', false], ['success', 'cancelled', false], ['success', 'skipped', false],
-  ['failure', 'failure', false], ['failure', 'cancelled', false], ['failure', 'skipped', false],
-  ['cancelled', 'failure', false], ['cancelled', 'cancelled', false], ['cancelled', 'skipped', false],
-  ['skipped', 'failure', false], ['skipped', 'cancelled', false], ['skipped', 'skipped', false]
-].each do |browser_result, service_result, expected|
+  ['success', true],
+  ['failure', false], ['cancelled', false], ['skipped', false]
+].each do |browser_result, expected|
   actual = aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
-    'BROWSER_RESULT' => browser_result, 'SERVICE_RESULT' => service_result
+    'BROWSER_RESULT' => browser_result
   ))
-  abort "aggregate child outcomes #{browser_result}/#{service_result}: expected #{expected}" unless actual == expected
+  abort "aggregate browser outcome #{browser_result}: expected #{expected}" unless actual == expected
 end
-puts 'Aggregate child outcome table passed (16 combinations)'
+puts 'Aggregate browser outcome table passed (4 combinations)'
 
 abort 'explicit draft skip must succeed' unless aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
   'ELIGIBLE' => 'false',
   'ELIGIBILITY_REASON' => 'draft-pr',
-  'BROWSER_RESULT' => 'skipped',
-  'SERVICE_RESULT' => 'skipped'
+  'BROWSER_RESULT' => 'skipped'
 ))
 abort 'absent eligibility output must fail shadow result' if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
   'ELIGIBLE' => '',
@@ -140,7 +138,7 @@ legacy = YAML.load_file(legacy_path, aliases: true)
 legacy_jobs = legacy.fetch('jobs')
 abort 'legacy EC2 gate must remain during shadow phase' unless legacy_jobs.key?('e2e-tests')
 
-[browser_steps, service_steps].each do |steps|
+[browser_steps].each do |steps|
   preflight = steps.find { |step| step['name'] == 'Capture runner preflight' }
   upload = steps.find { |step| step['uses'] == 'actions/upload-artifact@v4' }
   abort 'artifact upload must remain unconditional' unless upload.fetch('if').include?('always()')
@@ -179,7 +177,7 @@ abort 'legacy EC2 gate must remain during shadow phase' unless legacy_jobs.key?(
   abort 'requested ref must match checkout selection' unless preflight.fetch('env')['TESTED_REF'] ==
     '${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}'
 end
-puts 'Both jobs preserve event/run provenance with and without checkout'
+puts 'Browser job preserves event/run provenance with and without checkout'
 RUBY
 
 echo 'Hosted E2E workflow contract passed'
