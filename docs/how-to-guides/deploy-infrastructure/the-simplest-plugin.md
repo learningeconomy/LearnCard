@@ -118,6 +118,21 @@ export type MyPluginType = Plugin<'MyPluginName', any, MyPluginMethods>;
 
 The preceding file defines a plugin named `MyPluginName` that exposes one method: `getFavoriteNumber`
 
+### The six control planes
+
+Plugins can also expose functionality through LearnCard's six standard [control planes](../../core-concepts/architecture-and-principles/control-planes.md):
+
+| Plane     | Purpose                       |
+| :-------- | :---------------------------- |
+| `read`    | Retrieve credentials and data |
+| `store`   | Store and upload credentials  |
+| `index`   | Query indexed data            |
+| `cache`   | Temporary storage             |
+| `id`      | Identity (DIDs, keypairs)     |
+| `context` | Resolve context documents     |
+
+If your plugin relies on other plugins, you can specify `DependentControlPlanes` and `DependentMethods` in the `Plugin` type to ensure they are available at initialization.
+
 ### Create the Plugin
 
 {% code title="src/index.ts" lineNumbers="true" %}

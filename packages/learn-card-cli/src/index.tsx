@@ -19,6 +19,7 @@ import { getLerRsPlugin } from '@learncard/ler-rs-plugin';
 import { getRenderMethodPlugin } from '@learncard/render-method-plugin';
 
 import { generateRandomSeed } from './random';
+import { runSend } from './send';
 import {
     createLearnCardBundle,
     exportLearnCardBundle as writeLearnCardBundle,
@@ -300,7 +301,7 @@ const startReadlineRepl = async (colorize?: (input: string) => string): Promise<
             );
         } catch (error) {
             process.stdout.write(
-                `${error instanceof Error ? error.stack ?? error.message : String(error)}\n`
+                `${error instanceof Error ? (error.stack ?? error.message) : String(error)}\n`
             );
         }
 
@@ -325,6 +326,49 @@ const startCliRepl = async (colorize: (input: string) => string): Promise<void> 
 
     await startBunRepl(colorize);
 };
+
+program
+    .command('send <email>')
+    .description(
+        'Send a "Quickstart Complete" badge to an email address. Creates .env and send.mjs in the current folder.'
+    )
+    .option('-y, --yes', 'accept defaults without prompting')
+    .option('--name <displayName>', 'display name for your issuer profile')
+    .option('--badge <name>', 'name of the badge to send (default: "Quickstart Complete")')
+    .option('--description <text>', 'badge description')
+    .option(
+        '--profile-id <id>',
+        'public handle for your profile (default: derived from the display name)'
+    )
+    .option('--network <url>', 'network tRPC URL (default: production)')
+    .action(
+        async (
+            email: string,
+            opts: {
+                yes?: boolean;
+                name?: string;
+                badge?: string;
+                description?: string;
+                profileId?: string;
+                network?: string;
+            }
+        ) => {
+            const didkit = fs.readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
+            );
+            try {
+                await runSend(email, { ...opts, didkit });
+                process.exit(0);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                console.error(`\n${message.split('\n')[0]}`);
+                console.error(
+                    'Troubleshooting: https://docs.learncard.com/start-here/your-first-integration#if-something-goes-wrong'
+                );
+                process.exit(1);
+            }
+        }
+    );
 
 program
     .version(packageJson.version)

@@ -2,27 +2,27 @@
 
 ## Build & Test Commands
 
--   Build project: `bun run build` or `bunx nx build <package-name>`
--   Test all packages: `bun run test` or `bunx nx test`
--   (Vitest packages) Run tests once (non-watch): `bun run test -- run` (equivalent to `vitest run`)
--   Run single test: `bunx nx test <package-name> --testFile=path/to/test.spec.ts`
--   Run e2e tests: `bunx nx test:e2e e2e`
+- Build project: `bun run build` or `bunx nx build <package-name>`
+- Test all packages: `bun run test` or `bunx nx test`
+- (Vitest packages) Run tests once (non-watch): `bun run test -- run` (equivalent to `vitest run`)
+- Run single test: `bunx nx test <package-name> --testFile=path/to/test.spec.ts`
+- Run e2e tests: `bunx nx test:e2e e2e`
 
 ## Code Style Guidelines
 
--   **TypeScript**: Use strict typing with interfaces in dedicated type files
--   **Imports**: Prefer named imports; avoid default exports when possible
--   **Formatting**: Follow Prettier config; 4-space indentation for JSX
--   **Naming**:
-    -   PascalCase for classes, interfaces, types, React components
-    -   camelCase for variables, functions, methods, properties
-    -   ALL_CAPS for constants
--   **Error handling**: Use try/catch with specific error types
--   **Functions**: Prefer arrow functions with explicit return types
--   **React**: Function components with hooks preferred over class components
--   **React callbacks**: Use `onComplete`/`onSwitchComplete` callback props to let parent components control side effects after async actions complete, rather than hardcoding side effects in child components
--   **Modules**: Keep files focused on single responsibility
--   **Documentation**: Add JSDoc comments for public APIs and complex logic
+- **TypeScript**: Use strict typing with interfaces in dedicated type files
+- **Imports**: Prefer named imports; avoid default exports when possible
+- **Formatting**: Follow Prettier config; 4-space indentation for JSX
+- **Naming**:
+    - PascalCase for classes, interfaces, types, React components
+    - camelCase for variables, functions, methods, properties
+    - ALL_CAPS for constants
+- **Error handling**: Use try/catch with specific error types
+- **Functions**: Prefer arrow functions with explicit return types
+- **React**: Function components with hooks preferred over class components
+- **React callbacks**: Use `onComplete`/`onSwitchComplete` callback props to let parent components control side effects after async actions complete, rather than hardcoding side effects in child components
+- **Modules**: Keep files focused on single responsibility
+- **Documentation**: Add JSDoc comments for public APIs and complex logic
 
 ## UI/UX Design Guidelines
 
@@ -55,11 +55,11 @@ Indigo is the **only non-grayscale neutral** permitted alongside emerald / amber
 
 ### Typography
 
--   **Font family**: `font-poppins` (maps to Poppins in LCA, Noto Sans in Scouts)
--   **Headings**: `text-xl font-semibold text-grayscale-900`
--   **Body text**: `text-sm text-grayscale-600 leading-relaxed`
--   **Labels**: `text-xs font-medium text-grayscale-700`
--   **Hints / placeholders**: `text-xs text-grayscale-400` or `placeholder:text-grayscale-400`
+- **Font family**: `font-poppins` (maps to Poppins in LCA, Noto Sans in Scouts)
+- **Headings**: `text-xl font-semibold text-grayscale-900`
+- **Body text**: `text-sm text-grayscale-600 leading-relaxed`
+- **Labels**: `text-xs font-medium text-grayscale-700`
+- **Hints / placeholders**: `text-xs text-grayscale-400` or `placeholder:text-grayscale-400`
 
 ### Buttons
 
@@ -92,11 +92,11 @@ All buttons use `rounded-[20px]` (pill shape), **never** `rounded-lg`.
 
 Key rules:
 
--   Always set explicit `text-grayscale-900` and `bg-white` — never rely on defaults
--   Always set `placeholder:text-grayscale-400`
--   Use `rounded-xl` for inputs (slightly less rounded than buttons)
--   Focus state: `focus:ring-2 focus:ring-emerald-500 focus:border-transparent`
--   Add a `<label>` above: `text-xs font-medium text-grayscale-700 mb-1.5`
+- Always set explicit `text-grayscale-900` and `bg-white` — never rely on defaults
+- Always set `placeholder:text-grayscale-400`
+- Use `rounded-xl` for inputs (slightly less rounded than buttons)
+- Focus state: `focus:ring-2 focus:ring-emerald-500 focus:border-transparent`
+- Add a `<label>` above: `text-xs font-medium text-grayscale-700 mb-1.5`
 
 ### Overlays & Modals
 
@@ -116,9 +116,9 @@ Overlay renders a fixed fullscreen backdrop with a white `rounded-[20px]` card, 
 
 Sanctioned patterns for the two exceptions:
 
--   **Dual-host content** (renders in modals AND on routes): `var(--ion-safe-area-top, 0px)` / `-bottom` — resolves to `0` inside surfaces, real inset on routes.
--   **Absolutely-positioned overlay elements** (frosted footers, floating headers/close buttons — surface padding cannot protect them): compose the surface-published inset with the route fallback:
-    `calc(<offset> + var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px)))`
+- **Dual-host content** (renders in modals AND on routes): `var(--ion-safe-area-top, 0px)` / `-bottom` — resolves to `0` inside surfaces, real inset on routes.
+- **Absolutely-positioned overlay elements** (frosted footers, floating headers/close buttons — surface padding cannot protect them): compose the surface-published inset with the route fallback:
+  `calc(<offset> + var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px)))`
 
 Dev verification: append `?insets` (47/34) or `?insets=<top>,<bottom>` to any dev URL to simulate device insets in a desktop browser.
 
@@ -160,9 +160,9 @@ Use the standard error banner pattern:
 
 Map raw error messages to friendly language:
 
--   Decrypt errors → "Incorrect password or corrupted data. Please try again."
--   Network errors → "Connection issue. Please check your internet and try again."
--   Generic fallback → "Something went wrong. Please try again."
+- Decrypt errors → "Incorrect password or corrupted data. Please try again."
+- Network errors → "Connection issue. Please check your internet and try again."
+- Generic fallback → "Something went wrong. Please try again."
 
 ### Success States
 
@@ -182,26 +182,26 @@ Map raw error messages to friendly language:
 
 ### Copy & Language Rules
 
--   **No jargon.** Never use: "wallet", "migration", "device key", "key derivation", "SSS", "share", "DID". These are internal implementation details.
--   **User-friendly alternatives**: "account" (not "wallet"), "account upgrade" (not "migration"), "sign in" (not "authenticate")
--   **Be concise.** One short sentence for descriptions. No paragraphs.
--   **Be direct.** "Choose how you'd like to restore access." not "Please select one of the available recovery options below to proceed with restoring access to your wallet."
--   **Error titles**: "Something went wrong" — never expose stack traces or error codes.
--   **Button labels**: Use action verbs. "Recover Account", "Try Again", "Set Up Password". Not "Submit", "OK", "Proceed".
--   **Dismiss buttons**: "Skip for Now" (if optional), "Cancel" (if abandoning), "Done" (after success).
+- **No jargon.** Never use: "wallet", "migration", "device key", "key derivation", "SSS", "share", "DID". These are internal implementation details.
+- **User-friendly alternatives**: "account" (not "wallet"), "account upgrade" (not "migration"), "sign in" (not "authenticate")
+- **Be concise.** One short sentence for descriptions. No paragraphs.
+- **Be direct.** "Choose how you'd like to restore access." not "Please select one of the available recovery options below to proceed with restoring access to your wallet."
+- **Error titles**: "Something went wrong" — never expose stack traces or error codes.
+- **Button labels**: Use action verbs. "Recover Account", "Try Again", "Set Up Password". Not "Submit", "OK", "Proceed".
+- **Dismiss buttons**: "Skip for Now" (if optional), "Cancel" (if abandoning), "Done" (after success).
 
 ### Icons
 
--   Use **Ionicons** (`ionicons/icons`) for inline icons: `alertCircleOutline`, `keyOutline`, `fingerPrint`, `checkmarkCircleOutline`, etc.
--   For larger decorative icons (e.g., modal hero images), use **inline SVGs** with `stroke="currentColor"` so they inherit text color.
--   **Never use raw emoji** (`&#x1F4F7;`, `&#x2705;`) — they render inconsistently across platforms.
+- Use **Ionicons** (`ionicons/icons`) for inline icons: `alertCircleOutline`, `keyOutline`, `fingerPrint`, `checkmarkCircleOutline`, etc.
+- For larger decorative icons (e.g., modal hero images), use **inline SVGs** with `stroke="currentColor"` so they inherit text color.
+- **Never use raw emoji** (`&#x1F4F7;`, `&#x2705;`) — they render inconsistently across platforms.
 
 ### Background Context Awareness
 
 Shared components from `learn-card-base` may render on different backgrounds:
 
--   **Inside an Overlay**: White card background → `grayscale-*` text is fine
--   **On a login page**: Colored background (green, purple) → **wrap in a white card**
+- **Inside an Overlay**: White card background → `grayscale-*` text is fine
+- **On a login page**: Colored background (green, purple) → **wrap in a white card**
 
 When placing a shared component on a colored page background, always wrap it:
 
@@ -213,11 +213,11 @@ When placing a shared component on a colored page background, always wrap it:
 
 ### Spacing & Layout
 
--   Modal padding: `p-6` (inner content) or `p-8` (simple overlays with fewer elements)
--   Section spacing: `space-y-5` for major sections, `space-y-4` for form fields
--   Between heading + description: `mb-1`
--   Between description + content: `mb-5` or `mb-6`
--   Card content max-width: `max-w-md mx-auto` (inside overlays already constrained to 480px)
+- Modal padding: `p-6` (inner content) or `p-8` (simple overlays with fewer elements)
+- Section spacing: `space-y-5` for major sections, `space-y-4` for form fields
+- Between heading + description: `mb-1`
+- Between description + content: `mb-5` or `mb-6`
+- Card content max-width: `max-w-md mx-auto` (inside overlays already constrained to 480px)
 
 ### Checklist for New UI Components
 
@@ -253,10 +253,10 @@ The `docs/` folder contains **GitBook documentation** that is synced to [docs.le
 
 ### Key Files
 
--   `docs/README.md` — Landing page (What is LearnCard?)
--   `docs/SUMMARY.md` — Table of contents / sidebar navigation (GitBook uses this)
--   `docs/quick-start/` — Getting started guides
--   `docs/apps/` — User-facing app documentation (LearnCard App, ScoutPass)
+- `docs/README.md` — Landing page (What is LearnCard?)
+- `docs/SUMMARY.md` — Table of contents / sidebar navigation (GitBook uses this)
+- `docs/quick-start/` — Getting started guides
+- `docs/apps/` — User-facing app documentation (LearnCard App, ScoutPass)
 
 ### App Documentation (`docs/apps/`)
 
@@ -271,16 +271,24 @@ Use **Mermaid diagrams** for user flows (e.g., claim flow, share flow, permissio
 
 ### Editing Guidelines
 
--   **GitBook syntax**: Docs use GitBook-flavored markdown with special directives like `{% tabs %}`, `{% hint %}`, `{% content-ref %}`
--   **Code snippets**: Must be accurate and runnable. Use `@learncard/init` for initialization (not `@learncard/core`)
--   **Links**: Internal links use relative paths. GitBook handles `/broken/pages/` placeholders automatically
--   **Context URLs**: Use current versions (e.g., `https://ctx.learncard.com/boosts/1.0.3.json`)
--   **API patterns**: Use `learnCard.invoke.*` for methods, `learnCard.id.did()` for DID access
--   **Simplicity**: Avoid jargon. Spell out acronyms on first use. Keep examples minimal
+- **GitBook syntax**: Docs use GitBook-flavored markdown with special directives like `{% tabs %}`, `{% hint %}`, `{% content-ref %}`
+- **Code snippets**: Must be accurate and runnable. Use `@learncard/init` for initialization (not `@learncard/core`)
+- **Links**: Internal links use relative paths. GitBook handles `/broken/pages/` placeholders automatically
+- **Context URLs**: Use current versions (e.g., `https://ctx.learncard.com/boosts/1.0.3.json`)
+- **API patterns**: Use `learnCard.invoke.*` for methods, `learnCard.id.did()` for DID access
+- **Simplicity**: Avoid jargon. Spell out acronyms on first use. Keep examples minimal
 
 ### Testing Doc Changes
 
-Docs are not programmatically tested. When editing:
+Three CI checks run on every docs PR (`.github/workflows/docs-links.yml` + e2e):
+
+- `node scripts/check-docs-links.mjs` — internal links, SUMMARY entries, redirects, historical-URL coverage. **GitBook URLs come from the SUMMARY.md hierarchy, not file paths**; renaming a `## Group` or re-nesting a page changes URLs, and every historical URL must have an entry in `docs/.gitbook.yaml`. `--urls` prints the URL map.
+- `node scripts/check-docs-snippets.mjs` — code blocks wrapped in `<!-- snippet: path -->` … `<!-- /snippet -->` must be byte-identical to the file in `docs/snippets/`. Edit the file, then run `--fix` to update the Markdown. Never edit the embedded copy directly.
+- `tests/e2e/tests/docs-quickstart.spec.ts` — runs `docs/snippets/quickstart/*` against the local network and asserts the output the Quickstart page promises.
+
+To make a new code sample testable: put it in `docs/snippets/<page>/`, embed it with the snippet markers, and add a spec in `tests/e2e/tests/docs-*.spec.ts` that runs it (swap `network: true` for the local URL the way `docs-quickstart.spec.ts` does).
+
+For code that isn't wrapped as a snippet yet:
 
 1. Verify code snippets match the actual SDK API
 2. Check that imports reference the correct packages
@@ -290,8 +298,8 @@ Docs are not programmatically tested. When editing:
 
 LearnCard uses a modular plugin system. Each plugin provides functionality through:
 
--   **Control Planes**: Standardized interfaces (`read`, `store`, `index`, `cache`, `id`, `context`)
--   **Methods**: Custom functions exposed via `learnCard.invoke.*`
+- **Control Planes**: Standardized interfaces (`read`, `store`, `index`, `cache`, `id`, `context`)
+- **Methods**: Custom functions exposed via `learnCard.invoke.*`
 
 ### Control Planes
 
@@ -365,34 +373,34 @@ Three storage layers serve different purposes:
 
 ### Layer 1: LearnCloud Personal Index (MongoDB)
 
--   **Service**: `services/learn-cloud-service`
--   **Purpose**: User's personal wallet — what they SEE in the app
--   **Owner**: User (authenticated via DID)
--   **Access**: `wallet.index.LearnCloud.get/add/remove`
--   **Populated by**: Frontend on credential claim
+- **Service**: `services/learn-cloud-service`
+- **Purpose**: User's personal wallet — what they SEE in the app
+- **Owner**: User (authenticated via DID)
+- **Access**: `wallet.index.LearnCloud.get/add/remove`
+- **Populated by**: Frontend on credential claim
 
 ### Layer 2: Brain Service Network Index (Neo4j)
 
--   **Service**: `services/learn-card-network/brain-service`
--   **Purpose**: Network-level tracking of who received what
--   **Relationship**: `(Profile)-[:CREDENTIAL_SENT]->(Credential)-[:CREDENTIAL_RECEIVED]->(Profile)`
--   **Status values**: `null` (claimed), `'pending'` (sent, not accepted), `'revoked'`
--   **Access**: `wallet.invoke.getReceivedCredentials()`
+- **Service**: `services/learn-card-network/brain-service`
+- **Purpose**: Network-level tracking of who received what
+- **Relationship**: `(Profile)-[:CREDENTIAL_SENT]->(Credential)-[:CREDENTIAL_RECEIVED]->(Profile)`
+- **Status values**: `null` (claimed), `'pending'` (sent, not accepted), `'revoked'`
+- **Access**: `wallet.invoke.getReceivedCredentials()`
 
 ### Layer 3: Credential Storage (Various backends)
 
--   **Options**: Brain storage, Ceramic, IPFS, S3
--   **Purpose**: Actual VC JSON content
--   **Access**: `wallet.read.get(uri)`
+- **Options**: Brain storage, Ceramic, IPFS, S3
+- **Purpose**: Actual VC JSON content
+- **Access**: `wallet.read.get(uri)`
 
 ### Why Two Indexes?
 
 Brain-service stores the _network view_ (who sent what to whom). LearnCloud stores the _user view_ (personal wallet). They can differ because:
 
--   Users may have credentials from outside the network
--   Users may hide certain credentials
--   Brain-service can't modify LearnCloud (it's user-authenticated)
--   Frontend sync hooks bridge the gap (e.g., `useSyncRevokedCredentials`)
+- Users may have credentials from outside the network
+- Users may hide certain credentials
+- Brain-service can't modify LearnCloud (it's user-authenticated)
+- Frontend sync hooks bridge the gap (e.g., `useSyncRevokedCredentials`)
 
 ### Credential Lifecycle
 
@@ -414,9 +422,9 @@ REVOKE → Brain: status='revoked' + LearnCloud: frontend sync removes
 
 ### Debugging
 
--   **Shows in brain but not Membership page** → Check LearnCloud index
--   **Shows in Membership page but is revoked** → Run `useSyncRevokedCredentials()`
--   **In member list but user says they don't have it** → Check CREDENTIAL_RECEIVED.status (null vs 'pending')
+- **Shows in brain but not Membership page** → Check LearnCloud index
+- **Shows in Membership page but is revoked** → Run `useSyncRevokedCredentials()`
+- **In member list but user says they don't have it** → Check CREDENTIAL_RECEIVED.status (null vs 'pending')
 
 ## Verifiable Data Storage (`useVerifiableData`)
 
@@ -554,28 +562,28 @@ Alternatively, the `examples/credential-viewer` app has a **New Fixture** UI tha
 
 ### JSON-LD Context Gotchas
 
--   DidKit statically caches certain contexts (see `packages/plugins/didkit-plugin-node/native/src/lib.rs` `context_loader`)
--   CLR: use `context.json` (cached) not `context-2.0.1.json` (requires `allowRemoteContexts`)
--   VC v2 custom terms: use `https://www.w3.org/ns/credentials/examples/v2` (not `schema.org/` — causes protected term redefinition)
--   VC v1 custom terms: use `https://www.w3.org/2018/credentials/examples/v1`
+- DidKit statically caches certain contexts (see `packages/plugins/didkit-plugin-node/native/src/lib.rs` `context_loader`)
+- CLR: use `context.json` (cached) not `context-2.0.1.json` (requires `allowRemoteContexts`)
+- VC v2 custom terms: use `https://www.w3.org/ns/credentials/examples/v2` (not `schema.org/` — causes protected term redefinition)
+- VC v1 custom terms: use `https://www.w3.org/2018/credentials/examples/v1`
 
 ### CLR v2 Types (`@learncard/types`)
 
 Added in `packages/learn-card-types/src/clr.ts`:
 
--   `AssociationValidator` / `AssociationType`
--   `ClrSubjectValidator` / `ClrSubject`
--   `UnsignedClrCredentialValidator` / `UnsignedClrCredential`
--   `ClrCredentialValidator` / `ClrCredential`
+- `AssociationValidator` / `AssociationType`
+- `ClrSubjectValidator` / `ClrSubject`
+- `UnsignedClrCredentialValidator` / `UnsignedClrCredential`
+- `ClrCredentialValidator` / `ClrCredential`
 
 ### Credential Viewer (`examples/credential-viewer/`)
 
 Interactive React + Tailwind UI for browsing, issuing, and sending fixtures. Features:
 
--   Browse/filter/search all fixtures
--   Connect a LearnCard wallet (seed-based, configurable environment)
--   Bulk issue and send credentials
--   Create new fixtures with auto-inferred metadata
+- Browse/filter/search all fixtures
+- Connect a LearnCard wallet (seed-based, configurable environment)
+- Bulk issue and send credentials
+- Create new fixtures with auto-inferred metadata
 
 Run with `bun run dev` from the `examples/credential-viewer/` directory.
 
@@ -635,10 +643,10 @@ A form-based OBv3 credential template builder used by partner onboarding. Key fi
 
 The `ctid` field links credentials to the Credential Engine Registry:
 
--   **Format**: `ce-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` (UUID with ce- prefix)
--   **Serialization**: Emits an OBv3 alignment entry with `targetFramework: 'Credential Engine Registry'`
--   **Round-trip**: Detected via `targetFramework` + `targetType: 'ceterms:Credential'`, extracted to `ctid` field
--   **Validation**: Regex pattern `/^ce-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i`
+- **Format**: `ce-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` (UUID with ce- prefix)
+- **Serialization**: Emits an OBv3 alignment entry with `targetFramework: 'Credential Engine Registry'`
+- **Round-trip**: Detected via `targetFramework` + `targetType: 'ceterms:Credential'`, extracted to `ctid` field
+- **Validation**: Regex pattern `/^ce-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i`
 
 ## AuthCoordinator Architecture
 
@@ -673,17 +681,17 @@ A user with a cached private key can use the wallet even without an active Fireb
 
 **Security Considerations:**
 
--   Never bypass origin validation
--   Always use structured error types
--   Validate query parameter overrides
--   Test with different deployment scenarios
+- Never bypass origin validation
+- Always use structured error types
+- Validate query parameter overrides
+- Test with different deployment scenarios
 
 **Common Patterns:**
 
--   Use `sendMessage()` for all host communication
--   Implement proper cleanup in error cases
--   Follow browser compatibility guidelines (avoid Node.js types)
--   Use environment variables for sensitive configuration
+- Use `sendMessage()` for all host communication
+- Implement proper cleanup in error cases
+- Follow browser compatibility guidelines (avoid Node.js types)
+- Use environment variables for sensitive configuration
 
 #### When Working with Example Apps
 
@@ -696,17 +704,17 @@ A user with a cached private key can use the wallet even without an active Fireb
 
 **Backend Integration:**
 
--   Use `@learncard/init` for credential operations
--   Store issuer seeds in environment variables only
--   Validate inputs with Zod schemas
--   Handle network-related errors gracefully
+- Use `@learncard/init` for credential operations
+- Store issuer seeds in environment variables only
+- Validate inputs with Zod schemas
+- Handle network-related errors gracefully
 
 **Testing and Deployment:**
 
--   Test with staging and production LearnCard hosts
--   Verify origin validation works correctly
--   Test error scenarios (timeouts, user rejection, network issues)
--   Ensure proper cleanup on component unmount
+- Test with staging and production LearnCard hosts
+- Verify origin validation works correctly
+- Test error scenarios (timeouts, user rejection, network issues)
+- Ensure proper cleanup on component unmount
 
 ## ScoutPass App-Specific Features (`apps/scouts/`)
 
@@ -722,9 +730,9 @@ A user with a cached private key can use the wallet even without an active Fireb
 
 **Implementation Details**:
 
--   **File**: `apps/scouts/src/pages/troop/TroopPage.tsx`
--   **Logic**: Checks if user has admin access to parent network before enforcing credential status checks
--   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
+- **File**: `apps/scouts/src/pages/troop/TroopPage.tsx`
+- **Logic**: Checks if user has admin access to parent network before enforcing credential status checks
+- **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
 
 #### Network Admin Scout ID Issuance
 
@@ -732,16 +740,16 @@ A user with a cached private key can use the wallet even without an active Fireb
 
 **Implementation**:
 
--   **`troops.helpers.ts`**: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'` (previously excluded `scoutId`).
--   **`InviteSelectionModal.tsx`**: Allows selection between Leader ID and Scout ID for network admins with elevated permissions.
+- **`troops.helpers.ts`**: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'` (previously excluded `scoutId`).
+- **`InviteSelectionModal.tsx`**: Allows selection between Leader ID and Scout ID for network admins with elevated permissions.
 
 **Implementation Details**:
 
--   **Files**:
-    -   `apps/scouts/src/components/troopsCMS/troops.helpers.ts`
-    -   `apps/scouts/src/pages/troop/InviteSelectionModal.tsx`
--   **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
--   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
+- **Files**:
+    - `apps/scouts/src/components/troopsCMS/troops.helpers.ts`
+    - `apps/scouts/src/pages/troop/InviteSelectionModal.tsx`
+- **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
+- **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
 
 ## Generic Form Inputs (`learn-card-base`)
 
@@ -837,18 +845,18 @@ GDPR/COPPA-compliant privacy controls based on user age and country. Minors have
 
 ### Important
 
--   Always use `getMinorAgeThreshold()` from `learn-card-base` for minor determination — NOT `getGdprAgeLimit()` from the app's local `gdpr.ts` (that one returns 16 for non-EU, only correct for EU parental consent modals)
--   Preference fields: `aiEnabled`, `aiAutoDisabled`, `analyticsEnabled`, `analyticsAutoDisabled`, `bugReportsEnabled`, `isMinor` (all optional booleans)
--   See CLAUDE.md for full architectural details
+- Always use `getMinorAgeThreshold()` from `learn-card-base` for minor determination — NOT `getGdprAgeLimit()` from the app's local `gdpr.ts` (that one returns 16 for non-EU, only correct for EU parental consent modals)
+- Preference fields: `aiEnabled`, `aiAutoDisabled`, `analyticsEnabled`, `analyticsAutoDisabled`, `bugReportsEnabled`, `isMinor` (all optional booleans)
+- See CLAUDE.md for full architectural details
 
 ### State Machine (10 states)
 
 `idle` → `authenticating` → `authenticated` → `checking_key_status` → one of:
 
--   `needs_setup` (new user, no server record)
--   `needs_migration` (server has web3auth key)
--   `needs_recovery` (no local key / stale key)
--   `deriving_key` → `ready`
+- `needs_setup` (new user, no server record)
+- `needs_migration` (server has web3auth key)
+- `needs_recovery` (no local key / stale key)
+- `deriving_key` → `ready`
 
 Also: `error` (with `canRetry` + `previousState`)
 
@@ -856,14 +864,14 @@ Private-key-first shortcut: `idle` → `deriving_key` → `ready` (from cached k
 
 ### Key Interfaces
 
--   `AuthProvider` — Auth session abstraction (`getIdToken`, `getCurrentUser`, `signOut`)
--   `KeyDerivationStrategy` — Key split/reconstruct abstraction (`splitKey`, `reconstructKey`, `hasLocalKey`)
--   `AuthCoordinatorConfig` — Full configuration passed to `new AuthCoordinator()`
+- `AuthProvider` — Auth session abstraction (`getIdToken`, `getCurrentUser`, `signOut`)
+- `KeyDerivationStrategy` — Key split/reconstruct abstraction (`splitKey`, `reconstructKey`, `hasLocalKey`)
+- `AuthCoordinatorConfig` — Full configuration passed to `new AuthCoordinator()`
 
 ### Logout vs Forget Device
 
--   **`logout()`** — Signs out the auth provider, runs cleanup/onLogout callbacks, resets state to `idle`. **Preserves the device share** in IndexedDB so the user can reconstruct their key on re-login without recovery.
--   **`forgetDevice()`** — Calls `clearLocalKeys()` to wipe the device share from IndexedDB. Use this for "public computer" scenarios where the device should not remain trusted. Can be called before or after `logout()`.
+- **`logout()`** — Signs out the auth provider, runs cleanup/onLogout callbacks, resets state to `idle`. **Preserves the device share** in IndexedDB so the user can reconstruct their key on re-login without recovery.
+- **`forgetDevice()`** — Calls `clearLocalKeys()` to wipe the device share from IndexedDB. Use this for "public computer" scenarios where the device should not remain trusted. Can be called before or after `logout()`.
 
 ### File Map
 
@@ -915,15 +923,15 @@ apps/scouts/src/providers/
 
 All auth-related env vars use the `VITE_` prefix for Vite compatibility and are read via `getAuthConfig()` in `config/authConfig.ts`.
 
--   `VITE_AUTH_PROVIDER`: `'firebase' | 'supertokens' | 'keycloak' | 'oidc'` (default: `'firebase'`)
--   `VITE_KEY_DERIVATION`: `'sss' | 'web3auth'` (default: `'sss'`)
--   `VITE_SSS_SERVER_URL`: Server URL for key share operations (default: `'http://localhost:5100/api'`)
--   `VITE_ENABLE_MIGRATION`: `'true' | 'false'` (default: `'false'`)
--   `VITE_ENABLE_EMAIL_BACKUP_SHARE`: `'true' | 'false'` (default: `'true'`)
--   `VITE_WEB3AUTH_CLIENT_ID`: Web3Auth client ID (per app, from dashboard)
--   `VITE_WEB3AUTH_NETWORK`: Web3Auth network (e.g. `'testnet'`, `'sapphire_mainnet'`)
--   `VITE_WEB3AUTH_VERIFIER_ID`: Web3Auth verifier name (e.g. `'learncardapp-firebase'`)
--   `VITE_WEB3AUTH_RPC_TARGET`: Ethereum RPC URL for Web3Auth private key provider (e.g. Infura endpoint)
+- `VITE_AUTH_PROVIDER`: `'firebase' | 'supertokens' | 'keycloak' | 'oidc'` (default: `'firebase'`)
+- `VITE_KEY_DERIVATION`: `'sss' | 'web3auth'` (default: `'sss'`)
+- `VITE_SSS_SERVER_URL`: Server URL for key share operations (default: `'http://localhost:5100/api'`)
+- `VITE_ENABLE_MIGRATION`: `'true' | 'false'` (default: `'false'`)
+- `VITE_ENABLE_EMAIL_BACKUP_SHARE`: `'true' | 'false'` (default: `'true'`)
+- `VITE_WEB3AUTH_CLIENT_ID`: Web3Auth client ID (per app, from dashboard)
+- `VITE_WEB3AUTH_NETWORK`: Web3Auth network (e.g. `'testnet'`, `'sapphire_mainnet'`)
+- `VITE_WEB3AUTH_VERIFIER_ID`: Web3Auth verifier name (e.g. `'learncardapp-firebase'`)
+- `VITE_WEB3AUTH_RPC_TARGET`: Ethereum RPC URL for Web3Auth private key provider (e.g. Infura endpoint)
 
 ### Detailed Documentation
 
@@ -950,17 +958,17 @@ See `packages/learn-card-base/src/auth-coordinator/README.md` for full state mac
 
 **Security Considerations:**
 
--   Never bypass origin validation
--   Always use structured error types
--   Validate query parameter overrides
--   Test with different deployment scenarios
+- Never bypass origin validation
+- Always use structured error types
+- Validate query parameter overrides
+- Test with different deployment scenarios
 
 **Common Patterns:**
 
--   Use `sendMessage()` for all host communication
--   Implement proper cleanup in error cases
--   Follow browser compatibility guidelines (avoid Node.js types)
--   Use environment variables for sensitive configuration
+- Use `sendMessage()` for all host communication
+- Implement proper cleanup in error cases
+- Follow browser compatibility guidelines (avoid Node.js types)
+- Use environment variables for sensitive configuration
 
 #### When Working with Example Apps
 
@@ -973,17 +981,17 @@ See `packages/learn-card-base/src/auth-coordinator/README.md` for full state mac
 
 **Backend Integration:**
 
--   Use `@learncard/init` for credential operations
--   Store issuer seeds in environment variables only
--   Validate inputs with Zod schemas
--   Handle network-related errors gracefully
+- Use `@learncard/init` for credential operations
+- Store issuer seeds in environment variables only
+- Validate inputs with Zod schemas
+- Handle network-related errors gracefully
 
 **Testing and Deployment:**
 
--   Test with staging and production LearnCard hosts
--   Verify origin validation works correctly
--   Test error scenarios (timeouts, user rejection, network issues)
--   Ensure proper cleanup on component unmount
+- Test with staging and production LearnCard hosts
+- Verify origin validation works correctly
+- Test error scenarios (timeouts, user rejection, network issues)
+- Ensure proper cleanup on component unmount
 
 ## ScoutPass App-Specific Features (`apps/scouts/`)
 
@@ -999,9 +1007,9 @@ See `packages/learn-card-base/src/auth-coordinator/README.md` for full state mac
 
 **Implementation Details**:
 
--   **File**: `apps/scouts/src/pages/troop/TroopPage.tsx`
--   **Logic**: Checks if user has admin access to parent network before enforcing credential status checks
--   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
+- **File**: `apps/scouts/src/pages/troop/TroopPage.tsx`
+- **Logic**: Checks if user has admin access to parent network before enforcing credential status checks
+- **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
 
 #### Network Admin Scout ID Issuance
 
@@ -1009,16 +1017,16 @@ See `packages/learn-card-base/src/auth-coordinator/README.md` for full state mac
 
 **Implementation**:
 
--   **`troops.helpers.ts`**: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'` (previously excluded `scoutId`).
--   **`InviteSelectionModal.tsx`**: Allows selection between Leader ID and Scout ID for network admins with elevated permissions.
+- **`troops.helpers.ts`**: `canIssueChildren` and `canRevokeChildren` for `network` and `global` roles set to `'*'` (previously excluded `scoutId`).
+- **`InviteSelectionModal.tsx`**: Allows selection between Leader ID and Scout ID for network admins with elevated permissions.
 
 **Implementation Details**:
 
--   **Files**:
-    -   `apps/scouts/src/components/troopsCMS/troops.helpers.ts`
-    -   `apps/scouts/src/pages/troop/InviteSelectionModal.tsx`
--   **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
--   **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
+- **Files**:
+    - `apps/scouts/src/components/troopsCMS/troops.helpers.ts`
+    - `apps/scouts/src/pages/troop/InviteSelectionModal.tsx`
+- **Logic**: Network admins can issue both Leader IDs and Scout IDs to troops they manage
+- **Applies to**: ScoutPass only (NSO → Troop → Scout hierarchy)
 
 ## TenantConfig System
 
@@ -1187,13 +1195,13 @@ Environment files live in `apps/learn-card-app/environments/<tenant>.json`. They
 
 Data-driven helpers in `brandingHelpers.ts` replace hard-coded `BrandingEnum` switches:
 
--   `getCategoryLabel(branding, key)` — credential category display name
--   `getCategoryColor(branding, key)` — category color override
--   `getNavBarColorOverride(branding, path)` — per-route nav bar color
--   `getStatusBarColorOverride(branding, path)` — per-route status bar color
--   `getHeaderTextColor(branding, path)` — per-route header text color
--   `getHomeRoute(branding)` — tenant home route (default: `/wallet`)
--   `getHeaderText(branding)` — header display text
+- `getCategoryLabel(branding, key)` — credential category display name
+- `getCategoryColor(branding, key)` — category color override
+- `getNavBarColorOverride(branding, path)` — per-route nav bar color
+- `getStatusBarColorOverride(branding, path)` — per-route status bar color
+- `getHeaderTextColor(branding, path)` — per-route header text color
+- `getHomeRoute(branding)` — tenant home route (default: `/wallet`)
+- `getHeaderText(branding)` — header display text
 
 ### Build Scripts
 
@@ -1222,9 +1230,9 @@ bun scripts/prepare-native-config.ts local
 
 **Docker scripts in `package.json`:**
 
--   `docker-start` → `prepare-native-config.ts local && vite --host`
--   `docker-start:tenant` → `prepare-native-config.ts ${TENANT:-learncard} && vite --host`
--   `docker-build` → `prepare-native-config.ts local && vite build`
+- `docker-start` → `prepare-native-config.ts local && vite --host`
+- `docker-start:tenant` → `prepare-native-config.ts ${TENANT:-learncard} && vite --host`
+- `docker-build` → `prepare-native-config.ts local && vite build`
 
 #### `generate-tenant-assets.ts`
 
@@ -1239,9 +1247,9 @@ bun scripts/generate-tenant-assets.ts vetpass ~/vetpass-logo.png --bg "#1A3C5E" 
 
 **Options:**
 
--   `--bg <hex>` — Icon background color (default: `#FFFFFF`)
--   `--splash-bg <hex>` — Splash background color (defaults to `--bg`)
--   `--no-splash` — Skip splash screen generation
+- `--bg <hex>` — Icon background color (default: `#FFFFFF`)
+- `--splash-bg <hex>` — Splash background color (defaults to `--bg`)
+- `--no-splash` — Skip splash screen generation
 
 **Generated assets (~55 files) in `environments/<tenant>/assets/`:**
 
@@ -1275,13 +1283,13 @@ bun run build
 
 ### Important Rules for AI Assistants
 
--   **Never use legacy globals** (`LCN_URL`, `CLOUD_URL`, `API_URL`, `LCN_API_URL`, `LEARN_CLOUD_XAPI_URL`). These have been removed from `vite.config.ts` and `global.d.ts`. Always use `networkStore.get.*()` or the tenant config hooks instead.
--   **Never hardcode URLs** in components. Read from `networkStore` or `useTenantConfig()`.
--   **Environment files are overrides only** — never duplicate defaults. The build script deep-merges onto `DEFAULT_LEARNCARD_TENANT_CONFIG`.
--   **All config is Zod-validated** at build time. Schema violations fail the build, not runtime.
--   **`.passthrough()`** on all Zod sub-schemas means extra fields are preserved, not stripped.
--   **Generated assets are gitignored** (`environments/*/assets/`). They are build artifacts.
--   **`sharp`** is a devDependency of `learn-card-app` used only by the asset generation script.
+- **Never use legacy globals** (`LCN_URL`, `CLOUD_URL`, `API_URL`, `LCN_API_URL`, `LEARN_CLOUD_XAPI_URL`). These have been removed from `vite.config.ts` and `global.d.ts`. Always use `networkStore.get.*()` or the tenant config hooks instead.
+- **Never hardcode URLs** in components. Read from `networkStore` or `useTenantConfig()`.
+- **Environment files are overrides only** — never duplicate defaults. The build script deep-merges onto `DEFAULT_LEARNCARD_TENANT_CONFIG`.
+- **All config is Zod-validated** at build time. Schema violations fail the build, not runtime.
+- **`.passthrough()`** on all Zod sub-schemas means extra fields are preserved, not stripped.
+- **Generated assets are gitignored** (`environments/*/assets/`). They are build artifacts.
+- **`sharp`** is a devDependency of `learn-card-app` used only by the asset generation script.
 
 ## Privacy Preferences & Age-Gate System
 
@@ -1300,9 +1308,9 @@ GDPR/COPPA-compliant privacy controls based on user age and country. Minors have
 
 ### Important
 
--   Always use `getMinorAgeThreshold()` from `learn-card-base` for minor determination — NOT `getGdprAgeLimit()` from the app's local `gdpr.ts` (that one returns 16 for non-EU, only correct for EU parental consent modals)
--   Preference fields: `aiEnabled`, `aiAutoDisabled`, `analyticsEnabled`, `analyticsAutoDisabled`, `bugReportsEnabled`, `isMinor` (all optional booleans)
--   See CLAUDE.md for full architectural details
+- Always use `getMinorAgeThreshold()` from `learn-card-base` for minor determination — NOT `getGdprAgeLimit()` from the app's local `gdpr.ts` (that one returns 16 for non-EU, only correct for EU parental consent modals)
+- Preference fields: `aiEnabled`, `aiAutoDisabled`, `analyticsEnabled`, `analyticsAutoDisabled`, `bugReportsEnabled`, `isMinor` (all optional booleans)
+- See CLAUDE.md for full architectural details
 
 ## Logging
 
@@ -1374,12 +1382,12 @@ The logger accepts **any number of arguments in any order** (rest-args, like `co
 
 Examples:
 
--   `log.error(err)` — error becomes message + captures exception
--   `log.info('msg', false)` — message + boolean value
--   `log.error('msg', err, { userId })` — message + error + meta
--   `log.warn('failed to fetch', uri, err)` — message + leftover primitive + recovered Error (all reach Sentry; the Error is never dropped)
--   `log.warn('UID mismatch', { expected, got })` — preferred over positional `'expected', a, 'got', b`
--   `log.warn(42, { label: 'count' })` — no message, just primitive + metadata
+- `log.error(err)` — error becomes message + captures exception
+- `log.info('msg', false)` — message + boolean value
+- `log.error('msg', err, { userId })` — message + error + meta
+- `log.warn('failed to fetch', uri, err)` — message + leftover primitive + recovered Error (all reach Sentry; the Error is never dropped)
+- `log.warn('UID mismatch', { expected, got })` — preferred over positional `'expected', a, 'got', b`
+- `log.warn(42, { label: 'count' })` — no message, just primitive + metadata
 
 ### Setup (apps)
 

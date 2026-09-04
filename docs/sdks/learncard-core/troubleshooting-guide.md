@@ -43,8 +43,8 @@ This guide addresses common issues encountered when developing with LearnCard SD
 
 **Error messages:**
 
--   `WebAssembly module is included in initial chunk`
--   `Error: Unable to load WASM module`
+- `WebAssembly module is included in initial chunk`
+- `Error: Unable to load WASM module`
 
 **Solutions:**
 
@@ -280,9 +280,8 @@ function inspectCredential(credential) {
 
 If you continue to experience issues after trying the solutions in this guide:
 
-1. Check the [GitHub repository](https://github.com/learningeconomy/LearnCard) for open issues
-2. Join the [Learning Economy Discord](https://discord.gg/learningeconomy) for community support
-3. Submit a detailed bug report with:
+1. Search [existing issues](https://github.com/learningeconomy/LearnCard/issues) — someone may have hit the same thing
+2. [Open a bug report](https://github.com/learningeconomy/LearnCard/issues/new/choose) with:
     - LearnCard SDK version
     - Node.js/browser version
     - Complete error message and stack trace

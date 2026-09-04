@@ -1,0 +1,172 @@
+root: ./
+
+structure:
+    readme: README.md
+    summary: SUMMARY.md
+
+# Redirect manifest for the docs migration (URL inventory: scripts/docs-migration-map.csv).
+#
+# LOCATION: this file MUST live in the directory GitBook Git Sync is mapped to (the
+# "Project directory" in the space's Git Sync settings, shown as "GitBook (./docs)" in the
+# PR check name). A .gitbook.yaml at the repository root is silently ignored.
+#
+# HOW GITBOOK URLS WORK (this is why the manifest is large):
+#   A page's URL is <section-group-slug>/<parent-slug>/.../<page-slug>, derived from the
+#   SUMMARY.md hierarchy — NOT from the file path. Renaming a "## Group" heading or
+#   re-nesting a page changes its URL even when no file moves. The 2026 nav restructure
+#   (8 type-based groups -> 5 journey-based groups) therefore moved every URL, so every
+#   historical URL is redirected explicitly below. Do not rely on GitBook's implicit
+#   "page moved" redirect: it is undocumented and does not cover section landing pages
+#   (README.md) or OpenAPI-generated endpoint pages.
+#
+# Rules (per GitBook docs):
+#   - Keys are URL paths relative to `root` (no leading slash); values are FILE paths
+#     of published pages (must appear in SUMMARY.md).
+#   - A redirect is ignored if a live page still exists at the key's URL.
+#   - Never chain redirects: map every historical URL directly to its final destination.
+# Verified in CI by scripts/check-docs-links.mjs, which computes URLs the same way GitBook
+# does and fails if any URL in docs-migration-map.csv is neither live nor redirected.
+redirects:
+    # --- Pages removed or merged (content retired; nearest replacement) ---
+    apps/learn-card-app/resume-builder-ler-rs-mapping: apps/learn-card-app/README.md
+    core-concepts/architecture-and-principles/u.s.-state-api: sdks/learncard-network/README.md
+    core-concepts/credentials-and-data/general-best-practices-and-troubleshooting: core-concepts/credentials-and-data/README.md
+    core-concepts/network-and-interactions/core-interaction-workflows: core-concepts/network-and-interactions/network-architecture.md
+    core-concepts/network-and-interactions/credential-activity: core-concepts/network-and-interactions/README.md
+    core-concepts/network-and-interactions/key-network-procedures: core-concepts/network-and-interactions/network-architecture.md
+    core-concepts/network-and-interactions/network-vision-and-principles: core-concepts/network-and-interactions/network-architecture.md
+    core-concepts/tenant-branded-emails: apps/README.md
+    how-to-guides/implement-flows: tutorials/create-a-consentflow.md
+    how-to-guides/implement-flows/chapi: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/chapi-wallet-setup-guide: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/cheat-sheets: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/cheat-sheets/issuers: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/cheat-sheets/wallets: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/demo-application: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/translating-to-chapi-documentation: introduction/interoperability.md
+    how-to-guides/implement-flows/chapi/using-learncard-to-interact-with-a-chapi-wallet: introduction/interoperability.md
+
+    # --- Pages that still exist but whose URL changed in the nav restructure ---
+    apps/apps: apps/README.md
+    apps/learn-card-app: apps/learn-card-app/README.md
+    apps/learn-card-app/analytics: apps/learn-card-app/README.md
+    apps/scouts: apps/scouts/README.md
+    apps/scouts/credential-revocation: core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md
+    core-concepts/architecture-and-principles: core-concepts/architecture-and-principles/README.md
+    core-concepts/architecture-and-principles/auth-coordinator: core-concepts/architecture-and-principles/auth-coordinator.md
+    core-concepts/architecture-and-principles/auth-grants-and-api-tokens: core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md
+    core-concepts/architecture-and-principles/control-planes: core-concepts/architecture-and-principles/control-planes.md
+    core-concepts/architecture-and-principles/plugins: core-concepts/architecture-and-principles/plugins.md
+    core-concepts/consent-and-permissions: core-concepts/consent-and-permissions/README.md
+    core-concepts/consent-and-permissions/accessing-consented-data: core-concepts/consent-and-permissions/accessing-consented-data.md
+    core-concepts/consent-and-permissions/auto-boosts: core-concepts/consent-and-permissions/auto-boosts.md
+    core-concepts/consent-and-permissions/consent-contracts: core-concepts/consent-and-permissions/consent-contracts.md
+    core-concepts/consent-and-permissions/consent-transactions: core-concepts/consent-and-permissions/consent-transactions.md
+    core-concepts/consent-and-permissions/consentflow-overview: core-concepts/consent-and-permissions/consentflow-overview.md
+    core-concepts/consent-and-permissions/gameflow-overview: core-concepts/consent-and-permissions/gameflow-overview.md
+    core-concepts/consent-and-permissions/user-consent-and-terms: core-concepts/consent-and-permissions/user-consent-and-terms.md
+    core-concepts/consent-and-permissions/verifiable-data-in-consentflow: core-concepts/consent-and-permissions/verifiable-data-in-consentflow.md
+    core-concepts/consent-and-permissions/writing-consented-data: core-concepts/consent-and-permissions/writing-consented-data.md
+    core-concepts/credentials-and-data: core-concepts/credentials-and-data/README.md
+    core-concepts/credentials-and-data/achievement-types-and-categories: core-concepts/credentials-and-data/achievement-types-and-categories.md
+    core-concepts/credentials-and-data/boost-credentials: core-concepts/credentials-and-data/boost-credentials.md
+    core-concepts/credentials-and-data/building-verifiable-credentials: core-concepts/credentials-and-data/building-verifiable-credentials.md
+    core-concepts/credentials-and-data/credential-lifecycle: core-concepts/credentials-and-data/credential-lifecycle.md
+    core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists: core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md
+    core-concepts/credentials-and-data/display-hint-tags: core-concepts/credentials-and-data/display-hint-tags.md
+    core-concepts/credentials-and-data/getting-started-with-boosts: core-concepts/credentials-and-data/getting-started-with-boosts.md
+    core-concepts/credentials-and-data/uris: core-concepts/credentials-and-data/uris.md
+    core-concepts/credentials-and-data/verifiable-credentials-vcs: core-concepts/credentials-and-data/verifiable-credentials-vcs.md
+    core-concepts/credentials-and-data/xapi-data: core-concepts/credentials-and-data/xapi-data.md
+    core-concepts/holder-continuity: core-concepts/holder-continuity.md
+    core-concepts/identities-and-keys: core-concepts/identities-and-keys/README.md
+    core-concepts/identities-and-keys/account-recovery: core-concepts/identities-and-keys/account-recovery.md
+    core-concepts/identities-and-keys/cross-device-login: core-concepts/identities-and-keys/cross-device-login.md
+    core-concepts/identities-and-keys/decentralized-identifiers-dids: core-concepts/identities-and-keys/decentralized-identifiers-dids.md
+    core-concepts/identities-and-keys/key-management-sss: core-concepts/identities-and-keys/key-management-sss.md
+    core-concepts/identities-and-keys/network-profiles: core-concepts/identities-and-keys/network-profiles.md
+    core-concepts/identities-and-keys/seed-phrases: core-concepts/identities-and-keys/seed-phrases.md
+    core-concepts/identities-and-keys/signing-authorities: core-concepts/identities-and-keys/signing-authorities.md
+    core-concepts/identities-and-keys/trust-registries: core-concepts/identities-and-keys/trust-registries.md
+    core-concepts/network-and-interactions: core-concepts/network-and-interactions/README.md
+    core-concepts/network-and-interactions/universal-inbox: core-concepts/network-and-interactions/universal-inbox.md
+    development/contributing: development/contributing.md
+    how-to-guides/connect-systems: how-to-guides/connect-systems/README.md
+    how-to-guides/connect-systems/connect-a-game: how-to-guides/connect-systems/connect-a-website.md
+    how-to-guides/connect-systems/connect-a-website: how-to-guides/connect-systems/connect-a-website.md
+    how-to-guides/connect-systems/connect-ai-agent: how-to-guides/connect-systems/connect-ai-agent.md
+    how-to-guides/connect-systems/connect-an-embedded-app: how-to-guides/connect-systems/connect-an-embedded-app.md
+    how-to-guides/connect-systems/embed-a-claim-button: how-to-guides/connect-systems/embed-a-claim-button.md
+    how-to-guides/create-signing-authority: how-to-guides/create-signing-authority.md
+    how-to-guides/deploy-infrastructure: how-to-guides/deploy-infrastructure/README.md
+    how-to-guides/deploy-infrastructure/connect-to-independent-network: how-to-guides/deploy-infrastructure/connect-to-independent-network.md
+    how-to-guides/deploy-infrastructure/deploy-your-own-network: how-to-guides/deploy-infrastructure/connect-to-independent-network.md
+    how-to-guides/deploy-infrastructure/generate-api-tokens: how-to-guides/deploy-infrastructure/generate-api-tokens.md
+    how-to-guides/deploy-infrastructure/managing-seed-phrases: how-to-guides/deploy-infrastructure/managing-seed-phrases.md
+    how-to-guides/deploy-infrastructure/sss-key-management-config: how-to-guides/deploy-infrastructure/sss-key-management-config.md
+    how-to-guides/deploy-infrastructure/the-simplest-plugin: how-to-guides/deploy-infrastructure/the-simplest-plugin.md
+    how-to-guides/export-and-import-your-data: how-to-guides/export-and-import-your-data.md
+    how-to-guides/implement-flows/claim-data-after-guardian-consent: how-to-guides/implement-flows/claim-data-after-guardian-consent.md
+    how-to-guides/implement-flows/guardian-gated-credentials: how-to-guides/implement-flows/guardian-gated-credentials.md
+    how-to-guides/interoperate-with-learncard: how-to-guides/interoperate-with-learncard.md
+    how-to-guides/send-credentials: how-to-guides/send-credentials.md
+    how-to-guides/verify-my-issuer: how-to-guides/verify-my-issuer.md
+    introduction/ecosystem-architecture: introduction/ecosystem-architecture.md
+    introduction/interoperability: introduction/interoperability.md
+    introduction/use-cases-and-possibilities: introduction/what-do-you-want-to-build.md
+    quick-start/setup-and-prerequisites: quick-start/your-first-integration.md
+    quick-start/your-first-integration: quick-start/your-first-integration.md
+    sdks/auth-types: sdks/auth-types.md
+    sdks/embed-sdk: sdks/embed-sdk.md
+    sdks/learncard-cli: sdks/learncard-cli.md
+    sdks/learncard-core: sdks/learncard-core/README.md
+    sdks/learncard-core/architectural-patterns: sdks/learncard-core/architectural-patterns.md
+    sdks/learncard-core/authentication: sdks/learncard-core/authentication.md
+    sdks/learncard-core/construction: sdks/learncard-core/construction.md
+    sdks/learncard-core/migration-guide: sdks/learncard-core/migration-guide.md
+    sdks/learncard-core/production-deployment-guide: sdks/learncard-core/production-deployment-guide.md
+    sdks/learncard-core/troubleshooting-guide: sdks/learncard-core/troubleshooting-guide.md
+    sdks/learncard-core/writing-plugins: sdks/learncard-core/writing-plugins.md
+    sdks/learncard-network: sdks/learncard-network/README.md
+    sdks/learncard-network/architecture: sdks/learncard-network/architecture.md
+    sdks/learncard-network/authentication: sdks/learncard-network/authentication.md
+    sdks/learncard-network/bitstring-status-lists: sdks/learncard-network/bitstring-status-lists.md
+    sdks/learncard-network/lca-api-key-management: sdks/learncard-network/lca-api-key-management.md
+    sdks/learncard-network/notifications: sdks/learncard-network/notifications.md
+    sdks/learncard-network/skills-and-opensalt: sdks/learncard-network/skills-and-opensalt.md
+    sdks/learncard-network/usage-examples: sdks/learncard-network/usage-examples.md
+    sdks/learncloud-storage-api: sdks/learncloud-storage-api/README.md
+    sdks/learncloud-storage-api/architecture: sdks/learncloud-storage-api/architecture.md
+    sdks/learncloud-storage-api/authentication: sdks/learncloud-storage-api/authentication.md
+    sdks/learncloud-storage-api/usage-examples: sdks/learncloud-storage-api/usage-examples.md
+    sdks/learncloud-storage-api/xapi-reference: sdks/learncloud-storage-api/xapi-reference.md
+    sdks/official-plugins: sdks/official-plugins/README.md
+    sdks/partner-connect: sdks/partner-connect.md
+    sdks/sss-key-manager: sdks/sss-key-manager.md
+    tutorials/create-a-boost: tutorials/create-a-boost.md
+    tutorials/create-a-connected-website: tutorials/create-a-connected-website.md
+    tutorials/create-a-consentflow: tutorials/create-a-consentflow.md
+    tutorials/create-a-credential: tutorials/create-a-credential.md
+    tutorials/listen-to-webhooks: tutorials/listen-to-webhooks.md
+    tutorials/sending-xapi-statements: tutorials/sending-xapi-statements.md
+    tutorials/verify-credentials: tutorials/verify-credentials.md
+
+    # --- OpenAPI-generated endpoint pages (regenerated under the new section; no per-page identity) ---
+    sdks/learncard-network/auth-grants: sdks/learncard-network/README.md
+    sdks/learncard-network/boosts: sdks/learncard-network/README.md
+    sdks/learncard-network/claim-hooks: sdks/learncard-network/README.md
+    sdks/learncard-network/contracts: sdks/learncard-network/README.md
+    sdks/learncard-network/credentials: sdks/learncard-network/README.md
+    sdks/learncard-network/did-metadata: sdks/learncard-network/README.md
+    sdks/learncard-network/models: sdks/learncard-network/README.md
+    sdks/learncard-network/presentations: sdks/learncard-network/README.md
+    sdks/learncard-network/profile-managers: sdks/learncard-network/README.md
+    sdks/learncard-network/profiles: sdks/learncard-network/README.md
+    sdks/learncard-network/storage: sdks/learncard-network/README.md
+    sdks/learncard-network/utilities: sdks/learncard-network/README.md
+    sdks/learncloud-storage-api/custom-storage: sdks/learncloud-storage-api/README.md
+    sdks/learncloud-storage-api/index: sdks/learncloud-storage-api/README.md
+    sdks/learncloud-storage-api/models: sdks/learncloud-storage-api/README.md
+    sdks/learncloud-storage-api/storage: sdks/learncloud-storage-api/README.md
+    sdks/learncloud-storage-api/user: sdks/learncloud-storage-api/README.md
+    sdks/learncloud-storage-api/utilities: sdks/learncloud-storage-api/README.md

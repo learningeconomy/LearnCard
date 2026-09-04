@@ -7,7 +7,6 @@
     "version": "1.0.1",
     "workspaces": [
         "apps/*",
-        "reference*",
         "examples/*",
         "examples/app-store-apps/*",
         "packages/*",

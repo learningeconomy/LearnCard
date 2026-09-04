@@ -4,9 +4,9 @@ The **LearnCard App** is a digital wallet for verifiable credentials. It allows 
 
 Available on:
 
--   📱 iOS ([App Store](https://apps.apple.com/us/app/learncard/id1635841898))
--   📱 Android ([Google Play](https://play.google.com/store/apps/details?id=com.learncard.app))
--   🌐 Web ([app.learncard.com](https://app.learncard.com))
+- 📱 iOS ([App Store](https://apps.apple.com/us/app/learncard/id1635841898))
+- 📱 Android ([Google Play](https://play.google.com/store/apps/details?id=com.learncard.app))
+- 🌐 Web ([app.learncard.com](https://app.learncard.com))
 
 ---
 
@@ -92,39 +92,29 @@ Self-assigned skills are **self-attested credentials**. They represent what a us
 
 ---
 
-## Authentication & Key Management
+## Account Security & Recovery
 
-The LearnCard App uses the [AuthCoordinator](../../core-concepts/architecture-and-principles/auth-coordinator.md) to manage the full authentication and key derivation lifecycle. Private keys are protected using [Shamir Secret Sharing (SSS)](../../core-concepts/identities-and-keys/key-management-sss.md) — the key is split into three shares so that no single party ever holds the complete key.
+Each account is controlled by a private key that never exists in one place: it is split into pieces held by the user's device, LearnCard's servers, and the user's recovery methods, and any two pieces are needed to sign in. Neither LearnCard nor a stolen phone alone can access the account.
 
-### Key Flows
+After signing up, users are prompted to set up at least one recovery method:
 
-- **New User Setup** — After first login, a private key is generated and split into device, server, and recovery shares automatically.
-- **Account Recovery** — If a user logs in on a new device, they can [recover their key](../../core-concepts/identities-and-keys/account-recovery.md) using a passkey, recovery phrase, backup file, or email backup.
-- **Cross-Device Login** — Users can transfer their device share to a new device by [scanning a QR code](../../core-concepts/identities-and-keys/cross-device-login.md) from an already-authenticated device.
-- **Migration** — Existing Web3Auth users are automatically detected and migrated to SSS.
+| Method              | What it is                                                |
+| ------------------- | --------------------------------------------------------- |
+| **Passkey**         | Face ID, Touch ID, or a hardware key on the user's device |
+| **Recovery Phrase** | A 24-word phrase the user writes down                     |
+| **Backup File**     | A password-protected file the user downloads              |
+| **Email Backup**    | An encrypted backup sent to a verified email address      |
 
-### Recovery Methods
+Signing in on a new device works either by scanning a QR code from a device that's already signed in, or by using one of the recovery methods. Recovery settings live under **Account Recovery** in the profile.
 
-Users are prompted to set up recovery methods after initial key setup. A persistent banner appears until at least one method is configured. Available methods:
-
-| Method | Description |
-|---|---|
-| **Passkey** | Hardware-bound recovery via WebAuthn PRF (Touch ID, Face ID, YubiKey) |
-| **Recovery Phrase** | 24-word mnemonic written down by the user |
-| **Backup File** | Password-protected JSON file downloaded by the user |
-| **Email Backup** | Encrypted share sent to a verified recovery email |
-
-Recovery methods are managed from the **Account Recovery** section in the user's profile settings.
+For how this works under the hood, see [Key Management (SSS)](../../core-concepts/identities-and-keys/key-management-sss.md), [Account Recovery](../../core-concepts/identities-and-keys/account-recovery.md), and [Cross-Device Login](../../core-concepts/identities-and-keys/cross-device-login.md).
 
 ---
 
 ## Related Documentation
 
--   [Resume Builder LER-RS Mapping](resume-builder-ler-rs-mapping.md) — Field/category mapping for resume issuance
--   [Create a Credential](../../tutorials/create-a-credential.md) — For issuers
--   [Verify Credentials](../../tutorials/verify-credentials.md) — For verifiers
--   [ConsentFlow Overview](../../core-concepts/consent-and-permissions/consentflow-overview.md) — Understanding consent
--   [Key Management (SSS)](../../core-concepts/identities-and-keys/key-management-sss.md) — How private keys are protected
--   [Account Recovery](../../core-concepts/identities-and-keys/account-recovery.md) — Recovery methods and flows
--   [AuthCoordinator](../../core-concepts/architecture-and-principles/auth-coordinator.md) — The auth state machine
--   [SSS Configuration](../../how-to-guides/deploy-infrastructure/sss-key-management-config.md) — Deployment and env vars
+- [Export & Import Your Data](../../how-to-guides/export-and-import-your-data.md) — Take your data with you
+- [Send & Issue Credentials](../../how-to-guides/send-credentials.md) — For organizations issuing into the app
+- [Publish Your App in LearnCard](../../how-to-guides/publish-your-app.md) — Build an experience inside the app
+- [Verify Credentials](../../tutorials/verify-credentials.md) — For verifiers
+- [ConsentFlow Overview](../../core-concepts/consent-and-permissions/consentflow-overview.md) — How users control what they share
