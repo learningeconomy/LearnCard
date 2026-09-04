@@ -57,15 +57,27 @@ jobs:
             E2E_TEST_FILES: ${{ github.event.inputs.test_files || 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts' }}
         steps:
             - name: Checkout tested revision
+              id: checkout
               uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
                   fetch-depth: 0
 
             - name: Capture runner preflight
+              if: ${{ always() }}
+              working-directory: ${{ runner.temp }}
+              env:
+                  CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
+                  CHECKOUT_CONCLUSION: ${{ steps.checkout.conclusion }}
               run: |
                   mkdir -p "$E2E_ARTIFACT_DIR"
                   {
+                    printf 'checkout_outcome=%s\n' "$CHECKOUT_OUTCOME"
+                    printf 'checkout_conclusion=%s\n' "$CHECKOUT_CONCLUSION"
+                  } > "$E2E_ARTIFACT_DIR/checkout-status.txt"
+                  {
+                    echo 'checkout:'
+                    cat "$E2E_ARTIFACT_DIR/checkout-status.txt"
                     echo 'filesystem:'
                     df -h /
                     echo 'memory:'
@@ -113,15 +125,27 @@ jobs:
             E2E_ARTIFACT_DIR: ${{ github.workspace }}/e2e-artifacts/service
         steps:
             - name: Checkout tested revision
+              id: checkout
               uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
                   fetch-depth: 0
 
             - name: Capture runner preflight
+              if: ${{ always() }}
+              working-directory: ${{ runner.temp }}
+              env:
+                  CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
+                  CHECKOUT_CONCLUSION: ${{ steps.checkout.conclusion }}
               run: |
                   mkdir -p "$E2E_ARTIFACT_DIR"
                   {
+                    printf 'checkout_outcome=%s\n' "$CHECKOUT_OUTCOME"
+                    printf 'checkout_conclusion=%s\n' "$CHECKOUT_CONCLUSION"
+                  } > "$E2E_ARTIFACT_DIR/checkout-status.txt"
+                  {
+                    echo 'checkout:'
+                    cat "$E2E_ARTIFACT_DIR/checkout-status.txt"
                     echo 'filesystem:'
                     df -h /
                     echo 'memory:'
@@ -167,20 +191,26 @@ jobs:
         steps:
             - name: Evaluate hosted E2E result
               env:
+                  ELIGIBILITY_RESULT: ${{ needs.eligibility.result }}
                   ELIGIBLE: ${{ needs.eligibility.outputs.run_e2e }}
                   ELIGIBILITY_REASON: ${{ needs.eligibility.outputs.reason }}
                   BROWSER_RESULT: ${{ needs.browser_e2e.result }}
                   SERVICE_RESULT: ${{ needs.service_e2e.result }}
               run: |
-                  if [[ "$ELIGIBLE" != "true" ]]; then
-                    echo "Hosted E2E skipped: $ELIGIBILITY_REASON"
+                  if [[ "$ELIGIBILITY_RESULT" != "success" ]]; then
+                    echo "Hosted E2E eligibility did not succeed: $ELIGIBILITY_RESULT" >&2
+                    exit 1
+                  fi
+
+                  if [[ "$ELIGIBLE" == "false" && "$ELIGIBILITY_REASON" == "draft-pr" ]]; then
+                    echo 'Hosted E2E skipped: draft pull request.'
                     exit 0
                   fi
 
-                  if [[ "$BROWSER_RESULT" == "success" && "$SERVICE_RESULT" == "success" ]]; then
+                  if [[ "$ELIGIBLE" == "true" && "$BROWSER_RESULT" == "success" && "$SERVICE_RESULT" == "success" ]]; then
                     echo 'Both hosted E2E suites passed.'
                     exit 0
                   fi
 
-                  echo "Hosted E2E failed: browser=$BROWSER_RESULT service=$SERVICE_RESULT" >&2
+                  echo "Hosted E2E failed: eligibility=$ELIGIBLE reason=$ELIGIBILITY_REASON browser=$BROWSER_RESULT service=$SERVICE_RESULT" >&2
                   exit 1

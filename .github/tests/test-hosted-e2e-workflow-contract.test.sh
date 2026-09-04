@@ -5,6 +5,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 ruby - "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" "$REPO_ROOT/.github/workflows/test.yml" <<'RUBY'
 require 'yaml'
+require 'tempfile'
 
 hosted_path, legacy_path = ARGV
 abort 'hosted E2E workflow missing' unless File.file?(hosted_path)
@@ -61,6 +62,61 @@ abort 'browser runner invocation missing' unless browser_steps.any? do |step|
 end
 abort 'service runner invocation missing' unless service_steps.any? do |step|
   step['run'] == 'bash scripts/e2e-hosted/run-service.sh'
+end
+
+[browser_steps, service_steps].each do |steps|
+  checkout = steps.find { |step| step['id'] == 'checkout' }
+  abort 'checkout must expose its outcome to diagnostics' unless checkout
+
+  preflight = steps.find { |step| step['name'] == 'Capture runner preflight' }
+  abort 'runner preflight missing' unless preflight
+  abort 'preflight must run after checkout failure' unless preflight.fetch('if').include?('always()')
+  abort 'preflight must not depend on repository checkout' unless preflight.fetch('working-directory') == '${{ runner.temp }}'
+  abort 'preflight must preserve checkout outcome' unless preflight.fetch('env').fetch('CHECKOUT_OUTCOME') == '${{ steps.checkout.outcome }}'
+  abort 'preflight must preserve checkout failure artifact' unless preflight.fetch('run').include?('checkout-status.txt')
+end
+
+aggregate_step = aggregate.fetch('steps').fetch(0)
+aggregate_env = aggregate_step.fetch('env')
+abort 'aggregate must inspect eligibility job result' unless aggregate_env.fetch('ELIGIBILITY_RESULT') == '${{ needs.eligibility.result }}'
+aggregate_run = aggregate_step.fetch('run')
+
+def aggregate_succeeds?(run, env)
+  Tempfile.create(['hosted-e2e-aggregate', '.sh']) do |script|
+    script.write("#!/usr/bin/env bash\nset -euo pipefail\n#{run}\n")
+    script.flush
+    system(env, 'bash', script.path, out: File::NULL, err: File::NULL)
+  end
+end
+
+aggregate_defaults = {
+  'ELIGIBILITY_RESULT' => 'success',
+  'ELIGIBLE' => 'true',
+  'ELIGIBILITY_REASON' => 'non-draft-pr',
+  'BROWSER_RESULT' => 'success',
+  'SERVICE_RESULT' => 'success'
+}
+
+abort 'explicit draft skip must succeed' unless aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+  'ELIGIBLE' => 'false',
+  'ELIGIBILITY_REASON' => 'draft-pr',
+  'BROWSER_RESULT' => 'skipped',
+  'SERVICE_RESULT' => 'skipped'
+))
+abort 'absent eligibility output must fail shadow result' if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+  'ELIGIBLE' => '',
+  'ELIGIBILITY_REASON' => ''
+))
+abort 'malformed ineligible output must fail shadow result' if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+  'ELIGIBLE' => 'false',
+  'ELIGIBILITY_REASON' => 'manual-dispatch'
+))
+%w[failure cancelled].each do |result|
+  abort "#{result} eligibility must fail shadow result" if aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+    'ELIGIBILITY_RESULT' => result,
+    'ELIGIBLE' => '',
+    'ELIGIBILITY_REASON' => ''
+  ))
 end
 
 legacy = YAML.load_file(legacy_path, aliases: true)
