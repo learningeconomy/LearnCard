@@ -40,6 +40,8 @@ export const isCredentialRefreshEnabled = (): boolean =>
     getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_ENABLED;
 
 export type CredentialRefreshPluginOptions = {
+    /** Coarse per-source-IP pre-auth limit per minute across all refresh IDs */
+    preAuthSourceRateLimit?: number;
     /** Coarse per-(sourceIp, refreshId) pre-auth limit per minute */
     preAuthRateLimit?: number;
     /** Per-(holderDid, refreshId) post-auth limit per minute */
@@ -120,7 +122,8 @@ const authenticateRefreshRequest = async (
         await enforceCredentialRefreshPreAuthRateLimit(
             request.ip,
             refreshId,
-            options.preAuthRateLimit
+            options.preAuthRateLimit,
+            options.preAuthSourceRateLimit
         );
     } catch {
         logRefreshRequest(refreshId, 'rate-limited', startedAt);

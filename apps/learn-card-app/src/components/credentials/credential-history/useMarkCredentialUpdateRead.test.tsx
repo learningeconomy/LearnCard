@@ -10,14 +10,13 @@ import type { LCR } from 'learn-card-base/types/credential-records';
 const walletHost = vi.hoisted(() => ({
     get: vi.fn(),
     update: vi.fn(),
+    initWallet: vi.fn(),
 }));
 
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ warn: vi.fn() }),
     useWallet: () => ({
-        initWallet: async () => ({
-            index: { LearnCloud: { get: walletHost.get, update: walletHost.update } },
-        }),
+        initWallet: walletHost.initWallet,
     }),
 }));
 
@@ -39,13 +38,17 @@ const makeRecord = (overrides: Partial<LCR> = {}): LCR =>
         ...overrides,
     }) as LCR;
 
+const queryClient = new QueryClient();
 const wrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
-    <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 );
 
 describe('useMarkCredentialUpdateRead', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        walletHost.initWallet.mockResolvedValue({
+            index: { LearnCloud: { get: walletHost.get, update: walletHost.update } },
+        });
         walletHost.update.mockResolvedValue(true);
     });
 
@@ -73,6 +76,23 @@ describe('useMarkCredentialUpdateRead', () => {
 
         expect(markedRead).toBe(false);
         expect(walletHost.update).not.toHaveBeenCalled();
+    });
+
+    it('keeps the callback stable when unused refresh metadata changes', () => {
+        const renderedRecord = makeRecord();
+        const { result, rerender } = renderHook(
+            ({ record }) => useMarkCredentialUpdateRead(record),
+            { initialProps: { record: renderedRecord }, wrapper }
+        );
+        const originalCallback = result.current;
+
+        rerender({
+            record: makeRecord({
+                refresh: { ...renderedRecord.refresh!, etag: 'fresh-etag' },
+            }),
+        });
+
+        expect(result.current).toBe(originalCallback);
     });
 
     it('clears only the current version while preserving freshly read metadata', async () => {

@@ -26,10 +26,11 @@ export const useMarkCredentialUpdateRead = (record?: Partial<LCR>) => {
 
     const recordId = record?.id;
     const recordUri = record?.uri;
-    const refresh = record?.refresh;
+    const unreadUpdate = record?.refresh?.unreadUpdate;
+    const managedVersion = record?.refresh?.managedVersion;
 
     return useCallback(async (): Promise<boolean> => {
-        if (!recordId || !refresh?.unreadUpdate) return false;
+        if (!recordId || !unreadUpdate) return false;
 
         try {
             const wallet = await initWallet();
@@ -43,8 +44,7 @@ export const useMarkCredentialUpdateRead = (record?: Partial<LCR>) => {
             const recordAdvanced =
                 !current ||
                 current.uri !== recordUri ||
-                (refresh.managedVersion !== undefined &&
-                    currentRefresh?.managedVersion !== refresh.managedVersion);
+                (managedVersion !== undefined && currentRefresh?.managedVersion !== managedVersion);
 
             if (recordAdvanced || !currentRefresh?.unreadUpdate) return false;
 
@@ -71,5 +71,5 @@ export const useMarkCredentialUpdateRead = (record?: Partial<LCR>) => {
 
             return false;
         }
-    }, [recordId, recordUri, refresh, initWallet, queryClient]);
+    }, [recordId, recordUri, unreadUpdate, managedVersion, initWallet, queryClient]);
 };

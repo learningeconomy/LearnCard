@@ -542,12 +542,19 @@ describe('Credential Refresh Endpoint', () => {
 
     describe('rate limits', () => {
         let preAuthLimitedApp: FastifyInstance;
+        let preAuthSourceLimitedApp: FastifyInstance;
         let holderLimitedApp: FastifyInstance;
 
         beforeAll(async () => {
             preAuthLimitedApp = Fastify();
             await preAuthLimitedApp.register(credentialRefreshFastifyPlugin, {
                 preAuthRateLimit: 2,
+            });
+
+            preAuthSourceLimitedApp = Fastify();
+            await preAuthSourceLimitedApp.register(credentialRefreshFastifyPlugin, {
+                preAuthRateLimit: 1000,
+                preAuthSourceRateLimit: 2,
             });
 
             holderLimitedApp = Fastify();
@@ -559,6 +566,7 @@ describe('Credential Refresh Endpoint', () => {
 
         afterAll(async () => {
             await preAuthLimitedApp.close();
+            await preAuthSourceLimitedApp.close();
             await holderLimitedApp.close();
         });
 
@@ -572,6 +580,27 @@ describe('Credential Refresh Endpoint', () => {
             expect(second.statusCode).toBe(401);
 
             const limited = await preAuthLimitedApp.inject({ method: 'GET', url: path });
+            expect(limited.statusCode).toBe(429);
+            expect(limited.json().jwe).toBeUndefined();
+        });
+
+        it('applies a coarse pre-auth limit per source IP across refresh IDs', async () => {
+            const first = await preAuthSourceLimitedApp.inject({
+                method: 'GET',
+                url: '/refresh/rate-limited-source-a',
+            });
+            expect(first.statusCode).toBe(401);
+
+            const second = await preAuthSourceLimitedApp.inject({
+                method: 'GET',
+                url: '/refresh/rate-limited-source-b',
+            });
+            expect(second.statusCode).toBe(401);
+
+            const limited = await preAuthSourceLimitedApp.inject({
+                method: 'GET',
+                url: '/refresh/rate-limited-source-c',
+            });
             expect(limited.statusCode).toBe(429);
             expect(limited.json().jwe).toBeUndefined();
         });

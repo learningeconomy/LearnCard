@@ -29,6 +29,7 @@ const CHALLENGE_BYTES = 32;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 
 export const CREDENTIAL_REFRESH_PRE_AUTH_RATE_LIMIT = 60;
+export const CREDENTIAL_REFRESH_PRE_AUTH_SOURCE_RATE_LIMIT = 600;
 export const CREDENTIAL_REFRESH_HOLDER_RATE_LIMIT = 120;
 
 export const getCredentialRefreshChallengeCacheKey = (refreshId: string, challenge: string) =>
@@ -146,15 +147,24 @@ export const verifyCredentialRefreshAuthorization = async (
 };
 
 /**
- * Coarse pre-authentication abuse limit keyed by network source and refreshId.
- * Throws when the limit is exhausted (callers map this to a non-disclosing 429).
+ * Coarse pre-authentication abuse limits keyed by network source globally and by
+ * network source plus refreshId. The global window prevents callers from evading
+ * the narrower limit by rotating refresh IDs. Throws when either limit is exhausted
+ * (callers map this to a non-disclosing 429).
  */
 export const enforceCredentialRefreshPreAuthRateLimit = async (
     sourceIp: string,
     refreshId: string,
-    limit: number = CREDENTIAL_REFRESH_PRE_AUTH_RATE_LIMIT
+    limit: number = CREDENTIAL_REFRESH_PRE_AUTH_RATE_LIMIT,
+    sourceLimit: number = CREDENTIAL_REFRESH_PRE_AUTH_SOURCE_RATE_LIMIT
 ): Promise<void> =>
     enforceRateLimits([
+        {
+            key: `credentialRefresh|preAuth|${sourceIp}`,
+            limit: sourceLimit,
+            windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
+            description: 'credential refresh pre-authentication requests by source',
+        },
         {
             key: `credentialRefresh|preAuth|${sourceIp}|${refreshId}`,
             limit,

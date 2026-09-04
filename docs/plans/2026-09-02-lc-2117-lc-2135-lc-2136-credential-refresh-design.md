@@ -330,8 +330,8 @@ SSRF-hardened:
 -   Retry DID authentication only for the recognized challenge scheme.
 
 Managed refresh IDs are generated with cryptographically secure randomness. Routes
-are rate-limited before authentication by network source and refresh ID, then after
-authentication by holder DID and refresh ID.
+are rate-limited before authentication both by network source globally and by network
+source plus refresh ID, then after authentication by holder DID and refresh ID.
 
 ## Plaintext and encryption boundary
 

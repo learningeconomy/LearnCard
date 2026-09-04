@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import cache from '@cache';
 
 import {
+    enforceCredentialRefreshPreAuthRateLimit,
     issueCredentialRefreshChallenge,
     verifyCredentialRefreshAuthorization,
 } from './credential-refresh-auth.helpers';
@@ -48,5 +49,14 @@ describe('credential refresh DID challenges', () => {
 
         expect(results.filter(result => result.authenticated)).toHaveLength(1);
         expect(results.filter(result => !result.authenticated)).toHaveLength(1);
+    });
+
+    it('limits one source across distinct refresh IDs', async () => {
+        await enforceCredentialRefreshPreAuthRateLimit('192.0.2.1', 'refresh-a', 1000, 2);
+        await enforceCredentialRefreshPreAuthRateLimit('192.0.2.1', 'refresh-b', 1000, 2);
+
+        await expect(
+            enforceCredentialRefreshPreAuthRateLimit('192.0.2.1', 'refresh-c', 1000, 2)
+        ).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' });
     });
 });
