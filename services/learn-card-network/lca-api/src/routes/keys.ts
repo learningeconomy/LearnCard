@@ -20,14 +20,10 @@ import { setValidChallengeForDid } from '@cache/challenges';
 import {
     MAX_RECOVERY_OTP_ATTEMPTS,
     claimRecoveryOtpSendWindow,
-    clearRecoveryOtpAttempts,
-    consumeRecoveryOtp,
     consumeRecoverySession,
     createRecoverySession,
-    getRecoveryOtp,
-    isRecoveryOtpLocked,
-    recordFailedRecoveryOtpAttempt,
     storeRecoveryOtp,
+    verifyRecoveryOtp,
 } from '@cache/recoverySessions';
 import {
     findUserKeyByAuthProvider,
@@ -50,6 +46,7 @@ import {
     completeIdentityRebind,
     ServerEncryptedShareValidator,
     EncryptedShareValidator,
+    UserKeyVersionConflictError,
     type ContactMethod,
     type AuthProviderMapping,
     type MongoUserKeyType,
@@ -348,41 +345,40 @@ export const keysRouter = t.router({
         )
         .mutation(async ({ input }) => {
             const email = input.email.trim().toLowerCase();
+            const verification = await verifyRecoveryOtp(
+                email,
+                hashRecoveryConfirmationCode(input.code)
+            );
 
-            if (await isRecoveryOtpLocked(email)) {
+            if (verification.status === 'locked') {
                 throw new TRPCError({
                     code: 'TOO_MANY_REQUESTS',
                     message: 'Too many incorrect attempts. Request a new code later.',
                 });
             }
 
-            const pending = await getRecoveryOtp(email);
-
-            if (!pending || !confirmationCodeMatches(input.code, pending.codeHash)) {
-                const attempts = await recordFailedRecoveryOtpAttempt(email);
-
+            if (verification.status === 'mismatch') {
                 throw new TRPCError({
                     code:
-                        attempts >= MAX_RECOVERY_OTP_ATTEMPTS ? 'TOO_MANY_REQUESTS' : 'BAD_REQUEST',
+                        verification.attempts >= MAX_RECOVERY_OTP_ATTEMPTS
+                            ? 'TOO_MANY_REQUESTS'
+                            : 'BAD_REQUEST',
                     message:
-                        attempts >= MAX_RECOVERY_OTP_ATTEMPTS
+                        verification.attempts >= MAX_RECOVERY_OTP_ATTEMPTS
                             ? 'Too many incorrect attempts. Request a new code later.'
                             : 'Incorrect or expired code. Please try again.',
                 });
             }
 
-            const consumed = await consumeRecoveryOtp(email);
-
-            if (!consumed || consumed.codeHash !== pending.codeHash) {
+            if (verification.status === 'none') {
                 throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'This code was already used.',
+                    code: 'BAD_REQUEST',
+                    message: 'Incorrect or expired code. Please try again.',
                 });
             }
 
-            await clearRecoveryOtpAttempts(email);
             const userKey = await requireUserKey(
-                consumed.authProvider,
+                verification.record.authProvider,
                 'Recovery account not found.'
             );
             const recoveryMethods = serializeConfirmedRecoveryMethods(userKey);
@@ -396,7 +392,7 @@ export const keysRouter = t.router({
 
             const recoverySessionToken = await createRecoverySession({
                 scope: 'recover',
-                authProvider: consumed.authProvider,
+                authProvider: verification.record.authProvider,
             });
 
             return { recoverySessionToken, recoveryMethods };
@@ -748,14 +744,32 @@ export const keysRouter = t.router({
 
             const authShareToStore = encryptAuthShare(input.authShare, seed);
 
-            const updatedDoc = await upsertUserKeyByAuthProvider(contactMethod, authProvider, {
-                authShare: authShareToStore,
-                primaryDid: authenticatedDid,
-                securityLevel: input.securityLevel ?? 'basic',
-                keyProvider: isMigration ? 'web3auth' : (existing?.keyProvider ?? 'sss'),
-                sssActivationState: shouldRemainProvisional ? 'provisional' : 'active',
-                ...(provisionalCreatedAt ? { provisionalCreatedAt } : {}),
-            });
+            let updatedDoc: MongoUserKeyType;
+
+            try {
+                updatedDoc = await upsertUserKeyByAuthProvider(
+                    contactMethod,
+                    authProvider,
+                    {
+                        authShare: authShareToStore,
+                        primaryDid: authenticatedDid,
+                        securityLevel: input.securityLevel ?? 'basic',
+                        keyProvider: isMigration ? 'web3auth' : (existing?.keyProvider ?? 'sss'),
+                        sssActivationState: shouldRemainProvisional ? 'provisional' : 'active',
+                        ...(provisionalCreatedAt ? { provisionalCreatedAt } : {}),
+                    },
+                    existing ? (existing.shareVersion ?? 1) : undefined
+                );
+            } catch (error) {
+                if (error instanceof UserKeyVersionConflictError) {
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: 'Key material changed; please retry',
+                    });
+                }
+
+                throw error;
+            }
 
             return { success: true, shareVersion: updatedDoc.shareVersion ?? 1 };
         }),
@@ -1396,7 +1410,7 @@ export const keysRouter = t.router({
             return { success: true, customToken };
         }),
 
-    deleteUserKey: didRoute
+    deleteUserKey: didAndChallengeRoute
         .meta({
             openapi: {
                 method: 'POST',
@@ -1405,7 +1419,11 @@ export const keysRouter = t.router({
                 summary: 'Delete user key and all associated data',
             },
         })
-        .input(AuthInputValidator)
+        .input(
+            AuthInputValidator.extend({
+                challenge: z.string().min(1),
+            })
+        )
         .output(z.object({ success: z.boolean() }))
         .mutation(async ({ ctx, input }) => {
             const { authProvider } = await verifyAndGetContactMethod(input);
