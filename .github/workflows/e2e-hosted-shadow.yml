@@ -69,12 +69,28 @@ jobs:
               env:
                   CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
                   CHECKOUT_CONCLUSION: ${{ steps.checkout.conclusion }}
+                  TESTED_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
               run: |
                   mkdir -p "$E2E_ARTIFACT_DIR"
                   {
                     printf 'checkout_outcome=%s\n' "$CHECKOUT_OUTCOME"
                     printf 'checkout_conclusion=%s\n' "$CHECKOUT_CONCLUSION"
                   } > "$E2E_ARTIFACT_DIR/checkout-status.txt"
+                  checkout_sha=unavailable
+                  if [[ "$CHECKOUT_OUTCOME" == "success" ]]; then
+                    checkout_sha=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD 2>/dev/null) || checkout_sha=unavailable
+                  fi
+                  {
+                    printf 'event_name=%s\n' "$GITHUB_EVENT_NAME"
+                    printf 'event_sha=%s\n' "$GITHUB_SHA"
+                    printf 'event_ref=%s\n' "$GITHUB_REF"
+                    printf 'run_id=%s\n' "$GITHUB_RUN_ID"
+                    printf 'run_attempt=%s\n' "$GITHUB_RUN_ATTEMPT"
+                    printf 'repository=%s\n' "$GITHUB_REPOSITORY"
+                    printf 'workflow=%s\n' "$GITHUB_WORKFLOW"
+                    printf 'tested_ref=%s\n' "$TESTED_REF"
+                    printf 'checkout_sha=%s\n' "$checkout_sha"
+                  } > "$E2E_ARTIFACT_DIR/revision-provenance.txt"
                   {
                     echo 'checkout:'
                     cat "$E2E_ARTIFACT_DIR/checkout-status.txt"
@@ -137,12 +153,28 @@ jobs:
               env:
                   CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
                   CHECKOUT_CONCLUSION: ${{ steps.checkout.conclusion }}
+                  TESTED_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
               run: |
                   mkdir -p "$E2E_ARTIFACT_DIR"
                   {
                     printf 'checkout_outcome=%s\n' "$CHECKOUT_OUTCOME"
                     printf 'checkout_conclusion=%s\n' "$CHECKOUT_CONCLUSION"
                   } > "$E2E_ARTIFACT_DIR/checkout-status.txt"
+                  checkout_sha=unavailable
+                  if [[ "$CHECKOUT_OUTCOME" == "success" ]]; then
+                    checkout_sha=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD 2>/dev/null) || checkout_sha=unavailable
+                  fi
+                  {
+                    printf 'event_name=%s\n' "$GITHUB_EVENT_NAME"
+                    printf 'event_sha=%s\n' "$GITHUB_SHA"
+                    printf 'event_ref=%s\n' "$GITHUB_REF"
+                    printf 'run_id=%s\n' "$GITHUB_RUN_ID"
+                    printf 'run_attempt=%s\n' "$GITHUB_RUN_ATTEMPT"
+                    printf 'repository=%s\n' "$GITHUB_REPOSITORY"
+                    printf 'workflow=%s\n' "$GITHUB_WORKFLOW"
+                    printf 'tested_ref=%s\n' "$TESTED_REF"
+                    printf 'checkout_sha=%s\n' "$checkout_sha"
+                  } > "$E2E_ARTIFACT_DIR/revision-provenance.txt"
                   {
                     echo 'checkout:'
                     cat "$E2E_ARTIFACT_DIR/checkout-status.txt"

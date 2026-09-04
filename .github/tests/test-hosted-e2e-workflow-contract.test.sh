@@ -6,6 +6,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ruby - "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" "$REPO_ROOT/.github/workflows/test.yml" <<'RUBY'
 require 'yaml'
 require 'tempfile'
+require 'tmpdir'
+require 'open3'
 
 hosted_path, legacy_path = ARGV
 abort 'hosted E2E workflow missing' unless File.file?(hosted_path)
@@ -97,6 +99,21 @@ aggregate_defaults = {
   'SERVICE_RESULT' => 'success'
 }
 
+[
+  ['success', 'success', true],
+  ['failure', 'success', false], ['cancelled', 'success', false], ['skipped', 'success', false],
+  ['success', 'failure', false], ['success', 'cancelled', false], ['success', 'skipped', false],
+  ['failure', 'failure', false], ['failure', 'cancelled', false], ['failure', 'skipped', false],
+  ['cancelled', 'failure', false], ['cancelled', 'cancelled', false], ['cancelled', 'skipped', false],
+  ['skipped', 'failure', false], ['skipped', 'cancelled', false], ['skipped', 'skipped', false]
+].each do |browser_result, service_result, expected|
+  actual = aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
+    'BROWSER_RESULT' => browser_result, 'SERVICE_RESULT' => service_result
+  ))
+  abort "aggregate child outcomes #{browser_result}/#{service_result}: expected #{expected}" unless actual == expected
+end
+puts 'Aggregate child outcome table passed (16 combinations)'
+
 abort 'explicit draft skip must succeed' unless aggregate_succeeds?(aggregate_run, aggregate_defaults.merge(
   'ELIGIBLE' => 'false',
   'ELIGIBILITY_REASON' => 'draft-pr',
@@ -122,6 +139,47 @@ end
 legacy = YAML.load_file(legacy_path, aliases: true)
 legacy_jobs = legacy.fetch('jobs')
 abort 'legacy EC2 gate must remain during shadow phase' unless legacy_jobs.key?('e2e-tests')
+
+[browser_steps, service_steps].each do |steps|
+  preflight = steps.find { |step| step['name'] == 'Capture runner preflight' }
+  upload = steps.find { |step| step['uses'] == 'actions/upload-artifact@v4' }
+  abort 'artifact upload must remain unconditional' unless upload.fetch('if').include?('always()')
+
+  %w[success failure].each do |checkout_outcome|
+    Dir.mktmpdir('hosted-preflight') do |dir|
+      # Stub Docker and Linux-only memory diagnostics; run the actual workflow shell and git lookup.
+      File.write(File.join(dir, 'docker'), "#!/bin/sh\nexit 0\n")
+      File.chmod(0755, File.join(dir, 'docker'))
+      File.write(File.join(dir, 'head'), "#!/bin/sh\nif [ \"$2\" = /proc/meminfo ]; then echo 'MemTotal: fixture'; else exec /usr/bin/head \"$@\"; fi\n")
+      File.chmod(0755, File.join(dir, 'head'))
+      artifacts = File.join(dir, 'artifacts')
+      workspace = checkout_outcome == 'success' ? File.expand_path('../..', File.dirname(hosted_path)) : File.join(dir, 'missing-checkout')
+      env = {
+        'PATH' => "#{dir}:#{ENV.fetch('PATH')}", 'E2E_ARTIFACT_DIR' => artifacts,
+        'GITHUB_WORKSPACE' => workspace, 'CHECKOUT_OUTCOME' => checkout_outcome,
+        'CHECKOUT_CONCLUSION' => checkout_outcome, 'GITHUB_EVENT_NAME' => 'workflow_dispatch',
+        'GITHUB_SHA' => 'event-sha-fixture', 'GITHUB_REF' => 'refs/heads/main',
+        'GITHUB_RUN_ID' => '12345', 'GITHUB_RUN_ATTEMPT' => '2',
+        'GITHUB_REPOSITORY' => 'example/LearnCard', 'GITHUB_WORKFLOW' => 'Hosted E2E Shadow',
+        'TESTED_REF' => 'selected-manual-ref'
+      }
+      stdout, status = Open3.capture2e(env, 'bash', '-euo', 'pipefail', '-c', preflight.fetch('run'), chdir: dir)
+      abort "preflight failed without checkout dependency: #{stdout}" unless status.success?
+      provenance_path = File.join(artifacts, 'revision-provenance.txt')
+      abort 'revision provenance artifact missing' unless File.file?(provenance_path)
+      provenance = File.read(provenance_path)
+      %w[event_name=workflow_dispatch event_sha=event-sha-fixture event_ref=refs/heads/main run_id=12345 run_attempt=2 repository=example/LearnCard tested_ref=selected-manual-ref].each do |expected|
+        abort "missing provenance #{expected}" unless provenance.lines.map(&:chomp).include?(expected)
+      end
+      checkout_sha = checkout_outcome == 'success' ? Open3.capture2('git', '-C', workspace, 'rev-parse', 'HEAD').first.strip : 'unavailable'
+      abort 'actual checkout SHA must be distinct from event SHA' unless provenance.include?("checkout_sha=#{checkout_sha}\n")
+      abort 'checkout status missing after failed checkout' unless File.read(File.join(artifacts, 'checkout-status.txt')).include?("checkout_outcome=#{checkout_outcome}")
+    end
+  end
+  abort 'requested ref must match checkout selection' unless preflight.fetch('env')['TESTED_REF'] ==
+    '${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}'
+end
+puts 'Both jobs preserve event/run provenance with and without checkout'
 RUBY
 
 echo 'Hosted E2E workflow contract passed'

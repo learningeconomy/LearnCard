@@ -27,13 +27,20 @@ trap collect_browser_artifacts EXIT
 
 wait_for_url() {
     local name="${1:?name required}" url="${2:?url required}" timeout="${3:-300}" start=$SECONDS
-    until curl --silent --show-error --fail "$url" >/dev/null 2>&1; do
-        if (( SECONDS - start >= timeout )); then
-            echo "$name did not become ready within ${timeout}s" >&2
-            return 1
+    local remaining request_timeout sleep_time
+    while (( (remaining = timeout - (SECONDS - start)) > 0 )); do
+        request_timeout=$((remaining < 10 ? remaining : 10))
+        if curl --silent --show-error --fail --connect-timeout 5 --max-time "$request_timeout" \
+            "$url" >/dev/null 2>&1; then
+            return 0
         fi
-        sleep 2
+        remaining=$((timeout - (SECONDS - start)))
+        (( remaining > 0 )) || break
+        sleep_time=$((remaining < 2 ? remaining : 2))
+        sleep "$sleep_time"
     done
+    echo "$name did not become ready within ${timeout}s" >&2
+    return 1
 }
 
 build_base() {
@@ -66,11 +73,14 @@ install_firefox() {
 
 wait_for_stack() {
     wait_for_url app http://localhost:3000 300 & local app_pid=$!
-    wait_for_url brain http://localhost:4000 300 & local brain_pid=$!
-    wait_for_url cloud http://localhost:4100 300 & local cloud_pid=$!
-    wait "$app_pid"
-    wait "$brain_pid"
-    wait "$cloud_pid"
+    wait_for_url brain http://localhost:4000/api/health-check 300 & local brain_pid=$!
+    wait_for_url cloud http://localhost:4100/api/health-check 300 & local cloud_pid=$!
+    # e2e_timed disables errexit: explicitly retain failure while reaping every child.
+    local status=0
+    wait "$app_pid" || status=$?
+    wait "$brain_pid" || status=$?
+    wait "$cloud_pid" || status=$?
+    return "$status"
 }
 
 run_playwright() {
