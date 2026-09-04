@@ -44,6 +44,16 @@ export type EcosystemAuditEvent = {
     timestamp: string;
     beforeSummary?: Record<string, unknown>;
     afterSummary?: Record<string, unknown>;
+    actorDisplayName?: string;
+    object?: {
+        kind: 'INSTALL' | 'BINDING';
+        title: string;
+        subtitle?: string;
+        listingId?: string;
+        listingKind?: string;
+        capability?: string;
+        memberCount?: number;
+    };
 };
 
 const makeCallers = async (ctx: AuthedContext) => {
@@ -187,7 +197,7 @@ export const surfacesRouter = router({
 
 export const activityRouter = router({
     list: protectedProcedure
-        .input(EcosystemInput.extend({ limit: z.number().int().positive().max(200).optional() }))
+        .input(EcosystemInput.extend({ limit: z.number().int().positive().max(500).optional() }))
         .query(async ({ ctx, input }) => {
             const { query } = await makeCallers(ctx);
 

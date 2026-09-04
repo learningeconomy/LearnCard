@@ -21,6 +21,7 @@ import { Infrastructure } from './pages/Infrastructure';
 import { TrustRegistries } from './pages/TrustRegistries';
 import { Bindings } from './pages/Bindings';
 import { CredentialFinder } from './pages/CredentialFinder';
+import { Settings } from './pages/Settings';
 import { ComingSoon } from './pages/ComingSoon';
 import { allRoutes } from './routes';
 
@@ -154,6 +155,9 @@ export function App() {
                         <Route path="/credential-finder">
                             <CredentialFinder session={session} />
                         </Route>
+                        <Route path="/settings">
+                            <Settings session={session} />
+                        </Route>
                         {allRoutes
                             .filter(
                                 r =>
@@ -170,7 +174,8 @@ export function App() {
                                     r.path !== '/plugins' &&
                                     r.path !== '/trust-registries' &&
                                     r.path !== '/bindings' &&
-                                    r.path !== '/credential-finder'
+                                    r.path !== '/credential-finder' &&
+                                    r.path !== '/settings'
                             )
                             .map(route => (
                                 <Route key={route.path} path={route.path}>

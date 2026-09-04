@@ -26,6 +26,7 @@ import {
     listInstallIntentsByEcosystem,
     readInstallIntentById,
 } from '@accesslayer/install-intent/intent-read';
+import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { suspendInstallIntentForPolicy } from '@accesslayer/install-intent/intent-status';
 import {
     createInstallIntentAuditEvent,
@@ -900,14 +901,34 @@ export const installIntentsRouter = t.router({
             return listBindingsByEcosystem(input.ecosystemId);
         }),
 
+    // ADR-011 §4: operators query decisions by actor, object, decision and time. Events are
+    // returned newest-first with the actor and object resolved to names so the console never
+    // has to show a bare profileId / intentId / bindingId.
     listEcosystemAuditEvents: profileRoute
         .meta({ requiredScope: 'app-store:read' })
         .input(
             ListEcosystemInstallTargetsInputValidator.extend({
-                limit: z.number().int().positive().max(200).default(50),
+                limit: z.number().int().positive().max(500).default(200),
             })
         )
-        .output(z.array(InstallIntentAuditEventValidator))
+        .output(
+            z.array(
+                InstallIntentAuditEventValidator.extend({
+                    actorDisplayName: z.string().optional(),
+                    object: z
+                        .object({
+                            kind: z.enum(['INSTALL', 'BINDING']),
+                            title: z.string(),
+                            subtitle: z.string().optional(),
+                            listingId: z.string().optional(),
+                            listingKind: z.string().optional(),
+                            capability: z.string().optional(),
+                            memberCount: z.number().int().optional(),
+                        })
+                        .optional(),
+                })
+            )
+        )
         .query(async ({ ctx, input }) => {
             await requireEcosystemRole(input.ecosystemId, ctx.user.profile.profileId, [
                 'OWNER',
@@ -916,9 +937,90 @@ export const installIntentsRouter = t.router({
                 'VIEWER',
             ]);
 
-            const events = await getInstallIntentAuditEvents({ ecosystemId: input.ecosystemId });
+            const [events, intents, bindings, targets] = await Promise.all([
+                getInstallIntentAuditEvents({ ecosystemId: input.ecosystemId }),
+                listInstallIntentsByEcosystem(input.ecosystemId),
+                listBindingsByEcosystem(input.ecosystemId),
+                listInstallTargetsByEcosystemId(input.ecosystemId),
+            ]);
+            const recent = events.slice(-input.limit).reverse();
 
-            return events.slice(-input.limit).reverse();
+            const intentById = new Map(intents.map(intent => [intent.intentId, intent]));
+            const bindingById = new Map(bindings.map(binding => [binding.bindingId, binding]));
+            const targetById = new Map(targets.map(target => [target.id, target]));
+
+            const listingIds = new Set<string>();
+            intents.forEach(intent => listingIds.add(intent.proposal.source.listingId));
+            targets.forEach(target => target.listingId && listingIds.add(target.listingId));
+            const listings = await Promise.all([...listingIds].map(readAppStoreListingById));
+            const listingById = new Map(
+                listings
+                    .filter((listing): listing is NonNullable<typeof listing> => Boolean(listing))
+                    .map(listing => [listing.listing_id, listing])
+            );
+
+            const actorIds = [
+                ...new Set(
+                    recent
+                        .map(event => event.actorProfileId)
+                        .filter((id): id is string => Boolean(id))
+                ),
+            ];
+            const actors = await getProfilesByProfileIds(actorIds);
+            const actorNameById = new Map(
+                actors.map(profile => [profile.profileId, profile.displayName || profile.profileId])
+            );
+
+            const endpointName = (endpoint: { resourceType: string; resourceId: string }) => {
+                if (endpoint.resourceType === 'ECOSYSTEM') return 'This ecosystem';
+                const target = targetById.get(endpoint.resourceId);
+                const listing = target?.listingId ? listingById.get(target.listingId) : undefined;
+                return listing?.display_name ?? endpoint.resourceId;
+            };
+
+            type AuditObject = {
+                kind: 'INSTALL' | 'BINDING';
+                title: string;
+                subtitle?: string;
+                listingId?: string;
+                listingKind?: string;
+                capability?: string;
+                memberCount?: number;
+            };
+
+            return recent.map(event => {
+                const binding = event.bindingId ? bindingById.get(event.bindingId) : undefined;
+                const intent = event.intentId ? intentById.get(event.intentId) : undefined;
+
+                let object: AuditObject | undefined;
+
+                if (binding) {
+                    object = {
+                        kind: 'BINDING',
+                        title: `${endpointName(binding.provider)} → ${endpointName(binding.consumer)}`,
+                        capability: binding.capability,
+                    };
+                } else if (intent) {
+                    const listing = listingById.get(intent.proposal.source.listingId);
+                    const targetCount = intent.spec?.targets.length ?? 0;
+                    object = {
+                        kind: 'INSTALL',
+                        title: listing?.display_name ?? intent.proposal.source.listingId,
+                        subtitle: listing?.tagline ?? undefined,
+                        listingId: intent.proposal.source.listingId,
+                        listingKind: listing?.kind ?? undefined,
+                        memberCount: targetCount > 1 ? targetCount : undefined,
+                    };
+                }
+
+                return {
+                    ...event,
+                    actorDisplayName: event.actorProfileId
+                        ? actorNameById.get(event.actorProfileId)
+                        : undefined,
+                    object,
+                };
+            });
         }),
 
     // ADR-015 D4: surface visibility is a derived projection, never persisted state. A surface

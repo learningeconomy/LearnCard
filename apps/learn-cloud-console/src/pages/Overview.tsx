@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import {
-    Activity,
+    AlertTriangle,
     AppWindow,
+    ArrowRight,
+    CheckCircle2,
     BookMarked,
     Building2,
     Loader2,
@@ -11,8 +13,13 @@ import {
     TrendingUp,
     Users,
 } from 'lucide-react';
-import { Badge } from '../components/ui/badge';
-import { DashboardSession, EcosystemAuditEvent, getEcosystemDetail, listEcosystems } from '../api';
+import {
+    BindingRecord,
+    DashboardSession,
+    EcosystemAuditEvent,
+    getEcosystemDetail,
+    listEcosystems,
+} from '../api';
 import { trpc } from '../trpc';
 import type { InstallIntent } from '@learncard/types';
 
@@ -47,37 +54,6 @@ const quickActions: { title: string; desc: string; icon: LucideIcon; href: strin
     },
 ];
 
-// Install-intent audit actions (brain install-intents.ts createInstallIntentAuditEvent
-// call sites + reconciler STATUS_* transitions) → operator-readable labels.
-const ACTION_LABELS: Record<
-    string,
-    { label: string; tone: 'default' | 'success' | 'warning' | 'destructive' }
-> = {
-    PLAN_CREATED: { label: 'Install planned', tone: 'default' },
-    APPROVED: { label: 'Install approved', tone: 'success' },
-    REJECTED: { label: 'Install rejected', tone: 'destructive' },
-    APPLIED: { label: 'Install applied', tone: 'success' },
-    REVOKED: { label: 'Install revoked', tone: 'destructive' },
-    POLICY_SUSPENDED: { label: 'Suspended by policy', tone: 'warning' },
-    STATUS_APPLYING: { label: 'Applying', tone: 'default' },
-    STATUS_READY: { label: 'Ready', tone: 'success' },
-    STATUS_FAILED: { label: 'Failed', tone: 'destructive' },
-    STATUS_DEGRADED: { label: 'Degraded', tone: 'warning' },
-    BINDING_PROPOSED: { label: 'Binding proposed', tone: 'default' },
-    BINDING_APPROVED: { label: 'Binding approved', tone: 'success' },
-    BINDING_ACTIVATED: { label: 'Binding activated', tone: 'success' },
-    BINDING_REVOKED: { label: 'Binding revoked', tone: 'destructive' },
-};
-
-const describeAction = (action: string) =>
-    ACTION_LABELS[action] ?? {
-        label: action.toLowerCase().replace(/_/g, ' '),
-        tone: 'default' as const,
-    };
-
-const badgeVariant = (tone: 'default' | 'success' | 'warning' | 'destructive') =>
-    tone === 'default' ? 'outline' : tone;
-
 const relativeTime = (iso: string): string => {
     const diffMs = Date.now() - new Date(iso).getTime();
     const minutes = Math.round(diffMs / 60000);
@@ -103,6 +79,7 @@ export function Overview({ session }: { session: DashboardSession }) {
     const [error, setError] = useState<string | null>(null);
     const [stats, setStats] = useState<StatTile[]>([]);
     const [events, setEvents] = useState<EcosystemAuditEvent[]>([]);
+    const [pendingBindings, setPendingBindings] = useState<BindingRecord[]>([]);
 
     const ecosystemIds = useMemo(
         () => [...new Set(session.effectiveAccess.ecosystemRoles.map(grant => grant.ecosystemId))],
@@ -112,7 +89,7 @@ export function Overview({ session }: { session: DashboardSession }) {
     const load = useCallback(async () => {
         setError(null);
         try {
-            const [ecosystems, details, intentsPerEcosystem, eventsPerEcosystem] =
+            const [ecosystems, details, intentsPerEcosystem, eventsPerEcosystem, bindingsPer] =
                 await Promise.all([
                     listEcosystems(),
                     Promise.all(ecosystemIds.map(id => getEcosystemDetail(id))),
@@ -123,17 +100,18 @@ export function Overview({ session }: { session: DashboardSession }) {
                     ),
                     Promise.all(
                         ecosystemIds.map(id =>
-                            trpc.activity.list.query({ ecosystemId: id, limit: 12 })
+                            trpc.activity.list.query({ ecosystemId: id, limit: 50 })
                         )
+                    ),
+                    Promise.all(
+                        ecosystemIds.map(id => trpc.bindings.list.query({ ecosystemId: id }))
                     ),
                 ]);
 
             setEvents(
-                eventsPerEcosystem
-                    .flat()
-                    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-                    .slice(0, 12)
+                eventsPerEcosystem.flat().sort((a, b) => b.timestamp.localeCompare(a.timestamp))
             );
+            setPendingBindings(bindingsPer.flat().filter(b => b.status === 'PROPOSED'));
 
             // Members = unique profiles across every ecosystem this session can see
             // (ADR-001: profiles are the real primitive behind the prototype's
@@ -236,45 +214,78 @@ export function Overview({ session }: { session: DashboardSession }) {
                 ))}
             </div>
 
-            {/* Activity — real ADR-008 install-intent / binding audit events */}
-            {events.length > 0 && (
-                <div>
-                    <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                        <Activity className="w-5 h-5 text-emerald" /> Recent Activity
-                    </h2>
+            {/* Needs your attention — the only activity that is actionable from a dashboard.
+                History lives in Settings → Security → Audit Log. */}
+            {(() => {
+                const latestInstall = events.find(
+                    e => e.action === 'APPLIED' && e.object?.kind === 'INSTALL'
+                );
+                const todayCount = events.filter(
+                    e =>
+                        !e.action.startsWith('STATUS_') &&
+                        new Date(e.timestamp).toDateString() === new Date().toDateString()
+                ).length;
+                if (pendingBindings.length === 0 && !latestInstall) return null;
+
+                return (
                     <div className="bg-card border border-border rounded-xl shadow-card divide-y divide-border/60">
-                        {events.map(event => {
-                            const { label, tone } = describeAction(event.action);
-                            return (
-                                <div
-                                    key={event.id}
-                                    className="flex items-center justify-between gap-3 px-4 py-3"
-                                >
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <Badge
-                                            variant={badgeVariant(tone)}
-                                            className="text-[10px] shrink-0"
-                                        >
-                                            {label}
-                                        </Badge>
-                                        <span className="text-sm text-muted-foreground truncate font-mono">
-                                            {event.bindingId ?? event.intentId}
-                                        </span>
-                                        {event.actorProfileId && (
-                                            <span className="text-xs text-muted-foreground hidden sm:inline truncate">
-                                                by {event.actorProfileId}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <span className="text-xs text-muted-foreground shrink-0">
-                                        {relativeTime(event.timestamp)}
+                        {pendingBindings.length > 0 && (
+                            <Link
+                                href="/bindings"
+                                className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-muted/40 transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="w-9 h-9 rounded-lg bg-gold/10 text-gold flex items-center justify-center shrink-0">
+                                        <AlertTriangle className="w-4 h-4" />
                                     </span>
+                                    <div>
+                                        <div className="text-sm font-medium text-foreground">
+                                            {pendingBindings.length} binding
+                                            {pendingBindings.length === 1 ? '' : 's'} awaiting your
+                                            approval
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            Proposed connections stay inert until an accountable
+                                            administrator activates them.
+                                        </div>
+                                    </div>
                                 </div>
-                            );
-                        })}
+                                <span className="text-sm text-emerald font-medium inline-flex items-center gap-1 shrink-0">
+                                    Review <ArrowRight className="w-3.5 h-3.5" />
+                                </span>
+                            </Link>
+                        )}
+                        {latestInstall && (
+                            <div className="flex items-center justify-between gap-3 px-5 py-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="w-9 h-9 rounded-lg bg-emerald/10 text-emerald flex items-center justify-center shrink-0">
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    </span>
+                                    <div>
+                                        <div className="text-sm font-medium text-foreground">
+                                            {latestInstall.object?.title} installed{' '}
+                                            <span className="text-muted-foreground font-normal">
+                                                {relativeTime(latestInstall.timestamp)}
+                                            </span>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {todayCount} decision{todayCount === 1 ? '' : 's'} today
+                                            {latestInstall.actorDisplayName &&
+                                                ` · by ${latestInstall.actorDisplayName}`}
+                                        </div>
+                                    </div>
+                                </div>
+                                <Link
+                                    href="/settings"
+                                    className="text-sm text-emerald font-medium inline-flex items-center gap-1 shrink-0"
+                                >
+                                    View audit log <ArrowRight className="w-3.5 h-3.5" />
+                                </Link>
+                            </div>
+                        )}
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* Quick Actions */}
             <div>
