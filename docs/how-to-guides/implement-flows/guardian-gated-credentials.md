@@ -35,7 +35,7 @@ const result = await learnCard.invoke.send({
 });
 
 console.log(result.inbox?.guardianStatus); // 'AWAITING_GUARDIAN'
-console.log(result.inbox?.issuanceId);     // Tracking ID
+console.log(result.inbox?.issuanceId); // Tracking ID
 ```
 
 ### REST API
@@ -54,6 +54,12 @@ Content-Type: application/json
     }
 }
 ```
+
+### What each person sees
+
+- **The guardian** gets an approval email and approves via a 6-digit OTP.
+- **The learner** gets a "pending guardian approval" notice until then, followed by the normal claim flow once approved.
+- **You (the issuer)** see the credential status move from `AWAITING_GUARDIAN` to `GUARDIAN_APPROVED` or `GUARDIAN_REJECTED`.
 
 ### Requirements
 
@@ -97,11 +103,11 @@ console.log(finalizeResult.guardianPending); // Number of credentials awaiting g
 
 ## Guardian Status Values
 
-| Status | Meaning |
-|--------|---------|
+| Status              | Meaning                                                    |
+| ------------------- | ---------------------------------------------------------- |
 | `AWAITING_GUARDIAN` | Credential sent, waiting for guardian to approve or reject |
-| `GUARDIAN_APPROVED` | Guardian approved, student can claim |
-| `GUARDIAN_REJECTED` | Guardian rejected, student cannot claim |
+| `GUARDIAN_APPROVED` | Guardian approved, student can claim                       |
+| `GUARDIAN_REJECTED` | Guardian rejected, student cannot claim                    |
 
 ## Related
 

@@ -14,7 +14,7 @@ _In the wild:_ universities issuing diplomas and micro-credentials, bootcamps ce
 
 - **No code**: issue directly from the [LearnCard app](https://learncard.app)
 - **One API call**: [send a credential to an email](../quick-start/your-first-integration.md) (~15 lines)
-- **At scale**: [reusable credential templates with Boosts](../tutorials/create-a-boost.md)
+- **At scale**: [issue at scale with Boosts](../tutorials/create-a-boost.md)
 - **Everything else**: [all sending patterns](../how-to-guides/send-credentials.md) — templates, webhooks, guardian consent
 
 ## 📱 Publish your app in LearnCard
@@ -24,6 +24,7 @@ Put your product inside the LearnCard app store, where users can install and lau
 _In the wild:_ AI tutors that read a learner's real history (with consent), games that turn achievements into portable badges, career tools that build a skills profile from the wallet.
 
 - Start here: [Publish Your App in LearnCard](../how-to-guides/publish-your-app.md) — local mock mode to published listing
+- Build it: [Build an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md)
 - Full API surface: [Partner Connect SDK](../sdks/partner-connect.md)
 
 ## 🌐 Add LearnCard to your site
@@ -32,8 +33,9 @@ Let users claim credentials from your website or app — from a one-script claim
 
 _In the wild:_ an LMS that awards completions into the learner's wallet; a conference site with a one-click "claim your attendance badge."
 
-- **One script tag**: [Embed SDK claim button](../sdks/embed-sdk.md)
-- **Full integration**: [connect a website](../how-to-guides/connect-systems/connect-a-website.md) or [an embedded app](../how-to-guides/connect-systems/connect-an-embedded-app.md)
+- **One script tag**: [embed a claim button](../how-to-guides/connect-systems/embed-a-claim-button.md)
+- **Connected accounts**: [connect your website or game](../how-to-guides/connect-systems/connect-a-website.md) — users link once, you issue automatically
+- **All options**: [Add LearnCard to Your Product](../how-to-guides/connect-systems/README.md)
 
 ## 🤝 Manage consent & guardianship
 
@@ -50,9 +52,10 @@ For products where LearnCard is core infrastructure: run your own wallet instanc
 
 _In the wild:_ a state agency running its own credential network; a wallet vendor adding a LearnCard plugin so its users can receive LearnCard-issued credentials.
 
-- [LearnCard Wallet SDK](../sdks/learncard-core/README.md)
+- Start here: [How should I manage keys?](../how-to-guides/deploy-infrastructure/choose-key-management.md)
 - [Build a plugin](../how-to-guides/deploy-infrastructure/the-simplest-plugin.md)
-- [Deploy your own network](../how-to-guides/deploy-infrastructure/deploy-your-own-network.md)
+- [Connect to an independent network](../how-to-guides/deploy-infrastructure/connect-to-independent-network.md)
+- Full API: [LearnCard Wallet SDK](../sdks/learncard-core/README.md)
 
 ---
 

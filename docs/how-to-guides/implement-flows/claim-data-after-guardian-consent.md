@@ -8,10 +8,10 @@ description: How to implement the Consentful "Claim Later" Flow
 
 The Consentful "Claim Later" Flow enables applications to save an ephemeral user's session data as a "Save Game" state, which can be restored after obtaining guardian consent. This pattern is ideal for applications that need to:
 
--   Create low-PII profiles quickly (using nicknames)
--   Allow users to start using the application immediately
--   Obtain guardian consent after initial engagement
--   Restore the user's session state after consent is granted
+- Create low-PII profiles quickly (using nicknames)
+- Allow users to start using the application immediately
+- Obtain guardian consent after initial engagement
+- Restore the user's session state after consent is granted
 
 ### Use Case: MyLittleTabbyCat
 
@@ -20,7 +20,7 @@ To illustrate this flow, we'll use a fictional application called "MyLittleTabby
 ### Implementation Steps
 
 {% hint style="warning" %}
-Before you begin, make sure you've [setup a Service Profile ](https://docs.learncard.com/learn-card-sdk/learncard-network/learncard-network-api/profile#id-2.-create-a-service-profile)in the network for your LearnCard.&#x20;
+Before you begin, make sure you've [setup a Service Profile ](../../core-concepts/identities-and-keys/network-profiles.md)in the network for your LearnCard.&#x20;
 
 ```javascript
 const serviceProfile = {
@@ -51,7 +51,7 @@ await learnCard.invoke.issueCredential(credential);
 const credential {
   "@context": [
     "https://www.w3.org/2018/credentials/v1",
-    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json",
+    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
     "https://ctx.learncard.com/boosts/1.0.3.json",
     {
       "tabby": "https://docs.mylittletabbycat.com/definitions#",
@@ -183,7 +183,7 @@ const signingAuthority = {
 {% endhint %}
 
 ```javascript
-// Create a GameFlow contract (based on ConsentFlow)
+// Create a GameFlow contract (a specialized ConsentFlow for ephemeral sessions)
 const gameFlowContract = {
     name: 'MyLittleTabbyCat Game',
     subtitle: "Guardian Consent for Child's Tabby Cat",

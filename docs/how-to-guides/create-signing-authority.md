@@ -6,6 +6,11 @@ description: 'How-To Guide: Configuring a Signing Authority'
 
 This guide provides practical, step-by-step recipes for setting up a [Signing Authority](../core-concepts/identities-and-keys/signing-authorities.md). A [Signing Authority](../core-concepts/identities-and-keys/signing-authorities.md) is a service that cryptographically signs credentials on your behalf, allowing you to issue official records without directly handling private keys in your application.
 
+{% hint style="info" %}
+**Do you need a signing authority?**
+If you sign credentials yourself and pass `signedCredential` to `send()` (like in the [Quickstart](../quick-start/your-first-integration.md)), you do **NOT** need a signing authority. You only need one when LearnCard signs on your behalf — for example, when using `templateUri`/`templateData` sends, generating claim links, or building Partner Connect apps.
+{% endhint %}
+
 We'll cover two paths: the simple, recommended approach of using a LearnCard-managed authority, and the advanced option of registering your own external service.
 
 This guide assumes you have a LearnCard Passport profile. If not, you can create one via the UI or CLI.
@@ -118,12 +123,8 @@ console.log(`Successfully registered "${myExternalAuthority.name}".`);
 ```javascript
 // Note the explicit `signingAuthority` object in the configuration.
 await learncardApiClient.post('/inbox/issue', {
-    recipient: {
-        /* ... */
-    },
-    credential: {
-        /* ...unsigned credential data... */
-    },
+    recipient: {/* ... */},
+    credential: {/* ...unsigned credential data... */},
     configuration: {
         signingAuthority: {
             name: 'my-custom-signer',
@@ -148,6 +149,12 @@ await learncardApiClient.post('/inbox/issue', {
     - **Click**: Create
 3. Already Signed In? Deep link below 👇
 
--   [LearnCardApp Signing Authority DevTools](https://learncard.app/passport?showSigningAuthorityDevTools=true)
+- [LearnCardApp Signing Authority DevTools](https://learncard.app/passport?showSigningAuthorityDevTools=true)
 
 {% embed url="https://www.loom.com/share/080838131d82428289073699d19a2aa8" %}
+
+## Next steps
+
+- Send your first credential → [Send & Issue Credentials](send-credentials.md)
+- Issue at scale → [Create a Boost](../tutorials/create-a-boost.md)
+- Track claims → [Listen to Webhooks](../tutorials/listen-to-webhooks.md)

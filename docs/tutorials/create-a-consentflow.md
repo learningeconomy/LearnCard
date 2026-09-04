@@ -4,7 +4,16 @@ description: 'Tutorial: create a ConsentFlow — the starting point for consent 
 
 # Consent & Guardianship: Create a ConsentFlow
 
-**What is a ConsentFlow?** A ConsentFlow is a powerful mechanism in LearnCard that allows your application or service (as an "Issuer" or "Contract Owner") to request permission from users ("Holders") to access certain parts of their data or to write new information (like credentials) to their profile. It's all based on explicit user consent, ensuring transparency and user control.
+**What is a [ConsentFlow](../core-concepts/consent-and-permissions/consentflow-overview.md)?** A ConsentFlow is a powerful mechanism in LearnCard that allows your application or service (as an "Issuer" or "Contract Owner") to request permission from users ("Holders") to access certain parts of their data or to write new information (like credentials) to their profile. It's all based on explicit user consent, ensuring transparency and user control.
+
+## Consent or guardianship — which do you need?
+
+Before building, decide if you need a standard ConsentFlow or a guardian-gated flow:
+
+- **Standard ConsentFlow**: For adults and independent learners. You request read/write access, they accept the terms, and you can set up ongoing auto-issuance.
+- **Guardianship**: For minors or managed accounts. A guardian must approve the action via email and OTP before the learner can claim the credential. You trigger this by calling `send()` with `options.guardianEmail`, or by creating a contract with `needsGuardianConsent: true`.
+
+If you need guardianship, check out [Guardian-gated credentials](../how-to-guides/implement-flows/guardian-gated-credentials.md) and [Claim data after guardian consent](../how-to-guides/implement-flows/claim-data-after-guardian-consent.md). For a deeper dive into standard consent, read the [ConsentFlow overview](../core-concepts/consent-and-permissions/consentflow-overview.md).
 
 ## **What you'll accomplish in this tutorial:**
 
@@ -108,11 +117,12 @@ const myAppConsentFlowContract = {
 {% hint style="info" %}
 ✨ **Good to know:**
 
--   `read` and `write` permissions are structured by `personal` data fields and `credentials` (grouped by `categories`).
--   You can mark items as `required: true` or `required: false`.
--   The `redirectUrl` is crucial for getting the user back to your application with their consent information.
--   Supported credential categories include: `Achievement`, `ID`, `Learning History`, `Work History`, `Social Badge`, `Membership`, `Accomplishment`, `Accommodation`, `Family`, `Course`.
-    {% endhint %}
+- `read` and `write` permissions are structured by `personal` data fields and `credentials` (grouped by `categories`).
+- You can mark items as `required: true` or `required: false`.
+- The `redirectUrl` is crucial for getting the user back to your application with their consent information.
+- Supported credential categories include: `Achievement`, `ID`, `Learning History`, `Work History`, `Social Badge`, `Membership`, `Accomplishment`, `Accommodation`, `Family`, `Course`.
+
+{% endhint %}
 
 ### **Step 1.2: Create the Contract**
 
@@ -392,11 +402,18 @@ async function sendCredentialViaContract(
 {% hint style="warning" %}
 **Important:**
 
--   The `credential.type` and its category must match what your ConsentFlow contract allows for `write` permissions.
--   The `boostUri` parameter in `writeCredentialToContract` links the issued credential to a "Boost," which can act as a template or define its category and display properties. Ensure this Boost exists and your service profile has permission to use it.
-    {% endhint %}
+- The `credential.type` and its category must match what your ConsentFlow contract allows for `write` permissions.
+- The `boostUri` parameter in `writeCredentialToContract` links the issued credential to a "Boost," which can act as a template or define its category and display properties. Ensure this Boost exists and your service profile has permission to use it.
+
+{% endhint %}
 
 ---
+
+## Troubleshooting
+
+- **"Invalid Terms for Contract"**: You might be trying to consent to a contract twice, or the terms you're accepting don't match the contract's requirements.
+- **"Could not find contract"**: Double-check your `contractUri`. It must be exact.
+- **Redirect fails**: Ensure your `redirectUrl` is a valid `http://` or `https://` URL.
 
 ## Summary & Next Steps
 
@@ -410,9 +427,9 @@ You've now learned the end-to-end process of:
 
 This is a foundational flow for many powerful applications. From here, you can explore more advanced ConsentFlow features like:
 
--   [Updating and withdrawing consent.](../sdks/learncard-core/construction.md#retrieving-profiles-5)
--   Using [Auto-Boosts](../core-concepts/consent-and-permissions/auto-boosts.md) to automatically issue credentials upon consent.
--   Using an existing contract as a template in **Admin Tools → Manage ConsentFlow Contracts** by selecting **"Use as template"** from the contract detail view.
--   More complex data queries.
+- [Updating and withdrawing consent.](../sdks/learncard-core/construction.md#retrieving-profiles-5)
+- Using [Auto-Boosts](../core-concepts/consent-and-permissions/auto-boosts.md) to automatically issue credentials upon consent.
+- Using an existing contract as a template in **Admin Tools → Manage ConsentFlow Contracts** by selecting **"Use as template"** from the contract detail view.
+- More complex data queries.
 
 Check out our Core Concept pages on [Consent Contracts](../core-concepts/consent-and-permissions/consent-contracts.md), [User Consent & Terms](../core-concepts/consent-and-permissions/user-consent-and-terms.md), and [Accessing Consented Data](../core-concepts/consent-and-permissions/accessing-consented-data.md) for more details.

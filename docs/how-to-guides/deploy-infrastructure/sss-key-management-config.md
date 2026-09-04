@@ -8,11 +8,26 @@ This guide covers the environment variables and infrastructure needed to deploy 
 
 ## Prerequisites
 
--   A running **lca-api** server instance
--   **Redis** (for OTP codes, QR login sessions, and caching)
--   **MongoDB** (for UserKey records)
--   A **Firebase** project (or other supported auth provider) with Admin SDK credentials
--   **Postmark** account (for email delivery in production) — optional, falls back to logging
+- A running **lca-api** server instance
+- **Redis** (for OTP codes, QR login sessions, and caching)
+- **MongoDB** (for UserKey records)
+- A **Firebase** project (or other supported auth provider) with Admin SDK credentials
+- **Postmark** account (for email delivery in production) — optional, falls back to logging
+
+## Happy path in six steps
+
+1. **Redis**: Stand up a Redis instance for OTPs and caching.
+2. **Mongo**: Stand up a MongoDB instance for the `UserKey` collection.
+3. **SEED**: Generate a strong, random string for the `SEED` env var (back this up!).
+4. **Deploy lca-api**: Deploy the `lca-api` service with the required environment variables.
+5. **Frontend env vars**: Set `VITE_KEY_DERIVATION=sss` and `VITE_SSS_SERVER_URL` in your frontend app.
+6. **Test login**: Log in to the frontend app and verify the key derivation completes.
+
+### Verify it works
+
+- Run `redis-cli PING` to ensure Redis is reachable.
+- Check the `lca-api` health endpoint (e.g., `GET /health`) to ensure it's running.
+- In the frontend, ensure the AuthCoordinator reaches the `ready` state after login.
 
 ---
 
@@ -51,8 +66,8 @@ Earlier deployments required `POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS` and `
 {% hint style="warning" %}
 The template variables changed from numeric IDs to string aliases in an earlier release:
 
--   `POSTMARK_LOGIN_CODE_TEMPLATE_ID` → `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS`
--   `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID` → `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS`
+- `POSTMARK_LOGIN_CODE_TEMPLATE_ID` → `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS`
+- `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID` → `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS`
 
 Update your deployment configuration accordingly.
 {% endhint %}
@@ -114,9 +129,9 @@ Once all users are migrated, these can be removed.
 
 Redis is required for:
 
--   **OTP codes** for login and recovery email verification (stored with short TTLs)
--   **QR login sessions** (ephemeral, auto-evicted)
--   **General caching**
+- **OTP codes** for login and recovery email verification (stored with short TTLs)
+- **QR login sessions** (ephemeral, auto-evicted)
+- **General caching**
 
 A single Redis instance is sufficient. The lca-api connects via `REDIS_HOST` + `REDIS_PORT`.
 
@@ -124,18 +139,18 @@ A single Redis instance is sufficient. The lca-api connects via `REDIS_HOST` + `
 
 MongoDB stores the `UserKey` collection, which contains:
 
--   The user's encrypted auth share
--   Previous auth share versions (for share versioning)
--   Recovery method metadata
--   Contact method and DID associations
+- The user's encrypted auth share
+- Previous auth share versions (for share versioning)
+- Recovery method metadata
+- Contact method and DID associations
 
 ### Firebase Admin SDK
 
 The Firebase Admin SDK is used for:
 
--   **Token verification** — validating Firebase ID tokens from the frontend
--   **User management** — updating user email/phone during contact method upgrades
--   **Custom tokens** — issuing new Firebase auth tokens after contact method changes
+- **Token verification** — validating Firebase ID tokens from the frontend
+- **User management** — updating user email/phone during contact method upgrades
+- **Custom tokens** — issuing new Firebase auth tokens after contact method changes
 
 The service account JSON is provided via `GOOGLE_APPLICATION_CREDENTIAL`.
 

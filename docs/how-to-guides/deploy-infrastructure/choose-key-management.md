@@ -17,7 +17,7 @@ Every LearnCard identity is controlled by a private key derived from a seed. Who
 
 ## Rules of thumb
 
--   **Never put a seed in client-side code.** Browser and mobile apps should use SSS (users) or call your backend (issuance).
--   **Prefer API tokens over wallets** for simple server integrations — a Bearer token with scope `inbox:write` sends credentials without key ceremony.
--   **One seed = one identity.** Rotating a seed means a new DID; plan issuer identity before going to production.
--   **Test recovery before launch.** An identity without a working recovery path is a support ticket factory.
+- **Never put a seed in client-side code.** Browser and mobile apps should use SSS (users) or call your backend (issuance).
+- **Prefer API tokens over wallets** for simple server integrations — a Bearer token with scope `boosts:write` sends credentials without key ceremony. See [Generate API Tokens](generate-api-tokens.md).
+- **One seed = one identity.** Rotating a seed means a new DID; plan issuer identity before going to production.
+- **Test recovery before launch.** An identity without a working recovery path is a support ticket factory.

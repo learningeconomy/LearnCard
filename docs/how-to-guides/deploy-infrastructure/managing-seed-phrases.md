@@ -26,3 +26,9 @@ const learnCard = await initLearnCard({ seed });
 ```
 
 By following these steps, you can leverage a remote KMS for managing your LearnCard wallet's seed phrases, providing enhanced security and control over the wallet initialization process.
+
+**Important:** Rotating a seed = a new DID. Plan your issuer identity before going to production, as changing the seed will change the DID that issues your credentials.
+
+## Next steps
+
+- [How Should I Manage Keys?](choose-key-management.md) — review other key management strategies.

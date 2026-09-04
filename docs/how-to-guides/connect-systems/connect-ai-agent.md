@@ -14,9 +14,13 @@ Connect your AI assistant (e.g. Claude or ChatGPT) to LearnCard to enable person
 https://mcp.learncard.ai/
 ```
 
+## What your assistant can do once connected
+
+Once connected, your assistant can see your LearnCard — your credentials and learning history — with your permission, and use that context in the conversation: tutoring that picks up where you left off, career advice grounded in what you've actually earned, or help deciding what to learn next. You stay in control: you approve what it can access when you connect, and you can disconnect at any time.
+
 Below are instructions for connecting the LearnCard MCP server with Claude or ChatGPT.
 
-***
+---
 
 ## Claude
 
@@ -49,8 +53,8 @@ Below are instructions for connecting the LearnCard MCP server with Claude or Ch
 
 6. Enter:
 
-* **Name:** `LearnCard` &#x20;
-*   **Remote MCP Server URL:**&#x20;
+- **Name:** `LearnCard` &#x20;
+- **Remote MCP Server URL:**&#x20;
 
     ```
     https://mcp.learncard.ai/
@@ -88,11 +92,9 @@ Below are instructions for connecting the LearnCard MCP server with Claude or Ch
 
 <figure><img src="../../.gitbook/assets/image (41).png" alt=""><figcaption></figcaption></figure>
 
-
-
 </details>
 
-***
+---
 
 ## ChatGPT
 
@@ -141,17 +143,16 @@ Below are instructions for connecting the LearnCard MCP server with Claude or Ch
 
 10. Enter:
 
-* **Name:** `LearnCard`
-*   **MCP Server URL:**&#x20;
+- **Name:** `LearnCard`
+- **MCP Server URL:**&#x20;
 
     ```
     https://mcp.learncard.ai/
     ```
-* Check `I understand and want to continue`
+
+- Check `I understand and want to continue`
 
 <figure><img src="../../.gitbook/assets/image (51).png" alt=""><figcaption></figcaption></figure>
-
-
 
 11. Click `Create`
 
@@ -172,10 +173,19 @@ Below are instructions for connecting the LearnCard MCP server with Claude or Ch
 15. Click `More` and select `LearnCard` .
 
     <figure><img src="../../.gitbook/assets/image (55).png" alt=""><figcaption></figcaption></figure>
+
 16. ChatGPT should now show LearnCard attached to the chat input. When you send a message, ChatGPT will request permission to use the connector — that means it’s working! Approve access to continue your AI tutoring session.
 
 <figure><img src="../../.gitbook/assets/image (57).png" alt=""><figcaption></figcaption></figure>
 
-
-
 </details>
+
+## Troubleshooting
+
+- **Connector not showing**: Make sure you enable it in the chat interface (the `+` or connector button).
+- **Can't see credentials**: Sign in at [learncard.app](https://learncard.app) first to ensure your wallet is active.
+
+## Next steps
+
+- Building an AI tutor that issues credentials? Check out [Publish Your App](../publish-your-app.md).
+- Want to understand how consent works? Read the [ConsentFlow overview](../../core-concepts/consent-and-permissions/consentflow-overview.md).

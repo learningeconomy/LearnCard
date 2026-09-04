@@ -13,17 +13,18 @@ This plugin is ideal for **server-side applications** where performance is criti
 {% hint style="info" %}
 **When to use this plugin:**
 
--   ✅ Node.js server applications (Express, Fastify, NestJS, etc.)
--   ✅ Serverless functions (AWS Lambda, Vercel, etc.)
--   ✅ CLI tools and scripts
--   ✅ High-throughput credential processing
+- ✅ Node.js server applications (Express, Fastify, NestJS, etc.)
+- ✅ Serverless functions (AWS Lambda, Vercel, etc.)
+- ✅ CLI tools and scripts
+- ✅ High-throughput credential processing
 
 **When to use the WASM plugin instead:**
 
--   Browser applications
--   React Native / mobile apps
--   Environments without native compilation support
-    {% endhint %}
+- Browser applications
+- React Native / mobile apps
+- Environments without native compilation support
+
+{% endhint %}
 
 ## Installation
 
@@ -71,13 +72,13 @@ const didKitPlugin = await getDidKitPlugin(
 
 Like the WASM version, the native plugin uses SSI's **50+ embedded JSON-LD contexts**. Both versions avoid HTTP requests for common contexts:
 
--   W3C Credentials v1/v2
--   W3C Security contexts
--   DID Core contexts
--   Open Badges v2/v3
--   CLR v2
--   LearnCard Boosts contexts
--   And many more...
+- W3C Credentials v1/v2
+- W3C Security contexts
+- DID Core contexts
+- Open Badges v2/v3
+- CLR v2
+- LearnCard Boosts contexts
+- And many more...
 
 Unknown contexts can optionally be fetched via HTTP if `allowRemoteContexts` is enabled.
 
@@ -293,7 +294,7 @@ All method signatures and return types are identical.
 
 ## Related Documentation
 
--   [DIDKit (WASM)](didkit.md) - The browser-compatible WASM version
--   [Plugin System](../../core-concepts/architecture-and-principles/plugins.md) - How plugins work
--   [Verifiable Credentials](../../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) - VC concepts
--   [DIDs](../../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) - DID concepts
+- [DIDKit (WASM)](didkit.md) - The browser-compatible WASM version
+- [Plugin System](../../core-concepts/architecture-and-principles/plugins.md) - How plugins work
+- [Verifiable Credentials](../../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) - VC concepts
+- [DIDs](../../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) - DID concepts

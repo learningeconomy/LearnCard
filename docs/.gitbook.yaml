@@ -92,7 +92,7 @@ redirects:
     core-concepts/network-and-interactions/universal-inbox: core-concepts/network-and-interactions/universal-inbox.md
     development/contributing: development/contributing.md
     how-to-guides/connect-systems: how-to-guides/connect-systems/README.md
-    how-to-guides/connect-systems/connect-a-game: how-to-guides/connect-systems/connect-a-game.md
+    how-to-guides/connect-systems/connect-a-game: how-to-guides/connect-systems/connect-a-website.md
     how-to-guides/connect-systems/connect-a-website: how-to-guides/connect-systems/connect-a-website.md
     how-to-guides/connect-systems/connect-ai-agent: how-to-guides/connect-systems/connect-ai-agent.md
     how-to-guides/connect-systems/connect-an-embedded-app: how-to-guides/connect-systems/connect-an-embedded-app.md
@@ -100,7 +100,7 @@ redirects:
     how-to-guides/create-signing-authority: how-to-guides/create-signing-authority.md
     how-to-guides/deploy-infrastructure: how-to-guides/deploy-infrastructure/README.md
     how-to-guides/deploy-infrastructure/connect-to-independent-network: how-to-guides/deploy-infrastructure/connect-to-independent-network.md
-    how-to-guides/deploy-infrastructure/deploy-your-own-network: how-to-guides/deploy-infrastructure/deploy-your-own-network.md
+    how-to-guides/deploy-infrastructure/deploy-your-own-network: how-to-guides/deploy-infrastructure/connect-to-independent-network.md
     how-to-guides/deploy-infrastructure/generate-api-tokens: how-to-guides/deploy-infrastructure/generate-api-tokens.md
     how-to-guides/deploy-infrastructure/managing-seed-phrases: how-to-guides/deploy-infrastructure/managing-seed-phrases.md
     how-to-guides/deploy-infrastructure/sss-key-management-config: how-to-guides/deploy-infrastructure/sss-key-management-config.md
