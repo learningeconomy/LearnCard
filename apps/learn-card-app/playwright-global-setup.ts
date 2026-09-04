@@ -6,6 +6,15 @@ import { getLogger } from 'learn-card-base/src/logging/logger';
 const log = getLogger('playwright-global-setup');
 
 export const globalSetup = async (config: FullConfig) => {
+    // Application addressing is independent of who owns the server lifecycle.
+    let appURL: URL;
+    try {
+        appURL = new URL(config.projects[0]?.use.baseURL ?? '');
+        if (!['http:', 'https:'].includes(appURL.protocol)) throw new Error('Invalid protocol');
+    } catch {
+        throw new Error('Playwright project use.baseURL must be an absolute HTTP(S) URL');
+    }
+
     // Run headed if DEBUG_SETUP=true OR if tests are run with --headed flag
     const projectHeadless = config.projects?.[0]?.use?.headless;
     const isHeaded = process.env.DEBUG_SETUP === 'true' || projectHeadless === false;
@@ -24,8 +33,8 @@ export const globalSetup = async (config: FullConfig) => {
 
     const page = await context.newPage();
 
-    log.info('[GlobalSetup] Navigating to:', config.webServer?.url);
-    await page.goto(config.webServer?.url!);
+    log.info('[GlobalSetup] Navigating to:', appURL.href);
+    await page.goto(appURL.href);
     log.info('[GlobalSetup] Page loaded, current URL:', page.url());
 
     // Wait for the email textbox to be visible (don't use networkidle - app polls constantly)
@@ -73,7 +82,7 @@ export const globalSetup = async (config: FullConfig) => {
     }
 
     const state = await page.context().storageState();
-    const localhostState = state.origins.find(origin => origin.origin === 'http://localhost:3000');
+    const localhostState = state.origins.find(origin => origin.origin === appURL.origin);
     const userState = JSON.parse(
         localhostState?.localStorage.find(storage => storage.name === 'currentUserStore')?.value ??
             ''
@@ -100,7 +109,7 @@ export const globalSetup = async (config: FullConfig) => {
     await mockDidKitWasmForContext(context2);
 
     const page2 = await context2.newPage();
-    await page2.goto(`${config.webServer?.url!}/hidden/seed`);
+    await page2.goto(new URL('/hidden/seed', appURL).href);
     await page2.getByRole('textbox').fill('2'.repeat(64));
 
     await page2.getByRole('button', { name: /sign in with seed/i }).click();
@@ -130,9 +139,7 @@ export const globalSetup = async (config: FullConfig) => {
     }
 
     const state2 = await page2.context().storageState();
-    const localhostState2 = state2.origins.find(
-        origin => origin.origin === 'http://localhost:3000'
-    );
+    const localhostState2 = state2.origins.find(origin => origin.origin === appURL.origin);
     const userState2 = JSON.parse(
         localhostState2?.localStorage.find(storage => storage.name === 'currentUserStore')?.value ??
             ''

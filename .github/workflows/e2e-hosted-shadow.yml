@@ -1,0 +1,166 @@
+name: Hosted E2E Shadow
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    workflow_dispatch:
+        inputs:
+            ref:
+                description: 'LearnCard ref to test'
+                required: false
+                default: 'main'
+            test_files:
+                description: 'Browser spec files, separated by spaces'
+                required: false
+                default: 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+    cancel-in-progress: true
+
+jobs:
+    eligibility:
+        name: Determine hosted E2E eligibility
+        runs-on: ubuntu-latest
+        outputs:
+            run_e2e: ${{ steps.policy.outputs.run_e2e }}
+            reason: ${{ steps.policy.outputs.reason }}
+        steps:
+            - name: Evaluate PR policy
+              id: policy
+              env:
+                  EVENT_NAME: ${{ github.event_name }}
+                  PR_DRAFT: ${{ github.event.pull_request.draft || false }}
+              run: |
+                  if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+                    echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
+                    echo 'reason=manual-dispatch' >> "$GITHUB_OUTPUT"
+                  elif [[ "$PR_DRAFT" == "false" ]]; then
+                    echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
+                    echo 'reason=non-draft-pr' >> "$GITHUB_OUTPUT"
+                  else
+                    echo 'run_e2e=false' >> "$GITHUB_OUTPUT"
+                    echo 'reason=draft-pr' >> "$GITHUB_OUTPUT"
+                  fi
+
+    browser_e2e:
+        name: Hosted browser E2E and accessibility
+        needs: eligibility
+        if: ${{ needs.eligibility.outputs.run_e2e == 'true' }}
+        runs-on: ${{ vars.E2E_HOSTED_RUNNER || 'ubuntu-latest' }}
+        timeout-minutes: 60
+        env:
+            E2E_ARTIFACT_DIR: ${{ github.workspace }}/e2e-artifacts/browser
+            E2E_TEST_FILES: ${{ github.event.inputs.test_files || 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts' }}
+        steps:
+            - name: Checkout tested revision
+              id: checkout
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
+                  fetch-depth: 0
+
+            - name: Capture runner preflight
+              if: ${{ always() }}
+              working-directory: ${{ runner.temp }}
+              env:
+                  CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
+                  CHECKOUT_CONCLUSION: ${{ steps.checkout.conclusion }}
+                  TESTED_REF: ${{ github.event.pull_request.head.sha || github.event.inputs.ref || github.sha }}
+              run: |
+                  mkdir -p "$E2E_ARTIFACT_DIR"
+                  {
+                    printf 'checkout_outcome=%s\n' "$CHECKOUT_OUTCOME"
+                    printf 'checkout_conclusion=%s\n' "$CHECKOUT_CONCLUSION"
+                  } > "$E2E_ARTIFACT_DIR/checkout-status.txt"
+                  checkout_sha=unavailable
+                  if [[ "$CHECKOUT_OUTCOME" == "success" ]]; then
+                    checkout_sha=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD 2>/dev/null) || checkout_sha=unavailable
+                  fi
+                  {
+                    printf 'event_name=%s\n' "$GITHUB_EVENT_NAME"
+                    printf 'event_sha=%s\n' "$GITHUB_SHA"
+                    printf 'event_ref=%s\n' "$GITHUB_REF"
+                    printf 'run_id=%s\n' "$GITHUB_RUN_ID"
+                    printf 'run_attempt=%s\n' "$GITHUB_RUN_ATTEMPT"
+                    printf 'repository=%s\n' "$GITHUB_REPOSITORY"
+                    printf 'workflow=%s\n' "$GITHUB_WORKFLOW"
+                    printf 'tested_ref=%s\n' "$TESTED_REF"
+                    printf 'checkout_sha=%s\n' "$checkout_sha"
+                  } > "$E2E_ARTIFACT_DIR/revision-provenance.txt"
+                  {
+                    echo 'checkout:'
+                    cat "$E2E_ARTIFACT_DIR/checkout-status.txt"
+                    echo 'filesystem:'
+                    df -h /
+                    echo 'memory:'
+                    head -5 /proc/meminfo
+                    echo 'docker:'
+                    docker system df -v 2>&1 || true
+                  } > "$E2E_ARTIFACT_DIR/runner-preflight.txt"
+
+            - name: Prepare runner storage
+              run: bash scripts/e2e-hosted/prepare-storage.sh
+
+            - name: Setup Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - name: Setup Bun and dependencies
+              uses: ./.github/actions/setup
+
+            - name: Run hosted browser suites
+              run: bash scripts/e2e-hosted/run-browser.sh
+
+            - name: Publish browser diagnostic summary
+              if: always()
+              run: |
+                  if [[ -f "$E2E_ARTIFACT_DIR/summary.md" ]]; then
+                    cat "$E2E_ARTIFACT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
+                  else
+                    echo 'Hosted browser diagnostics were not created.' >> "$GITHUB_STEP_SUMMARY"
+                  fi
+
+            - name: Upload browser E2E artifacts
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: hosted-browser-e2e-${{ github.run_id }}
+                  path: ${{ env.E2E_ARTIFACT_DIR }}
+                  if-no-files-found: error
+                  retention-days: 30
+
+    hosted_e2e_shadow:
+        name: Hosted E2E shadow
+        needs: [eligibility, browser_e2e]
+        if: ${{ always() }}
+        runs-on: ubuntu-latest
+        steps:
+            - name: Evaluate hosted E2E result
+              env:
+                  ELIGIBILITY_RESULT: ${{ needs.eligibility.result }}
+                  ELIGIBLE: ${{ needs.eligibility.outputs.run_e2e }}
+                  ELIGIBILITY_REASON: ${{ needs.eligibility.outputs.reason }}
+                  BROWSER_RESULT: ${{ needs.browser_e2e.result }}
+              run: |
+                  if [[ "$ELIGIBILITY_RESULT" != "success" ]]; then
+                    echo "Hosted E2E eligibility did not succeed: $ELIGIBILITY_RESULT" >&2
+                    exit 1
+                  fi
+
+                  if [[ "$ELIGIBLE" == "false" && "$ELIGIBILITY_REASON" == "draft-pr" ]]; then
+                    echo 'Hosted E2E skipped: draft pull request.'
+                    exit 0
+                  fi
+
+                  if [[ "$ELIGIBLE" == "true" && "$BROWSER_RESULT" == "success" ]]; then
+                    echo 'Hosted browser E2E suite passed.'
+                    exit 0
+                  fi
+
+                  echo "Hosted E2E failed: eligibility=$ELIGIBLE reason=$ELIGIBILITY_REASON browser=$BROWSER_RESULT" >&2
+                  exit 1
