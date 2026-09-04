@@ -68,12 +68,25 @@ const VerifierStateBadgeAndText = forwardRef<HTMLButtonElement, VerifierStateBad
         ) : (
             <UnknownVerifierBadge />
         );
+        const issuerName =
+            issuerContext.profile?.displayName ?? issuerContext.profile?.profileId ?? '';
+        const issuerNameStart = issuerName ? label.indexOf(issuerName) : -1;
+        const renderedLabel =
+            issuerNameStart >= 0 ? (
+                <>
+                    {label.slice(0, issuerNameStart)}
+                    <strong className="font-bold">{issuerName}</strong>
+                    {label.slice(issuerNameStart + issuerName.length)}
+                </>
+            ) : (
+                label
+            );
         const content = (
             <div
                 className={`flex items-center gap-1 font-poppins font-[500] text-[12px] leading-tight ${color}`}
             >
                 {icon}
-                <span className="whitespace-nowrap">{label}</span>
+                <span className="whitespace-nowrap">{renderedLabel}</span>
             </div>
         );
 

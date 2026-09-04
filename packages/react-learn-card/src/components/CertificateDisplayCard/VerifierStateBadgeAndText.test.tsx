@@ -33,9 +33,10 @@ describe('VerifierStateBadgeAndText', () => {
             />
         );
 
-        expect(getByText('From your connection Charles Henway').parentElement?.className).toContain(
-            'text-emerald-600'
-        );
+        const issuerName = getByText('Charles Henway');
+        expect(issuerName.parentElement?.parentElement?.className).toContain('text-emerald-600');
+        expect(issuerName.tagName).toBe('STRONG');
+        expect(issuerName.className).toContain('font-bold');
         expect(container.querySelector('img')?.getAttribute('src')).toBe(
             'https://example.com/charles.png'
         );
