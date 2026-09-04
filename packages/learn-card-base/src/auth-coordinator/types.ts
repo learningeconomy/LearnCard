@@ -80,6 +80,7 @@ export type UnifiedAuthState =
           recoverySessionToken?: string;
           recoveryMethods: RecoveryMethodInfo[];
           recoveredDid?: string;
+          error?: string;
       }
     | { status: 'awaiting_rebind'; did: string }
     | {
