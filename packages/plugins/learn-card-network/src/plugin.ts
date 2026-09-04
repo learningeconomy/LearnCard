@@ -34,6 +34,66 @@ import {
     TrustedBoostRegistryEntry,
 } from './types';
 
+/**
+ * Allowlist of trusted federation hosts with their complete endpoint configurations.
+ * Federation requests will ONLY be sent to these hosts using the fixed path.
+ * This prevents SSRF by ensuring BOTH host AND path come from server-controlled data.
+ */
+const TRUSTED_FEDERATION_ENDPOINTS: Record<string, { protocol: 'http' | 'https'; path: string }> = {
+    'network.learncard.com': { protocol: 'https', path: '/api/inbox/receive' },
+    'cloud.learncard.com': { protocol: 'https', path: '/api/inbox/receive' },
+    'api.learncard.app': { protocol: 'https', path: '/api/inbox/receive' },
+    // Development hosts
+    'localhost': { protocol: 'http', path: '/api/inbox/receive' },
+    '127.0.0.1': { protocol: 'http', path: '/api/inbox/receive' },
+};
+
+/**
+ * Constructs a safe federation URL entirely from server-controlled data.
+ * User input is ONLY used to SELECT which trusted endpoint to use.
+ * The actual URL (protocol, host, path) comes entirely from the allowlist.
+ *
+ * @param userProvidedUrl - The URL hint from the DID document (user-influenced)
+ * @returns A URL constructed entirely from server-controlled allowlist data
+ * @throws Error if the host is not in the allowlist
+ */
+const buildSafeFederationUrl = (userProvidedUrl: string): string => {
+    let parsed: URL;
+    try {
+        parsed = new URL(userProvidedUrl);
+    } catch {
+        throw new Error(`Invalid federation endpoint URL: ${userProvidedUrl}`);
+    }
+
+    const userHost = parsed.hostname.toLowerCase();
+    const userPort = parsed.port;
+
+    // User input SELECTS which trusted endpoint to use - it doesn't become part of the URL
+    // Find the matching key from the allowlist (server-controlled string)
+    const trustedHostKey = Object.keys(TRUSTED_FEDERATION_ENDPOINTS).find(key => key === userHost);
+
+    if (!trustedHostKey) {
+        throw new Error(
+            `Federation host '${userHost}' is not in the trusted allowlist. ` +
+                `Allowed hosts: ${Object.keys(TRUSTED_FEDERATION_ENDPOINTS).join(', ')}`
+        );
+    }
+
+    // All values now come from SERVER-CONTROLLED constants
+    // Protocol is automatically http for localhost/127.0.0.1, https for production
+    // This replaces the old `receiveUrl.replace('https://', 'http://')` logic for dev
+    const { protocol, path } = TRUSTED_FEDERATION_ENDPOINTS[trustedHostKey]!;
+
+    // For localhost/dev, preserve port (e.g., :3000); for production, use standard ports
+    const isDevHost = trustedHostKey === 'localhost' || trustedHostKey === '127.0.0.1';
+    const portSuffix = isDevHost && userPort ? `:${userPort}` : '';
+
+    // Return a URL built entirely from server-controlled strings
+    // Example: localhost:3000 → http://localhost:3000/api/inbox/receive
+    // Example: network.learncard.com → https://network.learncard.com/api/inbox/receive
+    return `${protocol}://${trustedHostKey}${portSuffix}${path}`;
+};
+
 const uint8ArrayToBase64Url = (bytes: Uint8Array): string => {
     let binary = '';
     for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]!);
@@ -910,11 +970,9 @@ export async function getLearnCardNetworkPlugin(
                         challenge: `inbox-federation-${crypto.randomUUID()}`,
                     });
 
-                    let receiveUrl = inboxEndpoint;
-
-                    if (receiveUrl.includes('localhost')) {
-                        receiveUrl = receiveUrl.replace('https://', 'http://');
-                    }
+                    // Build a safe URL using server-controlled hostname from allowlist.
+                    // This prevents SSRF by ensuring the host comes from trusted data.
+                    const receiveUrl = buildSafeFederationUrl(inboxEndpoint);
 
                     const response = await fetch(receiveUrl, {
                         method: 'POST',
