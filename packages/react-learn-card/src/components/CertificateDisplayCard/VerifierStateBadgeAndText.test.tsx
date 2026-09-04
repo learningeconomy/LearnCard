@@ -28,7 +28,6 @@ describe('VerifierStateBadgeAndText', () => {
         const { container, getByRole, getByText } = render(
             <VerifierStateBadgeAndText
                 issuerContext={createContext()}
-                issuerName="Charles Henway"
                 label="From your connection Charles Henway"
                 onClick={onClick}
             />

@@ -87,7 +87,9 @@ const VerifierStateBadgeAndText = forwardRef<HTMLButtonElement, VerifierStateBad
         ) : (
             <UnknownVerifierBadge />
         );
-        const renderedLabel = <IssuerLabelText label={label} issuerName={issuerName} />;
+        const emphasizedIssuerName =
+            issuerName ?? issuerContext.profile?.displayName ?? issuerContext.profile?.profileId;
+        const renderedLabel = <IssuerLabelText label={label} issuerName={emphasizedIssuerName} />;
         const content = (
             <div
                 className={`flex items-center gap-1 font-poppins font-[500] text-[12px] leading-tight ${color}`}
