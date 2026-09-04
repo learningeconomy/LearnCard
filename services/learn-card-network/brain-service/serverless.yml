@@ -173,6 +173,9 @@ provider:
         POSTHOG_API_KEY: ${env:POSTHOG_API_KEY, ""}
         POSTHOG_HOST: ${env:POSTHOG_HOST, ""}
         GIT_SHA: ${env:GIT_SHA, ""}
+        CREDENTIAL_REFRESH_ENABLED: ${env:CREDENTIAL_REFRESH_ENABLED, "false"}
+        CREDENTIAL_REFRESH_DIGEST_SECRET: ${env:CREDENTIAL_REFRESH_DIGEST_SECRET, ""}
+        CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: ${env:CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS, "24"}
     tracing:
         apiGateway: true
         lambda: true
@@ -250,6 +253,21 @@ functions:
         events:
             - httpApi: GET /status-lists/{id}
             - httpApi: OPTIONS /status-lists/{id}
+
+    credentialRefresh:
+        handler: lambda.credentialRefreshHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /refresh/{refreshId}
+            - httpApi: OPTIONS /refresh/{refreshId}
+            - httpApi: GET /refresh/{refreshId}/history
+            - httpApi: OPTIONS /refresh/{refreshId}/history
+            - httpApi: GET /refresh/{refreshId}/versions/{version}
+            - httpApi: OPTIONS /refresh/{refreshId}/versions/{version}
 
 resources:
     Resources:

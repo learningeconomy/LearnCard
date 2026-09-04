@@ -12,6 +12,7 @@ import * as Sentry from '@sentry/serverless';
 import app from './src/openapi';
 import skillsViewerApp from './src/skills-viewer';
 import statusListsApp from './src/status-lists';
+import credentialRefreshApp from './src/credential-refresh';
 import { appRouter, createContext } from './src/app';
 import { deliverQueuedNotification } from './src/helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from './src/helpers/skill-embedding.helpers';
@@ -48,6 +49,8 @@ export const swaggerUiHandler = serverlessHttp(toServerlessApplication(app), {
 export const skillsViewerHandler = serverlessHttp(toServerlessApplication(skillsViewerApp));
 
 export const statusListsHandler = serverlessHttp(toServerlessApplication(statusListsApp));
+
+export const credentialRefreshHandler = serverlessHttp(credentialRefreshApp);
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,

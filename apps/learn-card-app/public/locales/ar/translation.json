@@ -1931,7 +1931,22 @@
         "loadingNotifications": "جاري تحميل الإشعارات...",
         "refresh": "تحديث",
         "restored": "تمت الاستعادة",
-        "unableToLoad": "تعذر تحميل الإشعار"
+        "unableToLoad": "تعذر تحميل الإشعار",
+        "credentialUpdated": "تم تحديث الشهادة",
+        "updated": "تم التحديث",
+        "checkingForUpdate": "جارٍ البحث عن تحديثات…",
+        "updateCheckFailed": "مشكلة في الاتصال. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.",
+        "updatedCredentialUnavailable": "هذه الشهادة غير متوفرة بعد. يرجى المحاولة مرة أخرى لاحقًا."
+    },
+    "credentialHistory": {
+        "title": "الإصدارات السابقة",
+        "empty": "لا توجد إصدارات سابقة محفوظة على هذا الجهاز.",
+        "unavailable": "هذا الإصدار غير متوفر على هذا الجهاز.",
+        "view": "عرض",
+        "loadingVersion": "جارٍ تحميل الإصدار…",
+        "done": "تم",
+        "updatedOn": "تم التحديث في {{date}}",
+        "versionFrom": "إصدار من {{date}}"
     },
     "share": {
         "addContact": "إضافة جهة اتصال",
@@ -2358,7 +2373,8 @@
         },
         "menu": {
             "manageIssuances": "إدارة الإصدارات",
-            "viewData": "عرض البيانات"
+            "viewData": "عرض البيانات",
+            "viewPreviousVersions": "عرض الإصدارات السابقة"
         },
         "shortBoost": {
             "selectRecipient": "اختيار المستلم",

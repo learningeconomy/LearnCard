@@ -1931,7 +1931,22 @@
         "loadingNotifications": "Cargando notificaciones...",
         "refresh": "Actualizar",
         "restored": "Restaurada",
-        "unableToLoad": "No se pudo cargar la notificación"
+        "unableToLoad": "No se pudo cargar la notificación",
+        "credentialUpdated": "Credencial actualizada",
+        "updated": "Actualizada",
+        "checkingForUpdate": "Buscando actualizaciones…",
+        "updateCheckFailed": "Problema de conexión. Comprueba tu conexión a internet e inténtalo de nuevo.",
+        "updatedCredentialUnavailable": "Esta credencial aún no está disponible. Inténtalo de nuevo más tarde."
+    },
+    "credentialHistory": {
+        "title": "Versiones anteriores",
+        "empty": "No hay versiones anteriores almacenadas en este dispositivo.",
+        "unavailable": "Esta versión no está disponible en este dispositivo.",
+        "view": "Ver",
+        "loadingVersion": "Cargando versión…",
+        "done": "Listo",
+        "updatedOn": "Actualizada el {{date}}",
+        "versionFrom": "Versión del {{date}}"
     },
     "share": {
         "addContact": "Agregar contacto",
@@ -2358,7 +2373,8 @@
         },
         "menu": {
             "manageIssuances": "Gestionar emisiones",
-            "viewData": "Ver datos"
+            "viewData": "Ver datos",
+            "viewPreviousVersions": "Ver versiones anteriores"
         },
         "shortBoost": {
             "selectRecipient": "Seleccionar destinatario",

@@ -17,6 +17,7 @@ import {
     registerFixtures,
     prepareFixture,
     prepareFixtureById,
+    buildFinalTranscriptVariant,
 } from '../index';
 
 import { ALL_FIXTURES } from '../fixtures';
@@ -169,6 +170,65 @@ describe('Query API', () => {
 
     it('getFixture throws for unknown ID', () => {
         expect(() => getFixture('nonexistent/fixture')).toThrow('not found');
+    });
+
+    // -----------------------------------------------------------------------
+    // Provisional transcript fixture (LC-2117 / LC-2135 / LC-2136)
+    // -----------------------------------------------------------------------
+
+    describe('clr/provisional-transcript', () => {
+        it('is discoverable as a valid CLR 2.0 fixture with a 1EdTech refresh service', () => {
+            const fixture = getFixture('clr/provisional-transcript');
+
+            expect(isCredentialFixture(fixture)).toBe(true);
+            expect(fixture.spec).toBe('clr-v2');
+            expect(fixture.profile).toBe('learner-record');
+            expect(fixture.validity).toBe('valid');
+            expect(fixture.features).toContain('refresh-service');
+
+            if (!isCredentialFixture(fixture)) throw new Error('Expected W3C VC fixture');
+
+            const refreshService = (
+                fixture.credential as { refreshService?: { type?: unknown; id?: unknown } }
+            ).refreshService;
+
+            expect(refreshService?.type).toBe('1EdTechCredentialRefresh');
+            expect(typeof refreshService?.id).toBe('string');
+        });
+
+        it('prepares provisional and final variants sharing one credential ID, issuer, and subject', () => {
+            const provisional = prepareFixtureById('clr/provisional-transcript', {
+                issuerDid: 'did:example:test-issuer',
+                subjectDid: 'did:example:test-holder',
+            });
+
+            expect(typeof provisional.id).toBe('string');
+            expect(provisional.name).toContain('Provisional');
+
+            const final = buildFinalTranscriptVariant(provisional, {
+                validFrom: '2026-06-01T00:00:00Z',
+            });
+            const provisionalIssuer =
+                typeof provisional.issuer === 'string' ? provisional.issuer : provisional.issuer.id;
+            const finalIssuer = typeof final.issuer === 'string' ? final.issuer : final.issuer.id;
+            const provisionalSubject = Array.isArray(provisional.credentialSubject)
+                ? provisional.credentialSubject[0]
+                : provisional.credentialSubject;
+            const finalSubject = Array.isArray(final.credentialSubject)
+                ? final.credentialSubject[0]
+                : final.credentialSubject;
+
+            // Identity stability: the final version shares the credential ID, issuer,
+            // and subject with the provisional version.
+            expect(final.id).toBe(provisional.id);
+            expect(finalIssuer).toBe(provisionalIssuer);
+            expect(finalSubject?.id).toBe(provisionalSubject?.id);
+
+            // The final variant is materially different and marked final.
+            expect(final.name).toContain('Final');
+            expect(final.validFrom).toBe('2026-06-01T00:00:00Z');
+            expect(final.refreshService).toEqual(provisional.refreshService);
+        });
     });
 
     it('findFixture returns undefined for unknown ID', () => {
@@ -528,8 +588,7 @@ describe('prepareFixture', () => {
             ? (programAchievement?.resultDescription as UnknownArrayRecord[])
             : [];
         const programResultDescriptionId = programResults[0]?.resultDescription as
-            | string
-            | undefined;
+            string | undefined;
         const programResultDescription = programResultDescriptions[0]?.id as string | undefined;
 
         expect(programResultDescriptionId).toBe(programResultDescription);

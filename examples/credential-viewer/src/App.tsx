@@ -16,6 +16,7 @@ import { BulkActionBar } from './components/BulkActionBar';
 import { IssuePanel } from './components/IssuePanel';
 import { SendPanel } from './components/SendPanel';
 import { NewFixturePanel } from './components/NewFixturePanel';
+import { ManagedRefreshPanel } from './components/ManagedRefreshPanel';
 import { SPEC_LABELS } from './lib/colors';
 import { getCategoryForFixture } from './lib/category';
 
@@ -38,6 +39,7 @@ const AppInner: React.FC = () => {
     const [showBulkSend, setShowBulkSend] = useState(false);
     const [showFilters, setShowFilters] = useState(true);
     const [showNewFixture, setShowNewFixture] = useState(false);
+    const [showManagedRefresh, setShowManagedRefresh] = useState(false);
 
     const filtered = useMemo(() => {
         return allFixtures.filter(f => {
@@ -251,8 +253,15 @@ const AppInner: React.FC = () => {
                         )}
 
                         <button
+                            onClick={() => setShowManagedRefresh(true)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg transition-colors cursor-pointer ml-auto"
+                        >
+                            Managed Refresh Demo
+                        </button>
+
+                        <button
                             onClick={() => setShowNewFixture(true)}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-lg transition-colors cursor-pointer ml-auto"
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-lg transition-colors cursor-pointer"
                         >
                             <svg
                                 className="w-3.5 h-3.5"
@@ -370,6 +379,10 @@ const AppInner: React.FC = () => {
             )}
 
             {showNewFixture && <NewFixturePanel onClose={() => setShowNewFixture(false)} />}
+
+            {showManagedRefresh && (
+                <ManagedRefreshPanel onClose={() => setShowManagedRefresh(false)} />
+            )}
         </div>
     );
 };

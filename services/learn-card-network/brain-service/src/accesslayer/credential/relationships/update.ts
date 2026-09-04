@@ -2,6 +2,7 @@ import { QueryBuilder, BindParam } from 'neogma';
 
 import { Credential } from '@models';
 import { setCredentialBitstringStatus } from '@helpers/status-list.helpers';
+import { revokeCredentialRefreshForCredential } from '@accesslayer/credential-refresh/update';
 
 /**
  * Revoke a credential by setting its issuer-controlled status on the CREDENTIAL_SENT relationship.
@@ -33,6 +34,22 @@ export const revokeCredentialReceived = async (
             // silently (the authoritative relationship status still drives the UI).
             console.warn(
                 `[revokeCredentialReceived] credential ${credentialId} has no verifiable 'revocation' status entry; bitstring bit not set`
+            );
+        }
+    }
+
+    // Managed credential refresh coupling (LC-2117/LC-2135): revoking the original
+    // sent credential invalidates the whole refresh chain. Best-effort — the holder
+    // endpoint independently cross-checks this canonical relationship state on every
+    // authenticated request, so a failed write here cannot leave a revoked credential
+    // servable.
+    if (result.records.length > 0) {
+        try {
+            await revokeCredentialRefreshForCredential(credentialId);
+        } catch (error) {
+            console.error(
+                '[revokeCredentialReceived] failed to revoke credential refresh aggregate:',
+                error
             );
         }
     }

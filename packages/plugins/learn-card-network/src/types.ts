@@ -111,6 +111,12 @@ import {
     CredentialActivityStats,
     BitstringCredentialStatusPurpose,
     BitstringCredentialStatusEntry,
+    AllocateCredentialRefreshInput,
+    AllocateCredentialRefreshResult,
+    PublishCredentialRefreshInput,
+    PublishCredentialRefreshResult,
+    GetCredentialRefreshHistoryInput,
+    GetCredentialRefreshHistoryResult,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -411,6 +417,47 @@ export type LearnCardNetworkPluginMethods = {
         statusPurposes?: BitstringCredentialStatusPurpose[];
         listSize?: number;
     }) => Promise<BitstringCredentialStatusEntry[]>;
+
+    // Managed Credential Refresh (LC-2117 / LC-2135 / LC-2136)
+
+    /**
+     * Allocates an unguessable managed refresh service for a credential BEFORE it is
+     * signed. The returned `refreshService` descriptor must be injected into the
+     * unsigned credential so it becomes part of the signed payload; `credentialId`
+     * binds the allocation to the credential's stable ID.
+     */
+    allocateCredentialRefresh: (
+        input: AllocateCredentialRefreshInput
+    ) => Promise<AllocateCredentialRefreshResult>;
+    /**
+     * Binds a signed credential to its allocated refresh aggregate. The plaintext VC is
+     * verified server-side and persisted only as a holder-encrypted JWE — the issuer
+     * and the service never retain a readable copy. When the credential was issued from
+     * a boost, pass `boostUri` so the stored instance stays linked INSTANCE_OF the
+     * boost for canonical recipient management (including revocation).
+     */
+    sendRefreshableCredential: (
+        refreshId: string,
+        credential: VC,
+        boostUri?: string,
+        skipNotification?: boolean
+    ) => Promise<string>;
+    /**
+     * Publishes a new immutable version of a refreshable credential and atomically
+     * advances the refresh head. Issuer-signed mode takes a fully signed VC;
+     * signing-authority mode takes updated unsigned claims plus an authorized signing
+     * authority.
+     */
+    publishCredentialRefresh: (
+        input: PublishCredentialRefreshInput
+    ) => Promise<PublishCredentialRefreshResult>;
+    /**
+     * Cursor-paginated, metadata-only issuer audit history for a managed refresh.
+     * Never includes credential bodies or encrypted payloads.
+     */
+    getCredentialRefreshHistory: (
+        input: GetCredentialRefreshHistoryInput
+    ) => Promise<GetCredentialRefreshHistoryResult>;
     revokeBoostRecipient: (
         boostUri: string,
         recipientProfileId: string,
@@ -437,6 +484,16 @@ export type LearnCardNetworkPluginMethods = {
                   skipNotification?: boolean;
                   templateData?: Record<string, unknown>;
                   statusPurposes?: BitstringCredentialStatusPurpose[];
+                  /**
+                   * Opt into a managed refresh service. When true, a stable UUID
+                   * credential ID is generated if the boost template has none, a
+                   * refresh service is allocated BEFORE signing and injected into the
+                   * signed credential, and the credential is sent via the dedicated
+                   * managed-send procedure (holder-encrypted storage only) instead of
+                   * legacy credential storage. The `encrypt` option is ignored in this
+                   * mode — managed storage is always holder-only.
+                   */
+                  enableRefresh?: boolean;
               }
     ) => Promise<string>;
 

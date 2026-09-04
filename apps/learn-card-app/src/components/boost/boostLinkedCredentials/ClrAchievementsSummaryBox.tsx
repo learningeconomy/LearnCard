@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-type ClrAchievement = {
+export type ClrAchievement = {
     id?: string;
     type?: string[];
     name?: string;
@@ -9,7 +9,7 @@ type ClrAchievement = {
     criteria?: { narrative?: string };
 };
 
-type ClrAssociation = {
+export type ClrAssociation = {
     type?: string[];
     associationType?: string;
     sourceId?: string;
@@ -42,9 +42,7 @@ const ClrAchievementsSummaryBox: React.FC<ClrAchievementsSummaryBoxProps> = ({
 
     // Build a name lookup map: achievement id → name
     const achievementNameById = new Map<string, string>(
-        achievements
-            .filter(a => a.id)
-            .map(a => [a.id!, a.name || 'Unnamed Achievement'])
+        achievements.filter(a => a.id).map(a => [a.id!, a.name || 'Unnamed Achievement'])
     );
 
     // Build a map: achievement id → outgoing associations

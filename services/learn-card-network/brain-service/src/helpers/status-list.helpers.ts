@@ -52,7 +52,7 @@ const nodeToStatusList = (node: unknown): StatusListType | null => {
 };
 
 export const getStatusListBaseUrl = (domain: string): string => {
-    const normalizedDomain = domain.replace('/trpc', '').replace(/%3A/g, ':');
+    const normalizedDomain = domain.replace('/trpc', '').replace(/%3A/gi, ':');
     const protocol = normalizedDomain.includes('localhost') ? 'http' : 'https';
 
     return `${protocol}://${normalizedDomain}`;

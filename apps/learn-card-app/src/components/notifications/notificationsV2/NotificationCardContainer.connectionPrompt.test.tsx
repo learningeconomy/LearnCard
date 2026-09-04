@@ -46,6 +46,7 @@ vi.mock('./NotificationGuardianApprovalCard', () => ({ default: () => null }));
 vi.mock('./NotificationGuardianOutcomeCard', () => ({ default: () => null }));
 vi.mock('./NotificationAppNotificationCard', () => ({ default: () => null }));
 vi.mock('./NotificationCredentialStatusCard', () => ({ default: () => null }));
+vi.mock('./NotificationCredentialRefreshedCard', () => ({ default: () => null }));
 vi.mock('../../../paraglide/messages.js', () => ({
     'connectionPrompts.title': ({ name }: { name: string }) => `Connect with ${name}?`,
     'connectionPrompts.description': () => 'Stay in touch and recognize what comes next.',
@@ -76,7 +77,7 @@ const makeNotification = (connectionPrompt?: unknown): NotificationType =>
         message: { body: 'Alice claimed your credential' },
         data: connectionPrompt === undefined ? {} : { metadata: { connectionPrompt } },
         sent: '2026-08-20T12:00:00.000Z',
-    } as NotificationType);
+    }) as NotificationType;
 
 const renderContainer = (notification: NotificationType) => {
     const queryClient = new QueryClient({
