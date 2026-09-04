@@ -70,6 +70,16 @@ abort 'browser runner invocation missing' unless browser_steps.any? do |step|
   step['run'] == 'bash scripts/e2e-hosted/run-browser.sh'
 end
 
+preflight_index = browser_steps.index { |step| step['name'] == 'Capture runner preflight' }
+storage_index = browser_steps.index { |step| step['name'] == 'Prepare runner storage' }
+setup_index = browser_steps.index { |step| step['name'] == 'Setup Node' }
+abort 'runner storage preparation missing' unless storage_index
+abort 'runner storage preparation must follow preflight' unless storage_index > preflight_index
+abort 'runner storage preparation must precede dependency and Docker work' unless storage_index < setup_index
+abort 'runner storage preparation must execute the tested script' unless browser_steps.fetch(storage_index).fetch(
+  'run'
+) == 'bash scripts/e2e-hosted/prepare-storage.sh'
+
 [browser_steps].each do |steps|
   checkout = steps.find { |step| step['id'] == 'checkout' }
   abort 'checkout must expose its outcome to diagnostics' unless checkout

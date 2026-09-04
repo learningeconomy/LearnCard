@@ -102,6 +102,9 @@ jobs:
                     docker system df -v 2>&1 || true
                   } > "$E2E_ARTIFACT_DIR/runner-preflight.txt"
 
+            - name: Prepare runner storage
+              run: bash scripts/e2e-hosted/prepare-storage.sh
+
             - name: Setup Node
               uses: actions/setup-node@v6
               with:
