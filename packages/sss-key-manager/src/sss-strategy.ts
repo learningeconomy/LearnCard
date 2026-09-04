@@ -370,11 +370,16 @@ export const selectRecoveryPhraseChallengeIndices = (
     }
 
     const indices = new Set<number>();
+    // Rejection sampling: discard values in the partial top bucket so every
+    // index is equally likely (avoids modulo bias flagged by CodeQL).
+    const limit = 0x1_0000_0000 - (0x1_0000_0000 % wordCount);
 
     while (indices.size < challengeCount) {
         const randomValue = crypto.getRandomValues(new Uint32Array(1))[0];
 
         if (randomValue === undefined) throw new Error('Failed to choose recovery phrase words');
+        if (randomValue >= limit) continue;
+
         indices.add(randomValue % wordCount);
     }
 
@@ -911,7 +916,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
             lastServerSnapshot = {
                 currentVersion: serverVersion,
-                resolvedVersion: authShareString ? localVersion ?? serverVersion : null,
+                resolvedVersion: authShareString ? (localVersion ?? serverVersion) : null,
                 authShare: authShareString,
                 primaryDid: data.primaryDid || null,
             };

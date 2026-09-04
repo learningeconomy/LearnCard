@@ -83,9 +83,7 @@ export interface RecoveryPhraseRecoveryMethod {
 
 /** @deprecated Use RecoveryInput instead. Kept for legacy SSSKeyManager class. */
 export type RecoveryMethod =
-    | PasskeyRecoveryMethod
-    | BackupFileRecoveryMethod
-    | RecoveryPhraseRecoveryMethod;
+    PasskeyRecoveryMethod | BackupFileRecoveryMethod | RecoveryPhraseRecoveryMethod;
 
 /**
  * SSS-specific recovery input — what the user provides to recover their key.
