@@ -19,12 +19,35 @@ describe('authConfig', () => {
         expect(getAuthConfig()).toMatchObject({
             authProvider: 'firebase',
             keyDerivation: 'sss',
+            sssCohortEnabled: false,
         });
         expect(getSSSConfig()).toEqual({
             serverUrl: 'http://localhost:5100/api',
+            escrowRelayPublicKey: '',
+            escrowRelayKeyId: '',
             enableEmailBackupShare: true,
             requireEmailForPhoneUsers: true,
         });
+    });
+
+    it('allows tenant overrides to enable the SSS cohort', () => {
+        setAuthConfigOverrides({ sssCohortEnabled: true });
+
+        expect(getAuthConfig().sssCohortEnabled).toBe(true);
+    });
+
+    it('reads the pinned escrow relay key from tenant SSS config', () => {
+        setAuthConfigOverrides({
+            providerConfig: {
+                sss: {
+                    escrowRelayPublicKey: 'relay-public-key',
+                    escrowRelayKeyId: 'relay-key-2026-09',
+                },
+            },
+        });
+
+        expect(getSSSConfig().escrowRelayPublicKey).toBe('relay-public-key');
+        expect(getSSSConfig().escrowRelayKeyId).toBe('relay-key-2026-09');
     });
 
     it('uses explicit validated overrides without consulting environment variables', () => {

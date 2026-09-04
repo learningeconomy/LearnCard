@@ -15,8 +15,12 @@ import {
 } from './src/helpers/sentry.helpers';
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
+import { ensureUserKeysIndexes } from './src/models';
 
-const promise = getEmptyLearnCard(); // Load WASM in for better cold starts
+const startupPromise = Promise.all([
+    getEmptyLearnCard(), // Load WASM in for better cold starts
+    ensureUserKeysIndexes(),
+]);
 
 const isWarmupEvent = (event: APIGatewayProxyEventV2): boolean =>
     'source' in event && event.source === 'serverless-plugin-warmup';
@@ -72,7 +76,7 @@ export const _trpcHandler = awsLambdaRequestHandler({
 
 export const openApiHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        await promise;
+        await startupPromise;
 
         if (isWarmupEvent(event)) {
             console.log('[Warmup] Initializing LearnCard...');
@@ -98,7 +102,7 @@ export const openApiHandler = Sentry.AWSLambda.wrapHandler(
 
 export const trpcHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
-        await promise;
+        await startupPromise;
 
         if (isWarmupEvent(event)) {
             console.log('[Warmup] Initializing LearnCard...');

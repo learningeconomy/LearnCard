@@ -1712,6 +1712,11 @@
         }
     },
     "recovery": {
+        "error.invalidPhrase": "Esas palabras no coinciden con tu frase de recuperación. Revísalas e inténtalo de nuevo.",
+        "error.invalidPassword": "Contraseña incorrecta o no se pudo leer el archivo. Por favor, inténtalo de nuevo.",
+        "error.invalidCode": "Ese código es incorrecto o ha expirado. Solicita uno nuevo e inténtalo de nuevo.",
+        "error.network": "Problema de conexión. Por favor, comprueba tu internet e inténtalo de nuevo.",
+        "error.default": "Algo salió mal. Por favor, inténtalo de nuevo.",
         "prompt": {
             "openAria": "Configurar una forma de volver a iniciar sesión",
             "snoozeAria": "Recordármelo en 7 días",
@@ -1722,6 +1727,10 @@
             "urgent": {
                 "title": "Esta sesión termina cuando cierres la pestaña",
                 "body": "Configura una forma de volver a iniciar sesión o perderás el acceso a tu cuenta."
+            },
+            "activation": {
+                "title": "Termina de proteger tu cuenta",
+                "body": "La actualización de tu cuenta no estará completa hasta que agregues una forma de volver a iniciar sesión."
             },
             "success": {
                 "title": "Tu cuenta está protegida",
@@ -1845,6 +1854,11 @@
         "yourRecoveryPhrase": "Tu frase de recuperación",
         "copied": "¡Copiado!",
         "savedSomewhereSafe": "La he guardado en un lugar seguro",
+        "verifyPhraseTitle": "Confirma tu frase de recuperación",
+        "verifyPhraseDescription": "Introduce las palabras solicitadas para confirmar que guardaste tu frase.",
+        "wordNumber": "Palabra {{number}}",
+        "confirmPhrase": "Confirmar frase de recuperación",
+        "phraseWordsMismatch": "Esas palabras no coinciden. Revisa tu frase e inténtalo de nuevo.",
         "backupDescription": "Genera un archivo de copia de seguridad cifrado protegido por una contraseña. Guárdalo en un lugar seguro — necesitarás tanto el archivo como la contraseña para recuperar.",
         "backupPassword": "Contraseña de copia de seguridad",
         "confirmPassword": "Confirmar contraseña",
@@ -1856,6 +1870,9 @@
         },
         "backupReady": "Archivo de copia de seguridad listo",
         "backupReadyDesc": "Descarga este archivo y guárdalo en un lugar seguro. Lo necesitarás junto con tu contraseña de copia de seguridad para recuperar.",
+        "reenterPassword": "Vuelve a introducir la contraseña de copia de seguridad",
+        "verifyBackupDescription": "Comprobaremos el archivo descargado antes de confirmar este método de recuperación.",
+        "verifyBackup": "Verificar archivo de copia de seguridad",
         "passwordsDontMatch": "Las contraseñas no coinciden.",
         "recommended": "Recomendado",
         "emailDescription": "Agrega un correo personal (diferente al de inicio de sesión) como destino de recuperación. Se enviará una clave de recuperación allí.",
@@ -1868,6 +1885,8 @@
         "emailKeyDescription": "Enviaremos una clave de recuperación a este correo. Si alguna vez pierdes acceso, solo revisa tu bandeja de entrada y pega la clave para recuperar.",
         "recoveryKeySentTitle": "Clave de recuperación enviada",
         "recoveryKeySentDesc": "Revisa tu bandeja de entrada en {{email}}. Guarda ese correo — necesitarás la clave de recuperación si alguna vez pierdes acceso.",
+        "recoveryConfirmationCodeSent": "Introduce el código de confirmación enviado con tu clave de recuperación a {{email}}.",
+        "confirmRecoveryKey": "Confirmar clave de recuperación",
         "accountUpgradeNeeded": "Actualización de cuenta necesaria",
         "accountUpgradeDesc": "Estamos actualizando la seguridad de tu cuenta pero no pudimos terminar automáticamente. Intenta de nuevo.",
         "logOut": "Cerrar sesión",
@@ -1897,7 +1916,32 @@
         "anotherDeviceDesc": "Escanea un código desde un dispositivo con sesión iniciada",
         "emailRecoveryLabel": "Clave de recuperación por correo",
         "phraseEnter25": "Ingresa tu frase de 25 palabras",
-        "wordsCount": "{{count}} / 25 palabras"
+        "wordsCount": "{{count}} / 25 palabras",
+        "identity": {
+            "lostSchoolLogin": "Perdí el acceso a mi correo escolar o inicio de sesión",
+            "title": "Restaura tu cuenta",
+            "emailDescription": "Ingresa el correo personal de recuperación que verificaste anteriormente.",
+            "recoveryEmailLabel": "Correo de recuperación",
+            "recoveryEmailPlaceholder": "tu@ejemplo.com",
+            "sendCode": "Enviar código de recuperación",
+            "sendingCode": "Enviando código...",
+            "checkEmail": "Revisa tu correo",
+            "codeDescription": "Ingresa el código de 6 dígitos enviado a tu correo de recuperación.",
+            "codeLabel": "Código de recuperación",
+            "verifyCode": "Verificar código",
+            "chooseMethod": "Verifica tu cuenta",
+            "chooseMethodDescription": "Elige un método de recuperación para confirmar que la cuenta es tuya.",
+            "keyVerified": "Cuenta verificada",
+            "newLoginDescription": "Ahora inicia sesión con un correo o acceso nuevo para reconectar tu cuenta.",
+            "continueToLogin": "Continuar para iniciar sesión",
+            "signInPrompt": "Inicia sesión con tu nuevo acceso",
+            "signInPromptDescription": "Reconectaremos tu cuenta existente después de iniciar sesión.",
+            "successTitle": "Acceso restaurado",
+            "successDescription": "Tu cuenta está conectada a tu nuevo acceso. Configura de nuevo la recuperación para mantenerla protegida.",
+            "tooManyAttempts": "Demasiados intentos incorrectos. Inténtalo más tarde.",
+            "invalidCode": "El código es incorrecto o venció. Solicita uno nuevo e inténtalo otra vez.",
+            "invalidRecoveryMethod": "Ese método no pudo verificar tu cuenta. Prueba otro método."
+        }
     },
     "alerts": {
         "title": "Alertas",

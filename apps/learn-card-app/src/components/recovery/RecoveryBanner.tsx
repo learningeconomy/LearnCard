@@ -22,6 +22,7 @@ type RecoveryPromptPhase = 'visible' | 'success' | 'exiting' | 'hidden';
 interface RecoveryBannerProps {
     recoverySupported: boolean;
     recoveryMethodCount: number | null;
+    activationPending?: boolean;
     totalCredentialCount: number;
     onSetup: (options: {
         initialMethod: RecoverySetupType;
@@ -33,11 +34,15 @@ interface RecoveryBannerProps {
 export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
     recoverySupported,
     recoveryMethodCount,
+    activationPending = false,
     totalCredentialCount,
     onSetup,
 }) => {
     const { track } = useAnalytics();
-    const isPublic = isPublicComputerMode();
+    // Public sessions lose access when the tab closes; provisional migrations
+    // are not activated until a method is confirmed. Both are urgent and
+    // cannot be snoozed.
+    const isPublic = isPublicComputerMode() || activationPending;
     const snoozedUntil = firstStartupStore.useTracked.recoveryPromptSnoozedUntil();
     const [phase, setPhase] = useState<RecoveryPromptPhase>('visible');
     const [completed, setCompleted] = useState(false);
@@ -212,18 +217,22 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                                         isPublic ? 'text-amber-900' : 'text-grayscale-900'
                                     }`}
                                 >
-                                    {isPublic
-                                        ? m['recovery.prompt.urgent.title']()
-                                        : m['recovery.prompt.calm.title']()}
+                                    {activationPending
+                                        ? m['recovery.prompt.activation.title']()
+                                        : isPublic
+                                          ? m['recovery.prompt.urgent.title']()
+                                          : m['recovery.prompt.calm.title']()}
                                 </span>
                                 <span
                                     className={`block text-xs leading-snug mt-0.5 ${
                                         isPublic ? 'text-amber-800' : 'text-grayscale-600'
                                     }`}
                                 >
-                                    {isPublic
-                                        ? m['recovery.prompt.urgent.body']()
-                                        : m['recovery.prompt.calm.body']()}
+                                    {activationPending
+                                        ? m['recovery.prompt.activation.body']()
+                                        : isPublic
+                                          ? m['recovery.prompt.urgent.body']()
+                                          : m['recovery.prompt.calm.body']()}
                                 </span>
                                 <span
                                     className={`block text-xs font-semibold mt-1 ${

@@ -34,6 +34,7 @@ const LOCAL_TEMPLATE_ALIASES: Record<string, TemplateId> = {
     'guardian-approval': 'guardian-approval',
     'account-approved': 'account-approved',
     'contact-method-verification': 'contact-method-verification',
+    'account-sign-in-changed': 'account-sign-in-changed',
 };
 
 /** Whether the given alias is a sentinel we registered (vs. a real Postmark alias). */
@@ -166,9 +167,13 @@ export class PostmarkAdapter implements DeliveryService {
                     recipient: model.recipient as { name?: string } | undefined,
                 };
 
+            case 'account-sign-in-changed':
+                return {};
+
             case 'recovery-key':
                 return {
                     recoveryKey: (model.recoveryKey as string) ?? '',
+                    confirmationCode: (model.confirmationCode as string) ?? '',
                 };
 
             case 'endorsement-request':

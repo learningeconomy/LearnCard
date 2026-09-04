@@ -1712,6 +1712,11 @@
         }
     },
     "recovery": {
+        "error.invalidPhrase": "Ces mots ne correspondent pas à votre phrase de récupération. Vérifiez-les et réessayez.",
+        "error.invalidPassword": "Mot de passe incorrect ou le fichier n'a pas pu être lu. Veuillez réessayer.",
+        "error.invalidCode": "Ce code est incorrect ou a expiré. Demandez-en un nouveau et réessayez.",
+        "error.network": "Problème de connexion. Veuillez vérifier votre internet et réessayer.",
+        "error.default": "Quelque chose s'est mal passé. Veuillez réessayer.",
         "prompt": {
             "openAria": "Configurer un moyen de se reconnecter",
             "snoozeAria": "Me le rappeler dans 7 jours",
@@ -1722,6 +1727,10 @@
             "urgent": {
                 "title": "Cette session se termine lorsque vous fermez l’onglet",
                 "body": "Configurez un moyen de vous reconnecter, sinon vous perdrez l’accès à votre compte."
+            },
+            "activation": {
+                "title": "Terminez la sécurisation de votre compte",
+                "body": "La mise à niveau de votre compte ne sera terminée que lorsque vous aurez ajouté un moyen de vous reconnecter."
             },
             "success": {
                 "title": "Votre compte est protégé",
@@ -1845,6 +1854,11 @@
         "yourRecoveryPhrase": "Votre phrase de récupération",
         "copied": "Copié !",
         "savedSomewhereSafe": "Je l'ai enregistrée en lieu sûr",
+        "verifyPhraseTitle": "Confirmez votre phrase de récupération",
+        "verifyPhraseDescription": "Saisissez les mots demandés pour confirmer que vous avez enregistré votre phrase.",
+        "wordNumber": "Mot {{number}}",
+        "confirmPhrase": "Confirmer la phrase de récupération",
+        "phraseWordsMismatch": "Ces mots ne correspondent pas. Vérifiez votre phrase et réessayez.",
         "backupDescription": "Générez un fichier de sauvegarde chiffré protégé par un mot de passe. Stockez-le en lieu sûr — vous aurez besoin du fichier et du mot de passe pour récupérer.",
         "backupPassword": "Mot de passe de sauvegarde",
         "confirmPassword": "Confirmer le mot de passe",
@@ -1856,6 +1870,9 @@
         },
         "backupReady": "Fichier de sauvegarde prêt",
         "backupReadyDesc": "Téléchargez ce fichier et stockez-le en lieu sûr. Vous en aurez besoin avec votre mot de passe de sauvegarde pour récupérer.",
+        "reenterPassword": "Saisissez à nouveau le mot de passe de sauvegarde",
+        "verifyBackupDescription": "Nous vérifierons le fichier téléchargé avant de confirmer cette méthode de récupération.",
+        "verifyBackup": "Vérifier le fichier de sauvegarde",
         "passwordsDontMatch": "Les mots de passe ne correspondent pas.",
         "recommended": "Recommandé",
         "emailDescription": "Ajoutez un e-mail personnel (différent de votre identifiant) comme destination de récupération. Une clé de récupération y sera envoyée.",
@@ -1868,6 +1885,8 @@
         "emailKeyDescription": "Nous enverrons une clé de récupération à cet e-mail. Si vous perdez l'accès, vérifiez votre boîte de réception et collez la clé pour récupérer.",
         "recoveryKeySentTitle": "Clé de récupération envoyée",
         "recoveryKeySentDesc": "Vérifiez votre boîte de réception à {{email}}. Gardez cet e-mail en sécurité — vous aurez besoin de la clé de récupération si vous perdez l'accès.",
+        "recoveryConfirmationCodeSent": "Saisissez le code de confirmation envoyé avec votre clé de récupération à {{email}}.",
+        "confirmRecoveryKey": "Confirmer la clé de récupération",
         "accountUpgradeNeeded": "Mise à niveau du compte nécessaire",
         "accountUpgradeDesc": "Nous mettons à niveau la sécurité de votre compte mais n'avons pas pu terminer automatiquement. Veuillez réessayer.",
         "logOut": "Se déconnecter",
@@ -1897,7 +1916,32 @@
         "anotherDeviceDesc": "Scannez un code depuis un appareil connecté",
         "emailRecoveryLabel": "Clé de récupération par e-mail",
         "phraseEnter25": "Entrez votre phrase de 25 mots",
-        "wordsCount": "{{count}} / 25 mots"
+        "wordsCount": "{{count}} / 25 mots",
+        "identity": {
+            "lostSchoolLogin": "Je n’ai plus accès à mon adresse scolaire ou à ma connexion",
+            "title": "Restaurer votre compte",
+            "emailDescription": "Saisissez l’adresse personnelle de récupération vérifiée auparavant.",
+            "recoveryEmailLabel": "Adresse de récupération",
+            "recoveryEmailPlaceholder": "vous@exemple.com",
+            "sendCode": "Envoyer le code de récupération",
+            "sendingCode": "Envoi du code...",
+            "checkEmail": "Consultez vos e-mails",
+            "codeDescription": "Saisissez le code à 6 chiffres envoyé à votre adresse de récupération.",
+            "codeLabel": "Code de récupération",
+            "verifyCode": "Vérifier le code",
+            "chooseMethod": "Vérifier votre compte",
+            "chooseMethodDescription": "Choisissez une méthode de récupération pour confirmer que ce compte est le vôtre.",
+            "keyVerified": "Compte vérifié",
+            "newLoginDescription": "Connectez-vous maintenant avec une nouvelle adresse ou un nouvel identifiant pour reconnecter votre compte.",
+            "continueToLogin": "Continuer vers la connexion",
+            "signInPrompt": "Connectez-vous avec votre nouvel identifiant",
+            "signInPromptDescription": "Nous reconnecterons votre compte existant après votre connexion.",
+            "successTitle": "Accès restauré",
+            "successDescription": "Votre compte est connecté à votre nouvel identifiant. Configurez à nouveau la récupération pour le protéger.",
+            "tooManyAttempts": "Trop de tentatives incorrectes. Réessayez plus tard.",
+            "invalidCode": "Ce code est incorrect ou a expiré. Demandez un nouveau code et réessayez.",
+            "invalidRecoveryMethod": "Cette méthode n’a pas permis de vérifier votre compte. Essayez-en une autre."
+        }
     },
     "alerts": {
         "title": "Alertes",

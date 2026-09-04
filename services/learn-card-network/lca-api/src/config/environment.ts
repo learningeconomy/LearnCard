@@ -32,6 +32,8 @@ export const lcaApiEnvironmentShape = {
     POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: optionalEnvironmentString,
     POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS: optionalEnvironmentString,
     POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: optionalEnvironmentString,
+    ESCROW_RELAY_URL: optionalEnvironmentUrl,
+    ESCROW_RELAY_AUTH_TOKEN: optionalEnvironmentString,
     ANDROID_PUSH_ICON: optionalEnvironmentString,
     REDIS_HOST: optionalEnvironmentString,
     REDIS_PORT: optionalEnvironmentPort,

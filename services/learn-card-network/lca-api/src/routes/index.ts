@@ -12,7 +12,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-templates';
 
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
-import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
+import { consumeChallengeForDid } from '@cache/challenges';
 
 export type DidAuthVP = {
     iss: string;
@@ -34,6 +34,13 @@ export type Context = {
     tenant: ResolvedTenant;
     debug?: boolean;
     clientIp?: string;
+    // Value of the X-Auth-Token header — a caller's own provider token
+    // (e.g. a Firebase ID token), distinct from the Authorization header
+    // (reserved for the DID-Auth VP). Lets GET routes that verify a
+    // provider token (e.g. keys.getRecoveryShare, P0-4) read it without
+    // putting it in a query string, without colliding with clients that
+    // send a DID-Auth VP as Authorization for the same route.
+    providerToken?: string;
 };
 
 export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create();
@@ -48,6 +55,13 @@ export const createContext = async (
     const authHeader = event.headers.authorization;
     const domainName = 'requestContext' in event ? event.requestContext.domainName : '';
     const debug = environment.NODE_ENV === 'test';
+
+    // See Context.providerToken — a separate header from Authorization,
+    // which is reserved for the DID-Auth VP handled below.
+    const providerTokenHeader = (event.headers as Record<string, string | undefined>)[
+        'x-auth-token'
+    ];
+    const providerToken = providerTokenHeader || undefined;
 
     const domain =
         !domainName || environment.IS_OFFLINE
@@ -116,10 +130,10 @@ export const createContext = async (
                             tenant,
                             debug,
                             clientIp,
+                            providerToken,
                         };
 
-                    const cacheResponse = await isChallengeValidForDid(did, challenge);
-                    await invalidateChallengeForDid(did, challenge);
+                    const cacheResponse = await consumeChallengeForDid(did, challenge);
 
                     return {
                         user: { did, isChallengeValid: Boolean(cacheResponse), authorizedDid },
@@ -127,6 +141,7 @@ export const createContext = async (
                         tenant,
                         debug,
                         clientIp,
+                        providerToken,
                     };
                 }
             }
@@ -135,14 +150,83 @@ export const createContext = async (
         console.error(e);
     }
 
-    return { domain, tenant, clientIp };
+    return { domain, tenant, clientIp, providerToken };
 };
 
+// ---------------------------------------------------------------------------
+// P0-4: Secret leakage — telemetry
+// ---------------------------------------------------------------------------
+//
+// /keys/* inputs carry Firebase auth tokens, encrypted/plaintext key shares,
+// and recovery artifacts. `attachRpcInput` is disabled below (globally, since
+// this middleware chain is shared by every router — see app.ts) so Sentry
+// never receives raw tRPC input. The event processor further down is
+// defense-in-depth: even if input attachment is ever re-enabled upstream, or
+// another integration attaches a raw payload to an event for a /keys/*
+// request, this strips anything secret-shaped before it can leave the
+// process.
+const SECRET_FIELD_RE = /share|token|seed|recoverykey|blob/i;
+
+/**
+ * Recursively replaces values whose key matches SECRET_FIELD_RE with
+ * '[Redacted]'. Guards against circular references and caps recursion depth.
+ * Exported for unit testing.
+ */
+export const redactSecretFields = (
+    value: unknown,
+    depth = 0,
+    seen: Set<object> = new Set()
+): unknown => {
+    if (depth > 10 || value === null || value === undefined) return value;
+
+    if (Array.isArray(value)) {
+        if (seen.has(value)) return '[Circular]';
+        seen.add(value);
+        return value.map(item => redactSecretFields(item, depth + 1, seen));
+    }
+
+    if (typeof value === 'object') {
+        if (seen.has(value)) return '[Circular]';
+        seen.add(value);
+        return Object.fromEntries(
+            Object.entries(value as Record<string, unknown>).map(([key, val]) => [
+                key,
+                SECRET_FIELD_RE.test(key) ? '[Redacted]' : redactSecretFields(val, depth + 1, seen),
+            ])
+        );
+    }
+
+    return value;
+};
+
+const sentryTrpcMiddleware = Sentry.Handlers.trpcMiddleware({ attachRpcInput: false });
+
 export const openRoute = t.procedure
-    .use(t.middleware(Sentry.Handlers.trpcMiddleware({ attachRpcInput: true }) as any))
+    .use(
+        t.middleware(({ path, type, next, getRawInput }) =>
+            sentryTrpcMiddleware({ path, type, next, rawInput: getRawInput })
+        )
+    )
     .use(({ ctx, next, path }) => {
         Sentry.configureScope(scope => {
             scope.setTransactionName(`trpc-${path}`);
+
+            if (path.startsWith('keys.')) {
+                scope.addEventProcessor(event => {
+                    if (event.contexts) {
+                        event.contexts = redactSecretFields(
+                            event.contexts
+                        ) as typeof event.contexts;
+                    }
+                    if (event.extra) {
+                        event.extra = redactSecretFields(event.extra) as typeof event.extra;
+                    }
+                    if (event.request?.data) {
+                        event.request.data = redactSecretFields(event.request.data);
+                    }
+                    return event;
+                });
+            }
         });
         return next({ ctx });
     });

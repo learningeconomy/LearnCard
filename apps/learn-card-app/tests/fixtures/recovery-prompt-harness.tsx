@@ -86,13 +86,19 @@ const Harness: React.FC = () => {
                         existingMethods={[]}
                         maskedRecoveryEmail={null}
                         onSetupPasskey={async () => 'credential-id'}
-                        onGeneratePhrase={async () => 'one two three'}
+                        onGeneratePhrase={async () => ({
+                            phrase: 'one two three',
+                            challengeWordIndices: [0, 2],
+                        })}
+                        onConfirmPhrase={async () => undefined}
                         onSetupBackup={async () => '{}'}
+                        onConfirmBackup={async () => undefined}
                         onAddRecoveryEmail={async () => undefined}
                         onVerifyRecoveryEmail={async () => ({
                             maskedEmail: 'r***@example.com',
                         })}
                         onSetupEmailRecovery={async () => undefined}
+                        onConfirmEmailRecovery={async () => undefined}
                         onClose={() => {
                             setupOptions.onClosed();
                             setSetupOptions(null);

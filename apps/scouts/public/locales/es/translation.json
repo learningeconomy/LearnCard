@@ -524,7 +524,10 @@
                 "yourPhrase": "Tu Frase de Recuperación",
                 "copied": "¡Copiado!",
                 "copyBtn": "Copiar al Portapapeles",
-                "confirmBtn": "Lo He Guardado en un Lugar Seguro"
+                "confirmBtn": "Lo He Guardado en un Lugar Seguro",
+                "verifyDesc": "Introduzca las palabras solicitadas para confirmar que ha guardado su frase.",
+                "verifyTitle": "Confirme su frase de recuperación",
+                "wordNumber": "Palabra {{number}}"
             },
             "backup": {
                 "createdRow": "Archivo de respaldo creado",
@@ -542,7 +545,9 @@
                 "downloadAgain": "Descargar de Nuevo",
                 "downloadBtn": "Descargar Archivo de Respaldo",
                 "confirmBtn": "Lo He Guardado en un Lugar Seguro",
-                "shareTitle": "Copia de seguridad de ScoutPass"
+                "shareTitle": "Copia de seguridad de ScoutPass",
+                "reenterPassword": "Vuelva a introducir la contraseña de la copia de seguridad",
+                "verifyDesc": "Comprobaremos el archivo descargado antes de confirmar este método de recuperación."
             },
             "email": {
                 "recoveryRow": "Correo de recuperación: {{email}}",
@@ -563,7 +568,9 @@
                 "sendKeyDesc": "Enviaremos una clave de recuperación a este correo. Si pierdes acceso, revisa tu bandeja y pega la clave.",
                 "sendKeyBtn": "Enviar Clave de Recuperación",
                 "keySentTitle": "Clave de recuperación enviada",
-                "keySentDesc": "Revisa tu bandeja en {{email}}. Guarda ese correo — necesitarás la clave si pierdes acceso."
+                "keySentDesc": "Revisa tu bandeja en {{email}}. Guarda ese correo — necesitarás la clave si pierdes acceso.",
+                "confirmKeyBtn": "Confirmar clave de recuperación",
+                "confirmationCodeSent": "Introduzca el código de confirmación enviado con su clave de recuperación a {{email}}."
             },
             "errors": {
                 "passLength": "La contraseña debe tener al menos 8 caracteres.",

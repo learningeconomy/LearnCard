@@ -14,6 +14,7 @@ const log = getLogger('use-auth-coordinator-auto-setup');
 
 import { useEffect, useRef } from 'react';
 
+import { getAuthConfig } from '../config/authConfig';
 import type { AuthCoordinatorContextValue } from './AuthCoordinatorProvider';
 
 export interface AutoSetupConfig {
@@ -34,6 +35,12 @@ export interface AutoSetupConfig {
 
     /** Whether `needs_setup` should auto-generate a new key (default: true) */
     autoSetupNeedsSetup?: boolean;
+
+    /**
+     * Whether provisional SSS migration is enabled. Defaults to the tenant's
+     * `sssCohortEnabled` flag, which is false when no tenant override is set.
+     */
+    autoMigrate?: boolean;
 }
 
 export const useAuthCoordinatorAutoSetup = (
@@ -48,13 +55,17 @@ export const useAuthCoordinatorAutoSetup = (
     // values without needing them in the dependency array (avoids re-firing
     // when callback identity changes but state.status hasn't).
     const configRef = useRef(config);
-    configRef.current = config;
 
     const actionsRef = useRef({ setupNewKey, migrate });
-    actionsRef.current = { setupNewKey, migrate };
+
+    useEffect(() => {
+        configRef.current = config;
+        actionsRef.current = { setupNewKey, migrate };
+    }, [config, setupNewKey, migrate]);
 
     const enabled = config.enabled ?? true;
     const autoSetupNeedsSetup = config.autoSetupNeedsSetup ?? true;
+    const autoMigrate = config.autoMigrate ?? getAuthConfig().sssCohortEnabled;
 
     // Auto-handle needs_setup
     useEffect(() => {
@@ -98,7 +109,8 @@ export const useAuthCoordinatorAutoSetup = (
             : undefined;
 
     useEffect(() => {
-        if (!enabled || state.status !== 'needs_migration' || handlingRef.current) return;
+        if (!enabled || !autoMigrate || state.status !== 'needs_migration' || handlingRef.current)
+            return;
 
         if (!migrationKey) return;
 
@@ -123,7 +135,7 @@ export const useAuthCoordinatorAutoSetup = (
         };
 
         handleMigration();
-    }, [state.status, enabled, migrationKey]);
+    }, [state.status, enabled, autoMigrate, migrationKey]);
 
     // Notify when ready
     useEffect(() => {

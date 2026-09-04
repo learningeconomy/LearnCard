@@ -224,6 +224,7 @@ export const RecoveryMethodInfoValidator = z.object({
     createdAt: z.string(),
     credentialId: z.string().optional(),
     shareVersion: z.number().optional(),
+    confirmedAt: z.string().optional(),
 });
 export type RecoveryMethodInfo = z.infer<typeof RecoveryMethodInfoValidator>;
 
