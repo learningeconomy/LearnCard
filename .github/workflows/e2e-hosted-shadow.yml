@@ -1,0 +1,47 @@
+name: Hosted E2E Shadow
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    workflow_dispatch:
+        inputs:
+            ref:
+                description: 'LearnCard ref to test'
+                required: false
+                default: 'main'
+            test_files:
+                description: 'Browser spec files, separated by spaces'
+                required: false
+                default: 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+    cancel-in-progress: true
+
+jobs:
+    eligibility:
+        name: Determine hosted E2E eligibility
+        runs-on: ubuntu-latest
+        outputs:
+            run_e2e: ${{ steps.policy.outputs.run_e2e }}
+            reason: ${{ steps.policy.outputs.reason }}
+        steps:
+            - name: Evaluate PR policy
+              id: policy
+              env:
+                  EVENT_NAME: ${{ github.event_name }}
+                  PR_DRAFT: ${{ github.event.pull_request.draft || false }}
+              run: |
+                  if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+                    echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
+                    echo 'reason=manual-dispatch' >> "$GITHUB_OUTPUT"
+                  elif [[ "$PR_DRAFT" == "false" ]]; then
+                    echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
+                    echo 'reason=non-draft-pr' >> "$GITHUB_OUTPUT"
+                  else
+                    echo 'run_e2e=false' >> "$GITHUB_OUTPUT"
+                    echo 'reason=draft-pr' >> "$GITHUB_OUTPUT"
+                  fi
