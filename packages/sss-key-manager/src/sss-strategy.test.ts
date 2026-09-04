@@ -1062,9 +1062,8 @@ describe('createSSSStrategy', () => {
         it('full flow: v2 device share from another device reconstructs with v2 auth share from server', async () => {
             // --- Setup: split a key to get a real v2 device/auth pair ---
             const originalKey = 'deadbeef1234'.padEnd(64, '0');
-            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } = await strategy.splitKey(
-                originalKey
-            );
+            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } =
+                await strategy.splitKey(originalKey);
 
             // --- Simulate: Device A receives v2 share via QR recovery ---
             strategy.setActiveUser!('recovering-user');
@@ -1155,9 +1154,8 @@ describe('createSSSStrategy', () => {
             // 3. coordinator.initialize() → fetchServerKeyStatus sends v2
 
             const originalKey = 'cafe0123babe'.padEnd(64, '0');
-            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } = await strategy.splitKey(
-                originalKey
-            );
+            const { localKey: v2DeviceShare, remoteKey: v2AuthShare } =
+                await strategy.splitKey(originalKey);
 
             strategy.setActiveUser!('device-recovery-user');
             await strategy.storeLocalKey(v2DeviceShare);
@@ -2561,7 +2559,7 @@ describe('createSSSStrategy', () => {
                 const authShare = requestedVersion
                     ? requestedVersion === server.version
                         ? server.currentAuthShare
-                        : server.previousAuthShares.get(requestedVersion) ?? null
+                        : (server.previousAuthShares.get(requestedVersion) ?? null)
                     : server.currentAuthShare;
 
                 return new Response(

@@ -260,9 +260,9 @@ graph TD
 
 After **every** recovery, the shares are **re-split** and **re-stored**. This means:
 
--   The device share on the new device is fresh (not the old one)
--   The auth share on the server is fresh
--   Old shares are effectively invalidated
+- The device share on the new device is fresh (not the old one)
+- The auth share on the server is fresh
+- Old shares are effectively invalidated
 
 ---
 
@@ -337,5 +337,5 @@ All cryptographic operations come from `@learncard/sss-key-manager`:
 
 ## See Also
 
--   [README.md](./README.md) — Core state machine reference + diagrams
--   [INTEGRATION.md](./INTEGRATION.md) — How to wire the coordinator into an app
+- [README.md](./README.md) — Core state machine reference + diagrams
+- [INTEGRATION.md](./INTEGRATION.md) — How to wire the coordinator into an app

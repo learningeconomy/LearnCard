@@ -102,7 +102,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
     const description = user?.bio ?? user?.shortBio;
 
-    let scoutPassDisplayStyles = currentLCNUser?.display;
+    const scoutPassDisplayStyles = currentLCNUser?.display;
 
     const handleUpdateMyScoutPassID = async (scoutPassIDUpdates: UserCMSAppearance) => {
         const wallet = await initWallet();
