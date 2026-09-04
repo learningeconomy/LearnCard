@@ -17,4 +17,11 @@ grep -Fq 'E2E_EXTERNAL_STACK=true' "$BROWSER_SCRIPT"
 grep -Fq 'bun run test:a11y' "$BROWSER_SCRIPT"
 grep -Fq 'docker compose down --remove-orphans -v' "$BROWSER_SCRIPT"
 
+SERVICE_SCRIPT="$REPO_ROOT/scripts/e2e-hosted/run-service.sh"
+[[ -f "$SERVICE_SCRIPT" ]] || { echo 'hosted service runner missing' >&2; exit 1; }
+grep -Fq 'docker compose up -d --build' "$SERVICE_SCRIPT"
+grep -Fq 'E2E_MANAGE_DOCKER=false' "$SERVICE_SCRIPT"
+grep -Fq 'bunx nx run e2e:test:e2e --verbose' "$SERVICE_SCRIPT"
+grep -Fq 'docker compose down --remove-orphans -v' "$SERVICE_SCRIPT"
+
 echo 'Hosted E2E script contracts passed'
