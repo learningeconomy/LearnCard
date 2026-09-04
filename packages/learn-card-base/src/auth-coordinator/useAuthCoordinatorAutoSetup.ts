@@ -51,10 +51,13 @@ export const useAuthCoordinatorAutoSetup = (
     // values without needing them in the dependency array (avoids re-firing
     // when callback identity changes but state.status hasn't).
     const configRef = useRef(config);
-    configRef.current = config;
 
     const actionsRef = useRef({ setupNewKey, migrate });
-    actionsRef.current = { setupNewKey, migrate };
+
+    useEffect(() => {
+        configRef.current = config;
+        actionsRef.current = { setupNewKey, migrate };
+    }, [config, setupNewKey, migrate]);
 
     const enabled = config.enabled ?? true;
     const autoSetupNeedsSetup = config.autoSetupNeedsSetup ?? true;

@@ -55,15 +55,13 @@ const createMockKeyDerivation = (): KeyDerivationStrategy => ({
     clearLocalKeys: vi.fn().mockResolvedValue(undefined),
     splitKey: vi.fn().mockResolvedValue({ localKey: 'l', remoteKey: 'r' }),
     reconstructKey: vi.fn().mockResolvedValue('pk'),
-    fetchServerKeyStatus: vi
-        .fn()
-        .mockResolvedValue({
-            exists: false,
-            needsMigration: false,
-            primaryDid: null,
-            recoveryMethods: [],
-            authShare: null,
-        }),
+    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+        exists: false,
+        needsMigration: false,
+        primaryDid: null,
+        recoveryMethods: [],
+        authShare: null,
+    }),
     storeAuthShare: vi.fn().mockResolvedValue(undefined),
     executeRecovery: vi.fn().mockResolvedValue({ privateKey: 'pk', did: 'did:key:z1' }),
     getPreservedStorageKeys: vi.fn().mockReturnValue([]),

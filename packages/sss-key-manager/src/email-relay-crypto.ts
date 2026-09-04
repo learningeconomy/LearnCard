@@ -12,7 +12,14 @@ import { base64ToBuffer, bufferToBase64 } from './crypto';
 export const EMAIL_RELAY_ENVELOPE_VERSION = 1 as const;
 export const EMAIL_RELAY_ALGORITHM = 'P-256-HKDF-SHA256-AES-256-GCM' as const;
 
-const EMAIL_RELAY_INFO = new TextEncoder().encode('learncard-email-relay-v1');
+const encodeUtf8 = (value: string): Uint8Array<ArrayBuffer> => {
+    const bytes = new TextEncoder().encode(value);
+    const copy = new Uint8Array(new ArrayBuffer(bytes.byteLength));
+    copy.set(bytes);
+    return copy;
+};
+
+const EMAIL_RELAY_INFO = encodeUtf8('learncard-email-relay-v1');
 const SIX_DIGIT_CODE_RANGE = 900_000;
 const UINT32_RANGE = 0x1_0000_0000;
 const MAX_UNBIASED_UINT32 = Math.floor(UINT32_RANGE / SIX_DIGIT_CODE_RANGE) * SIX_DIGIT_CODE_RANGE;
@@ -155,12 +162,12 @@ export const parseEmailRelayPlaintext = (value: unknown): EmailRelayPlaintext =>
 
 const getAad = (
     envelope: Pick<EmailRelayEnvelope, 'version' | 'algorithm' | 'keyId'>
-): Uint8Array =>
-    new TextEncoder().encode(`${envelope.version}|${envelope.algorithm}|${envelope.keyId}`);
+): Uint8Array<ArrayBuffer> =>
+    encodeUtf8(`${envelope.version}|${envelope.algorithm}|${envelope.keyId}`);
 
 const deriveAesKey = async (
     sharedSecret: ArrayBuffer,
-    salt: Uint8Array,
+    salt: Uint8Array<ArrayBuffer>,
     usage: KeyUsage
 ): Promise<CryptoKey> => {
     const keyMaterial = await crypto.subtle.importKey('raw', sharedSecret, 'HKDF', false, [
@@ -234,7 +241,7 @@ export const encryptEmailRelayPayload = async (
     const ciphertext = await crypto.subtle.encrypt(
         { name: 'AES-GCM', iv, additionalData: getAad(envelopeMetadata) },
         aesKey,
-        new TextEncoder().encode(JSON.stringify(plaintext))
+        encodeUtf8(JSON.stringify(plaintext))
     );
     const ephemeralPublicKey = await crypto.subtle.exportKey('raw', ephemeralKeyPair.publicKey);
 
