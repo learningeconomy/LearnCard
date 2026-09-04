@@ -256,6 +256,7 @@ const cases: VCDisplayCase[] = [
                 },
             },
             issuerLabel: 'Charles Babbage: Verified profile',
+            issuerLabelName: 'Charles Babbage',
             isFrontOverride: true,
             verificationItems: BASE_VERIFICATION_ITEMS,
         }),

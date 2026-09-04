@@ -8,7 +8,11 @@ import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
 
 import type { IssuerTrustProfile, VC, VerificationItem } from '@learncard/types';
 import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
-import { getIssuerContextLabel, useIssuerContext } from 'learn-card-base/hooks/useIssuerContext';
+import {
+    getIssuerContextLabel,
+    getIssuerContextName,
+    useIssuerContext,
+} from 'learn-card-base/hooks/useIssuerContext';
 import { useT } from 'learn-card-base/i18n';
 
 type IssueHistory = {
@@ -82,13 +86,11 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const { issuerContext, registryIssuerName } = useIssuerContext(credential, {
         trustProfile: issuerTrustProfile,
     });
+    const issuerLabelName = issuerContext
+        ? getIssuerContextName(issuerContext, issuerOverride ?? registryIssuerName)
+        : undefined;
     const issuerLabel = issuerContext
-        ? getIssuerContextLabel(
-              issuerContext,
-              t,
-              issuerOverride ?? registryIssuerName,
-              verifierLabelOverride
-          )
+        ? getIssuerContextLabel(issuerContext, t, issuerLabelName, verifierLabelOverride)
         : undefined;
     const [isFront, setIsFront] = useState(true);
 
@@ -169,6 +171,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             titleOverride={titleOverride}
                             issuerContext={issuerContext}
                             issuerLabel={issuerLabel}
+                            issuerLabelName={issuerLabelName}
                             handleXClick={isCertificate ? handleCloseModal : undefined}
                             hideIssueDate={hideIssueDate}
                             customRibbonCategoryComponent={customRibbonCategoryComponent}

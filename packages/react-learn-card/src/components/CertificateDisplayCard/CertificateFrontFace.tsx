@@ -27,6 +27,7 @@ type CertificateFrontFaceProps = {
     issueeOverride?: Profile;
     issuerContext?: IssuerContext;
     issuerLabel?: string;
+    issuerLabelName?: string;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -48,6 +49,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     issueeOverride,
     issuerContext,
     issuerLabel,
+    issuerLabelName,
     subjectImageComponent,
     issuerImageComponent,
     customBodyCardComponent,
@@ -233,6 +235,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         <VerifierStateBadgeAndText
                             issuerContext={issuerContext}
                             label={issuerLabel}
+                            issuerName={issuerLabelName}
                             onClick={onVerifierClick}
                         />
                     )}

@@ -28,6 +28,7 @@ describe('VerifierStateBadgeAndText', () => {
         const { container, getByRole, getByText } = render(
             <VerifierStateBadgeAndText
                 issuerContext={createContext()}
+                issuerName="Charles Henway"
                 label="From your connection Charles Henway"
                 onClick={onClick}
             />
@@ -45,6 +46,24 @@ describe('VerifierStateBadgeAndText', () => {
         expect(onClick).toHaveBeenCalledOnce();
     });
 
+    it('bolds the exact app issuer name when no profile is available', () => {
+        const { getByText } = render(
+            <VerifierStateBadgeAndText
+                issuerContext={createContext({
+                    state: 'app',
+                    trustProfile: 'credential',
+                    profile: undefined,
+                })}
+                label="Issued via Acme Learning"
+                issuerName="Acme Learning"
+            />
+        );
+
+        const issuerName = getByText('Acme Learning');
+        expect(issuerName.tagName).toBe('STRONG');
+        expect(issuerName.parentElement?.textContent).toBe('Issued via Acme Learning');
+    });
+
     it('keeps denylisted issuers red even when relationship data is present', () => {
         const { container, getByText } = render(
             <VerifierStateBadgeAndText
@@ -55,5 +74,6 @@ describe('VerifierStateBadgeAndText', () => {
 
         expect(getByText('Untrusted Issuer').parentElement?.className).toContain('text-red-600');
         expect(container.querySelector('img')).toBeNull();
+        expect(container.querySelector('strong')).toBeNull();
     });
 });

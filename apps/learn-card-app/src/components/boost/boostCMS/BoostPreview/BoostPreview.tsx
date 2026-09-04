@@ -31,7 +31,11 @@ import {
     BoostCategoryOptionsEnum,
     PreviewTypeEnum,
 } from 'learn-card-base';
-import { getIssuerContextLabel, useIssuerContext } from 'learn-card-base/hooks/useIssuerContext';
+import {
+    getIssuerContextLabel,
+    getIssuerContextName,
+    useIssuerContext,
+} from 'learn-card-base/hooks/useIssuerContext';
 import { useT } from 'learn-card-base/i18n';
 
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
@@ -209,8 +213,11 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         trustProfile:
             categoryType === BoostCategoryOptionsEnum.socialBadge ? 'social' : 'credential',
     });
+    const issuerLabelName = issuerContext
+        ? getIssuerContextName(issuerContext, issuerOverride ?? registryIssuerName)
+        : undefined;
     const issuerLabel = issuerContext
-        ? getIssuerContextLabel(issuerContext, t, issuerOverride ?? registryIssuerName)
+        ? getIssuerContextLabel(issuerContext, t, issuerLabelName)
         : undefined;
 
     const vcVerifications = useVerification(credential);
@@ -350,6 +357,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
             titleOverride={titleOverride}
             issuerContext={issuerContext}
             issuerLabel={issuerLabel}
+            issuerLabelName={issuerLabelName}
             handleXClick={isCertificate ? closeModal : undefined}
             hideIssueDate={hideIssueDate}
             customRibbonCategoryComponent={<RibbonCategory categoryType={categoryType} />}

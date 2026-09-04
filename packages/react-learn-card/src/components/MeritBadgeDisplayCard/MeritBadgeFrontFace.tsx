@@ -27,6 +27,7 @@ type MeritBadgeFrontFaceProps = {
     issueeOverride?: Profile;
     issuerContext?: IssuerContext;
     issuerLabel?: string;
+    issuerLabelName?: string;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -47,6 +48,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     issueeOverride,
     issuerContext,
     issuerLabel,
+    issuerLabelName,
     subjectImageComponent,
     issuerImageComponent,
     customBodyCardComponent,
@@ -245,6 +247,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     <VerifierStateBadgeAndText
                         issuerContext={issuerContext}
                         label={issuerLabel}
+                        issuerName={issuerLabelName}
                         className="bg-white px-[5px] pb-[5px]"
                         onClick={onVerifierClick}
                     />

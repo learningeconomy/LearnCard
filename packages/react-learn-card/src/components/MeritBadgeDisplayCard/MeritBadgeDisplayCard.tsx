@@ -19,6 +19,7 @@ type MeritBadgeDisplayCardProps = {
     issueeOverride?: Profile;
     issuerContext?: IssuerContext;
     issuerLabel?: string;
+    issuerLabelName?: string;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -55,6 +56,7 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
     customBodyCardComponent,
     issuerContext,
     issuerLabel,
+    issuerLabelName,
     hideIssueDate,
     customSkillsComponent,
 
@@ -92,6 +94,7 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
                         issueeOverride={issueeOverride}
                         issuerContext={issuerContext}
                         issuerLabel={issuerLabel}
+                        issuerLabelName={issuerLabelName}
                         subjectImageComponent={subjectImageComponent}
                         issuerImageComponent={issuerImageComponent}
                         customBodyCardComponent={customBodyCardComponent}

@@ -98,6 +98,7 @@ export type VCDisplayCard2Props = {
     customFrontButton?: React.ReactNode;
     issuerContext?: IssuerContext;
     issuerLabel?: string;
+    issuerLabelName?: string;
     hideIssueDate?: boolean;
     onDotsClick?: () => void;
     customSkillsComponent?: React.ReactNode;
@@ -147,6 +148,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customFrontButton,
     issuerContext,
     issuerLabel,
+    issuerLabelName,
     hideIssueDate,
     onDotsClick,
     customSkillsComponent,
@@ -257,6 +259,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 enableLightbox={enableLightbox}
                 issuerContext={issuerContext}
                 issuerLabel={issuerLabel}
+                issuerLabelName={issuerLabelName}
                 handleXClick={handleXClick}
                 subjectImageComponent={subjectImageComponent}
                 issuerImageComponent={issuerImageComponent}
@@ -291,6 +294,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 enableLightbox={enableLightbox}
                 issuerContext={issuerContext}
                 issuerLabel={issuerLabel}
+                issuerLabelName={issuerLabelName}
                 handleXClick={handleXClick}
                 subjectImageComponent={subjectImageComponent}
                 issuerImageComponent={issuerImageComponent}
@@ -326,6 +330,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     enableLightbox={enableLightbox}
                     issuerContext={issuerContext}
                     issuerLabel={issuerLabel}
+                    issuerLabelName={issuerLabelName}
                     customSkillsComponent={customSkillsComponent}
                     isFrontOverride={isFrontOverride}
                     setIsFrontOverride={setIsFrontOverride}
@@ -446,6 +451,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     imageUrl={imageUrl}
                                     issuerContext={issuerContext}
                                     issuerLabel={issuerLabel}
+                                    issuerLabelName={issuerLabelName}
                                     customBodyContentSlot={customBodyContentSlot}
                                     onVerifierClick={onVerifierClick}
                                 />

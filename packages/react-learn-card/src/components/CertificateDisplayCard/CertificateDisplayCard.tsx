@@ -19,6 +19,7 @@ type CertificateDisplayCardProps = {
     issueeOverride?: Profile;
     issuerContext?: IssuerContext;
     issuerLabel?: string;
+    issuerLabelName?: string;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -56,6 +57,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     customBodyCardComponent,
     issuerContext,
     issuerLabel,
+    issuerLabelName,
     hideIssueDate,
     customSkillsComponent,
 
@@ -94,6 +96,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         issueeOverride={issueeOverride}
                         issuerContext={issuerContext}
                         issuerLabel={issuerLabel}
+                        issuerLabelName={issuerLabelName}
                         subjectImageComponent={subjectImageComponent}
                         issuerImageComponent={issuerImageComponent}
                         customBodyCardComponent={customBodyCardComponent}

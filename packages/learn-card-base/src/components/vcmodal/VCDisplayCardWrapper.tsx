@@ -28,7 +28,11 @@ import { getLogger } from '../../logging/logger';
 import CredentialIssuerPopover, {
     useCredentialIssuerPopover,
 } from '../CredentialBadge/CredentialIssuerPopover';
-import { getIssuerContextLabel, useIssuerContext } from 'learn-card-base/hooks/useIssuerContext';
+import {
+    getIssuerContextLabel,
+    getIssuerContextName,
+    useIssuerContext,
+} from 'learn-card-base/hooks/useIssuerContext';
 import { useT } from 'learn-card-base/i18n';
 const log = getLogger('vcdisplay-card-wrapper');
 
@@ -215,8 +219,11 @@ export const VCDisplayCardWrapper = ({
     const { issuerContext, registryIssuerName } = useIssuerContext(credential, {
         trustProfile: category === BoostCategoryOptionsEnum.socialBadge ? 'social' : 'credential',
     });
+    const issuerLabelName = issuerContext
+        ? getIssuerContextName(issuerContext, issuerText || registryIssuerName)
+        : undefined;
     const issuerLabel = issuerContext
-        ? getIssuerContextLabel(issuerContext, t, issuerText || registryIssuerName)
+        ? getIssuerContextLabel(issuerContext, t, issuerLabelName)
         : undefined;
     const categoryImgUrl = categoryMetadata[category].defaultImageSrc;
     const shouldUseHostCardPadding = getVCDisplayCardVariant(credential, category) !== 'ribbon';
@@ -272,6 +279,7 @@ export const VCDisplayCardWrapper = ({
                             categoryType={category}
                             issuerContext={issuerContext}
                             issuerLabel={issuerLabel}
+                            issuerLabelName={issuerLabelName}
                             onVerifierClick={
                                 issuerContext
                                     ? event => openCredentialIssuerPopover(event, issuerContext)

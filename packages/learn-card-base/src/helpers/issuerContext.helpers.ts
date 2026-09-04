@@ -62,6 +62,15 @@ export const resolveIssuerContext = (input: ResolveIssuerContextInput): IssuerCo
     return { ...context, state: 'unresolvable' };
 };
 
+/**
+ * Returns the exact issuer name used when interpolating an issuer-context label.
+ */
+export const getIssuerContextName = (
+    context: IssuerContext,
+    issuerNameOverride?: string
+): string | undefined =>
+    issuerNameOverride ?? context.profile?.displayName ?? context.profile?.profileId;
+
 export const getIssuerContextLabel = (
     context: IssuerContext,
     t: (key: string, params?: Record<string, unknown>) => string,
@@ -76,8 +85,7 @@ export const getIssuerContextLabel = (
         return labelOverride;
     }
 
-    const issuerName =
-        issuerNameOverride ?? context.profile?.displayName ?? context.profile?.profileId;
+    const issuerName = getIssuerContextName(context, issuerNameOverride);
 
     switch (context.state) {
         case 'denied':

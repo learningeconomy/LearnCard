@@ -9,6 +9,7 @@ import {
 } from 'learn-card-base/helpers/issuerContext.helpers';
 export {
     getIssuerContextLabel,
+    getIssuerContextName,
     resolveIssuerContext,
     type ResolveIssuerContextInput,
 } from 'learn-card-base/helpers/issuerContext.helpers';

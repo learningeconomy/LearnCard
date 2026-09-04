@@ -5,7 +5,11 @@ import { VCDisplayCard2 } from '@learncard/react';
 import FamilyBoostPreview from './FamilyBoostPreview/FamilyBoostPreview';
 
 import useVerifyCredential from 'learn-card-base/hooks/useVerifyCredential';
-import { getIssuerContextLabel, useIssuerContext } from 'learn-card-base/hooks/useIssuerContext';
+import {
+    getIssuerContextLabel,
+    getIssuerContextName,
+    useIssuerContext,
+} from 'learn-card-base/hooks/useIssuerContext';
 import { useT } from 'learn-card-base/i18n';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useGetVCInfo } from 'learn-card-base/hooks/useGetVCInfo';
@@ -299,13 +303,11 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             issuerTrustProfile ??
             (category === BoostCategoryOptionsEnum.socialBadge ? 'social' : 'credential'),
     });
+    const issuerLabelName = issuerContext
+        ? getIssuerContextName(issuerContext, issuerName ?? registryIssuerName)
+        : undefined;
     const issuerLabel = issuerContext
-        ? getIssuerContextLabel(
-              issuerContext,
-              t,
-              issuerName ?? registryIssuerName,
-              verifierLabelOverride
-          )
+        ? getIssuerContextLabel(issuerContext, t, issuerLabelName, verifierLabelOverride)
         : undefined;
     const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
         useCredentialIssuerPopover();
@@ -399,6 +401,7 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
                 handleXClick={isCertificate ? handleClose : undefined}
                 issuerContext={issuerContext}
                 issuerLabel={issuerLabel}
+                issuerLabelName={issuerLabelName}
                 isFrontOverride={isFrontOverride}
                 setIsFrontOverride={setIsFrontOverride}
                 hideNavButtons={hideNavButtons}

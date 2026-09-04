@@ -25,6 +25,7 @@ type VCIDDisplayFrontFaceProps = {
     credential: VC | BoostAchievementCredential;
     issuerContext?: IssuerContext;
     issuerLabel?: string;
+    issuerLabelName?: string;
     customThumbComponent?: React.ReactNode;
     hideQRCode?: boolean;
     qrCodeOnClick?: () => void;
@@ -39,6 +40,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
     credential,
     issuerContext,
     issuerLabel,
+    issuerLabelName,
     customThumbComponent,
     hideQRCode = false,
     qrCodeOnClick,
@@ -117,6 +119,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                     <VerifierStateBadgeAndText
                                         issuerContext={issuerContext}
                                         label={issuerLabel}
+                                        issuerName={issuerLabelName}
                                         onClick={onVerifierClick}
                                     />
                                 </div>

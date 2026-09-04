@@ -35,6 +35,7 @@ export type VCIDDisplayCardProps = {
     enableLightbox?: boolean;
     issuerContext?: IssuerContext;
     issuerLabel?: string;
+    issuerLabelName?: string;
     customSkillsComponent?: React.ReactNode;
     isFrontOverride?: boolean;
     setIsFrontOverride?: (value: boolean) => void;
@@ -63,6 +64,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     enableLightbox,
     issuerContext,
     issuerLabel,
+    issuerLabelName,
     customSkillsComponent,
     isFrontOverride,
     setIsFrontOverride,
@@ -115,6 +117,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                     credential={credential}
                                     issuerContext={issuerContext}
                                     issuerLabel={issuerLabel}
+                                    issuerLabelName={issuerLabelName}
                                     qrCodeOnClick={qrCodeOnClick}
                                     hideQRCode={hideQRCode}
                                     customIDDescription={customIDDescription}

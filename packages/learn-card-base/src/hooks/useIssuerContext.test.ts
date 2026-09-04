@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     getIssuerContextLabel,
+    getIssuerContextName,
     resolveIssuerContext,
     type ResolveIssuerContextInput,
 } from '../helpers/issuerContext.helpers';
@@ -120,6 +121,18 @@ describe('resolveIssuerContext', () => {
         expect(
             resolveIssuerContext(createInput({ trustProfile: 'credential', relationship }))
         ).toMatchObject({ state: 'unresolvable', trustProfile: 'credential' });
+    });
+});
+
+describe('getIssuerContextName', () => {
+    const context = resolveIssuerContext(createInput());
+
+    it('uses the exact override before profile names', () => {
+        expect(getIssuerContextName(context, 'Registry Issuer')).toBe('Registry Issuer');
+    });
+
+    it('falls back to the resolved profile name', () => {
+        expect(getIssuerContextName(context)).toBe('Charles Henway');
     });
 });
 

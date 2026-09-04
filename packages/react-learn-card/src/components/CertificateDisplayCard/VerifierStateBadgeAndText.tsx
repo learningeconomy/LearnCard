@@ -9,6 +9,7 @@ import RedFlag from '../svgs/RedFlag';
 export type VerifierStateBadgeAndTextProps = {
     issuerContext: IssuerContext;
     label: string;
+    issuerName?: string;
     className?: string;
     onClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
@@ -38,8 +39,26 @@ const IssuerAvatar: React.FC<{ issuerContext: IssuerContext }> = ({ issuerContex
     );
 };
 
+export const IssuerLabelText: React.FC<{ label: string; issuerName?: string }> = ({
+    label,
+    issuerName,
+}) => {
+    const exactIssuerName = issuerName ?? '';
+    const issuerNameStart = exactIssuerName ? label.indexOf(exactIssuerName) : -1;
+
+    if (issuerNameStart < 0) return <>{label}</>;
+
+    return (
+        <>
+            {label.slice(0, issuerNameStart)}
+            <strong className="font-bold">{exactIssuerName}</strong>
+            {label.slice(issuerNameStart + exactIssuerName.length)}
+        </>
+    );
+};
+
 const VerifierStateBadgeAndText = forwardRef<HTMLButtonElement, VerifierStateBadgeAndTextProps>(
-    ({ issuerContext, label, className = '', onClick }, ref) => {
+    ({ issuerContext, label, issuerName, className = '', onClick }, ref) => {
         const isRelationshipState =
             issuerContext.state === 'connection' ||
             issuerContext.state === 'mutuals' ||
@@ -68,19 +87,7 @@ const VerifierStateBadgeAndText = forwardRef<HTMLButtonElement, VerifierStateBad
         ) : (
             <UnknownVerifierBadge />
         );
-        const issuerName =
-            issuerContext.profile?.displayName ?? issuerContext.profile?.profileId ?? '';
-        const issuerNameStart = issuerName ? label.indexOf(issuerName) : -1;
-        const renderedLabel =
-            issuerNameStart >= 0 ? (
-                <>
-                    {label.slice(0, issuerNameStart)}
-                    <strong className="font-bold">{issuerName}</strong>
-                    {label.slice(issuerNameStart + issuerName.length)}
-                </>
-            ) : (
-                label
-            );
+        const renderedLabel = <IssuerLabelText label={label} issuerName={issuerName} />;
         const content = (
             <div
                 className={`flex items-center gap-1 font-poppins font-[500] text-[12px] leading-tight ${color}`}

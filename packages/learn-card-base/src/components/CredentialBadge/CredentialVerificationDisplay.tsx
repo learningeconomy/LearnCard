@@ -7,13 +7,18 @@ import type {
     IssuerTrustProfile,
     VC,
 } from '@learncard/types';
+import { IssuerLabelText } from '@learncard/react';
 
 import TrustedCertIcon from 'learn-card-base/svgs/TrustedCertIcon';
 import SelfVerifiedCertIcon from 'learn-card-base/svgs/SelfVerifiedCertIcon';
 import UnknownCertIcon from 'learn-card-base/svgs/UnknownCertIcon';
 import UntrustedCertIcon from 'learn-card-base/svgs/UntrustedCertIcon';
 import { useT } from 'learn-card-base/i18n';
-import { getIssuerContextLabel, useIssuerContext } from 'learn-card-base/hooks/useIssuerContext';
+import {
+    getIssuerContextLabel,
+    getIssuerContextName,
+    useIssuerContext,
+} from 'learn-card-base/hooks/useIssuerContext';
 import CredentialIssuerPopover from './CredentialIssuerPopover';
 import { CredentialStatusSealIcon, CredentialLifecycleStatus } from './CredentialStatusSealIcon';
 
@@ -141,8 +146,9 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         managedBoost,
         trustProfile: issuerTrustProfile,
     });
-    const resolvedIssuerName =
-        issuerDisplayName ?? registryIssuerName ?? issuerContext?.profile?.displayName;
+    const resolvedIssuerName = issuerContext
+        ? getIssuerContextName(issuerContext, issuerDisplayName ?? registryIssuerName)
+        : undefined;
     const label = issuerContext
         ? getIssuerContextLabel(issuerContext, t, resolvedIssuerName, verifierLabelOverride)
         : '';
@@ -183,7 +189,11 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
             )} ${className}`}
         >
             <IssuerStateIcon issuerContext={issuerContext} className={iconClassName} />
-            {showText && <span className="whitespace-nowrap tracking-wide">{label}</span>}
+            {showText && (
+                <span className="whitespace-nowrap tracking-wide">
+                    <IssuerLabelText label={label} issuerName={resolvedIssuerName} />
+                </span>
+            )}
         </div>
     );
     if (!issuerPopoverEnabled) {

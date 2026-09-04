@@ -32,6 +32,7 @@ type VC2FrontFaceInfoProps = {
     customBodyContentSlot?: React.ReactNode;
     issuerContext?: IssuerContext;
     issuerLabel?: string;
+    issuerLabelName?: string;
     onVerifierClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
@@ -72,6 +73,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     customBodyContentSlot,
     issuerContext,
     issuerLabel,
+    issuerLabelName,
     onVerifierClick,
 }) => {
     const issuerImage = getImageFromProfile(issuer ?? '');
@@ -225,6 +227,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                     <VerifierStateBadgeAndText
                                         issuerContext={issuerContext}
                                         label={issuerLabel}
+                                        issuerName={issuerLabelName}
                                         onClick={onVerifierClick}
                                     />
                                 )}
