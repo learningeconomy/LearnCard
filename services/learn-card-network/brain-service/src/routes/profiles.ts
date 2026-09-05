@@ -95,6 +95,7 @@ import {
 } from '@helpers/profile-privacy.helpers';
 import { verifyAuthToken } from '@helpers/oidc-jwt.helpers';
 import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
+import { assertOrganizationInvariants } from '@helpers/organization.helpers';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
@@ -159,6 +160,8 @@ export const profilesRouter = t.router({
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { authToken, ...profileInput } = input;
+
+            assertOrganizationInvariants(profileInput);
 
             const profileExists = await checkIfProfileExists({
                 ...profileInput,
@@ -246,6 +249,8 @@ export const profilesRouter = t.router({
         .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
+            assertOrganizationInvariants(input);
+
             const profileExists = await checkIfProfileExists({ ...input, did: ctx.user.did });
 
             if (profileExists) {
@@ -284,6 +289,8 @@ export const profilesRouter = t.router({
         .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
+            assertOrganizationInvariants(input);
+
             const { profileId } = input;
             const profileExists = await checkIfProfileExists({ profileId });
 
@@ -498,7 +505,7 @@ export const profilesRouter = t.router({
             } = input;
 
             const _selfProfile = ctx.user?.did ? await getProfileByDid(ctx.user.did) : null;
-            const selfProfile = includeSelf ? null : _selfProfile ?? null;
+            const selfProfile = includeSelf ? null : (_selfProfile ?? null);
 
             const blacklist =
                 (_selfProfile && (await getBlockedAndBlockedByIds(_selfProfile))) || [];

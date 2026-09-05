@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import type { Ecosystem, EcosystemRole } from '@learncard/types';
+import type { Ecosystem, EcosystemRole, LCNOrganizationDetails } from '@learncard/types';
 
 import { DidAuthBearerFactory } from '../brain/did-auth';
 import { authorizedCall, type BrainServiceTransport } from '../brain';
@@ -19,10 +19,13 @@ export type EcosystemAccessEntry = {
     children: Ecosystem[];
 };
 
+/** Mirrors brain-service ecosystem.listMembers; its output validator is the source of truth. */
 export type EcosystemMember = {
     profileId: string;
     displayName: string;
     role: EcosystemRole;
+    type?: string;
+    organization?: LCNOrganizationDetails;
     profileRole: string | null;
     email: string | null;
 };
@@ -33,6 +36,15 @@ export type EcosystemDetail = {
     ecosystem: Ecosystem | null;
     children: Ecosystem[];
     members: EcosystemMember[];
+};
+
+const getEffectiveEcosystemRole = (
+    ecosystem: Ecosystem | null,
+    profileId: string,
+    edgeRole: EcosystemRole | null
+): EcosystemRole | null => {
+    // ADR-001 D7: OWNER is implied by ownerProfileId, not stored as a MEMBER_OF edge
+    return ecosystem?.ownerProfileId === profileId ? 'OWNER' : edgeRole;
 };
 
 type BrainCaller = <T>(path: string, input: unknown) => Promise<T>;
@@ -114,7 +126,12 @@ export const ecosystemRouter = router({
 
                     return {
                         ecosystemId,
-                        role,
+                        role:
+                            getEffectiveEcosystemRole(
+                                resolvedEcosystem,
+                                ctx.session.profileId,
+                                role
+                            ) ?? role,
                         ecosystem: resolvedEcosystem,
                         children: resolvedChildren,
                     };
@@ -149,7 +166,11 @@ export const ecosystemRouter = router({
 
             return {
                 ecosystemId: input.id,
-                role: grant?.role ?? null,
+                role: getEffectiveEcosystemRole(
+                    ecosystem && ecosystem.id ? ecosystem : null,
+                    ctx.session.profileId,
+                    grant?.role ?? null
+                ),
                 ecosystem: ecosystem && ecosystem.id ? ecosystem : null,
                 children: Array.isArray(children) ? children : [],
                 members: Array.isArray(members) ? members : [],

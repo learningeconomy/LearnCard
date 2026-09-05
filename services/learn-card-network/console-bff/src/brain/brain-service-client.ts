@@ -1,4 +1,4 @@
-import type { EcosystemRole, ProvisionableRole } from '@learncard/types';
+import type { EcosystemRole, LCNOrganizationDetails, ProvisionableRole } from '@learncard/types';
 
 import type { KeyManagementService, ManagedKeyRef } from '@kms';
 
@@ -12,7 +12,12 @@ export interface BrainServiceTransport {
     requestChallenge(bootstrapBearer: string): Promise<string>;
     createProfile(
         bearer: string,
-        body: { profileId: string; displayName?: string; type?: string }
+        body: {
+            profileId: string;
+            displayName?: string;
+            type?: string;
+            organization?: LCNOrganizationDetails;
+        }
     ): Promise<void>;
     grantProvisionedMembership(
         bearer: string,

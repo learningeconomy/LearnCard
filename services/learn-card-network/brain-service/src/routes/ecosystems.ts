@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { EcosystemValidator, EcosystemRoleEnum, SLUG_REGEX } from '@learncard/types';
+import {
+    EcosystemValidator,
+    EcosystemRoleEnum,
+    LCNOrganizationDetailsValidator,
+    SLUG_REGEX,
+} from '@learncard/types';
 
 import { t, didAndChallengeRoute, profileRoute, serviceDidRoute } from '@routes';
 import {
@@ -254,6 +259,8 @@ export const ecosystemsRouter = t.router({
                     profileId: z.string(),
                     displayName: z.string(),
                     role: EcosystemRoleEnum,
+                    type: z.string().optional(),
+                    organization: LCNOrganizationDetailsValidator.optional(),
                     profileRole: z.string().nullable(),
                     email: z.string().nullable(),
                 })

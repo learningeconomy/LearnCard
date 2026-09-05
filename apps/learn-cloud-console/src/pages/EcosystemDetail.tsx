@@ -1,6 +1,7 @@
+import React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useLocation } from 'wouter';
-import { ArrowLeft, Users, Trash2, Building2, Plus, Layers } from 'lucide-react';
+import { ArrowLeft, Users, Trash2, Building2, Plus, Layers, ChevronRight } from 'lucide-react';
 import {
     getEcosystemDetail,
     grantEcosystemMembership,
@@ -8,6 +9,7 @@ import {
     listGroupsByEcosystem,
     type EcosystemDetail as EcosystemDetailData,
     type Group,
+    listEcosystems,
 } from '../api';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -33,6 +35,7 @@ export function EcosystemDetail() {
     const [grantError, setGrantError] = useState<string | null>(null);
     const [showAddChild, setShowAddChild] = useState(false);
     const [groups, setGroups] = useState<Group[]>([]);
+    const [ancestors, setAncestors] = useState<{ id: string; name: string }[]>([]);
     const [showAddGroup, setShowAddGroup] = useState(false);
 
     const load = useCallback(async () => {
@@ -40,12 +43,31 @@ export function EcosystemDetail() {
         setError(null);
         setLoading(true);
         try {
-            const [data, groupsData] = await Promise.all([
+            const [data, groupsData, allEcos] = await Promise.all([
                 getEcosystemDetail(id),
                 listGroupsByEcosystem(id).catch(() => []),
+                listEcosystems().catch(() => []),
             ]);
             setDetail(data);
             setGroups(groupsData);
+
+            if (data.ecosystem && data.ecosystem.pathIds.length > 1) {
+                const pathIds = data.ecosystem.pathIds.slice(0, -1); // Exclude self
+                const ecoMap = new Map<string, string>();
+                allEcos.forEach(e => {
+                    if (e.ecosystem) ecoMap.set(e.ecosystemId, e.ecosystem.name);
+                    e.children.forEach(c => ecoMap.set(c.id, c.name));
+                });
+
+                setAncestors(
+                    pathIds.map(pid => ({
+                        id: pid,
+                        name: ecoMap.get(pid) || pid,
+                    }))
+                );
+            } else {
+                setAncestors([]);
+            }
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         } finally {
@@ -54,7 +76,7 @@ export function EcosystemDetail() {
     }, [id]);
 
     useEffect(() => {
-        void load();
+        void Promise.resolve().then(load);
     }, [load]);
 
     const handleGrant = async () => {
@@ -111,6 +133,28 @@ export function EcosystemDetail() {
             </Link>
 
             <div className="bg-card border border-border rounded-xl p-5 md:p-6 shadow-card space-y-2">
+                {ancestors.length > 0 && (
+                    <nav
+                        aria-label="Breadcrumb"
+                        className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2"
+                    >
+                        {ancestors.map(anc => (
+                            <React.Fragment key={anc.id}>
+                                <Link
+                                    href={`/ecosystem/${anc.id}`}
+                                    className="hover:text-foreground"
+                                >
+                                    {anc.name}
+                                </Link>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                            </React.Fragment>
+                        ))}
+                        <span className="text-foreground font-medium">
+                            {detail.ecosystem ? detail.ecosystem.name : detail.ecosystemId}
+                        </span>
+                    </nav>
+                )}
+
                 <div className="flex items-center gap-2">
                     {detail.role && (
                         <Badge variant="secondary" className="text-xs">
@@ -172,7 +216,16 @@ export function EcosystemDetail() {
                             />
                             <select
                                 value={newMemberRole}
-                                onChange={e => setNewMemberRole(e.target.value as any)}
+                                onChange={e => {
+                                    const role = e.target.value;
+                                    if (
+                                        role === 'ADMIN' ||
+                                        role === 'MEMBER' ||
+                                        role === 'VIEWER'
+                                    ) {
+                                        setNewMemberRole(role);
+                                    }
+                                }}
                                 className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 disabled={granting}
                             >
@@ -231,8 +284,8 @@ export function EcosystemDetail() {
                                             member.role === 'OWNER'
                                                 ? 'default'
                                                 : member.role === 'ADMIN'
-                                                ? 'secondary'
-                                                : 'outline'
+                                                  ? 'secondary'
+                                                  : 'outline'
                                         }
                                     >
                                         {member.role}
@@ -328,8 +381,8 @@ export function EcosystemDetail() {
                                             group.status === 'ACTIVE'
                                                 ? 'success'
                                                 : group.status === 'DRAFT'
-                                                ? 'warning'
-                                                : 'outline'
+                                                  ? 'warning'
+                                                  : 'outline'
                                         }
                                     >
                                         {group.status}
@@ -411,8 +464,8 @@ export function EcosystemDetail() {
                                             child.status === 'ACTIVE'
                                                 ? 'success'
                                                 : child.status === 'DRAFT'
-                                                ? 'warning'
-                                                : 'outline'
+                                                  ? 'warning'
+                                                  : 'outline'
                                         }
                                     >
                                         {child.status}

@@ -168,6 +168,24 @@ export const authorizeGroupWrite = async (input: {
     return ecosystem;
 };
 
+export const authorizeGroupMemberRead = async (input: {
+    actorProfileId: string;
+    ownerEcosystemId: string;
+}): Promise<void> => {
+    const ecosystem = await requireEcosystem(input.ownerEcosystemId);
+    const callerRole =
+        ecosystem.ownerProfileId === input.actorProfileId
+            ? 'OWNER'
+            : await getEcosystemMembershipRole(input.actorProfileId, ecosystem.id);
+
+    if (callerRole !== 'OWNER' && callerRole !== 'ADMIN') {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Only an owning Ecosystem owner or admin may list Group members.',
+        });
+    }
+};
+
 export const assertArchivedGroupWriteAllowed = (
     group: FlatGroupType,
     action: GroupWriteAction,

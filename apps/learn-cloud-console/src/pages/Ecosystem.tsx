@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Globe, Building2, Search, Plus, Layers, School, ChevronDown } from 'lucide-react';
+import { Globe, Building2, Search, Plus, Layers, School, ChevronDown, Network } from 'lucide-react';
+import { InstitutionTypeEnum, type InstitutionType } from '@learncard/types';
 import {
     listEcosystems,
     listGroupsByEcosystem,
     getGroupDetail,
+    getEcosystemDetail,
     type EcosystemAccess,
+    type EcosystemDetail,
     type Group,
 } from '../api';
 import { Input } from '../components/ui/input';
@@ -14,48 +17,107 @@ import { Button } from '../components/ui/button';
 import { cn } from '../lib/utils';
 import { PageSkeleton } from '../components/PageSkeleton';
 import { ErrorState } from '../components/ErrorState';
-import { CreateEcosystemForm } from '../components/CreateEcosystemForm';
-import { CreateGroupForm } from '../components/CreateGroupForm';
-import { CreateOrgForm } from '../components/CreateOrgForm';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { DropdownMenu, DropdownMenuItem } from '../components/ui/dropdown-menu';
+import { AddEntityDialog } from '../components/ecosystem/AddEntityDialog';
+import { EcosystemMapDialog } from '../components/ecosystem/EcosystemMapDialog';
+
+const institutionTypeLabels: Record<InstitutionType, string> = {
+    [InstitutionTypeEnum.enum.preschool]: 'Preschool',
+    [InstitutionTypeEnum.enum.primary_school]: 'Primary School',
+    [InstitutionTypeEnum.enum.secondary_school]: 'Secondary School',
+    [InstitutionTypeEnum.enum.college]: 'College',
+    [InstitutionTypeEnum.enum.university]: 'University',
+};
 
 type UnifiedEntity = {
     id: string;
     name: string;
-    subtitle: string;
+    subtitle: React.ReactNode;
+    searchString: string;
     typeLabel: string;
     kind: 'ecosystem' | 'group' | 'institution' | 'employer';
     status?: string;
     role?: string;
     link?: string;
+    slugPath?: string[];
+    ownerEcosystemId?: string;
+    groupIds?: string[];
+    groupNames?: string[];
 };
+
+type EcosystemMember = EcosystemDetail['members'][number];
+type OrgProfile = Pick<EcosystemMember, 'profileId' | 'displayName' | 'organization'> & {
+    type: 'institution' | 'employer';
+    anchorEcosystemId: string;
+    groupNames: string[];
+    groupIds: string[];
+};
+
+const isOrgMember = (
+    member: EcosystemMember
+): member is EcosystemMember & { type: 'institution' | 'employer' } =>
+    member.type === 'institution' || member.type === 'employer';
 
 export function Ecosystem() {
     const [, setLocation] = useLocation();
     const [entries, setEntries] = useState<EcosystemAccess[]>([]);
+    const [deepEcosystems, setDeepEcosystems] = useState<EcosystemDetail[]>([]);
     const [groups, setGroups] = useState<Group[]>([]);
-    const [orgProfiles, setOrgProfiles] = useState<any[]>([]);
+    const [orgProfiles, setOrgProfiles] = useState<OrgProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const [search, setSearch] = useState('');
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
-    const [showCreateEcosystem, setShowCreateEcosystem] = useState(false);
-    const [showCreateGroup, setShowCreateGroup] = useState(false);
-    const [showCreateOrg, setShowCreateOrg] = useState(false);
-    const [createOrgType, setCreateOrgType] = useState<'institution' | 'employer'>('institution');
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<
+        'group' | 'institution' | 'employer' | 'ecosystem'
+    >('institution');
+    const [mapOpen, setMapOpen] = useState(false);
 
     const load = useCallback(async () => {
         setError(false);
         setLoading(true);
         try {
+            // ecosystem.listMine returns direct children only; walk CHILD_OF breadth-first so deep subtrees render (ADR-001 D3)
             const ecoData = await listEcosystems();
             setEntries(ecoData);
 
-            const grantedEcosystemIds = ecoData.map(e => e.ecosystemId);
+            const allEcoDetails = new Map<string, EcosystemDetail>();
+            const queue = new Set<string>();
+
+            ecoData.forEach(e => {
+                queue.add(e.ecosystemId);
+                e.children.forEach(c => queue.add(c.id));
+            });
+
+            let currentLevel = Array.from(queue);
+            let depth = 0;
+
+            while (currentLevel.length > 0 && depth < 8) {
+                const details = await Promise.all(
+                    currentLevel.map(id => getEcosystemDetail(id).catch(() => null))
+                );
+
+                const nextLevel = new Set<string>();
+                for (const detail of details) {
+                    if (!detail) continue;
+                    allEcoDetails.set(detail.ecosystemId, detail);
+                    for (const child of detail.children) {
+                        if (!allEcoDetails.has(child.id)) {
+                            nextLevel.add(child.id);
+                        }
+                    }
+                }
+                currentLevel = Array.from(nextLevel);
+                depth++;
+            }
+
+            const uniqueEcoIds = Array.from(allEcoDetails.keys());
+            setDeepEcosystems(Array.from(allEcoDetails.values()));
+
             const groupsDataArrays = await Promise.all(
-                grantedEcosystemIds.map(id => listGroupsByEcosystem(id).catch(() => []))
+                uniqueEcoIds.map(id => listGroupsByEcosystem(id).catch(() => []))
             );
             const allGroups = groupsDataArrays.flat();
             setGroups(allGroups);
@@ -64,18 +126,41 @@ export function Ecosystem() {
                 allGroups.map(g => getGroupDetail(g.id).catch(() => null))
             );
 
-            const allOrgs = [];
-            const seenProfileIds = new Set<string>();
-
+            const profileIdToGroupNames = new Map<string, string[]>();
+            const profileIdToGroupIds = new Map<string, string[]>();
             for (const detail of groupDetails) {
                 if (!detail) continue;
                 for (const member of detail.members) {
-                    if (member.type === 'institution' || member.type === 'employer') {
+                    const existing = profileIdToGroupNames.get(member.profileId) || [];
+                    if (!existing.includes(detail.group.name)) existing.push(detail.group.name);
+                    profileIdToGroupNames.set(member.profileId, existing);
+
+                    const existingIds = profileIdToGroupIds.get(member.profileId) || [];
+                    if (!existingIds.includes(detail.group.id)) existingIds.push(detail.group.id);
+                    profileIdToGroupIds.set(member.profileId, existingIds);
+                }
+            }
+
+            // ADR-001 D6: institutions/employers are Profiles anchored to the Ecosystem via MEMBER_OF; Groups (D11) are optional taxonomy
+            const ecoDetails = Array.from(allEcoDetails.values());
+
+            const allOrgs: OrgProfile[] = [];
+            const seenProfileIds = new Set<string>();
+
+            for (const detail of ecoDetails) {
+                if (!detail) continue;
+                for (const member of detail.members) {
+                    if (isOrgMember(member)) {
                         if (!seenProfileIds.has(member.profileId)) {
                             seenProfileIds.add(member.profileId);
                             allOrgs.push({
-                                ...member,
-                                groupName: detail.group.name,
+                                profileId: member.profileId,
+                                displayName: member.displayName,
+                                type: member.type,
+                                organization: member.organization,
+                                anchorEcosystemId: detail.ecosystemId,
+                                groupNames: profileIdToGroupNames.get(member.profileId) || [],
+                                groupIds: profileIdToGroupIds.get(member.profileId) || [],
                             });
                         }
                     }
@@ -90,56 +175,157 @@ export function Ecosystem() {
     }, []);
 
     useEffect(() => {
-        void load();
+        void Promise.resolve().then(load);
     }, [load]);
+
+    const openDialog = (mode: 'group' | 'institution' | 'employer' | 'ecosystem') => {
+        setDialogMode(mode);
+        setDialogOpen(true);
+    };
 
     const unifiedEntities: UnifiedEntity[] = [];
 
+    const ecoNameMap = new Map<string, string>();
+    deepEcosystems.forEach(eco => {
+        if (eco.ecosystem) ecoNameMap.set(eco.ecosystemId, eco.ecosystem.name);
+    });
     entries.forEach(entry => {
+        if (entry.ecosystem) ecoNameMap.set(entry.ecosystemId, entry.ecosystem.name);
+        entry.children.forEach(child => ecoNameMap.set(child.id, child.name));
+    });
+
+    // Helper to generate ecosystem summary
+    const getEcoSummary = (ecoId: string, childrenCount: number) => {
+        const groupCount = groups.filter(g => g.ownerEcosystemId === ecoId).length;
+        const memberCount = orgProfiles.filter(o => o.anchorEcosystemId === ecoId).length;
+
+        const parts: string[] = [];
+        if (childrenCount > 0)
+            parts.push(`${childrenCount} child ecosystem${childrenCount === 1 ? '' : 's'}`);
+        if (groupCount > 0) parts.push(`${groupCount} group${groupCount === 1 ? '' : 's'}`);
+        if (memberCount > 0) parts.push(`${memberCount} member${memberCount === 1 ? '' : 's'}`);
+
+        // Slug is a URL detail; hierarchy is conveyed by sectioning + breadcrumb. Cards summarize contents instead.
+        return parts.length > 0 ? parts.join(' · ') : null;
+    };
+
+    const addedEcoIds = new Set<string>();
+    entries.forEach(entry => {
+        addedEcoIds.add(entry.ecosystemId);
         unifiedEntities.push({
             id: entry.ecosystemId,
             name: entry.ecosystem ? entry.ecosystem.name : entry.ecosystemId,
-            subtitle: entry.ecosystem
-                ? entry.ecosystem.description || '/' + entry.ecosystem.slugPath.join('/')
+            subtitle: getEcoSummary(entry.ecosystemId, entry.children.length),
+            searchString: entry.ecosystem
+                ? '/' + entry.ecosystem.slugPath.join('/')
                 : 'Details unavailable from LearnCloud yet.',
             typeLabel: 'Ecosystem',
             kind: 'ecosystem',
             status: entry.ecosystem?.status,
             role: entry.role,
             link: `/ecosystem/${entry.ecosystemId}`,
+            slugPath: entry.ecosystem?.slugPath || [entry.ecosystemId],
         });
         entry.children.forEach(child => {
-            unifiedEntities.push({
-                id: child.id,
-                name: child.name,
-                subtitle: child.description || '/' + child.slugPath.join('/'),
-                typeLabel: 'Ecosystem',
-                kind: 'ecosystem',
-                status: child.status,
-                link: `/ecosystem/${child.id}`,
-            });
+            if (!addedEcoIds.has(child.id)) {
+                addedEcoIds.add(child.id);
+                unifiedEntities.push({
+                    id: child.id,
+                    name: child.name,
+                    subtitle: getEcoSummary(child.id, 0),
+                    searchString: '/' + child.slugPath.join('/'),
+                    typeLabel: 'Ecosystem',
+                    kind: 'ecosystem',
+                    status: child.status,
+                    link: `/ecosystem/${child.id}`,
+                    slugPath: child.slugPath,
+                });
+            }
         });
     });
 
+    deepEcosystems.forEach(eco => {
+        if (!addedEcoIds.has(eco.ecosystemId)) {
+            addedEcoIds.add(eco.ecosystemId);
+            unifiedEntities.push({
+                id: eco.ecosystemId,
+                name: eco.ecosystem ? eco.ecosystem.name : eco.ecosystemId,
+                subtitle: getEcoSummary(eco.ecosystemId, eco.children.length),
+                searchString: eco.ecosystem
+                    ? '/' + eco.ecosystem.slugPath.join('/')
+                    : 'Details unavailable from LearnCloud yet.',
+                typeLabel: 'Ecosystem',
+                kind: 'ecosystem',
+                status: eco.ecosystem?.status,
+                link: `/ecosystem/${eco.ecosystemId}`,
+                slugPath: eco.ecosystem?.slugPath || [eco.ecosystemId],
+            });
+        }
+    });
+
     groups.forEach(group => {
+        const ownerName = ecoNameMap.get(group.ownerEcosystemId) || group.ownerEcosystemId;
         unifiedEntities.push({
             id: group.id,
             name: group.name,
-            subtitle: group.description || '/' + group.slug,
+            subtitle: (
+                <>
+                    in <span className="font-medium text-foreground">{ownerName}</span>
+                </>
+            ),
+            searchString: `in ${ownerName}`,
             typeLabel: group.type.charAt(0).toUpperCase() + group.type.slice(1),
             kind: 'group',
             status: group.status,
             link: `/group/${group.id}`,
+            ownerEcosystemId: group.ownerEcosystemId,
         });
     });
 
     orgProfiles.forEach(org => {
+        const parts: string[] = [];
+        if (org.type === 'institution' && org.organization?.institutionType) {
+            parts.push(
+                institutionTypeLabels[org.organization.institutionType] ||
+                    org.organization.institutionType
+            );
+        }
+        if (
+            org.organization?.address?.addressLocality ||
+            org.organization?.address?.addressRegion
+        ) {
+            const loc = [
+                org.organization.address.addressLocality,
+                org.organization.address.addressRegion,
+            ]
+                .filter(Boolean)
+                .join(', ');
+            if (loc) parts.push(loc);
+        }
+
+        let subtitle: React.ReactNode;
+        const ownerName = ecoNameMap.get(org.anchorEcosystemId) || org.anchorEcosystemId;
+        if (parts.length > 0) {
+            subtitle = parts.join(' · ');
+        } else {
+            subtitle = (
+                <>
+                    in <span className="font-medium text-foreground">{ownerName}</span>
+                </>
+            );
+        }
+
         unifiedEntities.push({
             id: org.profileId,
             name: org.displayName || org.profileId,
-            subtitle: `Member of ${org.groupName} · ${org.profileId}`,
+            subtitle,
+            searchString: parts.length > 0 ? parts.join(' · ') : `in ${ownerName}`,
             typeLabel: org.type === 'institution' ? 'Institution' : 'Employer',
-            kind: org.type as 'institution' | 'employer',
+            kind: org.type,
+            link: `/ecosystem/${org.anchorEcosystemId}`,
+            ownerEcosystemId: org.anchorEcosystemId,
+            groupIds: org.groupIds,
+            groupNames: org.groupNames, // Pass groupNames for chips
         });
     });
 
@@ -151,7 +337,7 @@ export function Ecosystem() {
         if (!search) return true;
         const term = search.toLowerCase();
         if (entity.name.toLowerCase().includes(term)) return true;
-        if (entity.subtitle.toLowerCase().includes(term)) return true;
+        if (entity.searchString.toLowerCase().includes(term)) return true;
         if (entity.id.toLowerCase().includes(term)) return true;
         return false;
     });
@@ -170,14 +356,22 @@ export function Ecosystem() {
     };
 
     const parentOptions = entries
-        .flatMap(entry => {
-            const opts = [];
-            if (entry.ecosystem) {
-                opts.push({ id: entry.ecosystemId, name: entry.ecosystem.name });
-            }
-            opts.push(...entry.children.map(c => ({ id: c.id, name: c.name })));
-            return opts;
-        })
+        .flatMap(entry => [
+            ...(entry.ecosystem
+                ? [
+                      {
+                          id: entry.ecosystemId,
+                          name: entry.ecosystem.name,
+                          slugPath: entry.ecosystem.slugPath,
+                      },
+                  ]
+                : []),
+            ...entry.children.map(child => ({
+                id: child.id,
+                name: child.name,
+                slugPath: child.slugPath,
+            })),
+        ])
         .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
 
     if (loading) return <PageSkeleton rows={5} />;
@@ -200,6 +394,15 @@ export function Ecosystem() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="sm:size-default"
+                        onClick={() => setMapOpen(true)}
+                    >
+                        <Network className="w-4 h-4 mr-1.5" />
+                        MAP
+                    </Button>
                     <DropdownMenu
                         trigger={
                             <Button variant="hero" size="sm" className="sm:size-default">
@@ -209,29 +412,19 @@ export function Ecosystem() {
                             </Button>
                         }
                     >
-                        <DropdownMenuItem onClick={() => setShowCreateGroup(true)}>
+                        <DropdownMenuItem onClick={() => openDialog('group')}>
                             <Layers className="w-4 h-4 mr-2 text-violet" />
                             Add Group
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                            onClick={() => {
-                                setCreateOrgType('employer');
-                                setShowCreateOrg(true);
-                            }}
-                        >
+                        <DropdownMenuItem onClick={() => openDialog('employer')}>
                             <Building2 className="w-4 h-4 mr-2 text-coral" />
                             Add Employer
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                            onClick={() => {
-                                setCreateOrgType('institution');
-                                setShowCreateOrg(true);
-                            }}
-                        >
+                        <DropdownMenuItem onClick={() => openDialog('institution')}>
                             <School className="w-4 h-4 mr-2 text-emerald" />
                             Add Institution
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowCreateEcosystem(true)}>
+                        <DropdownMenuItem onClick={() => openDialog('ecosystem')}>
                             <Globe className="w-4 h-4 mr-2 text-primary" />
                             Add Ecosystem
                         </DropdownMenuItem>
@@ -239,56 +432,29 @@ export function Ecosystem() {
                 </div>
             </div>
 
-            <Dialog open={showCreateEcosystem} onOpenChange={setShowCreateEcosystem}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="font-display capitalize">Add Ecosystem</DialogTitle>
-                    </DialogHeader>
-                    <CreateEcosystemForm
-                        parentOptions={parentOptions}
-                        onCreated={eco => {
-                            setShowCreateEcosystem(false);
-                            setLocation(`/ecosystem/${eco.id}`);
-                        }}
-                        onCancel={() => setShowCreateEcosystem(false)}
-                    />
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={showCreateGroup} onOpenChange={setShowCreateGroup}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="font-display capitalize">Add Group</DialogTitle>
-                    </DialogHeader>
-                    <CreateGroupForm
-                        ecosystemOptions={parentOptions}
-                        onCreated={() => {
-                            setShowCreateGroup(false);
-                            load();
-                        }}
-                        onCancel={() => setShowCreateGroup(false)}
-                    />
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={showCreateOrg} onOpenChange={setShowCreateOrg}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="font-display capitalize">
-                            Add {createOrgType === 'institution' ? 'Institution' : 'Employer'}
-                        </DialogTitle>
-                    </DialogHeader>
-                    <CreateOrgForm
-                        type={createOrgType}
-                        groupOptions={groups.map(g => ({ id: g.id, name: g.name }))}
-                        onCreated={() => {
-                            setShowCreateOrg(false);
-                            load();
-                        }}
-                        onCancel={() => setShowCreateOrg(false)}
-                    />
-                </DialogContent>
-            </Dialog>
+            <AddEntityDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                ecosystems={parentOptions}
+                groups={groups.map(group => ({
+                    id: group.id,
+                    name: group.name,
+                    ownerEcosystemId: group.ownerEcosystemId,
+                }))}
+                onCreated={result => {
+                    if (result.kind === 'ecosystem') {
+                        setLocation(`/ecosystem/${result.id}`);
+                    } else {
+                        void load();
+                    }
+                }}
+            />
+            <EcosystemMapDialog
+                open={mapOpen}
+                onOpenChange={setMapOpen}
+                entities={unifiedEntities}
+            />
 
             <div className="space-y-3">
                 {availableTypes.length > 0 && (
@@ -344,33 +510,61 @@ export function Ecosystem() {
                     </p>
                 </div>
             ) : (
-                <div className="space-y-3">
-                    {filtered.map(entity => {
-                        const isLink = !!entity.link;
+                <div className="space-y-6">
+                    {(() => {
+                        // Group by ecosystem
+                        const ecoMap = new Map<string, UnifiedEntity>();
+                        const childrenMap = new Map<string, UnifiedEntity[]>();
 
-                        let Icon = Globe;
-                        let iconColor = 'bg-violet/10 text-violet';
-                        if (entity.kind === 'group') {
-                            Icon = Layers;
-                            iconColor = 'bg-violet/10 text-violet';
-                        } else if (entity.kind === 'institution') {
-                            Icon = School;
-                            iconColor = 'bg-emerald/10 text-emerald';
-                        } else if (entity.kind === 'employer') {
-                            Icon = Building2;
-                            iconColor = 'bg-coral/10 text-coral';
-                        }
+                        // First, collect all ecosystems
+                        unifiedEntities.forEach(e => {
+                            if (e.kind === 'ecosystem') {
+                                ecoMap.set(e.id, e);
+                                if (!childrenMap.has(e.id)) childrenMap.set(e.id, []);
+                            }
+                        });
 
-                        if (isLink) {
-                            return (
-                                <Link
-                                    key={entity.id}
-                                    href={entity.link as string}
-                                    className={cn(
-                                        'bg-card border border-border rounded-xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-card transition-shadow hover:shadow-elevated cursor-pointer block'
-                                    )}
-                                >
-                                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                        // Then assign children
+                        unifiedEntities.forEach(e => {
+                            if (e.kind !== 'ecosystem' && e.ownerEcosystemId) {
+                                if (!childrenMap.has(e.ownerEcosystemId))
+                                    childrenMap.set(e.ownerEcosystemId, []);
+                                childrenMap.get(e.ownerEcosystemId)!.push(e);
+                            }
+                        });
+
+                        // Sort ecosystems by slugPath length (roots first)
+                        const sortedEcos = Array.from(ecoMap.values()).sort((a, b) => {
+                            const aLen = a.slugPath?.length || 0;
+                            const bLen = b.slugPath?.length || 0;
+                            if (aLen !== bLen) return aLen - bLen;
+                            return a.name.localeCompare(b.name);
+                        });
+
+                        const renderCard = (entity: UnifiedEntity) => {
+                            const isLink = !!entity.link;
+                            let Icon = Globe;
+                            let iconColor = 'bg-violet/10 text-violet';
+                            if (entity.kind === 'group') {
+                                Icon = Layers;
+                                iconColor = 'bg-violet/10 text-violet';
+                            } else if (entity.kind === 'institution') {
+                                Icon = School;
+                                iconColor = 'bg-emerald/10 text-emerald';
+                            } else if (entity.kind === 'employer') {
+                                Icon = Building2;
+                                iconColor = 'bg-coral/10 text-coral';
+                            }
+
+                            // Exception-only: ACTIVE is the norm; only DRAFT/ARCHIVED (Ecosystem/Group lifecycle) is signal
+                            const showStatus = entity.status && entity.status !== 'ACTIVE';
+
+                            // ADR-001 D11: groups are taxonomy tags on a Profile — render as chips, not prose
+                            const hasGroups = entity.groupNames && entity.groupNames.length > 0;
+
+                            const content = (
+                                <>
+                                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                                         <div
                                             className={cn(
                                                 'w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0',
@@ -389,89 +583,147 @@ export function Ecosystem() {
                                                     {entity.typeLabel}
                                                 </Badge>
                                             </h3>
-                                            <p className="text-sm text-muted-foreground truncate">
-                                                {entity.subtitle}
-                                            </p>
+                                            {entity.subtitle && (
+                                                <p className="text-sm text-muted-foreground truncate">
+                                                    {entity.subtitle}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-3">
-                                        {entity.role && (
-                                            <Badge variant="outline" className="text-xs">
-                                                {entity.role}
-                                            </Badge>
-                                        )}
-                                        {entity.status && (
-                                            <Badge
-                                                variant={
-                                                    entity.status === 'ACTIVE'
-                                                        ? 'success'
-                                                        : entity.status === 'DRAFT'
-                                                        ? 'warning'
-                                                        : 'outline'
-                                                }
-                                            >
-                                                {entity.status}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </Link>
+                                    {(showStatus || hasGroups) && (
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 ml-auto shrink-0 justify-end">
+                                            {hasGroups && (
+                                                <div
+                                                    className="flex flex-wrap items-center gap-1.5"
+                                                    title={entity.groupNames!.join(', ')}
+                                                >
+                                                    {entity.groupNames!.slice(0, 2).map(gName => (
+                                                        <Badge
+                                                            key={gName}
+                                                            variant="outline"
+                                                            className="text-xs whitespace-nowrap"
+                                                        >
+                                                            {gName}
+                                                        </Badge>
+                                                    ))}
+                                                    {entity.groupNames!.length > 2 && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-xs whitespace-nowrap"
+                                                        >
+                                                            +{entity.groupNames!.length - 2}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {showStatus && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-xs text-muted-foreground"
+                                                >
+                                                    {entity.status}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    )}
+                                </>
                             );
-                        }
 
-                        return (
-                            <div
-                                key={entity.id}
-                                className={cn(
-                                    'bg-card border border-border rounded-xl p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-card transition-shadow'
-                                )}
-                            >
-                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                                    <div
+                            if (isLink) {
+                                return (
+                                    <Link
+                                        key={entity.id}
+                                        href={entity.link as string}
                                         className={cn(
-                                            'w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0',
-                                            iconColor
+                                            'bg-card border border-border rounded-xl p-4 md:p-5 flex items-center gap-3 shadow-card transition-shadow hover:shadow-elevated cursor-pointer'
                                         )}
                                     >
-                                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h3 className="font-medium text-foreground truncate">
-                                            {entity.name}
-                                            <Badge
-                                                variant="secondary"
-                                                className="text-xs shrink-0 align-middle ml-2"
-                                            >
-                                                {entity.typeLabel}
-                                            </Badge>
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground truncate">
-                                            {entity.subtitle}
+                                        {content}
+                                    </Link>
+                                );
+                            }
+
+                            return (
+                                <div
+                                    key={entity.id}
+                                    className={cn(
+                                        'bg-card border border-border rounded-xl p-4 md:p-5 flex items-center gap-3 shadow-card transition-shadow'
+                                    )}
+                                >
+                                    {content}
+                                </div>
+                            );
+                        };
+
+                        const renderedSections: React.ReactNode[] = [];
+                        const processedEcoIds = new Set<string>();
+
+                        const renderSection = (eco: UnifiedEntity) => {
+                            if (processedEcoIds.has(eco.id)) return null;
+                            processedEcoIds.add(eco.id);
+
+                            const children = childrenMap.get(eco.id) || [];
+
+                            // Filter children based on search/type
+                            const filteredChildren = children.filter(c =>
+                                filtered.some(f => f.id === c.id)
+                            );
+                            const isEcoFiltered = filtered.some(f => f.id === eco.id);
+
+                            if (!isEcoFiltered && filteredChildren.length === 0) return null;
+
+                            const depth = (eco.slugPath?.length || 1) - 1;
+
+                            // Sort children: groups first, then institutions, then employers
+                            const kindOrder = {
+                                group: 0,
+                                institution: 1,
+                                employer: 2,
+                                ecosystem: 3,
+                            };
+                            filteredChildren.sort((a, b) => kindOrder[a.kind] - kindOrder[b.kind]);
+
+                            return (
+                                <div
+                                    key={eco.id}
+                                    className={cn(
+                                        'space-y-3',
+                                        depth >= 1 && 'border-l-2 border-border pl-4'
+                                    )}
+                                >
+                                    {isEcoFiltered ? (
+                                        renderCard(eco)
+                                    ) : (
+                                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                            {eco.name}
                                         </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    {entity.role && (
-                                        <Badge variant="outline" className="text-xs">
-                                            {entity.role}
-                                        </Badge>
                                     )}
-                                    {entity.status && (
-                                        <Badge
-                                            variant={
-                                                entity.status === 'ACTIVE'
-                                                    ? 'success'
-                                                    : entity.status === 'DRAFT'
-                                                    ? 'warning'
-                                                    : 'outline'
-                                            }
-                                        >
-                                            {entity.status}
-                                        </Badge>
-                                    )}
+                                    {filteredChildren.map(child => renderCard(child))}
+
+                                    {/* Render child ecosystems recursively */}
+                                    {sortedEcos
+                                        .filter(
+                                            e =>
+                                                e.slugPath &&
+                                                e.slugPath.length > 1 &&
+                                                e.slugPath[e.slugPath.length - 2] ===
+                                                    eco.slugPath?.[eco.slugPath.length - 1]
+                                        )
+                                        .map(childEco => renderSection(childEco))}
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        };
+
+                        // Start with root ecosystems (depth 0)
+                        sortedEcos
+                            .filter(e => !e.slugPath || e.slugPath.length === 1)
+                            .forEach(eco => {
+                                const section = renderSection(eco);
+                                if (section) renderedSections.push(section);
+                            });
+
+                        return renderedSections;
+                    })()}
                 </div>
             )}
         </div>

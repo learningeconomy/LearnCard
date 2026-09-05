@@ -1,5 +1,6 @@
 import { neogma } from '@instance';
-import { EcosystemRole } from '@learncard/types';
+import { EcosystemRole, LCNOrganizationDetails } from '@learncard/types';
+import { organizationDetailsFromSummary } from '@helpers/organization.helpers';
 
 export const grantEcosystemMembership = async (input: {
     profileId: string;
@@ -50,6 +51,8 @@ export type EcosystemMember = {
     profileId: string;
     displayName: string;
     role: EcosystemRole;
+    type?: string;
+    organization?: LCNOrganizationDetails;
     /** The Profile's own persona role (`Profile.role`), distinct from the MEMBER_OF ecosystem role. */
     profileRole: string | null;
     email: string | null;
@@ -59,18 +62,33 @@ export const getEcosystemMembers = async (ecosystemId: string): Promise<Ecosyste
     const result = await neogma.queryRunner.run(
         `MATCH (p:Profile)-[r:MEMBER_OF]->(:Ecosystem { id: $ecosystemId })
          RETURN p.profileId AS profileId, p.displayName AS displayName, r.role AS role,
-                p.role AS profileRole, p.email AS email
+                p.type AS type, p.role AS profileRole, p.email AS email,
+                p.\`organization.institutionType\` AS institutionType,
+                p.\`organization.address.addressLocality\` AS addressLocality,
+                p.\`organization.address.addressRegion\` AS addressRegion,
+                p.\`organization.address.addressCountry\` AS addressCountry
          ORDER BY r.role, p.profileId`,
         { ecosystemId }
     );
 
-    return result.records.map(record => ({
-        profileId: record.get('profileId') as string,
-        displayName: (record.get('displayName') as string | null) ?? '',
-        role: record.get('role') as EcosystemRole,
-        profileRole: (record.get('profileRole') as string | null) ?? null,
-        email: (record.get('email') as string | null) ?? null,
-    }));
+    return result.records.map(record => {
+        const organization = organizationDetailsFromSummary({
+            institutionType: record.get('institutionType'),
+            addressLocality: record.get('addressLocality'),
+            addressRegion: record.get('addressRegion'),
+            addressCountry: record.get('addressCountry'),
+        });
+
+        return {
+            profileId: record.get('profileId') as string,
+            displayName: (record.get('displayName') as string | null) ?? '',
+            role: record.get('role') as EcosystemRole,
+            type: (record.get('type') as string | null) ?? undefined,
+            ...(organization ? { organization } : {}),
+            profileRole: (record.get('profileRole') as string | null) ?? null,
+            email: (record.get('email') as string | null) ?? null,
+        };
+    });
 };
 
 export const revokeEcosystemMembership = async (

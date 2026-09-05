@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 
-import type { EcosystemRole, ProvisionableRole } from '@learncard/types';
+import type { EcosystemRole, LCNOrganizationDetails, ProvisionableRole } from '@learncard/types';
 
 import type { BrainServiceTransport } from './brain-service-client';
 
@@ -21,7 +21,15 @@ export class StubBrainServiceTransport implements BrainServiceTransport {
         return randomUUID();
     }
 
-    async createProfile(_bearer: string, body: { profileId: string }): Promise<void> {
+    async createProfile(
+        _bearer: string,
+        body: {
+            profileId: string;
+            displayName?: string;
+            type?: string;
+            organization?: LCNOrganizationDetails;
+        }
+    ): Promise<void> {
         console.info('[stub-brain] createProfile', body.profileId);
     }
 

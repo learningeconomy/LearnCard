@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import type { TRPC_ERROR_CODE_KEY } from '@trpc/server/rpc';
 
-import type { EcosystemRole, ProvisionableRole } from '@learncard/types';
+import type { EcosystemRole, LCNOrganizationDetails, ProvisionableRole } from '@learncard/types';
 
 import type { BrainServiceTransport } from './brain-service-client';
 
@@ -101,7 +101,12 @@ export class HttpBrainServiceTransport implements BrainServiceTransport {
 
     async createProfile(
         bearer: string,
-        body: { profileId: string; displayName?: string; type?: string }
+        body: {
+            profileId: string;
+            displayName?: string;
+            type?: string;
+            organization?: LCNOrganizationDetails;
+        }
     ): Promise<void> {
         const res = await this.fetchImpl(`${this.base}/profile/create`, {
             method: 'POST',
@@ -110,6 +115,7 @@ export class HttpBrainServiceTransport implements BrainServiceTransport {
                 profileId: body.profileId,
                 displayName: body.displayName ?? body.profileId,
                 ...(body.type ? { type: body.type } : {}),
+                ...(body.organization ? { organization: body.organization } : {}),
             }),
         });
 

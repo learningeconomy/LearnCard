@@ -1,6 +1,7 @@
 import type {} from 'zod-openapi';
 
 export * from './vc';
+export * from './organization';
 export * from './did';
 export * from './obv3';
 export * from './clr';

@@ -2,7 +2,8 @@ import { randomUUID } from 'crypto';
 
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import type { Group, GroupType } from '@learncard/types';
+import { LCNOrganizationDetailsValidator } from '@learncard/types';
+import type { Group, GroupType, LCNOrganizationDetails } from '@learncard/types';
 
 import { DidAuthBearerFactory } from '../brain/did-auth';
 import { authorizedCall } from '../brain';
@@ -22,10 +23,12 @@ const GROUP_TYPES = [
     'custom',
 ] as const;
 
+/** Mirrors brain-service group.getGroupMembers; its output validator is the source of truth. */
 export type GroupMemberProfile = {
     profileId: string;
     displayName: string;
     type?: string;
+    organization?: LCNOrganizationDetails;
 };
 
 export type GroupDetail = {
@@ -41,6 +44,7 @@ export type CreatedOrgProfile = {
     managedDid: string;
     displayName: string;
     type: OrgProfileType;
+    organization?: LCNOrganizationDetails;
 };
 
 const brainCallers = (
@@ -169,12 +173,21 @@ export const groupRouter = router({
     createOrgProfile: protectedProcedure
         .input(
             z.object({
+                ecosystemId: z.string().min(1),
                 name: z.string().min(1).max(120),
                 type: z.enum(['institution', 'employer']),
-                groupId: z.string().optional(),
+                groupIds: z.array(z.string().min(1)).default([]),
+                organization: LCNOrganizationDetailsValidator.optional(),
             })
         )
         .mutation(async ({ ctx, input }): Promise<CreatedOrgProfile> => {
+            if (input.type === 'employer' && input.organization?.institutionType) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'institutionType is only valid for institution profiles',
+                });
+            }
+
             const profileId = orgProfileId(input.name);
             const managedDid = didWebFromDomain(ctx.consoleDomain, profileId);
 
@@ -192,24 +205,38 @@ export const groupRouter = router({
                     profileId,
                     displayName: input.name,
                     type: input.type,
+                    organization: input.organization,
                 })
             );
 
-            if (input.groupId) {
-                const operatorKeyRef = await requireKeyRef(ctx.keyRefFor, ctx.session.managedDid);
-                const { mutate } = brainCallers(
-                    ctx.kms,
-                    ctx.transport,
-                    ctx.session.managedDid,
-                    operatorKeyRef
-                );
+            const operatorKeyRef = await requireKeyRef(ctx.keyRefFor, ctx.session.managedDid);
+            const { mutate } = brainCallers(
+                ctx.kms,
+                ctx.transport,
+                ctx.session.managedDid,
+                operatorKeyRef
+            );
 
+            // ADR-001 D6: Profiles anchor to an Ecosystem via MEMBER_OF; Groups are optional taxonomy (D11)
+            await mutate<{ granted: boolean; role: 'MEMBER' }>('ecosystem.grantMembership', {
+                id: input.ecosystemId,
+                profileId,
+                role: 'MEMBER',
+            });
+
+            for (const groupId of input.groupIds) {
                 await mutate<{ success: boolean }>('group.addGroupMember', {
-                    id: input.groupId,
+                    id: groupId,
                     profileId,
                 });
             }
 
-            return { profileId, managedDid, displayName: input.name, type: input.type };
+            return {
+                profileId,
+                managedDid,
+                displayName: input.name,
+                type: input.type,
+                organization: input.organization,
+            };
         }),
 });

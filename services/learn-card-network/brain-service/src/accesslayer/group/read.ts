@@ -5,9 +5,11 @@ import {
     GroupReference,
     GroupReferenceMode,
     GroupReferenceView,
+    LCNOrganizationDetails,
 } from '@learncard/types';
 import { FlatGroupType } from 'types/group';
 import { toJsNumber } from '@accesslayer/ecosystem/read';
+import { organizationDetailsFromSummary } from '@helpers/organization.helpers';
 
 export const inflateGroup = (flat: FlatGroupType): GroupType => {
     const { computedCriteria, parentGroupId, ...rest } = flat;
@@ -38,21 +40,36 @@ export type GroupMemberProfile = {
     profileId: string;
     displayName: string;
     type?: string;
+    organization?: LCNOrganizationDetails;
 };
 
 export const getGroupMemberProfiles = async (groupId: string): Promise<GroupMemberProfile[]> => {
     const result = await neogma.queryRunner.run(
         `MATCH (p:Profile)-[:MEMBER_OF]->(:Group { id: $groupId })
-         RETURN p.profileId AS profileId, p.displayName AS displayName, p.type AS type
+         RETURN p.profileId AS profileId, p.displayName AS displayName, p.type AS type,
+                p.\`organization.institutionType\` AS institutionType,
+                p.\`organization.address.addressLocality\` AS addressLocality,
+                p.\`organization.address.addressRegion\` AS addressRegion,
+                p.\`organization.address.addressCountry\` AS addressCountry
          ORDER BY p.profileId ASC`,
         { groupId }
     );
 
-    return result.records.map(record => ({
-        profileId: String(record.get('profileId')),
-        displayName: (record.get('displayName') as string | null) ?? '',
-        type: (record.get('type') as string | null) ?? undefined,
-    }));
+    return result.records.map(record => {
+        const organization = organizationDetailsFromSummary({
+            institutionType: record.get('institutionType'),
+            addressLocality: record.get('addressLocality'),
+            addressRegion: record.get('addressRegion'),
+            addressCountry: record.get('addressCountry'),
+        });
+
+        return {
+            profileId: String(record.get('profileId')),
+            displayName: (record.get('displayName') as string | null) ?? '',
+            type: (record.get('type') as string | null) ?? undefined,
+            ...(organization ? { organization } : {}),
+        };
+    });
 };
 
 export const getGroupById = async (id: string): Promise<GroupType | null> => {

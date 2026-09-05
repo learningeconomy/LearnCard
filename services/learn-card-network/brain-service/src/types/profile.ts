@@ -24,7 +24,10 @@ export const VisibleProfileValidator = LCNVisibleProfileValidator;
 export const ProfileVisibilityValidator = ProfileVisibilityEnum;
 export const AllowConnectionRequestsValidator = AllowConnectionRequestsEnum;
 
-export const FlatProfileValidator = ProfileValidator.omit({ display: true }).catchall(z.any());
+export const FlatProfileValidator = ProfileValidator.omit({
+    display: true,
+    organization: true,
+}).catchall(z.any());
 export type FlatProfileType = z.infer<typeof FlatProfileValidator>;
 
 export const SigningAuthorityValidator = LCNSigningAuthorityValidator;

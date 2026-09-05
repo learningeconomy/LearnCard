@@ -8,6 +8,7 @@ import {
     DisableGroupIdentityIssuanceInputValidator,
     GrantGroupReferenceInputValidator,
     GroupMemberMutationInputValidator,
+    LCNOrganizationDetailsValidator,
     GroupReferenceViewValidator,
     GroupValidator,
     MaterializeComputedGroupMembershipInputValidator,
@@ -40,6 +41,7 @@ import {
     transferGroupOwnership,
     updateGroup,
 } from '@accesslayer/group/write';
+import { authorizeGroupMemberRead } from '@helpers/group.helpers';
 
 export const groupsRouter = t.router({
     getGroup: didAndChallengeRoute
@@ -116,13 +118,19 @@ export const groupsRouter = t.router({
                     profileId: z.string(),
                     displayName: z.string(),
                     type: z.string().optional(),
+                    organization: LCNOrganizationDetailsValidator.optional(),
                 })
             )
         )
-        .query(async ({ input }) => {
+        .query(async ({ ctx, input }) => {
             const group = await getGroupById(input.id);
 
             if (!group) throw new TRPCError({ code: 'NOT_FOUND', message: 'Group not found' });
+
+            await authorizeGroupMemberRead({
+                actorProfileId: ctx.user.profile.profileId,
+                ownerEcosystemId: group.ownerEcosystemId,
+            });
 
             return getGroupMemberProfiles(input.id);
         }),

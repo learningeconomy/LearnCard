@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createGroup } from '../api';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Select } from './ui/select';
 import { TRPCClientError } from '@trpc/client';
 
 interface CreateGroupFormProps {
@@ -87,18 +88,12 @@ export function CreateGroupForm({
                     <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                         Owner Ecosystem
                     </label>
-                    <select
+                    <Select
                         value={ownerEcosystemId}
-                        onChange={e => setOwnerEcosystemId(e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                        onValueChange={setOwnerEcosystemId}
+                        options={ecosystemOptions.map(opt => ({ value: opt.id, label: opt.name }))}
                         disabled={busy}
-                    >
-                        {ecosystemOptions.map(opt => (
-                            <option key={opt.id} value={opt.id}>
-                                {opt.name}
-                            </option>
-                        ))}
-                    </select>
+                    />
                 </div>
             )}
 
@@ -135,19 +130,19 @@ export function CreateGroupForm({
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                     Type
                 </label>
-                <select
+                <Select
                     value={type}
-                    onChange={e => setType(e.target.value as any)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                    onValueChange={setType}
+                    options={[
+                        { value: 'geographic', label: 'Geographic' },
+                        { value: 'administrative', label: 'Administrative' },
+                        { value: 'programmatic', label: 'Programmatic' },
+                        { value: 'functional', label: 'Functional' },
+                        { value: 'cohort', label: 'Cohort' },
+                        { value: 'custom', label: 'Custom' },
+                    ]}
                     disabled={busy}
-                >
-                    <option value="geographic">Geographic</option>
-                    <option value="administrative">Administrative</option>
-                    <option value="programmatic">Programmatic</option>
-                    <option value="functional">Functional</option>
-                    <option value="cohort">Cohort</option>
-                    <option value="custom">Custom</option>
-                </select>
+                />
             </div>
 
             <div>

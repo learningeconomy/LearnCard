@@ -1,5 +1,5 @@
 import { TRPCClientError } from '@trpc/client';
-import type { inferRouterOutputs } from '@trpc/server';
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 
 import type { ConsoleRouter } from '@console-bff/trpc/router';
 
@@ -31,6 +31,8 @@ export type EcosystemInstallTarget =
     inferRouterOutputs<ConsoleRouter>['installTargets']['list'][number];
 export type EcosystemAuditEvent = inferRouterOutputs<ConsoleRouter>['activity']['list'][number];
 export type ProjectedConsoleSurface = inferRouterOutputs<ConsoleRouter>['surfaces']['list'][number];
+export type CreateGroupInput = inferRouterInputs<ConsoleRouter>['group']['create'];
+export type CreateOrgProfileInput = inferRouterInputs<ConsoleRouter>['group']['createOrgProfile'];
 
 const TENANT_ID = 'learncard';
 const PROVIDER_ID = 'lef-wallet';
@@ -165,11 +167,7 @@ export async function removeGroupMember(input: { id: string; profileId: string }
     return trpc.group.removeMember.mutate(input);
 }
 
-export async function createOrgProfile(input: {
-    name: string;
-    type: 'institution' | 'employer';
-    groupId?: string;
-}) {
+export async function createOrgProfile(input: CreateOrgProfileInput) {
     return trpc.group.createOrgProfile.mutate(input);
 }
 

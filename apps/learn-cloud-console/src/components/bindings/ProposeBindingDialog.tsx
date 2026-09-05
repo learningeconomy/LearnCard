@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Loader2, XCircle } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Select } from '../ui/select';
 import {
     Dialog,
     DialogContent,
@@ -29,9 +30,6 @@ interface Props {
     capabilities: string[];
     onProposed: () => void;
 }
-
-const selectClassName =
-    'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 export function ProposeBindingDialog({
     open,
@@ -127,47 +125,36 @@ export function ProposeBindingDialog({
                 <div className="space-y-4">
                     <label className="block space-y-1.5">
                         <span className="text-sm font-medium">Capability</span>
-                        <select
-                            className={`${selectClassName} font-mono`}
+                        <Select
                             value={capability}
-                            onChange={e => setCapability(e.target.value)}
-                        >
-                            {capabilities.map(c => (
-                                <option key={c} value={c}>
-                                    {c}
-                                </option>
-                            ))}
-                        </select>
+                            onValueChange={setCapability}
+                            options={capabilities.map(c => ({ value: c, label: c }))}
+                            className="font-mono"
+                        />
                     </label>
                     <label className="block space-y-1.5">
                         <span className="text-sm font-medium">Provider</span>
-                        <select
-                            className={selectClassName}
+                        <Select
                             value={providerKey}
-                            onChange={e => setProviderKey(e.target.value)}
-                        >
-                            <option value="">Select a provider…</option>
-                            {choices.map(choice => (
-                                <option key={choice.key} value={choice.key}>
-                                    {choice.label}
-                                </option>
-                            ))}
-                        </select>
+                            onValueChange={setProviderKey}
+                            options={choices.map(choice => ({
+                                value: choice.key,
+                                label: choice.label,
+                            }))}
+                            placeholder="Select a provider…"
+                        />
                     </label>
                     <label className="block space-y-1.5">
                         <span className="text-sm font-medium">Consumer</span>
-                        <select
-                            className={selectClassName}
+                        <Select
                             value={consumerKey}
-                            onChange={e => setConsumerKey(e.target.value)}
-                        >
-                            <option value="">Select a consumer…</option>
-                            {choices.map(choice => (
-                                <option key={choice.key} value={choice.key}>
-                                    {choice.label}
-                                </option>
-                            ))}
-                        </select>
+                            onValueChange={setConsumerKey}
+                            options={choices.map(choice => ({
+                                value: choice.key,
+                                label: choice.label,
+                            }))}
+                            placeholder="Select a consumer…"
+                        />
                     </label>
                 </div>
 

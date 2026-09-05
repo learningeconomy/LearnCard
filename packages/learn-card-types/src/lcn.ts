@@ -2,6 +2,7 @@ import type {} from 'zod-openapi';
 import { z } from 'zod/v4';
 
 import { PaginationResponseValidator } from './mongo';
+import { LCNOrganizationDetailsValidator } from './organization';
 import { StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
 
@@ -57,6 +58,9 @@ export const LCNProfileValidator = z.object({
         .optional()
         .describe('Whether the profile is a service profile or not.'),
     type: z.string().optional().describe('Profile type: e.g. "person", "organization", "service".'),
+    organization: LCNOrganizationDetailsValidator.optional().describe(
+        'Typed intrinsic organization metadata (ADR-001 §4 amendment). Only for type=institution|employer.'
+    ),
     notificationsWebhook: z
         .string()
         .url()
