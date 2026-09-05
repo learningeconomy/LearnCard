@@ -37,6 +37,7 @@ const credential = {
     issuer: {
         id: 'did:web:example.com:users:alex',
         name: 'Alex Rivera',
+        image: 'https://example.com/alex.png',
     },
     credentialSubject: {
         achievement: { name: 'Community Builder' },
@@ -71,12 +72,12 @@ describe('HeroCanvas issuer context queries', () => {
         expect(mocks.useKnownDIDRegistry).not.toHaveBeenCalled();
     });
 
-    it('loads and forwards recipient-aware context only for an issue preview', () => {
+    it('forwards issuer identity metadata to an anyone-with-a-link full preview', () => {
         render(
             <HeroCanvas
                 credential={credential}
                 credentialType="badge"
-                recipientMode="self"
+                recipientMode="link"
                 cardTitle="Badge"
             />
         );
@@ -87,8 +88,12 @@ describe('HeroCanvas issuer context queries', () => {
         expect(previewCardProps).toEqual(
             expect.objectContaining({
                 issuerContextOverride: expect.objectContaining({
-                    state: 'self',
+                    state: 'unclaimed',
                     issuerDid: 'did:web:example.com:users:alex',
+                    profile: expect.objectContaining({
+                        displayName: 'Alex Rivera',
+                        image: 'https://example.com/alex.png',
+                    }),
                 }),
             })
         );

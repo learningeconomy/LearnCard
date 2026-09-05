@@ -427,7 +427,6 @@ const IssueCredentialPage: React.FC = () => {
             getCurrentLCNUserDid(currentLCNUser?.profileId) ?? currentLCNUser?.did;
 
         let credentialSubjectName: string | undefined;
-        let showIssuerImage = true;
 
         // getImageUrlFromCredential ranks credentialSubject.image above
         // achievement.image, so a recipient photo would hide the badge artwork.
@@ -455,11 +454,6 @@ const IssueCredentialPage: React.FC = () => {
             recipients[0].kind === 'profile'
         ) {
             credentialSubjectName = recipients[0].displayName;
-        } else {
-            // No specific recipient yet (link / anyone / email / multiple): don't
-            // let the badge fall back to the issuer's photo — show the category's
-            // default artwork instead so the issuer isn't mistaken for the holder.
-            showIssuerImage = false;
         }
 
         if (subjectObject) {
@@ -473,7 +467,7 @@ const IssueCredentialPage: React.FC = () => {
             issuer: {
                 id: currentIssuerDid ?? 'did:web:preview',
                 name: issuerName,
-                ...(showIssuerImage && issuerImage ? { image: issuerImage } : {}),
+                ...(issuerImage ? { image: issuerImage } : {}),
             },
             credentialSubject: subjectObject
                 ? {
