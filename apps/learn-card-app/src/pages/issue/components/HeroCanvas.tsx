@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ImageIcon } from 'lucide-react';
-import type { LCNVisibleProfile, VC } from '@learncard/types';
+import type { IssuerContext, LCNVisibleProfile, VC } from '@learncard/types';
 
 import { BoostCategoryOptionsEnum, BoostPageViewMode, useGetConnections } from 'learn-card-base';
 import {
@@ -53,24 +53,46 @@ const SkeletonCard: React.FC = () => (
     </div>
 );
 
-export const HeroCanvas: React.FC<HeroCanvasProps> = ({
+type PreviewCredentialCardProps = {
+    credential: VC;
+    issuerContextOverride?: IssuerContext;
+};
+
+const PreviewCredentialCard: React.FC<PreviewCredentialCardProps> = ({
     credential,
-    credentialType,
-    cardTitle = '',
-    hasImage = false,
+    issuerContextOverride,
+}) => (
+    <BoostEarnedCard
+        credential={credential}
+        categoryType={
+            getDefaultCategoryForCredential(credential) ?? BoostCategoryOptionsEnum.achievement
+        }
+        boostPageViewMode={BoostPageViewMode.Card}
+        useWrapper={false}
+        verifierState={false}
+        issuerContextOverride={issuerContextOverride}
+        hideOptionsMenu
+        isPreview
+        className="shadow-xl"
+    />
+);
+
+type IssuePreviewCredentialCardProps = {
+    credential: VC;
+    recipientMode: RecipientMode;
+    recipients: Recipient[];
+};
+
+const IssuePreviewCredentialCard: React.FC<IssuePreviewCredentialCardProps> = ({
+    credential,
     recipientMode,
-    recipients = [],
+    recipients,
 }) => {
-    const popping = useChangePulse(cardTitle);
-    const glowing = useChangePulse(hasImage ? 'has-image' : '');
-    const t = useT();
     const { data: connections = [] } = useGetConnections();
     const issuer =
-        credential?.issuer && typeof credential.issuer === 'object'
-            ? (credential.issuer as Record<string, unknown>)
-            : undefined;
+        credential.issuer && typeof credential.issuer === 'object' ? credential.issuer : undefined;
     const issuerDid =
-        typeof credential?.issuer === 'string'
+        typeof credential.issuer === 'string'
             ? credential.issuer
             : typeof issuer?.id === 'string'
             ? issuer.id
@@ -84,13 +106,7 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
         registry.data?.source === 'unknown'
             ? (registry.data.source as PreviewRegistrySource)
             : undefined;
-    const category =
-        credential &&
-        (getDefaultCategoryForCredential(credential as unknown as VC) ||
-            BoostCategoryOptionsEnum.achievement);
     const issuerContext = useMemo(() => {
-        if (!credential || !issuerDid || !recipientMode) return undefined;
-
         const issuerProfile: LCNVisibleProfile = {
             profileId: getProfileIdFromLCNDidWeb(issuerDid) ?? issuerDid,
             displayName: issuerName ?? issuerDid,
@@ -101,7 +117,7 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
         return createPreviewIssuerContext({
             issuerDid,
             issuerProfile,
-            trustProfile: deriveIssuerTrustProfile(credential as unknown as VC),
+            trustProfile: deriveIssuerTrustProfile(credential),
             registrySource,
             recipientMode,
             recipients,
@@ -117,9 +133,25 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
         recipients,
         registrySource,
     ]);
+
+    return <PreviewCredentialCard credential={credential} issuerContextOverride={issuerContext} />;
+};
+
+export const HeroCanvas: React.FC<HeroCanvasProps> = ({
+    credential,
+    credentialType,
+    cardTitle = '',
+    hasImage = false,
+    recipientMode,
+    recipients = [],
+}) => {
+    const popping = useChangePulse(cardTitle);
+    const glowing = useChangePulse(hasImage ? 'has-image' : '');
+    const previewCredential = credential as VC | null;
+
     return (
         <div className="w-full flex flex-col items-center gap-4">
-            {credentialType && credential ? (
+            {credentialType && previewCredential ? (
                 <div
                     className={`w-[160px] rounded-[24px] transition-all duration-300 animate-fade-in-up motion-reduce:animate-none ${
                         popping ? 'motion-safe:animate-card-pop' : ''
@@ -129,17 +161,15 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
                         key={hasImage ? 'with-image' : 'no-image'}
                         className={hasImage ? 'motion-safe:animate-image-drop' : ''}
                     >
-                        <BoostEarnedCard
-                            credential={credential as unknown as VC}
-                            categoryType={category}
-                            boostPageViewMode={BoostPageViewMode.Card}
-                            useWrapper={false}
-                            verifierState={false}
-                            issuerContextOverride={issuerContext}
-                            hideOptionsMenu
-                            isPreview
-                            className="shadow-xl"
-                        />
+                        {recipientMode ? (
+                            <IssuePreviewCredentialCard
+                                credential={previewCredential}
+                                recipientMode={recipientMode}
+                                recipients={recipients}
+                            />
+                        ) : (
+                            <PreviewCredentialCard credential={previewCredential} />
+                        )}
                     </div>
                 </div>
             ) : (
