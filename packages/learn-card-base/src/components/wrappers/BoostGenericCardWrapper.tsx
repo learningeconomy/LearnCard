@@ -3,7 +3,7 @@ import React from 'react';
 import { BoostGenericCard } from '@learncard/react';
 import BoostListItem from '../boost/BoostListItem';
 
-import type { IssuerContext, IssuerTrustProfile, VC } from '@learncard/types';
+import type { IssuerTrustProfile, VC } from '@learncard/types';
 import { CredentialCategory } from 'learn-card-base/types/credentials';
 import { WalletCategoryTypes } from '../IssueVC/types';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -46,8 +46,6 @@ type BoostGenericCardWrapperProps = {
     uri?: string;
     indicatorColor?: string;
     verifierLabelOverride?: string;
-    issuerDisplayName?: string;
-    issuerContextOverride?: IssuerContext;
     issuerTrustProfile?: IssuerTrustProfile;
     relativeDate?: boolean;
     compact?: boolean;
@@ -87,8 +85,6 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     uri,
     indicatorColor,
     verifierLabelOverride,
-    issuerDisplayName,
-    issuerContextOverride,
     issuerTrustProfile,
     relativeDate,
     compact,
@@ -150,8 +146,6 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                         iconClassName="!w-[15px] !h-[15px]"
                         showText={!!verifierLabelOverride}
                         verifierLabelOverride={verifierLabelOverride}
-                        issuerDisplayName={issuerDisplayName}
-                        issuerContextOverride={issuerContextOverride}
                         issuerTrustProfile={issuerTrustProfile}
                         lifecycleStatus={lifecycleStatus}
                         trustedOnly={trustedVerifierOnly}

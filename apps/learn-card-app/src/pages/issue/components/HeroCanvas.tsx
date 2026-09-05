@@ -4,16 +4,11 @@ import type { LCNVisibleProfile, VC } from '@learncard/types';
 
 import { BoostCategoryOptionsEnum, BoostPageViewMode, useGetConnections } from 'learn-card-base';
 import {
-    getIssuerContextLabel,
-    getIssuerContextName,
-} from 'learn-card-base/helpers/issuerContext.helpers';
-import {
     getDefaultCategoryForCredential,
     getProfileIdFromLCNDidWeb,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { deriveIssuerTrustProfile } from 'learn-card-base/hooks/useIssuerContext';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
-import { useT } from 'learn-card-base/i18n';
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import type { SimpleCredentialType } from '../../../components/simple-send/simpleSend.helpers';
 import type { Recipient, RecipientMode } from './recipientTypes';
@@ -122,12 +117,6 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
         recipients,
         registrySource,
     ]);
-    const issuerLabelName = issuerContext
-        ? getIssuerContextName(issuerContext, issuerName)
-        : undefined;
-    const issuerLabel = issuerContext
-        ? getIssuerContextLabel(issuerContext, t, issuerLabelName)
-        : undefined;
     return (
         <div className="w-full flex flex-col items-center gap-4">
             {credentialType && credential ? (
@@ -146,8 +135,6 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
                             boostPageViewMode={BoostPageViewMode.Card}
                             useWrapper={false}
                             verifierState={false}
-                            verifierLabelOverride={issuerLabel}
-                            issuerDisplayName={issuerLabelName}
                             issuerContextOverride={issuerContext}
                             hideOptionsMenu
                             isPreview

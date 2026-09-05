@@ -2,18 +2,17 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { VC } from '@learncard/types';
+import type { IssuerContext, VC } from '@learncard/types';
 
 type CardWrapperProps = {
     innerOnClick?: () => void;
     optionsTriggerOnClick?: () => void;
-    verifierLabelOverride?: string;
     issuerName?: string;
-    customIssuerName?: React.ReactNode;
 };
 
 type PreviewProps = {
     onDotsClick?: () => void;
+    issuerContextOverride?: IssuerContext;
 };
 
 const mocks = vi.hoisted(() => ({
@@ -22,6 +21,7 @@ const mocks = vi.hoisted(() => ({
     isBoostCredential: vi.fn(),
     boostPreview: vi.fn(() => null),
     nonBoostPreview: vi.fn(() => null),
+    cardWrapper: vi.fn(),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -59,26 +59,23 @@ vi.mock('learn-card-base', () => ({
         },
     },
     BoostPageViewMode: { Card: 'card' },
-    BoostGenericCardWrapper: ({
-        innerOnClick,
-        optionsTriggerOnClick,
-        verifierLabelOverride,
-        issuerName,
-        customIssuerName,
-    }: CardWrapperProps) => (
-        <div>
-            <button type="button" onClick={innerOnClick}>
-                Open credential
-            </button>
-            {optionsTriggerOnClick && (
-                <button type="button" onClick={optionsTriggerOnClick}>
-                    Card options
+    BoostGenericCardWrapper: (props: CardWrapperProps) => {
+        mocks.cardWrapper(props);
+
+        return (
+            <div>
+                <button type="button" onClick={props.innerOnClick}>
+                    Open credential
                 </button>
-            )}
-            {verifierLabelOverride}
-            {customIssuerName || issuerName}
-        </div>
-    ),
+                {props.optionsTriggerOnClick && (
+                    <button type="button" onClick={props.optionsTriggerOnClick}>
+                        Card options
+                    </button>
+                )}
+                {props.issuerName}
+            </div>
+        );
+    },
     resetIonicModalBackground: vi.fn(),
     BoostCategoryOptionsEnum: { family: 'Family' },
     newCredsStore: {
@@ -153,6 +150,7 @@ describe('BoostEarnedCard', () => {
         mocks.isBoostCredential.mockReturnValue(true);
         mocks.boostPreview.mockClear();
         mocks.nonBoostPreview.mockClear();
+        mocks.cardWrapper.mockClear();
     });
 
     it('does not expose card options while the credential is loading', () => {
@@ -227,26 +225,35 @@ describe('BoostEarnedCard', () => {
         expect(mocks.presentOptions).not.toHaveBeenCalled();
     });
 
-    it('shows the relationship preview label without repeating the issuer name', () => {
+    it('keeps relationship context in the full preview without changing the small card', () => {
+        const issuerContext: IssuerContext = {
+            issuerDid: 'did:example:issuer',
+            trustProfile: 'social',
+            state: 'self',
+            connectionStatus: 'NOT_CONNECTED',
+            mutualConnectionCount: 0,
+            hasVerifiedContactMethod: false,
+        };
+
         render(
             <BoostEarnedCard
                 credential={credential}
                 categoryType="Achievement"
                 useWrapper={false}
-                verifierLabelOverride="You created this"
-                issuerDisplayName="Example University"
-                issuerContextOverride={{
-                    issuerDid: 'did:example:issuer',
-                    trustProfile: 'social',
-                    state: 'self',
-                    connectionStatus: 'NOT_CONNECTED',
-                    mutualConnectionCount: 0,
-                    hasVerifiedContactMethod: false,
-                }}
+                issuerContextOverride={issuerContext}
             />
         );
 
-        expect(screen.getByText('You created this')).toBeInTheDocument();
-        expect(screen.queryByText('Example University')).not.toBeInTheDocument();
+        expect(screen.getByText('Example University')).toBeInTheDocument();
+        const smallCardProps = mocks.cardWrapper.mock.calls[0]?.[0];
+        expect(smallCardProps).not.toHaveProperty('issuerContextOverride');
+        expect(smallCardProps).not.toHaveProperty('verifierLabelOverride');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Open credential' }));
+        const preview = mocks.newModal.mock.calls[0]?.[0] as
+            | React.ReactElement<PreviewProps>
+            | undefined;
+
+        expect(preview?.props.issuerContextOverride).toEqual(issuerContext);
     });
 });

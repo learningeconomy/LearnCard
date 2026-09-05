@@ -82,8 +82,6 @@ type BoostEarnedCardProps = {
     isPreview?: boolean;
     relativeDate?: boolean;
     compact?: boolean;
-    verifierLabelOverride?: string;
-    issuerDisplayName?: string;
     issuerContextOverride?: IssuerContext;
 };
 
@@ -113,8 +111,6 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     isPreview = false,
     relativeDate = false,
     compact = false,
-    verifierLabelOverride,
-    issuerDisplayName,
     issuerContextOverride,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
@@ -444,16 +440,12 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     dateDisplay={issueDate}
                     issuerName={issuerName}
                     customIssuerName={
-                        verifierLabelOverride ? (
-                            <></>
-                        ) : (
-                            <CustomIssuerName
-                                issuerName={issuerName}
-                                subjectName={issueeName}
-                                isLoading={showSkeleton}
-                                isClrCredential={isClrCredential}
-                            />
-                        )
+                        <CustomIssuerName
+                            issuerName={issuerName}
+                            subjectName={issueeName}
+                            isLoading={showSkeleton}
+                            isClrCredential={isClrCredential}
+                        />
                     }
                     customThumbComponent={
                         showSkeleton ? (
@@ -500,10 +492,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     relativeDate={relativeDate}
                     compact={compact}
                     isCLR={isClrCredential}
-                    verifierLabelOverride={verifierLabelOverride}
-                    issuerDisplayName={issuerDisplayName}
-                    issuerContextOverride={issuerContextOverride}
-                    trustedVerifierOnly={!issuerContextOverride}
+                    trustedVerifierOnly
                 />
             </ErrorBoundary>
         );
