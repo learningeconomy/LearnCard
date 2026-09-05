@@ -33,10 +33,7 @@ import {
     type OBv3CredentialTemplate,
 } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
-import {
-    getDefaultCategoryForCredential,
-    getFallBackImage,
-} from 'learn-card-base/helpers/credentialHelpers';
+import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
 import type { CredentialCategoryEnum } from 'learn-card-base';
 
@@ -45,6 +42,7 @@ import { applyVariableValues } from './components/variableSubstitution';
 import { attachmentsToEvidence } from './components/mediaEvidence';
 import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import { useCredentialIdentity } from './components/useCredentialIdentity';
+import { buildPreviewCredential } from './components/buildPreviewCredential';
 import { mergeSkillAlignments, type ResolvedSkill } from './components/skillAlignment';
 import type { SelectedSkill } from '../skills/skillTypes';
 import { IssueCredentialView } from './IssueCredentialView';
@@ -102,26 +100,6 @@ const clearSuccessSnapshot = (): void => {
     } catch (e) {
         log.warn('issue.snapshot_clear_failed', e);
     }
-};
-
-const hasAchievementImage = (subject: unknown): boolean => {
-    if (!subject || typeof subject !== 'object' || Array.isArray(subject)) return false;
-
-    const image = (subject as Record<string, unknown>).image;
-    const imageRecord =
-        image && typeof image === 'object' && !Array.isArray(image)
-            ? (image as Record<string, unknown>)
-            : undefined;
-    const imageValue = imageRecord && imageRecord.value !== undefined ? imageRecord.value : image;
-
-    return (
-        typeof imageValue === 'string' ||
-        Boolean(
-            imageValue &&
-                typeof imageValue === 'object' &&
-                (imageValue as Record<string, unknown>).id
-        )
-    );
 };
 
 const IssueCredentialPage: React.FC = () => {
@@ -397,97 +375,27 @@ const IssueCredentialPage: React.FC = () => {
 
     const previewCredential = useMemo<Record<string, unknown> | null>(() => {
         if (!template) return null;
-        const json = applyVariableValues(templateToJson(template), previewValues);
-        const fill = (obj: unknown): unknown => {
-            if (typeof obj === 'string') {
-                return obj.replace(/\{\{(\w+)\}\}/g, (_m, v) =>
-                    /date|time/i.test(v) ? new Date().toISOString() : ''
-                );
-            }
-            if (Array.isArray(obj)) return obj.map(fill);
-            if (obj && typeof obj === 'object') {
-                return Object.fromEntries(Object.entries(obj).map(([k, val]) => [k, fill(val)]));
-            }
-            return obj;
-        };
 
-        const filledJson = fill(json) as Record<string, unknown>;
-        const rawSubject = filledJson.credentialSubject;
-        // A custom VC may carry an array (or absent) credentialSubject; only the
-        // single-object case can take the preview's name/image injection.
-        const subjectObject =
-            rawSubject && typeof rawSubject === 'object' && !Array.isArray(rawSubject)
-                ? (rawSubject as Record<string, unknown>)
-                : undefined;
-
-        const previewCategory =
-            getDefaultCategoryForCredential(filledJson as UnsignedVC) || 'Achievement';
-        const fallbackImage = getFallBackImage(previewCategory);
-        const currentIssuerDid =
-            getCurrentLCNUserDid(currentLCNUser?.profileId) ?? currentLCNUser?.did;
-
-        let credentialSubjectName: string | undefined;
-
-        // getImageUrlFromCredential ranks credentialSubject.image above
-        // achievement.image, so a recipient photo would hide the badge artwork.
-        // The issued credential never sets credentialSubject.image; only inject
-        // it here when there's no badge image, keeping the preview faithful.
-        const hasBadgeImage = hasAchievementImage(filledJson) || hasAchievementImage(ach);
-        const specificProfileRecipient =
-            recipientMode === 'people' &&
-            recipients.length === 1 &&
-            recipients[0].kind === 'profile'
-                ? recipients[0]
-                : undefined;
-        const hasSpecificRecipient = recipientMode === 'self' || Boolean(specificProfileRecipient);
-        const imageForSubject = hasSpecificRecipient
-            ? hasBadgeImage
-                ? undefined
-                : fallbackImage
-            : fallbackImage;
-
-        if (recipientMode === 'self') {
-            credentialSubjectName = currentLCNUser?.displayName || issuerName;
-        } else if (
-            recipientMode === 'people' &&
-            recipients.length === 1 &&
-            recipients[0].kind === 'profile'
-        ) {
-            credentialSubjectName = recipients[0].displayName;
-        }
-
-        if (subjectObject) {
-            const previewSubjectDid =
-                recipientMode === 'self' ? currentIssuerDid : specificProfileRecipient?.did;
-            if (previewSubjectDid) subjectObject.id = previewSubjectDid;
-        }
-
-        return {
-            ...filledJson,
-            issuer: {
-                id: currentIssuerDid ?? 'did:web:preview',
-                name: issuerName,
-                ...(issuerImage ? { image: issuerImage } : {}),
-            },
-            credentialSubject: subjectObject
-                ? {
-                      ...subjectObject,
-                      ...(credentialSubjectName ? { name: credentialSubjectName } : {}),
-                      ...(imageForSubject ? { image: imageForSubject } : {}),
-                  }
-                : rawSubject,
-            validFrom: new Date().toISOString(),
-        };
+        return buildPreviewCredential({
+            template,
+            previewValues,
+            issuerDid: getCurrentLCNUserDid(currentLCNUser?.profileId) ?? currentLCNUser?.did,
+            issuerName,
+            issuerImage,
+            currentUserDisplayName: currentLCNUser?.displayName,
+            recipientMode,
+            recipients,
+        });
     }, [
         template,
-        issuerName,
-        issuerImage,
-        currentLCNUser?.displayName,
+        previewValues,
         currentLCNUser?.profileId,
         currentLCNUser?.did,
+        currentLCNUser?.displayName,
+        issuerName,
+        issuerImage,
         recipientMode,
         recipients,
-        previewValues,
     ]);
 
     const handleIssue = useCallback(async () => {
