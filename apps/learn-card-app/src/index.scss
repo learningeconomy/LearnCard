@@ -120,6 +120,16 @@ textarea[class*='border-gray']:-webkit-autofill:active {
     transition: background-color 5000s ease-in-out 0s;
 }
 
+// iOS Safari zooms focused form controls below 16px. Keep pinch zoom available
+// without triggering an unexpected layout jump when a field receives focus.
+@supports (-webkit-touch-callout: none) {
+    input,
+    select,
+    textarea {
+        font-size: max(16px, 1rem);
+    }
+}
+
 // Keyboard focus is intentionally invisible for pointer interaction and appears
 // only for keyboard-style focus. This covers native controls and the small
 // number of composite widgets used by the core app flows.
