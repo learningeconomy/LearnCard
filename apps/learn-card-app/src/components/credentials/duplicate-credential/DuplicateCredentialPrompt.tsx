@@ -23,43 +23,10 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
     onChoose,
 }) => {
     const skipButtonRef = React.useRef<HTMLButtonElement>(null);
-    const dialogRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
         skipButtonRef.current?.focus();
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onChoose('cancel');
-                return;
-            }
-            if (event.key !== 'Tab') return;
-
-            const focusableElements =
-                dialogRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
-            if (!focusableElements?.length) return;
-
-            const firstElement = focusableElements[0];
-            const lastElement = focusableElements[focusableElements.length - 1];
-
-            if (!dialogRef.current?.contains(document.activeElement)) {
-                event.preventDefault();
-                (event.shiftKey ? lastElement : firstElement).focus();
-                return;
-            }
-
-            if (event.shiftKey && document.activeElement === firstElement) {
-                event.preventDefault();
-                lastElement.focus();
-            } else if (!event.shiftKey && document.activeElement === lastElement) {
-                event.preventDefault();
-                firstElement.focus();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onChoose]);
+    }, []);
 
     const credentialName = getCredentialName(existing.credential);
     const issuerName =
@@ -69,15 +36,12 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
     const imageUrl = getImageUrlFromCredential(existing.credential, existing.record.category);
 
     return createPortal(
-        <Overlay>
-            <div
-                ref={dialogRef}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="duplicate-credential-title"
-                aria-describedby="duplicate-credential-description"
-                className="relative p-6 sm:p-8"
-            >
+        <Overlay
+            aria-labelledby="duplicate-credential-title"
+            aria-describedby="duplicate-credential-description"
+            onDismiss={() => onChoose('cancel')}
+        >
+            <div className="relative p-6 sm:p-8">
                 <button
                     type="button"
                     aria-label={m['common.cancel']()}
