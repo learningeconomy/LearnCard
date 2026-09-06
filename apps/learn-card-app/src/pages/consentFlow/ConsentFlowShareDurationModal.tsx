@@ -105,6 +105,7 @@ const ConsentFlowShareDurationModal: React.FC<{
                                     {m['consentFlow.sync.liveSyncing']()}
                                 </p>
                                 <RadioButton
+                                    aria-label={m['consentFlow.sync.liveSyncing']()}
                                     checked={
                                         !shareDuration.oneTimeShare && !shareDuration.customDuration
                                     }
@@ -121,6 +122,7 @@ const ConsentFlowShareDurationModal: React.FC<{
                                     {m['consentFlow.shareOneTimeOnly']()}
                                 </p>
                                 <RadioButton
+                                    aria-label={m['consentFlow.shareOneTimeOnly']()}
                                     checked={shareDuration.oneTimeShare}
                                     onClick={() => {
                                         handleStateChange('customDuration', '');
@@ -135,6 +137,7 @@ const ConsentFlowShareDurationModal: React.FC<{
                                     {m['consentFlow.customDuration']()}
                                 </p>
                                 <RadioButton
+                                    aria-label={m['consentFlow.customDuration']()}
                                     checked={Boolean(shareDuration.customDuration)}
                                     onClick={() => {
                                         handleStateChange('oneTimeShare', false);

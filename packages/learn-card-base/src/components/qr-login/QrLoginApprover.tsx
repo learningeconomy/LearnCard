@@ -59,7 +59,8 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
     onScanQr,
     shareVersion,
 }) => {
-    const { status, sessionInfo, error, lookupSession, approve, reset } = useQrLoginApprover(serverUrl);
+    const { status, sessionInfo, error, lookupSession, approve, reset } =
+        useQrLoginApprover(serverUrl);
 
     const [codeInput, setCodeInput] = useState('');
     const [mode, setMode] = useState<'choose' | 'scan' | 'code'>('choose');
@@ -113,7 +114,9 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
     if (mode === 'choose' && status === 'idle') {
         return (
             <div className="p-6 max-w-md mx-auto font-poppins">
-                <h2 className="text-xl font-semibold text-grayscale-900 mb-1 text-center">Link New Device</h2>
+                <h2 className="text-xl font-semibold text-grayscale-900 mb-1 text-center">
+                    Link New Device
+                </h2>
 
                 <p className="text-sm text-grayscale-600 mb-6 text-center leading-relaxed">
                     Authorize another device to sign in to your account.
@@ -122,16 +125,31 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
                 <div className="space-y-2">
                     {onScanQr && (
                         <button
+                            aria-label="Scan QR code"
                             onClick={handleScan}
                             className="w-full p-4 rounded-2xl bg-grayscale-10 hover:bg-grayscale-100 text-grayscale-900 flex items-center gap-4 transition-colors"
                         >
                             <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-700 text-base shrink-0">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                    <circle cx="12" cy="13" r="4" />
+                                </svg>
                             </div>
 
                             <div className="flex-1 text-left">
                                 <p className="font-medium text-sm">Scan QR Code</p>
-                                <p className="text-xs text-grayscale-500 mt-0.5">Scan the code shown on the new device</p>
+                                <p className="text-xs text-grayscale-500 mt-0.5">
+                                    Scan the code shown on the new device
+                                </p>
                             </div>
                         </button>
                     )}
@@ -146,7 +164,9 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
 
                         <div className="flex-1 text-left">
                             <p className="font-medium text-sm">Enter Code</p>
-                            <p className="text-xs text-grayscale-500 mt-0.5">Type the 8-digit code from the new device</p>
+                            <p className="text-xs text-grayscale-500 mt-0.5">
+                                Type the 8-digit code from the new device
+                            </p>
                         </div>
                     </button>
                 </div>
@@ -166,11 +186,16 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
     if (mode === 'code' && (status === 'idle' || status === 'loading' || status === 'error')) {
         return (
             <div className="p-6 max-w-md mx-auto font-poppins">
-                <button onClick={handleBack} className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5">
+                <button
+                    onClick={handleBack}
+                    className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
+                >
                     <span className="text-xs">&larr;</span> Back
                 </button>
 
-                <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Enter Pairing Code</h3>
+                <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
+                    Enter Pairing Code
+                </h3>
 
                 <p className="text-sm text-grayscale-600 mb-5 leading-relaxed">
                     Enter the 8-digit code shown on the device you want to sign in.
@@ -183,6 +208,7 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
                 )}
 
                 <input
+                    aria-label="Device link code"
                     type="text"
                     inputMode="numeric"
                     maxLength={8}
@@ -190,7 +216,6 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
                     onChange={e => setCodeInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
                     placeholder="00000000"
                     className="w-full text-center font-mono text-3xl tracking-[0.3em] py-3 px-4 border border-grayscale-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent mb-5 text-grayscale-900 placeholder:text-grayscale-300 bg-white"
-                    autoFocus
                 />
 
                 <button
@@ -209,20 +234,38 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
     if (status === 'confirming' && sessionInfo) {
         return (
             <div className="p-6 max-w-md mx-auto font-poppins">
-                <button onClick={handleBack} className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5">
+                <button
+                    onClick={handleBack}
+                    className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
+                >
                     <span className="text-xs">&larr;</span> Back
                 </button>
 
                 <div className="text-center mb-6">
                     <div className="w-16 h-16 mx-auto mb-4 bg-amber-50 rounded-full flex items-center justify-center">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-amber-500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <svg
+                            width="28"
+                            height="28"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            className="text-amber-500"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Authorize this device?</h3>
+                    <h3 className="text-lg font-semibold text-grayscale-900 mb-1">
+                        Authorize this device?
+                    </h3>
 
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        A new device is requesting access to your account.
-                        This will securely connect it.
+                        A new device is requesting access to your account. This will securely
+                        connect it.
                     </p>
                 </div>
 
@@ -263,7 +306,19 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
         return (
             <div className="p-6 max-w-md mx-auto text-center font-poppins">
                 <div className="w-16 h-16 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-emerald-600" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <svg
+                        width="28"
+                        height="28"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        className="text-emerald-600"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
                 </div>
 
                 <h3 className="text-lg font-semibold text-grayscale-900 mb-1">Device Linked!</h3>

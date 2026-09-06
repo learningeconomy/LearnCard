@@ -3,12 +3,16 @@ const { ESLint } = require('eslint');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const APP_SOURCE_PATTERN = 'apps/learn-card-app/src/**/*.{ts,tsx}';
+const BASE_SOURCE_PATTERN = 'packages/learn-card-base/src/**/*.{ts,tsx}';
+const A11Y_WARNING_BASELINE = 327;
 const A11Y_RULE_PREFIX = 'jsx-a11y/';
 
-// Lint the full LearnCard app by default. Passing file/glob arguments makes
-// this script useful for reviewing a smaller set of changed files locally.
+// Lint the LearnCard app and shared component library by default. Passing
+// file/glob arguments makes this script useful for reviewing a smaller set
+// of changed files locally.
 const requestedPatterns = process.argv.slice(2);
-const lintPatterns = requestedPatterns.length > 0 ? requestedPatterns : [APP_SOURCE_PATTERN];
+const lintPatterns =
+    requestedPatterns.length > 0 ? requestedPatterns : [APP_SOURCE_PATTERN, BASE_SOURCE_PATTERN];
 
 // Keep the repository-wide warning baseline compact in normal runs, while
 // showing actionable locations for explicitly requested files or verbose runs.
@@ -65,8 +69,18 @@ const run = async () => {
         });
     }
 
-    // Warnings are intentionally non-blocking during rollout. Rules promoted
-    // to error in .eslintrc.js, plus fatal lint failures, determine the exit code.
+    const warningBaselineExceeded =
+        requestedPatterns.length === 0 && warningMessages.length > A11Y_WARNING_BASELINE;
+
+    if (warningBaselineExceeded) {
+        console.error(
+            `\nWarning baseline exceeded: ${warningMessages.length} > ${A11Y_WARNING_BASELINE}.`
+        );
+    }
+
+    // Warnings remain non-blocking up to the recorded baseline. Promoted
+    // rules in eslint.a11y.config.mjs, fatal failures, and baseline growth
+    // determine the exit code.
     if (errorMessages.length > 0 || fatalMessages.length > 0) {
         console.error('\nErrors:');
         [...fatalMessages, ...errorMessages].forEach(message => {
@@ -76,7 +90,8 @@ const run = async () => {
         });
     }
 
-    process.exitCode = errorMessages.length > 0 || fatalMessages.length > 0 ? 1 : 0;
+    process.exitCode =
+        errorMessages.length > 0 || fatalMessages.length > 0 || warningBaselineExceeded ? 1 : 0;
 };
 
 run().catch(error => {

@@ -57,7 +57,11 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
         try {
             await onSendCode(trimmedEmail);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Something went wrong sending the code. Please try again.');
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Something went wrong sending the code. Please try again.'
+            );
             setLoading(false);
             return;
         }
@@ -82,7 +86,11 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
         try {
             await onVerifyCode(email.trim(), trimmedCode);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Something went wrong verifying your email. Please try again.');
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Something went wrong verifying your email. Please try again.'
+            );
             setLoading(false);
             return;
         }
@@ -98,7 +106,11 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
         try {
             await onSendCode(email.trim());
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Something went wrong sending the code. Please try again.');
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Something went wrong sending the code. Please try again.'
+            );
             setLoading(false);
             return;
         }
@@ -112,7 +124,13 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
             <Overlay>
                 <div className="p-8 text-center space-y-5">
                     <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
-                        <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg
+                            className="w-7 h-7 text-emerald-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                        >
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
@@ -121,8 +139,9 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                         <h2 className="text-xl font-semibold text-grayscale-900">Email Added</h2>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Your account is now secured with <strong className="text-grayscale-900">{email.trim()}</strong>.
-                            You can use this email to sign in going forward.
+                            Your account is now secured with{' '}
+                            <strong className="text-grayscale-900">{email.trim()}</strong>. You can
+                            use this email to sign in going forward.
                         </p>
                     </div>
 
@@ -143,34 +162,61 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                 <form onSubmit={handleVerifyCode} className="p-8 space-y-5">
                     <div className="text-center space-y-2">
                         <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
-                            <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            <svg
+                                className="w-7 h-7 text-emerald-500"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                                />
                             </svg>
                         </div>
 
-                        <h2 className="text-xl font-semibold text-grayscale-900">Check Your Email</h2>
+                        <h2 className="text-xl font-semibold text-grayscale-900">
+                            Check Your Email
+                        </h2>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            We sent a 6-digit code to <strong className="text-grayscale-900">{email.trim()}</strong>.
-                            Enter it below to verify your email.
+                            We sent a 6-digit code to{' '}
+                            <strong className="text-grayscale-900">{email.trim()}</strong>. Enter it
+                            below to verify your email.
                         </p>
                     </div>
 
                     {error && (
                         <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                            <svg className="w-5 h-5 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg
+                                className="w-5 h-5 text-red-400 mt-0.5 shrink-0"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
                             </svg>
                             <span className="text-sm text-red-700 leading-relaxed">{error}</span>
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                        <label
+                            htmlFor="email-verification-code"
+                            className="block text-xs font-medium text-grayscale-700 mb-1.5"
+                        >
                             Verification Code
                         </label>
 
                         <input
+                            id="email-verification-code"
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
@@ -200,13 +246,19 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     Verifying...
                                 </span>
-                            ) : 'Verify Email'}
+                            ) : (
+                                'Verify Email'
+                            )}
                         </button>
 
                         <div className="flex items-center justify-between">
                             <button
                                 type="button"
-                                onClick={() => { setStep('email'); setCode(''); setError(null); }}
+                                onClick={() => {
+                                    setStep('email');
+                                    setCode('');
+                                    setError(null);
+                                }}
                                 disabled={loading}
                                 className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >
@@ -233,34 +285,60 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
             <form onSubmit={handleSendCode} className="p-8 space-y-5">
                 <div className="text-center space-y-2">
                     <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
-                        <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        <svg
+                            className="w-7 h-7 text-emerald-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            />
                         </svg>
                     </div>
 
-                    <h2 className="text-xl font-semibold text-grayscale-900">Add an Email Address</h2>
+                    <h2 className="text-xl font-semibold text-grayscale-900">
+                        Add an Email Address
+                    </h2>
 
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        To keep your account secure, please add an email address.
-                        This lets us send you a recovery key in case you lose access to your device.
+                        To keep your account secure, please add an email address. This lets us send
+                        you a recovery key in case you lose access to your device.
                     </p>
                 </div>
 
                 {error && (
                     <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                        <svg className="w-5 h-5 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                            className="w-5 h-5 text-red-400 mt-0.5 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
                         </svg>
                         <span className="text-sm text-red-700 leading-relaxed">{error}</span>
                     </div>
                 )}
 
                 <div>
-                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                    <label
+                        htmlFor="recovery-email"
+                        className="block text-xs font-medium text-grayscale-700 mb-1.5"
+                    >
                         Email Address
                     </label>
 
                     <input
+                        id="recovery-email"
                         type="email"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
@@ -285,7 +363,9 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 Sending Code...
                             </span>
-                        ) : 'Send Verification Code'}
+                        ) : (
+                            'Send Verification Code'
+                        )}
                     </button>
 
                     <button
