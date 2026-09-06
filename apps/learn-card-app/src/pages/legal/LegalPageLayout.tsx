@@ -36,12 +36,12 @@ const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({ title, lastUpdated, c
                     </div>
                 </header>
 
-                <main className="max-w-3xl mx-auto px-6 py-10">
+                <div className="max-w-3xl mx-auto px-6 py-10">
                     <h1 className="text-2xl font-semibold text-grayscale-900 mb-1">
                         {title}
                     </h1>
 
-                    <p className="text-xs text-grayscale-500 mb-8">
+                    <p className="text-xs text-grayscale-600 mb-8">
                         Last Updated: {lastUpdated}
                     </p>
 
@@ -60,7 +60,7 @@ const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({ title, lastUpdated, c
                             Contact: <a href="mailto:privacy@learningeconomy.io" className="underline hover:text-grayscale-600">privacy@learningeconomy.io</a>
                         </p>
                     </footer>
-                </main>
+                </div>
             </IonContent>
         </IonPage>
     );

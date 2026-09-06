@@ -24,14 +24,15 @@ const CustomWallet: React.FC = () => {
     if (wallet) return <CustomWalletMain wallet={wallet} />;
 
     return (
-        <main className="h-full w-full flex flex-col items-center justify-center max-w-[600px] mx-auto">
+        <div className="h-full w-full flex flex-col items-center justify-center max-w-[600px] mx-auto">
             <form
                 className="flex flex-col p-8 gap-4 border rounded shadow w-full max-w-screen-mobile text-black"
                 onSubmit={e => e.preventDefault()}
             >
                 <fieldset className="flex flex-col gap-2">
-                    <span>Hello, please enter a seed lol</span>
+                    <label htmlFor="custom-wallet-seed">Hello, please enter a seed lol</label>
                     <input
+                        id="custom-wallet-seed"
                         className="bg-white border"
                         type="text"
                         value={seed}
@@ -41,14 +42,14 @@ const CustomWallet: React.FC = () => {
 
                 <button
                     onClick={createWallet}
-                    className="w-full py-2 rounded border border-solid border-emerald-700 text-emerald-800"
+                    className="w-full py-2 rounded-[20px] border border-solid border-grayscale-300 text-grayscale-900"
                     type="button"
                 >
                     Create Wallet
                 </button>
             </form>
             <IonLoading isOpen={loading} message="Creating wallet..." mode="ios" />
-        </main>
+        </div>
     );
 };
 

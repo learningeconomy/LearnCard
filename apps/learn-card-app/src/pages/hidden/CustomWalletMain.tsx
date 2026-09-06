@@ -15,7 +15,7 @@ const CustomWalletMain: React.FC<CustomWalletMainProps> = ({ wallet }) => {
 
     if (page === 'index') {
         return (
-            <main className="h-full w-full flex flex-col items-center justify-center p-8 gap-8 text-black">
+            <div className="h-full w-full flex flex-col items-center justify-center p-8 gap-8 text-black">
                 <header className="w-full border-b p-2 font-bold">Did: {wallet.id.did()}</header>
 
                 <section className="w-full flex-1 flex flex-col items-center p-8 gap-8">
@@ -50,7 +50,7 @@ const CustomWalletMain: React.FC<CustomWalletMainProps> = ({ wallet }) => {
                         </li>
                     </ul>
                 </section>
-            </main>
+            </div>
         );
     }
 
@@ -62,7 +62,7 @@ const CustomWalletMain: React.FC<CustomWalletMainProps> = ({ wallet }) => {
     };
 
     return (
-        <main className="h-full w-full flex flex-col items-center p-8 gap-8 text-black">
+        <div className="h-full w-full flex flex-col items-center p-8 gap-8 text-black">
             <header className="w-full border-b p-2 font-bold">Did: {wallet.id.did()}</header>
 
             <section className="w-full flex flex-col items-center p-8 gap-8 overflow-y-auto relative">
@@ -74,7 +74,7 @@ const CustomWalletMain: React.FC<CustomWalletMainProps> = ({ wallet }) => {
                 </header>
                 {PAGES[page]}
             </section>
-        </main>
+        </div>
     );
 };
 
