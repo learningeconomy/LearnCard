@@ -1,0 +1,207 @@
+// @vitest-environment jsdom
+
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const modalMocks = vi.hoisted(() => ({
+    newModal: vi.fn(),
+    closeModal: vi.fn(),
+}));
+
+vi.mock('@ionic/react', () => ({
+    IonInput: ({
+        onIonInput,
+        onIonFocus,
+        onIonBlur,
+        maxlength,
+        debounce: _debounce,
+        autocapitalize,
+        value,
+        ...props
+    }: {
+        onIonInput?: (event: { detail: { value: string } }) => void;
+        onIonFocus?: () => void;
+        onIonBlur?: () => void;
+        maxlength?: number;
+        debounce?: number;
+        autocapitalize?: string;
+        value?: string | number | null;
+    } & React.InputHTMLAttributes<HTMLInputElement>) => (
+        <input
+            {...props}
+            value={value ?? ''}
+            maxLength={maxlength}
+            autoCapitalize={autocapitalize}
+            onChange={event => onIonInput?.({ detail: { value: event.target.value } })}
+            onFocus={onIonFocus}
+            onBlur={onIonBlur}
+        />
+    ),
+    IonTextarea: ({
+        onIonInput,
+        onIonFocus,
+        onIonBlur,
+        maxlength,
+        debounce: _debounce,
+        autoGrow: _autoGrow,
+        autocapitalize,
+        value,
+        ...props
+    }: {
+        onIonInput?: (event: { detail: { value: string } }) => void;
+        onIonFocus?: () => void;
+        onIonBlur?: () => void;
+        maxlength?: number;
+        debounce?: number;
+        autoGrow?: boolean;
+        autocapitalize?: string;
+        value?: string | null;
+    } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
+        <textarea
+            {...props}
+            value={value ?? ''}
+            maxLength={maxlength}
+            autoCapitalize={autocapitalize}
+            onChange={event => onIonInput?.({ detail: { value: event.target.value } })}
+            onFocus={onIonFocus}
+            onBlur={onIonBlur}
+        />
+    ),
+}));
+
+vi.mock('../modals/useModal', () => ({
+    default: () => modalMocks,
+}));
+vi.mock('learn-card-base/svgs/ChevronDown', () => ({
+    default: () => <span aria-hidden="true" />,
+}));
+
+import Checkbox from './Checkbox';
+import RadioGroup from './RadioGroup';
+import SearchInput from './SearchInput';
+import SelectInput from './SelectInput';
+import TextArea from './TextArea';
+import TextInput from './TextInput';
+import Toggle from './Toggle';
+
+describe('shared form input accessibility', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('associates text input labels and errors with the control', () => {
+        render(<TextInput value="" onChange={vi.fn()} label="Email" error="Enter a valid email" />);
+
+        const input = screen.getByRole('textbox', { name: 'Email' });
+        const error = screen.getByText('Enter a valid email');
+
+        expect(input.getAttribute('aria-label')).toBe('Email');
+        expect(input.getAttribute('aria-invalid')).toBe('true');
+        expect(input.getAttribute('aria-describedby')).toBe(error.id);
+    });
+
+    it('names search and textarea controls and keeps errors discoverable', () => {
+        const onChange = vi.fn();
+        render(
+            <>
+                <SearchInput value="query" onChange={onChange} placeholder="Search skills" />
+                <TextArea
+                    value=""
+                    onChange={vi.fn()}
+                    aria-label="Work summary"
+                    error="Add a summary"
+                />
+            </>
+        );
+
+        expect(screen.getByRole('searchbox', { name: 'Search skills' })).toBeTruthy();
+        expect(screen.getByRole('textbox', { name: 'Work summary' })).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+        expect(onChange).toHaveBeenCalledWith('');
+    });
+
+    it('exposes native keyboard controls with announced state', () => {
+        const onToggle = vi.fn();
+        const onCheck = vi.fn();
+        render(
+            <>
+                <Toggle checked onChange={onToggle} aria-label="Enable analytics" />
+                <Checkbox checked={false} onChange={onCheck} label="Current job" />
+            </>
+        );
+
+        const toggle = screen.getByRole('switch', { name: 'Enable analytics' });
+        const checkbox = screen.getByRole('checkbox', { name: 'Current job' });
+
+        expect(toggle.tagName).toBe('BUTTON');
+        expect(toggle.getAttribute('aria-checked')).toBe('true');
+        expect(checkbox.tagName).toBe('BUTTON');
+        expect(checkbox.getAttribute('aria-checked')).toBe('false');
+
+        fireEvent.click(toggle);
+        fireEvent.click(checkbox);
+        expect(onToggle).toHaveBeenCalledWith(false);
+        expect(onCheck).toHaveBeenCalledWith(true);
+    });
+
+    it('implements radio roles, roving focus, and arrow-key selection', () => {
+        const onChange = vi.fn();
+        render(
+            <RadioGroup
+                name="Salary type"
+                value="year"
+                onChange={onChange}
+                options={[
+                    { value: 'year', label: 'Per year' },
+                    { value: 'hour', label: 'Per hour' },
+                ]}
+            />
+        );
+
+        const group = screen.getByRole('radiogroup', { name: 'Salary type' });
+        const yearly = screen.getByRole('radio', { name: 'Per year' });
+        const hourly = screen.getByRole('radio', { name: 'Per hour' });
+
+        expect(group).toBeTruthy();
+        expect(yearly.getAttribute('aria-checked')).toBe('true');
+        expect(yearly.getAttribute('tabindex')).toBe('0');
+        expect(hourly.getAttribute('tabindex')).toBe('-1');
+
+        yearly.focus();
+        fireEvent.keyDown(yearly, { key: 'ArrowRight' });
+        expect(onChange).toHaveBeenCalledWith('hour');
+        expect(document.activeElement).toBe(hourly);
+    });
+
+    it('announces select state and exposes keyboard-operable options', () => {
+        const onChange = vi.fn();
+        render(
+            <SelectInput
+                value="one"
+                onChange={onChange}
+                aria-label="Experience"
+                options={[
+                    { value: 'one', displayText: 'One year' },
+                    { value: 'two', displayText: 'Two years' },
+                ]}
+            />
+        );
+
+        const trigger = screen.getByRole('button', { name: 'Experience' });
+        expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
+        expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+        fireEvent.click(trigger);
+        expect(trigger.getAttribute('aria-expanded')).toBe('true');
+        const modalContent = modalMocks.newModal.mock.calls[0][0] as React.ReactElement;
+        render(modalContent);
+
+        expect(screen.getByRole('listbox', { name: 'Experience options' })).toBeTruthy();
+        fireEvent.click(screen.getByRole('option', { name: 'Two years' }));
+        expect(onChange).toHaveBeenCalledWith('two');
+        expect(modalMocks.closeModal).toHaveBeenCalledOnce();
+        expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    });
+});
