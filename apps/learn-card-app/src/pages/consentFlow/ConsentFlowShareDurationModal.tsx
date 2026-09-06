@@ -36,6 +36,10 @@ const ConsentFlowShareDurationModal: React.FC<{
 }> = ({ shareDuration, setShareDuration, handleCloseModal }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const shareTitleId = React.useId();
+    const liveSyncingSelected = !shareDuration.oneTimeShare && !shareDuration.customDuration;
+    const oneTimeSelected = shareDuration.oneTimeShare;
+    const customDurationSelected = Boolean(shareDuration.customDuration);
 
     const handleStateChange = <Key extends keyof typeof shareDuration>(
         propName: Key,
@@ -88,7 +92,10 @@ const ConsentFlowShareDurationModal: React.FC<{
                                         >
                                             <CaretLeft className="h-auto w-3 text-grayscale-900" />
                                         </button>
-                                        <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
+                                        <h3
+                                            id={shareTitleId}
+                                            className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl"
+                                        >
                                             {m['common.share']()}
                                         </h3>
                                     </IonCol>
@@ -98,7 +105,11 @@ const ConsentFlowShareDurationModal: React.FC<{
                     </IonToolbar>
                 </IonHeader>
                 <IonGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
-                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
+                    <IonRow
+                        role="radiogroup"
+                        aria-labelledby={shareTitleId}
+                        className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]"
+                    >
                         <IonRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
                             <IonCol class="flex items-center justify-between w-full ion-padding">
                                 <p className="text-lg font-medium">
@@ -106,9 +117,8 @@ const ConsentFlowShareDurationModal: React.FC<{
                                 </p>
                                 <RadioButton
                                     aria-label={m['consentFlow.sync.liveSyncing']()}
-                                    checked={
-                                        !shareDuration.oneTimeShare && !shareDuration.customDuration
-                                    }
+                                    checked={liveSyncingSelected}
+                                    tabIndex={liveSyncingSelected ? 0 : -1}
                                     onClick={() => {
                                         handleStateChange('oneTimeShare', false);
                                         handleStateChange('customDuration', '');
@@ -124,6 +134,7 @@ const ConsentFlowShareDurationModal: React.FC<{
                                 <RadioButton
                                     aria-label={m['consentFlow.shareOneTimeOnly']()}
                                     checked={shareDuration.oneTimeShare}
+                                    tabIndex={oneTimeSelected ? 0 : -1}
                                     onClick={() => {
                                         handleStateChange('customDuration', '');
                                         handleStateChange('oneTimeShare', true);
@@ -138,7 +149,8 @@ const ConsentFlowShareDurationModal: React.FC<{
                                 </p>
                                 <RadioButton
                                     aria-label={m['consentFlow.customDuration']()}
-                                    checked={Boolean(shareDuration.customDuration)}
+                                    checked={customDurationSelected}
+                                    tabIndex={customDurationSelected ? 0 : -1}
                                     onClick={() => {
                                         handleStateChange('oneTimeShare', false);
 

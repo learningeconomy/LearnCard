@@ -5,24 +5,30 @@ type RadioOption = {
     label: string;
 };
 
+type RadioGroupAccessibleName =
+    | {
+          'aria-label': string;
+          'aria-labelledby'?: never;
+      }
+    | {
+          'aria-label'?: never;
+          'aria-labelledby': string;
+      };
+
 type RadioGroupProps = {
     value: string | null;
     onChange: (value: string | null) => void;
     options: RadioOption[];
-    name: string;
-    'aria-label'?: string;
-    'aria-labelledby'?: string;
     columns?: 1 | 2 | 3;
     disabled?: boolean;
     className?: string;
     allowDeselect?: boolean;
-};
+} & RadioGroupAccessibleName;
 
 const RadioGroup: React.FC<RadioGroupProps> = ({
     value,
     onChange,
     options,
-    name,
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
     columns = 2,
@@ -76,7 +82,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
     return (
         <div
             role="radiogroup"
-            aria-label={ariaLabel ?? (ariaLabelledBy ? undefined : name)}
+            aria-label={ariaLabel}
             aria-labelledby={ariaLabelledBy}
             className={`grid ${gridCols[columns]} gap-[10px] ${className}`}
         >

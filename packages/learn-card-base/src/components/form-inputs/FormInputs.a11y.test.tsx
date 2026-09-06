@@ -78,6 +78,7 @@ vi.mock('learn-card-base/svgs/ChevronDown', () => ({
 }));
 
 import Checkbox from './Checkbox';
+import { RadioButton } from '../RadioButton';
 import RadioGroup from './RadioGroup';
 import SearchInput from './SearchInput';
 import SelectInput from './SelectInput';
@@ -99,6 +100,37 @@ describe('shared form input accessibility', () => {
         expect(input.getAttribute('aria-label')).toBe('Email');
         expect(input.getAttribute('aria-invalid')).toBe('true');
         expect(input.getAttribute('aria-describedby')).toBe(error.id);
+    });
+
+    it('applies visual class overrides to the field instead of the label wrapper', () => {
+        render(
+            <>
+                <TextInput
+                    value=""
+                    onChange={vi.fn()}
+                    aria-label="Email"
+                    className="custom-input-surface"
+                />
+                <TextArea
+                    value=""
+                    onChange={vi.fn()}
+                    aria-label="Summary"
+                    className="custom-textarea-surface"
+                />
+            </>
+        );
+
+        const input = screen.getByRole('textbox', { name: 'Email' });
+        const textarea = screen.getByRole('textbox', { name: 'Summary' });
+
+        expect(input.parentElement?.classList.contains('custom-input-surface')).toBe(true);
+        expect(input.parentElement?.parentElement?.classList.contains('custom-input-surface')).toBe(
+            false
+        );
+        expect(textarea.parentElement?.classList.contains('custom-textarea-surface')).toBe(true);
+        expect(
+            textarea.parentElement?.parentElement?.classList.contains('custom-textarea-surface')
+        ).toBe(false);
     });
 
     it('names search and textarea controls and keeps errors discoverable', () => {
@@ -150,7 +182,7 @@ describe('shared form input accessibility', () => {
         const onChange = vi.fn();
         render(
             <RadioGroup
-                name="Salary type"
+                aria-label="Salary type"
                 value="year"
                 onChange={onChange}
                 options={[
@@ -175,6 +207,32 @@ describe('shared form input accessibility', () => {
         expect(document.activeElement).toBe(hourly);
     });
 
+    it('supports roving focus for standalone radio buttons in a named group', () => {
+        const selectFirst = vi.fn();
+        const selectSecond = vi.fn();
+
+        render(
+            <div role="radiogroup" aria-label="Share duration">
+                <RadioButton aria-label="Live syncing" checked tabIndex={0} onClick={selectFirst} />
+                <RadioButton
+                    aria-label="One time"
+                    checked={false}
+                    tabIndex={-1}
+                    onClick={selectSecond}
+                />
+            </div>
+        );
+
+        const first = screen.getByRole('radio', { name: 'Live syncing' });
+        const second = screen.getByRole('radio', { name: 'One time' });
+
+        first.focus();
+        fireEvent.keyDown(first, { key: 'ArrowRight' });
+
+        expect(selectSecond).toHaveBeenCalledWith(true);
+        expect(document.activeElement).toBe(second);
+    });
+
     it('announces select state and exposes keyboard-operable options', () => {
         const onChange = vi.fn();
         render(
@@ -192,6 +250,7 @@ describe('shared form input accessibility', () => {
         const trigger = screen.getByRole('button', { name: 'Experience' });
         expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
         expect(trigger.getAttribute('aria-expanded')).toBe('false');
+        expect(trigger.hasAttribute('aria-controls')).toBe(false);
 
         fireEvent.click(trigger);
         expect(trigger.getAttribute('aria-expanded')).toBe('true');

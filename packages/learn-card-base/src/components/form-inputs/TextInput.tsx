@@ -68,7 +68,7 @@ const TextInput: React.FC<TextInputProps> = ({
     const hasPaddingRightOverride = /\bpr-\[/.test(inputClassName);
 
     return (
-        <div className={className}>
+        <div>
             {label && (
                 <label
                     htmlFor={inputId}
@@ -77,7 +77,9 @@ const TextInput: React.FC<TextInputProps> = ({
                     {label}
                 </label>
             )}
-            <div className="relative flex items-center rounded-[10px] bg-grayscale-100 focus-within:ring-2 focus-within:ring-emerald-500">
+            <div
+                className={`relative flex items-center rounded-[10px] bg-grayscale-100 focus-within:ring-2 focus-within:ring-emerald-500 ${className}`}
+            >
                 {hasStartContent && (
                     <div className="absolute left-[15px] top-1/2 z-10 flex -translate-y-1/2 transform items-center">
                         {startIcon}

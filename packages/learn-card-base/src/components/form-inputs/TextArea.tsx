@@ -52,7 +52,7 @@ const TextArea: React.FC<TextAreaProps> = ({
         .join(' ');
 
     return (
-        <div className={className}>
+        <div>
             {label && (
                 <label
                     htmlFor={inputId}
@@ -61,7 +61,9 @@ const TextArea: React.FC<TextAreaProps> = ({
                     {label}
                 </label>
             )}
-            <div className="relative flex items-center rounded-[10px] bg-grayscale-100 focus-within:ring-2 focus-within:ring-emerald-500">
+            <div
+                className={`relative flex items-center rounded-[10px] bg-grayscale-100 focus-within:ring-2 focus-within:ring-emerald-500 ${className}`}
+            >
                 <IonTextarea
                     id={inputId}
                     aria-label={ariaLabel ?? label ?? placeholder}

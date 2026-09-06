@@ -43,7 +43,6 @@ const SelectInput: React.FC<SelectInputProps> = ({
     const [isOpen, setIsOpen] = React.useState(false);
     const generatedId = React.useId();
     const triggerId = id ?? `select-input-${generatedId}`;
-    const listboxId = `${triggerId}-options`;
 
     const selectedOption = options.find(o => o.value === value);
 
@@ -60,7 +59,6 @@ const SelectInput: React.FC<SelectInputProps> = ({
         setIsOpen(true);
         newModal(
             <div
-                id={listboxId}
                 role="listbox"
                 aria-label={`${ariaLabel ?? placeholder} options`}
                 className={`text-grayscale-900 flex flex-col max-h-[70vh] overflow-y-auto ${
@@ -162,7 +160,6 @@ const SelectInput: React.FC<SelectInputProps> = ({
             aria-describedby={ariaDescribedBy}
             aria-haspopup="listbox"
             aria-expanded={isOpen}
-            aria-controls={listboxId}
             className={`flex items-center justify-between bg-grayscale-100 rounded-[15px] px-[16px] py-[12px] min-h-[48px] w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
                 ${isPlaceholder ? 'text-grayscale-500' : 'text-grayscale-900'}
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
