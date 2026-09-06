@@ -114,6 +114,101 @@ describe('ResultFieldEditor', () => {
         );
     });
 
+    it('shows and preserves a dynamic achieved level when personalizing the result value', () => {
+        const template = writeResult(legacyPercentTemplate(), {
+            resultType: 'RubricCriterionLevel',
+            value: '3',
+            achievedLevel: dynamicField('achieved_level'),
+            rubricCriterionLevel: [
+                {
+                    id: 'urn:uuid:proficient',
+                    name: staticField('Proficient'),
+                    level: staticField('3'),
+                    points: staticField('3'),
+                },
+            ],
+        });
+        const onChangeTemplate = vi.fn();
+
+        render(
+            <ResultFieldEditor
+                template={template}
+                onChangeTemplate={onChangeTemplate}
+                canMakeDynamic
+            />
+        );
+
+        expect(screen.getByText('{{achieved_level}}')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Personalize per recipient' }));
+
+        expect(readResultState(onChangeTemplate.mock.calls[0][0])).toMatchObject({
+            valueField: {
+                isDynamic: true,
+                variableName: 'grade',
+            },
+            achievedLevelField: {
+                isDynamic: true,
+                variableName: 'achieved_level',
+            },
+        });
+    });
+
+    it('preserves rubric description identity while replacing its last level', () => {
+        const levelId = 'urn:uuid:proficient';
+        const template = writeResult(legacyPercentTemplate(), {
+            resultType: 'RubricCriterionLevel',
+            value: '',
+            achievedLevel: levelId,
+            rubricCriterionLevel: [
+                {
+                    id: levelId,
+                    name: staticField('Proficient'),
+                    level: staticField('3'),
+                    points: staticField('3'),
+                },
+            ],
+        });
+        const description = template.credentialSubject.achievement.resultDescription?.[0];
+        if (!description) throw new Error('Expected a rubric result description');
+        description.name = staticField('Imported Rubric');
+        const descriptionId = description.id;
+        const onChangeTemplate = vi.fn();
+        const Harness = () => {
+            const [currentTemplate, setCurrentTemplate] = useState(template);
+
+            return (
+                <ResultFieldEditor
+                    template={currentTemplate}
+                    onChangeTemplate={next => {
+                        onChangeTemplate(next);
+                        setCurrentTemplate(next);
+                    }}
+                    canMakeDynamic={false}
+                />
+            );
+        };
+
+        render(<Harness />);
+        fireEvent.click(screen.getByRole('button', { name: 'Remove rubric level 1' }));
+
+        const afterRemoval = onChangeTemplate.mock.calls.at(-1)?.[0] as OBv3CredentialTemplate;
+        expect(afterRemoval.credentialSubject.result).toBeUndefined();
+        expect(afterRemoval.credentialSubject.achievement.resultDescription?.[0]).toMatchObject({
+            id: descriptionId,
+            name: { value: 'Imported Rubric' },
+            rubricCriterionLevel: [],
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add Level' }));
+
+        const afterAdd = onChangeTemplate.mock.calls.at(-1)?.[0] as OBv3CredentialTemplate;
+        expect(afterAdd.credentialSubject.achievement.resultDescription?.[0]).toMatchObject({
+            id: descriptionId,
+            name: { value: 'Imported Rubric' },
+            rubricCriterionLevel: [expect.any(Object)],
+        });
+    });
+
     it('edits and round-trips an achieved-level-only rubric result', () => {
         const template = legacyPercentTemplate();
         const descriptionId = 'urn:uuid:rubric-description';

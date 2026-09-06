@@ -120,8 +120,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
 
     const setValue = (value: string) => commitUpdate({ value });
 
-    const makeDynamic = () =>
-        commitUpdate({ value: dynamicField(RESULT_VARIABLE_NAME), achievedLevel: '' });
+    const makeDynamic = () => commitUpdate({ value: dynamicField(RESULT_VARIABLE_NAME) });
 
     const makeStatic = () => commitUpdate({ value: staticField('') });
 
@@ -407,23 +406,49 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                         <Plus className="w-4 h-4" />
                         {m['issueFlow.result.editor.addLevel']()}
                     </button>
-                    <label className={LABEL_CLASS}>
-                        {m['issueFlow.result.editor.achievedLevel']()}
-                        <select
-                            value={state.achievedLevel}
-                            onChange={event => commitUpdate({ achievedLevel: event.target.value })}
-                            className={`${INPUT_CLASS} mt-1.5`}
-                        >
-                            <option value="">{m['issueFlow.result.editor.chooseLevel']()}</option>
-                            {(state.rubricCriterionLevel ?? [])
-                                .filter(level => level.id.trim())
-                                .map(level => (
-                                    <option key={level.id} value={level.id}>
-                                        {level.name.value || level.level.value || level.id}
-                                    </option>
-                                ))}
-                        </select>
-                    </label>
+                    {state.achievedLevelField?.isDynamic ? (
+                        <div>
+                            <p className={LABEL_CLASS}>
+                                {m['issueFlow.result.editor.achievedLevel']()}
+                            </p>
+                            <div className="flex items-center gap-2 py-3 px-4 border border-dashed border-emerald-300 rounded-xl bg-emerald-50/50">
+                                <Variable className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span className="text-sm font-medium text-emerald-800">
+                                    {`{{${state.achievedLevelField.variableName}}}`}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => commitUpdate({ achievedLevel: staticField('') })}
+                                    className="ml-auto flex items-center gap-1 text-xs font-medium text-grayscale-500 hover:text-grayscale-900 transition-colors"
+                                >
+                                    <X className="w-3 h-3" />
+                                    {m['issueFlow.fields.useFixed']()}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <label className={LABEL_CLASS}>
+                            {m['issueFlow.result.editor.achievedLevel']()}
+                            <select
+                                value={state.achievedLevel}
+                                onChange={event =>
+                                    commitUpdate({ achievedLevel: event.target.value })
+                                }
+                                className={`${INPUT_CLASS} mt-1.5`}
+                            >
+                                <option value="">
+                                    {m['issueFlow.result.editor.chooseLevel']()}
+                                </option>
+                                {(state.rubricCriterionLevel ?? [])
+                                    .filter(level => level.id.trim())
+                                    .map(level => (
+                                        <option key={level.id} value={level.id}>
+                                            {level.name.value || level.level.value || level.id}
+                                        </option>
+                                    ))}
+                            </select>
+                        </label>
+                    )}
                 </div>
             )}
 

@@ -253,8 +253,9 @@ export const writeResult = (
         resultType === 'RubricCriterionLevel' &&
         Boolean(achievedLevel?.isDynamic || achievedLevel?.value.trim());
     const hasResult = hasValue || hasAchievedLevel;
+    const preserveEmptyRubricDescription = resultType === 'RubricCriterionLevel' && sameType;
 
-    if (!hasResult && !hasDescriptionConfiguration) {
+    if (!hasResult && !hasDescriptionConfiguration && !preserveEmptyRubricDescription) {
         const remainingDescriptions = achievement.resultDescription?.filter(
             description => description !== existingDescription
         );
