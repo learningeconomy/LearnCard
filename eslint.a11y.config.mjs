@@ -52,15 +52,10 @@ const zeroViolationRules = Object.fromEntries(
 // in its recorded warning baseline. LC-2101 promotes these rules for the newly
 // covered shared library without expanding into unrelated app remediation.
 const baseZeroViolationRules = Object.fromEntries(
-    ['jsx-a11y/alt-text', 'jsx-a11y/aria-props', 'jsx-a11y/label-has-associated-control'].map(
-        ruleName => {
-            const ruleConfig = recommendedRules[ruleName];
-            return [
-                ruleName,
-                Array.isArray(ruleConfig) ? ['error', ...ruleConfig.slice(1)] : 'error',
-            ];
-        }
-    )
+    ['jsx-a11y/alt-text', 'jsx-a11y/label-has-associated-control'].map(ruleName => {
+        const ruleConfig = recommendedRules[ruleName];
+        return [ruleName, Array.isArray(ruleConfig) ? ['error', ...ruleConfig.slice(1)] : 'error'];
+    })
 );
 
 export default tseslint.config(

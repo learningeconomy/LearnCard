@@ -71,6 +71,15 @@ const run = async () => {
 
     const warningBaselineExceeded =
         requestedPatterns.length === 0 && warningMessages.length > A11Y_WARNING_BASELINE;
+    const warningBaselineImproved =
+        requestedPatterns.length === 0 && warningMessages.length < A11Y_WARNING_BASELINE;
+
+    if (warningBaselineImproved) {
+        console.log(
+            `\nWarning baseline improved: ${A11Y_WARNING_BASELINE} → ${warningMessages.length}. ` +
+                'Lower A11Y_WARNING_BASELINE to preserve the improvement.'
+        );
+    }
 
     if (warningBaselineExceeded) {
         console.error(
