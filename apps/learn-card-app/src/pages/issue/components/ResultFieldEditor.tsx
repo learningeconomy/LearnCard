@@ -33,15 +33,20 @@ const RESULT_VARIABLE_NAME = 'grade';
 const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
+const newEditorId = (): string =>
+    typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
 const createRubricLevel = (): RubricCriterionLevelTemplate => ({
-    id: `urn:uuid:${crypto.randomUUID()}`,
+    id: `urn:uuid:${newEditorId()}`,
     name: staticField(''),
     level: staticField(''),
     points: staticField(''),
 });
 
 const createResultAlignment = (): AlignmentTemplate => ({
-    id: `resultAlignment_${crypto.randomUUID()}`,
+    id: `resultAlignment_${newEditorId()}`,
     targetName: staticField(''),
     targetUrl: staticField(''),
     targetFramework: staticField('Credential Engine Registry'),
@@ -86,6 +91,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
     };
 
     const setResultType = (resultType: ResultType) => {
+        if (resultType === selectedType) return;
         setSelectedType(resultType);
         const value = state.valueField?.isDynamic ? state.valueField : '';
         const rubricCriterionLevel =
@@ -119,12 +125,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
         const levels = (state.rubricCriterionLevel ?? []).map((level, levelIndex) =>
             levelIndex === index ? { ...level, ...patch } : level
         );
-        const previousId = state.rubricCriterionLevel?.[index]?.id;
-        const achievedLevel =
-            patch.id !== undefined && state.achievedLevel === previousId
-                ? patch.id
-                : state.achievedLevel;
-        commitUpdate({ rubricCriterionLevel: levels, achievedLevel });
+        commitUpdate({ rubricCriterionLevel: levels });
     };
 
     const removeRubricLevel = (index: number) => {
@@ -172,7 +173,9 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                         </button>
                     ) : null}
                 </div>
-                <p className="text-xs text-grayscale-500 mb-2">Skill-aligned result types</p>
+                <p className="text-xs text-grayscale-500 mb-2">
+                    {m['issueFlow.result.editor.skillAlignedTypes']()}
+                </p>
                 <div className="flex flex-wrap gap-2">
                     {RESULT_TYPE_OPTIONS.filter(option => option.profileSupported).map(option => {
                         const active = option.value === selectedType;
@@ -195,10 +198,10 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                 </div>
                 <details className="mt-3" open={!activeOption.profileSupported}>
                     <summary className="text-xs font-medium text-grayscale-600 cursor-pointer">
-                        Other result types
+                        {m['issueFlow.result.editor.otherTypes']()}
                     </summary>
                     <p className="text-xs text-amber-700 leading-relaxed mt-2">
-                        These types aren’t included in the Open Skill Alignment profile.
+                        {m['issueFlow.result.editor.otherTypesHint']()}
                     </p>
                     <div className="flex flex-wrap gap-2 mt-2">
                         {RESULT_TYPE_OPTIONS.filter(option => !option.profileSupported).map(
@@ -259,30 +262,32 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
             )}
 
             {selectedType === 'Percent' && (
-                <p className="text-xs text-grayscale-500">Percent results use a 0–100 range.</p>
+                <p className="text-xs text-grayscale-500">
+                    {m['issueFlow.result.editor.percentRange']()}
+                </p>
             )}
 
             {selectedType === 'RawScore' && (
                 <div className="grid grid-cols-2 gap-3">
                     <label className={LABEL_CLASS}>
-                        Minimum
+                        {m['issueFlow.result.editor.minimum']()}
                         <input
                             type="text"
                             inputMode="decimal"
                             value={state.valueMin}
                             onChange={event => commitUpdate({ valueMin: event.target.value })}
-                            placeholder="e.g. 0"
+                            placeholder={m['issueFlow.result.editor.minimumPlaceholder']()}
                             className={`${INPUT_CLASS} mt-1.5`}
                         />
                     </label>
                     <label className={LABEL_CLASS}>
-                        Maximum
+                        {m['issueFlow.result.editor.maximum']()}
                         <input
                             type="text"
                             inputMode="decimal"
                             value={state.valueMax}
                             onChange={event => commitUpdate({ valueMax: event.target.value })}
-                            placeholder="e.g. 800"
+                            placeholder={m['issueFlow.result.editor.maximumPlaceholder']()}
                             className={`${INPUT_CLASS} mt-1.5`}
                         />
                     </label>
@@ -292,9 +297,11 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
             {selectedType === 'RubricCriterionLevel' && (
                 <div className="rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4 space-y-4">
                     <div>
-                        <p className="text-sm font-medium text-grayscale-900">Rubric levels</p>
+                        <p className="text-sm font-medium text-grayscale-900">
+                            {m['issueFlow.result.editor.rubricLevels']()}
+                        </p>
                         <p className="text-xs text-grayscale-500 mt-1">
-                            Define each level before choosing the one achieved.
+                            {m['issueFlow.result.editor.rubricHint']()}
                         </p>
                     </div>
                     {(state.rubricCriterionLevel ?? []).map((level, index) => (
@@ -304,19 +311,23 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                         >
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-grayscale-700">
-                                    Level {index + 1}
+                                    {m['issueFlow.result.editor.levelNumber']({
+                                        number: index + 1,
+                                    })}
                                 </span>
                                 <button
                                     type="button"
                                     onClick={() => removeRubricLevel(index)}
-                                    aria-label={`Remove rubric level ${index + 1}`}
+                                    aria-label={m['issueFlow.result.editor.removeRubricLevel']({
+                                        number: index + 1,
+                                    })}
                                     className="p-2 rounded-full text-grayscale-400 hover:text-red-700 hover:bg-red-50 transition-colors"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>
                             <label className={LABEL_CLASS}>
-                                ID
+                                {m['issueFlow.result.editor.id']()}
                                 <input
                                     type="text"
                                     value={level.id}
@@ -327,7 +338,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                             </label>
                             <div className="grid grid-cols-3 gap-2">
                                 <label className={LABEL_CLASS}>
-                                    Name
+                                    {m['issueFlow.result.editor.name']()}
                                     <input
                                         type="text"
                                         value={level.name.value}
@@ -336,12 +347,14 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                                                 name: staticField(event.target.value),
                                             })
                                         }
-                                        placeholder="Proficient"
+                                        placeholder={m[
+                                            'issueFlow.result.editor.proficientPlaceholder'
+                                        ]()}
                                         className={`${INPUT_CLASS} mt-1.5`}
                                     />
                                 </label>
                                 <label className={LABEL_CLASS}>
-                                    Level
+                                    {m['issueFlow.result.editor.level']()}
                                     <input
                                         type="text"
                                         value={level.level.value}
@@ -355,7 +368,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                                     />
                                 </label>
                                 <label className={LABEL_CLASS}>
-                                    Points
+                                    {m['issueFlow.result.editor.points']()}
                                     <input
                                         type="text"
                                         inputMode="decimal"
@@ -385,17 +398,17 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                         className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-full bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 font-medium text-sm transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        Add Level
+                        {m['issueFlow.result.editor.addLevel']()}
                     </button>
                     <label className={LABEL_CLASS}>
-                        Achieved level
+                        {m['issueFlow.result.editor.achievedLevel']()}
                         <select
                             value={state.achievedLevel}
                             onChange={event => commitUpdate({ achievedLevel: event.target.value })}
                             disabled={!state.valueField}
                             className={`${INPUT_CLASS} mt-1.5`}
                         >
-                            <option value="">Choose a level…</option>
+                            <option value="">{m['issueFlow.result.editor.chooseLevel']()}</option>
                             {(state.rubricCriterionLevel ?? [])
                                 .filter(level => level.id.trim())
                                 .map(level => (
@@ -415,9 +428,11 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                 <summary className="flex items-start gap-2 cursor-pointer">
                     <Link className="w-4 h-4 text-grayscale-500 mt-0.5 shrink-0" />
                     <div>
-                        <p className="text-sm font-medium text-grayscale-900">Result alignments</p>
+                        <p className="text-sm font-medium text-grayscale-900">
+                            {m['issueFlow.result.editor.resultAlignments']()}
+                        </p>
                         <p className="text-xs text-grayscale-500 mt-1">
-                            Link this result to a CTDL resource in the Credential Registry.
+                            {m['issueFlow.result.editor.resultAlignmentsHint']()}
                         </p>
                     </div>
                 </summary>
@@ -429,7 +444,9 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                         >
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-grayscale-700">
-                                    Alignment {index + 1}
+                                    {m['issueFlow.result.editor.alignmentNumber']({
+                                        number: index + 1,
+                                    })}
                                 </span>
                                 <button
                                     type="button"
@@ -440,14 +457,16 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                                             ),
                                         })
                                     }
-                                    aria-label={`Remove result alignment ${index + 1}`}
+                                    aria-label={m['issueFlow.result.editor.removeAlignment']({
+                                        number: index + 1,
+                                    })}
                                     className="p-2 rounded-full text-grayscale-400 hover:text-red-700 hover:bg-red-50 transition-colors"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>
                             <label className={LABEL_CLASS}>
-                                Name
+                                {m['issueFlow.result.editor.name']()}
                                 <input
                                     type="text"
                                     value={alignment.targetName.value}
@@ -456,12 +475,12 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                                             targetName: staticField(event.target.value),
                                         })
                                     }
-                                    placeholder="Skill or competency"
+                                    placeholder={m['issueFlow.result.editor.skillPlaceholder']()}
                                     className={`${INPUT_CLASS} mt-1.5`}
                                 />
                             </label>
                             <label className={LABEL_CLASS}>
-                                CTDL resource URL
+                                {m['issueFlow.result.editor.ctdlResourceUrl']()}
                                 <input
                                     type="url"
                                     value={alignment.targetUrl.value}
@@ -470,7 +489,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                                             targetUrl: staticField(event.target.value),
                                         })
                                     }
-                                    placeholder="https://credentialengineregistry.org/resources/..."
+                                    placeholder={m['issueFlow.result.editor.ctdlUrlPlaceholder']()}
                                     className={`${INPUT_CLASS} mt-1.5`}
                                 />
                             </label>
@@ -486,7 +505,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                         className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-full bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 font-medium text-sm transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        Add Result Alignment
+                        {m['issueFlow.result.editor.addResultAlignment']()}
                     </button>
                 </div>
             </details>

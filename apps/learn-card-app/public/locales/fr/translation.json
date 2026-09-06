@@ -8623,6 +8623,10 @@
                 "label": "Points",
                 "eg": "p. ex. 720"
             },
+            "RubricCriterionLevel": {
+                "label": "Niveau de rubrique",
+                "eg": "p. ex. 3"
+            },
             "Status": {
                 "label": "Statut",
                 "eg": ""
@@ -8635,6 +8639,52 @@
                 "OnHold": "En attente",
                 "Provisional": "Provisoire",
                 "Withdrew": "Abandonné"
+            },
+            "editor": {
+                "skillAlignedTypes": "Types de résultats alignés sur les compétences",
+                "otherTypes": "Autres types de résultats",
+                "otherTypesHint": "Ces types ne sont pas inclus dans le profil Open Skill Alignment.",
+                "percentRange": "Les résultats en pourcentage utilisent une plage de 0 à 100.",
+                "minimum": "Minimum",
+                "maximum": "Maximum",
+                "minimumPlaceholder": "p. ex. 0",
+                "maximumPlaceholder": "p. ex. 800",
+                "rubricLevels": "Niveaux de rubrique",
+                "rubricHint": "Définissez chaque niveau avant de choisir celui qui a été atteint.",
+                "levelNumber": "Niveau {{number}}",
+                "removeRubricLevel": "Supprimer le niveau de rubrique {{number}}",
+                "id": "ID",
+                "name": "Nom",
+                "level": "Niveau",
+                "points": "Points",
+                "proficientPlaceholder": "Compétent",
+                "addLevel": "Ajouter un niveau",
+                "achievedLevel": "Niveau atteint",
+                "chooseLevel": "Choisissez un niveau…",
+                "resultAlignments": "Alignements du résultat",
+                "resultAlignmentsHint": "Associez ce résultat à une ressource CTDL du registre des certifications.",
+                "alignmentNumber": "Alignement {{number}}",
+                "removeAlignment": "Supprimer l’alignement du résultat {{number}}",
+                "skillPlaceholder": "Compétence",
+                "ctdlResourceUrl": "URL de la ressource CTDL",
+                "ctdlUrlPlaceholder": "https://credentialengineregistry.org/resources/...",
+                "addResultAlignment": "Ajouter un alignement de résultat"
+            },
+            "validation": {
+                "alignmentNameUrl": "Ajoutez un nom et une URL pour chaque alignement de résultat.",
+                "alignmentUrl": "Saisissez une URL valide pour chaque alignement de résultat.",
+                "numericBounds": "Utilisez des valeurs numériques pour le minimum et le maximum.",
+                "minimumExceedsMaximum": "Le résultat minimum ne peut pas dépasser le maximum.",
+                "addRubricLevel": "Ajoutez au moins un niveau de rubrique.",
+                "completeRubricLevel": "Renseignez l’ID, le nom, le niveau et les points de chaque niveau de rubrique.",
+                "uniqueRubricId": "Utilisez un ID unique pour chaque niveau de rubrique.",
+                "numericRubricPoints": "Saisissez des points numériques pour chaque niveau de rubrique.",
+                "chooseAchievedLevel": "Choisissez le niveau de rubrique atteint.",
+                "chooseDeclaredRubricLevel": "Choisissez l’un des niveaux de rubrique définis.",
+                "numericResult": "Saisissez un résultat numérique.",
+                "resultRange": "Saisissez un résultat compris entre {{minimum}} et {{maximum}}.",
+                "resultMinimum": "Saisissez un résultat d’au moins {{minimum}}.",
+                "resultMaximum": "Saisissez un résultat ne dépassant pas {{maximum}}."
             }
         },
         "field": {

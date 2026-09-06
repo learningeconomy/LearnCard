@@ -240,16 +240,11 @@ export const serializeAchievement = (ach: AchievementTemplate): Record<string, u
             if (rd.requiredValue?.value || rd.requiredValue?.isDynamic) {
                 desc.requiredValue = fieldToJson(rd.requiredValue);
             }
-            if (fieldToJson(rd.resultType) === 'Percent') {
-                desc.valueMin = '0';
-                desc.valueMax = '100';
-            } else {
-                if (rd.valueMin?.value || rd.valueMin?.isDynamic) {
-                    desc.valueMin = fieldToJson(rd.valueMin);
-                }
-                if (rd.valueMax?.value || rd.valueMax?.isDynamic) {
-                    desc.valueMax = fieldToJson(rd.valueMax);
-                }
+            if (rd.valueMin?.value || rd.valueMin?.isDynamic) {
+                desc.valueMin = fieldToJson(rd.valueMin);
+            }
+            if (rd.valueMax?.value || rd.valueMax?.isDynamic) {
+                desc.valueMax = fieldToJson(rd.valueMax);
             }
             if (rd.rubricCriterionLevel && rd.rubricCriterionLevel.length > 0) {
                 desc.rubricCriterionLevel = rd.rubricCriterionLevel.map(level => ({

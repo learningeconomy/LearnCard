@@ -53,9 +53,13 @@ export const RESULT_TYPE_OPTIONS: ResultTypeOption[] = [
  * key is absent from the active locale bundle. Display strings on the data
  * above are keyed by their stable `value`/enum so translations stay stable.
  */
-const msg = (key: string, fallback: string): string => {
+type MessageParams = Record<string, string | number>;
+
+const msg = (key: string, fallback: string, params?: MessageParams): string => {
     const fn = (m as Record<string, unknown>)[key];
-    return typeof fn === 'function' ? (fn as () => string)() : fallback;
+    return typeof fn === 'function'
+        ? (fn as (messageParams?: MessageParams) => string)(params)
+        : fallback;
 };
 
 /** Translated grade-type label, keyed by the stable result-type value. */
@@ -89,6 +93,19 @@ const newResultDescriptionId = (): string =>
             : `${Date.now()}-${Math.random().toString(16).slice(2)}`
     }`;
 
+const findResultDescription = (
+    template: OBv3CredentialTemplate
+): ResultDescriptionTemplate | undefined => {
+    const result = template.credentialSubject.result?.[0];
+    const descriptions = template.credentialSubject.achievement.resultDescription;
+    const descriptionId = result?.resultDescription?.value;
+
+    return (
+        descriptions?.find(description => description.id === descriptionId) ??
+        descriptions?.find(description => description.name?.value === DEFAULT_RESULT_NAME)
+    );
+};
+
 export interface ResultState {
     resultType: ResultType;
     value: string;
@@ -106,11 +123,7 @@ export interface ResultState {
 
 export const readResultState = (template: OBv3CredentialTemplate): ResultState => {
     const result = template.credentialSubject.result?.[0];
-    const descriptions = template.credentialSubject.achievement.resultDescription;
-    const descId = result?.resultDescription?.value;
-    const desc =
-        descriptions?.find(description => description.id === descId) ??
-        descriptions?.find(description => description.name?.value === DEFAULT_RESULT_NAME);
+    const desc = findResultDescription(template);
 
     if (!result && !desc) {
         return {
@@ -162,6 +175,7 @@ const buildResultDescription = (
     id: string,
     resultType: ResultType,
     config: {
+        name?: TemplateFieldValue;
         valueMin?: TemplateFieldValue;
         valueMax?: TemplateFieldValue;
         rubricCriterionLevel?: RubricCriterionLevelTemplate[];
@@ -169,7 +183,7 @@ const buildResultDescription = (
     }
 ): ResultDescriptionTemplate => ({
     id,
-    name: staticField(DEFAULT_RESULT_NAME),
+    name: config.name ?? staticField(DEFAULT_RESULT_NAME),
     resultType: staticField(resultType),
     ...(resultType === 'Percent'
         ? { valueMin: staticField('0'), valueMax: staticField('100') }
@@ -216,9 +230,7 @@ export const writeResult = (
     const { resultType } = next;
     const field = toField(next.value) ?? staticField('');
     const achievement = template.credentialSubject.achievement;
-    const existingDescription = achievement.resultDescription?.find(
-        description => description.name?.value === DEFAULT_RESULT_NAME
-    );
+    const existingDescription = findResultDescription(template);
     const sameType = existingDescription?.resultType?.value === resultType;
     const valueMin =
         toField(next.valueMin) ?? (sameType ? existingDescription?.valueMin : undefined);
@@ -227,6 +239,7 @@ export const writeResult = (
     const rubricCriterionLevel =
         next.rubricCriterionLevel ??
         (sameType ? existingDescription?.rubricCriterionLevel : undefined);
+    // Alignments describe the result itself, so preserve them across result-type changes.
     const alignment = next.alignment ?? existingDescription?.alignment;
     const achievedLevel = toField(next.achievedLevel);
     const hasDescriptionConfiguration = Boolean(
@@ -239,9 +252,7 @@ export const writeResult = (
 
     if (!hasValue && !hasDescriptionConfiguration) {
         const remainingDescriptions = achievement.resultDescription?.filter(
-            description =>
-                description.name?.value !== DEFAULT_RESULT_NAME ||
-                description.resultType?.value === undefined
+            description => description !== existingDescription
         );
         return {
             ...template,
@@ -261,9 +272,8 @@ export const writeResult = (
 
     const id = existingDescription?.id ?? newResultDescriptionId();
     const otherDescriptions =
-        achievement.resultDescription?.filter(
-            description => description.name?.value !== DEFAULT_RESULT_NAME
-        ) ?? [];
+        achievement.resultDescription?.filter(description => description !== existingDescription) ??
+        [];
 
     return {
         ...template,
@@ -275,6 +285,7 @@ export const writeResult = (
                 resultDescription: [
                     ...otherDescriptions,
                     buildResultDescription(id, resultType, {
+                        name: existingDescription?.name,
                         valueMin,
                         valueMax,
                         rubricCriterionLevel,
@@ -306,32 +317,31 @@ export const getResultValidationError = (
     const result = template.credentialSubject.result?.[0];
     const description = state.resultDescription;
 
-    if (!result && !description) return null;
+    if ((!result && !description) || state.isLegacyUntyped) return null;
 
     for (const alignment of state.alignment ?? []) {
         if (!alignment.targetName.value.trim() || !alignment.targetUrl.value.trim()) {
-            return 'Add a name and URL for each result alignment.';
+            return msg(
+                'issueFlow.result.validation.alignmentNameUrl',
+                'Add a name and URL for each result alignment.'
+            );
         }
         if (!/^https?:\/\//i.test(alignment.targetUrl.value.trim())) {
-            return 'Enter a valid URL for each result alignment.';
+            return msg(
+                'issueFlow.result.validation.alignmentUrl',
+                'Enter a valid URL for each result alignment.'
+            );
         }
-    }
-
-    const minimum = state.valueMin ? Number(state.valueMin) : undefined;
-    const maximum = state.valueMax ? Number(state.valueMax) : undefined;
-    if (
-        (state.valueMin && !Number.isFinite(minimum)) ||
-        (state.valueMax && !Number.isFinite(maximum))
-    ) {
-        return 'Use numeric minimum and maximum values.';
-    }
-    if (minimum !== undefined && maximum !== undefined && minimum > maximum) {
-        return 'The minimum result cannot exceed the maximum result.';
     }
 
     if (state.resultType === 'RubricCriterionLevel') {
         const levels = state.rubricCriterionLevel ?? [];
-        if (levels.length === 0) return 'Add at least one rubric level.';
+        if (levels.length === 0) {
+            return msg(
+                'issueFlow.result.validation.addRubricLevel',
+                'Add at least one rubric level.'
+            );
+        }
         const ids = new Set<string>();
         for (const level of levels) {
             if (
@@ -340,26 +350,67 @@ export const getResultValidationError = (
                 !level.level.value.trim() ||
                 !level.points.value.trim()
             ) {
-                return 'Complete the id, name, level, and points for each rubric level.';
+                return msg(
+                    'issueFlow.result.validation.completeRubricLevel',
+                    'Complete the id, name, level, and points for each rubric level.'
+                );
             }
-            if (ids.has(level.id)) return 'Use a unique id for each rubric level.';
+            if (ids.has(level.id)) {
+                return msg(
+                    'issueFlow.result.validation.uniqueRubricId',
+                    'Use a unique id for each rubric level.'
+                );
+            }
             ids.add(level.id);
             if (!Number.isFinite(Number(level.points.value))) {
-                return 'Enter numeric points for each rubric level.';
+                return msg(
+                    'issueFlow.result.validation.numericRubricPoints',
+                    'Enter numeric points for each rubric level.'
+                );
             }
         }
         const achievedLevel = resolveFieldValue(state.achievedLevelField, variableValues);
-        if (result && achievedLevel === '') return 'Choose an achieved rubric level.';
-        if (achievedLevel !== undefined && achievedLevel && !ids.has(achievedLevel)) {
-            return 'Choose one of the declared rubric levels.';
+        if (result && achievedLevel === '') {
+            return msg(
+                'issueFlow.result.validation.chooseAchievedLevel',
+                'Choose an achieved rubric level.'
+            );
         }
+        if (achievedLevel !== undefined && achievedLevel && !ids.has(achievedLevel)) {
+            return msg(
+                'issueFlow.result.validation.chooseDeclaredRubricLevel',
+                'Choose one of the declared rubric levels.'
+            );
+        }
+    }
+
+    if (!result) return null;
+
+    const minimum = state.valueMin ? Number(state.valueMin) : undefined;
+    const maximum = state.valueMax ? Number(state.valueMax) : undefined;
+    if (
+        (state.valueMin && !Number.isFinite(minimum)) ||
+        (state.valueMax && !Number.isFinite(maximum))
+    ) {
+        return msg(
+            'issueFlow.result.validation.numericBounds',
+            'Use numeric minimum and maximum values.'
+        );
+    }
+    if (minimum !== undefined && maximum !== undefined && minimum > maximum) {
+        return msg(
+            'issueFlow.result.validation.minimumExceedsMaximum',
+            'The minimum result cannot exceed the maximum result.'
+        );
     }
 
     if (!PROFILE_RESULT_TYPES.has(state.resultType)) return null;
 
     const value = resolveFieldValue(state.valueField, variableValues);
     if (value === undefined) return null;
-    if (!value || !Number.isFinite(Number(value))) return 'Enter a numeric result.';
+    if (!value || !Number.isFinite(Number(value))) {
+        return msg('issueFlow.result.validation.numericResult', 'Enter a numeric result.');
+    }
 
     const numericValue = Number(value);
     if (
@@ -367,10 +418,24 @@ export const getResultValidationError = (
         (maximum !== undefined && numericValue > maximum)
     ) {
         if (minimum !== undefined && maximum !== undefined) {
-            return `Enter a result from ${state.valueMin} to ${state.valueMax}.`;
+            return msg(
+                'issueFlow.result.validation.resultRange',
+                `Enter a result from ${state.valueMin} to ${state.valueMax}.`,
+                { minimum: state.valueMin, maximum: state.valueMax }
+            );
         }
-        if (minimum !== undefined) return `Enter a result of at least ${state.valueMin}.`;
-        return `Enter a result no higher than ${state.valueMax}.`;
+        if (minimum !== undefined) {
+            return msg(
+                'issueFlow.result.validation.resultMinimum',
+                `Enter a result of at least ${state.valueMin}.`,
+                { minimum: state.valueMin }
+            );
+        }
+        return msg(
+            'issueFlow.result.validation.resultMaximum',
+            `Enter a result no higher than ${state.valueMax}.`,
+            { maximum: state.valueMax }
+        );
     }
 
     return null;

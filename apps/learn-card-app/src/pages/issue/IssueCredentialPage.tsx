@@ -233,7 +233,7 @@ const IssueCredentialPage: React.FC = () => {
         return variableValues;
     }, [usePerRecipient, recipients, recipientValues, variableValues]);
     const resultValidationError = useMemo(() => {
-        if (!template) return null;
+        if (!template || jsonOnly) return null;
         const valueSets =
             usePerRecipient && recipients.length > 0
                 ? recipients.map(recipient => recipientValues[recipientKey(recipient)] ?? {})
@@ -244,7 +244,7 @@ const IssueCredentialPage: React.FC = () => {
                 .find((message): message is string => Boolean(message)) ??
             getResultValidationError(template)
         );
-    }, [template, usePerRecipient, recipients, recipientValues, variableValues]);
+    }, [template, jsonOnly, usePerRecipient, recipients, recipientValues, variableValues]);
 
     const hasRecipientEvidence = recipients.some(
         r => (recipientEvidence[recipientKey(r)]?.length ?? 0) > 0

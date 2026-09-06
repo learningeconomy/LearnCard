@@ -121,6 +121,33 @@ describe('OBv3 Result / ResultDescription', () => {
 
         expect(secondId).toBe(firstId);
     });
+    it('preserves a linked ResultDescription with a non-default name', () => {
+        const template = baseTemplate();
+        const descriptionId = 'urn:uuid:data-analysis-rubric';
+        template.credentialSubject.achievement.resultDescription = [
+            {
+                id: descriptionId,
+                name: staticField('Data Analysis Rubric'),
+                resultType: staticField('RawScore'),
+                valueMin: staticField('1'),
+                valueMax: staticField('5'),
+            },
+        ];
+        template.credentialSubject.result = [
+            {
+                id: 'result_0',
+                resultDescription: staticField(descriptionId),
+                value: staticField('4'),
+            },
+        ];
+
+        const updated = writeResult(template, { resultType: 'RawScore', value: '5' });
+        const descriptions = resultJson(updated).credentialSubject.achievement.resultDescription;
+
+        expect(descriptions).toHaveLength(1);
+        expect(descriptions[0].id).toBe(descriptionId);
+        expect(descriptions[0].name).toBe('Data Analysis Rubric');
+    });
 
     it('round-trips through JSON back into typed state', () => {
         const t = writeResult(baseTemplate(), { resultType: 'GradePointAverage', value: '3.8' });
@@ -141,6 +168,38 @@ describe('OBv3 Result / ResultDescription', () => {
         expect(description.valueMin).toBe('0');
         expect(description.valueMax).toBe('100');
         expect(getResultValidationError(t)).toBeNull();
+    });
+    it('preserves custom Percent bounds in the shared JSON serializer', () => {
+        const template = baseTemplate();
+        template.credentialSubject.achievement.resultDescription = [
+            {
+                id: 'urn:uuid:custom-percent',
+                name: staticField('Custom Percent Scale'),
+                resultType: staticField('Percent'),
+                valueMin: staticField('1'),
+                valueMax: staticField('10'),
+            },
+        ];
+
+        const description = resultJson(template).credentialSubject.achievement.resultDescription[0];
+
+        expect(description.valueMin).toBe('1');
+        expect(description.valueMax).toBe('10');
+    });
+
+    it('allows a ResultDescription without an achieved result', () => {
+        const template = baseTemplate();
+        template.credentialSubject.achievement.resultDescription = [
+            {
+                id: 'urn:uuid:description-only',
+                name: staticField('Available Result'),
+                resultType: staticField('Percent'),
+                valueMin: staticField('0'),
+                valueMax: staticField('100'),
+            },
+        ];
+
+        expect(getResultValidationError(template)).toBeNull();
     });
 
     it('round-trips raw-score bounds and result-description alignments', () => {
@@ -238,6 +297,7 @@ describe('OBv3 Result / ResultDescription', () => {
 
         expect(state.isLegacyUntyped).toBe(true);
         expect(state.value).toBe('B+');
+        expect(getResultValidationError(t)).toBeNull();
     });
 
     it('clears the pair when value is emptied', () => {

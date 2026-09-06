@@ -8712,6 +8712,10 @@
                 "label": "نقاط",
                 "eg": "مثال: 720"
             },
+            "RubricCriterionLevel": {
+                "label": "مستوى المعيار",
+                "eg": "مثال: 3"
+            },
             "Status": {
                 "label": "الحالة",
                 "eg": ""
@@ -8724,6 +8728,52 @@
                 "OnHold": "قيد الانتظار",
                 "Provisional": "مؤقت",
                 "Withdrew": "منسحب"
+            },
+            "editor": {
+                "skillAlignedTypes": "أنواع النتائج المتوافقة مع المهارات",
+                "otherTypes": "أنواع نتائج أخرى",
+                "otherTypesHint": "هذه الأنواع غير مضمنة في ملف Open Skill Alignment.",
+                "percentRange": "تستخدم النتائج المئوية نطاقًا من 0 إلى 100.",
+                "minimum": "الحد الأدنى",
+                "maximum": "الحد الأقصى",
+                "minimumPlaceholder": "مثال: 0",
+                "maximumPlaceholder": "مثال: 800",
+                "rubricLevels": "مستويات المعيار",
+                "rubricHint": "حدّد كل مستوى قبل اختيار المستوى الذي تم تحقيقه.",
+                "levelNumber": "المستوى {{number}}",
+                "removeRubricLevel": "إزالة مستوى المعيار {{number}}",
+                "id": "المعرّف",
+                "name": "الاسم",
+                "level": "المستوى",
+                "points": "النقاط",
+                "proficientPlaceholder": "متقن",
+                "addLevel": "إضافة مستوى",
+                "achievedLevel": "المستوى المحقق",
+                "chooseLevel": "اختر مستوى…",
+                "resultAlignments": "مواءمات النتيجة",
+                "resultAlignmentsHint": "اربط هذه النتيجة بمورد CTDL في سجل بيانات الاعتماد.",
+                "alignmentNumber": "المواءمة {{number}}",
+                "removeAlignment": "إزالة مواءمة النتيجة {{number}}",
+                "skillPlaceholder": "مهارة أو كفاءة",
+                "ctdlResourceUrl": "عنوان URL لمورد CTDL",
+                "ctdlUrlPlaceholder": "https://credentialengineregistry.org/resources/...",
+                "addResultAlignment": "إضافة مواءمة نتيجة"
+            },
+            "validation": {
+                "alignmentNameUrl": "أضف اسمًا وعنوان URL لكل مواءمة نتيجة.",
+                "alignmentUrl": "أدخل عنوان URL صالحًا لكل مواءمة نتيجة.",
+                "numericBounds": "استخدم قيمًا رقمية للحد الأدنى والحد الأقصى.",
+                "minimumExceedsMaximum": "لا يمكن أن تتجاوز النتيجة الدنيا النتيجة القصوى.",
+                "addRubricLevel": "أضف مستوى معيار واحدًا على الأقل.",
+                "completeRubricLevel": "أكمل المعرّف والاسم والمستوى والنقاط لكل مستوى معيار.",
+                "uniqueRubricId": "استخدم معرّفًا فريدًا لكل مستوى معيار.",
+                "numericRubricPoints": "أدخل نقاطًا رقمية لكل مستوى معيار.",
+                "chooseAchievedLevel": "اختر مستوى المعيار المحقق.",
+                "chooseDeclaredRubricLevel": "اختر أحد مستويات المعيار المحددة.",
+                "numericResult": "أدخل نتيجة رقمية.",
+                "resultRange": "أدخل نتيجة من {{minimum}} إلى {{maximum}}.",
+                "resultMinimum": "أدخل نتيجة لا تقل عن {{minimum}}.",
+                "resultMaximum": "أدخل نتيجة لا تزيد عن {{maximum}}."
             }
         },
         "field": {
