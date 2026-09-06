@@ -36,7 +36,6 @@ const ConsentFlowShareDurationModal: React.FC<{
 }> = ({ shareDuration, setShareDuration, handleCloseModal }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
-    const shareTitleId = React.useId();
     const liveSyncingSelected = !shareDuration.oneTimeShare && !shareDuration.customDuration;
     const oneTimeSelected = shareDuration.oneTimeShare;
     const customDurationSelected = Boolean(shareDuration.customDuration);
@@ -92,10 +91,7 @@ const ConsentFlowShareDurationModal: React.FC<{
                                         >
                                             <CaretLeft className="h-auto w-3 text-grayscale-900" />
                                         </button>
-                                        <h3
-                                            id={shareTitleId}
-                                            className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl"
-                                        >
+                                        <h3 className="text-grayscale-900 flex items-center justify-start font-poppins font-medium text-xl">
                                             {m['common.share']()}
                                         </h3>
                                     </IonCol>
@@ -106,7 +102,11 @@ const ConsentFlowShareDurationModal: React.FC<{
                 </IonHeader>
                 <IonGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
                     <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
-                        <div role="radiogroup" aria-labelledby={shareTitleId} className="w-full">
+                        <div
+                            role="radiogroup"
+                            aria-label={m['consentFlow.shareDuration']()}
+                            className="w-full"
+                        >
                             <IonRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
                                 <IonCol class="flex items-center justify-between w-full ion-padding">
                                     <p className="text-lg font-medium">

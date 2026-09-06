@@ -169,7 +169,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 
     if (loading) {
         return (
-            <Overlay>
+            <Overlay aria-label={m['auth.prepLink']()}>
                 <div className="p-6 flex flex-col items-center">
                     <div className="w-8 h-8 border-2 border-gray-200 border-t-purple-600 rounded-full animate-spin mb-3" />
                     <p className="text-sm text-gray-500">{m['auth.prepLink']()}</p>
@@ -180,7 +180,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 
     if (error || !deviceShare) {
         return (
-            <Overlay>
+            <Overlay aria-label={m['auth.noDeviceKey']()}>
                 <div className="p-6 text-center">
                     <p className="text-sm text-red-600 mb-4">{error ?? m['auth.noDeviceKey']()}</p>
 
@@ -209,21 +209,22 @@ const ScoutsDeviceLinkOverlay: React.FC<{
                 }
             }
 
-            return new Promise(async resolve => {
-                const listener = await BarcodeScanner.addListener(
-                    'barcodeScanned',
-                    async result => {
-                        await listener.remove();
-                        await BarcodeScanner.stopScan();
-                        resolve(result.barcode?.rawValue ?? null);
-                    }
-                );
-
-                await BarcodeScanner.startScan({
-                    formats: [BarcodeFormat.QrCode],
-                    lensFacing: LensFacing.Back,
-                });
+            let resolveScan: (value: string | null) => void = () => undefined;
+            const scanResult = new Promise<string | null>(resolve => {
+                resolveScan = resolve;
             });
+            const listener = await BarcodeScanner.addListener('barcodeScanned', async result => {
+                await listener.remove();
+                await BarcodeScanner.stopScan();
+                resolveScan(result.barcode?.rawValue ?? null);
+            });
+
+            await BarcodeScanner.startScan({
+                formats: [BarcodeFormat.QrCode],
+                lensFacing: LensFacing.Back,
+            });
+
+            return scanResult;
         } catch (e) {
             log.warn('QR scan failed', e);
             await BarcodeScanner.removeAllListeners();
@@ -1274,7 +1275,7 @@ const AuthSessionManager: React.FC<{
                     // Session check still in progress — show loading
                     if (recoverySessionValid === null) {
                         return (
-                            <Overlay>
+                            <Overlay aria-label={m['auth.verifySess']()}>
                                 <div className="p-8 flex flex-col items-center">
                                     <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
                                     <p className="text-sm text-grayscale-500">

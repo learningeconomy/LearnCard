@@ -560,6 +560,9 @@ test.describe('Authenticated core-page accessibility', () => {
         await expect(page.getByRole('heading', { name: /Badges/i })).toBeVisible({
             timeout: 30_000,
         });
+        const earnedTab = page.getByRole('tab', { name: 'Earned', exact: true });
+        await tabTo(page, earnedTab);
+        await expect(earnedTab).toBeFocused();
         await assertNoHighImpactViolations(page, testInfo, 'wallet-badges-category');
 
         await page.goto('/dashboard');

@@ -23,6 +23,8 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
     onChoose,
 }) => {
     const skipButtonRef = React.useRef<HTMLButtonElement>(null);
+    const titleId = React.useId();
+    const descriptionId = React.useId();
 
     React.useEffect(() => {
         skipButtonRef.current?.focus();
@@ -37,8 +39,8 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
 
     return createPortal(
         <Overlay
-            aria-labelledby="duplicate-credential-title"
-            aria-describedby="duplicate-credential-description"
+            aria-labelledby={titleId}
+            aria-describedby={descriptionId}
             onDismiss={() => onChoose('cancel')}
         >
             <div className="relative p-6 sm:p-8">
@@ -52,14 +54,11 @@ export const DuplicateCredentialPrompt: React.FC<DuplicateCredentialPromptProps>
                 </button>
 
                 <div className="pr-10">
-                    <h1
-                        id="duplicate-credential-title"
-                        className="text-xl font-semibold text-grayscale-900"
-                    >
+                    <h1 id={titleId} className="text-xl font-semibold text-grayscale-900">
                         {m['claim.duplicate.title']()}
                     </h1>
                     <p
-                        id="duplicate-credential-description"
+                        id={descriptionId}
                         className="mt-2 text-sm leading-relaxed text-grayscale-600"
                     >
                         {m['claim.duplicate.description']()}

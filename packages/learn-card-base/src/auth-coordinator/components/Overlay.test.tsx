@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Overlay } from './Overlay';
@@ -92,6 +92,38 @@ describe('Overlay accessibility', () => {
 
         expect(dialog.getAttribute('aria-labelledby')).toBe(heading.id);
         expect(dialog.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('updates its accessible name when a child swaps headings', async () => {
+        const RecoveryStep = (): React.ReactElement => {
+            const [showPassword, setShowPassword] = React.useState(false);
+
+            return showPassword ? (
+                <h3>Enter recovery password</h3>
+            ) : (
+                <>
+                    <h2>Recovery options</h2>
+                    <button type="button" onClick={() => setShowPassword(true)}>
+                        Use password
+                    </button>
+                </>
+            );
+        };
+
+        render(
+            <Overlay>
+                <RecoveryStep />
+            </Overlay>
+        );
+
+        const dialog = screen.getByRole('dialog', { name: 'Recovery options' });
+        fireEvent.click(screen.getByRole('button', { name: 'Use password' }));
+
+        await waitFor(() => {
+            const heading = screen.getByRole('heading', { name: 'Enter recovery password' });
+            expect(screen.getByRole('dialog', { name: 'Enter recovery password' })).toBe(dialog);
+            expect(dialog.getAttribute('aria-labelledby')).toBe(heading.id);
+        });
     });
 
     it('preserves focus chosen by a child before the animation frame runs', () => {

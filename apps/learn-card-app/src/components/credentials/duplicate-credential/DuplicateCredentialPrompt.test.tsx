@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
-import { Overlay as BaseOverlay } from '../../../../../../packages/learn-card-base/src/auth-coordinator/components/Overlay';
+import { Overlay as BaseOverlay } from 'learn-card-base/auth-coordinator/components/Overlay';
 
 import { DuplicateCredentialPrompt } from './DuplicateCredentialPrompt';
 vi.mock('learn-card-base', () => ({

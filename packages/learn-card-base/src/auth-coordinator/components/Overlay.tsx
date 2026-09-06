@@ -38,10 +38,12 @@ export const Overlay: React.FC<OverlayProps> = ({
     const generatedTitleId = useId();
     const [derivedTitleId, setDerivedTitleId] = useState<string>();
 
-    const handleDialogRef = useCallback(
-        (dialog: HTMLDivElement | null): void => {
-            dialogRef.current = dialog;
-            if (!dialog || ariaLabelledBy || ariaLabel) return;
+    const updateDerivedTitle = useCallback(
+        (dialog: HTMLDivElement): void => {
+            if (ariaLabelledBy || ariaLabel) {
+                setDerivedTitleId(undefined);
+                return;
+            }
 
             const title = dialog.querySelector<HTMLElement>(
                 'h1, h2, h3, [role="heading"][aria-level]'
@@ -58,8 +60,26 @@ export const Overlay: React.FC<OverlayProps> = ({
                 currentTitleId === titleId ? currentTitleId : titleId
             );
         },
-        [ariaLabel, ariaLabelledBy, children, generatedTitleId]
+        [ariaLabel, ariaLabelledBy, generatedTitleId]
     );
+
+    const handleDialogRef = useCallback(
+        (dialog: HTMLDivElement | null): void => {
+            dialogRef.current = dialog;
+            if (dialog) updateDerivedTitle(dialog);
+        },
+        [updateDerivedTitle]
+    );
+
+    useEffect(() => {
+        const dialog = dialogRef.current;
+        if (!dialog || ariaLabelledBy || ariaLabel) return;
+
+        const observer = new MutationObserver(() => updateDerivedTitle(dialog));
+        observer.observe(dialog, { childList: true, subtree: true });
+
+        return () => observer.disconnect();
+    }, [ariaLabel, ariaLabelledBy, updateDerivedTitle]);
 
     useEffect(() => {
         const previouslyFocused =

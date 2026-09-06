@@ -57,7 +57,7 @@ const IssuerStatusCard: React.FC<IssuerStatusCardProps> = ({ walletDid }) => {
                             );
                         }, 300);
                     }}
-                    className="w-full flex items-center justify-center bg-grayscale-900 text-white font-poppins font-semibold text-base rounded-full py-[10px] shadow-md"
+                    className="w-full flex items-center justify-center bg-indigo-600 text-white font-poppins font-semibold text-base rounded-full py-[10px] shadow-md"
                 >
                     Become a Trusted Issuer
                 </button>

@@ -1675,6 +1675,7 @@
         "syncMyData": "Sincronizar mis datos",
         "shareOneTimeOnly": "Compartir solo una vez",
         "customDuration": "Duración personalizada",
+        "shareDuration": "Duración del uso compartido",
         "noCredentials": "Sin credenciales",
         "fetchingCredentials": "Obteniendo tus credenciales...",
         "shareAll": "Compartir todo",
