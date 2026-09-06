@@ -245,7 +245,7 @@ describe('shared form input accessibility', () => {
         const radio = screen.getByRole('radio', { name: 'Only option' });
         radio.focus();
 
-        fireEvent.keyDown(radio, { key: 'ArrowRight' });
+        expect(fireEvent.keyDown(radio, { key: 'ArrowRight' })).toBe(false);
         fireEvent.keyDown(radio, { key: 'Home' });
         fireEvent.keyDown(radio, { key: 'End' });
 

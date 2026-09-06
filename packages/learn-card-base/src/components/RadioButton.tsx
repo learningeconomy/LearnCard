@@ -40,9 +40,11 @@ export const RadioButton: React.FC<RadioButtonProps> = ({
             nextIndex = radios.length - 1;
         }
 
-        if (nextIndex === undefined || nextIndex === currentIndex || !radios[nextIndex]) return;
+        if (nextIndex === undefined || !radios[nextIndex]) return;
 
         event.preventDefault();
+        if (nextIndex === currentIndex) return;
+
         radios[nextIndex].click();
         radios[nextIndex].focus();
     };
