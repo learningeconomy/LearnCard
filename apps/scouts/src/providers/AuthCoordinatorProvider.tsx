@@ -169,7 +169,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 
     if (loading) {
         return (
-            <Overlay aria-label={m['auth.prepLink']()}>
+            <Overlay aria-label={m['auth.prepLink']()} onDismiss={onClose}>
                 <div className="p-6 flex flex-col items-center">
                     <div className="w-8 h-8 border-2 border-gray-200 border-t-purple-600 rounded-full animate-spin mb-3" />
                     <p className="text-sm text-gray-500">{m['auth.prepLink']()}</p>
@@ -180,7 +180,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 
     if (error || !deviceShare) {
         return (
-            <Overlay aria-label={m['auth.noDeviceKey']()}>
+            <Overlay aria-label={m['auth.noDeviceKey']()} onDismiss={onClose}>
                 <div className="p-6 text-center">
                     <p className="text-sm text-red-600 mb-4">{error ?? m['auth.noDeviceKey']()}</p>
 
@@ -234,7 +234,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
     };
 
     return (
-        <Overlay>
+        <Overlay onDismiss={onClose}>
             <QrLoginApprover
                 serverUrl={getSSSConfig().serverUrl}
                 deviceShare={deviceShare}
@@ -1046,7 +1046,7 @@ const AuthSessionManager: React.FC<{
 
             {/* ── Recovery overlay ─────────────────────────────── */}
             {showRecovery && authProvider && (
-                <Overlay>
+                <Overlay onDismiss={handleLogout}>
                     <RecoveryFlowModal
                         availableMethods={availableMethods}
                         recoveryReason={
@@ -1275,7 +1275,10 @@ const AuthSessionManager: React.FC<{
                     // Session check still in progress — show loading
                     if (recoverySessionValid === null) {
                         return (
-                            <Overlay aria-label={m['auth.verifySess']()}>
+                            <Overlay
+                                aria-label={m['auth.verifySess']()}
+                                onDismiss={() => setShowRecoverySetup(false)}
+                            >
                                 <div className="p-8 flex flex-col items-center">
                                     <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
                                     <p className="text-sm text-grayscale-500">
@@ -1289,7 +1292,7 @@ const AuthSessionManager: React.FC<{
                     // Session expired — show in-place re-auth overlay
                     if (recoverySessionValid === false) {
                         return (
-                            <Overlay>
+                            <Overlay onDismiss={() => setShowRecoverySetup(false)}>
                                 <ReAuthOverlay
                                     onSuccess={() => setRecoverySessionValid(true)}
                                     onCancel={() => setShowRecoverySetup(false)}
@@ -1359,7 +1362,7 @@ const AuthSessionManager: React.FC<{
                     };
 
                     return (
-                        <Overlay>
+                        <Overlay onDismiss={() => setShowRecoverySetup(false)}>
                             <RecoverySetupModal
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}

@@ -207,6 +207,51 @@ describe('shared form input accessibility', () => {
         expect(document.activeElement).toBe(hourly);
     });
 
+    it('does not reselect a radio when navigation keeps focus on the same option', () => {
+        const onChange = vi.fn();
+
+        render(
+            <RadioGroup
+                aria-label="Only option"
+                value="only"
+                onChange={onChange}
+                options={[{ value: 'only', label: 'Only option' }]}
+            />
+        );
+
+        const radio = screen.getByRole('radio', { name: 'Only option' });
+        radio.focus();
+
+        expect(fireEvent.keyDown(radio, { key: 'ArrowRight' })).toBe(false);
+        fireEvent.keyDown(radio, { key: 'Home' });
+        fireEvent.keyDown(radio, { key: 'End' });
+
+        expect(onChange).not.toHaveBeenCalled();
+        expect(document.activeElement).toBe(radio);
+    });
+
+    it('keeps a stale radio value keyboard reachable', () => {
+        render(
+            <RadioGroup
+                aria-label="Salary type"
+                value="legacy"
+                onChange={vi.fn()}
+                options={[
+                    { value: 'year', label: 'Per year' },
+                    { value: 'hour', label: 'Per hour' },
+                ]}
+            />
+        );
+
+        const yearly = screen.getByRole('radio', { name: 'Per year' });
+        const hourly = screen.getByRole('radio', { name: 'Per hour' });
+
+        expect(yearly.getAttribute('tabindex')).toBe('0');
+        expect(hourly.getAttribute('tabindex')).toBe('-1');
+        expect(yearly.getAttribute('aria-checked')).toBe('false');
+        expect(hourly.getAttribute('aria-checked')).toBe('false');
+    });
+
     it('supports roving focus for standalone radio buttons in a named group', () => {
         const selectFirst = vi.fn();
         const selectSecond = vi.fn();

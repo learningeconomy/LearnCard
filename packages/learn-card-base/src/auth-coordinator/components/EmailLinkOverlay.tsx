@@ -123,7 +123,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
 
     if (step === 'success') {
         return (
-            <Overlay>
+            <Overlay onDismiss={onComplete}>
                 <div className="p-8 text-center space-y-5">
                     <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
                         <svg
@@ -160,7 +160,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
 
     if (step === 'code') {
         return (
-            <Overlay>
+            <Overlay onDismiss={loading ? undefined : onLogout}>
                 <form onSubmit={handleVerifyCode} className="p-8 space-y-5">
                     <div className="text-center space-y-2">
                         <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
@@ -283,7 +283,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
     }
 
     return (
-        <Overlay>
+        <Overlay onDismiss={loading ? undefined : onLogout}>
             <form onSubmit={handleSendCode} className="p-8 space-y-5">
                 <div className="text-center space-y-2">
                     <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">

@@ -75,9 +75,13 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
         if (nextIndex === undefined) return;
 
         event.preventDefault();
+        if (nextIndex === currentIndex) return;
+
         onChange(options[nextIndex].value);
         optionRefs.current[nextIndex]?.focus();
     };
+
+    const hasSelectedOption = options.some(option => option.value === value);
 
     return (
         <div
@@ -88,7 +92,7 @@ const RadioGroup: React.FC<RadioGroupProps> = ({
         >
             {options.map((option, index) => {
                 const isSelected = value === option.value;
-                const isTabStop = isSelected || (value === null && index === 0);
+                const isTabStop = isSelected || (!hasSelectedOption && index === 0);
 
                 return (
                     <button

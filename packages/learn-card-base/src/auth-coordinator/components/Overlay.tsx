@@ -37,10 +37,22 @@ export const Overlay: React.FC<OverlayProps> = ({
     const dialogRef = useRef<HTMLDivElement>(null);
     const generatedTitleId = useId();
     const [derivedTitleId, setDerivedTitleId] = useState<string>();
+    const generatedTitleElementRef = useRef<HTMLElement | null>(null);
+
+    const clearGeneratedTitleId = useCallback((): void => {
+        const generatedTitle = generatedTitleElementRef.current;
+
+        if (generatedTitle?.id === `lc-overlay-title-${generatedTitleId}`) {
+            generatedTitle.removeAttribute('id');
+        }
+
+        generatedTitleElementRef.current = null;
+    }, [generatedTitleId]);
 
     const updateDerivedTitle = useCallback(
         (dialog: HTMLDivElement): void => {
             if (ariaLabelledBy || ariaLabel) {
+                clearGeneratedTitleId();
                 setDerivedTitleId(undefined);
                 return;
             }
@@ -50,17 +62,23 @@ export const Overlay: React.FC<OverlayProps> = ({
             );
 
             if (!title) {
+                clearGeneratedTitleId();
                 setDerivedTitleId(undefined);
                 return;
             }
 
+            if (generatedTitleElementRef.current !== title) clearGeneratedTitleId();
+
             const titleId = title.id || `lc-overlay-title-${generatedTitleId}`;
-            if (!title.id) title.id = titleId;
+            if (!title.id) {
+                title.id = titleId;
+                generatedTitleElementRef.current = title;
+            }
             setDerivedTitleId(currentTitleId =>
                 currentTitleId === titleId ? currentTitleId : titleId
             );
         },
-        [ariaLabel, ariaLabelledBy, generatedTitleId]
+        [ariaLabel, ariaLabelledBy, clearGeneratedTitleId, generatedTitleId]
     );
 
     const handleDialogRef = useCallback(

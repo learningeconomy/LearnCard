@@ -126,6 +126,41 @@ describe('Overlay accessibility', () => {
         });
     });
 
+    it('moves its generated title id when a child prepends a heading', async () => {
+        const HeadingList = (): React.ReactElement => {
+            const [showPrimaryHeading, setShowPrimaryHeading] = React.useState(false);
+
+            return (
+                <>
+                    {showPrimaryHeading && <h2>Primary heading</h2>}
+                    <h3>Secondary heading</h3>
+                    <button type="button" onClick={() => setShowPrimaryHeading(true)}>
+                        Add primary heading
+                    </button>
+                </>
+            );
+        };
+
+        render(
+            <Overlay>
+                <HeadingList />
+            </Overlay>
+        );
+
+        const dialog = screen.getByRole('dialog', { name: 'Secondary heading' });
+        const secondaryHeading = screen.getByRole('heading', { name: 'Secondary heading' });
+        const generatedTitleId = secondaryHeading.id;
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add primary heading' }));
+
+        await waitFor(() => {
+            const primaryHeading = screen.getByRole('heading', { name: 'Primary heading' });
+            expect(screen.getByRole('dialog', { name: 'Primary heading' })).toBe(dialog);
+            expect(primaryHeading.id).toBe(generatedTitleId);
+            expect(secondaryHeading.hasAttribute('id')).toBe(false);
+        });
+    });
+
     it('preserves focus chosen by a child before the animation frame runs', () => {
         const SelfFocusingChild = (): React.ReactElement => {
             const preferredRef = React.useRef<HTMLButtonElement>(null);
