@@ -115,6 +115,13 @@ export const Overlay: React.FC<OverlayProps> = ({
         };
     }, []);
 
+    useEffect(() => {
+        const dialog = dialogRef.current;
+        if (!dialog || dialog.contains(document.activeElement)) return;
+
+        (getFocusableElements(dialog)[0] ?? dialog).focus();
+    }, [children]);
+
     const handleKeyDown = useCallback(
         (event: KeyboardEvent): void => {
             const dialog = dialogRef.current;

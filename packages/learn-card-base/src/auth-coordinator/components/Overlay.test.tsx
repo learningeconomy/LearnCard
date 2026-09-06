@@ -126,6 +126,37 @@ describe('Overlay accessibility', () => {
         });
     });
 
+    it('moves focus into replacement content after a child transition', () => {
+        const SteppedOverlay = (): React.ReactElement => {
+            const [showSecondStep, setShowSecondStep] = React.useState(false);
+
+            return (
+                <Overlay>
+                    {showSecondStep ? (
+                        <div key="second">
+                            <h2>Second step</h2>
+                            <button type="button">Second action</button>
+                        </div>
+                    ) : (
+                        <div key="first">
+                            <h2>First step</h2>
+                            <button type="button" onClick={() => setShowSecondStep(true)}>
+                                Continue
+                            </button>
+                        </div>
+                    )}
+                </Overlay>
+            );
+        };
+
+        render(<SteppedOverlay />);
+        flushInitialFocus();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Second action' }));
+    });
+
     it('moves its generated title id when a child prepends a heading', async () => {
         const HeadingList = (): React.ReactElement => {
             const [showPrimaryHeading, setShowPrimaryHeading] = React.useState(false);
