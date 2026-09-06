@@ -105,85 +105,82 @@ const ConsentFlowShareDurationModal: React.FC<{
                     </IonToolbar>
                 </IonHeader>
                 <IonGrid className="flex items-center justify-center flex-col w-full px-4 pb-14">
-                    <IonRow
-                        role="radiogroup"
-                        aria-labelledby={shareTitleId}
-                        className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]"
-                    >
-                        <IonRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
-                            <IonCol class="flex items-center justify-between w-full ion-padding">
-                                <p className="text-lg font-medium">
-                                    {m['consentFlow.sync.liveSyncing']()}
-                                </p>
-                                <RadioButton
-                                    aria-label={m['consentFlow.sync.liveSyncing']()}
-                                    checked={liveSyncingSelected}
-                                    tabIndex={liveSyncingSelected ? 0 : -1}
-                                    onClick={() => {
-                                        handleStateChange('oneTimeShare', false);
-                                        handleStateChange('customDuration', '');
-                                    }}
-                                />
-                            </IonCol>
-                        </IonRow>
-                        <IonRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
-                            <IonCol class="flex items-center justify-between w-full ion-padding">
-                                <p className="text-lg font-medium">
-                                    {m['consentFlow.shareOneTimeOnly']()}
-                                </p>
-                                <RadioButton
-                                    aria-label={m['consentFlow.shareOneTimeOnly']()}
-                                    checked={shareDuration.oneTimeShare}
-                                    tabIndex={oneTimeSelected ? 0 : -1}
-                                    onClick={() => {
-                                        handleStateChange('customDuration', '');
-                                        handleStateChange('oneTimeShare', true);
-                                    }}
-                                />
-                            </IonCol>
-                        </IonRow>
-                        <IonRow className="w-full flex flex-col items-center justify-center mt-2">
-                            <IonCol class="flex items-center justify-between w-full ion-padding">
-                                <p className="text-lg font-medium">
-                                    {m['consentFlow.customDuration']()}
-                                </p>
-                                <RadioButton
-                                    aria-label={m['consentFlow.customDuration']()}
-                                    checked={customDurationSelected}
-                                    tabIndex={customDurationSelected ? 0 : -1}
-                                    onClick={() => {
-                                        handleStateChange('oneTimeShare', false);
+                    <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] rounded-[20px]">
+                        <div role="radiogroup" aria-labelledby={shareTitleId} className="w-full">
+                            <IonRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
+                                <IonCol class="flex items-center justify-between w-full ion-padding">
+                                    <p className="text-lg font-medium">
+                                        {m['consentFlow.sync.liveSyncing']()}
+                                    </p>
+                                    <RadioButton
+                                        aria-label={m['consentFlow.sync.liveSyncing']()}
+                                        checked={liveSyncingSelected}
+                                        tabIndex={liveSyncingSelected ? 0 : -1}
+                                        onClick={() => {
+                                            handleStateChange('oneTimeShare', false);
+                                            handleStateChange('customDuration', '');
+                                        }}
+                                    />
+                                </IonCol>
+                            </IonRow>
+                            <IonRow className="w-full flex flex-col items-center justify-center border-b-2 border-b-grayscale-200 mb-2 mt-2 pb-4">
+                                <IonCol class="flex items-center justify-between w-full ion-padding">
+                                    <p className="text-lg font-medium">
+                                        {m['consentFlow.shareOneTimeOnly']()}
+                                    </p>
+                                    <RadioButton
+                                        aria-label={m['consentFlow.shareOneTimeOnly']()}
+                                        checked={shareDuration.oneTimeShare}
+                                        tabIndex={oneTimeSelected ? 0 : -1}
+                                        onClick={() => {
+                                            handleStateChange('customDuration', '');
+                                            handleStateChange('oneTimeShare', true);
+                                        }}
+                                    />
+                                </IonCol>
+                            </IonRow>
+                            <IonRow className="w-full flex flex-col items-center justify-center mt-2">
+                                <IonCol class="flex items-center justify-between w-full ion-padding">
+                                    <p className="text-lg font-medium">
+                                        {m['consentFlow.customDuration']()}
+                                    </p>
+                                    <RadioButton
+                                        aria-label={m['consentFlow.customDuration']()}
+                                        checked={customDurationSelected}
+                                        tabIndex={customDurationSelected ? 0 : -1}
+                                        onClick={() => {
+                                            handleStateChange('oneTimeShare', false);
 
-                                        if (!shareDuration.customDuration) {
-                                            handleStateChange('customDuration', defaultDate);
-                                        }
-                                    }}
-                                />
-                            </IonCol>
-
-                            <div className="flex flex-col items-center justify-center w-full mb-2 mt-4 px-4">
-                                <p className="w-full text-left mb-2 pl-2">
-                                    Share permission expires on:{' '}
-                                </p>
-                                <button
-                                    className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[16px] py-[12px] font-medium tracking-widest text-base"
-                                    onClick={() => {
-                                        presentDatePicker({
-                                            backdropDismiss: true,
-                                            showBackdrop: false,
-                                            cssClass: 'flex items-center justify-center',
-                                        });
-                                    }}
-                                >
-                                    {shareDuration?.customDuration
-                                        ? moment(shareDuration?.customDuration).format(
-                                              'MMMM Do, YYYY - hh:mm A'
-                                          )
-                                        : 'Duration'}
-                                    <Calendar className="w-[30px] text-grayscale-700" />
-                                </button>
-                            </div>
-                        </IonRow>
+                                            if (!shareDuration.customDuration) {
+                                                handleStateChange('customDuration', defaultDate);
+                                            }
+                                        }}
+                                    />
+                                </IonCol>
+                            </IonRow>
+                        </div>
+                        <div className="flex flex-col items-center justify-center w-full mb-2 mt-4 px-4">
+                            <p className="w-full text-left mb-2 pl-2">
+                                Share permission expires on:{' '}
+                            </p>
+                            <button
+                                className="w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] px-[16px] py-[12px] font-medium tracking-widest text-base"
+                                onClick={() => {
+                                    presentDatePicker({
+                                        backdropDismiss: true,
+                                        showBackdrop: false,
+                                        cssClass: 'flex items-center justify-center',
+                                    });
+                                }}
+                            >
+                                {shareDuration?.customDuration
+                                    ? moment(shareDuration?.customDuration).format(
+                                          'MMMM Do, YYYY - hh:mm A'
+                                      )
+                                    : 'Duration'}
+                                <Calendar className="w-[30px] text-grayscale-700" />
+                            </button>
+                        </div>
                     </IonRow>
                 </IonGrid>
             </IonContent>

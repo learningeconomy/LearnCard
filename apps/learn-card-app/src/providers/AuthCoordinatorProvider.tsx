@@ -208,7 +208,7 @@ const DeviceLinkOverlay: React.FC<{
 
     if (loading) {
         return (
-            <Overlay>
+            <Overlay aria-label="Preparing secure link">
                 <div className="p-6 flex flex-col items-center">
                     <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
                     <p className="text-sm text-gray-500">Preparing secure link...</p>
@@ -219,7 +219,7 @@ const DeviceLinkOverlay: React.FC<{
 
     if (error || !deviceShare) {
         return (
-            <Overlay>
+            <Overlay aria-label="Device link unavailable">
                 <div className="p-6 text-center">
                     <p className="text-sm text-red-600 mb-4">
                         {error ?? 'No device key available'}
@@ -1591,7 +1591,7 @@ const AuthSessionManager: React.FC<{
                     // Session check still in progress — show loading
                     if (recoverySessionValid === null) {
                         return (
-                            <Overlay>
+                            <Overlay aria-label="Verifying session">
                                 <div className="p-8 flex flex-col items-center">
                                     <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
                                     <p className="text-sm text-grayscale-500">

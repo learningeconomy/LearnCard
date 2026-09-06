@@ -87,7 +87,11 @@ describe('Overlay accessibility', () => {
 
         flushInitialFocus();
 
-        expect(screen.getByRole('dialog', { name: 'Account recovery' })).toBeTruthy();
+        const dialog = screen.getByRole('dialog', { name: 'Account recovery' });
+        const heading = screen.getByRole('heading', { name: 'Account recovery' });
+
+        expect(dialog.getAttribute('aria-labelledby')).toBe(heading.id);
+        expect(dialog.hasAttribute('aria-label')).toBe(false);
     });
 
     it('preserves focus chosen by a child before the animation frame runs', () => {

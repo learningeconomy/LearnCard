@@ -11,7 +11,7 @@
  * displays `err.message` directly without any provider-specific parsing.
  */
 
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 
 import { Overlay } from './Overlay';
 
@@ -40,6 +40,8 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [step, setStep] = useState<'email' | 'code' | 'success'>('email');
+    const emailInputId = useId();
+    const verificationCodeInputId = useId();
 
     const handleSendCode = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -209,14 +211,14 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
 
                     <div>
                         <label
-                            htmlFor="email-verification-code"
+                            htmlFor={verificationCodeInputId}
                             className="block text-xs font-medium text-grayscale-700 mb-1.5"
                         >
                             Verification Code
                         </label>
 
                         <input
-                            id="email-verification-code"
+                            id={verificationCodeInputId}
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
@@ -331,14 +333,14 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
 
                 <div>
                     <label
-                        htmlFor="recovery-email"
+                        htmlFor={emailInputId}
                         className="block text-xs font-medium text-grayscale-700 mb-1.5"
                     >
                         Email Address
                     </label>
 
                     <input
-                        id="recovery-email"
+                        id={emailInputId}
                         type="email"
                         value={email}
                         onChange={e => setEmail(e.target.value)}

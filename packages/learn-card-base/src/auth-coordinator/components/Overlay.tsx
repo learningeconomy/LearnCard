@@ -2,7 +2,7 @@
  * Fullscreen overlay backdrop used for recovery, error, and migration modals.
  */
 
-import React, { useCallback, useEffect, useId, useLayoutEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 const FOCUSABLE_SELECTOR = [
     'a[href]',
@@ -36,35 +36,30 @@ export const Overlay: React.FC<OverlayProps> = ({
 }) => {
     const dialogRef = useRef<HTMLDivElement>(null);
     const generatedTitleId = useId();
+    const [derivedTitleId, setDerivedTitleId] = useState<string>();
 
-    useLayoutEffect(() => {
-        const dialog = dialogRef.current;
-        if (!dialog) return;
+    const handleDialogRef = useCallback(
+        (dialog: HTMLDivElement | null): void => {
+            dialogRef.current = dialog;
+            if (!dialog || ariaLabelledBy || ariaLabel) return;
 
-        if (ariaLabelledBy) {
-            dialog.setAttribute('aria-labelledby', ariaLabelledBy);
-            dialog.removeAttribute('aria-label');
-            return;
-        }
+            const title = dialog.querySelector<HTMLElement>(
+                'h1, h2, h3, [role="heading"][aria-level]'
+            );
 
-        if (ariaLabel) {
-            dialog.setAttribute('aria-label', ariaLabel);
-            dialog.removeAttribute('aria-labelledby');
-            return;
-        }
+            if (!title) {
+                setDerivedTitleId(undefined);
+                return;
+            }
 
-        const title = dialog.querySelector<HTMLElement>('h1, h2, h3, [role="heading"][aria-level]');
-
-        if (title) {
             const titleId = title.id || `lc-overlay-title-${generatedTitleId}`;
             if (!title.id) title.id = titleId;
-            dialog.setAttribute('aria-labelledby', titleId);
-            dialog.removeAttribute('aria-label');
-        } else {
-            dialog.removeAttribute('aria-labelledby');
-            dialog.setAttribute('aria-label', 'Dialog');
-        }
-    });
+            setDerivedTitleId(currentTitleId =>
+                currentTitleId === titleId ? currentTitleId : titleId
+            );
+        },
+        [ariaLabel, ariaLabelledBy, children, generatedTitleId]
+    );
 
     useEffect(() => {
         const previouslyFocused =
@@ -129,14 +124,19 @@ export const Overlay: React.FC<OverlayProps> = ({
         return () => document.removeEventListener('keydown', handleKeyDown, true);
     }, [handleKeyDown]);
 
+    const resolvedAriaLabelledBy = ariaLabelledBy ?? (ariaLabel ? undefined : derivedTitleId);
+    const resolvedAriaLabel = ariaLabelledBy
+        ? undefined
+        : (ariaLabel ?? (derivedTitleId ? undefined : 'Dialog'));
+
     return (
         <div className="lc-auth-overlay fixed inset-0 z-[9999] flex flex-col overflow-y-auto bg-black/50 backdrop-blur-sm animate-fade-in-up font-poppins sm:p-4">
             <div
-                ref={dialogRef}
+                ref={handleDialogRef}
                 role="dialog"
                 aria-modal="true"
-                aria-label={ariaLabel}
-                aria-labelledby={ariaLabelledBy}
+                aria-label={resolvedAriaLabel}
+                aria-labelledby={resolvedAriaLabelledBy}
                 aria-describedby={ariaDescribedBy}
                 tabIndex={-1}
                 className="lc-surface bg-white sm:rounded-[20px] shadow-2xl sm:max-w-[480px] w-full min-h-full sm:min-h-0 mx-auto sm:my-auto shrink-0 focus:outline-none"

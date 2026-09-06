@@ -233,6 +233,26 @@ describe('shared form input accessibility', () => {
         expect(document.activeElement).toBe(second);
     });
 
+    it('does not toggle a standalone radio when navigation keeps focus on the same option', () => {
+        const onClick = vi.fn();
+
+        render(
+            <div role="radiogroup" aria-label="Only option">
+                <RadioButton aria-label="Only option" checked tabIndex={0} onClick={onClick} />
+            </div>
+        );
+
+        const radio = screen.getByRole('radio', { name: 'Only option' });
+        radio.focus();
+
+        fireEvent.keyDown(radio, { key: 'ArrowRight' });
+        fireEvent.keyDown(radio, { key: 'Home' });
+        fireEvent.keyDown(radio, { key: 'End' });
+
+        expect(onClick).not.toHaveBeenCalled();
+        expect(document.activeElement).toBe(radio);
+    });
+
     it('announces select state and exposes keyboard-operable options', () => {
         const onChange = vi.fn();
         render(
