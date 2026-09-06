@@ -2,11 +2,11 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
+import { Overlay as BaseOverlay } from '../../../../../../packages/learn-card-base/src/auth-coordinator/components/Overlay';
 
 import { DuplicateCredentialPrompt } from './DuplicateCredentialPrompt';
-
 vi.mock('learn-card-base', () => ({
-    Overlay: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+    Overlay: BaseOverlay,
 }));
 
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
@@ -40,7 +40,7 @@ describe('DuplicateCredentialPrompt', () => {
         await waitFor(() =>
             expect(screen.getByRole('button', { name: 'Skip This Copy' })).toHaveFocus()
         );
-        fireEvent.keyDown(window, { key: 'Escape' });
+        fireEvent.keyDown(document, { key: 'Escape' });
         expect(onChoose).toHaveBeenLastCalledWith('cancel');
         onChoose.mockClear();
 
@@ -68,14 +68,14 @@ describe('DuplicateCredentialPrompt', () => {
         const saveButton = screen.getByRole('button', { name: 'Save Another Copy' });
 
         saveButton.focus();
-        fireEvent.keyDown(window, { key: 'Tab' });
+        fireEvent.keyDown(document, { key: 'Tab' });
         expect(cancelButton).toHaveFocus();
 
-        fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+        fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
         expect(saveButton).toHaveFocus();
 
         outsideButton.focus();
-        fireEvent.keyDown(window, { key: 'Tab' });
+        fireEvent.keyDown(document, { key: 'Tab' });
         expect(cancelButton).toHaveFocus();
     });
 
