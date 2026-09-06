@@ -4,9 +4,8 @@
 @import url('https://tetunori.github.io/fluent-emoji-webfont/dist/FluentEmojiFlat.css');
 
 * {
-    font-family:
-        'Poppins', 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode',
-        Geneva, Verdana, sans-serif;
+    font-family: 'Poppins', 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande',
+        'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
 }
 
 body.scanner-active > * {
@@ -121,32 +120,22 @@ textarea[class*='border-gray']:-webkit-autofill:active {
     transition: background-color 5000s ease-in-out 0s;
 }
 
-// iOS Safari zooms focused form controls below 16px. Keep pinch zoom available
-// without triggering an unexpected layout jump when a field receives focus.
-@supports (-webkit-touch-callout: none) {
-    input,
-    select,
-    textarea {
-        font-size: max(16px, 1rem);
-    }
-}
-
 // Keyboard focus is intentionally invisible for pointer interaction and appears
 // only for keyboard-style focus. This covers native controls and the small
 // number of composite widgets used by the core app flows.
 #app-router,
 #modal-mid-root {
     :where(
-        button,
-        a[href],
-        input,
-        select,
-        textarea,
-        [role='button'],
-        [role='tab'],
-        [role='option'],
-        [tabindex]:not([tabindex='-1'])
-    ):focus-visible {
+            button,
+            a[href],
+            input,
+            select,
+            textarea,
+            [role='button'],
+            [role='tab'],
+            [role='option'],
+            [tabindex]:not([tabindex='-1'])
+        ):focus-visible {
         @apply outline-none ring-2 ring-emerald-500 ring-offset-2;
     }
 }
@@ -185,9 +174,8 @@ textarea[class*='border-gray']:-webkit-autofill:active {
     #modal-mid-root *::after {
         animation: none !important;
         scroll-behavior: auto !important;
-        transition-property:
-            color, background-color, border-color, text-decoration-color, fill, stroke, opacity,
-            box-shadow !important;
+        transition-property: color, background-color, border-color, text-decoration-color, fill,
+            stroke, opacity, box-shadow !important;
     }
 
     // Preserve a subtle opacity entrance while removing fade-in-up's translate.
