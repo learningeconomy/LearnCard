@@ -4,11 +4,16 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
     staticField,
+    dynamicField,
     systemField,
     type OBv3CredentialTemplate,
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { ResultFieldEditor } from './ResultFieldEditor';
-import { readResultState } from './resultField';
+import { readResultState, writeResult } from './resultField';
+import {
+    jsonToTemplate,
+    templateToJson,
+} from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
 
 const legacyPercentTemplate = (): OBv3CredentialTemplate => ({
     schemaType: 'obv3',
@@ -67,6 +72,108 @@ describe('ResultFieldEditor', () => {
             resultType: 'Percent',
             value: '95',
             isLegacyUntyped: false,
+        });
+    });
+
+    it('preserves a dynamic achieved level when removing another rubric level', () => {
+        const template = writeResult(legacyPercentTemplate(), {
+            resultType: 'RubricCriterionLevel',
+            value: '3',
+            achievedLevel: dynamicField('achieved_level'),
+            rubricCriterionLevel: [
+                {
+                    id: 'urn:uuid:developing',
+                    name: staticField('Developing'),
+                    level: staticField('2'),
+                    points: staticField('2'),
+                },
+                {
+                    id: 'urn:uuid:proficient',
+                    name: staticField('Proficient'),
+                    level: staticField('3'),
+                    points: staticField('3'),
+                },
+            ],
+        });
+        const onChangeTemplate = vi.fn();
+
+        render(
+            <ResultFieldEditor
+                template={template}
+                onChangeTemplate={onChangeTemplate}
+                canMakeDynamic={false}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Remove rubric level 1' }));
+
+        expect(readResultState(onChangeTemplate.mock.calls[0][0]).achievedLevelField).toMatchObject(
+            {
+                isDynamic: true,
+                variableName: 'achieved_level',
+            }
+        );
+    });
+
+    it('edits and round-trips an achieved-level-only rubric result', () => {
+        const template = legacyPercentTemplate();
+        const descriptionId = 'urn:uuid:rubric-description';
+        const developingId = 'urn:uuid:developing';
+        const proficientId = 'urn:uuid:proficient';
+        template.credentialSubject.achievement.resultDescription = [
+            {
+                id: descriptionId,
+                name: staticField('Rubric'),
+                resultType: staticField('RubricCriterionLevel'),
+                rubricCriterionLevel: [
+                    {
+                        id: developingId,
+                        name: staticField('Developing'),
+                        level: staticField('2'),
+                        points: staticField('2'),
+                    },
+                    {
+                        id: proficientId,
+                        name: staticField('Proficient'),
+                        level: staticField('3'),
+                        points: staticField('3'),
+                    },
+                ],
+            },
+        ];
+        template.credentialSubject.result = [
+            {
+                id: 'result_0',
+                resultDescription: staticField(descriptionId),
+                achievedLevel: staticField(developingId),
+            },
+        ];
+        const onChangeTemplate = vi.fn();
+
+        render(
+            <ResultFieldEditor
+                template={template}
+                onChangeTemplate={onChangeTemplate}
+                canMakeDynamic={false}
+            />
+        );
+        const achievedLevelSelect = screen.getByLabelText('Achieved level');
+        expect(achievedLevelSelect).toBeEnabled();
+
+        fireEvent.change(achievedLevelSelect, { target: { value: proficientId } });
+
+        const updated = onChangeTemplate.mock.calls[0][0] as OBv3CredentialTemplate;
+        const json = templateToJson(updated) as {
+            credentialSubject: { result: Array<Record<string, unknown>> };
+        };
+        const roundTripped = jsonToTemplate(json);
+
+        expect(json.credentialSubject.result[0]).toMatchObject({
+            achievedLevel: proficientId,
+        });
+        expect(json.credentialSubject.result[0].value).toBeUndefined();
+        expect(readResultState(roundTripped)).toMatchObject({
+            achievedLevel: proficientId,
+            valueField: undefined,
         });
     });
 });

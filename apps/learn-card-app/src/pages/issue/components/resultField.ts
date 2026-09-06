@@ -205,18 +205,14 @@ const buildResultDescription = (
 const buildResult = (
     id: string,
     resultType: ResultType,
-    field: TemplateFieldValue,
+    field?: TemplateFieldValue,
     achievedLevel?: TemplateFieldValue
-): ResultTemplate => {
-    const result =
-        resultType === 'Status'
-            ? { id: 'result_0', resultDescription: staticField(id), status: field }
-            : { id: 'result_0', resultDescription: staticField(id), value: field };
-
-    return resultType === 'RubricCriterionLevel' && achievedLevel
-        ? { ...result, achievedLevel }
-        : result;
-};
+): ResultTemplate => ({
+    id: 'result_0',
+    resultDescription: staticField(id),
+    ...(field ? (resultType === 'Status' ? { status: field } : { value: field }) : {}),
+    ...(resultType === 'RubricCriterionLevel' && achievedLevel ? { achievedLevel } : {}),
+});
 
 export interface ResultUpdate {
     resultType: ResultType;
@@ -253,8 +249,12 @@ export const writeResult = (
         hasCustomBounds || rubricCriterionLevel?.length || alignment?.length
     );
     const hasValue = field.isDynamic || Boolean(field.value.trim());
+    const hasAchievedLevel =
+        resultType === 'RubricCriterionLevel' &&
+        Boolean(achievedLevel?.isDynamic || achievedLevel?.value.trim());
+    const hasResult = hasValue || hasAchievedLevel;
 
-    if (!hasValue && !hasDescriptionConfiguration) {
+    if (!hasResult && !hasDescriptionConfiguration) {
         const remainingDescriptions = achievement.resultDescription?.filter(
             description => description !== existingDescription
         );
@@ -283,7 +283,16 @@ export const writeResult = (
         ...template,
         credentialSubject: {
             ...template.credentialSubject,
-            result: hasValue ? [buildResult(id, resultType, field, achievedLevel)] : undefined,
+            result: hasResult
+                ? [
+                      buildResult(
+                          id,
+                          resultType,
+                          hasValue ? field : undefined,
+                          hasAchievedLevel ? achievedLevel : undefined
+                      ),
+                  ]
+                : undefined,
             achievement: {
                 ...achievement,
                 resultDescription: [
@@ -411,6 +420,14 @@ export const getResultValidationError = (
     }
 
     if (!PROFILE_RESULT_TYPES.has(state.resultType)) return null;
+
+    if (
+        state.resultType === 'RubricCriterionLevel' &&
+        !state.valueField &&
+        state.achievedLevelField
+    ) {
+        return null;
+    }
 
     const value = resolveFieldValue(state.valueField, variableValues);
     if (value === undefined) return null;

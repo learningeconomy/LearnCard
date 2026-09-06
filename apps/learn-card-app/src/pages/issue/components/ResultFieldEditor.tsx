@@ -138,7 +138,10 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
             rubricCriterionLevel: (state.rubricCriterionLevel ?? []).filter(
                 (_, levelIndex) => levelIndex !== index
             ),
-            achievedLevel: state.achievedLevel === removedId ? '' : state.achievedLevel,
+            achievedLevel:
+                state.achievedLevel === removedId
+                    ? ''
+                    : (state.achievedLevelField ?? state.achievedLevel),
         });
     };
 
@@ -409,7 +412,6 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                         <select
                             value={state.achievedLevel}
                             onChange={event => commitUpdate({ achievedLevel: event.target.value })}
-                            disabled={!state.valueField}
                             className={`${INPUT_CLASS} mt-1.5`}
                         >
                             <option value="">{m['issueFlow.result.editor.chooseLevel']()}</option>

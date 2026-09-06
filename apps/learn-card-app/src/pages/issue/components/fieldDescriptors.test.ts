@@ -332,6 +332,36 @@ describe('OBv3 Result / ResultDescription', () => {
         expect(getResultValidationError(invalid)).toBe('Choose one of the declared rubric levels.');
     });
 
+    it('accepts an achieved rubric level without a numeric value', () => {
+        const template = baseTemplate();
+        const descriptionId = 'urn:uuid:rubric-description';
+        const levelId = 'urn:uuid:proficient';
+        template.credentialSubject.achievement.resultDescription = [
+            {
+                id: descriptionId,
+                name: staticField('Rubric'),
+                resultType: staticField('RubricCriterionLevel'),
+                rubricCriterionLevel: [
+                    {
+                        id: levelId,
+                        name: staticField('Proficient'),
+                        level: staticField('3'),
+                        points: staticField('3'),
+                    },
+                ],
+            },
+        ];
+        template.credentialSubject.result = [
+            {
+                id: 'result_0',
+                resultDescription: staticField(descriptionId),
+                achievedLevel: staticField(levelId),
+            },
+        ];
+
+        expect(getResultValidationError(template)).toBeNull();
+    });
+
     it('rejects non-numeric and out-of-range profile results', () => {
         const nonNumeric = writeResult(baseTemplate(), {
             resultType: 'RawScore',
