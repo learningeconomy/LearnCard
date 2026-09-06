@@ -11,7 +11,12 @@ import {
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { FIELD_DESCRIPTORS } from './fieldDescriptors';
 import type { ActivityField } from './credentialTypeCatalog';
-import { readResultState, writeResult, type ResultType } from './resultField';
+import {
+    getResultValidationError,
+    readResultState,
+    writeResult,
+    type ResultType,
+} from './resultField';
 
 const baseTemplate = (): OBv3CredentialTemplate => ({
     schemaType: 'obv3',
@@ -33,6 +38,18 @@ const baseTemplate = (): OBv3CredentialTemplate => ({
     validFrom: systemField('issue_date'),
     customFields: [],
 });
+
+interface ResultCredentialJson extends Record<string, unknown> {
+    credentialSubject: {
+        achievement: {
+            resultDescription: Record<string, unknown>[];
+        };
+        result: Record<string, unknown>[];
+    };
+}
+
+const resultJson = (template: OBv3CredentialTemplate): ResultCredentialJson =>
+    templateToJson(template) as unknown as ResultCredentialJson;
 
 const DESCRIPTOR_KEYS = Object.keys(FIELD_DESCRIPTORS) as ActivityField[];
 
@@ -72,7 +89,7 @@ describe('FieldDescriptor get/set symmetry', () => {
 describe('OBv3 Result / ResultDescription', () => {
     it('emits a standards-pure linked pair for a letter grade', () => {
         const t = writeResult(baseTemplate(), { resultType: 'LetterGrade', value: 'A-' });
-        const json = templateToJson(t) as any;
+        const json = resultJson(t);
 
         const descriptions = json.credentialSubject.achievement.resultDescription;
         const results = json.credentialSubject.result;
@@ -89,7 +106,7 @@ describe('OBv3 Result / ResultDescription', () => {
 
     it('uses status (not value) for Status result type', () => {
         const t = writeResult(baseTemplate(), { resultType: 'Status', value: 'Completed' });
-        const json = templateToJson(t) as any;
+        const json = resultJson(t);
 
         expect(json.credentialSubject.result[0].status).toBe('Completed');
         expect(json.credentialSubject.result[0].value).toBeUndefined();
@@ -97,12 +114,10 @@ describe('OBv3 Result / ResultDescription', () => {
 
     it('keeps the ResultDescription id stable across edits', () => {
         const first = writeResult(baseTemplate(), { resultType: 'LetterGrade', value: 'A-' });
-        const firstId = (templateToJson(first) as any).credentialSubject.achievement
-            .resultDescription[0].id;
+        const firstId = resultJson(first).credentialSubject.achievement.resultDescription[0].id;
 
         const second = writeResult(first, { resultType: 'Percent', value: '95' });
-        const secondId = (templateToJson(second) as any).credentialSubject.achievement
-            .resultDescription[0].id;
+        const secondId = resultJson(second).credentialSubject.achievement.resultDescription[0].id;
 
         expect(secondId).toBe(firstId);
     });
@@ -116,6 +131,104 @@ describe('OBv3 Result / ResultDescription', () => {
         expect(state.resultType).toBe<ResultType>('GradePointAverage');
         expect(state.value).toBe('3.8');
         expect(state.isLegacyUntyped).toBe(false);
+    });
+
+    it('forces Percent results to the Open Skill Alignment range', () => {
+        const t = writeResult(baseTemplate(), { resultType: 'Percent', value: '95' });
+        const json = resultJson(t);
+        const description = json.credentialSubject.achievement.resultDescription[0];
+
+        expect(description.valueMin).toBe('0');
+        expect(description.valueMax).toBe('100');
+        expect(getResultValidationError(t)).toBeNull();
+    });
+
+    it('round-trips raw-score bounds and result-description alignments', () => {
+        const t = writeResult(baseTemplate(), {
+            resultType: 'RawScore',
+            value: '720',
+            valueMin: '400',
+            valueMax: '800',
+            alignment: [
+                {
+                    id: 'alignment_0',
+                    targetName: staticField('Data analysis'),
+                    targetUrl: staticField('https://credentialengineregistry.org/resources/ce-123'),
+                    targetFramework: staticField('Credential Engine Registry'),
+                    targetType: staticField('CTDL'),
+                },
+            ],
+        });
+        const parsed = jsonToTemplate(templateToJson(t));
+        const state = readResultState(parsed);
+
+        expect(state.valueMin).toBe('400');
+        expect(state.valueMax).toBe('800');
+        expect(state.alignment?.[0].targetUrl.value).toBe(
+            'https://credentialengineregistry.org/resources/ce-123'
+        );
+        expect(getResultValidationError(parsed)).toBeNull();
+    });
+
+    it('round-trips rubric levels and constrains the achieved level', () => {
+        const t = writeResult(baseTemplate(), {
+            resultType: 'RubricCriterionLevel',
+            value: '3',
+            achievedLevel: 'urn:uuid:level-proficient',
+            rubricCriterionLevel: [
+                {
+                    id: 'urn:uuid:level-proficient',
+                    name: staticField('Proficient'),
+                    level: staticField('3'),
+                    points: staticField('3'),
+                },
+            ],
+        });
+        const json = resultJson(t);
+        const parsed = jsonToTemplate(json);
+        const state = readResultState(parsed);
+
+        expect(json.credentialSubject.result[0].achievedLevel).toBe('urn:uuid:level-proficient');
+        expect(
+            json.credentialSubject.achievement.resultDescription[0].rubricCriterionLevel
+        ).toEqual([
+            {
+                id: 'urn:uuid:level-proficient',
+                type: ['RubricCriterionLevel'],
+                name: 'Proficient',
+                level: '3',
+                points: '3',
+            },
+        ]);
+        expect(state.achievedLevel).toBe('urn:uuid:level-proficient');
+        expect(state.rubricCriterionLevel?.[0].name.value).toBe('Proficient');
+        expect(getResultValidationError(parsed)).toBeNull();
+
+        const invalid = writeResult(parsed, {
+            resultType: 'RubricCriterionLevel',
+            value: '3',
+            achievedLevel: 'urn:uuid:missing',
+            rubricCriterionLevel: state.rubricCriterionLevel,
+        });
+        expect(getResultValidationError(invalid)).toBe('Choose one of the declared rubric levels.');
+    });
+
+    it('rejects non-numeric and out-of-range profile results', () => {
+        const nonNumeric = writeResult(baseTemplate(), {
+            resultType: 'RawScore',
+            value: 'high',
+            valueMin: '0',
+            valueMax: '10',
+        });
+        const outOfRange = writeResult(baseTemplate(), {
+            resultType: 'RawScore',
+            value: '11',
+            valueMin: '0',
+            valueMax: '10',
+        });
+
+        expect(getResultValidationError(nonNumeric)).toBe('Enter a numeric result.');
+        expect(getResultValidationError(outOfRange)).toBe('Enter a result from 0 to 10.');
     });
 
     it('flags a bare imported result as legacy untyped', () => {

@@ -10,6 +10,7 @@ import { applyVariableValues } from './components/variableSubstitution';
 import type { VariableScope } from './components/DynamicFieldsSection';
 import type { LinkOptions, Recipient, RecipientMode } from './components/recipientTypes';
 import type { ResolvedSkill } from './components/skillAlignment';
+import { getResultValidationError } from './components/resultField';
 import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import type { SelectedSkill } from '../skills/skillTypes';
 import { buildSimpleTemplate } from '../../components/simple-send/simpleSend.helpers';
@@ -53,20 +54,24 @@ const SeedProfiles: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
     return <>{children}</>;
 };
-
-const initialTemplate = (): OBv3CredentialTemplate =>
+const initialTemplate = (
+    credentialType: CredentialTypeEntry['baseSimpleType'] = 'badge'
+): OBv3CredentialTemplate =>
     buildSimpleTemplate({
-        credentialType: 'badge',
+        credentialType,
         name: 'Intro to Storybook',
         description: 'Completed the Storybook fundamentals module.',
         issuerName: 'Learning Economy',
     });
 
-const ViewHarness: React.FC = () => {
+const ViewHarness: React.FC<{ initialObv3Type?: string }> = ({ initialObv3Type = 'Badge' }) => {
+    const initialCredentialType = getTypeByObv3(initialObv3Type) ?? null;
     const [selectedType, setSelectedType] = useState<CredentialTypeEntry | null>(
-        getTypeByObv3('Badge') ?? null
+        initialCredentialType
     );
-    const [template, setTemplate] = useState<OBv3CredentialTemplate | null>(initialTemplate);
+    const [template, setTemplate] = useState<OBv3CredentialTemplate | null>(() =>
+        initialTemplate(initialCredentialType?.baseSimpleType)
+    );
     const [recipientMode, setRecipientMode] = useState<RecipientMode>('self');
     const [recipients, setRecipients] = useState<Recipient[]>([]);
     const [linkOptions, setLinkOptions] = useState<LinkOptions>({});
@@ -93,6 +98,9 @@ const ViewHarness: React.FC = () => {
         () => (template ? extractVariablesByType(template).dynamic : []),
         [template]
     );
+    const resultValidationError = template
+        ? getResultValidationError(template, variableValues)
+        : null;
 
     const jsonOnly = Boolean(template?.schemaType && template.schemaType !== 'obv3');
     const viewingJson = showJson || jsonOnly;
@@ -111,8 +119,8 @@ const ViewHarness: React.FC = () => {
             provenanceLabel={null}
             error={null}
             isSubmitting={false}
-            canIssue={Boolean(template) && !jsonError}
-            missingHint={template ? null : 'Pick a type to begin'}
+            canIssue={Boolean(template) && !jsonError && !resultValidationError}
+            missingHint={template ? resultValidationError : 'Pick a type to begin'}
             showJson={showJson}
             jsonOnly={jsonOnly}
             viewingJson={viewingJson}
@@ -193,5 +201,62 @@ export const FullPage: Story = {
         await waitFor(() =>
             expect(canvasElement.querySelector('textarea.font-mono')).not.toBeNull()
         );
+    },
+};
+
+export const SkillAlignedResult: Story = {
+    render: () => (
+        <SeedProfiles>
+            <ViewHarness initialObv3Type="Course" />
+        </SeedProfiles>
+    ),
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        const submit = canvas.getByTestId('issue-submit');
+        const resultInput = canvas.getByPlaceholderText('e.g. 95');
+
+        await userEvent.type(resultInput, '101');
+        await expect(canvas.getByRole('alert')).toHaveTextContent('Enter a result from 0 to 100.');
+        await expect(submit).toBeDisabled();
+
+        await userEvent.clear(resultInput);
+        await userEvent.type(resultInput, '95');
+        await waitFor(() =>
+            expect(canvas.queryByText('Enter a result from 0 to 100.')).not.toBeInTheDocument()
+        );
+
+        await userEvent.click(canvas.getByRole('button', { name: 'Rubric level' }));
+        const rubricSection = canvas.getByText('Rubric levels').closest('.rounded-2xl');
+        if (!(rubricSection instanceof HTMLElement)) throw new Error('Rubric editor not found');
+        const rubric = within(rubricSection);
+
+        await userEvent.type(canvas.getByPlaceholderText('e.g. 3'), '3');
+        await userEvent.type(rubric.getByPlaceholderText('Proficient'), 'Proficient');
+        const rubricValues = rubric.getAllByPlaceholderText('3');
+        await userEvent.type(rubricValues[0], '3');
+        await userEvent.type(rubricValues[1], '3');
+        await userEvent.selectOptions(
+            rubric.getByRole('combobox', { name: 'Achieved level' }),
+            rubric.getByRole('option', { name: 'Proficient' })
+        );
+
+        await userEvent.click(canvas.getByText('Result alignments'));
+        await userEvent.click(canvas.getByRole('button', { name: 'Add Result Alignment' }));
+        await userEvent.type(canvas.getByPlaceholderText('Skill or competency'), 'Data analysis');
+        await userEvent.type(
+            canvas.getByPlaceholderText('https://credentialengineregistry.org/resources/...'),
+            'https://credentialengineregistry.org/resources/ce-123'
+        );
+        await expect(submit).toBeEnabled();
+
+        await userEvent.click(canvas.getByRole('button', { name: 'JSON' }));
+        await waitFor(() =>
+            expect(canvasElement.querySelector('textarea.font-mono')).not.toBeNull()
+        );
+        const jsonEditor = canvasElement.querySelector('textarea.font-mono');
+        if (!(jsonEditor instanceof HTMLTextAreaElement)) throw new Error('JSON editor not found');
+        expect(jsonEditor.value).toContain('"rubricCriterionLevel"');
+        expect(jsonEditor.value).toContain('"achievedLevel"');
+        expect(jsonEditor.value).toContain('"alignment"');
     },
 };

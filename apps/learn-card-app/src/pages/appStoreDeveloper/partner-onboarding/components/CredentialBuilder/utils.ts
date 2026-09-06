@@ -240,6 +240,48 @@ export const serializeAchievement = (ach: AchievementTemplate): Record<string, u
             if (rd.requiredValue?.value || rd.requiredValue?.isDynamic) {
                 desc.requiredValue = fieldToJson(rd.requiredValue);
             }
+            if (fieldToJson(rd.resultType) === 'Percent') {
+                desc.valueMin = '0';
+                desc.valueMax = '100';
+            } else {
+                if (rd.valueMin?.value || rd.valueMin?.isDynamic) {
+                    desc.valueMin = fieldToJson(rd.valueMin);
+                }
+                if (rd.valueMax?.value || rd.valueMax?.isDynamic) {
+                    desc.valueMax = fieldToJson(rd.valueMax);
+                }
+            }
+            if (rd.rubricCriterionLevel && rd.rubricCriterionLevel.length > 0) {
+                desc.rubricCriterionLevel = rd.rubricCriterionLevel.map(level => ({
+                    id: level.id,
+                    type: ['RubricCriterionLevel'],
+                    name: fieldToJson(level.name),
+                    level: fieldToJson(level.level),
+                    points: fieldToJson(level.points),
+                }));
+            }
+            if (rd.alignment && rd.alignment.length > 0) {
+                desc.alignment = rd.alignment.map(a => {
+                    const alignment: Record<string, unknown> = {
+                        type: ['Alignment'],
+                        targetName: fieldToJson(a.targetName),
+                        targetUrl: fieldToJson(a.targetUrl),
+                    };
+                    if (a.targetDescription?.value || a.targetDescription?.isDynamic) {
+                        alignment.targetDescription = fieldToJson(a.targetDescription);
+                    }
+                    if (a.targetFramework?.value || a.targetFramework?.isDynamic) {
+                        alignment.targetFramework = fieldToJson(a.targetFramework);
+                    }
+                    if (a.targetCode?.value || a.targetCode?.isDynamic) {
+                        alignment.targetCode = fieldToJson(a.targetCode);
+                    }
+                    if (a.targetType?.value || a.targetType?.isDynamic) {
+                        alignment.targetType = fieldToJson(a.targetType);
+                    }
+                    return alignment;
+                });
+            }
             return desc;
         });
     }
@@ -471,6 +513,41 @@ export const parseAchievement = (achievementObj: Record<string, unknown>): Achie
                           ? (rd.allowedValue as string[])
                           : undefined,
                       requiredValue: rd.requiredValue ? jsonToField(rd.requiredValue) : undefined,
+                      valueMin: rd.valueMin ? jsonToField(rd.valueMin) : undefined,
+                      valueMax: rd.valueMax ? jsonToField(rd.valueMax) : undefined,
+                      rubricCriterionLevel: Array.isArray(rd.rubricCriterionLevel)
+                          ? (rd.rubricCriterionLevel as Record<string, unknown>[]).map(
+                                (criterion, criterionIndex) => ({
+                                    id:
+                                        (criterion.id as string) ||
+                                        `rubricCriterion_${criterionIndex}`,
+                                    name: jsonToField(criterion.name || ''),
+                                    level: jsonToField(criterion.level || ''),
+                                    points: jsonToField(criterion.points || ''),
+                                })
+                            )
+                          : undefined,
+                      alignment: Array.isArray(rd.alignment)
+                          ? (rd.alignment as Record<string, unknown>[]).map(
+                                (alignment, alignmentIndex) => ({
+                                    id: `resultAlignment_${alignmentIndex}`,
+                                    targetName: jsonToField(alignment.targetName || ''),
+                                    targetUrl: jsonToField(alignment.targetUrl || ''),
+                                    targetDescription: alignment.targetDescription
+                                        ? jsonToField(alignment.targetDescription)
+                                        : undefined,
+                                    targetFramework: alignment.targetFramework
+                                        ? jsonToField(alignment.targetFramework)
+                                        : undefined,
+                                    targetCode: alignment.targetCode
+                                        ? jsonToField(alignment.targetCode)
+                                        : undefined,
+                                    targetType: alignment.targetType
+                                        ? jsonToField(alignment.targetType)
+                                        : undefined,
+                                })
+                            )
+                          : undefined,
                   }))
                 : undefined,
     };
@@ -750,8 +827,8 @@ export const jsonToClrTemplate = (
     const evidenceArr = Array.isArray(json.evidence)
         ? (json.evidence as Record<string, unknown>[])
         : Array.isArray(subjectObj.evidence)
-        ? (subjectObj.evidence as Record<string, unknown>[])
-        : [];
+          ? (subjectObj.evidence as Record<string, unknown>[])
+          : [];
 
     // Parse multi-achievement array
     const achievementArr = Array.isArray(subjectObj.achievement)
@@ -874,8 +951,8 @@ export const jsonToTemplate = (json: Record<string, unknown>): OBv3CredentialTem
     const evidenceArr = Array.isArray(json.evidence)
         ? (json.evidence as Record<string, unknown>[])
         : Array.isArray(subjectObj.evidence)
-        ? (subjectObj.evidence as Record<string, unknown>[])
-        : [];
+          ? (subjectObj.evidence as Record<string, unknown>[])
+          : [];
     const resultArr = Array.isArray(subjectObj.result)
         ? (subjectObj.result as Record<string, unknown>[])
         : [];
@@ -1007,6 +1084,21 @@ const checkAchievementFields = (
         checkField(rd.name);
         checkField(rd.resultType);
         checkField(rd.requiredValue);
+        checkField(rd.valueMin);
+        checkField(rd.valueMax);
+        rd.rubricCriterionLevel?.forEach(level => {
+            checkField(level.name);
+            checkField(level.level);
+            checkField(level.points);
+        });
+        rd.alignment?.forEach(a => {
+            checkField(a.targetName);
+            checkField(a.targetUrl);
+            checkField(a.targetDescription);
+            checkField(a.targetFramework);
+            checkField(a.targetCode);
+            checkField(a.targetType);
+        });
     });
     ach.alignment?.forEach(a => {
         checkField(a.targetName);
