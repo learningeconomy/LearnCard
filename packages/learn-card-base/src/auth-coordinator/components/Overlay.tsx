@@ -2,7 +2,7 @@
  * Fullscreen overlay backdrop used for recovery, error, and migration modals.
  */
 
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef } from 'react';
 
 const FOCUSABLE_SELECTOR = [
     'a[href]',
@@ -35,6 +35,36 @@ export const Overlay: React.FC<OverlayProps> = ({
     'aria-describedby': ariaDescribedBy,
 }) => {
     const dialogRef = useRef<HTMLDivElement>(null);
+    const generatedTitleId = useId();
+
+    useLayoutEffect(() => {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+
+        if (ariaLabelledBy) {
+            dialog.setAttribute('aria-labelledby', ariaLabelledBy);
+            dialog.removeAttribute('aria-label');
+            return;
+        }
+
+        if (ariaLabel) {
+            dialog.setAttribute('aria-label', ariaLabel);
+            dialog.removeAttribute('aria-labelledby');
+            return;
+        }
+
+        const title = dialog.querySelector<HTMLElement>('h1, h2, h3, [role="heading"][aria-level]');
+
+        if (title) {
+            const titleId = title.id || `lc-overlay-title-${generatedTitleId}`;
+            if (!title.id) title.id = titleId;
+            dialog.setAttribute('aria-labelledby', titleId);
+            dialog.removeAttribute('aria-label');
+        } else {
+            dialog.removeAttribute('aria-labelledby');
+            dialog.setAttribute('aria-label', 'Dialog');
+        }
+    });
 
     useEffect(() => {
         const previouslyFocused =
@@ -59,6 +89,9 @@ export const Overlay: React.FC<OverlayProps> = ({
 
             const openOverlays = document.querySelectorAll('.lc-auth-overlay');
             if (dialog.parentElement !== openOverlays.item(openOverlays.length - 1)) return;
+
+            const sharedModalPortal = document.getElementById('modal-mid-root');
+            if (sharedModalPortal?.contains(document.activeElement)) return;
 
             if (event.key === 'Escape' && onDismiss) {
                 event.preventDefault();
@@ -102,7 +135,7 @@ export const Overlay: React.FC<OverlayProps> = ({
                 ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
-                aria-label={ariaLabel ?? (ariaLabelledBy ? undefined : 'Dialog')}
+                aria-label={ariaLabel}
                 aria-labelledby={ariaLabelledBy}
                 aria-describedby={ariaDescribedBy}
                 tabIndex={-1}
