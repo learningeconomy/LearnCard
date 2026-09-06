@@ -24,7 +24,7 @@ const CustomWallet: React.FC = () => {
     if (wallet) return <CustomWalletMain wallet={wallet} />;
 
     return (
-        <div className="h-full w-full flex flex-col items-center justify-center max-w-[600px] mx-auto">
+        <main className="h-full w-full flex flex-col items-center justify-center max-w-[600px] mx-auto">
             <form
                 className="flex flex-col p-8 gap-4 border rounded shadow w-full max-w-screen-mobile text-black"
                 onSubmit={e => e.preventDefault()}
@@ -49,7 +49,7 @@ const CustomWallet: React.FC = () => {
                 </button>
             </form>
             <IonLoading isOpen={loading} message="Creating wallet..." mode="ios" />
-        </div>
+        </main>
     );
 };
 

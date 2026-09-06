@@ -13,6 +13,7 @@ const HIGH_IMPACT_LEVELS = new Set(['serious', 'critical']);
 const REQUIRED_RULES: Record<string, true> = {
     'meta-viewport': true,
     'landmark-no-duplicate-main': true,
+    'landmark-one-main': true,
     'landmark-main-is-top-level': true,
     'landmark-unique': true,
 };
@@ -663,7 +664,20 @@ test.describe('Public page accessibility', () => {
         await expect(page.getByText('Hello, please enter a seed lol')).toBeVisible({
             timeout: 30_000,
         });
+        await expect(page.locator('main')).toHaveCount(1);
         await assertNoGatedViolations(page, testInfo, 'custom-wallet');
+
+        await page.getByRole('button', { name: 'Create Wallet' }).click();
+        await expect(page.getByText('What would you like to do?', { exact: true })).toBeVisible({
+            timeout: 30_000,
+        });
+        await expect(page.locator('main')).toHaveCount(1);
+        await assertNoGatedViolations(page, testInfo, 'custom-wallet-main');
+
+        await page.getByRole('button', { name: 'Manage LCN Account' }).click();
+        await expect(page.getByRole('button', { name: '< Back' })).toBeVisible();
+        await expect(page.locator('main')).toHaveCount(1);
+        await assertNoGatedViolations(page, testInfo, 'custom-wallet-manage-account');
     });
 });
 
