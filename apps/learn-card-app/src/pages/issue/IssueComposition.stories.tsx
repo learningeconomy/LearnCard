@@ -89,6 +89,10 @@ const ViewHarness: React.FC<{ initialObv3Type?: string }> = ({ initialObv3Type =
     >({});
 
     const issuableJson = useMemo(() => (template ? templateToJson(template) : null), [template]);
+    const previewCredential = useMemo(
+        () => (issuableJson ? { ...issuableJson, validFrom: '2026-01-01T00:00:00.000Z' } : null),
+        [issuableJson]
+    );
     const validationJson = useMemo(
         () => (issuableJson ? applyVariableValues(issuableJson, variableValues) : null),
         [issuableJson, variableValues]
@@ -108,7 +112,7 @@ const ViewHarness: React.FC<{ initialObv3Type?: string }> = ({ initialObv3Type =
     return (
         <IssueCredentialView
             issuedUri={null}
-            previewCredential={issuableJson}
+            previewCredential={previewCredential}
             selectedType={selectedType}
             template={template}
             recipientMode={recipientMode}
