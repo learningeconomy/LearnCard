@@ -100,9 +100,14 @@ const findResultDescription = (
     const descriptions = template.credentialSubject.achievement.resultDescription;
     const descriptionId = result?.resultDescription?.value;
 
+    const linkedDescription = descriptionId
+        ? descriptions?.find(description => description.id === descriptionId)
+        : undefined;
+
     return (
-        descriptions?.find(description => description.id === descriptionId) ??
-        descriptions?.find(description => description.name?.value === DEFAULT_RESULT_NAME)
+        linkedDescription ??
+        descriptions?.find(description => description.name?.value === DEFAULT_RESULT_NAME) ??
+        (!result && descriptions?.length === 1 ? descriptions[0] : undefined)
     );
 };
 
@@ -242,11 +247,10 @@ export const writeResult = (
     // Alignments describe the result itself, so preserve them across result-type changes.
     const alignment = next.alignment ?? existingDescription?.alignment;
     const achievedLevel = toField(next.achievedLevel);
+    const hasCustomBounds =
+        resultType !== 'Percent' && Boolean(valueMin?.value.trim() || valueMax?.value.trim());
     const hasDescriptionConfiguration = Boolean(
-        valueMin?.value.trim() ||
-        valueMax?.value.trim() ||
-        rubricCriterionLevel?.length ||
-        alignment?.length
+        hasCustomBounds || rubricCriterionLevel?.length || alignment?.length
     );
     const hasValue = field.isDynamic || Boolean(field.value.trim());
 
@@ -320,13 +324,16 @@ export const getResultValidationError = (
     if ((!result && !description) || state.isLegacyUntyped) return null;
 
     for (const alignment of state.alignment ?? []) {
-        if (!alignment.targetName.value.trim() || !alignment.targetUrl.value.trim()) {
+        const targetName = resolveFieldValue(alignment.targetName, variableValues);
+        const targetUrl = resolveFieldValue(alignment.targetUrl, variableValues);
+
+        if (targetName === '' || targetUrl === '') {
             return msg(
                 'issueFlow.result.validation.alignmentNameUrl',
                 'Add a name and URL for each result alignment.'
             );
         }
-        if (!/^https?:\/\//i.test(alignment.targetUrl.value.trim())) {
+        if (targetUrl !== undefined && !/^https?:\/\//i.test(targetUrl)) {
             return msg(
                 'issueFlow.result.validation.alignmentUrl',
                 'Enter a valid URL for each result alignment.'
@@ -344,12 +351,11 @@ export const getResultValidationError = (
         }
         const ids = new Set<string>();
         for (const level of levels) {
-            if (
-                !level.id.trim() ||
-                !level.name.value.trim() ||
-                !level.level.value.trim() ||
-                !level.points.value.trim()
-            ) {
+            const name = resolveFieldValue(level.name, variableValues);
+            const rubricLevel = resolveFieldValue(level.level, variableValues);
+            const points = resolveFieldValue(level.points, variableValues);
+
+            if (!level.id.trim() || name === '' || rubricLevel === '' || points === '') {
                 return msg(
                     'issueFlow.result.validation.completeRubricLevel',
                     'Complete the id, name, level, and points for each rubric level.'
@@ -362,7 +368,7 @@ export const getResultValidationError = (
                 );
             }
             ids.add(level.id);
-            if (!Number.isFinite(Number(level.points.value))) {
+            if (points !== undefined && !Number.isFinite(Number(points))) {
                 return msg(
                     'issueFlow.result.validation.numericRubricPoints',
                     'Enter numeric points for each rubric level.'

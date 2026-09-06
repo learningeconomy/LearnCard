@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -33,24 +33,39 @@ const legacyPercentTemplate = (): OBv3CredentialTemplate => ({
 });
 
 describe('ResultFieldEditor', () => {
-    it('converts a legacy untyped result when its default Percent type is selected', () => {
-        const template = legacyPercentTemplate();
+    it('keeps a nonnumeric legacy result editable when Percent is selected', () => {
         const onChangeTemplate = vi.fn();
+        const Harness = () => {
+            const [template, setTemplate] = useState(legacyPercentTemplate);
 
-        expect(readResultState(template).isLegacyUntyped).toBe(true);
+            return (
+                <ResultFieldEditor
+                    template={template}
+                    onChangeTemplate={next => {
+                        onChangeTemplate(next);
+                        setTemplate(next);
+                    }}
+                    canMakeDynamic={false}
+                />
+            );
+        };
 
-        render(
-            <ResultFieldEditor
-                template={template}
-                onChangeTemplate={onChangeTemplate}
-                canMakeDynamic={false}
-            />
-        );
+        render(<Harness />);
+        expect(readResultState(legacyPercentTemplate()).isLegacyUntyped).toBe(true);
+
         fireEvent.click(screen.getByRole('button', { name: 'Percent' }));
 
-        expect(onChangeTemplate).toHaveBeenCalledOnce();
-        expect(readResultState(onChangeTemplate.mock.calls[0][0])).toMatchObject({
+        const resultInput = screen.getByPlaceholderText('e.g. 95');
+        expect(resultInput).toHaveValue('B+');
+        expect(screen.getByRole('alert')).toHaveTextContent('Enter a numeric result.');
+
+        fireEvent.change(resultInput, { target: { value: '95' } });
+
+        expect(resultInput).toHaveValue('95');
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(readResultState(onChangeTemplate.mock.calls.at(-1)?.[0])).toMatchObject({
             resultType: 'Percent',
+            value: '95',
             isLegacyUntyped: false,
         });
     });

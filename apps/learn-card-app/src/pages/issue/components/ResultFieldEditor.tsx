@@ -93,7 +93,11 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
     const setResultType = (resultType: ResultType) => {
         if (resultType === selectedType && !state.isLegacyUntyped) return;
         setSelectedType(resultType);
-        const value = state.valueField?.isDynamic ? state.valueField : '';
+        const value = state.isLegacyUntyped
+            ? (state.valueField ?? state.value)
+            : state.valueField?.isDynamic
+              ? state.valueField
+              : '';
         const rubricCriterionLevel =
             resultType === 'RubricCriterionLevel'
                 ? state.rubricCriterionLevel?.length

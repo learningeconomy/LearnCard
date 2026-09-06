@@ -6,6 +6,7 @@ import {
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
 import {
     staticField,
+    dynamicField,
     systemField,
     type OBv3CredentialTemplate,
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
@@ -187,11 +188,12 @@ describe('OBv3 Result / ResultDescription', () => {
         expect(description.valueMax).toBe('10');
     });
 
-    it('allows a ResultDescription without an achieved result', () => {
+    it('reuses a lone ResultDescription when adding its first achieved result', () => {
         const template = baseTemplate();
+        const descriptionId = 'urn:uuid:description-only';
         template.credentialSubject.achievement.resultDescription = [
             {
-                id: 'urn:uuid:description-only',
+                id: descriptionId,
                 name: staticField('Available Result'),
                 resultType: staticField('Percent'),
                 valueMin: staticField('0'),
@@ -200,6 +202,16 @@ describe('OBv3 Result / ResultDescription', () => {
         ];
 
         expect(getResultValidationError(template)).toBeNull();
+
+        const updated = writeResult(template, { resultType: 'Percent', value: '95' });
+        const json = resultJson(updated);
+
+        expect(json.credentialSubject.achievement.resultDescription).toHaveLength(1);
+        expect(json.credentialSubject.achievement.resultDescription[0]).toMatchObject({
+            id: descriptionId,
+            name: 'Available Result',
+        });
+        expect(json.credentialSubject.result[0].resultDescription).toBe(descriptionId);
     });
 
     it('round-trips raw-score bounds and result-description alignments', () => {
@@ -227,6 +239,54 @@ describe('OBv3 Result / ResultDescription', () => {
             'https://credentialengineregistry.org/resources/ce-123'
         );
         expect(getResultValidationError(parsed)).toBeNull();
+    });
+
+    it('validates dynamic rubric and alignment fields with supplied values', () => {
+        const template = writeResult(baseTemplate(), {
+            resultType: 'RubricCriterionLevel',
+            value: '3',
+            achievedLevel: 'urn:uuid:proficient',
+            rubricCriterionLevel: [
+                {
+                    id: 'urn:uuid:proficient',
+                    name: staticField('Proficient'),
+                    level: staticField('3'),
+                    points: dynamicField('rubric_points'),
+                },
+            ],
+            alignment: [
+                {
+                    id: 'alignment_0',
+                    targetName: dynamicField('skill_name'),
+                    targetUrl: dynamicField('skill_url'),
+                    targetFramework: staticField('Credential Engine Registry'),
+                    targetType: staticField('CTDL'),
+                },
+            ],
+        });
+
+        expect(getResultValidationError(template)).toBeNull();
+        expect(
+            getResultValidationError(template, {
+                rubric_points: '3',
+                skill_name: 'Data analysis',
+                skill_url: 'https://example.com/skills/data-analysis',
+            })
+        ).toBeNull();
+        expect(
+            getResultValidationError(template, {
+                rubric_points: '3',
+                skill_name: 'Data analysis',
+                skill_url: 'not-a-url',
+            })
+        ).toBe('Enter a valid URL for each result alignment.');
+        expect(
+            getResultValidationError(template, {
+                rubric_points: 'three',
+                skill_name: 'Data analysis',
+                skill_url: 'https://example.com/skills/data-analysis',
+            })
+        ).toBe('Enter numeric points for each rubric level.');
     });
 
     it('round-trips rubric levels and constrains the achieved level', () => {
@@ -303,6 +363,20 @@ describe('OBv3 Result / ResultDescription', () => {
     it('clears the pair when value is emptied', () => {
         const filled = writeResult(baseTemplate(), { resultType: 'LetterGrade', value: 'A-' });
         const cleared = writeResult(filled, { resultType: 'LetterGrade', value: '' });
+
+        expect(cleared.credentialSubject.result).toBeUndefined();
+        expect(cleared.credentialSubject.achievement.resultDescription).toBeUndefined();
+    });
+
+    it('removes a synthesized Percent description when its result is cleared', () => {
+        const filled = writeResult(baseTemplate(), { resultType: 'Percent', value: '95' });
+        const state = readResultState(filled);
+        const cleared = writeResult(filled, {
+            resultType: 'Percent',
+            value: '',
+            valueMin: state.valueMin,
+            valueMax: state.valueMax,
+        });
 
         expect(cleared.credentialSubject.result).toBeUndefined();
         expect(cleared.credentialSubject.achievement.resultDescription).toBeUndefined();
