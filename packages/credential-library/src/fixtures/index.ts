@@ -23,6 +23,7 @@ import { obv3CourseCompletion } from './obv3/course-completion';
 import { obv3StandaloneFullCourse } from './obv3/standalone-full-course';
 import { obv3K12Diploma } from './obv3/k12-diploma';
 import { obv3EndorsementCredential } from './obv3/endorsement';
+import { obv3RubricAlignedBadge } from './obv3/rubric-aligned-badge';
 
 // CLR v2
 import { clrMinimal } from './clr/minimal';
@@ -88,6 +89,7 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
+    obv3RubricAlignedBadge,
 
     // CLR v2
     clrMinimal,
@@ -153,6 +155,7 @@ export {
     obv3StandaloneFullCourse,
     obv3K12Diploma,
     obv3EndorsementCredential,
+    obv3RubricAlignedBadge,
     clrUniversityTranscript,
     boostCommunityAward,
     boostDelegate,
