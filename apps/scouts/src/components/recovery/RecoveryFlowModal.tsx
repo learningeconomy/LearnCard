@@ -13,7 +13,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 import { Capacitor } from '@capacitor/core';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
-import { QrLoginRequester, getSSSConfig } from 'learn-card-base';
+import { Overlay, QrLoginRequester, getSSSConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
@@ -88,6 +88,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
 
     const hasMethod = (type: string) => availableMethods.some(m => m.type === type);
     const webAuthnSupported = isWebAuthnSupported();
+
+    const handleBack = (): void => {
+        setActiveMethod(null);
+        setError(null);
+    };
 
     const handlePasskeyRecovery = async () => {
         const passkeyMethod = availableMethods.find(m => m.type === 'passkey');
@@ -229,7 +234,7 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     // ── Method picker ────────────────────────────────────────────
 
     if (!activeMethod) {
-        return (
+        const content = (
             <div className="p-6 max-w-md mx-auto">
                 <div className="text-center mb-6">
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -284,17 +289,16 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 </button>
             </div>
         );
+
+        return <Overlay onDismiss={onCancel}>{content}</Overlay>;
     }
 
     // ── Active method detail ─────────────────────────────────────
 
-    return (
+    const content = (
         <div className="p-6 max-w-md mx-auto">
             <button
-                onClick={() => {
-                    setActiveMethod(null);
-                    setError(null);
-                }}
+                onClick={handleBack}
                 className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
             >
                 <DirectionalIcon>
@@ -606,6 +610,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             )}
         </div>
     );
+
+    return <Overlay onDismiss={loading ? undefined : handleBack}>{content}</Overlay>;
 };
 
 export default RecoveryFlowModal;

@@ -101,6 +101,12 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
         setStep('success');
     };
 
+    const handleChangeEmail = (): void => {
+        setStep('email');
+        setCode('');
+        setError(null);
+    };
+
     const handleResendCode = async () => {
         setError(null);
         setLoading(true);
@@ -160,7 +166,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
 
     if (step === 'code') {
         return (
-            <Overlay onDismiss={loading ? undefined : onLogout}>
+            <Overlay onDismiss={loading ? undefined : handleChangeEmail}>
                 <form onSubmit={handleVerifyCode} className="p-8 space-y-5">
                     <div className="text-center space-y-2">
                         <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 flex items-center justify-center">
@@ -256,11 +262,7 @@ export const EmailLinkOverlay: React.FC<EmailLinkOverlayProps> = ({
                         <div className="flex items-center justify-between">
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setStep('email');
-                                    setCode('');
-                                    setError(null);
-                                }}
+                                onClick={handleChangeEmail}
                                 disabled={loading}
                                 className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                             >

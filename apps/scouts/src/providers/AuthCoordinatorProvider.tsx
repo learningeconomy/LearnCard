@@ -1046,50 +1046,48 @@ const AuthSessionManager: React.FC<{
 
             {/* ── Recovery overlay ─────────────────────────────── */}
             {showRecovery && authProvider && (
-                <Overlay onDismiss={handleLogout}>
-                    <RecoveryFlowModal
-                        availableMethods={availableMethods}
-                        recoveryReason={
-                            coordinator.state.status === 'needs_recovery'
-                                ? coordinator.state.recoveryReason
-                                : undefined
-                        }
-                        maskedRecoveryEmail={
-                            coordinator.state.status === 'needs_recovery'
-                                ? coordinator.state.maskedRecoveryEmail
-                                : null
-                        }
-                        onRecoverWithPasskey={async (credentialId: string) => {
-                            await coordinator.recover({ method: 'passkey', credentialId });
-                        }}
-                        onRecoverWithPhrase={async (phrase: string) => {
-                            await coordinator.recover({ method: 'phrase', phrase });
-                        }}
-                        onRecoverWithBackup={async (fileContents: string, password: string) => {
-                            await coordinator.recover({ method: 'backup', fileContents, password });
-                        }}
-                        onRecoverWithEmail={async (emailShare: string) => {
-                            await coordinator.recover({ method: 'email', emailShare });
-                        }}
-                        onRecoverWithDevice={async (deviceShare: string, shareVersion?: number) => {
-                            await keyDerivation.storeLocalKey(deviceShare);
+                <RecoveryFlowModal
+                    availableMethods={availableMethods}
+                    recoveryReason={
+                        coordinator.state.status === 'needs_recovery'
+                            ? coordinator.state.recoveryReason
+                            : undefined
+                    }
+                    maskedRecoveryEmail={
+                        coordinator.state.status === 'needs_recovery'
+                            ? coordinator.state.maskedRecoveryEmail
+                            : null
+                    }
+                    onRecoverWithPasskey={async (credentialId: string) => {
+                        await coordinator.recover({ method: 'passkey', credentialId });
+                    }}
+                    onRecoverWithPhrase={async (phrase: string) => {
+                        await coordinator.recover({ method: 'phrase', phrase });
+                    }}
+                    onRecoverWithBackup={async (fileContents: string, password: string) => {
+                        await coordinator.recover({ method: 'backup', fileContents, password });
+                    }}
+                    onRecoverWithEmail={async (emailShare: string) => {
+                        await coordinator.recover({ method: 'email', emailShare });
+                    }}
+                    onRecoverWithDevice={async (deviceShare: string, shareVersion?: number) => {
+                        await keyDerivation.storeLocalKey(deviceShare);
 
-                            if (shareVersion != null) {
-                                log.debug('[Recovery via Device] storing shareVersion', {
-                                    shareVersion,
-                                });
-                                await keyDerivation.storeLocalShareVersion?.(shareVersion);
-                            } else {
-                                log.warn(
-                                    '[Recovery via Device] no shareVersion received from approver device'
-                                );
-                            }
+                        if (shareVersion != null) {
+                            log.debug('[Recovery via Device] storing shareVersion', {
+                                shareVersion,
+                            });
+                            await keyDerivation.storeLocalShareVersion?.(shareVersion);
+                        } else {
+                            log.warn(
+                                '[Recovery via Device] no shareVersion received from approver device'
+                            );
+                        }
 
-                            await coordinator.initialize();
-                        }}
-                        onCancel={handleLogout}
-                    />
-                </Overlay>
+                        await coordinator.initialize();
+                    }}
+                    onCancel={handleLogout}
+                />
             )}
 
             {/* ── Phone→email upgrade gate ─────────────────────── */}
