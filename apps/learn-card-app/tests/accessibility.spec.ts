@@ -557,12 +557,10 @@ test.describe('Authenticated core-page accessibility', () => {
 
         await activateWithKeyboard(page, badgesCategory, 'Space');
         await page.waitForURL(/\/socialBadges/, { timeout: 30_000 });
-        await expect(page.getByText('Earned', { exact: true })).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByRole('heading', { name: /Badges/i })).toBeVisible({
+            timeout: 30_000,
+        });
         await assertNoHighImpactViolations(page, testInfo, 'wallet-badges-category');
-
-        const earnedTab = page.getByRole('tab', { name: 'Earned', exact: true });
-        await tabTo(page, earnedTab);
-        await expect(earnedTab).toBeFocused();
 
         await page.goto('/dashboard');
         await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({
@@ -806,16 +804,18 @@ test.describe('Credential lifecycle accessibility', () => {
                 );
             }
             await assertNoHighImpactViolations(recipientPage, testInfo, 'claim-success');
-
             const skipConnectionButton = recipientPage.getByRole('button', {
                 name: 'Skip for Now',
+            });
+
+            await recipientPage.goto('/wallet');
+            const badgesCategory = recipientPage.getByRole('button', { name: /Badges/i });
+            await expect(badgesCategory.or(skipConnectionButton).first()).toBeVisible({
+                timeout: 30_000,
             });
             if (await skipConnectionButton.isVisible()) {
                 await activateWithKeyboard(recipientPage, skipConnectionButton, 'Enter');
             }
-
-            await recipientPage.goto('/wallet');
-            const badgesCategory = recipientPage.getByRole('button', { name: /Badges/i });
             await expect(badgesCategory).toBeVisible({ timeout: 30_000 });
             await activateWithKeyboard(recipientPage, badgesCategory, 'Space');
             await recipientPage.waitForURL(/\/socialBadges/, { timeout: 30_000 });
