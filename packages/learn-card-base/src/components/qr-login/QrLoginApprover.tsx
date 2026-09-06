@@ -9,7 +9,7 @@
  * the device share, then calls onDone.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useQrLoginApprover } from '../../hooks/useQrLogin';
 
@@ -64,6 +64,11 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
 
     const [codeInput, setCodeInput] = useState('');
     const [mode, setMode] = useState<'choose' | 'scan' | 'code'>('choose');
+    const codeInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (mode === 'code') codeInputRef.current?.focus();
+    }, [mode]);
 
     const handleScan = useCallback(async () => {
         if (!onScanQr) return;
@@ -208,6 +213,7 @@ export const QrLoginApprover: React.FC<QrLoginApproverProps> = ({
                 )}
 
                 <input
+                    ref={codeInputRef}
                     aria-label="Device link code"
                     type="text"
                     inputMode="numeric"

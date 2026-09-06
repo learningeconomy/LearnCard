@@ -74,6 +74,11 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
     const history = useHistory();
 
     const { searchString, isSearchActive } = credentialSearchStore.useStore();
+    const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        if (isSearchActive) searchInputRef.current?.focus();
+    }, [isSearchActive]);
 
     const handleOnChange = (tab: CredentialListTabEnum) => {
         if (tab === CredentialListTabEnum.Managed) {
@@ -119,6 +124,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                         {isSearchActive && (
                             <>
                                 <input
+                                    ref={searchInputRef}
                                     type="text"
                                     value={searchString}
                                     onChange={e =>
