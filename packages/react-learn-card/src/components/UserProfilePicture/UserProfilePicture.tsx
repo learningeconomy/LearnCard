@@ -1,5 +1,24 @@
 import React from 'react';
 
+/**
+ * Validates an image URL and only allows http and https URLs to prevent XSS via javascript: or malicious data: URIs.
+ */
+const sanitizeImageUrl = (url: string | undefined): string | undefined => {
+    if (!url) return undefined;
+
+    try {
+        const parsed = new URL(url);
+
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return undefined;
+        }
+
+        return parsed.href;
+    } catch {
+        return undefined;
+    }
+};
+
 const PersonSilhouette: React.FC<{ className?: string }> = ({ className = '' }) => (
     <svg
         width="22"
@@ -64,13 +83,17 @@ export const UserProfilePicture: React.FC<{
     avatarFallbackVariant = 'initial',
 }) => {
     const baseColor = avatarColor || 'bg-grayscale-700';
-    const src = user?.image || user?.profileImage;
+    const rawSrc = user?.image || user?.profileImage;
+    const src = sanitizeImageUrl(rawSrc);
     const [errored, setErrored] = React.useState(false);
+    const [prevSrc, setPrevSrc] = React.useState(src);
 
     // Reset the error flag whenever the source changes (e.g. good URL after a bad one).
-    React.useEffect(() => {
+    // Using derived state pattern instead of useEffect to avoid cascading renders.
+    if (src !== prevSrc) {
+        setPrevSrc(src);
         setErrored(false);
-    }, [src]);
+    }
 
     const letterToDisplay =
         user?.displayName?.substring(0, 1) ||

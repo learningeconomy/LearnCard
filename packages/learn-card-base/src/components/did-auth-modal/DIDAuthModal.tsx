@@ -207,10 +207,29 @@ export const DIDAuthModal = () => {
     );
 };
 
+/**
+ * Sanitizes a URL for use in img src to prevent XSS.
+ * Only allows http: and https: protocols.
+ * Returns reconstructed URL to break taint chain.
+ */
+const sanitizeImageUrl = (url: string | undefined): string | undefined => {
+    if (!url) return undefined;
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+            return parsed.href;
+        }
+        return undefined;
+    } catch {
+        return undefined;
+    }
+};
+
 export const DIDAuthMessage = ({ title, subtitle, text, color, image }) => {
+    const safeImageUrl = sanitizeImageUrl(image);
     return (
         <IonCard color={color} style={{ maxWidth: '600px ' }}>
-            {image && <img alt="Success" src={image} />}
+            {safeImageUrl && <img alt="Success" src={safeImageUrl} />}
             <IonCardHeader>
                 <IonCardTitle>{title}</IonCardTitle>
                 <IonCardSubtitle>{subtitle}</IonCardSubtitle>
