@@ -1,8 +1,12 @@
-import { describe, test, expect } from 'vitest';
+import { afterEach, describe, test, expect } from 'vitest';
 
 import { getLearnCardForUser, getLearnCard, LearnCard } from './helpers/learncard.helpers';
-import { sendCredentialsViaInbox } from './helpers/inbox.helpers';
-import { LCNIntegration } from '@learncard/types';
+import { sendCredentialsViaInbox, startP256DidAuthFixture } from './helpers/inbox.helpers';
+import type { P256DidAuthFixture } from './helpers/inbox.helpers';
+import { testUnsignedBoost } from './helpers/credential.helpers';
+import type { LCNIntegration, VP } from '@learncard/types';
+
+type ExchangeResponse = { status: number; data: Record<string, any> };
 
 let a: LearnCard;
 let b_anonymous: LearnCard;
@@ -41,6 +45,174 @@ describe('Inbox', () => {
         });
 
         token = await a.invoke.getAPITokenForAuthGrant(grantId);
+    });
+
+    describe.each(['workflow', 'inbox-claim'] as const)('P-256 DIDAuth %s', branch => {
+        let p256: P256DidAuthFixture | undefined;
+
+        beforeEach(async () => {
+            p256 = await startP256DidAuthFixture();
+        });
+
+        afterEach(async () => {
+            await p256?.close();
+            p256 = undefined;
+        });
+
+        const postExchange = async (url: string, presentation?: VP): Promise<ExchangeResponse> => {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(presentation ? { verifiablePresentation: presentation } : {}),
+            });
+            return { status: response.status, data: await response.json() };
+        };
+
+        const initiate = async (url: string): Promise<{ challenge: string; domain: string }> => {
+            const response = await postExchange(url);
+            expect(response.status).toBe(200);
+            expect(response.data.verifiablePresentationRequest).toMatchObject({
+                challenge: expect.any(String),
+                domain: expect.any(String),
+            });
+            const { challenge, domain } = response.data.verifiablePresentationRequest;
+            return { challenge, domain };
+        };
+
+        const createExchange = async (holderDid: string) => {
+            if (branch === 'inbox-claim') {
+                const credential = await a.invoke.issueCredential(await a.invoke.getTestVc());
+                const response = await fetch('http://localhost:4000/api/inbox/issue', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        credential,
+                        recipient: { type: 'email', value: 'p256-holder@test.com' },
+                    }),
+                });
+                expect(response.status).toBe(200);
+                expect(await response.json()).toMatchObject({ status: 'PENDING' });
+                const delivery = await fetch('http://localhost:4000/api/test/last-delivery');
+                const claimUrl = (await delivery.json()).templateModel.claimUrl;
+                const interaction = parseInteractionUrl(claimUrl);
+                expect(interaction?.workflowId).toBe('inbox-claim');
+                if (!interaction) throw new Error('Missing inbox claim interaction');
+                const url = `http://localhost:4000/api/workflows/inbox-claim/exchanges/${interaction.interactionId}`;
+                return { url, expectedCredential: credential, freshUrl: async () => url };
+            }
+
+            const sa = await a.invoke.createSigningAuthority('p256-exchange');
+            if (!sa) throw new Error('Failed to create exchange signing authority');
+            await a.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
+                name: 'P-256 exchange',
+                type: 'achievement',
+                category: 'Achievement',
+            });
+            await a.invoke.updateBoost(boostUri, { defaultPermissions: { canView: true } });
+            const freshUrl = async () => {
+                // Generic claim links are intentionally reusable unless a usage limit is set.
+                const exchange = await a.invoke.generateClaimLink(
+                    boostUri,
+                    { endpoint: sa.endpoint!, name: sa.name },
+                    { totalUses: 1 }
+                );
+                const id = Buffer.from(JSON.stringify(exchange)).toString('base64url');
+                return `http://localhost:4000/api/workflows/claim/exchanges/${id}`;
+            };
+            return {
+                url: await freshUrl(),
+                expectedCredential: {
+                    name: testUnsignedBoost.name,
+                    credentialSubject: { id: holderDid },
+                },
+                freshUrl,
+            };
+        };
+
+        const expectIssued = (response: ExchangeResponse, expectedCredential: object) => {
+            expect(response.status).toBe(200);
+            expect(response.data.verifiablePresentation.verifiableCredential).toHaveLength(1);
+            expect(response.data.verifiablePresentation.verifiableCredential[0]).toMatchObject(
+                expectedCredential
+            );
+        };
+
+        const expectDenied = (response: ExchangeResponse, status = 400) => {
+            expect(response.status).toBe(status);
+            expect(response.data).not.toHaveProperty('verifiablePresentation');
+            expect(response.data).not.toHaveProperty('verifiableCredential');
+        };
+
+        test.each(['did:key', 'did:web'] as const)(
+            '%s completes issuance, denies replay, and accepts a fresh challenge',
+            async method => {
+                const fixture = p256!;
+                const holder = method === 'did:key' ? fixture.keyHolder : fixture.webHolder;
+                const exchange = await createExchange(holder.did);
+                const request = await initiate(exchange.url);
+                const presentation = await fixture.sign(holder, request);
+                expectIssued(
+                    await postExchange(exchange.url, presentation),
+                    exchange.expectedCredential
+                );
+                expectDenied(
+                    await postExchange(exchange.url, presentation),
+                    branch === 'workflow' ? 404 : 400
+                );
+
+                // Inbox restarts with {}; a consumed single-use generic link needs a newly
+                // generated claim link, not a reset of the exhausted link.
+                const freshUrl = await exchange.freshUrl();
+                const freshRequest = await initiate(freshUrl);
+                expect(freshRequest.challenge).not.toBe(request.challenge);
+                expectDenied(await postExchange(freshUrl, presentation));
+                expectIssued(
+                    await postExchange(freshUrl, await fixture.sign(holder, freshRequest)),
+                    exchange.expectedCredential
+                );
+            }
+        );
+
+        test.each(['challenge', 'domain', 'purpose'] as const)(
+            'rejects an incorrect %s without consuming the exchange',
+            async invalid => {
+                const fixture = p256!;
+                const holder = fixture.keyHolder;
+                const exchange = await createExchange(holder.did);
+                const request = await initiate(exchange.url);
+                const overrides =
+                    invalid === 'challenge'
+                        ? { challenge: `${request.challenge}-incorrect` }
+                        : invalid === 'domain'
+                          ? { domain: 'http://localhost:1' }
+                          : { proofPurpose: 'assertionMethod' };
+                const invalidPresentation = await fixture.sign(holder, request, overrides);
+                expectDenied(await postExchange(exchange.url, invalidPresentation));
+
+                // Reuse the original challenge, without another initiation hiding consumption.
+                expectIssued(
+                    await postExchange(exchange.url, await fixture.sign(holder, request)),
+                    exchange.expectedCredential
+                );
+            }
+        );
+
+        test('rejects did:web without authentication authorization and preserves the exchange', async () => {
+            const fixture = p256!;
+            const exchange = await createExchange(fixture.webHolder.did);
+            const request = await initiate(exchange.url);
+            const presentation = await fixture.sign(fixture.unauthorizedWebHolder, request);
+            fixture.removeAuthentication();
+            expectDenied(await postExchange(exchange.url, presentation));
+            expectIssued(
+                await postExchange(exchange.url, await fixture.sign(fixture.webHolder, request)),
+                exchange.expectedCredential
+            );
+        });
     });
 
     describe('Issue Credential', () => {

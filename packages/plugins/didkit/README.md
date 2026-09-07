@@ -72,6 +72,23 @@ if (result.errors.length > 0) console.error('This presentation is not valid!', r
 else console.log('This presentation is valid!');
 ```
 
+#### Final P-256 Data Integrity proofs
+
+The native and WASM engines support explicit `ecdsa-rdfc-2019` proofs with P-256/ES256
+keys. Verification accepts equivalent P-256 JWKs and validated compressed P-256
+Multikeys. This suite is distinct from the legacy `ecdsa-2019` suite; omitted-suite
+selection and existing EdDSA behavior are unchanged. P-384 is not supported by the
+new suite.
+
+For DIDAuth verification, supply the expected `proofPurpose: 'authentication'`,
+`challenge`, and `domain`. The holder's DID document must authorize the verification
+method for authentication. Final-suite proofs may omit `created`; a verification
+date cutoff applies to timestamps that are present.
+
+Low-level signing requires an explicit P-256 key and an appropriate document context.
+An Ed25519 wallet does not gain P-256 key selection, and outgoing OpenID negotiation
+does not advertise this suite.
+
 ### Storing/Retrieving/Sending Credentials
 
 #### Ceramic/IDX
