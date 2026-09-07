@@ -4,6 +4,7 @@ import { isLocalhost } from 'learn-card-base';
 import SpilledCup from '../svgs/SpilledCup';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { environment } from '../../config/environment';
 const log = getLogger('generic-error-boundary');
 
 type ErrorFallbackProps = {
@@ -12,7 +13,7 @@ type ErrorFallbackProps = {
 };
 
 const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetErrorBoundary }) => {
-    const showError = process.env.NODE_ENV === 'development' || isLocalhost;
+    const showError = environment.DEV || isLocalhost;
 
     return (
         <div className="text-grayscale-900 h-full w-full flex flex-col gap-[50px] items-center justify-center p-4">

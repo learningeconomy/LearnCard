@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import * as Sentry from '@sentry/serverless';
 
 import type { TracingProvider, SpanContext, SpanResult } from '../types';
@@ -5,7 +6,11 @@ import type { TracingProvider, SpanContext, SpanResult } from '../types';
 interface SentrySpanLike {
     finish(): void;
     setStatus(status: string): void;
-    startChild(opts: { op: string; description: string; data?: Record<string, unknown> }): SentrySpanLike;
+    startChild(opts: {
+        op: string;
+        description: string;
+        data?: Record<string, unknown>;
+    }): SentrySpanLike;
 }
 
 export class SentryTracingProvider implements TracingProvider {
@@ -16,7 +21,7 @@ export class SentryTracingProvider implements TracingProvider {
     private rootSpans = new Map<string, SentrySpanLike>();
 
     isEnabled(): boolean {
-        return Boolean(process.env.SENTRY_DSN);
+        return Boolean(environment.SENTRY_DSN);
     }
 
     onSpanStart(ctx: SpanContext): void {

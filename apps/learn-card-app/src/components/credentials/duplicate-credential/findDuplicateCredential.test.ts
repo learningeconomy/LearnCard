@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { createDeferred } from 'learn-card-base/helpers/deferred';
 
 import { findDuplicateCredential } from './findDuplicateCredential';
 
@@ -222,11 +223,11 @@ describe('findDuplicateCredential', () => {
         try {
             const wallet = createWallet();
             const { promise: delayedExactRecords, resolve: resolveExactRecords } =
-                Promise.withResolvers<never[]>();
+                createDeferred<never[]>();
             setTimeout(() => resolveExactRecords([]), 2000);
             vi.mocked(wallet.index.LearnCloud.get).mockReturnValueOnce(delayedExactRecords);
 
-            const { promise: stalledPage } = Promise.withResolvers<never>();
+            const { promise: stalledPage } = createDeferred<never>();
             const getPage = vi.fn().mockReturnValue(stalledPage);
             wallet.index.LearnCloud.getPage = getPage;
 

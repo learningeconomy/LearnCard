@@ -62,8 +62,8 @@ const EndorsementReviewFooter: React.FC<{
                         {isDisabled
                             ? m['endorsement.reviewFooter.approved']()
                             : isLoading
-                            ? m['endorsement.reviewFooter.approving']()
-                            : m['endorsement.reviewFooter.approve']()}
+                              ? m['endorsement.reviewFooter.approving']()
+                              : m['endorsement.reviewFooter.approve']()}
                     </button>
                 </div>
             </div>

@@ -57,11 +57,17 @@
                 "script": "test"
             }
         },
-        "test:watch": {
-            "executor": "./tools/executors/workspace:run-command",
+        "typecheck": {
+            "executor": "nx:run-script",
+            "dependsOn": ["^build"],
             "options": {
-                "command": "bun run test:watch",
-                "cwd": "{root}/services/learn-card-network/lca-api"
+                "script": "typecheck"
+            }
+        },
+        "test:watch": {
+            "executor": "nx:run-script",
+            "options": {
+                "script": "test:watch"
             }
         },
         "test:integration": {

@@ -68,14 +68,42 @@ describe('resolveTenantConfig – full boot path', () => {
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it('falls back to DEFAULT config when all sources fail', async () => {
-        // Baked fetch 404s
-        fetchMock.mockImplementation(async (url: string) => ({
+    it('rejects an invalid explicit static config', async () => {
+        await expect(
+            resolveTenantConfig({ staticConfig: { tenantId: 'incomplete' } })
+        ).rejects.toThrow(/Invalid TenantConfig from static override/);
+    });
+
+    it('rejects an invalid successful config response instead of using defaults', async () => {
+        fetchMock.mockImplementation(async (url: string) => {
+            if (url.includes('tenant-config.json')) return { ok: false, status: 404 };
+
+            return {
+                ok: true,
+                json: async () => ({
+                    tenantId: 'broken',
+                    domain: 'broken.example.com',
+                    apis: { brainService: 'not-a-url' },
+                }),
+            };
+        });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(/Invalid TenantConfig/);
+    });
+
+    it('fails when no source resolves unless the default is explicitly allowed', async () => {
+        fetchMock.mockResolvedValue({ ok: false, status: 404 });
+
+        await expect(resolveTenantConfig()).rejects.toThrow(/No valid TenantConfig source/);
+    });
+
+    it('uses the validated default only when explicitly allowed', async () => {
+        fetchMock.mockImplementation(async () => ({
             ok: false,
             status: 404,
         }));
 
-        const result = await resolveTenantConfig();
+        const result = await resolveTenantConfig({ allowDefault: true });
 
         expect(result.tenantId).toBe(DEFAULT_LEARNCARD_TENANT_CONFIG.tenantId);
         expect(result.domain).toBe(DEFAULT_LEARNCARD_TENANT_CONFIG.domain);
@@ -176,7 +204,7 @@ describe('resolveTenantConfig – full boot path', () => {
     });
 
     it('skips network fetch when offlineOnly is set', async () => {
-        const result = await resolveTenantConfig({ offlineOnly: true });
+        const result = await resolveTenantConfig({ offlineOnly: true, allowDefault: true });
 
         // Only baked fetch should have been called (for /tenant-config.json)
         const fetchCalls = fetchMock.mock.calls.map((c: unknown[]) => c[0]);

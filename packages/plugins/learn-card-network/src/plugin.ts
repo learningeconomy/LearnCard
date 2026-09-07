@@ -2703,7 +2703,9 @@ export async function getLearnCardNetworkPlugin(
 
             isServiceTrusted: async (_learnCard, serviceDid) => {
                 const trustedServices = await client.federation.getTrustedServices.query({});
-                return trustedServices.some(s => s.did === serviceDid);
+                return trustedServices.some(
+                    (service: { did: string }) => service.did === serviceDid
+                );
             },
 
             getTrustedServices: async () => {
@@ -2771,9 +2773,8 @@ export const getVerifyBoostPlugin = async (
                 const boostCredential = credential?.boostCredential;
                 try {
                     if (boostCredential) {
-                        const verifyBoostCredential = await learnCard.invoke.verifyCredential(
-                            boostCredential
-                        );
+                        const verifyBoostCredential =
+                            await learnCard.invoke.verifyCredential(boostCredential);
                         const boostCredentialErrors = verifyBoostCredential.errors ?? [];
                         if (verifyBoostCredential.status?.length) {
                             verificationCheck.status = [

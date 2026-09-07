@@ -13,8 +13,10 @@
  */
 
 import { Capacitor } from '@capacitor/core';
+import type { TenantConfig } from 'learn-card-base';
 
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { environment } from '../config/environment';
 
 export type AnalyticsEnvironment = 'production' | 'staging' | 'preview' | 'development' | 'test';
 
@@ -27,6 +29,14 @@ export interface SharedEventContext {
     [key: string]: unknown;
 }
 
+const getTenantConfig = (): TenantConfig | undefined => {
+    try {
+        return getResolvedTenantConfig();
+    } catch {
+        return undefined;
+    }
+};
+
 const isAutomatedAgent = (): boolean => {
     if (typeof navigator === 'undefined') return false;
     // Playwright/Selenium/etc. set `navigator.webdriver`. Headless
@@ -34,34 +44,50 @@ const isAutomatedAgent = (): boolean => {
     return navigator.webdriver === true || /HeadlessChrome/i.test(navigator.userAgent ?? '');
 };
 
+const getBuildAnalyticsEnvironment = (): Exclude<AnalyticsEnvironment, 'test'> => {
+    if (environment.MODE === 'production') return 'production';
+    if (environment.MODE === 'staging') return 'staging';
+    if (environment.MODE === 'preview') return 'preview';
+    return 'development';
+};
+
+const getTenantAnalyticsEnvironment = (
+    config: TenantConfig | undefined
+): Exclude<AnalyticsEnvironment, 'test'> | undefined => {
+    if (!config) return undefined;
+
+    const identity = `${config.observability.sentryEnv ?? ''} ${config.domain}`.toLowerCase();
+
+    if (identity.includes('staging') || identity.includes('stage.')) return 'staging';
+    if (identity.includes('preview') || identity.includes('alpha')) return 'preview';
+    if (identity.includes('development') || identity.includes('localhost')) return 'development';
+    if (identity.includes('production')) return 'production';
+    return undefined;
+};
+
 /**
  * Classify the runtime environment. Ordering matters:
- * automation → native (hostname is `localhost` under Capacitor, so it
- * must be decided by build mode before web hostname checks) → web
- * hostname heuristics → build-mode fallback.
+ * automation → resolved tenant stage → hostname heuristics → build-mode fallback.
+ * Native builds use the baked tenant stage because Vite always builds them in
+ * production mode, including staging releases.
  */
 export const detectAnalyticsEnvironment = (): AnalyticsEnvironment => {
     if (isAutomatedAgent()) return 'test';
-    if (import.meta.env.MODE === 'test') return 'test';
+    if (environment.MODE === 'test') return 'test';
+
+    const config = getTenantConfig();
+    const tenantEnvironment = getTenantAnalyticsEnvironment(config);
 
     if (Capacitor.isNativePlatform()) {
-        return import.meta.env.PROD ? 'production' : 'development';
+        return tenantEnvironment ?? getBuildAnalyticsEnvironment();
     }
 
     const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-
-    let prodDomain: string | undefined;
-    let devDomain: string | undefined;
-    try {
-        const config = getResolvedTenantConfig();
-        prodDomain = config.domain;
-        devDomain = config.devDomain;
-    } catch {
-        // TenantConfig not resolved yet — fall through to heuristics.
-    }
+    const prodDomain = config?.domain;
+    const devDomain = config?.devDomain;
 
     if (prodDomain && (hostname === prodDomain || hostname === `www.${prodDomain}`)) {
-        return 'production';
+        return tenantEnvironment ?? 'production';
     }
 
     if (
@@ -85,9 +111,7 @@ export const detectAnalyticsEnvironment = (): AnalyticsEnvironment => {
         return 'staging';
     }
 
-    // Unknown host: trust the build mode. Production builds served from
-    // an unrecognized host (e.g. a new tenant CNAME) should still count.
-    return import.meta.env.PROD ? 'production' : 'development';
+    return tenantEnvironment ?? getBuildAnalyticsEnvironment();
 };
 
 /**
@@ -109,18 +133,12 @@ const getPlatform = (): SharedEventContext['platform'] => {
  * cached so late TenantConfig resolution self-heals.
  */
 export const getSharedEventContext = (): SharedEventContext => {
-    let tenantId: string | undefined;
-    try {
-        tenantId = getResolvedTenantConfig().tenantId;
-    } catch {
-        tenantId = undefined;
-    }
-
-    const version = import.meta.env.VITE_APP_VERSION;
+    const tenantId = getTenantConfig()?.tenantId;
+    const version = environment.VITE_APP_VERSION ?? __APP_VERSION__;
 
     return {
         environment: detectAnalyticsEnvironment(),
-        app_version: version && version.length > 0 ? version : undefined,
+        app_version: version.length > 0 ? version : undefined,
         tenant_id: tenantId,
         platform: getPlatform(),
     };

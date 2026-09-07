@@ -315,6 +315,9 @@ export const AnalyticsEvents = {
     // completion needs no event (derivable from the funnel events).
     DASHBOARD_GET_STARTED_INTERACTED: 'dashboard_get_started_interacted',
 
+    // Dashboard account-recovery prompt funnel.
+    DASHBOARD_RECOVERY_PROMPT_INTERACTED: 'dashboard_recovery_prompt_interacted',
+
     // ConsentFlow terminal states — distinguish deliberate exits and
     // technical failures from silent abandonment.
     CONSENT_FLOW_DECLINED: 'consent_flow_declined',
@@ -1256,6 +1259,12 @@ export interface AnalyticsEventPayloads {
         action: 'item_clicked' | 'dismissed';
         item_key?: string;
         hero_action_id?: string;
+    };
+
+    [AnalyticsEvents.DASHBOARD_RECOVERY_PROMPT_INTERACTED]: {
+        action: 'shown' | 'clicked' | 'snoozed' | 'completed';
+        weight: 'calm' | 'urgent';
+        method?: 'passkey' | 'phrase' | 'backup' | 'email';
     };
 
     [AnalyticsEvents.CONSENT_FLOW_DECLINED]: {

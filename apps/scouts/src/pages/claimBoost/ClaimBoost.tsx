@@ -5,7 +5,6 @@ import { IonContent, IonPage, IonSpinner, useIonAlert, IonRow } from '@ionic/rea
 import { getVCDisplayCardVariant } from '@learncard/react';
 // import MainHeader from '../../components/main-header/MainHeader';
 import X from 'learn-card-base/svgs/X';
-// @ts-ignore
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import ViewTroopIdModal from '../troop/ViewTroopIdModal';
@@ -29,7 +28,7 @@ import {
     ProfilePicture,
     BrandingEnum,
     ModalTypes,
-    SCOUTPASS_NETWORK_API_URL,
+    networkStore,
     useToast,
     ToastTypeEnum,
 } from 'learn-card-base';
@@ -56,7 +55,9 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
 
-    const profileId = getUserHandleFromDid(boostVC?.issuer as any);
+    const issuerDid =
+        typeof boostVC.issuer === 'string' ? boostVC.issuer : (boostVC.issuer?.id ?? '');
+    const profileId = getUserHandleFromDid(issuerDid);
     const { data } = useGetProfile(profileId);
 
     const issueDate = formatLocaleDate(boostVC?.issuanceDate, {
@@ -200,7 +201,7 @@ export const ClaimBoostModal: React.FC<{
             setLoading(true);
 
             const result = await fetch(
-                `${SCOUTPASS_NETWORK_API_URL}/storage/resolve?uri=${boostUri}${
+                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${boostUri}${
                     challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
                 }`
             );
@@ -210,7 +211,7 @@ export const ClaimBoostModal: React.FC<{
             const boostVC: VC = await result.json();
 
             setBoost(boostVC);
-        } catch (error: any) {
+        } catch (error) {
             log.error(error);
         } finally {
             setLoading(false);
@@ -241,13 +242,10 @@ export const ClaimBoostModal: React.FC<{
             );
             await addCredentialToWallet({ uri: claimedBoostUri });
 
-            const category = getDefaultCategoryForCredential((boost || {}) as any);
-            const achievementType = getAchievementType((boost || {}) as any);
-
             if (boost) {
                 logAnalyticsEvent('claim_boost', {
-                    boostType: category,
-                    achievementType,
+                    boostType: getDefaultCategoryForCredential(boost),
+                    achievementType: getAchievementType(boost),
                     method: 'Claim Modal',
                 });
             }
@@ -303,7 +301,9 @@ export const ClaimBoostModal: React.FC<{
         getBoost();
     }, []);
 
-    const credentialBodyOverride = <ClaimBoostBodyPreviewOverride boostVC={(boost || {}) as any} />;
+    const credentialBodyOverride = boost ? (
+        <ClaimBoostBodyPreviewOverride boostVC={boost} />
+    ) : undefined;
 
     const handleClaimBoostAction = async () => {
         if (isLoggedIn && !loading) {
@@ -313,15 +313,11 @@ export const ClaimBoostModal: React.FC<{
             openLoggedOutModal();
         }
     };
-    let actionButtonText = m['common.accept']();
-
-    if (isClaimLoading) {
-        actionButtonText = m['common.loading']();
-    } else if (!isClaimLoading && isClaimed) {
-        actionButtonText = m['notifications.accepted']();
-    } else {
-        actionButtonText = m['common.accept']();
-    }
+    const actionButtonText = isClaimLoading
+        ? m['common.loading']()
+        : isClaimed
+          ? m['notifications.accepted']()
+          : m['common.accept']();
 
     const isTroopIdClaim = boost ? isTroopCredential(boost) : false;
 
@@ -365,7 +361,7 @@ export const ClaimBoostModal: React.FC<{
                         <>
                             {!isTroopIdClaim ? (
                                 <VCDisplayCardWrapper2
-                                    credential={(boost || {}) as any}
+                                    credential={boost!}
                                     customBodyCardComponent={credentialBodyOverride}
                                     customFooterComponent={<div />}
                                     checkProof={false}
@@ -377,7 +373,7 @@ export const ClaimBoostModal: React.FC<{
                                 />
                             ) : (
                                 <ViewTroopIdModal
-                                    credential={(boost || {}) as any}
+                                    credential={boost!}
                                     boostUri={boostUri || ''}
                                     claimCredentialUri={boostUri || ''}
                                     useCurrentUserInfo

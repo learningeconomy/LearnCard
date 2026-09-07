@@ -2,6 +2,7 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC, VP } from '@learncard/types';
+import { createDeferred } from 'learn-card-base/helpers/deferred';
 
 import ExchangeAcceptCredentials from './ExchangeAcceptCredentials';
 
@@ -223,7 +224,7 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
     });
 
     it('removes the inline claim overlay when exchange completion unmounts the claim screen', async () => {
-        const { promise: storeResult, resolve: resolveStore } = Promise.withResolvers<{
+        const { promise: storeResult, resolve: resolveStore } = createDeferred<{
             result: boolean;
             credentialUri: string;
         }>();

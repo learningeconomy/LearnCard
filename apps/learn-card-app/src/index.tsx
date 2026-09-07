@@ -7,7 +7,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
-import { TenantConfigProvider } from 'learn-card-base';
+import { TenantConfigProvider, renderConfigurationError } from 'learn-card-base';
 import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOpener';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
@@ -19,7 +19,8 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import { installInsetSimulator } from 'learn-card-base/dev/simulateInsets';
 import * as Sentry from '@sentry/browser';
 
-(window as any).Buffer = Buffer;
+const browserGlobals = window as Window & { Buffer: typeof Buffer };
+browserGlobals.Buffer = Buffer;
 
 // Dev-only: simulate device safe-area insets via ?insets so band bugs are
 // visible on desktop. Must run before React renders (sets CSS vars on <html>).
@@ -100,4 +101,7 @@ installInsetSimulator();
     // to log results (for example: reportWebVitals(console.log))
     // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
     reportWebVitals();
-})();
+})().catch(error => {
+    renderConfigurationError(error);
+    SplashScreen.hide({ fadeOutDuration: 0 }).catch(() => undefined);
+});

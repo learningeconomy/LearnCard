@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { ServerClient } from 'postmark';
 
 import { renderEmail, resolveBranding } from '@learncard/email-templates';
@@ -50,8 +51,8 @@ export class PostmarkAdapter implements DeliveryService {
     }
 
     public async send(notification: Notification): Promise<void> {
-        const defaultFrom = process.env.POSTMARK_FROM_EMAIL || 'support@learningeconomy.io';
-        const defaultBrandName = process.env.POSTMARK_BRAND_NAME || 'LearnCard';
+        const defaultFrom = environment.POSTMARK_FROM_EMAIL || 'support@learningeconomy.io';
+        const defaultBrandName = environment.POSTMARK_BRAND_NAME || 'LearnCard';
 
         // Use tenant branding for the "From" name and domain when available
         const brandName = notification.branding?.brandName || defaultBrandName;

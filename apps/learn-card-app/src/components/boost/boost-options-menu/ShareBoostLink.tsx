@@ -118,8 +118,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         issuerName = profile
             ? profile?.displayName
             : isLoading
-            ? m['common.loading']()
-            : m['common.unknown']();
+              ? m['common.loading']()
+              : m['common.unknown']();
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }
@@ -128,8 +128,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         issueeName = myProfile
             ? myProfile?.displayName
             : myProfileLoading
-            ? m['common.loading']()
-            : m['common.unknown']();
+              ? m['common.loading']()
+              : m['common.unknown']();
     } else {
         issueeName = cred?.credentialSubject?.id;
     }

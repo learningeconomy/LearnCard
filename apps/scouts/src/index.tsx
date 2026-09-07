@@ -4,7 +4,7 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { asyncWithLDProvider } from 'launchdarkly-react-client-sdk';
 import { ANONYMOUS_CONTEXT } from './constants/launchDarkly';
-import { TenantConfigProvider } from 'learn-card-base';
+import { TenantConfigProvider, renderConfigurationError } from 'learn-card-base';
 import { LocaleProvider } from './i18n';
 import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
 
@@ -16,10 +16,9 @@ import reportWebVitals from './reportWebVitals';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import { installInsetSimulator } from 'learn-card-base/dev/simulateInsets';
 import * as Sentry from '@sentry/browser';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('index');
 
-(window as any).Buffer = Buffer;
+const browserGlobals = window as Window & { Buffer: typeof Buffer };
+browserGlobals.Buffer = Buffer;
 
 // Dev-only: simulate device safe-area insets via ?insets so band bugs are
 // visible on desktop. Must run before React renders (sets CSS vars on <html>).
@@ -32,8 +31,12 @@ installInsetSimulator();
     // fall through to the tenant default when there's no persisted choice and
     // navigator.language isn't a supported locale. Must run BEFORE React mounts
     // (resolveInitialLocale runs in the LocaleProvider useState initializer).
-    setTenantDefaultLocaleCache((tenantConfig as any)?.i18n?.defaultLanguage);
-    setTenantSupportedLanguagesCache((tenantConfig as any)?.i18n?.supportedLanguages);
+    const { i18n } = tenantConfig as typeof tenantConfig & {
+        i18n?: { defaultLanguage?: string; supportedLanguages?: string[] };
+    };
+
+    setTenantDefaultLocaleCache(i18n?.defaultLanguage);
+    setTenantSupportedLanguagesCache(i18n?.supportedLanguages);
 
     // notifyAppReady
     const capGoApp = await CapacitorUpdater.notifyAppReady();
@@ -75,4 +78,7 @@ installInsetSimulator();
     // to log results (for example: reportWebVitals(console.log))
     // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
     reportWebVitals();
-})();
+})().catch(error => {
+    renderConfigurationError(error);
+    SplashScreen.hide({ fadeOutDuration: 0 }).catch(() => undefined);
+});

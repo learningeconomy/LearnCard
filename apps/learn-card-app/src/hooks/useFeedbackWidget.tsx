@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/react';
-import { getClient } from '@sentry/react';
+import { useObservabilityConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 interface Props {
     buttonRef?: RefObject<HTMLButtonElement> | RefObject<HTMLAnchorElement>;
@@ -9,8 +9,9 @@ interface Props {
 }
 
 export default function useFeedbackWidget({ buttonRef, messagePlaceholder }: Props) {
+    const { sentryDsn, sentryEnv } = useObservabilityConfig();
     const feedback = Sentry.getFeedback();
-    const isSentryEnabled = SENTRY_ENV && SENTRY_ENV !== 'development';
+    const isSentryEnabled = Boolean(sentryDsn) && sentryEnv !== 'development';
 
     useEffect(() => {
         if (!feedback || !isSentryEnabled) {

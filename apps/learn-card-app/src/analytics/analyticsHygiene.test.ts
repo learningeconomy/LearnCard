@@ -1,10 +1,22 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { LearnCardAppEnvironment } from '../config/buildEnvironment';
 
-const { mockCapacitor, mockGetResolvedTenantConfig } = vi.hoisted(() => ({
+type MockAnalyticsEnvironment = Pick<
+    LearnCardAppEnvironment,
+    'MODE' | 'DEV' | 'PROD' | 'VITE_APP_VERSION'
+>;
+
+const { mockCapacitor, mockEnvironment, mockGetResolvedTenantConfig } = vi.hoisted(() => ({
     mockCapacitor: {
         isNativePlatform: vi.fn(() => false),
         getPlatform: vi.fn(() => 'web'),
     },
+    mockEnvironment: {
+        MODE: 'test',
+        DEV: false,
+        PROD: false,
+        VITE_APP_VERSION: undefined,
+    } satisfies MockAnalyticsEnvironment,
     mockGetResolvedTenantConfig: vi.fn(),
 }));
 
@@ -12,8 +24,12 @@ vi.mock('@capacitor/core', () => ({ Capacitor: mockCapacitor }));
 vi.mock('../config/bootstrapTenantConfig', () => ({
     getResolvedTenantConfig: mockGetResolvedTenantConfig,
 }));
+vi.mock('../config/environment', () => ({ environment: mockEnvironment }));
 vi.mock('learn-card-base', () => ({
-    getLogger: () => (globalThis as any).mockLearnCardBaseLogger(),
+    getLogger: () =>
+        (
+            globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown }
+        ).mockLearnCardBaseLogger(),
 }));
 
 import { detectAnalyticsEnvironment, getSharedEventContext, newFlowId } from './sharedContext';
@@ -41,25 +57,21 @@ const setWebdriver = (value: boolean) => {
 
 describe('detectAnalyticsEnvironment', () => {
     beforeEach(() => {
-        // Vitest itself runs with MODE === 'test', which the detector
-        // (correctly) classifies as automation. Stub it to exercise the
-        // other branches.
-        vi.stubEnv('MODE', 'development');
+        mockEnvironment.MODE = 'development';
+        mockEnvironment.PROD = false;
         setWebdriver(false);
         mockCapacitor.isNativePlatform.mockReturnValue(false);
         mockGetResolvedTenantConfig.mockReturnValue({
             tenantId: 'learncard',
             domain: 'learncard.app',
             devDomain: 'localhost:3000',
+            observability: { sentryEnv: 'production' },
         });
     });
 
-    afterEach(() => {
-        vi.unstubAllEnvs();
-    });
-
     it('classifies the vitest runtime itself as test', () => {
-        vi.unstubAllEnvs();
+        mockEnvironment.MODE = 'test';
+
         expect(detectAnalyticsEnvironment()).toBe('test');
     });
 
@@ -71,9 +83,25 @@ describe('detectAnalyticsEnvironment', () => {
     it('classifies native production builds as production even on localhost', () => {
         setHostname('localhost');
         mockCapacitor.isNativePlatform.mockReturnValue(true);
-        vi.stubEnv('PROD', true);
+        mockEnvironment.MODE = 'production';
+        mockEnvironment.PROD = true;
 
         expect(detectAnalyticsEnvironment()).toBe('production');
+    });
+
+    it('classifies native staging config as staging in a production-mode Vite build', () => {
+        setHostname('localhost');
+        mockCapacitor.isNativePlatform.mockReturnValue(true);
+        mockEnvironment.MODE = 'production';
+        mockEnvironment.PROD = true;
+        mockGetResolvedTenantConfig.mockReturnValue({
+            tenantId: 'learncard',
+            domain: 'staging.learncard.ai',
+            devDomain: 'localhost:3000',
+            observability: { sentryEnv: 'staging' },
+        });
+
+        expect(detectAnalyticsEnvironment()).toBe('staging');
     });
 
     it('classifies web localhost as development', () => {
@@ -86,6 +114,19 @@ describe('detectAnalyticsEnvironment', () => {
         expect(detectAnalyticsEnvironment()).toBe('production');
     });
 
+    it('classifies a staging tenant domain as staging', () => {
+        setHostname('staging.learncard.ai');
+        mockEnvironment.MODE = 'production';
+        mockEnvironment.PROD = true;
+        mockGetResolvedTenantConfig.mockReturnValue({
+            tenantId: 'learncard',
+            domain: 'staging.learncard.ai',
+            observability: { sentryEnv: 'staging' },
+        });
+
+        expect(detectAnalyticsEnvironment()).toBe('staging');
+    });
+
     it('classifies netlify hosts as preview', () => {
         setHostname('deploy-preview-42--learncard.netlify.app');
         expect(detectAnalyticsEnvironment()).toBe('preview');
@@ -96,6 +137,30 @@ describe('detectAnalyticsEnvironment', () => {
         expect(detectAnalyticsEnvironment()).toBe('staging');
     });
 
+    it('uses the tenant stage for an unknown web hostname', () => {
+        setHostname('custom.example');
+        mockEnvironment.MODE = 'production';
+        mockEnvironment.PROD = true;
+        mockGetResolvedTenantConfig.mockReturnValue({
+            tenantId: 'learncard',
+            domain: 'staging.learncard.ai',
+            observability: { sentryEnv: 'staging' },
+        });
+
+        expect(detectAnalyticsEnvironment()).toBe('staging');
+    });
+
+    it('uses the build mode for an unknown hostname before tenant bootstrap', () => {
+        setHostname('custom.example');
+        mockEnvironment.MODE = 'preview';
+        mockEnvironment.PROD = true;
+        mockGetResolvedTenantConfig.mockImplementation(() => {
+            throw new Error('not resolved');
+        });
+
+        expect(detectAnalyticsEnvironment()).toBe('preview');
+    });
+
     it('falls back to heuristics when tenant config is unresolved', () => {
         mockGetResolvedTenantConfig.mockImplementation(() => {
             throw new Error('not resolved');
@@ -104,22 +169,33 @@ describe('detectAnalyticsEnvironment', () => {
 
         expect(detectAnalyticsEnvironment()).toBe('development');
     });
+
+    it('builds shared context before tenant config resolves', () => {
+        mockGetResolvedTenantConfig.mockImplementation(() => {
+            throw new Error('not resolved');
+        });
+        setHostname('localhost');
+
+        expect(getSharedEventContext()).toMatchObject({
+            environment: 'development',
+            tenant_id: undefined,
+            platform: 'web',
+        });
+    });
 });
 
 describe('applyPostHogHygiene', () => {
     beforeEach(() => {
-        vi.stubEnv('MODE', 'development');
+        mockEnvironment.MODE = 'development';
+        mockEnvironment.PROD = false;
         setWebdriver(false);
         setHostname('learncard.app');
         mockCapacitor.isNativePlatform.mockReturnValue(false);
         mockGetResolvedTenantConfig.mockReturnValue({
             tenantId: 'learncard',
             domain: 'learncard.app',
+            observability: { sentryEnv: 'production' },
         });
-    });
-
-    afterEach(() => {
-        vi.unstubAllEnvs();
     });
 
     it('passes null through', () => {

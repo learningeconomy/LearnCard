@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { getEphemeralLearnCard } from '@helpers/learnCard.helpers';
 import { SigningAuthorities } from '.';
 import crypto from 'node:crypto';
@@ -8,7 +9,7 @@ export const createSigningAuthorityForDID = async (
     name: string
 ): Promise<string | false> => {
     const seed =
-        process.env.NODE_ENV === 'test' ? 'e'.repeat(64) : crypto.randomBytes(32).toString('hex');
+        environment.NODE_ENV === 'test' ? 'e'.repeat(64) : crypto.randomBytes(32).toString('hex');
     const did = (await getEphemeralLearnCard(seed)).id.did();
     try {
         return (

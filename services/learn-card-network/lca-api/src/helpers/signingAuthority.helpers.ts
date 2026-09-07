@@ -1,11 +1,9 @@
-import dotenv from 'dotenv';
+import { environment } from '@environment';
 import { MongoSigningAuthorityType, SigningAuthorityResponseType } from '@models';
 
-dotenv.config();
-
 export const getEndpoint = (domainName: string) => {
-    return !domainName || process.env.IS_OFFLINE
-        ? `http://localhost:${process.env.PORT || 3000}/api`
+    return !domainName || environment.IS_OFFLINE
+        ? `http://localhost:${environment.PORT || 3000}/api`
         : `https://${domainName}/api`;
 };
 

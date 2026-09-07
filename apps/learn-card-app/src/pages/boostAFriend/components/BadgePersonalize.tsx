@@ -198,8 +198,8 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                                             {isUploadingImage
                                                 ? m['boost.cms.media.uploading']()
                                                 : effectiveImageUrl
-                                                ? m['boostAFriend.person.change']()
-                                                : m['boostAFriend.person.uploadImg']()}
+                                                  ? m['boostAFriend.person.change']()
+                                                  : m['boostAFriend.person.uploadImg']()}
                                         </button>
                                         {imageUrl?.trim() && !isUploadingImage && (
                                             <button

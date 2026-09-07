@@ -16,7 +16,7 @@ const getNewClient = async (
 ) => {
     return getClient(
         url,
-        async challenge => {
+        async (challenge?: string) => {
             const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
             if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
@@ -307,9 +307,8 @@ export const getLCAPlugin = async (
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    const result = await client.analytics.generateAnalyticsAccessToken.mutate(
-                        payload
-                    );
+                    const result =
+                        await client.analytics.generateAnalyticsAccessToken.mutate(payload);
 
                     return result;
                 },

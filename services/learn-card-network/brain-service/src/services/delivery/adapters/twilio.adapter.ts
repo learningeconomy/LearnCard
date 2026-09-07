@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import twilio from 'twilio';
 import { DeliveryService, Notification } from '../delivery.service';
 import { getSmsBody } from '../helpers/sms.helpers';
@@ -13,13 +14,15 @@ export class TwilioAdapter implements DeliveryService {
         const { contactMethod } = notification;
 
         const body = getSmsBody(notification);
-        if(!body) {
-            throw new Error('Failed to generate SMS body. Template not found: ' + notification.templateId);
+        if (!body) {
+            throw new Error(
+                'Failed to generate SMS body. Template not found: ' + notification.templateId
+            );
         }
         try {
             await this.client.messages.create({
                 body,
-                from: process.env.TWILIO_FROM_NUMBER,
+                from: environment.TWILIO_FROM_NUMBER,
                 to: contactMethod.value,
             });
         } catch (error) {

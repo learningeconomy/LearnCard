@@ -1,3 +1,4 @@
+import { environment } from '@environment';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -60,7 +61,7 @@ const getDidKitPlugin = async (): Promise<DIDKitPlugin> => {
     if (didKitPluginPromise) return didKitPluginPromise;
 
     didKitPluginPromise = (async () => {
-        if (process.env.SKIP_DIDKIT_NAPI) {
+        if (environment.SKIP_DIDKIT_NAPI) {
             const didkitModule = await import('@learncard/didkit-plugin');
             const getWasmPlugin = resolveDidKitPluginFactory(didkitModule);
             const wasmBuffer = await readFile(resolveDidkitWasmPath());
@@ -104,7 +105,7 @@ export type SeedLearnCard = LearnCard<
         VCPlugin,
         VCTemplatePlugin,
         ExpirationPlugin,
-        LearnCardPlugin
+        LearnCardPlugin,
     ]
 >;
 
@@ -129,7 +130,7 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
 };
 
 export const getLearnCard = async (
-    seed = isTest ? 'a'.repeat(64) : process.env.LEARN_CLOUD_SEED
+    seed = isTest ? 'a'.repeat(64) : environment.LEARN_CLOUD_SEED
 ): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
 

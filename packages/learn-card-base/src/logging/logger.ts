@@ -1,3 +1,5 @@
+import { isProductionEnvironment } from '../config/isProduction';
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -288,7 +290,7 @@ const createLogger = (scope?: string): Logger => {
     return {
         debug(...args) {
             // Dropped in production (transport active + non-dev environment) to avoid noise.
-            if (sentryActive() && process.env.NODE_ENV === 'production') return;
+            if (sentryActive() && isProductionEnvironment()) return;
             const p = parseArgs(args);
             recordDiagnosticLog({
                 level: 'info',

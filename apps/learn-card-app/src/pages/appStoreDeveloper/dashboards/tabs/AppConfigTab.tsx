@@ -620,10 +620,10 @@ module.exports = nextConfig;`;
                                 isChecking
                                     ? 'bg-gray-50 border-gray-200'
                                     : allPassed
-                                    ? 'bg-emerald-50 border-emerald-200'
-                                    : hasFailed
-                                    ? 'bg-red-50 border-red-200'
-                                    : 'bg-gray-50 border-gray-200'
+                                      ? 'bg-emerald-50 border-emerald-200'
+                                      : hasFailed
+                                        ? 'bg-red-50 border-red-200'
+                                        : 'bg-gray-50 border-gray-200'
                             }`}
                         >
                             <div className="flex items-center gap-2 mb-3">
@@ -642,10 +642,10 @@ module.exports = nextConfig;`;
                                         isChecking
                                             ? 'text-gray-700'
                                             : allPassed
-                                            ? 'text-emerald-800'
-                                            : hasFailed
-                                            ? 'text-red-800'
-                                            : 'text-gray-700'
+                                              ? 'text-emerald-800'
+                                              : hasFailed
+                                                ? 'text-red-800'
+                                                : 'text-gray-700'
                                     }`}
                                 >
                                     {isChecking
@@ -653,16 +653,16 @@ module.exports = nextConfig;`;
                                               'developerPortal.dashboards.tabs.appConfig.checkResults.checking'
                                           ]()
                                         : allPassed
-                                        ? m[
-                                              'developerPortal.dashboards.tabs.appConfig.checkResults.allPassed'
-                                          ]()
-                                        : hasFailed
-                                        ? m[
-                                              'developerPortal.dashboards.tabs.appConfig.checkResults.issuesFound'
-                                          ]()
-                                        : m[
-                                              'developerPortal.dashboards.tabs.appConfig.checkResults.resultsTitle'
-                                          ]()}
+                                          ? m[
+                                                'developerPortal.dashboards.tabs.appConfig.checkResults.allPassed'
+                                            ]()
+                                          : hasFailed
+                                            ? m[
+                                                  'developerPortal.dashboards.tabs.appConfig.checkResults.issuesFound'
+                                              ]()
+                                            : m[
+                                                  'developerPortal.dashboards.tabs.appConfig.checkResults.resultsTitle'
+                                              ]()}
                                 </h4>
                             </div>
 
@@ -686,10 +686,10 @@ module.exports = nextConfig;`;
                                                         result.status === 'pass'
                                                             ? 'text-emerald-600'
                                                             : result.status === 'fail'
-                                                            ? 'text-red-600'
-                                                            : result.status === 'warn'
-                                                            ? 'text-amber-600'
-                                                            : 'text-gray-500'
+                                                              ? 'text-red-600'
+                                                              : result.status === 'warn'
+                                                                ? 'text-amber-600'
+                                                                : 'text-gray-500'
                                                     }`}
                                                 >
                                                     {result.messageKey

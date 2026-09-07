@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
-import { Agent } from 'undici';
+import { environment } from '@environment';
+import { Agent, fetch as undiciFetch, type Response as UndiciResponse } from 'undici';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { VCValidator, JWEValidator } from '@learncard/types';
@@ -12,9 +12,7 @@ import { PerfTracker } from '@helpers/perf';
 import { benchContextStorage } from '@helpers/bench-context.helpers';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
 
-dotenv.config();
-
-const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
+const IS_TEST_ENVIRONMENT = environment.NODE_ENV === 'test';
 
 // LC-1644 Phase 4e: the SA HTTP call previously used a 21s timeout with no retry.
 // In practice a healthy SA responds in ~220ms warm / ~1.5s cold; when it fails it's
@@ -69,9 +67,7 @@ export class SaIssueError extends Error {
     }
 }
 
-const classifyHttpStatus = (
-    status: number
-): { kind: SaIssueError['kind']; retryable: boolean } => {
+const classifyHttpStatus = (status: number): { kind: SaIssueError['kind']; retryable: boolean } => {
     if (status >= 500) return { kind: 'http_5xx', retryable: true };
     if (status === 408) return { kind: 'http_408', retryable: true };
     if (status === 429) return { kind: 'http_429', retryable: true };
@@ -149,151 +145,182 @@ export async function issueCredentialWithSigningAuthority(
         encrypt,
     };
 
-    return trace('signing-authority', 'issueCredentialWithSigningAuthority', async () => {
-        const perf = new PerfTracker('issueCredentialWithSigningAuthority');
+    return trace(
+        'signing-authority',
+        'issueCredentialWithSigningAuthority',
+        async () => {
+            const perf = new PerfTracker('issueCredentialWithSigningAuthority');
 
-        try {
-
-            if (IS_TEST_ENVIRONMENT) {
-                return await _mockIssueCredentialWithSigningAuthority(credentialToIssue);
-            }
-
-            console.log('[SA Helper] Initiating credential issuance', logContext);
-
-            const learnCard = await trace('init', 'getDidWebLearnCard', () => getDidWebLearnCard());
-            perf.mark('initDid');
-
-            const brainDid = learnCard.id.did();
-            console.log('[SA Helper] Brain DID resolved:', brainDid);
-
-            const didJwt = await traceCrypto('getDidAuthVp', () =>
-                learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' })
-            );
-            perf.mark('didAuthVp');
-
-            if (!didJwt) {
-                console.error('[SA Helper] Failed to generate DID Auth VP - got falsy value');
-            }
-
-            const subjectId = Array.isArray(credentialToIssue?.credentialSubject)
-                ? credentialToIssue?.credentialSubject[0]?.id
-                : credentialToIssue?.credentialSubject?.id;
-
-            const encryption = encrypt
-                ? {
-                      recipients: [brainDid, ...(subjectId ? [subjectId] : [])],
-                  }
-                : undefined;
-
-            console.log('[SA Helper] Request details:', {
-                subjectId,
-                encryptionRecipients: encryption?.recipients,
-                credentialType: credentialToIssue?.type,
-            });
-
-            const requestBody = JSON.stringify({
-                credential: credentialToIssue,
-                signingAuthority: {
-                    ownerDid,
-                    name: saName,
-                    did: saDid,
-                },
-                encryption,
-            });
-
-            /**
-             * One HTTP attempt against the SA. Throws a structured SaIssueError that
-             * carries the status + body + classification the retry loop needs to decide
-             * whether to try again. Per-attempt timeout is REQUEST_TIMEOUT_MS.
-             */
-            const attempt = async (attemptIndex: number): Promise<VC | JWE> => {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-                let response: Response;
-                try {
-                    response = await traceHttp(
-                        'fetch-lca-api',
-                        () =>
-                            fetch(issuerEndpoint, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${didJwt}`,
-                                },
-                                body: requestBody,
-                                signal: controller.signal,
-                                // LC-1644 Task 3: keepAlive + pooling via shared undici Agent
-                                dispatcher: getSaAgent(),
-                            } as RequestInit & { dispatcher: Agent }),
-                        { endpoint: issuerEndpoint, attempt: attemptIndex + 1 }
-                    );
-                } catch (err) {
-                    clearTimeout(timeoutId);
-                    // AbortError → timeout; everything else is a generic network error.
-                    // Both are retryable; we only get here if fetch itself throws.
-                    const isAbort =
-                        err instanceof Error &&
-                        (err.name === 'AbortError' || err.message.toLowerCase().includes('abort'));
-                    throw new SaIssueError({
-                        message: isAbort
-                            ? `SA request aborted after ${REQUEST_TIMEOUT_MS}ms timeout`
-                            : `SA network error: ${err instanceof Error ? err.message : String(err)}`,
-                        status: 0,
-                        kind: isAbort ? 'timeout' : 'network',
-                        retryable: true,
-                        cause: err,
-                    });
+            try {
+                if (IS_TEST_ENVIRONMENT) {
+                    return await _mockIssueCredentialWithSigningAuthority(credentialToIssue);
                 }
 
-                clearTimeout(timeoutId);
+                console.log('[SA Helper] Initiating credential issuance', logContext);
 
-                console.log(
-                    '[SA Helper] LCA-API response status:',
-                    response.status,
-                    response.statusText,
-                    attemptIndex > 0 ? `(attempt ${attemptIndex + 1})` : ''
+                const learnCard = await trace('init', 'getDidWebLearnCard', () =>
+                    getDidWebLearnCard()
                 );
+                perf.mark('initDid');
 
-                if (!response.ok) {
-                    const errorBody = await response.text().catch(() => '');
-                    const { kind, retryable } = classifyHttpStatus(response.status);
-                    console.error('[SA Helper] LCA-API returned non-OK response:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        body: errorBody,
-                        attempt: attemptIndex + 1,
-                        retryable,
-                        ...logContext,
-                    });
-                    throw new SaIssueError({
-                        message: `LCA-API returned ${response.status}${response.statusText ? ` ${response.statusText}` : ''}`,
-                        status: response.status,
-                        body: errorBody,
-                        kind,
-                        retryable,
-                    });
+                const brainDid = learnCard.id.did();
+                console.log('[SA Helper] Brain DID resolved:', brainDid);
+
+                const didJwt = await traceCrypto('getDidAuthVp', () =>
+                    learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' })
+                );
+                perf.mark('didAuthVp');
+
+                if (!didJwt) {
+                    console.error('[SA Helper] Failed to generate DID Auth VP - got falsy value');
                 }
 
-                const res = await trace('internal', 'parseResponse', () => response.json());
+                const subjectId = Array.isArray(credentialToIssue?.credentialSubject)
+                    ? credentialToIssue?.credentialSubject[0]?.id
+                    : credentialToIssue?.credentialSubject?.id;
 
-                if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
-                    console.error('[SA Helper] LCA-API returned error in body:', JSON.stringify(res));
-                    throw new SaIssueError({
-                        message: `LCA-API error response: ${JSON.stringify(res)}`,
-                        status: response.status,
-                        body: JSON.stringify(res),
-                        kind: 'http_5xx',
-                        retryable: true,
-                    });
-                }
+                const encryption = encrypt
+                    ? {
+                          recipients: [brainDid, ...(subjectId ? [subjectId] : [])],
+                      }
+                    : undefined;
 
-                if (encryption) {
-                    const validationResult = await JWEValidator.spa(res);
-                    if (!validationResult.success) {
-                        console.error('[SA Helper] JWE validation failed:', validationResult.error);
+                console.log('[SA Helper] Request details:', {
+                    subjectId,
+                    encryptionRecipients: encryption?.recipients,
+                    credentialType: credentialToIssue?.type,
+                });
+
+                const requestBody = JSON.stringify({
+                    credential: credentialToIssue,
+                    signingAuthority: {
+                        ownerDid,
+                        name: saName,
+                        did: saDid,
+                    },
+                    encryption,
+                });
+
+                /**
+                 * One HTTP attempt against the SA. Throws a structured SaIssueError that
+                 * carries the status + body + classification the retry loop needs to decide
+                 * whether to try again. Per-attempt timeout is REQUEST_TIMEOUT_MS.
+                 */
+                const attempt = async (attemptIndex: number): Promise<VC | JWE> => {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+                    let response: UndiciResponse;
+                    try {
+                        response = await traceHttp(
+                            'fetch-lca-api',
+                            () =>
+                                undiciFetch(issuerEndpoint, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${didJwt}`,
+                                    },
+                                    body: requestBody,
+                                    signal: controller.signal,
+                                    // LC-1644 Task 3: keepAlive + pooling via shared undici Agent
+                                    dispatcher: getSaAgent(),
+                                }),
+                            { endpoint: issuerEndpoint, attempt: attemptIndex + 1 }
+                        );
+                    } catch (err) {
+                        clearTimeout(timeoutId);
+                        // AbortError → timeout; everything else is a generic network error.
+                        // Both are retryable; we only get here if fetch itself throws.
+                        const isAbort =
+                            err instanceof Error &&
+                            (err.name === 'AbortError' ||
+                                err.message.toLowerCase().includes('abort'));
                         throw new SaIssueError({
-                            message: 'Signing Authority returned malformed JWE',
+                            message: isAbort
+                                ? `SA request aborted after ${REQUEST_TIMEOUT_MS}ms timeout`
+                                : `SA network error: ${err instanceof Error ? err.message : String(err)}`,
+                            status: 0,
+                            kind: isAbort ? 'timeout' : 'network',
+                            retryable: true,
+                            cause: err,
+                        });
+                    }
+
+                    clearTimeout(timeoutId);
+
+                    console.log(
+                        '[SA Helper] LCA-API response status:',
+                        response.status,
+                        response.statusText,
+                        attemptIndex > 0 ? `(attempt ${attemptIndex + 1})` : ''
+                    );
+
+                    if (!response.ok) {
+                        const errorBody = await response.text().catch(() => '');
+                        const { kind, retryable } = classifyHttpStatus(response.status);
+                        console.error('[SA Helper] LCA-API returned non-OK response:', {
+                            status: response.status,
+                            statusText: response.statusText,
+                            body: errorBody,
+                            attempt: attemptIndex + 1,
+                            retryable,
+                            ...logContext,
+                        });
+                        throw new SaIssueError({
+                            message: `LCA-API returned ${response.status}${response.statusText ? ` ${response.statusText}` : ''}`,
+                            status: response.status,
+                            body: errorBody,
+                            kind,
+                            retryable,
+                        });
+                    }
+
+                    const res = await trace<unknown>('internal', 'parseResponse', () =>
+                        response.json()
+                    );
+                    const isInternalServerError =
+                        typeof res === 'object' &&
+                        res !== null &&
+                        'code' in res &&
+                        res.code === 'INTERNAL_SERVER_ERROR';
+
+                    if (!res || isInternalServerError) {
+                        console.error(
+                            '[SA Helper] LCA-API returned error in body:',
+                            JSON.stringify(res)
+                        );
+                        throw new SaIssueError({
+                            message: `LCA-API error response: ${JSON.stringify(res)}`,
+                            status: response.status,
+                            body: JSON.stringify(res),
+                            kind: 'http_5xx',
+                            retryable: true,
+                        });
+                    }
+
+                    if (encryption) {
+                        const validationResult = await JWEValidator.spa(res);
+                        if (!validationResult.success) {
+                            console.error(
+                                '[SA Helper] JWE validation failed:',
+                                validationResult.error
+                            );
+                            throw new SaIssueError({
+                                message: 'Signing Authority returned malformed JWE',
+                                status: response.status,
+                                body: typeof res === 'string' ? res : JSON.stringify(res),
+                                kind: 'malformed_response',
+                                retryable: false,
+                            });
+                        }
+                        return validationResult.data;
+                    }
+                    const validationResult = await VCValidator.spa(res);
+                    if (!validationResult.success) {
+                        console.error('[SA Helper] VC validation failed:', validationResult.error);
+                        throw new SaIssueError({
+                            message: 'Signing Authority returned malformed VC',
                             status: response.status,
                             body: typeof res === 'string' ? res : JSON.stringify(res),
                             kind: 'malformed_response',
@@ -301,82 +328,75 @@ export async function issueCredentialWithSigningAuthority(
                         });
                     }
                     return validationResult.data;
-                }
-                const validationResult = await VCValidator.spa(res);
-                if (!validationResult.success) {
-                    console.error('[SA Helper] VC validation failed:', validationResult.error);
-                    throw new SaIssueError({
-                        message: 'Signing Authority returned malformed VC',
-                        status: response.status,
-                        body: typeof res === 'string' ? res : JSON.stringify(res),
-                        kind: 'malformed_response',
-                        retryable: false,
-                    });
-                }
-                return validationResult.data;
-            };
+                };
 
-            // Retry loop. See REQUEST_TIMEOUT_MS / MAX_RETRIES notes at top of file.
-            let lastError: SaIssueError | undefined;
-            for (let i = 0; i <= MAX_RETRIES; i++) {
-                try {
-                    const result = await attempt(i);
-                    // Use the same phase name for both the mark and the bench read so
-                    // they can't drift. Retry attempts mark `http_retry_N`; without the
-                    // shared variable, the bench read of `phases.http` would miss them
-                    // and record sa_http_ms: 0 on retry-successful runs.
-                    const httpPhase = i === 0 ? 'http' : `http_retry_${i}`;
-                    perf.mark(httpPhase);
-                    perf.done({
-                        saEndpoint: signingAuthorityForUser.signingAuthority.endpoint,
-                        attempts: i + 1,
-                    });
-                    const benchCtx = benchContextStorage.getStore();
-                    if (benchCtx) {
-                        const captured = perf.capture();
-                        benchCtx.sa_http_ms = captured.phases[httpPhase] ?? 0;
-                        benchCtx.sa_didauthvp_ms = captured.phases.didAuthVp ?? 0;
+                // Retry loop. See REQUEST_TIMEOUT_MS / MAX_RETRIES notes at top of file.
+                let lastError: SaIssueError | undefined;
+                for (let i = 0; i <= MAX_RETRIES; i++) {
+                    try {
+                        const result = await attempt(i);
+                        // Use the same phase name for both the mark and the bench read so
+                        // they can't drift. Retry attempts mark `http_retry_N`; without the
+                        // shared variable, the bench read of `phases.http` would miss them
+                        // and record sa_http_ms: 0 on retry-successful runs.
+                        const httpPhase = i === 0 ? 'http' : `http_retry_${i}`;
+                        perf.mark(httpPhase);
+                        perf.done({
+                            saEndpoint: signingAuthorityForUser.signingAuthority.endpoint,
+                            attempts: i + 1,
+                        });
+                        const benchCtx = benchContextStorage.getStore();
+                        if (benchCtx) {
+                            const captured = perf.capture();
+                            benchCtx.sa_http_ms = captured.phases[httpPhase] ?? 0;
+                            benchCtx.sa_didauthvp_ms = captured.phases.didAuthVp ?? 0;
+                        }
+                        return result;
+                    } catch (err) {
+                        if (!(err instanceof SaIssueError)) throw err; // unexpected: let it bubble
+                        lastError = err;
+                        if (!err.retryable || i === MAX_RETRIES) break;
+                        const backoff =
+                            RETRY_BACKOFF_BASE_MS +
+                            Math.floor(Math.random() * RETRY_BACKOFF_JITTER_MS);
+                        console.warn('[SA Helper] retrying SA call', {
+                            kind: err.kind,
+                            status: err.status,
+                            attempt: i + 1,
+                            nextAttemptIn: `${backoff}ms`,
+                            ...logContext,
+                        });
+                        await sleep(backoff);
                     }
-                    return result;
-                } catch (err) {
-                    if (!(err instanceof SaIssueError)) throw err; // unexpected: let it bubble
-                    lastError = err;
-                    if (!err.retryable || i === MAX_RETRIES) break;
-                    const backoff =
-                        RETRY_BACKOFF_BASE_MS + Math.floor(Math.random() * RETRY_BACKOFF_JITTER_MS);
-                    console.warn('[SA Helper] retrying SA call', {
-                        kind: err.kind,
-                        status: err.status,
-                        attempt: i + 1,
-                        nextAttemptIn: `${backoff}ms`,
-                        ...logContext,
-                    });
-                    await sleep(backoff);
                 }
+                // Exhausted retries. Re-throw the last error with full context preserved.
+                // Defensive ?? guard: lastError is only undefined if attempt() somehow
+                // exited cleanly without returning — shouldn't happen, but never throw
+                // `undefined` to callers.
+                throw lastError ?? new Error('SA request failed without recorded error');
+            } catch (error) {
+                const errMsg = error instanceof Error ? error.message : String(error);
+                const errStack = error instanceof Error ? error.stack : undefined;
+                const errDetail =
+                    error instanceof SaIssueError
+                        ? { status: error.status, kind: error.kind, body: error.body }
+                        : {};
+                perf.done({
+                    saEndpoint: signingAuthorityForUser.signingAuthority.endpoint,
+                    error: errMsg,
+                });
+                console.error('[SA Helper] issueCredentialWithSigningAuthority failed:', {
+                    error: errMsg,
+                    stack: errStack,
+                    ...errDetail,
+                    ...logContext,
+                });
+                throw error;
             }
-            // Exhausted retries. Re-throw the last error with full context preserved.
-            // Defensive ?? guard: lastError is only undefined if attempt() somehow
-            // exited cleanly without returning — shouldn't happen, but never throw
-            // `undefined` to callers.
-            throw lastError ?? new Error('SA request failed without recorded error');
-        } catch (error) {
-            const errMsg = error instanceof Error ? error.message : String(error);
-            const errStack = error instanceof Error ? error.stack : undefined;
-            const errDetail =
-                error instanceof SaIssueError
-                    ? { status: error.status, kind: error.kind, body: error.body }
-                    : {};
-            perf.done({ saEndpoint: signingAuthorityForUser.signingAuthority.endpoint, error: errMsg });
-            console.error('[SA Helper] issueCredentialWithSigningAuthority failed:', {
-                error: errMsg,
-                stack: errStack,
-                ...errDetail,
-                ...logContext,
-            });
-            throw error;
+        },
+        {
+            issuer: getIssuerProfileId(issuer),
+            saEndpoint: signingAuthorityForUser.signingAuthority.endpoint,
         }
-    }, {
-        issuer: getIssuerProfileId(issuer),
-        saEndpoint: signingAuthorityForUser.signingAuthority.endpoint,
-    });
+    );
 }

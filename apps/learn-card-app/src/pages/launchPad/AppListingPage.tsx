@@ -467,9 +467,8 @@ const AppListingPage: React.FC = () => {
                         unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
+                    const unsignedDidAuthVp =
+                        await wallet.invoke.newPresentation(delegateCredential);
 
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',

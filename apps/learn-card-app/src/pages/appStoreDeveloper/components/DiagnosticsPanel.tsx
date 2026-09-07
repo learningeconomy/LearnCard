@@ -160,8 +160,8 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                                             !event.authorized && event.permission
                                                 ? 'bg-amber-900/20'
                                                 : event.status === 'error'
-                                                ? 'bg-red-900/20'
-                                                : ''
+                                                  ? 'bg-red-900/20'
+                                                  : ''
                                         }`}
                                     >
                                         <div className="flex items-start justify-between gap-2">

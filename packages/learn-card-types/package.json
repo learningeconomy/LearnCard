@@ -24,6 +24,7 @@
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
+        "typecheck": "tsc --noEmit -p tsconfig.json",
         "start": "aqu watch"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",

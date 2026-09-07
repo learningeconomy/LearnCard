@@ -370,9 +370,8 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                 );
 
                 if (sentBoost) {
-                    const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(
-                        sentBoost
-                    );
+                    const issuedVcUri =
+                        await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentBoost);
                     if (issuedVcUri) {
                         await addCredentialToWallet({ uri: issuedVcUri });
                     }
@@ -756,15 +755,15 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
                                         isUniqueValid
                                             ? 'bg-emerald-100 text-emerald-700'
                                             : uniqueProfileFetching
-                                            ? 'bg-amber-100 text-amber-700'
-                                            : 'bg-gray-100 text-gray-500'
+                                              ? 'bg-amber-100 text-amber-700'
+                                              : 'bg-gray-100 text-gray-500'
                                     }`}
                                 >
                                     {uniqueProfileFetching
                                         ? 'Checking...'
                                         : isUniqueValid
-                                        ? 'Available'
-                                        : 'Must be unique'}
+                                          ? 'Available'
+                                          : 'Must be unique'}
                                 </span>
                             </div>
 

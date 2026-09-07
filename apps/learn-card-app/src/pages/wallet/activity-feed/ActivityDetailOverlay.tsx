@@ -90,10 +90,10 @@ export const ActivityDetailOverlay: React.FC<{
     const subText = item.isSelf
         ? m['passport.activity.selfAdded']()
         : item.direction === 'sent'
-        ? m['passport.activity.sentShare']({ name: item.counterpartyName })
-        : m['passport.activity.rcvdShare']({
-              name: item.actorName || m['passport.activity.someone'](),
-          });
+          ? m['passport.activity.sentShare']({ name: item.counterpartyName })
+          : m['passport.activity.rcvdShare']({
+                name: item.actorName || m['passport.activity.someone'](),
+            });
 
     const personNode = (
         <UserProfilePicture

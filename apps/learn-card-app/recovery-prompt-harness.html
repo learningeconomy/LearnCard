@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dashboard recovery prompt harness</title>
+        <script>
+            const params = new URLSearchParams(window.location.search);
+
+            if (params.get('clear') === '1') {
+                localStorage.removeItem('firstStartup');
+                localStorage.removeItem('lc_recovery_banner_dismissed');
+                localStorage.removeItem('recovery-prompt-harness-completed');
+            }
+
+            if (params.get('legacy') === '1') {
+                localStorage.setItem('lc_recovery_banner_dismissed', 'true');
+            }
+
+            const locale = params.get('lang') || 'en';
+            localStorage.setItem('i18n.language', locale);
+
+            if (params.get('public') === '1') {
+                sessionStorage.setItem('lc-session-mode', 'public');
+            } else {
+                sessionStorage.removeItem('lc-session-mode');
+            }
+
+            if (params.get('passkey') === '0') {
+                Object.defineProperty(window, 'PublicKeyCredential', {
+                    value: undefined,
+                    configurable: true,
+                });
+            } else {
+                class HarnessPublicKeyCredential {
+                    static async isUserVerifyingPlatformAuthenticatorAvailable() {
+                        return true;
+                    }
+                }
+
+                Object.defineProperty(window, 'PublicKeyCredential', {
+                    value: HarnessPublicKeyCredential,
+                    configurable: true,
+                });
+            }
+        </script>
+    </head>
+    <body class="m-0 bg-grayscale-100">
+        <div id="root"></div>
+        <script type="module" src="/tests/fixtures/recovery-prompt-harness.tsx"></script>
+    </body>
+</html>
