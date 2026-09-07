@@ -11,31 +11,48 @@ import * as m from '../../../../paraglide/messages.js';
 
 type Props = {
     credential: ParsedCredential;
-    onSave: (editedVc: any) => void;
+    onSave: (editedVc: Record<string, unknown>) => void;
     onBack: () => void;
 };
 
 /** Read a nested VC path, returning '' for missing values. Handles array values (e.g. achievementType: ["Certificate"]) */
-const getField = (vc: any, path: string): string => {
-    const value = path.split('.').reduce((obj, key) => obj?.[key], vc);
+const getField = (vc: Record<string, unknown>, path: string): string => {
+    const value = path.split('.').reduce<unknown>((obj, key) => {
+        if (obj && typeof obj === 'object' && key in obj) {
+            return (obj as Record<string, unknown>)[key];
+        }
+        return undefined;
+    }, vc);
     if (typeof value === 'string') return value;
     if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'string') return value[0];
     return '';
 };
 
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-
 /** Set a nested path on a deep-cloned VC. Empty string removes the key. */
-const setField = (vc: any, path: string, value: string): any => {
+const setField = (
+    vc: Record<string, unknown>,
+    path: string,
+    value: string
+): Record<string, unknown> => {
     const clone = JSON.parse(JSON.stringify(vc));
     const keys = path.split('.');
-    if (keys.some(k => UNSAFE_KEYS.has(k))) return clone;
     let obj = clone;
     for (let i = 0; i < keys.length - 1; i++) {
-        if (!obj[keys[i]]) obj[keys[i]] = {};
-        obj = obj[keys[i]];
+        const key = keys[i];
+        // Guard against prototype pollution - inline check for CodeQL recognition
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+            return clone;
+        }
+        if (!Object.prototype.hasOwnProperty.call(obj, key)) {
+            obj[key] = {};
+        }
+        obj = obj[key];
     }
     const lastKey = keys[keys.length - 1];
+    // Guard against prototype pollution - inline check for CodeQL recognition
+    if (lastKey === '__proto__' || lastKey === 'constructor' || lastKey === 'prototype') {
+        return clone;
+    }
     if (value === '') {
         delete obj[lastKey];
     } else {
@@ -45,7 +62,9 @@ const setField = (vc: any, path: string, value: string): any => {
 };
 
 export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack }) => {
-    const [vc, setVc] = useState<any>(() => JSON.parse(JSON.stringify(credential.vc)));
+    const [vc, setVc] = useState<Record<string, unknown>>(() =>
+        JSON.parse(JSON.stringify(credential.vc))
+    );
     const { colors } = useTheme();
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
@@ -54,7 +73,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
     const name = getField(vc, 'credentialSubject.achievement.name');
 
     const updateField = (path: string, value: string) => {
-        setVc((prev: any) => {
+        setVc((prev: Record<string, unknown>) => {
             let updated = setField(prev, path, value);
             // Sync top-level name from achievement name (card display reads vc.name)
             if (path === 'credentialSubject.achievement.name') {
