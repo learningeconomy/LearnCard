@@ -7,7 +7,12 @@ export const isYoutubeUrl = (url: string) => {
 
     try {
         const { hostname } = new URL(url);
-        return hostname.includes('youtube.com') || hostname === 'youtu.be';
+        // Check exact hostname or proper subdomain suffix to prevent bypass via evil.youtube.com.attacker.com
+        return (
+            hostname === 'youtube.com' ||
+            hostname.endsWith('.youtube.com') ||
+            hostname === 'youtu.be'
+        );
     } catch {
         return false;
     }
@@ -40,7 +45,7 @@ export const getVideoSource = (url: string) => {
         let hostname = urlObj.hostname;
 
         // Special handling for Google Drive links
-        if (hostname.includes('drive.google')) {
+        if (hostname === 'drive.google.com' || hostname.endsWith('.drive.google.com')) {
             return 'Google Drive';
         }
 
