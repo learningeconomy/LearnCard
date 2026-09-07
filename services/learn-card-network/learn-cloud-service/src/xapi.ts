@@ -2,6 +2,7 @@ import XAPI from '@xapi/xapi';
 import jwtDecode from 'jwt-decode';
 import Fastify, { FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
+import fastifyRateLimit from '@fastify/rate-limit';
 
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { areDidsEqual } from '@helpers/did.helpers';
@@ -149,6 +150,15 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
 export const app = Fastify();
 
 app.register(fastifyCors);
+app.register(fastifyRateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+    errorResponseBuilder: () => ({
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: 'Too many requests, please try again later.',
+    }),
+});
 app.register(xapiFastifyPlugin);
 
 export default app;
