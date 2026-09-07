@@ -30,14 +30,24 @@ if [ ! -f "${DIDKIT_WASM_LOCKFILE}" ]; then
     exit 1
 fi
 
+# DIDKit owns an independent workspace lock. Temporarily use LearnCard's
+# authoritative WASM graph and restore the original workspace bytes on exit.
+DIDKIT_LOCKFILE_BACKUP=""
 if [ -e "${DIDKIT_LOCKFILE}" ]; then
-    echo "Unexpected upstream DIDKit lockfile at ${DIDKIT_LOCKFILE}" >&2
-    echo "If a previous build was interrupted, remove it: rm '${DIDKIT_LOCKFILE}'" >&2
-    exit 1
+    DIDKIT_LOCKFILE_BACKUP="$(mktemp)"
+    cp "${DIDKIT_LOCKFILE}" "${DIDKIT_LOCKFILE_BACKUP}"
 fi
 
-# DIDKit does not ship a workspace lock, so seed Cargo with our reproducible WASM lock.
-trap 'rm -f "${DIDKIT_LOCKFILE}"' EXIT INT TERM
+restore_didkit_lockfile() {
+    if [ -n "${DIDKIT_LOCKFILE_BACKUP}" ]; then
+        mv "${DIDKIT_LOCKFILE_BACKUP}" "${DIDKIT_LOCKFILE}"
+    else
+        rm -f "${DIDKIT_LOCKFILE}"
+    fi
+}
+trap restore_didkit_lockfile EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 cp "${DIDKIT_WASM_LOCKFILE}" "${DIDKIT_LOCKFILE}"
 
 (
