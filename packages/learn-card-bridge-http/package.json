@@ -20,6 +20,7 @@
         "commander": "^9.3.0",
         "cors": "^2.8.5",
         "express": "~4.21.0",
+        "express-rate-limit": "^7.1.5",
         "figlet": "^1.5.2",
         "immer": "^9.0.15",
         "ink": "^3.2.0",
