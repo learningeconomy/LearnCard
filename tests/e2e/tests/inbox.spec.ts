@@ -134,7 +134,7 @@ describe('Inbox', () => {
         };
 
         const expectIssued = (response: ExchangeResponse, expectedCredential: object) => {
-            expect(response.status).toBe(200);
+            expect(response.status, JSON.stringify(response.data)).toBe(200);
             expect(response.data.verifiablePresentation.verifiableCredential).toHaveLength(1);
             expect(response.data.verifiablePresentation.verifiableCredential[0]).toMatchObject(
                 expectedCredential
