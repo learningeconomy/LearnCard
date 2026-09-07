@@ -7,7 +7,7 @@ export const isYoutubeUrl = (url: string) => {
 
     try {
         const { hostname } = new URL(url);
-        // Check exact hostname or proper subdomain suffix to prevent bypass via evil.youtube.com.attacker.com
+        // Check exact hostname or proper subdomain suffix to prevent bypass of untrusted URLs
         return (
             hostname === 'youtube.com' ||
             hostname.endsWith('.youtube.com') ||
