@@ -8,14 +8,14 @@ The Verifiable Credential standard is infinitely customizable and always evolvin
 
 This package provides:
 
--   **Real and synthetic credential fixtures** spanning VC v1, v2, OBv3, CLR v2, and LearnCard Boosts
--   **Rich metadata** per fixture: spec, profile, features exercised, source, validity
--   **Queryable API** to filter fixtures by any combination of metadata
--   **Fixture preparation** for real issuance — patch in DIDs, timestamps, and fresh UUIDs
--   **Self-validating test suite** that ensures every fixture passes its declared Zod validator
--   **Issuance integration tests** that verify every valid fixture can be issued by a real LearnCard wallet
--   **Intentionally invalid fixtures** for negative testing
--   **One-file-per-fixture** pattern that makes it trivial to add new credentials
+- **Real and synthetic credential fixtures** spanning VC v1, v2, OBv3, CLR v2, and LearnCard Boosts
+- **Rich metadata** per fixture: spec, profile, features exercised, source, validity
+- **Queryable API** to filter fixtures by any combination of metadata
+- **Fixture preparation** for real issuance — patch in DIDs, timestamps, and fresh UUIDs
+- **Self-validating test suite** that ensures every fixture passes its declared Zod validator
+- **Issuance integration tests** that verify every valid fixture can be issued by a real LearnCard wallet
+- **Intentionally invalid fixtures** for negative testing
+- **One-file-per-fixture** pattern that makes it trivial to add new credentials
 
 ## Quick Start
 
@@ -86,10 +86,10 @@ const signed = await wallet.invoke.issueCredential(unsigned);
 
 `prepareFixture` deep-clones the fixture and patches:
 
--   **Issuer DID** — replaces the placeholder issuer with your wallet's DID
--   **Subject DID** — optionally replaces the subject DID
--   **Fresh UUIDs** — regenerates all `urn:uuid:` ids (disable with `freshIds: false`)
--   **Timestamps** — sets `validFrom`/`issuanceDate` to now (or a custom value)
+- **Issuer DID** — replaces the placeholder issuer with your wallet's DID
+- **Subject DID** — optionally replaces the subject DID
+- **Fresh UUIDs** — regenerates all `urn:uuid:` ids (disable with `freshIds: false`)
+- **Timestamps** — sets `validFrom`/`issuanceDate` to now (or a custom value)
 
 ### Materializing an SD-JWT VC Fixture
 
@@ -199,10 +199,10 @@ export const myFixture: CredentialFixture = {
 
 The `examples/credential-viewer` app has a **New Fixture** button that provides a form with:
 
--   JSON editor with metadata auto-inference
--   JSON file upload
--   Test Issue button (requires wallet connection)
--   Saves the `.ts` file and updates the index automatically
+- JSON editor with metadata auto-inference
+- JSON file upload
+- Test Issue button (requires wallet connection)
+- Saves the `.ts` file and updates the index automatically
 
 The form creates W3C VC fixtures only. Add SD-JWT VC template fixtures manually so
 their `kind`, reserved ID/spec pairing, and materialization template remain explicit.
@@ -236,60 +236,62 @@ See the [Credential Viewer README](../../examples/credential-viewer/README.md) f
 
 ### VC v1 (3)
 
--   `vc-v1/basic` — Minimal VCDM v1 credential
--   `vc-v1/with-status` — With StatusList2021 credential status
--   `vc-v1/alumni-credential` — University alumni credential
+- `vc-v1/basic` — Minimal VCDM v1 credential
+- `vc-v1/with-status` — With StatusList2021 credential status
+- `vc-v1/alumni-credential` — University alumni credential
 
 ### VC v2 (8)
 
--   `vc-v2/basic` — Minimal VCDM v2 credential
--   `vc-v2/with-evidence` — With evidence array
--   `vc-v2/multiple-subjects` — With multiple credential subjects
--   `vc-v2/employment-credential` — Employment verification credential
--   `vc-v2/education-degree` — University bachelor degree credential
--   `vc-v2/digital-id` — Government digital identity credential
--   `vc-v2/membership-credential` — Professional association membership
--   `vc-v2/license-credential` — Professional nursing license
+- `vc-v2/basic` — Minimal VCDM v2 credential
+- `vc-v2/with-evidence` — With evidence array
+- `vc-v2/multiple-subjects` — With multiple credential subjects
+- `vc-v2/employment-credential` — Employment verification credential
+- `vc-v2/education-degree` — University bachelor degree credential
+- `vc-v2/digital-id` — Government digital identity credential
+- `vc-v2/membership-credential` — Professional association membership
+- `vc-v2/license-credential` — Professional nursing license
 
 ### Open Badges v3 (11)
 
--   `obv3/minimal-badge` — Minimal OBv3 achievement credential
--   `obv3/full-badge` — Full-featured badge with image, evidence, alignment, results, expiration
--   `obv3/with-alignment` — With competency framework alignments
--   `obv3/with-endorsement` — With embedded endorsement credential
--   `obv3/plugfest-jff2` — JFF PlugFest 2 interoperability badge
--   `obv3/1edtech-full` — 1EdTech complete OpenBadgeCredential (spec reference)
--   `obv3/professional-cert` — AWS Solutions Architect professional certification
--   `obv3/micro-credential` — Data Science Fundamentals micro-credential
--   `obv3/course-completion` — Introduction to Machine Learning course completion
--   `obv3/k12-diploma` — High school diploma
--   `obv3/endorsement-credential` — Program accreditation endorsement
+- `obv3/minimal-badge` — Minimal OBv3 achievement credential
+- `obv3/full-badge` — Full-featured badge with image, evidence, alignment, results, expiration
+- `obv3/with-alignment` — With competency framework alignments
+- `obv3/with-endorsement` — With embedded endorsement credential
+- `obv3/plugfest-jff2` — JFF PlugFest 2 interoperability badge
+- `obv3/1edtech-full` — 1EdTech complete OpenBadgeCredential (spec reference)
+- `obv3/professional-cert` — AWS Solutions Architect professional certification
+- `obv3/micro-credential` — Data Science Fundamentals micro-credential
+- `obv3/course-completion` — Introduction to Machine Learning course completion
+- `obv3/k12-diploma` — High school diploma
+- `obv3/endorsement-credential` — Program accreditation endorsement
 
 ### CLR v2 (4)
 
--   `clr/minimal` — Minimal Comprehensive Learner Record
--   `clr/multi-achievement` — Multiple achievements with associations
--   `clr/nd-student-transcript` — North Dakota student transcript (nested VCs, real-world structure)
--   `clr/university-transcript` — University academic transcript (6 nested course VCs)
+- `clr/minimal` — Minimal Comprehensive Learner Record
+- `clr/multi-achievement` — Multiple achievements with associations
+- `clr/nd-student-transcript` — North Dakota student transcript (nested VCs, real-world structure)
+- `clr/university-transcript` — University academic transcript (6 nested course VCs)
+- `clr/demo-isd-transcript` — Partner-issued 33-course K-12 transcript, ~480 blank nodes (perf regression case: share-VP signing takes ~80 s)
+- `clr/demo-isd-transcript-ids` — Same transcript with schema-safe `id`s on alignment/criteria/result (share-VP signing ~170 ms)
 
 ### LearnCard Boosts (5)
 
--   `boost/basic` — Basic BoostCredential with display
--   `boost/boost-id` — BoostID membership card
--   `boost/with-skills` — Boost with skills, evidence, and alignment
--   `boost/community-award` — Community leadership award boost
--   `boost/delegate` — Organization delegate credential
+- `boost/basic` — Basic BoostCredential with display
+- `boost/boost-id` — BoostID membership card
+- `boost/with-skills` — Boost with skills, evidence, and alignment
+- `boost/community-award` — Community leadership award boost
+- `boost/delegate` — Organization delegate credential
 
 ### SD-JWT VCs (1)
 
--   `sd-jwt-vc/course-completion` — Synthetic, holder-bound course completion
-    credential with selective disclosure and Digital Credentials API metadata
+- `sd-jwt-vc/course-completion` — Synthetic, holder-bound course completion
+  credential with selective disclosure and Digital Credentials API metadata
 
 ### Invalid / Negative Tests (3)
 
--   `invalid/missing-context` — No @context
--   `invalid/empty-type` — Empty type array
--   `invalid/missing-issuer` — No issuer field
+- `invalid/missing-context` — No @context
+- `invalid/empty-type` — Empty type array
+- `invalid/missing-issuer` — No issuer field
 
 ## Tests
 
@@ -299,23 +301,63 @@ bun run test
 
 Two test suites run automatically:
 
--   **`registry.test.ts`** — Validates every fixture against its Zod validator, checks metadata consistency, and tests the query/filter API
--   **`issuance.test.ts`** — Creates a real LearnCard wallet instance and calls `issueCredential()` on every valid fixture, verifying that each produces a signed VC with a proof
+- **`registry.test.ts`** — Validates every fixture against its Zod validator, checks metadata consistency, and tests the query/filter API
+- **`issuance.test.ts`** — Creates a real LearnCard wallet instance and calls `issueCredential()` on every valid fixture, verifying that each produces a signed VC with a proof
+
+## Benchmarking CLR signing & verification
+
+```bash
+# every CLR fixture in the library
+bun run bench:clr
+
+# one or more real-world CLRs, more runs, skip the (slow) share-VP measurement
+bun run bench:clr -- --runs 7 --no-vp path/to/transcript.json
+```
+
+`scripts/bench-clr-verification.ts` re-issues each CLR with a local key in several structural
+variants and times the two DIDKit operations the LearnCard app performs on a credential:
+
+- **verify** — `wallet.invoke.verifyCredential(vc)`, runs when a credential is opened
+- **share VP** — `wallet.invoke.issuePresentation(vp)` where the VP embeds the credential, runs
+  when a share link is generated
+
+Variants isolate specific hypotheses about what makes a CLR slow:
+
+| Variant     | What changes                                                                              | Isolates                                          |
+| ----------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `as-is`     | nothing (proof re-signed locally)                                                         | baseline                                          |
+| `ids-safe`  | `id` only where the CLR/OBv3 schema permits (`alignment`, `criteria`, `result`, …)        | what an issuer can realistically ship             |
+| `no-nested` | drops `credentialSubject.verifiableCredential`                                            | cost of the spec-mandated achievement duplication |
+| `no-schema` | drops `credentialSchema`                                                                  | the per-verify network fetch of the JSON schema   |
+| `ids-added` | opt-in: `id` on every blank node — **fails 1EdTech schema** on `association`/`identifier` | theoretical lower bound for canonicalization      |
+
+Each row reports byte size, blank-node counts (total and byte-identical duplicates), nested VC
+count, issue time, median/min/max verify time, and share-VP signing time.
+
+### Why the share VP matters
+
+Blank nodes (objects without an `id`) are cheap to canonicalize in a standalone credential but
+expensive inside a Verifiable Presentation: `verifiableCredential` is an `@graph` container, so
+the embedded credential becomes a blank-node _named graph_ and every blank node inside it hashes
+identically in URDNA2015's first pass, forcing the N-degree path. On `clr/demo-isd-transcript`
+(480 blank nodes, 370 duplicated because CLR repeats each achievement at the subject level and
+inside its nested VC) this is **~1 s to verify vs ~80 s to sign the share VP**. Adding
+schema-safe `id`s (`clr/demo-isd-transcript-ids`) brings the VP down to ~170 ms.
 
 ### Bundle Size & Production Use
 
 This package is designed for **testing, development, and CI** — not for inclusion in production application bundles. The fixture data is intentionally large and comprehensive.
 
--   The package declares `"sideEffects": false` so bundlers can tree-shake unused fixtures
--   The credential-viewer (`examples/credential-viewer/`) is `private: true` and not published
--   If you only need a few fixtures in a test file, import them directly: `import { obv3MinimalBadge } from '@learncard/credential-library'`
--   Avoid importing the full library in production application code paths
+- The package declares `"sideEffects": false` so bundlers can tree-shake unused fixtures
+- The credential-viewer (`examples/credential-viewer/`) is `private: true` and not published
+- If you only need a few fixtures in a test file, import them directly: `import { obv3MinimalBadge } from '@learncard/credential-library'`
+- Avoid importing the full library in production application code paths
 
 ### JSON-LD Context Notes
 
 All valid fixtures use `@context` URLs that are either statically cached in DidKit or fetchable via `allowRemoteContexts`. If you add a fixture with custom terms, make sure they are defined in one of the included contexts. Common choices:
 
--   `https://www.w3.org/2018/credentials/examples/v1` — Example terms for VC v1 (`degree`, `alumniOf`, etc.)
--   `https://www.w3.org/ns/credentials/examples/v2` — Example terms for VC v2 (`degree`, `role`, etc.)
--   `https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json` — OBv3 terms (cached in DidKit)
--   `https://purl.imsglobal.org/spec/clr/v2p0/context.json` — CLR v2 terms (cached in DidKit)
+- `https://www.w3.org/2018/credentials/examples/v1` — Example terms for VC v1 (`degree`, `alumniOf`, etc.)
+- `https://www.w3.org/ns/credentials/examples/v2` — Example terms for VC v2 (`degree`, `role`, etc.)
+- `https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json` — OBv3 terms (cached in DidKit)
+- `https://purl.imsglobal.org/spec/clr/v2p0/context.json` — CLR v2 terms (cached in DidKit)
