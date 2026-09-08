@@ -48,6 +48,17 @@ ruby -rjson -e '
     abort "#{name} missing GHA cache import" unless target.fetch("cache-from").any? { |cache| cache["type"] == "gha" }
     abort "#{name} missing GHA cache export" unless target.fetch("cache-to").any? { |cache| cache["type"] == "gha" && cache["mode"] == "max" }
   end
+  browser_scope = bake.fetch("target").fetch("browser-base").fetch("cache-to").fetch(0).fetch("scope")
+  service_scope = bake.fetch("target").fetch("service-base").fetch("cache-to").fetch(0).fetch("scope")
+  abort "identical monorepo bases must share one cache scope" unless browser_scope == service_scope
 ' <<< "$BAKE_JSON"
+
+ruby -ryaml -e '
+  compose = YAML.load_file(ARGV.fetch(0), aliases: true).fetch("services")
+  abort "app image name must be explicit" unless compose.dig("app", "image") == "learn-card-e2e-app"
+  abort "delete-service image name must be explicit" unless compose.dig("delete-service", "image") == "learn-card-e2e-delete-service"
+' "$REPO_ROOT/apps/learn-card-app/compose.yaml"
+grep -Fq '"learn-card-e2e-app"' "$BAKE_FILE" || { echo 'Bake app tag must match Compose' >&2; exit 1; }
+grep -Fq '"learn-card-e2e-delete-service"' "$BAKE_FILE" || { echo 'Bake delete tag must match Compose' >&2; exit 1; }
 
 echo 'Hosted E2E script contracts passed'

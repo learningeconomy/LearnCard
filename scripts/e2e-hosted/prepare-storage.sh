@@ -71,16 +71,19 @@ if [[ "$mnt_target" == /mnt && "$mnt_device" != "$root_device" ]]; then
     mnt_free_kib="$(available_kib /mnt)"
 
     if (( mnt_free_kib >= MIN_DOCKER_FREE_KIB && root_free_kib >= MIN_ROOT_FREE_KIB )); then
+        # Hosted runners are disposable. Mount an empty Docker root instead of
+        # copying preinstalled images so the larger disk starts with maximum capacity.
         sudo mkdir -p "$MNT_DOCKER_DIR" "$docker_root"
         sudo systemctl stop docker.service docker.socket
         sudo mount --bind "$MNT_DOCKER_DIR" "$docker_root"
-        sudo systemctl start docker.service
+        sudo systemctl start docker.service docker.socket
 
         docker_mount="$(findmnt -nro MAJ:MIN,TARGET -M "$docker_root" 2>/dev/null || true)"
         read -r docker_device docker_target _docker_details <<< "$docker_mount"
         docker_free_kib="$(available_kib "$docker_root")"
         if [[ "$docker_target" != "$docker_root" || "$docker_device" != "$mnt_device" ]]; then
             write_plan relocation-verification-failed
+            capture_diagnostics after
             echo "Docker storage was not mounted on $docker_root" >&2
             exit 1
         fi
@@ -90,6 +93,7 @@ fi
 
 if (( root_free_kib < MIN_ROOT_FREE_KIB || docker_free_kib < MIN_DOCKER_FREE_KIB )); then
     write_plan insufficient-capacity
+    capture_diagnostics after
     echo "Hosted E2E runner has insufficient storage: root=${root_free_kib}KiB docker=${docker_free_kib}KiB" >&2
     exit 1
 fi

@@ -1,8 +1,8 @@
 target "browser-base" {
   context    = "."
   dockerfile = "Dockerfile.monorepo"
-  cache-from = ["type=gha,scope=e2e-browser-base"]
-  cache-to   = ["type=gha,scope=e2e-browser-base,mode=max"]
+  cache-from = ["type=gha,scope=e2e-monorepo-base"]
+  cache-to   = ["type=gha,scope=e2e-monorepo-base,mode=max"]
 }
 
 target "browser-app" {
@@ -11,7 +11,7 @@ target "browser-app" {
   contexts = {
     learncard-monorepo-local = "target:browser-base"
   }
-  tags       = ["learn-card-app-app"]
+  tags       = ["learn-card-e2e-app"]
   cache-from = ["type=gha,scope=e2e-browser-app"]
   cache-to   = ["type=gha,scope=e2e-browser-app,mode=max"]
 }
@@ -52,7 +52,7 @@ target "browser-api" {
 target "browser-delete" {
   context    = "services/playwright-delete-service"
   dockerfile = "Dockerfile"
-  tags       = ["learn-card-app-delete-service"]
+  tags       = ["learn-card-e2e-delete-service"]
   cache-from = ["type=gha,scope=e2e-browser-delete"]
   cache-to   = ["type=gha,scope=e2e-browser-delete,mode=max"]
 }
@@ -71,8 +71,8 @@ target "service-base" {
   context    = "."
   dockerfile = "Dockerfile.monorepo"
   tags       = ["learncard-monorepo-local", "lca-api-service"]
-  cache-from = ["type=gha,scope=e2e-service-base"]
-  cache-to   = ["type=gha,scope=e2e-service-base,mode=max"]
+  cache-from = ["type=gha,scope=e2e-monorepo-base"]
+  cache-to   = ["type=gha,scope=e2e-monorepo-base,mode=max"]
 }
 
 group "service" {

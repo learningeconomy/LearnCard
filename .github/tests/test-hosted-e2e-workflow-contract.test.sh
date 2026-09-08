@@ -65,6 +65,7 @@ abort 'aggregate must inspect all job results' unless aggregate.fetch('needs') =
   'eligibility', 'browser_e2e', 'service_e2e'
 ]
 abort 'aggregate must run after failures/skips' unless aggregate.fetch('if').include?('always()')
+abort 'aggregate must have a bounded timeout' unless aggregate.fetch('timeout-minutes') == 5
 
 browser_steps = browser.fetch('steps')
 abort 'browser runner invocation missing' unless browser_steps.any? do |step|
@@ -84,8 +85,12 @@ abort 'runner storage preparation must execute the tested script' unless browser
 [browser_steps, service.fetch('steps')].each do |steps|
   buildx = steps.find { |step| step['uses'] == 'docker/setup-buildx-action@v3' }
   abort 'Buildx setup missing before cached Docker build' unless buildx
+  runtime = steps.find { |step| step['uses'] == 'crazy-max/ghaction-github-runtime@v3' }
+  abort 'GitHub Actions cache runtime exposure missing' unless runtime
   runner = steps.find { |step| step['run']&.start_with?('bash scripts/e2e-hosted/run-') }
   abort 'Buildx setup must precede the suite runner' unless steps.index(buildx) < steps.index(runner)
+  abort 'cache runtime exposure must follow Buildx setup' unless steps.index(runtime) > steps.index(buildx)
+  abort 'cache runtime exposure must precede the suite runner' unless steps.index(runtime) < steps.index(runner)
 
   checkout = steps.find { |step| step['id'] == 'checkout' }
   abort 'checkout must expose its outcome to diagnostics' unless checkout
@@ -206,5 +211,16 @@ abort 'legacy EC2 gate must remain during shadow phase' unless legacy_jobs.key?(
 end
 puts 'Browser job preserves event/run provenance with and without checkout'
 RUBY
+
+grep -Fq 'E2E_ARTIFACT_DIR: ${{ runner.temp }}/e2e-artifacts/browser' "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" \
+    || { echo 'browser artifacts must live outside the Docker context' >&2; exit 1; }
+grep -Fq 'E2E_ARTIFACT_DIR: ${{ runner.temp }}/e2e-artifacts/service' "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" \
+    || { echo 'service artifacts must live outside the Docker context' >&2; exit 1; }
+grep -Fxq 'e2e-artifacts/' "$REPO_ROOT/.dockerignore" \
+    || { echo 'Docker context must exclude local E2E artifacts' >&2; exit 1; }
+grep -Fxq 'e2e-artifacts/' "$REPO_ROOT/.gitignore" \
+    || { echo 'local E2E artifacts must be ignored by Git' >&2; exit 1; }
+grep -Fq 'for contract in .github/tests/*.test.cjs' "$REPO_ROOT/.github/workflows/lint.yml" \
+    || { echo 'CJS repository contracts are not executed in CI' >&2; exit 1; }
 
 echo 'Hosted E2E workflow contract passed'

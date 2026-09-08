@@ -169,7 +169,7 @@ grep -Fxq 'result=ready' "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
     || fail 'successful dual-disk preparation was not verified'
 stop_line="$(grep -nFx 'systemctl stop docker.service docker.socket' "$RUN_FIXTURE_ROOT/sudo.log" | cut -d: -f1)"
 mount_line="$(grep -nFx 'mount --bind /mnt/learncard-docker /var/lib/docker' "$RUN_FIXTURE_ROOT/sudo.log" | cut -d: -f1)"
-start_line="$(grep -nFx 'systemctl start docker.service' "$RUN_FIXTURE_ROOT/sudo.log" | cut -d: -f1)"
+start_line="$(grep -nFx 'systemctl start docker.service docker.socket' "$RUN_FIXTURE_ROOT/sudo.log" | cut -d: -f1)"
 (( stop_line < mount_line && mount_line < start_line )) \
     || fail 'Docker must be stopped before binding and restarted afterward'
 
@@ -185,11 +185,15 @@ grep -Fxq "docker_free_kib=$((20 * gib))" "$RUN_FIXTURE_ROOT/artifacts/storage-p
     || fail 'capacity was not measured at DockerRootDir'
 grep -Fxq 'result=insufficient-capacity' "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
     || fail 'full Docker filesystem did not produce an actionable result'
+grep -Fxq 'phase=after' "$RUN_FIXTURE_ROOT/artifacts/runner-storage.txt" \
+    || fail 'capacity failure did not capture final diagnostics'
 
 run_case relocation-verification dual "$((16 * gib))" "$((70 * gib))" "$((16 * gib))" false
 [[ "$RUN_STATUS" -ne 0 ]] || fail 'failed Docker bind verification was accepted'
 grep -Fxq 'result=relocation-verification-failed' "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
     || fail 'failed Docker bind did not produce an actionable result'
+grep -Fxq 'phase=after' "$RUN_FIXTURE_ROOT/artifacts/runner-storage.txt" \
+    || fail 'relocation failure did not capture final diagnostics'
 
 run_case insufficient-root dual "$((12 * gib))" "$((70 * gib))"
 [[ "$RUN_STATUS" -ne 0 ]] || fail 'dual-disk runner with insufficient workspace capacity was accepted'
