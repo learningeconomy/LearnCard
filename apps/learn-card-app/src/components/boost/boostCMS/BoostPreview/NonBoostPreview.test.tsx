@@ -21,7 +21,6 @@ vi.mock('learn-card-base', () => ({
             updateSelectedDisplayView: vi.fn(),
         },
     },
-    useWallet: () => ({ initWallet: vi.fn() }),
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
     ModalTypes: { Right: 'right' },
     useDeviceTypeByWidth: () => ({ isMobile: true }),
@@ -35,6 +34,15 @@ vi.mock('learn-card-base', () => ({
         achievement: 'Achievement',
         learningHistory: 'Learning History',
     },
+}));
+
+vi.mock('learn-card-base/hooks/useCredentialVerification', () => ({
+    useCredentialVerification: () => ({
+        verificationItems: [],
+        isVerifying: false,
+        isVerified: true,
+        error: null,
+    }),
 }));
 
 vi.mock('@ionic/react', () => ({

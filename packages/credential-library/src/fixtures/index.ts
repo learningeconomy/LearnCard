@@ -56,6 +56,8 @@ import { vcV2LicenseCredential } from './vc-v2/license-credential';
 import { clrGreatPlainsFull } from './clr/great-plains-full';
 import { clrWestbridgeFull } from './clr/westbridge-full';
 import { clrCompetencyAligned } from './clr/competency-aligned';
+import { clrDemoIsdTranscript } from './clr/demo-isd-transcript';
+import { clrDemoIsdTranscriptIds } from './clr/demo-isd-transcript-ids';
 
 // SD-JWT VC
 import { sdJwtVcCourseCompletion } from './sd-jwt-vc/course-completion';
@@ -119,6 +121,8 @@ export const ALL_FIXTURES: LibraryFixture[] = [
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrDemoIsdTranscript,
+    clrDemoIsdTranscriptIds,
 
     // SD-JWT VC
     sdJwtVcCourseCompletion,
@@ -165,5 +169,7 @@ export {
     clrGreatPlainsFull,
     clrWestbridgeFull,
     clrCompetencyAligned,
+    clrDemoIsdTranscript,
+    clrDemoIsdTranscriptIds,
     sdJwtVcCourseCompletion,
 };

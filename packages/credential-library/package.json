@@ -13,7 +13,8 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage",
-        "test:integration": "vitest run --config vitest.integration.config.ts"
+        "test:integration": "vitest run --config vitest.integration.config.ts",
+        "bench:clr": "bun --conditions=development scripts/bench-clr-verification.ts"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",

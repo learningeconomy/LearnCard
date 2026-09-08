@@ -3,7 +3,7 @@ import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { connectivityStore } from 'learn-card-base';
+import { connectivityStore, shouldPersistQuery } from 'learn-card-base';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
@@ -200,7 +200,11 @@ const FullApp: React.FC = () => {
     return (
         <PersistQueryClientProvider
             client={client}
-            persistOptions={{ persister, maxAge: CACHE_TTL }}
+            persistOptions={{
+                persister,
+                maxAge: CACHE_TTL,
+                dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+            }}
         >
             <AnalyticsContextProvider>
                 <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />

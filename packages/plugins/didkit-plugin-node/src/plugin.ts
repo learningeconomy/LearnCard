@@ -132,6 +132,10 @@ export const getDidKitPlugin = async (
             'Node-native N-API DIDKit plugin for LearnCard. Provides cryptographic operations without WASM overhead.',
         context: {
             resolveStaticDocument: async (_learnCard, url) => {
+                const { getStaticContext } = await import('@learncard/didkit-plugin');
+                const staticContext = getStaticContext(url);
+                if (staticContext) return staticContext;
+
                 // Uses SSI's embedded static contexts from Rust (no HTTP)
                 // Returns undefined for unknown contexts - DynamicLoaderPlugin can handle HTTP if needed
                 try {

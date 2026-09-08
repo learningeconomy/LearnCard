@@ -19,6 +19,7 @@ import init, {
     clearCache,
 } from './didkit/index';
 import { getDocumentMap } from './helpers';
+import { getStaticContext } from './staticContexts';
 
 import { DIDKitPlugin, DidMethod } from './types';
 
@@ -41,6 +42,9 @@ export const getDidKitPlugin = async (
             'Provides an interface to DIDKit, which allows for the generation of key material, as well as signing and verifying credentials and presentations',
         context: {
             resolveStaticDocument: async (_learnCard, url) => {
+                const staticContext = getStaticContext(url);
+                if (staticContext) return staticContext;
+
                 try {
                     return JSON.parse((await contextLoader(url)) ?? '') || undefined;
                 } catch (error) {
@@ -127,6 +131,9 @@ export const getDidKitPlugin = async (
             },
 
             contextLoader: async (_learnCard, url) => {
+                const staticContext = getStaticContext(url);
+                if (staticContext) return staticContext;
+
                 try {
                     return JSON.parse((await contextLoader(url)) ?? '') || undefined;
                 } catch (error) {

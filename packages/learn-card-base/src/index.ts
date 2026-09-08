@@ -146,6 +146,7 @@ export * from './hooks/usePrivacyGate';
 export * from './hooks/useAiFeatureGate';
 export * from './helpers/aiFeatureGate';
 export * from './hooks/useVerifiableData';
+export * from './hooks/useCredentialVerification';
 export * from './hooks/useSkillIconAnnotation';
 export * from './helpers/skillIconHelpers';
 export * from './hooks/useSharedUrisInTerms';
@@ -264,6 +265,7 @@ export * from './filestack/images/filestack.helpers';
 export * from './types/sync-my-school';
 export * from './types/careerOneStop';
 
+export * from './react-query/shouldPersistQuery';
 export * from './react-query/queries/queries';
 export * from './react-query/queries/vcQueries';
 export * from './react-query/queries/notifications';
