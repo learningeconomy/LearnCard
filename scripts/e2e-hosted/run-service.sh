@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SERVICE_DIR="$REPO_ROOT/tests/e2e"
+BAKE_FILE="$REPO_ROOT/scripts/e2e-hosted/docker-bake.hcl"
 : "${E2E_ARTIFACT_DIR:?E2E_ARTIFACT_DIR must be set}"
 
 source "$REPO_ROOT/scripts/e2e-hosted/metrics.sh"
@@ -27,14 +28,22 @@ run_service_suite() {
         2>&1 | tee "$E2E_ARTIFACT_DIR/vitest.log"
 }
 
+build_service_images() {
+    cd "$REPO_ROOT"
+    docker buildx bake --file "$BAKE_FILE" service --load --progress=plain \
+        2>&1 | tee "$E2E_ARTIFACT_DIR/docker-buildx-bake.log"
+}
+
 start_service_stack() {
     cd "$SERVICE_DIR"
-    BUILDKIT_PROGRESS=plain docker compose up -d --build \
-        2>&1 | tee "$E2E_ARTIFACT_DIR/docker-compose-build-start.log"
+    docker compose up -d --no-build \
+        2>&1 | tee "$E2E_ARTIFACT_DIR/docker-compose-start.log"
 }
 
 e2e_snapshot startup
-e2e_timed service_compose_build_start start_service_stack
+e2e_timed docker_buildx_bake build_service_images
+e2e_snapshot after-image-build
+e2e_timed service_compose_start start_service_stack
 e2e_snapshot service-stack-running
 # Bound startup before entering Vitest's global setup health-check loop.
 wait_for_service() {

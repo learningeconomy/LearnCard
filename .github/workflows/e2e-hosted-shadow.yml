@@ -105,6 +105,9 @@ jobs:
             - name: Prepare runner storage
               run: bash scripts/e2e-hosted/prepare-storage.sh
 
+            - name: Setup Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
             - name: Setup Node
               uses: actions/setup-node@v6
               with:
@@ -191,6 +194,9 @@ jobs:
 
             - name: Prepare runner storage
               run: bash scripts/e2e-hosted/prepare-storage.sh
+
+            - name: Setup Docker Buildx
+              uses: docker/setup-buildx-action@v3
 
             - name: Setup Node
               uses: actions/setup-node@v6

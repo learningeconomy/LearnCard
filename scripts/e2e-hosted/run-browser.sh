@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 APP_DIR="$REPO_ROOT/apps/learn-card-app"
+BAKE_FILE="$REPO_ROOT/scripts/e2e-hosted/docker-bake.hcl"
 : "${E2E_ARTIFACT_DIR:?E2E_ARTIFACT_DIR must be set}"
 E2E_TEST_FILES="${E2E_TEST_FILES:-consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts}"
 
@@ -43,16 +44,10 @@ wait_for_url() {
     return 1
 }
 
-build_base() {
+build_images() {
     cd "$REPO_ROOT"
-    docker build --progress=plain -t learncard-monorepo-local -f Dockerfile.monorepo . \
-        2>&1 | tee "$E2E_ARTIFACT_DIR/docker-base-build.log"
-}
-
-build_compose() {
-    cd "$APP_DIR"
-    BUILDKIT_PROGRESS=plain docker compose build --parallel \
-        2>&1 | tee "$E2E_ARTIFACT_DIR/docker-compose-build.log"
+    docker buildx bake --file "$BAKE_FILE" browser --load --progress=plain \
+        2>&1 | tee "$E2E_ARTIFACT_DIR/docker-buildx-bake.log"
 }
 
 start_compose() {
@@ -77,9 +72,9 @@ wait_for_stack() {
     wait_for_url cloud http://localhost:4100/api/health-check 300 & local cloud_pid=$!
     # e2e_timed disables errexit: explicitly retain failure while reaping every child.
     local status=0
-    wait "$app_pid" || status=$?
-    wait "$brain_pid" || status=$?
-    wait "$cloud_pid" || status=$?
+    wait "$app_pid" || status=1
+    wait "$brain_pid" || status=1
+    wait "$cloud_pid" || status=1
     return "$status"
 }
 
@@ -96,10 +91,8 @@ run_accessibility() {
 }
 
 e2e_snapshot startup
-e2e_timed docker_base_build build_base
-e2e_snapshot after-base-build
-e2e_timed docker_compose_build build_compose
-e2e_snapshot after-compose-build
+e2e_timed docker_buildx_bake build_images
+e2e_snapshot after-image-build
 e2e_timed compose_start start_compose
 e2e_timed host_dependency_build build_test_dependencies
 e2e_timed playwright_firefox_install install_firefox

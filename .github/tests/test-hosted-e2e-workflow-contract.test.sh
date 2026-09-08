@@ -82,6 +82,11 @@ abort 'runner storage preparation must execute the tested script' unless browser
 ) == 'bash scripts/e2e-hosted/prepare-storage.sh'
 
 [browser_steps, service.fetch('steps')].each do |steps|
+  buildx = steps.find { |step| step['uses'] == 'docker/setup-buildx-action@v3' }
+  abort 'Buildx setup missing before cached Docker build' unless buildx
+  runner = steps.find { |step| step['run']&.start_with?('bash scripts/e2e-hosted/run-') }
+  abort 'Buildx setup must precede the suite runner' unless steps.index(buildx) < steps.index(runner)
+
   checkout = steps.find { |step| step['id'] == 'checkout' }
   abort 'checkout must expose its outcome to diagnostics' unless checkout
 
