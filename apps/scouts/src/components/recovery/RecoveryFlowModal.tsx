@@ -299,7 +299,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         <div className="p-6 max-w-md mx-auto">
             <button
                 onClick={handleBack}
-                className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
+                disabled={loading}
+                className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 <DirectionalIcon>
                     <IonIcon icon={chevronBackOutline} className="text-xs" />
