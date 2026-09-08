@@ -212,9 +212,9 @@ end
 puts 'Browser job preserves event/run provenance with and without checkout'
 RUBY
 
-grep -Fq 'E2E_ARTIFACT_DIR: ${{ runner.temp }}/e2e-artifacts/browser' "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" \
+grep -Fq 'E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/browser' "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" \
     || { echo 'browser artifacts must live outside the Docker context' >&2; exit 1; }
-grep -Fq 'E2E_ARTIFACT_DIR: ${{ runner.temp }}/e2e-artifacts/service' "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" \
+grep -Fq 'E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/service' "$REPO_ROOT/.github/workflows/e2e-hosted-shadow.yml" \
     || { echo 'service artifacts must live outside the Docker context' >&2; exit 1; }
 grep -Fxq 'e2e-artifacts/' "$REPO_ROOT/.dockerignore" \
     || { echo 'Docker context must exclude local E2E artifacts' >&2; exit 1; }
