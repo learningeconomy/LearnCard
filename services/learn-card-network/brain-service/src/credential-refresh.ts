@@ -93,6 +93,8 @@ const setCorsHeaders = (reply: FastifyReply) => {
     reply.header('Access-Control-Allow-Origin', '*');
     reply.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
     reply.header('Access-Control-Allow-Headers', 'Authorization, Content-Type, If-None-Match');
+    // Browser holders must read the DID-auth challenge and conditional refresh validator.
+    reply.header('Access-Control-Expose-Headers', 'WWW-Authenticate, ETag');
 };
 
 type AuthenticatedAggregate = {

@@ -40,6 +40,10 @@ const loggerHost = vi.hoisted(() => ({
     error: vi.fn(),
 }));
 
+vi.mock('../../config/bootstrapTenantConfig', () => ({
+    getResolvedTenantConfig: () => ({ apis: { brainService: 'http://localhost:4000/trpc' } }),
+}));
+
 vi.mock('@capacitor/app', () => ({
     App: { addListener: appHost.addListener },
 }));
@@ -101,13 +105,14 @@ const HOUR_MS = 60 * 60 * 1000;
 
 let appStateChangeCallback: ((state: { isActive: boolean }) => void) | undefined;
 
-const makeRecord = (overrides: Record<string, unknown> = {}): LCR =>
-    ({
+const makeRecord = (overrides: Record<string, unknown> = {}): LCR => {
+    return {
         id: 'rec-1',
         uri: 'lc:cloud:cred-1',
         category: 'Achievement',
         ...overrides,
-    }) as unknown as LCR;
+    } as unknown as LCR;
+};
 
 const staleMetadata = (overrides: Record<string, unknown> = {}) => ({
     serviceId: 'https://refresh.example.com/refresh/abc',

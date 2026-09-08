@@ -64,6 +64,8 @@ export type RefreshLearnCloudCredentialParams = {
     record: LCR;
     /** Bypass the staleness guard (detail views, notification taps) */
     force?: boolean;
+    /** Explicit local QA opt-in. Only loopback managed endpoints on this origin qualify. */
+    localRefreshOrigin?: string;
 };
 
 const failed = (
@@ -133,7 +135,8 @@ const effectiveDateOf = (vc: VC): string | undefined => {
 const performRefresh = async (
     wallet: BespokeLearnCard,
     inputRecord: LCR,
-    force: boolean
+    force: boolean,
+    localRefreshOrigin?: string
 ): Promise<LearnCloudCredentialRefreshResult> => {
     const now = new Date().toISOString();
 
@@ -178,7 +181,28 @@ const performRefresh = async (
     let result: CredentialRefreshResult;
 
     try {
-        result = await wallet.invoke.refreshCredential(vc, { etag: metadata?.etag });
+        let allowLocalRefresh = false;
+        if (localRefreshOrigin) {
+            try {
+                const endpoint = new URL(getSupportedRefreshService(vc)?.id ?? '');
+                const allowed = new URL(localRefreshOrigin);
+                allowLocalRefresh =
+                    ['localhost', '127.0.0.1', '[::1]'].includes(allowed.hostname) &&
+                    ['http:', 'https:'].includes(allowed.protocol) &&
+                    endpoint.origin === allowed.origin &&
+                    !endpoint.username &&
+                    !endpoint.password &&
+                    endpoint.pathname.startsWith('/refresh/');
+            } catch {
+                // Invalid local configuration never relaxes the SDK's defaults.
+            }
+        }
+        result = await wallet.invoke.refreshCredential(vc, {
+            etag: metadata?.etag,
+            ...(allowLocalRefresh
+                ? { allowInsecureHttp: true, allowPrivateAddresses: true, maxRedirects: 0 }
+                : {}),
+        });
     } catch (error) {
         return failed('UNAVAILABLE', true, error);
     }
@@ -322,13 +346,14 @@ export const refreshLearnCloudCredential = ({
     wallet,
     record,
     force = false,
+    localRefreshOrigin,
 }: RefreshLearnCloudCredentialParams): Promise<LearnCloudCredentialRefreshResult> => {
     const inFlightKey = getInFlightRefreshKey(wallet, record.id);
     const existing = inFlightRefreshes.get(inFlightKey);
 
     if (existing) return existing;
 
-    const promise = performRefresh(wallet, record, force);
+    const promise = performRefresh(wallet, record, force, localRefreshOrigin);
 
     inFlightRefreshes.set(inFlightKey, promise);
 

@@ -82,6 +82,11 @@ describe('credential refresh holder route security', () => {
         const response = await app.inject({ method: 'GET', url: '/refresh/opaque-id' });
 
         expect(response.statusCode).toBe(401);
+        const exposedHeaders = String(response.headers['access-control-expose-headers'] ?? '')
+            .toLowerCase()
+            .split(',')
+            .map(header => header.trim());
+        expect(exposedHeaders).toEqual(expect.arrayContaining(['www-authenticate', 'etag']));
         expect(mocks.verifyCredentialRefreshAuthorization).toHaveBeenCalledWith(
             'opaque-id',
             undefined,

@@ -99,6 +99,39 @@ describe('refreshLearnCloudCredential', () => {
         vi.useRealTimers();
     });
 
+    describe('local QA origin', () => {
+        it.each([
+            ['http://localhost:4000/refresh/test', 'http://localhost:4000', true],
+            ['http://127.0.0.1:4000/refresh/test', 'http://127.0.0.1:4000', true],
+            ['http://localhost:4001/refresh/test', 'http://localhost:4000', false],
+            ['http://localhost:4000/other', 'http://localhost:4000', false],
+            ['http://localhost:4000/refresh/test', undefined, false],
+            ['https://refresh.example.com/refresh/test', 'https://refresh.example.com', false],
+            ['http://localhost.evil.test/refresh/test', 'http://localhost.evil.test', false],
+            ['http://10.0.0.1/refresh/test', 'http://10.0.0.1', false],
+        ])(
+            'scopes the exception for %s with origin %s',
+            async (serviceId, localRefreshOrigin, allowed) => {
+                const { wallet, readGet, refreshCredential } = makeWallet();
+                readGet.mockResolvedValue({
+                    ...currentVc,
+                    refreshService: { id: serviceId, type: '1EdTechCredentialRefresh' },
+                } as VC);
+                await refreshLearnCloudCredential({
+                    wallet,
+                    record: baseRecord(),
+                    localRefreshOrigin,
+                });
+                expect(refreshCredential).toHaveBeenCalledWith(expect.anything(), {
+                    etag: 'etag-1',
+                    ...(allowed
+                        ? { allowInsecureHttp: true, allowPrivateAddresses: true, maxRedirects: 0 }
+                        : {}),
+                });
+            }
+        );
+    });
+
     describe('unchanged response', () => {
         it('updates check metadata on the same record without touching the URI or history', async () => {
             const { wallet, indexUpdate, uploadEncrypted, refreshCredential } = makeWallet();

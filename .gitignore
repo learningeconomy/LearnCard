@@ -60,3 +60,6 @@ services/learn-card-network/lca-api/.env.scouts
 
 # Sisyphus agent working directory (local only)
 .sisyphus/
+
+# Local credential-refresh QA issuer keys and replay state
+/.credential-refresh-qa/

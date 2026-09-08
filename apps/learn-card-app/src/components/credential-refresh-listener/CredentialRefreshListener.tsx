@@ -20,6 +20,25 @@ import {
     processWithConcurrency,
 } from 'learn-card-base/react-query/queries/credentialRefresh';
 
+import { environment } from '../../config/environment';
+import { getResolvedTenantConfig } from '../../config/bootstrapTenantConfig';
+import { getCredentialRefreshLocalQaOrigin } from '../../config/credentialRefreshLocalQa';
+
+const getLocalQaOrigin = (): string | undefined => {
+    if (
+        !environment.DEV ||
+        !environment.VITE_CREDENTIAL_REFRESH_LOCAL_QA ||
+        typeof window === 'undefined'
+    )
+        return undefined;
+    return getCredentialRefreshLocalQaOrigin(
+        environment.DEV,
+        environment.VITE_CREDENTIAL_REFRESH_LOCAL_QA,
+        window.location.origin,
+        getResolvedTenantConfig().apis.brainService
+    );
+};
+
 const log = getLogger('credential-refresh-listener');
 
 /**
@@ -47,7 +66,9 @@ export const resetCredentialRefreshSessionForTests = (): void => {
  * 24-hour staleness guard.
  */
 export const useForceRefreshLearnCloudCredential = () => {
-    const mutation = useRefreshLearnCloudCredentialMutation();
+    const mutation = useRefreshLearnCloudCredentialMutation({
+        localRefreshOrigin: getLocalQaOrigin(),
+    });
     const { mutateAsync } = mutation;
 
     const forceRefresh = useCallback(
@@ -78,7 +99,9 @@ const CredentialRefreshListener: React.FC = () => {
     const flagEnabled = flags[CREDENTIAL_REFRESH_FOREGROUND_FLAG] === true;
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
-    const { mutateAsync } = useRefreshLearnCloudCredentialMutation();
+    const { mutateAsync } = useRefreshLearnCloudCredentialMutation({
+        localRefreshOrigin: getLocalQaOrigin(),
+    });
 
     // Latest-dependencies ref so listener registration never churns on wallet or
     // mutation identity changes.

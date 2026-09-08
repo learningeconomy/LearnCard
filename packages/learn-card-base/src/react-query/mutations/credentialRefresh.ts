@@ -27,7 +27,9 @@ export type RefreshLearnCloudCredentialVariables = {
  * or check-metadata update, credential and index queries are invalidated so wallet
  * views follow the new current URI.
  */
-export const useRefreshLearnCloudCredentialMutation = () => {
+export const useRefreshLearnCloudCredentialMutation = (
+    options: { localRefreshOrigin?: string } = {}
+) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
@@ -39,7 +41,12 @@ export const useRefreshLearnCloudCredentialMutation = () => {
         mutationFn: async ({ record, force, wallet: capturedWallet }) => {
             const wallet = capturedWallet ?? (await initWallet());
 
-            return refreshLearnCloudCredential({ wallet, record, force });
+            return refreshLearnCloudCredential({
+                wallet,
+                record,
+                force,
+                localRefreshOrigin: options.localRefreshOrigin,
+            });
         },
         onSuccess: async result => {
             if (result.status === 'updated' || result.status === 'unchanged') {
