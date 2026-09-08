@@ -31,9 +31,9 @@ import {
 import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
+import { useCredentialVerification } from 'learn-card-base/hooks/useCredentialVerification';
 import {
     BoostCategoryOptionsEnum,
-    useWallet,
     useModal,
     ModalTypes,
     useDeviceTypeByWidth,
@@ -123,8 +123,9 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isPreview = false,
 }) => {
     const { track } = useAnalytics();
-    const { initWallet } = useWallet();
-    const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
+    const { verificationItems: vcVerifications } = useCredentialVerification(credential, {
+        enabled: !isPreview,
+    });
     const viewedCredentialIdRef = React.useRef<string | undefined>(undefined);
     const renderMethod = getSvgMustacheRenderMethod(credential as VC);
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
@@ -142,18 +143,6 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const { newModal, closeModal } = useModal();
 
     const { isMobile } = useDeviceTypeByWidth();
-
-    useEffect(() => {
-        if (isPreview) return;
-
-        const verify = async () => {
-            const wallet = await initWallet();
-            const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
-            setVCVerifications(verifications);
-        };
-
-        verify();
-    }, [credential, isPreview]);
 
     useEffect(() => {
         if (!isEarnedBoost || isPreview) return;

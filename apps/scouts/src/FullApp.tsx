@@ -21,6 +21,7 @@ import {
     lazyWithRetry,
     Toast,
     InAppMessageHost,
+    shouldPersistQuery,
 } from 'learn-card-base';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
@@ -101,7 +102,11 @@ const FullApp: React.FC = () => {
     return (
         <PersistQueryClientProvider
             client={client}
-            persistOptions={{ persister, maxAge: CACHE_TTL }}
+            persistOptions={{
+                persister,
+                maxAge: CACHE_TTL,
+                dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+            }}
         >
             <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
             <IonReactRouter>

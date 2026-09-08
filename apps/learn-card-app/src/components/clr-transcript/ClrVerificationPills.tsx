@@ -1,33 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
 import RedXCircle from 'learn-card-base/svgs/RedXCircle';
 import WarningCircle from 'learn-card-base/svgs/WarningCircle';
 
-import { useVerifyCredential } from 'learn-card-base/hooks/useVerifyCredential';
+import { useCredentialVerification } from 'learn-card-base/hooks/useCredentialVerification';
 
 import type { VC, VerificationItem } from '@learncard/types';
 import { VerificationStatusEnum } from '@learncard/types';
 import { formatClrDate } from '../../helpers/clrRenderer.helpers';
 
+const getProofVerified = (items: VerificationItem[]): boolean => {
+    const proofItem = items.find(i => i.check.toLowerCase().includes('proof'));
+    if (proofItem) return proofItem.status === VerificationStatusEnum.Success;
+
+    return items.every(i => i.status === VerificationStatusEnum.Success);
+};
+
 const ClrVerificationPills: React.FC<{ boost: VC }> = ({ boost }) => {
-    const { verifyCredential, worstVerificationStatus } = useVerifyCredential();
-    const [verified, setVerified] = useState<boolean | null>(null);
+    const { verificationItems, isVerified } = useCredentialVerification(boost);
+    const verified = isVerified ? getProofVerified(verificationItems) : null;
 
-    useEffect(() => {
-        verifyCredential(boost).then((items: VerificationItem[]) => {
-            const proofItem = items.find((i: VerificationItem) =>
-                i.check.toLowerCase().includes('proof')
-            );
-            setVerified(
-                proofItem
-                    ? proofItem.status === VerificationStatusEnum.Success
-                    : worstVerificationStatus === VerificationStatusEnum.Success
-            );
-        });
-    }, []);
-
-    const expirationDate = boost.validUntil ?? (boost as any).expirationDate;
+    const expirationDate =
+        boost.validUntil ?? (boost as { expirationDate?: string }).expirationDate;
     const isExpired = expirationDate ? new Date(expirationDate) < new Date() : false;
 
     const proofIcon =

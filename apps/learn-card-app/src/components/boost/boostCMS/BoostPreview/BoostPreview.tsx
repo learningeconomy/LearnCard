@@ -6,7 +6,7 @@ import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
 import * as m from '../../../../paraglide/messages.js';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
-import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
+import { useCredentialVerification } from 'learn-card-base/hooks/useCredentialVerification';
 import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
@@ -23,7 +23,6 @@ import ReactCredentialIssuerPopover, {
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
     useModal,
-    useWallet,
     ModalTypes,
     useDeviceTypeByWidth,
     useGetCredentialWithEdits,
@@ -88,19 +87,8 @@ export type BoostPreviewProps = {
     isPreview?: boolean;
 };
 
-export const useVerification = (credential: VC) => {
-    const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
-    const { initWallet } = useWallet();
-    useEffect(() => {
-        const verify = async () => {
-            const wallet = await initWallet();
-            const verifications = await wallet?.invoke?.verifyCredential(credential, {}, true);
-            setVCVerifications(prettifyVerificationItems(verifications ?? []));
-        };
-        verify();
-    }, []);
-    return vcVerifications;
-};
+export const useVerification = (credential: VC) =>
+    useCredentialVerification(credential).verificationItems;
 
 const RibbonCategory: React.FC<{ categoryType: BoostCategoryOptionsEnum }> = ({ categoryType }) => {
     switch (categoryType) {

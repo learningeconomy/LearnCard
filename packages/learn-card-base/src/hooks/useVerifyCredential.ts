@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import useWallet from './useWallet';
 import { VC, VerificationItem, VerificationStatus, VerificationStatusEnum } from '@learncard/types';
-import { prettifyVerificationItems } from '../helpers/verificationPrettifier';
+import { useFetchCredentialVerification } from './useCredentialVerification';
 
 export const useVerifyCredential = (checkProof: boolean = true) => {
-    const { initWallet } = useWallet();
+    const fetchVerification = useFetchCredentialVerification();
 
     const [worstVerificationStatus, setWorstVerificationStatus] = useState<
         VerificationStatus | undefined
@@ -15,13 +14,7 @@ export const useVerifyCredential = (checkProof: boolean = true) => {
         onVerify?: (verificationItems: VerificationItem[]) => void
     ) => {
         let verificationItems;
-        const wallet = await initWallet();
-        const rawVerifications: VerificationItem[] = await wallet?.invoke?.verifyCredential(
-            credential,
-            {},
-            true
-        );
-        const verifications = prettifyVerificationItems(rawVerifications ?? []);
+        const verifications = await fetchVerification(credential);
 
         if (!checkProof) {
             const verificationsMinusProof = verifications.filter(
