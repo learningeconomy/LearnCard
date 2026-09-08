@@ -42,7 +42,9 @@ vi.mock('../../components/generic/GenericErrorBoundary', () => ({
 }));
 vi.mock('../../hooks/useHeaderScrollSync', () => ({ default: () => vi.fn() }));
 vi.mock('../../components/credential-refresh-listener/CredentialRefreshListener', () => ({
-    useForceRefreshLearnCloudCredential: () => ({ forceRefresh: refreshHost.forceRefresh }),
+    useForceRefreshLearnCloudCredential: () => ({
+        forceRefresh: (...args: unknown[]) => refreshHost.forceRefresh(...args),
+    }),
 }));
 vi.mock(
     '../../components/notifications/notificationsV2/NotificationCredentialRefreshedCard',
@@ -67,7 +69,7 @@ describe('NotificationsPage credential refresh deep link', () => {
     afterEach(() => cleanup());
 
     it('consumes the refresh query and force-refreshes its matching record once', async () => {
-        render(
+        const view = render(
             <MemoryRouter
                 initialEntries={['/notifications?refreshId=refresh-123&refresh=true&source=push']}
             >
@@ -85,6 +87,14 @@ describe('NotificationsPage credential refresh deep link', () => {
         expect(refreshHost.forceRefresh).toHaveBeenCalledWith(record, walletHost.wallet);
         expect(screen.getByTestId('location-search')).toHaveTextContent('?source=push');
 
+        view.rerender(
+            <MemoryRouter
+                initialEntries={['/notifications?refreshId=refresh-123&refresh=true&source=push']}
+            >
+                <NotificationsPage />
+                <LocationProbe />
+            </MemoryRouter>
+        );
         await new Promise(resolve => setTimeout(resolve, 0));
         expect(refreshHost.forceRefresh).toHaveBeenCalledTimes(1);
     });

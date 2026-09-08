@@ -37,6 +37,7 @@ describe('credential refresh DID challenges', () => {
         const domain = 'network.example.com';
         const { challenge } = await issueCredentialRefreshChallenge(refreshId, domain);
         const authorization = `Bearer ${toJwt({
+            iss: 'did:key:holder',
             aud: domain,
             nonce: challenge,
             vp: { holder: 'did:key:holder' },
@@ -49,6 +50,27 @@ describe('credential refresh DID challenges', () => {
 
         expect(results.filter(result => result.authenticated)).toHaveLength(1);
         expect(results.filter(result => !result.authenticated)).toHaveLength(1);
+    });
+
+    it.each([
+        { iss: 'did:key:attacker', vp: { holder: 'did:key:victim' } },
+        { vp: { holder: 'did:key:victim' } },
+        { iss: 'did:key:holder', vp: {} },
+    ])('rejects an unbound holder without consuming the challenge: %j', async claims => {
+        const domain = 'network.example.com';
+        const { challenge } = await issueCredentialRefreshChallenge('refresh-id', domain);
+        const result = await verifyCredentialRefreshAuthorization(
+            'refresh-id',
+            `Bearer ${toJwt({ ...claims, aud: domain, nonce: challenge })}`,
+            domain
+        );
+        expect(result).toEqual({ authenticated: false });
+        const valid = await verifyCredentialRefreshAuthorization(
+            'refresh-id',
+            `Bearer ${toJwt({ iss: 'did:key:holder', vp: { holder: 'did:key:holder' }, aud: domain, nonce: challenge })}`,
+            domain
+        );
+        expect(valid).toEqual({ authenticated: true, holderDid: 'did:key:holder' });
     });
 
     it('limits one source across distinct refresh IDs', async () => {

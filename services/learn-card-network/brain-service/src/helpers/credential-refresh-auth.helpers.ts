@@ -104,9 +104,18 @@ export const verifyCredentialRefreshAuthorization = async (
     }
 
     const challenge = decoded.nonce;
-    const holderDid = decoded.vp?.holder;
+    const holderDid = decoded.iss;
 
-    if (!challenge || !holderDid) return { authenticated: false };
+    // DIDKit binds iss to the verified signer, but does not bind nested vp.holder.
+    // Require both claims to agree before using the holder for authorization.
+    if (
+        typeof challenge !== 'string' ||
+        !challenge ||
+        typeof holderDid !== 'string' ||
+        !holderDid.startsWith('did:') ||
+        decoded.vp?.holder !== holderDid
+    )
+        return { authenticated: false };
 
     // Audience/domain binding: the VP must be addressed to this server.
     const aud = decoded.aud;

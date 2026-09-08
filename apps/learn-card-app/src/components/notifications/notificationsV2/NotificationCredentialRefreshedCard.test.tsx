@@ -95,7 +95,9 @@ vi.mock('../../../paraglide/messages.js', () => ({
         "This credential isn't available yet. Please try again later.",
 }));
 
-import NotificationCredentialRefreshedCard from './NotificationCredentialRefreshedCard';
+import NotificationCredentialRefreshedCard, {
+    locateCredentialRefreshRecord,
+} from './NotificationCredentialRefreshedCard';
 
 const REFRESH_ID = 'b7f1c2e4d3a4f5a6b7c8d9e0f1a2b3c4';
 
@@ -372,4 +374,30 @@ describe('NotificationCredentialRefreshedCard', () => {
         await waitFor(() => expect(modalHost.newModal).toHaveBeenCalledTimes(1));
         expect(screen.queryByText('Checking for updates…')).not.toBeInTheDocument();
     });
+});
+
+it('bounds lazy discovery to three reads and stops scheduling after a match', async () => {
+    const records = Array.from({ length: 10 }, (_, index) =>
+        makeRecord({ id: `rec-${index}`, uri: `uri-${index}`, refresh: undefined })
+    );
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => {
+        release = resolve;
+    });
+    const read = vi.fn(async () => {
+        await gate;
+        return { refreshService: { id: `https://network.example.com/refresh/${REFRESH_ID}` } };
+    });
+    const lookup = locateCredentialRefreshRecord(
+        {
+            index: { LearnCloud: { get: async () => records } },
+            read: { get: read },
+        } as unknown as Parameters<typeof locateCredentialRefreshRecord>[0],
+        REFRESH_ID
+    );
+    await Promise.resolve();
+    expect(read).toHaveBeenCalledTimes(3);
+    release();
+    expect(await lookup).toBeDefined();
+    expect(read).toHaveBeenCalledTimes(3);
 });

@@ -11,6 +11,10 @@ import {
     ToastTypeEnum,
     useWallet,
 } from 'learn-card-base';
+import {
+    processWithConcurrency,
+    CREDENTIAL_REFRESH_SCAN_CONCURRENCY,
+} from 'learn-card-base/react-query/queries/credentialRefresh';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import type { LCR } from 'learn-card-base/types/credential-records';
@@ -72,32 +76,37 @@ export const locateCredentialRefreshRecord = async (
 
     if (withMetadata) return withMetadata;
 
-    for (const record of records) {
-        if (record.refresh) continue;
+    let match: LCR | undefined;
+    await processWithConcurrency(
+        records.filter(record => !record.refresh),
+        CREDENTIAL_REFRESH_SCAN_CONCURRENCY,
+        async record => {
+            if (match) return;
 
-        try {
-            const vc = (await wallet.read.get(record.uri)) as VC | undefined;
-            const services = Array.isArray(vc?.refreshService)
-                ? vc.refreshService
-                : [vc?.refreshService];
+            try {
+                const vc = (await wallet.read.get(record.uri)) as VC | undefined;
+                const services = Array.isArray(vc?.refreshService)
+                    ? vc.refreshService
+                    : [vc?.refreshService];
 
-            if (
-                services.some(service =>
-                    serviceIdMatchesRefreshId(
-                        (service as { id?: unknown } | undefined)?.id,
-                        refreshId
+                if (
+                    services.some(service =>
+                        serviceIdMatchesRefreshId(
+                            (service as { id?: unknown } | undefined)?.id,
+                            refreshId
+                        )
                     )
-                )
-            ) {
-                return record;
+                ) {
+                    match ??= record;
+                }
+            } catch (error) {
+                // An unreadable credential is skipped without failing the lookup.
+                log.warn('refresh.notification.locate.read-failed', error);
             }
-        } catch (error) {
-            // An unreadable credential is skipped without failing the lookup.
-            log.warn('refresh.notification.locate.read-failed', error);
         }
-    }
+    );
 
-    return undefined;
+    return match;
 };
 
 /**
