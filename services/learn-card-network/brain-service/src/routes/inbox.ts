@@ -79,8 +79,9 @@ import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { finalizeInboxCredentialsForProfile } from '@helpers/finalize-inbox.helpers';
-import { parseCredentialMeta } from '@helpers/credential-meta.helpers';
 import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
+
+const EMBED_INBOX_EXPIRY_DAYS = 720;
 
 export const inboxRouter = t.router({
     // Request guardian approval via email
@@ -636,7 +637,7 @@ export const inboxRouter = t.router({
                 contactMethod,
                 resolvedCredential as UnsignedVC,
                 {
-                    expiresInDays: 720,
+                    expiresInDays: EMBED_INBOX_EXPIRY_DAYS,
                     integrationId: integration.id,
                     activityId,
                 },
@@ -830,7 +831,7 @@ export const inboxRouter = t.router({
 
             const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
 
-            const { credentialName } = parseCredentialMeta(inboxCredential.credential);
+            const { credentialName } = inboxCredential;
 
             // Best-effort check: if the caller has an authenticated profile,
             // check MANAGES relationship for OTP-skip eligibility
@@ -1072,9 +1073,8 @@ export const inboxRouter = t.router({
 
             // Notify the student
             try {
-                const studentContactMethod = await getContactMethodForInboxCredential(
-                    inboxCredentialId
-                );
+                const studentContactMethod =
+                    await getContactMethodForInboxCredential(inboxCredentialId);
                 if (studentContactMethod) {
                     const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                     const deliveryService = getDeliveryService(studentContactMethod);
@@ -1186,9 +1186,8 @@ export const inboxRouter = t.router({
 
             // Notify the student
             try {
-                const studentContactMethod = await getContactMethodForInboxCredential(
-                    inboxCredentialId
-                );
+                const studentContactMethod =
+                    await getContactMethodForInboxCredential(inboxCredentialId);
                 if (studentContactMethod) {
                     const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                     const deliveryService = getDeliveryService(studentContactMethod);
@@ -1297,9 +1296,8 @@ export const inboxRouter = t.router({
 
             // Notify the student via email
             try {
-                const studentContactMethod = await getContactMethodForInboxCredential(
-                    inboxCredentialId
-                );
+                const studentContactMethod =
+                    await getContactMethodForInboxCredential(inboxCredentialId);
                 if (studentContactMethod) {
                     const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                     const deliveryService = getDeliveryService(studentContactMethod);
@@ -1324,9 +1322,7 @@ export const inboxRouter = t.router({
             try {
                 const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
                 if (studentProfile) {
-                    const { credentialName, achievementType } = parseCredentialMeta(
-                        inboxCredential.credential
-                    );
+                    const { credentialName, achievementType } = inboxCredential;
 
                     await addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVED,
@@ -1407,9 +1403,8 @@ export const inboxRouter = t.router({
 
             // Notify the student via email
             try {
-                const studentContactMethod = await getContactMethodForInboxCredential(
-                    inboxCredentialId
-                );
+                const studentContactMethod =
+                    await getContactMethodForInboxCredential(inboxCredentialId);
                 if (studentContactMethod) {
                     const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                     const deliveryService = getDeliveryService(studentContactMethod);
@@ -1431,9 +1426,7 @@ export const inboxRouter = t.router({
             try {
                 const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
                 if (studentProfile) {
-                    const { credentialName, achievementType } = parseCredentialMeta(
-                        inboxCredential.credential
-                    );
+                    const { credentialName, achievementType } = inboxCredential;
 
                     await addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_REJECTED,

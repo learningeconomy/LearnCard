@@ -28,11 +28,8 @@ import {
 } from '@cache/claim-links';
 
 import { validateInboxClaimToken } from '@helpers/contact-method.helpers';
-import { getPendingOrIssuedInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
-import {
-    markInboxCredentialAsIsAccepted,
-    markInboxCredentialAsIssued,
-} from '@accesslayer/inbox-credential/update';
+import { getPendingInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
+import { finalizeAndWipeInboxCredential } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import { getContactMethodById, getProfileByContactMethod } from '@accesslayer/contact-method/read';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
@@ -49,6 +46,7 @@ import { getNotificationMessage } from '@helpers/notificationMessages';
 import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
+import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 import {
     EXHAUSTED,
     exhaustExchangeChallengeForToken,
@@ -324,7 +322,7 @@ async function handlePresentationForClaim(
 
     // Use the generator's profile for SA lookup if available, fall back to boost owner
     const saOwner = generatorProfileId
-        ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+        ? ((await getProfileByProfileId(generatorProfileId)) ?? boostOwner)
         : boostOwner;
 
     const saOwnerProfile = 'profileId' in saOwner ? saOwner : getBoostOwnerProfile(saOwner);
@@ -441,7 +439,7 @@ async function handleInboxClaimInitiation(claimToken: string, domain: string) {
     }
 
     // Verify there are pending credentials for this contact method
-    const pendingCredentials = await getPendingOrIssuedInboxCredentialsForContactMethodId(
+    const pendingCredentials = await getPendingInboxCredentialsForContactMethodId(
         claimTokenData.contactMethodId
     );
     if (pendingCredentials.length === 0) {
@@ -601,13 +599,14 @@ async function handleInboxClaimPresentation(
     const credentialProcessingPromises = pendingCredentials.map(async inboxCredential => {
         try {
             let finalCredential: VC;
+            const credentialPayload = await decryptInboxCredential(inboxCredential.credential);
 
             if (inboxCredential.isSigned) {
                 // Credential is already signed
-                finalCredential = JSON.parse(inboxCredential.credential) as VC;
+                finalCredential = JSON.parse(credentialPayload) as VC;
             } else {
                 // Need to sign the credential using signing authority
-                const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
+                const unsignedCredential = JSON.parse(credentialPayload) as UnsignedVC;
                 const inboxCredentialSigningAuthorityEndpoint =
                     (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
                 const inboxCredentialSigningAuthorityName =
@@ -668,9 +667,6 @@ async function handleInboxClaimPresentation(
                 )) as VC;
             }
 
-            await markInboxCredentialAsIssued(inboxCredential.id);
-            await markInboxCredentialAsIsAccepted(inboxCredential.id);
-
             // Store credential and create boost relationship if this was a boost issuance
             const boostUri = (inboxCredential as any).boostUri as string | undefined;
             if (holderProfile && boostUri) {
@@ -701,6 +697,9 @@ async function handleInboxClaimPresentation(
                     claimToken
                 );
             }
+
+            const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id);
+            if (!finalized) throw new Error('Inbox credential is no longer pending');
 
             // Log CLAIMED activity - chain to original activityId/integrationId if available
             // activityId and integrationId are stored on the inbox credential

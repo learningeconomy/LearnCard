@@ -203,6 +203,12 @@ describe('Universal Inbox', () => {
                 credential: vc,
                 recipient: { type: 'email', value: 'userA@test.com' },
             });
+
+            const storedBeforeClaim = (await InboxCredential.findMany({ where: {} })).find(
+                record => record.id === inboxCredential.issuanceId
+            );
+            expect(storedBeforeClaim?.credential).toMatch(/^lc-inbox-jwe:v1:/);
+            expect(storedBeforeClaim?.credential).not.toContain('Test Credential');
             expect(inboxCredential.claimUrl).not.toBeNull();
             expect(inboxCredential.claimUrl).toContain('/interactions/inbox-claim');
             expect(inboxCredential.claimUrl).toContain('?iuv=1');
@@ -925,6 +931,12 @@ describe('Universal Inbox', () => {
                 exchangePresentationResponse?.verifiablePresentation?.verifiableCredential?.[0]
             ).toMatchObject(vc);
 
+            const storedAfterClaim = (await InboxCredential.findMany({ where: {} })).find(
+                record => record.id === inboxCredential.issuanceId
+            );
+            expect(storedAfterClaim?.currentStatus).toBe('ISSUED');
+            expect(storedAfterClaim?.credential).toBeUndefined();
+
             const [claimerPrompts, senderPrompts, claimer, sender] = await Promise.all([
                 userB.clients.fullAuth.profile.pendingConnectionPrompts(),
                 userA.clients.fullAuth.profile.pendingConnectionPrompts(),
@@ -1134,7 +1146,7 @@ describe('Universal Inbox', () => {
                 recipient: { type: 'email', value: 'did-only@test.com' },
             });
 
-            await expect(claimFromInboxUrl(userB, secondIssue.claimUrl)).resolves.toHaveLength(2);
+            await expect(claimFromInboxUrl(userB, secondIssue.claimUrl)).resolves.toHaveLength(1);
             await expect(
                 userB.clients.fullAuth.profile.pendingConnectionPrompts()
             ).resolves.toMatchObject([

@@ -13,7 +13,7 @@ import {
 
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
-import { markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
+import { finalizeAndWipeInboxCredential } from '@accesslayer/inbox-credential/update';
 import { Context } from '@routes';
 import { getAppDidWeb } from '@helpers/did.helpers';
 import {
@@ -128,10 +128,11 @@ export const claimIntoInbox = async (
             activityId,
             expiresInDays,
         });
+        const finalizedInboxCredential = await finalizeAndWipeInboxCredential(inboxCredential.id);
 
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
-            inboxCredential,
+            inboxCredential: finalizedInboxCredential ?? inboxCredential,
             recipientDid: existingProfile.did,
         };
     } else {
@@ -332,7 +333,7 @@ export const issueToInbox = async (
         }
 
         // Mark as issued and create relationship
-        await markInboxCredentialAsIssued(inboxCredential.id);
+        await finalizeAndWipeInboxCredential(inboxCredential.id);
 
         // Log credential activity for auto-delivery
         if (activityId) {

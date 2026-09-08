@@ -10,6 +10,12 @@ It acts as a smart and secure "digital mailbox." An issuer can send a credential
 
 Think of it as the universal on-ramp to the LearnCard ecosystem. It's the bridge that connects traditional communication methods with the world of self-sovereign identity.
 
+## Security and retention
+
+Until a recipient creates an account, no recipient encryption key exists. LearnCard therefore encrypts the credential payload to the network service while it is waiting to be claimed. The service decrypts it only long enough to finalize delivery and removes the escrowed payload immediately after a successful claim. Expired payloads are also removed, and expired audit records are deleted according to the network retention policy.
+
+The standard claim window is 30 days. Issuers can choose a shorter window with `configuration.expiresInDays`. Use the shortest practical window for transcripts, Comprehensive Learner Records (CLRs), and other sensitive learner data. Embedded claim flows can remain available for up to 720 days by default, which is usually inappropriate for sensitive records unless the integration overrides its issuance policy.
+
 ## The Problem It Solves
 
 Before the Universal Inbox, issuing a credential involved significant friction for both the issuer and the recipient.

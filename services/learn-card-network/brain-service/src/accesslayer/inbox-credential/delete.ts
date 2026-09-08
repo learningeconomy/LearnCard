@@ -16,7 +16,9 @@ export const deleteExpiredInboxCredentials = async (olderThanDays = 90): Promise
 
     const result = await new QueryBuilder(new BindParam({ cutoffDate: cutoffDate.toISOString() }))
         .match({ model: InboxCredential, identifier: 'inboxCredential' })
-        .where('inboxCredential.currentStatus = "EXPIRED" AND inboxCredential.expiresAt < datetime($cutoffDate)')
+        .where(
+            'inboxCredential.currentStatus = "EXPIRED" AND coalesce(inboxCredential.expiredAt, inboxCredential.expiresAt) < datetime($cutoffDate)'
+        )
         .delete('inboxCredential')
         .run();
 

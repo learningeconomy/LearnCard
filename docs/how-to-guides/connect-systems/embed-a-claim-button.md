@@ -206,6 +206,10 @@ Your `publishableKey` doesn't match any active integration on the network. Doubl
 **Credential not appearing after claim**
 The credential lands in the user's inbox and is finalized when they next open their wallet. If you need to verify immediately, check the dashboard's activity tab.
 
+{% hint style="warning" %}
+Embedded claims can remain available for up to 720 days. Do not use that default for transcripts, CLRs, or other sensitive learner records; issue those records with a shorter `expiresInDays` claim window.
+{% endhint %}
+
 **OTP not arriving**
 In local dev, check your brain-service logs — OTP codes are printed there when no email provider is configured.
 

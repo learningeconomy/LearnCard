@@ -462,6 +462,8 @@ This is the most common use case, perfect for one-off issuances like a course co
 
 **The Recipe:** Make a `POST` request to the `/inbox/issue` endpoint with only two required fields: `recipient` and a _signed_ or _unsigned_ `credential`.  An unsigned credential requires [a configured signing authority](create-signing-authority.md).
 
+The inbox claim window defaults to 30 days. Set `configuration.expiresInDays` to a shorter integer from 1 through 365 when the record contains sensitive learner data. This controls how long the encrypted payload can be claimed; it does not change the credential's own validity dates. Transcript and CLR issuances should use the shortest operationally practical window.
+
 **Example:**
 
 {% tabs %}
@@ -472,7 +474,8 @@ await learnCard.invoke.sendCredentialViaInbox({
   recipient: { 
     type: 'email', 
     value: 'student@school.edu' 
-  }, 
+  },
+  configuration: { expiresInDays: 7 },
   credential: {
     "@context": [
         "https://www.w3.org/2018/credentials/v1",

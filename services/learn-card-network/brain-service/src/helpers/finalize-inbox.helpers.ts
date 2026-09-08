@@ -9,10 +9,7 @@ import { getContactMethodsForProfile } from '@accesslayer/contact-method/read';
 import { getAcceptedPendingInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
-import {
-    markInboxCredentialAsIsAccepted,
-    markInboxCredentialAsIssued,
-} from '@accesslayer/inbox-credential/update';
+import { finalizeAndWipeInboxCredential } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getAppDidWeb } from '@helpers/did.helpers';
@@ -22,6 +19,7 @@ import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { logCredentialClaimed, logCredentialFailed } from '@helpers/activity.helpers';
 import { handleConnectionPromptsForCredentialClaim } from '@helpers/connectionPrompt.helpers';
+import { decryptInboxCredential } from '@helpers/inbox-encryption.helpers';
 
 export async function finalizeInboxCredentialsForProfile(
     profile: ProfileType,
@@ -79,9 +77,10 @@ export async function finalizeInboxCredentialsForProfile(
 
             try {
                 let finalCredential: VC;
+                const credentialPayload = await decryptInboxCredential(inboxCredential.credential);
 
                 if (!inboxCredential.isSigned) {
-                    const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
+                    const unsignedCredential = JSON.parse(credentialPayload) as UnsignedVC;
 
                     const endpoint =
                         (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
@@ -133,12 +132,13 @@ export async function finalizeInboxCredentialsForProfile(
                         ownerDidOverride
                     )) as VC;
                 } else {
-                    finalCredential = JSON.parse(inboxCredential.credential) as VC;
+                    finalCredential = JSON.parse(credentialPayload) as VC;
                 }
 
-                await markInboxCredentialAsIssued(inboxCredential.id);
-                await markInboxCredentialAsIsAccepted(inboxCredential.id);
                 await createClaimedRelationship(profile.profileId, inboxCredential.id, 'finalize');
+
+                const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id);
+                if (!finalized) throw new Error('Inbox credential is no longer pending');
 
                 if (
                     senderProfile &&
