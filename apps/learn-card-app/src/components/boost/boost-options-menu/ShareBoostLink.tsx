@@ -4,7 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import moment from 'moment';
 
 import X from 'learn-card-base/svgs/X';
-import { IonGrid, IonSpinner } from '@ionic/react';
+import { IonGrid, IonIcon, IonSpinner } from '@ionic/react';
+import { qrCodeOutline } from 'ionicons/icons';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import IDSleeve from '../../../assets/images/id-sleeve.png';
 import FamilyCrest from '../../familyCMS/FamilyCrest/FamilyCrest';
@@ -177,7 +178,12 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         );
     };
 
+    // Generating a share link signs a VP that embeds the whole credential (expensive for
+    // large CLRs) and publishes it. Only do that eagerly in the full share modal, which the
+    // user opened on purpose; the compact header widget waits for a tap.
     useEffect(() => {
+        if (compact) return;
+
         generateShareLink();
     }, []);
 
@@ -247,20 +253,29 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         return (
             <div className="relative shrink-0 rounded-[16px] border border-grayscale-200 bg-white p-3 pb-8">
                 <div className="flex h-[50px] w-[50px] items-center justify-center">
-                    {isLinkLoading || !shareLink ? (
+                    {isLinkLoading ? (
                         <IonSpinner
                             role="status"
                             aria-label={m['common.loading']()}
                             name="crescent"
                             className="h-5 w-5 text-grayscale-600"
                         />
-                    ) : (
+                    ) : shareLink ? (
                         <QRCodeSVG
                             role="img"
                             aria-label={`${m['common.share']()} QR code`}
                             value={shareLink}
                             size={50}
                         />
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={generateShareLink}
+                            aria-label={`${m['common.share']()} QR code`}
+                            className="flex h-[50px] w-[50px] items-center justify-center rounded-xl text-grayscale-700 hover:bg-grayscale-10 transition-colors"
+                        >
+                            <IonIcon icon={qrCodeOutline} className="text-[28px]" />
+                        </button>
                     )}
                 </div>
                 <div className="absolute bottom-[5px] left-1/2 -translate-x-1/2">
