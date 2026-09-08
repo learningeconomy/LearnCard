@@ -578,10 +578,10 @@ describe('Boosts', () => {
                     id === USERS.b.profileId
                         ? b
                         : id === USERS.c.profileId
-                        ? c
-                        : id === USERS.d.profileId
-                        ? d
-                        : e;
+                          ? c
+                          : id === USERS.d.profileId
+                            ? d
+                            : e;
                 await lc.invoke.acceptConnectionRequest(USERS.a.profileId);
             }
 
