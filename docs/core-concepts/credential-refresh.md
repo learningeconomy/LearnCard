@@ -85,7 +85,7 @@ Issuers shouldn't spam holders, and holders shouldn't miss meaningful changes:
 
 - After each publication, the service decides whether the change is **material** by comparing a canonical projection of user-visible content (subject claims, titles, evidence, results, expiration) — ignoring proofs, identifiers, timestamps, and the refresh machinery itself.
 - The issuer can force (`notifyHolder: true`) or suppress (`notifyHolder: false`) notification.
-- The first material update sends a push and creates an in-app notification. Repeat updates inside a configurable **24-hour delivery window** (`CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS`) update the same unread in-app record instead of stacking new ones; a new window starts a new record.
+- The first material update sends a push and creates an in-app notification. Repeat updates inside a configurable **24-hour delivery window** (`CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS`) update the same unread in-app record instead of stacking new ones; a new window starts a new record. Notification windows are fixed wall-clock buckets, not sliding rate limits: updates across a bucket boundary can notify separately even when only minutes apart.
 - Revocation stays on its own lifecycle path — a status-only change never masquerades as an "updated" notification.
 
 ## Error semantics
@@ -114,3 +114,7 @@ Failure codes: `UNAVAILABLE`, `TIMEOUT`, `UNSUPPORTED_SERVICE`, `UNAUTHORIZED`, 
 - [Issue and Refresh a Managed Credential (How-To)](../how-to-guides/issue-and-refresh-a-managed-credential.md)
 - [Credential Lifecycle](credentials-and-data/credential-lifecycle.md)
 - [Credential Status & Bitstring Status Lists](credentials-and-data/credential-status-and-bitstring-status-lists.md)
+
+Local history currently retains every prior URI on the encrypted index record. Bounding or moving that index is follow-up work; pruning must preserve access to retained versions, including after revocation, when server history is unavailable.
+
+Managed refreshes now fingerprint the original subject identifier list at first send and reject changes before publication. Refreshes created before that fingerprint existed must be reissued before publishing further versions; their original encrypted contents cannot be safely reconstructed server-side for backfill.

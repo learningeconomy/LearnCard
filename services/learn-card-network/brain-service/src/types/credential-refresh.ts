@@ -36,6 +36,8 @@ export const CredentialRefreshRecordValidator = z.object({
     rootMaterialDigest: z.string().optional(),
     /** Server-keyed fingerprint of the original credentialStatus descriptor */
     credentialStatusDigest: z.string().optional(),
+    /** Keyed fingerprint of version 1 subject identifiers; no extra subject DIDs persisted. */
+    credentialSubjectDigest: z.string().optional(),
     /** Optional boost permanently associated with the initial credential bind. */
     boostId: z.string().optional(),
     signingMode: CredentialRefreshSigningModeValidator.optional(),

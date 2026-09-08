@@ -39,6 +39,7 @@ import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers'
 import {
     computeCredentialMaterialDigest,
     computeCredentialStatusDigest,
+    computeCredentialSubjectDigest,
     decideCredentialRefreshNotification,
 } from './credential-refresh-materiality.helpers';
 import { isInitialRefreshVersionUniquenessRace } from './credential-refresh-initial-binding.helpers';
@@ -508,6 +509,7 @@ export const sendRefreshableCredential = async (
              refresh.materialDigest = $materialDigest,
              refresh.rootMaterialDigest = $materialDigest,
              refresh.credentialStatusDigest = $credentialStatusDigest,
+             refresh.credentialSubjectDigest = $credentialSubjectDigest,
              refresh.boostId = $boostId,
              refresh.initialNotificationSuppressed = $initialNotificationSuppressed,
              refresh.lastPublishedAt = $now,
@@ -523,6 +525,9 @@ export const sendRefreshableCredential = async (
                 now,
                 credentialIssuerDid,
                 materialDigest: rootMaterialDigest,
+                credentialSubjectDigest: computeCredentialSubjectDigest(
+                    credential.credentialSubject
+                ),
                 credentialStatusDigest,
                 initialNotificationSuppressed: skipNotification,
             }
@@ -748,6 +753,18 @@ const assertRefreshVersionInvariants = (
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Credential subject does not match the intended holder',
+        });
+    }
+
+    if (
+        !aggregate.credentialSubjectDigest ||
+        computeCredentialSubjectDigest(credential.credentialSubject) !==
+            aggregate.credentialSubjectDigest
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+                'Credential subjects do not match the original credential; legacy refreshes require reissuance',
         });
     }
 

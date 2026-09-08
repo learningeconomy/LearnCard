@@ -95,6 +95,10 @@ vi.mock('../../../paraglide/messages.js', () => ({
         "This credential isn't available yet. Please try again later.",
 }));
 
+vi.mock('../../../config/bootstrapTenantConfig', () => ({
+    getResolvedTenantConfig: () => ({ apis: { brainService: 'https://network.example.com/trpc' } }),
+}));
+
 import NotificationCredentialRefreshedCard, {
     locateCredentialRefreshRecord,
 } from './NotificationCredentialRefreshedCard';
@@ -400,4 +404,26 @@ it('bounds lazy discovery to three reads and stops scheduling after a match', as
     release();
     expect(await lookup).toBeDefined();
     expect(read).toHaveBeenCalledTimes(3);
+});
+
+it('ignores matching tails on foreign origins and unrelated paths', async () => {
+    const wrong = makeRecord({
+        id: 'wrong',
+        refresh: {
+            ...makeRecord().refresh!,
+            serviceId: `https://other.example.com/refresh/${REFRESH_ID}`,
+        },
+    });
+    const wrongPath = makeRecord({
+        id: 'wrong-path',
+        refresh: {
+            ...makeRecord().refresh!,
+            serviceId: `https://network.example.com/unrelated/${REFRESH_ID}`,
+        },
+    });
+    const right = makeRecord();
+    const wallet = {
+        index: { LearnCloud: { get: async () => [wrong, wrongPath, right] } },
+    } as unknown as Parameters<typeof locateCredentialRefreshRecord>[0];
+    expect(await locateCredentialRefreshRecord(wallet, REFRESH_ID)).toBe(right);
 });

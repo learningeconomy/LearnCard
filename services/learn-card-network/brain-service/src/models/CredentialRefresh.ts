@@ -52,6 +52,7 @@ export const CredentialRefresh = ModelFactory<
             materialDigest: { type: 'string', required: false },
             rootMaterialDigest: { type: 'string', required: false },
             credentialStatusDigest: { type: 'string', required: false },
+            credentialSubjectDigest: { type: 'string', required: false },
             boostId: { type: 'string', required: false },
             signingMode: {
                 type: 'string',

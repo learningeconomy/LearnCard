@@ -106,6 +106,7 @@ describe('refreshCredential', () => {
     });
 
     afterEach(() => {
+        vi.useRealTimers();
         vi.unstubAllGlobals();
         vi.restoreAllMocks();
     });
@@ -723,6 +724,39 @@ describe('refreshCredential', () => {
             expect(result).toEqual({ status: 'failed', code: 'UNAVAILABLE', retryable: false });
             expect(fetchMock).toHaveBeenCalledTimes(3);
         });
+    });
+
+    it('shares one timeout budget across redirect hops', async () => {
+        vi.useFakeTimers();
+        fetchMock
+            .mockImplementationOnce(
+                () =>
+                    new Promise(resolve => {
+                        setTimeout(
+                            () =>
+                                resolve(
+                                    new Response(null, {
+                                        status: 302,
+                                        headers: { location: '/next' },
+                                    })
+                                ),
+                            15
+                        );
+                    })
+            )
+            .mockImplementationOnce(
+                (_url, init) =>
+                    new Promise((_resolve, reject) => {
+                        init.signal.addEventListener('abort', () =>
+                            reject(new DOMException('aborted', 'AbortError'))
+                        );
+                    })
+            );
+        const pending = runRefresh(currentCredential, { timeoutMs: 25 });
+        await vi.advanceTimersByTimeAsync(25);
+        const secondSignal = fetchMock.mock.calls[1]?.[1].signal;
+        expect(secondSignal?.aborted).toBe(true);
+        expect(await pending).toEqual({ status: 'failed', code: 'TIMEOUT', retryable: true });
     });
 
     describe('managed services', () => {

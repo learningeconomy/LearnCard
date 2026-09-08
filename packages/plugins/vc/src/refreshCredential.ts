@@ -348,7 +348,7 @@ const discardGuardedResponse = async (guarded: GuardedResponse): Promise<void> =
 
 /**
  * Performs a guarded GET: manual redirect handling with full revalidation of every
- * redirect target, a redirect cap, an abort timeout per attempt, and no forwarding of
+ * redirect target, a redirect cap, a shared timeout across hops, and no forwarding of
  * LearnCard authorization across origins.
  */
 const fetchWithGuards = async (
@@ -364,10 +364,13 @@ const fetchWithGuards = async (
     const initialOrigin = initialEndpoint.url.origin;
     let redirectsRemaining = options.maxRedirects;
     let auth = authorization;
+    const deadline = Date.now() + options.timeoutMs;
 
     for (;;) {
+        const remainingMs = deadline - Date.now();
+        if (remainingMs <= 0) return { result: failed('TIMEOUT', true) };
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), options.timeoutMs);
+        const timer = setTimeout(() => controller.abort(), remainingMs);
 
         let response: Response;
 

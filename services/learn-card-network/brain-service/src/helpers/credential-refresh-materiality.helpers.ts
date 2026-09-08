@@ -101,6 +101,19 @@ export const computeCredentialStatusDigest = (
         .update(canonicalizeCredentialJson(credentialStatus ?? null))
         .digest('base64url');
 
+/** Keyed fingerprint matching the holder SDK's sorted subject identity comparison. */
+export const computeCredentialSubjectDigest = (
+    credentialSubject: unknown,
+    secret: string = getCredentialRefreshDigestSecret()
+): string => {
+    const subjects = Array.isArray(credentialSubject) ? credentialSubject : [credentialSubject];
+    const ids = subjects.map(subject => (typeof subject?.id === 'string' ? subject.id : '')).sort();
+    return createHmac('sha256', secret)
+        .update('credential-subjects:v1\0')
+        .update(canonicalizeCredentialJson(ids))
+        .digest('base64url');
+};
+
 export type DecideCredentialRefreshNotificationParams = {
     /** Aggregate lifecycle state at publication time */
     state: CredentialRefreshState;

@@ -26,6 +26,8 @@ import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import * as m from '../../../paraglide/messages.js';
 import { notificationCardStyles } from './types';
 
+import { getResolvedTenantConfig } from '../../../config/bootstrapTenantConfig';
+
 const log = getLogger('notification-credential-refreshed-card');
 
 type NotificationCredentialRefreshedCardProps = {
@@ -49,13 +51,19 @@ export const getRefreshIdFromNotification = (
     return typeof refreshId === 'string' && refreshId.length > 0 ? refreshId : undefined;
 };
 
-/** A managed refresh service id is `<base>/refresh/<refreshId>`; match the tail exactly */
+/** Notifications may select only the configured managed brain endpoint. */
 const serviceIdMatchesRefreshId = (serviceId: unknown, refreshId: string): boolean => {
-    if (typeof serviceId !== 'string' || serviceId.length === 0) return false;
-
-    const tail = serviceId.split('/').filter(Boolean).pop();
-
-    return tail === refreshId;
+    if (typeof serviceId !== 'string' || !refreshId) return false;
+    try {
+        const expected = new URL(
+            `/refresh/${encodeURIComponent(refreshId)}`,
+            getResolvedTenantConfig().apis.brainService
+        );
+        const actual = new URL(serviceId);
+        return !actual.username && !actual.password && actual.href === expected.href;
+    } catch {
+        return false;
+    }
 };
 
 /**

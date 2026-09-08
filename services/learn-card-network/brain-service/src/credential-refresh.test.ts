@@ -1,4 +1,6 @@
 import Fastify from 'fastify';
+import serverlessHttp from 'serverless-http';
+import { toServerlessApplication } from './helpers/serverlessApplication';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -219,4 +221,29 @@ describe('credential refresh holder route security', () => {
 
         await app.close();
     });
+});
+
+it('uses the API Gateway source address instead of a forged forwarding header', async () => {
+    const app = Fastify();
+    app.get('/source', request => ({ ip: request.ip }));
+    await app.ready();
+    try {
+        const handler = serverlessHttp(toServerlessApplication(app.server));
+        const response = (await handler(
+            {
+                version: '2.0',
+                rawPath: '/source',
+                rawQueryString: '',
+                headers: { host: 'network.example.com', 'x-forwarded-for': '203.0.113.99' },
+                requestContext: {
+                    http: { method: 'GET', path: '/source', sourceIp: '198.51.100.7' },
+                },
+                isBase64Encoded: false,
+            },
+            {}
+        )) as { body: string };
+        expect(JSON.parse(response.body)).toEqual({ ip: '198.51.100.7' });
+    } finally {
+        await app.close();
+    }
 });
