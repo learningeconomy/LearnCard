@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
@@ -43,6 +43,11 @@ const renderModal = (
 };
 
 describe('RecoverySetupModal prompt integration', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        vi.restoreAllMocks();
+    });
+
     it('opens on the requested passkey method and reports terminal completion', async () => {
         const { onCompleted, props } = renderModal('passkey');
 
@@ -64,11 +69,15 @@ describe('RecoverySetupModal prompt integration', () => {
     });
 
     it('waits for backup download confirmation before reporting completion', async () => {
-        const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:backup');
-        const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-        const anchorClick = vi
-            .spyOn(HTMLAnchorElement.prototype, 'click')
-            .mockImplementation(() => {});
+        // jsdom does not implement blob URL creation or revocation.
+        vi.stubGlobal(
+            'URL',
+            class extends URL {
+                static createObjectURL = vi.fn(() => 'blob:backup');
+                static revokeObjectURL = vi.fn();
+            }
+        );
+        vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
         const { onCompleted, props } = renderModal('backup');
 
         fireEvent.change(screen.getByPlaceholderText('At least 8 characters'), {
@@ -86,9 +95,6 @@ describe('RecoverySetupModal prompt integration', () => {
         fireEvent.click(screen.getByRole('button', { name: "I've Saved It Somewhere Safe" }));
 
         expect(onCompleted).toHaveBeenCalledWith('backup');
-        createObjectURL.mockRestore();
-        revokeObjectURL.mockRestore();
-        anchorClick.mockRestore();
     });
 
     it('reports email completion only after the recovery key is sent', async () => {

@@ -30,6 +30,7 @@ const modalHost = vi.hoisted(() => ({
 }));
 
 const walletHost = vi.hoisted(() => ({
+    indexGet: vi.fn(),
     indexUpdate: vi.fn(),
     readGet: vi.fn(),
 }));
@@ -46,7 +47,7 @@ vi.mock('learn-card-base', () => ({
     ModalTypes: { FullScreen: 'FullScreen', Cancel: 'Cancel', Center: 'Center' },
     useWallet: () => ({
         initWallet: async () => ({
-            index: { LearnCloud: { update: walletHost.indexUpdate } },
+            index: { LearnCloud: { get: walletHost.indexGet, update: walletHost.indexUpdate } },
             read: { get: walletHost.readGet },
         }),
     }),
@@ -262,6 +263,7 @@ const renderEarnedCard = (record: Partial<LCR>, client = makeQueryClient()) =>
 
 beforeEach(() => {
     vi.clearAllMocks();
+    walletHost.indexGet.mockResolvedValue([makeRecord()]);
     walletHost.indexUpdate.mockResolvedValue(true);
     walletHost.readGet.mockResolvedValue(credential);
 });
