@@ -743,6 +743,65 @@ describe('refreshCredential', () => {
                 headers,
             });
 
+        it('does not sign for a cross-origin redirect target', async () => {
+            fetchMock
+                .mockResolvedValueOnce(
+                    new Response(null, {
+                        status: 302,
+                        headers: { location: 'https://other.example.com/refresh/1' },
+                    })
+                )
+                .mockResolvedValueOnce(
+                    challengeResponse({
+                        'www-authenticate':
+                            'LearnCardDIDAuth challenge="other", domain="other.example.com"',
+                    })
+                );
+            expect(await runRefresh()).toEqual({
+                status: 'failed',
+                code: 'UNAUTHORIZED',
+                retryable: false,
+            });
+            expect(learnCard.invoke.getDidAuthVp).not.toHaveBeenCalled();
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        });
+
+        it('bounds live challenge retention and frees expired capacity', async () => {
+            let now = Date.now();
+            vi.spyOn(Date, 'now').mockImplementation(() => now);
+            const method = refreshCredential({} as never);
+            const options = { resolveHost: async () => [PUBLIC_IP] };
+            const queueChallenge = (index: number) =>
+                fetchMock.mockResolvedValueOnce(
+                    challengeResponse(
+                        { 'www-authenticate': 'LearnCardDIDAuth' },
+                        {
+                            ...challengeBody,
+                            challenge: `bounded-${index}`,
+                            expiresAt: new Date(now + 1000).toISOString(),
+                        }
+                    )
+                );
+            for (let index = 0; index < 1024; index += 1) {
+                queueChallenge(index).mockResolvedValueOnce(jsonResponse(updatedCredential));
+                expect(
+                    (await method(learnCard as never, currentCredential as VC, options)).status
+                ).toBe('updated');
+            }
+            queueChallenge(1024);
+            expect(await method(learnCard as never, currentCredential as VC, options)).toEqual({
+                status: 'failed',
+                code: 'UNAUTHORIZED',
+                retryable: false,
+            });
+            expect(learnCard.invoke.getDidAuthVp).toHaveBeenCalledTimes(1024);
+            now += 1001;
+            queueChallenge(1025).mockResolvedValueOnce(jsonResponse(updatedCredential));
+            expect(
+                (await method(learnCard as never, currentCredential as VC, options)).status
+            ).toBe('updated');
+        });
+
         it('answers a LearnCardDIDAuth challenge once and decrypts the returned JWE', async () => {
             fetchMock
                 .mockResolvedValueOnce(challengeResponse(challengeHeaders, challengeBody))
@@ -974,14 +1033,14 @@ describe('refreshCredential', () => {
             expect(result.status).toBe('updated');
         });
 
-        it('binds a redirected challenge to the validated final endpoint origin', async () => {
+        it('allows an authenticated redirect within the original service origin', async () => {
             const redirectedChallengeBody = {
                 ...challengeBody,
-                domain: 'other.example.com',
+                domain: 'refresh.example.com',
             };
             const redirectedChallengeHeaders = {
                 'www-authenticate':
-                    'LearnCardDIDAuth challenge="srv-challenge-1", domain="other.example.com"',
+                    'LearnCardDIDAuth challenge="srv-challenge-1", domain="refresh.example.com"',
                 'content-type': 'application/json',
             };
 
@@ -989,7 +1048,7 @@ describe('refreshCredential', () => {
                 .mockResolvedValueOnce(
                     new Response(null, {
                         status: 302,
-                        headers: { location: 'https://other.example.com/refresh/refresh-1' },
+                        headers: { location: 'https://refresh.example.com/refresh/redirected' },
                     })
                 )
                 .mockResolvedValueOnce(
@@ -1006,14 +1065,14 @@ describe('refreshCredential', () => {
             expect(learnCard.invoke.getDidAuthVp).toHaveBeenCalledWith({
                 proofFormat: 'jwt',
                 challenge: 'srv-challenge-1',
-                domain: 'other.example.com',
+                domain: 'refresh.example.com',
             });
 
             const [retryUrl, retryInit] = fetchMock.mock.calls[2] as [string, RequestInit];
 
-            expect(retryUrl).toBe('https://other.example.com/refresh/refresh-1');
+            expect(retryUrl).toBe('https://refresh.example.com/refresh/redirected');
             expect((retryInit.headers as Record<string, string>).authorization).toBe(
-                'Bearer signed-vp:srv-challenge-1:other.example.com'
+                'Bearer signed-vp:srv-challenge-1:refresh.example.com'
             );
             expect(result.status).toBe('updated');
         });

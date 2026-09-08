@@ -14,6 +14,36 @@ describe('fetchWithPinnedAddress', () => {
         vi.restoreAllMocks();
     });
 
+    it.each([undefined, 0, 199, 600, 200])(
+        'rejects invalid response metadata (%s) without waiting for abort',
+        async status => {
+            const destroy = vi.fn();
+            requestMock.mockImplementation((_url, _options, onResponse) => {
+                const request = new EventEmitter() as EventEmitter & { end: () => void };
+                request.end = () =>
+                    queueMicrotask(() =>
+                        onResponse(
+                            Object.assign(new EventEmitter(), {
+                                statusCode: status,
+                                statusMessage: status === 200 ? 'invalid\nstatus' : undefined,
+                                headers: {},
+                                destroy,
+                            })
+                        )
+                    );
+                return request;
+            });
+            await expect(
+                fetchWithPinnedAddress(
+                    new URL('https://refresh.example.com'),
+                    {},
+                    { address: '93.184.216.34', family: 4 }
+                )
+            ).rejects.toThrow();
+            expect(destroy).toHaveBeenCalled();
+        }
+    );
+
     it('connects to the validated address while retaining the URL hostname for TLS', async () => {
         let capturedOptions: Record<string, unknown> | undefined;
 

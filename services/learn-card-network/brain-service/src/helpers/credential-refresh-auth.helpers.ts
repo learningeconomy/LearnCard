@@ -137,6 +137,7 @@ export const verifyCredentialRefreshAuthorization = async (
             domain,
         });
 
+        // Deliberately fail closed on verifier warnings until each warning is reviewed.
         if (
             result.warnings.length !== 0 ||
             result.errors.length !== 0 ||

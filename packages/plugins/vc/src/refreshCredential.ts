@@ -26,6 +26,11 @@ import { RefreshCredentialOptions, VCDependentLearnCard, VCImplicitLearnCard } f
  * proofs, enforces identity stability and non-regressing freshness, and returns a
  * typed result. It performs no storage or index mutation.
  *
+ * The generic primitive permits same-issuer-signed changes to credentialStatus and
+ * refreshService. It does not pin those fields; applications requiring immutable
+ * revocation/refresh handles must enforce that policy. Managed brain-service
+ * publication enforces both. Any new endpoint is revalidated on the next refresh.
+ *
  * Because `refreshService.id` is credential-controlled input, every request is
  * SSRF-hardened: HTTPS-only by default, private/loopback/link-local destinations are
  * rejected (after DNS resolution in Node runtimes), redirects are followed manually
@@ -38,6 +43,8 @@ import { RefreshCredentialOptions, VCDependentLearnCard, VCImplicitLearnCard } f
 const DID_AUTH_SCHEME = 'learncarddidauth';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
+const HEADER_CHALLENGE_TTL_MS = 300_000;
+const MAX_TRACKED_CHALLENGES = 1024;
 const DEFAULT_MAX_REDIRECTS = 3;
 const DEFAULT_MAX_RESPONSE_BYTES = 1_048_576; // 1 MiB
 
@@ -67,6 +74,7 @@ const unsafeEndpoint = () => failed('UNSAFE_ENDPOINT', false);
 const malformedResponse = () => failed('MALFORMED_RESPONSE', false);
 const invalidProof = () => failed('INVALID_PROOF', false);
 const unauthorized = () => failed('UNAUTHORIZED', false);
+// Deliberately fail closed on verifier warnings until each warning is reviewed.
 const proofVerified = (
     check: { checks: string[]; warnings: string[]; errors: string[] } | null | undefined
 ): boolean =>
@@ -504,7 +512,7 @@ const isAcceptedMediaType = (contentType: string | null): boolean => {
 
 // --- Managed DID-auth challenge -------------------------------------------------
 
-type ParsedChallenge = { challenge: string; domain?: string };
+type ParsedChallenge = { challenge: string; domain?: string; expiresAt: number };
 
 const parseAuthParams = (header: string): Record<string, string> => {
     const params: Record<string, string> = {};
@@ -542,6 +550,7 @@ const parseDidAuthChallenge = (
 
     let challenge = headerParams.challenge;
     let domain = headerParams.domain;
+    let expiresAt = Date.now() + HEADER_CHALLENGE_TTL_MS;
 
     if (bodyText) {
         let body: unknown;
@@ -562,14 +571,14 @@ const parseDidAuthChallenge = (
         challenge = parsed.data.challenge;
         domain = parsed.data.domain ?? domain;
 
-        const expiresAt = Date.parse(parsed.data.expiresAt);
+        expiresAt = Date.parse(parsed.data.expiresAt);
 
         if (Number.isNaN(expiresAt) || expiresAt <= Date.now()) return undefined;
     }
 
     if (!challenge || (domain && domain !== expectedDomain)) return undefined;
 
-    return { challenge, domain: expectedDomain };
+    return { challenge, domain: expectedDomain, expiresAt };
 };
 
 // --- Response decoding ------------------------------------------------------------
@@ -701,7 +710,9 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
      * single-use challenges; a repeated challenge value indicates a replay and is
      * rejected without signing.
      */
-    const usedChallenges = new Set<string>();
+    // Retain live entries until expiry; fail closed at capacity instead of evicting
+    // replay protection. Header-only challenges have a five-minute retention window.
+    const usedChallenges = new Map<string, number>();
 
     return async (
         _learnCard: VCImplicitLearnCard,
@@ -750,6 +761,11 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
 
         // Managed endpoints authenticate with a single DID-auth retry.
         if (response.status === 401) {
+            // Only the origin signed into the credential may request a holder proof.
+            if (guardedResponse.endpoint.url.origin !== validated.url.origin) {
+                await discardGuardedResponse(guardedResponse);
+                return unauthorized();
+            }
             const challengeRead = await readBodyWithLimit(
                 response,
                 resolved.maxResponseBytes,
@@ -769,9 +785,13 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
 
             const challengeKey = `${guardedResponse.endpoint.url.origin}|${challenge.challenge}`;
 
+            const now = Date.now();
+            for (const [key, expiresAt] of usedChallenges) {
+                if (expiresAt <= now) usedChallenges.delete(key);
+            }
             if (usedChallenges.has(challengeKey)) return unauthorized();
-
-            usedChallenges.add(challengeKey);
+            if (usedChallenges.size >= MAX_TRACKED_CHALLENGES) return unauthorized();
+            usedChallenges.set(challengeKey, challenge.expiresAt);
 
             let vp: VP | string;
 

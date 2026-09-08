@@ -87,48 +87,65 @@ export const fetchWithPinnedAddress = async (
                     ...(url.protocol === 'https:' ? { servername: url.hostname } : {}),
                 },
                 nodeResponse => {
-                    const status = nodeResponse.statusCode ?? 0;
-                    const hasBody = status !== 204 && status !== 205 && status !== 304;
-                    const body = hasBody
-                        ? new ReadableStream<Uint8Array>({
-                              start(controller) {
-                                  nodeResponse.on('data', chunk => {
-                                      if (typeof chunk === 'string') {
-                                          controller.enqueue(new TextEncoder().encode(chunk));
-                                      } else if (chunk instanceof Uint8Array) {
-                                          controller.enqueue(chunk);
-                                      } else {
+                    try {
+                        const status = nodeResponse.statusCode;
+                        if (
+                            status === undefined ||
+                            !Number.isInteger(status) ||
+                            status < 200 ||
+                            status > 599
+                        ) {
+                            reject(new RangeError('Invalid refresh response status'));
+                            nodeResponse.destroy();
+                            return;
+                        }
+                        const hasBody = status !== 204 && status !== 205 && status !== 304;
+                        const body = hasBody
+                            ? new ReadableStream<Uint8Array>({
+                                  start(controller) {
+                                      nodeResponse.on('data', chunk => {
+                                          if (typeof chunk === 'string') {
+                                              controller.enqueue(new TextEncoder().encode(chunk));
+                                          } else if (chunk instanceof Uint8Array) {
+                                              controller.enqueue(chunk);
+                                          } else {
+                                              controller.error(
+                                                  new TypeError('Unsupported response chunk')
+                                              );
+                                          }
+                                      });
+                                      nodeResponse.on('end', () => controller.close());
+                                      nodeResponse.on('error', error => controller.error(error));
+                                      nodeResponse.on('aborted', () =>
                                           controller.error(
-                                              new TypeError('Unsupported response chunk')
-                                          );
-                                      }
-                                  });
-                                  nodeResponse.on('end', () => controller.close());
-                                  nodeResponse.on('error', error => controller.error(error));
-                                  nodeResponse.on('aborted', () =>
-                                      controller.error(
-                                          new DOMException(
-                                              'The operation was aborted',
-                                              'AbortError'
+                                              new DOMException(
+                                                  'The operation was aborted',
+                                                  'AbortError'
+                                              )
                                           )
-                                      )
-                                  );
-                              },
-                              cancel(reason) {
-                                  nodeResponse.destroy(
-                                      reason instanceof Error ? reason : new Error(String(reason))
-                                  );
-                              },
-                          })
-                        : null;
+                                      );
+                                  },
+                                  cancel(reason) {
+                                      nodeResponse.destroy(
+                                          reason instanceof Error
+                                              ? reason
+                                              : new Error(String(reason))
+                                      );
+                                  },
+                              })
+                            : null;
 
-                    resolve(
-                        new Response(body, {
-                            status,
-                            statusText: nodeResponse.statusMessage,
-                            headers: toResponseHeaders(nodeResponse.headers),
-                        })
-                    );
+                        resolve(
+                            new Response(body, {
+                                status,
+                                statusText: nodeResponse.statusMessage,
+                                headers: toResponseHeaders(nodeResponse.headers),
+                            })
+                        );
+                    } catch (error) {
+                        reject(error);
+                        nodeResponse.destroy();
+                    }
                 }
             );
         } catch (error) {

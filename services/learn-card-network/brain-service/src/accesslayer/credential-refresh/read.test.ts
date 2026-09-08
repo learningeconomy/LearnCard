@@ -18,6 +18,16 @@ beforeEach(() => {
 });
 
 describe('atomic holder credential refresh reads', () => {
+    it('limits history rows before collecting metadata', async () => {
+        await getCredentialRefreshVersionsForHolder('refresh-id', { limit: 2 });
+        const [query, params] = mocks.run.mock.calls[0];
+        expect(query.indexOf('LIMIT $limitPlusOne')).toBeGreaterThan(
+            query.indexOf('ORDER BY version.version DESC')
+        );
+        expect(query.indexOf('LIMIT $limitPlusOne')).toBeLessThan(query.indexOf('collect('));
+        expect(params.limitPlusOne.toNumber()).toBe(3);
+    });
+
     it('binds current, history, and version selection to canonical non-revocation', async () => {
         await getCredentialRefreshHeadForHolder('refresh-id');
         await getCredentialRefreshVersionsForHolder('refresh-id');

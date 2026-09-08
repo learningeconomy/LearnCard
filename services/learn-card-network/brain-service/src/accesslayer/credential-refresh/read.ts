@@ -195,6 +195,7 @@ export const getCredentialRefreshVersionsForHolder = async (
          WHERE NOT revoked AND ($beforeVersion IS NULL OR version.version < $beforeVersion)
          WITH revoked, version
          ORDER BY version.version DESC
+         LIMIT $limitPlusOne
          WITH revoked, [entry IN collect(CASE WHEN version IS NULL THEN null ELSE {
              id: version.id,
              refreshId: version.refreshId,
@@ -205,7 +206,7 @@ export const getCredentialRefreshVersionsForHolder = async (
              etag: version.etag,
              signingMode: version.signingMode,
              updateSummary: version.updateSummary
-         } END) WHERE entry IS NOT NULL][0..$limitPlusOne] AS metadata
+         } END) WHERE entry IS NOT NULL] AS metadata
          RETURN revoked, metadata`,
         { refreshId, beforeVersion: beforeVersion ?? null, limitPlusOne: int(limit + 1) }
     );
