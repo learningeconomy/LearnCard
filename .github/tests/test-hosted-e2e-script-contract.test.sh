@@ -25,7 +25,9 @@ perl -0ne 'exit !/run_accessibility\(\).*?bun run test:a11y/s' "$BROWSER_SCRIPT"
     || { echo 'accessibility suite invocation missing' >&2; exit 1; }
 grep -Fq 'docker compose down --remove-orphans -v' "$BROWSER_SCRIPT"
 
-[[ ! -e "$REPO_ROOT/scripts/e2e-hosted/run-service.sh" ]] \
-    || { echo 'hosted shadow must not contain a service-suite runner' >&2; exit 1; }
+SERVICE_SCRIPT="$REPO_ROOT/scripts/e2e-hosted/run-service.sh"
+grep -Fq 'E2E_MANAGE_DOCKER=false' "$SERVICE_SCRIPT"
+grep -Fq 'nx run e2e:test:e2e' "$SERVICE_SCRIPT"
+grep -Fq 'docker compose down --remove-orphans -v' "$SERVICE_SCRIPT"
 
 echo 'Hosted E2E script contracts passed'
