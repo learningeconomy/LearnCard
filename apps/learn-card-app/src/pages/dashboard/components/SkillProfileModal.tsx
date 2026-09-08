@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { useBrandingConfig } from 'learn-card-base';
 
@@ -22,6 +22,11 @@ const TOTAL_STEPS = 5;
 const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
     const { name: brandName } = useBrandingConfig();
     const [currentStep, setCurrentStep] = useState(1);
+    const formScrollerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        formScrollerRef.current?.scrollTo({ top: 0 });
+    }, [currentStep]);
 
     const handleNext = () => {
         setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS));
@@ -91,7 +96,11 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
                 )}
             </div>
 
-            <div className="pt-4 border-t border-grayscale-200 w-full flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div
+                ref={formScrollerRef}
+                data-testid="skill-profile-form-scroller"
+                className="pt-4 border-t border-grayscale-200 w-full flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-contain"
+            >
                 {steps[currentStep] ?? null}
             </div>
         </div>
