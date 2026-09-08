@@ -20,7 +20,9 @@ beforeEach(() => {
 describe('atomic holder credential refresh reads', () => {
     it('limits history rows before collecting metadata', async () => {
         await getCredentialRefreshVersionsForHolder('refresh-id', { limit: 2 });
-        const [query, params] = mocks.run.mock.calls[0];
+        const call = mocks.run.mock.calls[0];
+        if (!call) throw new Error('Expected holder history query to execute');
+        const [query, params] = call;
         expect(query.indexOf('LIMIT $limitPlusOne')).toBeGreaterThan(
             query.indexOf('ORDER BY version.version DESC')
         );
