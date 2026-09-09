@@ -4,11 +4,11 @@ description: Give every credential your app issues a link to its public Credenti
 
 # Link Credentials to the Credential Engine Registry (CTID)
 
-If your credential is listed in the [Credential Engine Registry](https://credentialengine.org/), add its CTID to your template in the Developer Portal so every credential you issue links back to the public registry entry. This is done in the credential template step of [publishing your app](publish-your-app.md).
+If your credential is listed in the [Credential Engine Registry](https://credentialengine.org/), add its CTID during the credential template step of [publishing your app](publish-your-app.md). Each issued credential then links to its public registry entry.
 
 ## Overview
 
-When a boost creator knows their credential is listed in the [Credential Engine Registry](https://credentialengine.org/), they can add the credential's CTID (Credential Transparency Identifier) to the template. Every credential issued from that boost will then carry an OBv3 alignment entry linking to the public registry description on [Credential Finder](https://credentialfinder.org/).
+A CTID (Credential Transparency Identifier) adds an OBv3 alignment from a Boost template to its public [Credential Finder](https://credentialfinder.org/) description.
 
 ## What is CTID?
 
@@ -62,7 +62,7 @@ The CTID field supports dynamic mode. When enabled, you can use Mustache variabl
 {{registryId}}
 ```
 
-This allows the CTID to be injected at issuance time from external data sources.
+External data sources provide the CTID at issuance time.
 
 ## Validation
 
@@ -72,7 +72,7 @@ Static CTID values are validated against the Credential Engine format:
 - Must be followed by a valid UUID (8-4-4-4-12 hex characters)
 - Case-insensitive
 
-Invalid formats will show a validation error in the CredentialBuilder.
+CredentialBuilder shows a validation error for invalid formats.
 
 ## Round-Trip Behavior
 
@@ -82,11 +82,9 @@ When loading a saved template that contains a Credential Engine Registry alignme
 2. The `targetCode` is extracted and stored in the `ctid` field
 3. The alignment is filtered from the regular alignments list (to avoid duplication)
 
-This ensures credentials with CTIDs can be edited and re-saved without losing the registry link.
+This preserves the registry link when a template is edited and saved again.
 
 ## Finding Your CTID
-
-To find a credential's CTID:
 
 1. Go to [Credential Finder](https://credentialfinder.org/)
 2. Search for your credential

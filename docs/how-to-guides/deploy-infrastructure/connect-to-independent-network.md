@@ -4,11 +4,11 @@ description: Point the LearnCard SDK or REST API at your own independent network
 
 # Connect to an Independent Network
 
-If you are running your own instance of the LearnCard Network (Brain Service, LCA API, etc.), you can point the LearnCard SDK or use the REST API to interact with your independent infrastructure instead of the default public network.
+If you run your own instance of the LearnCard Network, point the LearnCard SDK or REST API to your infrastructure instead of the public network.
 
 ### Option A: Using the LearnCard SDK
 
-When initializing the LearnCard SDK, pass your independent network's URL to the `network` parameter:
+Pass your independent network's URL to the `network` parameter when initializing the LearnCard SDK:
 
 ```javascript
 import { initLearnCard } from '@learncard/init';
@@ -31,11 +31,11 @@ console.log('Credential sent:', result);
 
 ### Option B: Using the REST API
 
-If you prefer not to use the LearnCard SDK, you can interact with your independent network directly via its REST API.
+You can interact with your independent network directly via its REST API.
 
-First, generate an API token with the `boosts:write` scope (see [Generate API Tokens](generate-api-tokens.md)).
+Generate an API token with the `boosts:write` scope (see [Generate API Tokens](generate-api-tokens.md)).
 
-Then, use `POST /api/send` to issue a credential:
+Use `POST /api/send` to issue a credential:
 
 ```bash
 curl -X POST https://network.independent.example.org/api/send \
@@ -50,7 +50,7 @@ curl -X POST https://network.independent.example.org/api/send \
 
 #### Sending a credential you signed yourself
 
-Instead of a template, pass a credential you already signed as `signedCredential` — the same shape the [Quickstart](../../quick-start/your-first-integration.md) uses. Your issuer DID must resolve on the network you're calling (a `did:web` hosted by that network, or a `did:key`):
+Pass a credential you already signed as `signedCredential` — the same shape the [Quickstart](../../quick-start/your-first-integration.md) uses. Your issuer DID must resolve on the network you're calling:
 
 ```bash
 curl -X POST https://network.independent.example.org/api/send \
@@ -94,7 +94,7 @@ curl -X POST https://network.independent.example.org/api/send \
 
 ### Full OpenAPI Surface
 
-The examples above use the simplified `/api/send` endpoint. Your independent network also exposes the full OpenAPI surface for advanced operations, such as `/api/boost/create` for programmatic template creation, `/api/profile` for identity management, and more.
+Your independent network exposes the full OpenAPI surface for advanced operations, such as `/api/boost/create` and `/api/profile`.
 
 ## Next steps
 

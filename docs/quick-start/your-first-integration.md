@@ -1,16 +1,16 @@
 ---
-description: Send a verifiable credential to any email address — one command, a curl, or ~15 lines of code.
+description: Send a verifiable credential to any email address with one command, curl, or about 15 lines of code.
 ---
 
 # Quickstart: Send a Credential
 
-The fastest way to see LearnCard work: send a badge to an email address. The recipient gets an email with a claim link and the badge lands in their wallet — no account needed before they claim.
+Send a badge to an email address. The recipient gets a claim link and does not need an account until they claim it.
 
 {% hint style="info" %}
-No code at all? You can issue credentials directly from the [LearnCard app](https://learncard.app). This guide is for sending programmatically.
+You can issue credentials without code from the [LearnCard app](https://learncard.app). The options below send them programmatically.
 {% endhint %}
 
-Two ways to do it. Pick one.
+Choose one option.
 
 {% tabs %}
 {% tab title="Fastest: one command" %}
@@ -21,13 +21,13 @@ You need **Node.js 20 or newer**. In an empty folder, run:
 npx @learncard/cli send you@example.com
 ```
 
-Use **a real email address you can open** — this sends a real email. It will:
+Use **a real email address you can open**. The command:
 
 1. Ask for your issuer name and a badge name (Enter accepts the defaults)
 2. Generate a secret seed and write it to `.env` (and add `.env` to `.gitignore`)
 3. Create your profile on the LearnCard Network
 4. Sign a "Quickstart Complete" badge and send it
-5. Write the code it just ran to `./send.mjs` so you can read and modify it
+5. Write the generated code to `./send.mjs`
 
 Then skip to [What you should see](#what-you-should-see).
 
@@ -35,12 +35,12 @@ Then skip to [What you should see](#what-you-should-see).
 
 {% tab title="No keys: Developer Portal + curl" %}
 
-Nothing to install and no cryptography on your machine — LearnCard signs for you.
+LearnCard signs the credential; this option requires no installation or key management.
 
 1. Sign in at [learncard.app](https://learncard.app) and open **[learncard.app/app-store/developer](https://learncard.app/app-store/developer)**. Create an Integration if you don't have one.
 2. Open **Guides → Issue Credentials** and work down the steps:
     - **API Token** — create one and copy it. It's shown once.
-    - **Signing Authority** — one click; LearnCard hosts it for you.
+    - **Signing Authority** — create one hosted by LearnCard.
     - **Create Templates** — make a badge (any name). Its **template URI** (`boost:…`) appears under the template selector.
 3. Send it:
 
@@ -65,7 +65,7 @@ curl -X POST https://network.learncard.com/api/send \
 
 <!-- /snippet -->
 
-This is the same request the portal shows in its **Issue & Verify** step. The response is JSON; `inbox.status` is `PENDING` (new person — they get an email with `inbox.claimUrl`) or `ISSUED` (already a LearnCard user — it's in their wallet). Then skip to [What you should see](#what-you-should-see).
+The response is JSON. `inbox.status` is `PENDING` (new person — they get an email with `inbox.claimUrl`) or `ISSUED` (already a LearnCard user — it's in their wallet). Skip to [What you should see](#what-you-should-see).
 
 {% endtab %}
 
@@ -158,7 +158,7 @@ console.log(`Reusable template for this badge: ${result.uri}`);
 
 <!-- /snippet -->
 
-Run it with **a real email address you can open** (your own is ideal) — this sends a real email on the production network. Placeholder domains like `example.com` are rejected by the mail provider.
+Run it with **a real email address you can open**. Placeholder domains like `example.com` are rejected by the mail provider.
 
 ```bash
 node --env-file=.env send.mjs you@example.com
@@ -171,20 +171,20 @@ node --env-file=.env send.mjs you@example.com
 
 <figure><img src="../.gitbook/assets/quickstart-complete-badge.png" alt="The Quickstart Complete badge as it appears in the recipient's LearnCard wallet: a certificate reading Quickstart Complete, awarded on today's date, certified by My Organization." width="420"><figcaption>What the recipient sees after claiming.</figcaption></figure>
 
-In your terminal, one of two lines, depending on whether that email address already has a LearnCard account:
+Your terminal shows one of two results:
 
 ```
 Sent. you@example.com will get an email with this claim link:
 https://learncard.app/...
 ```
 
-Open the email → tap **Claim** → sign in or create an account. **"Quickstart Complete"** appears in the wallet. That's a real, verifiable Open Badges 3.0 credential, signed by you.
+Open the email, tap **Claim**, and sign in or create an account. **"Quickstart Complete"**, a verifiable Open Badges 3.0 credential signed by you, appears in the wallet.
 
 ```
 Delivered. you@example.com already uses LearnCard — the credential is in their wallet.
 ```
 
-No email in this case: the recipient already has a verified account, so LearnCard delivered straight to it. Open the app and it's there.
+The recipient already has a verified account, so the credential is in their wallet.
 
 Both are followed by:
 
@@ -192,9 +192,9 @@ Both are followed by:
 Reusable template for this badge: boost:…
 ```
 
-Every `send` also saves the badge as a **template** (a Boost). To send the same badge to more people, pass `templateUri: result.uri` instead of `signedCredential` — LearnCard fills in and signs each one server-side once you've set up a [signing authority](../how-to-guides/create-signing-authority.md) (one call).
+Every `send` saves the badge as a **template** (a Boost). To send the same badge to more people, pass `templateUri: result.uri` instead of `signedCredential`. LearnCard fills in and signs each one server-side once you set up a [signing authority](../how-to-guides/create-signing-authority.md).
 
-Run it again — it's safe. The profile is only created the first time.
+You can rerun the script; it creates the profile only once.
 
 ## If something goes wrong
 
@@ -211,7 +211,7 @@ Run it again — it's safe. The profile is only created the first time.
 
 ## Send your own signed credential over HTTP
 
-The no-keys tab lets LearnCard sign from a template. If you sign credentials yourself but want to deliver them from any language, create an API token once and POST the signed credential to `/api/send`. This script creates the token (scope `boosts:write`) and writes the exact request body to `request.json`:
+If you sign credentials yourself but want to deliver them from any language, create an API token and POST the signed credential to `/api/send`. This script creates the token (scope `boosts:write`) and writes the request body to `request.json`:
 
 <!-- snippet: quickstart/api-token.mjs -->
 
@@ -283,11 +283,11 @@ curl -X POST https://network.learncard.com/api/send \
 
 <!-- /snippet -->
 
-The token has one permission (`boosts:write`). Store it like a password; [revoke it](../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md) any time. Full API reference, phone delivery, templates, and webhooks: [Send & Issue Credentials](../how-to-guides/send-credentials.md).
+The token has one permission (`boosts:write`). Store it like a password. [Revoke it](../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md) any time. Full API reference, phone delivery, templates, and webhooks: [Send & Issue Credentials](../how-to-guides/send-credentials.md).
 
 ## Next steps
 
-- **Design a real badge** with an image, criteria, and skills → [Create a Credential](../tutorials/create-a-credential.md)
-- **Issue the same badge to many people** → [Create a Boost](../tutorials/create-a-boost.md)
-- **Know when it's claimed** → [Listen to Webhooks](../tutorials/listen-to-webhooks.md)
-- **Not sure what to build?** → [What Do You Want to Build?](../introduction/what-do-you-want-to-build.md)
+- [Create a Credential](../tutorials/create-a-credential.md) — add an image, criteria, and skills.
+- [Create a Boost](../tutorials/create-a-boost.md) — issue the same badge to many people.
+- [Listen to Webhooks](../tutorials/listen-to-webhooks.md) — detect when credentials are claimed.
+- [What Do You Want to Build?](../introduction/what-do-you-want-to-build.md) — choose an integration path.

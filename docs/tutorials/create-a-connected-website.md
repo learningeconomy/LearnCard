@@ -4,17 +4,17 @@ description: "Tutorial: Build 'Pixel Pet Designer' & Connect with LearnCard Game
 
 # Create a Connected Website
 
-Welcome, game developer! This tutorial is a practical, step-by-step lesson where you'll build a simple web application called "Pixel Pet Designer." More importantly, you'll learn how to integrate it with LearnCard using **GameFlow** to issue unique, verifiable digital badges to your users for their creations, complete with guardian consent for younger players.
+Build a simple web application called "Pixel Pet Designer" and integrate it with LearnCard using **GameFlow** to issue verifiable digital badges for user creations, complete with guardian consent for younger players.
 
 This same pattern works for any website or platform (using ConsentFlow instead of GameFlow). For a conceptual overview of this pattern, see the [Connect Your Website or Game](../how-to-guides/connect-systems/connect-a-website.md) how-to guide.
 
 {% hint style="info" %}
-**What is GameFlow?** GameFlow is LearnCard's specialized framework for educational games. It allows your game to securely interact with a player's LearnCard digital wallet to issue achievement badges and, optionally, track learning progress. A key feature is its built-in **guardian consent system**, ensuring a safe experience for younger learners. (For a deeper dive, see our [GameFlow Core Concept](../core-concepts/consent-and-permissions/gameflow-overview.md).)
+**What is GameFlow?** GameFlow is LearnCard's framework for educational games. It allows your game to interact with a player's LearnCard wallet to issue achievement badges and track learning progress. It includes a **guardian consent system** for younger learners. (See [GameFlow Core Concept](../core-concepts/consent-and-permissions/gameflow-overview.md).)
 {% endhint %}
 
 ## **Our Project: Pixel Pet Designer**&#x20;
 
-We'll create a fun, simple app where users can:
+We'll create an app where users can:
 
 1. Design a pixel art pet on a 10x10 grid.
 2. Name their pet.
@@ -22,7 +22,7 @@ We'll create a fun, simple app where users can:
 4. Prompt the user (and their guardian, if applicable) to connect their LearnCard account via GameFlow.
 5. Issue a verifiable digital badge (a "Pixel Pet Creation" badge) containing the pet's name and its design data.
 
-This tutorial focuses on the **learning experience** of integrating LearnCard. We'll keep the game logic itself very simple to concentrate on the GameFlow integration.
+We'll keep the game logic simple to concentrate on the GameFlow integration.
 
 ## **What you'll learn by doing:**
 
@@ -41,11 +41,7 @@ This tutorial focuses on the **learning experience** of integrating LearnCard. W
 - **A Secure Seed for your Issuer:** A 64-character hexadecimal string. **For this tutorial, generate one for testing; for production, it must be cryptographically random and kept highly secure.**
 - **Familiarity (Recommended):** Briefly review DIDs, Verifiable Credentials (VCs), and the general ConsentFlow Tutorial.
 
-Let's get started!
-
 ## Part 1: Setting Up the "Pixel Pet Designer" Frontend
-
-First, let's create the basic visual part of our application.
 
 ### **Step 1.1: Project Setup**&#x20;
 
@@ -245,11 +241,11 @@ function logToPage(message) {
 }
 ```
 
-At this point, you should be able to open `index.html` in your browser and see the Pixel Pet Designer interface. You can draw, but submitting doesn't do anything related to LearnCard yet.
+Open `index.html` in your browser to see the Pixel Pet Designer interface. You can draw, but submitting doesn't do anything related to LearnCard yet.
 
 ## Part 2: Setting Up the Backend (Issuer & GameFlow Contract)
 
-Your game's backend will handle LearnCard initialization, contract creation, and credential issuance. We'll use Node.js with conceptual Express-like routing for this tutorial.
+Your game's backend handles LearnCard initialization, contract creation, and credential issuance. We use Node.js with Express-like routing.
 
 ### **Step 2.1: Install Dependencies**&#x20;
 
@@ -403,8 +399,6 @@ app.listen(port, () => {
 
 ## Part 3: Connecting LearnCard - Frontend
 
-Now, let's make the "Connect with LearnCard" button functional.
-
 ### **Step 3.1: Update `app.js` to Fetch Consent URL**
 
 ```typescript
@@ -545,8 +539,6 @@ window.addEventListener('DOMContentLoaded', () => {
 {% endhint %}
 
 ## Part 5: Designing & Submitting a Pet (Frontend)
-
-This part focuses on capturing the pet design and name.
 
 ### **Step 5.1: Update `app.js` for Pet Submission**
 
@@ -805,11 +797,9 @@ app.post('/api/issue-pet-badge', async (req, res) => {
 You should see logs on both your frontend and backend. The frontend will update to show the badge was issued, and if you check the LearnCard app associated with the `playerLearnCardDid`, you should find your new "Pixel Pet: \[YourPetName]" badge!
 {% endhint %}
 
-## Summary & Next Steps
+## Next Steps
 
-Congratulations! You've successfully built "Pixel Pet Designer" and integrated it with LearnCard GameFlow to: ✅ Set up your game as a LearnCard Issuer. ✅ Create a GameFlow Contract enabling guardian consent. ✅ Allow players/guardians to connect their LearnCard accounts. ✅ Handle the consent callback and link player DIDs. ✅ Automatically issue a custom "Pixel Pet Creation" badge when a pet is designed.
-
-This tutorial demonstrates a powerful way to add verifiable achievements and data portability to your educational games.
+You've built "Pixel Pet Designer" and integrated it with LearnCard GameFlow to set up your game as a LearnCard Issuer, create a GameFlow Contract enabling guardian consent, allow players/guardians to connect their LearnCard accounts, handle the consent callback and link player DIDs, and automatically issue a custom "Pixel Pet Creation" badge when a pet is designed.
 
 From here, you can explore:
 
@@ -817,5 +807,3 @@ From here, you can explore:
 - **xAPI Integration:** Use the `delegateVpJwt` (captured in Part 4) to [send xAPI statements about game activities ](sending-xapi-statements.md)(e.g., "Player X started designing a pet," "Player X submitted pet Y").
 - **Advanced Boost Features:** Explore Boost permissions, hierarchies, and more detailed display customizations.
 - **Error Handling & UI/UX:** Improve the user interface, error messages, and overall flow for a production-ready game.
-
-You're now equipped to bring the power of Verifiable Credentials and LearnCard GameFlow to your own educational projects!

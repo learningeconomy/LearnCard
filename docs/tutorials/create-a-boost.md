@@ -4,25 +4,16 @@ description: 'Tutorial: Create reusable credential templates and issue them at s
 
 # Issue at Scale with Boosts
 
-Welcome! This tutorial guides you through creating a "Boost" with LearnCard. Boosts are an enhanced way to manage and issue Verifiable Credentials (VCs), especially when you want to issue a similar credential to multiple people or manage it as a distinct "template."
+Boosts are credential templates for issuing similar credentials to multiple people.
 
 ## What is a Boost, and Why Use It?
 
-You already know how to [Design a Custom Credential](create-a-credential.md). That's great for one-off situations.
+Use a Boost to:
 
-A **Boost** takes this a step further. Think of a Boost as a **master template or a blueprint for a specific type of credential**.
-
-- **Direct VC:** Like handwriting a single invitation.
-- **Boost:** Like designing a beautiful invitation template that you can print and send to many guests. Each guest gets a personalized copy (their own VC instance), but they all originate from your master "Boost" template.
-
-**Use a Boost instead of sending VCs directly when you want to:**
-
-- **Issue the same type of credential to multiple people:** e.g., a "Course Completion" certificate for all students who pass.
-- **Track recipients centrally:** Easily see a list of everyone who has received a credential derived from a specific Boost.
-- **Manage a credential type:** Update metadata or display properties of the Boost, which can influence future issuances.
-- **Delegate issuance:** Grant permissions to others to issue credentials based on a Boost you created.
-
-_(See the diagrams below for a visual comparison)_
+- Issue the same type of credential to multiple people.
+- Track recipients centrally.
+- Manage a credential type.
+- Delegate issuance.
 
 **Diagram 1: Sending Individual VCs** _(Covered in the previous tutorial)_
 
@@ -55,7 +46,7 @@ graph LR
 ```
 
 {% hint style="info" %}
-In this model, each credential is a distinct, standalone item.
+Each credential is a distinct, standalone item.
 {% endhint %}
 
 **Diagram 2: Sending Credentials via a Boost** _(Covered in this tutorial)_
@@ -102,7 +93,7 @@ graph LR
 ```
 
 {% hint style="success" %}
-Here, Urmila creates one "Book Club ID" Boost. When she sends it to Ted and Juniper, they each receive a credential that is an _instance of_ that main Boost.
+Urmila creates one "Book Club ID" Boost. Ted and Juniper receive credentials that are instances of that Boost.
 {% endhint %}
 
 ## Prerequisites
@@ -147,7 +138,7 @@ if (!profile) {
 
 ## Part 2: Defining the Credential Template
 
-This is the "template" for the credential that will be issued each time you send this Boost. Notice we don't specify the recipient's DID (`credentialSubject.id`) or the `issuer` — the network fills those in when you send the Boost.
+Define the template for the credential. Do not specify the recipient's DID (`credentialSubject.id`) or the `issuer` — the network fills those in when you send the Boost.
 
 ```javascript
 const meetupAttendeeTemplate = {
@@ -180,7 +171,7 @@ const meetupAttendeeTemplate = {
 
 ## Part 3: Creating the Boost
 
-Now, create the Boost on the LearnCard Network using the template content.
+Create the Boost on the LearnCard Network using the template content.
 
 ```javascript
 const boostMetadata = {
@@ -194,13 +185,13 @@ const boostUri = await learnCard.invoke.createBoost(meetupAttendeeTemplate, boos
 console.log('Boost Created! URI:', boostUri);
 ```
 
-When you run this, you get a `boostUri`. This URI is the identifier for your Boost template.
+The `boostUri` is the identifier for your Boost template.
 
 ---
 
 ## Part 4: Sending the Boost to Multiple Recipients
 
-With your `boostUri`, you can send it to your attendees. The `send` method automatically populates the recipient, signs the credential using your signing authority, and delivers it.
+The `send` method populates the recipient, signs the credential using your signing authority, and delivers it.
 
 ```javascript
 const attendees = ['alice@example.com', 'bob@example.com'];
@@ -229,7 +220,7 @@ for (const email of attendees) {
 
 ## Dynamic Templates with Mustache Variables
 
-Want to personalize credentials with unique data for each recipient? Boosts support **Mustache-style templating** that lets you inject dynamic values at issuance time.
+Boosts support **Mustache-style templating** to inject dynamic values at issuance time.
 
 ### Creating a Templated Boost
 
@@ -293,14 +284,7 @@ For more details on dynamic templates, see [Dynamic Templates with Mustache](../
 
 ## Summary & What's Next
 
-You've learned how to:
-✅ Understand the value of Boosts for reusable credential templates.
-✅ Define the content for a Boost template.
-✅ Create a Boost using the LearnCard SDK.
-✅ Send instances of that Boost to multiple recipients using `send()`.
-✅ Use dynamic templates with Mustache variables for personalized credentials.
-
-Boosts are a powerful way to manage credentialing at scale. From here, you can explore:
+Next steps:
 
 - **Retrieving Boost Recipients:** Use `learnCard.invoke.getPaginatedBoostRecipients(boostUri)` to see who has been issued a credential from this Boost.
 - **Boost Permissions:** Control who can edit, issue, or manage your Boosts.

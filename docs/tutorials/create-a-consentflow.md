@@ -4,31 +4,31 @@ description: 'Tutorial: create a ConsentFlow — the starting point for consent 
 
 # Consent & Guardianship: Create a ConsentFlow
 
-**What is a [ConsentFlow](../core-concepts/consent-and-permissions/consentflow-overview.md)?** A ConsentFlow is a powerful mechanism in LearnCard that allows your application or service (as an "Issuer" or "Contract Owner") to request permission from users ("Holders") to access certain parts of their data or to write new information (like credentials) to their profile. It's all based on explicit user consent, ensuring transparency and user control.
+A [ConsentFlow](../core-concepts/consent-and-permissions/consentflow-overview.md) lets your application request permission to read user data or write credentials to their profile.
 
 ## Consent or guardianship — which do you need?
 
-Before building, decide if you need a standard ConsentFlow or a guardian-gated flow:
+Decide if you need a standard ConsentFlow or a guardian-gated flow:
 
-- **Standard ConsentFlow**: For adults and independent learners. You request read/write access, they accept the terms, and you can set up ongoing auto-issuance.
-- **Guardianship**: For minors or managed accounts. A guardian must approve the action via email and OTP before the learner can claim the credential. You trigger this by calling `send()` with `options.guardianEmail`, or by creating a contract with `needsGuardianConsent: true`.
+- **Standard ConsentFlow**: For independent learners. You request read/write access, they accept, and you can set up ongoing auto-issuance.
+- **Guardianship**: For managed accounts. A guardian must approve via email and OTP before the learner can claim the credential. Trigger this by calling `send()` with `options.guardianEmail`, or by creating a contract with `needsGuardianConsent: true`.
 
-If you need guardianship, check out [Guardian-gated credentials](../how-to-guides/implement-flows/guardian-gated-credentials.md) and [Claim data after guardian consent](../how-to-guides/implement-flows/claim-data-after-guardian-consent.md). For a deeper dive into standard consent, read the [ConsentFlow overview](../core-concepts/consent-and-permissions/consentflow-overview.md).
+For guardianship, see [Guardian-gated credentials](../how-to-guides/implement-flows/guardian-gated-credentials.md) and [Claim data after guardian consent](../how-to-guides/implement-flows/claim-data-after-guardian-consent.md). For standard consent, see the [ConsentFlow overview](../core-concepts/consent-and-permissions/consentflow-overview.md).
 
-## **What you'll accomplish in this tutorial:**
+## In this tutorial:
 
-1. Create a ConsentFlow contract defining what data you want to read or write.
-2. Generate a URL for users to view and consent to this contract.
-3. Simulate placing a consent button on a webpage.
-4. Handle the redirect after a user consents to capture their DID (Decentralized Identifier).
-5. Read data from the contract for that consenting user.
-6. Send a new credential to that user through the contract.
+1. Create a ConsentFlow contract.
+2. Generate a consent URL.
+3. Add a consent button to a webpage.
+4. Handle the redirect to capture the user's DID.
+5. Read data from the contract.
+6. Send a credential through the contract.
 
 {% embed url="https://codepen.io/Jacks-n-Smith/pen/azzMQQP" %}
 
 ## **Prerequisites:**
 
-1.  **LearnCard SDK Initialized:** You'll need an active `learnCard` instance connected to the network. We'll call it `networkLearnCard`.
+1.  **LearnCard SDK Initialized:** An active `learnCard` instance connected to the network (`networkLearnCard`).
 
     ```typescript
     // Make sure you have the necessary imports
@@ -45,7 +45,7 @@ If you need guardianship, check out [Guardian-gated credentials](../how-to-guide
     console.log('LearnCard initialized. Your service DID:', networkLearnCard.id.did());
     ```
 
-2.  **Service Profile Created:** Your application needs its own profile on the LearnCard Network to act as the owner of the ConsentFlow contract.
+2.  **Service Profile Created:** Your application needs a profile on the LearnCard Network to own the ConsentFlow contract.
 
     ```typescript
     // Run this once to create your service profile
@@ -64,18 +64,18 @@ If you need guardianship, check out [Guardian-gated credentials](../how-to-guide
     }
     ```
 
-3.  **Basic Understanding:** Familiarity with [DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) and [Verifiable Credentials (VCs)](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) will be helpful.
-4.  **Web Environment:** You'll need a way to simulate a user clicking a link and your application handling a redirect (e.g., a simple HTML page and some client-side JavaScript for testing).
+3.  **Basic Understanding:** Familiarity with [DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) and [Verifiable Credentials (VCs)](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md).
+4.  **Web Environment:** A way to simulate a user clicking a link and handling a redirect.
 
 ---
 
 ## Part 1: Creating Your ConsentFlow Contract
 
-This contract will define what permissions your application is requesting from users.
+The contract defines the permissions your application requests.
 
 ### **Step 1.1: Define Your Contract's Terms**
 
-The contract specifies what your app can `read` from a user's profile/wallet and what it can `write` to it, after they consent.
+The contract specifies what your app can `read` and `write`.
 
 ```typescript
 const myAppConsentFlowContract = {
@@ -115,18 +115,18 @@ const myAppConsentFlowContract = {
 ```
 
 {% hint style="info" %}
-✨ **Good to know:**
+**Good to know:**
 
 - `read` and `write` permissions are structured by `personal` data fields and `credentials` (grouped by `categories`).
-- You can mark items as `required: true` or `required: false`.
-- The `redirectUrl` is crucial for getting the user back to your application with their consent information.
-- Supported credential categories include: `Achievement`, `ID`, `Learning History`, `Work History`, `Social Badge`, `Membership`, `Accomplishment`, `Accommodation`, `Family`, `Course`.
+- Items can be `required: true` or `required: false`.
+- The `redirectUrl` returns the user to your application.
+- Supported credential categories: `Achievement`, `ID`, `Learning History`, `Work History`, `Social Badge`, `Membership`, `Accomplishment`, `Accommodation`, `Family`, `Course`.
 
 {% endhint %}
 
 ### **Step 1.2: Create the Contract**
 
-Now, use the LearnCard SDK to publish this contract definition to the LearnCard Network.
+Publish this contract definition to the LearnCard Network.
 
 ```typescript
 async function createContract() {
@@ -146,18 +146,14 @@ async function createContract() {
 ```
 
 {% hint style="success" %}
-**Action:** Call this function. Keep the `contractUri` safe – it's the unique identifier for your contract.
+Keep the `contractUri` safe — it identifies your contract.
 {% endhint %}
 
 ---
 
 ## Part 2: Enabling User Consent on Your Website
 
-Now that your contract exists, users need a way to view and consent to it.
-
 ### **Step 2.1: Construct the Consent URL**
-
-The LearnCard platform provides a standard URL for users to interact with ConsentFlow contracts.
 
 ```typescript
 // Assume you have the contractUri from Part 1
@@ -183,7 +179,7 @@ console.log('User Consent URL:', userFacingConsentUrl);
 
 ### **Step 2.2: Add a Consent Button to Your Webpage**
 
-On your website or application, provide a button or link that directs the user to this `userFacingConsentUrl`.
+Provide a button or link that directs the user to `userFacingConsentUrl`.
 
 ```html
 <a id="consentButton" href="#" target="_blank"> Share Learning Data with My Awesome App </a>
@@ -200,21 +196,17 @@ On your website or application, provide a button or link that directs the user t
 </script>
 ```
 
-When a user clicks this, they'll be taken to `learncard.app` to review your contract and give their consent.
+Users click this to review your contract on `learncard.app`.
 
 ---
 
 ## Part 3: Handling the Redirect and Capturing the User's DID
 
-After the user consents (or denies) on `learncard.app`, they will be redirected back to the `redirectUrl` you specified in your contract (or the `returnTo` URL in the consent link). The DID of the consenting user will be appended as a query parameter.
+After the user consents or denies, they redirect to your `redirectUrl` or `returnTo` URL. The user's DID is appended as a query parameter.
 
 ### **Step 3.1: Your Redirect Page (`https://yourapp.com/consent-callback`)**
 
-This page in your application needs to be able to read URL query parameters.
-
 ### **Step 3.2: Extract the User's DID**
-
-Here's a simple client-side JavaScript example for your redirect page:
 
 ```typescript
 // In your /consent-callback page's JavaScript
@@ -240,17 +232,13 @@ function handleConsentRedirect() {
 window.onload = handleConsentRedirect;
 ```
 
-Now you have the DID of the user who consented! This is crucial for interacting with the data they agreed to share.
-
 ---
 
 ## Part 4: Interacting with Consented Data
 
-With the `contractUri` and the `userDid` of the consenter, your service (using its `networkLearnCard` instance) can now act on the consent.
-
 ### **Step 4.1: Reading Data Shared by the User**
 
-You can fetch all data shared by users for a specific contract. Then, you can find the record for the specific user using their DID.
+Fetch all data shared by users for a specific contract, then find the record for the specific user using their DID.
 
 ```typescript
 // (Assuming networkLearnCard is initialized, and you have contractUri and the userDidFromRedirect)
@@ -323,12 +311,10 @@ async function readConsentedData(contractUriForRead: string, targetUserDid: stri
 ```
 
 {% hint style="info" %}
-_Note on reading specific user data:_ The `getConsentFlowData` retrieves all consented data for the contract. To get data for a specific user, you'd typically filter the results by the user's DID, or your backend might record the link between the `termsUri` (returned when a user consents) and the user's DID for more direct lookups via `getConsentFlowTransactions` or similar. The most direct way to get data for a _specific DID_ for _your contracts_ is often `getConsentFlowDataForDid`, then filtering the results for the relevant `contractUri` if that method returns data across multiple contracts. For this tutorial, we're simplifying.
+_Note on reading specific user data:_ `getConsentFlowData` retrieves all consented data for the contract. To get data for a specific user, filter the results by the user's DID. The most direct way to get data for a specific DID is `getConsentFlowDataForDid`, then filtering the results for the relevant `contractUri`.
 {% endhint %}
 
 ### **Step 4.2: Sending a Credential to the User Through the Contract**
-
-Your contract might allow you to `write` credentials to users who have consented.
 
 ```typescript
 // (Assuming networkLearnCard, contractUri, userDidFromRedirect are defined)
@@ -415,17 +401,9 @@ async function sendCredentialViaContract(
 - **"Could not find contract"**: Double-check your `contractUri`. It must be exact.
 - **Redirect fails**: Ensure your `redirectUrl` is a valid `http://` or `https://` URL.
 
-## Summary & Next Steps
+## Next Steps
 
-You've now learned the end-to-end process of:
-
-1. **Creating** a ConsentFlow contract.
-2. **Generating a URL** for users to provide consent.
-3. **Handling the redirect** to capture the consenting user's DID.
-4. **Reading** data the user consented to share.
-5. **Sending/Writing** a new credential to the user through the contract.
-
-This is a foundational flow for many powerful applications. From here, you can explore more advanced ConsentFlow features like:
+Explore more advanced ConsentFlow features:
 
 - [Updating and withdrawing consent.](../sdks/learncard-core/construction.md#retrieving-profiles-5)
 - Using [Auto-Boosts](../core-concepts/consent-and-permissions/auto-boosts.md) to automatically issue credentials upon consent.

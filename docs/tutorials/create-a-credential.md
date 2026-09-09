@@ -4,9 +4,7 @@ description: 'Tutorial: Design and Send a Custom Digital Credential'
 
 # Design a Custom Credential
 
-The [Quickstart](../quick-start/your-first-integration.md) showed you how to send a minimal badge in one command. This tutorial teaches what the Quickstart skipped: designing a real credential with an image, description, criteria, and custom fields, then signing and sending it.
-
-Think of a Verifiable Credential (VC) as a secure, digital certificate or badge that proves an achievement or skill.
+Design a credential with an image, description, criteria, and custom fields, then sign and send it.
 
 {% embed url="https://www.figma.com/board/DPGBfPLlss2K6KmDLCN3ul/LearnCard-Docs?node-id=131-661&p=f&t=fk1wywzjUFmakXJE-0" %}
 
@@ -19,8 +17,6 @@ Think of a Verifiable Credential (VC) as a secure, digital certificate or badge 
 ---
 
 ## Part 1: Setting Up Your Issuer Environment
-
-Your computer acts as the "Issuer" — the entity creating and sending the credential.
 
 Create a new file `issueCredential.mjs` (or `.ts` if using TypeScript) and initialize the LearnCard SDK:
 
@@ -61,9 +57,7 @@ if (!profile) {
 
 ## Part 2: Designing Your Credential
 
-A Verifiable Credential is a set of claims made by an Issuer about a Subject (the recipient). We will design a "Workshop Completion" badge.
-
-Add this to your script:
+Add this to your script to define a "Workshop Completion" badge:
 
 ```javascript
 // 3. Define the credential content
@@ -97,11 +91,10 @@ const unsignedVc = {
 ```
 
 {% hint style="success" %}
-✨ **Key Points:**
 
-- **`@context`**: Tells systems how to interpret the fields. Always use `context-3.0.3.json` for Open Badges v3.
-- **`type`**: Categorizes the credential. `VerifiableCredential` and `OpenBadgeCredential` are standard.
-- **`credentialSubject`**: The core information. The `achievement` object holds the badge details like `name`, `description`, `criteria`, and `image`.
+- **`@context`**: Always use `context-3.0.3.json` for Open Badges v3.
+- **`type`**: `VerifiableCredential` and `OpenBadgeCredential` are standard.
+- **`credentialSubject`**: The `achievement` object holds the badge details like `name`, `description`, `criteria`, and `image`.
 
 {% endhint %}
 
@@ -119,9 +112,7 @@ const unsignedVc = {
 
 ## Part 3: Signing and Sending
 
-Now, sign the credential to make it official and send it to an email address.
-
-Add this to the end of your script:
+Add this to the end of your script to sign and send the credential:
 
 ```javascript
 // 4. Sign the credential
@@ -165,23 +156,14 @@ node --env-file=.env issueCredential.mjs
 
 ### What you should see
 
-In your terminal, you will see one of two messages:
-
-- **PENDING**: The recipient gets an email with a claim link. They can click it to create an account and claim the badge.
+- **PENDING**: The recipient gets an email with a claim link.
 - **ISSUED**: The recipient already has a LearnCard account. The badge is delivered straight to their wallet.
-
-Open the email or your LearnCard app to view the new "Workshop Completion" credential. It will display the image, description, and criteria you designed.
 
 ---
 
 ## Summary & What's Next
 
-You successfully:
-✅ Set up an Issuer environment.
-✅ Designed a custom Verifiable Credential with Open Badges v3 fields.
-✅ Signed and sent the credential via email.
-
 Next steps:
 
-- **Issue at scale:** Learn how to use templates to issue the same badge to many people in [Issue at Scale with Boosts](create-a-boost.md).
-- **Listen for claims:** Know when a user claims your credential in [Listen to Webhooks](listen-to-webhooks.md).
+- [Issue at Scale with Boosts](create-a-boost.md)
+- [Listen to Webhooks](listen-to-webhooks.md)

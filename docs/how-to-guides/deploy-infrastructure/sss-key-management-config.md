@@ -4,7 +4,7 @@ description: Configure and deploy SSS key management for your LearnCard instance
 
 # SSS Key Management Configuration
 
-This guide covers the environment variables and infrastructure needed to deploy LearnCard with the self-hosted Shamir Secret Sharing (SSS) key management system.
+Configure environment variables and infrastructure to deploy LearnCard with the self-hosted Shamir Secret Sharing (SSS) key management system.
 
 ## Prerequisites
 
@@ -44,7 +44,7 @@ This guide covers the environment variables and infrastructure needed to deploy 
 
 ### Email Delivery (Production)
 
-Emails are rendered locally via `@learncard/email-templates` and delivered through Postmark as raw HTML. Tenant branding (brand name, logo, colors, from-domain) is applied automatically based on the `X-Tenant-Id` / `Origin` header on each request.
+Emails render locally via `@learncard/email-templates` and deliver through Postmark as raw HTML. Tenant branding applies automatically based on the `X-Tenant-Id` or `Origin` header.
 
 | Variable                                      | Description                                                                                                                                                                    | Example                                |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
@@ -60,11 +60,11 @@ Emails are rendered locally via `@learncard/email-templates` and delivered throu
 {% hint style="info" %}
 **Migration from plain-text fallbacks (pre-LC-1749)**
 
-Earlier deployments required `POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS` and `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS` to avoid falling back to unstyled plain-text emails. These env vars are now pure overrides — the server always renders the React Email template from `@learncard/email-templates` with full tenant branding. You may remove them from your deployment configuration.
+Earlier deployments required `POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS` and `POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS`. These are now pure overrides — the server always renders the React Email template with full tenant branding. You can remove them.
 {% endhint %}
 
 {% hint style="warning" %}
-The template variables changed from numeric IDs to string aliases in an earlier release:
+Template variables changed from numeric IDs to string aliases:
 
 - `POSTMARK_LOGIN_CODE_TEMPLATE_ID` → `POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS`
 - `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ID` → `POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS`
@@ -110,7 +110,7 @@ The frontend reads environment variables with a dual-prefix fallback: `VITE_*` f
 
 ### Web3Auth (Migration Period)
 
-These are still read to support the legacy `web3auth` key derivation fallback during migration:
+These support the legacy `web3auth` key derivation fallback during migration:
 
 | Variable (Vite)             | Variable (CRA)                   | Description                  |
 | --------------------------- | -------------------------------- | ---------------------------- |
@@ -119,7 +119,7 @@ These are still read to support the legacy `web3auth` key derivation fallback du
 | `VITE_WEB3AUTH_VERIFIER_ID` | `REACT_APP_WEB3AUTH_VERIFIER_ID` | Web3Auth verifier name       |
 | `VITE_WEB3AUTH_RPC_TARGET`  | `REACT_APP_WEB3AUTH_RPC_TARGET`  | Ethereum RPC URL             |
 
-Once all users are migrated, these can be removed.
+Remove these once all users migrate.
 
 ---
 

@@ -8,10 +8,10 @@ description: The simplest plugin
 
 ### Boilerplate
 
-Start with a basic TypeScript node package boilerplate. If you've never done that before, we recommend using [aqu](https://www.npmjs.com/package/aqu?activeTab=readme):&#x20;
+Start with a basic TypeScript node package boilerplate. We recommend using [aqu](https://www.npmjs.com/package/aqu?activeTab=readme):&#x20;
 
 {% hint style="info" %}
-If you don't have aqu installed, you can install it globally with `npm i -g aqu.`
+Install aqu globally with `npm i -g aqu`.
 {% endhint %}
 
 {% tabs %}
@@ -65,12 +65,12 @@ cd simple-plugin
 {% endtabs %}
 
 {% hint style="info" %}
-If you'd like to publish your plugin to npm for others to use, please see our documentation on [publishing plugins](the-simplest-plugin.md#publish-your-plugin-to-npm)
+To publish your plugin to npm, see [publishing plugins](the-simplest-plugin.md#publish-your-plugin-to-npm).
 {% endhint %}
 
 ### Install Dependencies
 
-Using your preferred package manager, install `@learncard/core` (for the `Plugin` type) and `@learncard/init` (for initializing LearnCard):
+Install `@learncard/core` (for the `Plugin` type) and `@learncard/init` (for initializing LearnCard):
 
 {% tabs %}
 {% tab title="Bun" %}
@@ -100,7 +100,7 @@ npm i @learncard/core @learncard/init
 
 ### Create the Types
 
-To ease plugin development, it's best to start by defining the interface for your plugin. This can be done quite easily using [the `Plugin` type](../../sdks/learncard-core/writing-plugins.md#the-plugin-type):
+Define the interface for your plugin using [the `Plugin` type](../../sdks/learncard-core/writing-plugins.md#the-plugin-type):
 
 {% code title="src/types.ts" lineNumbers="true" %}
 
@@ -116,7 +116,7 @@ export type MyPluginType = Plugin<'MyPluginName', any, MyPluginMethods>;
 
 {% endcode %}
 
-The preceding file defines a plugin named `MyPluginName` that exposes one method: `getFavoriteNumber`
+This defines a plugin named `MyPluginName` that exposes one method: `getFavoriteNumber`.
 
 ### The six control planes
 
@@ -150,7 +150,7 @@ export const MyPlugin: MyPluginType = {
 
 ### Create a Test for Your Plugin
 
-It's important to write tests for your plugins, so others can rely on them :thumbsup:
+Write tests for your plugins:
 
 {% tabs %}
 {% tab title="Bun" %}
@@ -200,11 +200,11 @@ describe('MyPlugin', () => {
 
 {% endcode %}
 
-If all looks good, you should be able to `bun test` and successfully pass the test:
+Run `bun test` to verify:
 
 <img src="../../.gitbook/assets/Screen Shot 2022-11-11 at 4.19.56 PM.png" alt="" data-size="original">
 
-**That's it—you've got a simple plugin! 🎉**
+**You've got a simple plugin!**
 
 Now you can add it to a LearnCard object:
 
@@ -219,17 +219,15 @@ console.log(learnCardWithMyPlugin.invoke.getFavoriteNumber()); // 4
 
 ### Publish Your Plugin to NPM
 
-If you don't have anything secret contained in your plugin, you are encouraged to publish it as a package to NPM and share it with the world 🏆.
-
-Let's walk through how to do that together:
+Publish your plugin as a package to NPM.
 
 ## Make an npm account
 
-If you haven't yet, [follow these short steps to create an npm account](https://docs.npmjs.com/creating-a-new-npm-user-account). You will need to come up with a username, email, and password!
+[Create an npm account](https://docs.npmjs.com/creating-a-new-npm-user-account).
 
 ## Create the package boilerplate
 
-As noted in our docs on [The Simplest Plugin](the-simplest-plugin.md#boilerplate), if you've never set up a TS/node package before, we greatly recommend using [aqu](https://www.npmjs.com/package/aqu)!
+Use [aqu](https://www.npmjs.com/package/aqu) to create the package boilerplate:
 
 {% tabs %}
 {% tab title="Bun" %}
@@ -285,15 +283,15 @@ cd learn-card-example-plugin
 
 ## Create a Github Repo
 
-If you've selected an open source license (such as MIT or ISC), please make a Github Repo containing the code to your plugin! If you've never done this before, we recommend using the [Github CLI](https://cli.github.com/).
+Create a Github Repo containing the code to your plugin. We recommend using the [Github CLI](https://cli.github.com/).
 
-First, create a [Github Account](https://github.com/join), then install and login with the CLI. This is usually done with the following command:
+Create a [Github Account](https://github.com/join), then install and login with the CLI:
 
 ```bash
 gh auth login
 ```
 
-After getting all setup, initialize and create the repo with the following commands:
+Initialize and create the repo:
 
 ```bash
 git init
@@ -318,7 +316,7 @@ gh repo create
 ✓ Pushed commits to {REPOSITORY_URL}
 ```
 
-After getting a repo up, it's a good idea to add the URL (shown above as `{REPOSITORY_URL}`) to the `package.json`!
+Add the URL (shown above as `{REPOSITORY_URL}`) to `package.json`:
 
 {% code title="package.json" %}
 
@@ -333,7 +331,7 @@ After getting a repo up, it's a good idea to add the URL (shown above as `{REPOS
 
 ## Release the Package
 
-With everything set up, you may run the release command!
+Run the release command:
 
 {% tabs %}
 {% tab title="Bun" %}
@@ -361,7 +359,7 @@ npm run release
 {% endtab %}
 {% endtabs %}
 
-If you didn't use aqu to create your package, you may need to use the `publish` command directly:
+If you didn't use aqu, use the `publish` command directly:
 
 {% tabs %}
 {% tab title="Bun" %}
@@ -389,7 +387,7 @@ npm publish
 {% endtab %}
 {% endtabs %}
 
-Congratulations! 🥳 Your plugin is officially published and others may use it by installing it from npm!
+Your plugin is published and available on npm.
 
 ### Next Steps
 

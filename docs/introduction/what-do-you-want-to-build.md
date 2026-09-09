@@ -4,25 +4,25 @@ description: Pick your path — every integration starts with one of these five 
 
 # What Do You Want to Build?
 
-Most LearnCard integrations are one of five jobs. Pick yours — each path starts with the easiest method and lets you go deeper only when you need to.
+Most LearnCard integrations fit one of five paths. Each starts with the lowest-effort method.
 
 ## 🎖️ Send & issue credentials
 
-Issue badges, certificates, or credentials to your users — by email, phone, or directly to their LearnCard profile.
+Issue badges, certificates, or credentials by email, phone, or LearnCard profile.
 
-_In the wild:_ universities issuing diplomas and micro-credentials, bootcamps certifying skills, employers recognizing training — all verifiable anywhere.
+Examples include universities issuing diplomas, bootcamps certifying skills, and employers recognizing training.
 
 - **No code**: issue directly from the [LearnCard app](https://learncard.app)
 - **One API call**: [send a credential to an email](../quick-start/your-first-integration.md) (~15 lines)
 - **At scale**: [issue at scale with Boosts](../tutorials/create-a-boost.md)
-- **Everything else**: [all sending patterns](../how-to-guides/send-credentials.md) — templates, webhooks, guardian consent
-- **Already issue credentials elsewhere?** [Bring them into LearnCard](../how-to-guides/interoperate-with-learncard.md) — OID4VCI, VC-API, or signed JSON; nothing to re-platform
+- **Templates, webhooks, and guardian consent**: [all sending patterns](../how-to-guides/send-credentials.md)
+- **OID4VCI, VC-API, or signed JSON**: [bring existing credentials into LearnCard](../how-to-guides/interoperate-with-learncard.md)
 
 ## 📱 Publish your app in LearnCard
 
 Put your product inside the LearnCard app store, where users can install and launch it. Your app gets single sign-on, credential issuance, notifications, and learner context via the Partner Connect SDK.
 
-_In the wild:_ AI tutors that read a learner's real history (with consent), games that turn achievements into portable badges, career tools that build a skills profile from the wallet.
+Examples include AI tutors using consented learner history, games issuing portable badges, and career tools building skills profiles.
 
 - Start here: [Publish Your App in LearnCard](../how-to-guides/publish-your-app.md) — local mock mode to published listing
 - Build it: [Build an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md)
@@ -32,7 +32,7 @@ _In the wild:_ AI tutors that read a learner's real history (with consent), game
 
 Let users claim credentials from your website or app — from a one-script claim button to a full embedded experience.
 
-_In the wild:_ an LMS that awards completions into the learner's wallet; a conference site with a one-click "claim your attendance badge."
+Examples include an LMS awarding course completions and a conference site offering an attendance badge.
 
 - **One script tag**: [embed a claim button](../how-to-guides/connect-systems/embed-a-claim-button.md)
 - **Connected accounts**: [connect your website or game](../how-to-guides/connect-systems/connect-a-website.md) — users link once, you issue automatically
@@ -42,7 +42,7 @@ _In the wild:_ an LMS that awards completions into the learner's wallet; a confe
 
 Request user consent to read or write data, with built-in guardian approval flows for minors.
 
-_In the wild:_ a K-12 platform where parents approve what a school app can see; a scouting organization issuing to minors with guardian sign-off.
+Examples include parent-approved school apps and scouting organizations issuing to minors with guardian consent.
 
 - Start here: [Create a ConsentFlow](../tutorials/create-a-consentflow.md)
 - Concepts: [ConsentFlow overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
@@ -51,7 +51,7 @@ _In the wild:_ a K-12 platform where parents approve what a school app can see; 
 
 For products where LearnCard is core infrastructure: run your own wallet instances, write plugins, manage keys, or deploy your own network.
 
-_In the wild:_ a state agency running its own credential network; a wallet vendor adding a LearnCard plugin so its users can receive LearnCard-issued credentials.
+Examples include a state agency running a credential network and a wallet vendor adding a LearnCard plugin.
 
 - Start here: [How should I manage keys?](../how-to-guides/deploy-infrastructure/choose-key-management.md)
 - [Build a plugin](../how-to-guides/deploy-infrastructure/the-simplest-plugin.md)
@@ -60,4 +60,4 @@ _In the wild:_ a state agency running its own credential network; a wallet vendo
 
 ---
 
-Still not sure? [Open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) or email [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).
+For help choosing a path, [open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) or email [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).

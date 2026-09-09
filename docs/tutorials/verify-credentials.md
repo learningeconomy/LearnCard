@@ -4,11 +4,11 @@ description: 'Tutorial: Verify a Verifiable Credential'
 
 # Verify Credentials
 
-This tutorial walks you through verifying a Verifiable Credential (VC) using LearnCard. Verification checks that:
+Verification checks that:
 
-1. The credential's cryptographic proof is valid
-2. The credential hasn't been tampered with
-3. The credential hasn't expired
+1. The credential's cryptographic proof is valid.
+2. The credential hasn't been tampered with.
+3. The credential hasn't expired.
 
 ## Prerequisites
 
@@ -31,18 +31,18 @@ const learnCard = await initLearnCard();
 
 // Example signed credential (you'd receive this from an issuer)
 const signedCredential = {
-  "@context": ["https://www.w3.org/2018/credentials/v1"],
-  "type": ["VerifiableCredential"],
-  "issuer": "did:key:z6MkjZ...",
-  "issuanceDate": "2024-01-01T00:00:00Z",
-  "credentialSubject": {
-    "id": "did:key:z6Mkp...",
-    "achievement": "Completed Tutorial"
-  },
-  "proof": {
-    "type": "Ed25519Signature2020",
-    // ... proof details
-  }
+    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    'type': ['VerifiableCredential'],
+    'issuer': 'did:key:z6MkjZ...',
+    'issuanceDate': '2024-01-01T00:00:00Z',
+    'credentialSubject': {
+        'id': 'did:key:z6Mkp...',
+        'achievement': 'Completed Tutorial',
+    },
+    'proof': {
+        'type': 'Ed25519Signature2020',
+        // ... proof details
+    },
 };
 
 // Verify the credential
@@ -60,17 +60,17 @@ console.log(result);
 const result = await learnCard.invoke.verifyCredential(validCredential);
 
 if (result.errors.length === 0) {
-  console.log('✅ Credential is valid!');
-  console.log('Checks passed:', result.checks);
+    console.log('✅ Credential is valid!');
+    console.log('Checks passed:', result.checks);
 } else {
-  console.log('❌ Credential is invalid');
-  console.log('Errors:', result.errors);
+    console.log('❌ Credential is invalid');
+    console.log('Errors:', result.errors);
 }
 ```
 
 ### Human-Readable Output
 
-For a more detailed, human-readable result, pass `true` as the third argument:
+Pass `true` as the third argument for a human-readable result:
 
 ```typescript
 const result = await learnCard.invoke.verifyCredential(signedCredential, {}, true);
@@ -87,7 +87,7 @@ console.log(result);
 ```typescript
 // Tampered credential (modified after signing)
 const tamperedCredential = { ...signedCredential };
-tamperedCredential.credentialSubject.achievement = "Fake Achievement";
+tamperedCredential.credentialSubject.achievement = 'Fake Achievement';
 
 const result = await learnCard.invoke.verifyCredential(tamperedCredential);
 
@@ -106,11 +106,11 @@ import { initLearnCard } from '@learncard/init';
 
 async function verifyCredentialFromIssuer(credential: any) {
   const learnCard = await initLearnCard();
-  
+
   const result = await learnCard.invoke.verifyCredential(credential, {}, true);
-  
+
   const isValid = result.every(check => check.status === 'Success');
-  
+
   if (isValid) {
     console.log('✅ Credential verified successfully!');
     result.forEach(check => {
@@ -124,7 +124,7 @@ async function verifyCredentialFromIssuer(credential: any) {
       }
     });
   }
-  
+
   return isValid;
 }
 
@@ -137,4 +137,3 @@ await verifyCredentialFromIssuer(credential);
 
 - Learn about [Verifiable Presentations](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) for sharing credentials
 - Explore [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) for validating issuers
-

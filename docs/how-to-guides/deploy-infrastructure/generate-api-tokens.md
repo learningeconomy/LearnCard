@@ -1,16 +1,12 @@
 # Generate API Tokens
 
 {% hint style="info" %}
-Click here for more information on [Auth Grants and Scopes](../../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md).
+See [Auth Grants and Scopes](../../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md).
 {% endhint %}
 
 ### How to Generate API Tokens
 
-Here's an example showing how to:
-
-1. Create an AuthGrant
-2. Generate an API token
-3. Use the token to send a boost via the HTTP API
+To generate and use an API token:
 
 ```javascript
 // Step 1: Create an AuthGrant with specific permissions
@@ -67,8 +63,7 @@ if (response.status === 200) {
         - **Scope** (required)
         - **Expiration** (optional)
     - **Click**: Create
-3. Already Signed In? Deep link below 👇\
-   \- [LearnCardApp API Token Dev Tools](https://learncard.app/passport?showTokenDevTools=true)
+3. Already signed in? Go to [LearnCardApp API Token Dev Tools](https://learncard.app/passport?showTokenDevTools=true).
 
 #### Token Management Features
 

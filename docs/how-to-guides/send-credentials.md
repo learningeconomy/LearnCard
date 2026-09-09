@@ -4,15 +4,13 @@ description: 'How-To Guide: Sending and issuing credentials with LearnCard'
 
 # Send & Issue Credentials
 
-This guide provides practical, step-by-step recipes for sending credentials. We'll start with the simplest possible use case and progressively add more powerful configurations.
-
 ---
 
 ## Quick Start: The `send` Method (Recommended)
 
-The `send` method is the simplest and most ergonomic way to send credentials to recipients. It handles credential issuance, signing, and delivery in a single call.
+The `send` method handles credential issuance, signing, and delivery in a single call.
 
-**The `send` method automatically detects your recipient type:**
+The `send` method detects your recipient type:
 
 - **Profile ID** → Direct delivery to their LearnCard
 - **DID** → Direct delivery via DID resolution
@@ -175,7 +173,7 @@ const result = await learnCard.invoke.send({
 
 ### REST API (`POST /api/send`)
 
-The `send` method is also available as a REST endpoint. Use an API key or bearer token for authentication.
+The `send` method is available as a REST endpoint. Use an API key or bearer token for authentication.
 
 {% tabs %}
 {% tab title="cURL: Send with Template" %}
@@ -264,15 +262,15 @@ console.log(result);
 
 ### How It Works
 
-1. **Detects recipient type** - Automatically determines if recipient is email, phone, DID, or profile ID
-2. **Routes appropriately** - Uses direct send for profiles/DIDs, Universal Inbox for email/phone
-3. **Prepares the credential** - Uses your template, creates a new template on-the-fly, or uses your pre-signed credential as-is
-4. **Signs the credential** - Skips signing if you provided a `signedCredential`; otherwise uses client-side signing if available, or falls back to your registered signing authority
-5. **Delivers the credential** - Direct delivery or sends claim email/SMS based on recipient type
-6. **Auto-delivery for verified users** - If the email/phone is already verified and linked to a LearnCard profile, the credential is delivered directly to their wallet without requiring them to click a claim link
+1. **Detects recipient type**: email, phone, DID, or profile ID.
+2. **Routes**: direct send for profiles/DIDs, Universal Inbox for email/phone.
+3. **Prepares the credential**: uses your template, creates a new template, or uses your pre-signed credential.
+4. **Signs the credential**: skips signing if you provided a `signedCredential`; otherwise uses client-side signing or your registered signing authority.
+5. **Delivers the credential**: direct delivery or sends claim email/SMS.
+6. **Auto-delivery**: if the email/phone is verified and linked to a LearnCard profile, the credential is delivered directly to their wallet.
 
 {% hint style="info" %}
-**Pre-Signed Credentials**: When you provide only `signedCredential` (without `templateUri` or `template`), the system automatically creates a template from your credential. This is ideal when you've already signed the credential yourself and don't need the server to sign it. Your original proof is preserved through the entire flow, including email inbox claims.
+**Pre-Signed Credentials**: When you provide only `signedCredential` (without `templateUri` or `template`), the system creates a template from your credential. Your original proof is preserved through the entire flow, including email inbox claims.
 {% endhint %}
 
 ### Guardian-Gated Credentials
@@ -365,7 +363,7 @@ options: {
 
 ## Tracking Boost Recipients
 
-You can track which users have received credentials from a specific boost template using `getPaginatedBoostRecipients`:
+Track which users have received credentials from a specific boost template using `getPaginatedBoostRecipients`:
 
 ```typescript
 // Get all recipients of a boost
@@ -378,25 +376,19 @@ console.log(records);
 // ]
 ```
 
-This is useful for:
-
-- **Auditing**: See who has received a specific credential
-- **Preventing duplicates**: Check if a user already received a boost before sending
-- **Analytics**: Track issuance metrics for your credentials
+Use this for auditing, preventing duplicates, and tracking issuance metrics.
 
 ---
 
 ## Dynamic Templates with `templateData`
 
-Use Mustache-style templates to personalize credentials with unique data for each recipient. This is perfect for issuing the same type of credential (like course completions) with recipient-specific details.
-
-For a full guide on creating templated boosts and sending them with personalized data, see [Dynamic Templates with Mustache Variables](../tutorials/create-a-boost.md#dynamic-templates-with-mustache-variables).
+Use Mustache-style templates to personalize credentials with unique data for each recipient. See [Dynamic Templates with Mustache Variables](../tutorials/create-a-boost.md#dynamic-templates-with-mustache-variables).
 
 ---
 
 ## Need more control?
 
-The `send` method covers the vast majority of issuance needs. If you need lower-level control over the inbox issuance process (like custom delivery suppression, custom branding per issuance, or webhook-driven status tracking), check out the [Universal Inbox API](../sdks/learncard-network/universal-inbox-api.md).
+For lower-level control over the inbox issuance process (custom delivery suppression, custom branding per issuance, or webhook-driven status tracking), see the [Universal Inbox API](../sdks/learncard-network/universal-inbox-api.md).
 
 ---
 

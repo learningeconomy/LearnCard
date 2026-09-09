@@ -4,7 +4,7 @@ description: 'How-To Guide: Add a credential claim button to any website using t
 
 # Embed a Claim Button
 
-Add a "Claim Credential" button to any webpage — a course completion page, an event landing page, an onboarding flow. When a user clicks it, a polished modal walks them through email verification and deposits the credential directly into their LearnCard wallet.
+Add a "Claim Credential" button to any webpage. When a user clicks it, a modal walks them through email verification and deposits the credential into their LearnCard wallet.
 
 {% hint style="info" %}
 This is for **external websites** that want to award credentials to visitors. If you're building an app that runs _inside_ the LearnCard App Store, see [Connect an Embedded App](connect-an-embedded-app.md) instead.
@@ -12,9 +12,9 @@ This is for **external websites** that want to award credentials to visitors. If
 
 ## Prerequisites
 
--   A LearnCard developer account with an **Embed** integration created in the [Developer Dashboard](https://learncard.app)
--   At least one **credential template** attached to that integration
--   Your integration's **publishable key** (`pk_...`)
+- A LearnCard developer account with an **Embed** integration created in the [Developer Dashboard](https://learncard.app)
+- At least one **credential template** attached to that integration
+- Your integration's **publishable key** (`pk_...`)
 
 ## Step 1: Create Your Integration & Template
 
@@ -63,7 +63,7 @@ Add a target element and call `init()`:
 </script>
 ```
 
-The credential name must match a template you created in the dashboard. The SDK resolves it server-side — you don't need to embed the full credential JSON.
+The credential name must match a template you created in the dashboard. The SDK resolves it server-side.
 
 ## Step 4: Customize Branding (Optional)
 
@@ -84,7 +84,7 @@ LearnCard.init({
 
 ## Step 5: Handle Success (Optional)
 
-By default, after claiming, the SDK opens the wallet in a new tab (deep-linked to the credential via `handoffUrl`) and shows a success screen. You can hook into this with `onSuccess`:
+After claiming, the SDK opens the wallet in a new tab (deep-linked to the credential via `handoffUrl`) and shows a success screen. Hook into this with `onSuccess`:
 
 ```js
 LearnCard.init({
@@ -177,7 +177,7 @@ sequenceDiagram
 
 ## Whitelisted Domains
 
-For security, the API only accepts claims from domains you've whitelisted in the Embed Code tab of your dashboard. Add your production domain before going live.
+The API only accepts claims from domains whitelisted in the Embed Code tab of your dashboard. Add your production domain before going live.
 
 During local development, `localhost` is allowed automatically.
 
@@ -201,16 +201,16 @@ cd examples/embed-example && bun run dev
 ## Troubleshooting
 
 **"This integration could not be found"**
-Your `publishableKey` doesn't match any active integration on the network. Double-check the key from your dashboard Embed Code tab and ensure your domain is whitelisted.
+Your `publishableKey` doesn't match an active integration. Check the key from your dashboard Embed Code tab and ensure your domain is whitelisted.
 
 **Credential not appearing after claim**
-The credential lands in the user's inbox and is finalized when they next open their wallet. If you need to verify immediately, check the dashboard's activity tab.
+The credential lands in the user's inbox and is finalized when they open their wallet. To verify immediately, check the dashboard's activity tab.
 
 **OTP not arriving**
 In local dev, check your brain-service logs — OTP codes are printed there when no email provider is configured.
 
 ## See Also
 
--   [Embed SDK Reference](../../sdks/embed-sdk.md)
--   [Embed Code Tab (Dashboard)](../../how-to-guides/connect-systems/connect-a-website.md)
--   [Connect an Embedded App](connect-an-embedded-app.md) — for apps inside LearnCard
+- [Embed SDK Reference](../../sdks/embed-sdk.md)
+- [Embed Code Tab (Dashboard)](../../how-to-guides/connect-systems/connect-a-website.md)
+- [Connect an Embedded App](connect-an-embedded-app.md) — for apps inside LearnCard

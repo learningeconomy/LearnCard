@@ -4,22 +4,18 @@ description: 'How-To Guide: Configuring a Signing Authority'
 
 # Create Signing Authority
 
-This guide provides practical, step-by-step recipes for setting up a [Signing Authority](../core-concepts/identities-and-keys/signing-authorities.md). A [Signing Authority](../core-concepts/identities-and-keys/signing-authorities.md) is a service that cryptographically signs credentials on your behalf, allowing you to issue official records without directly handling private keys in your application.
+A [Signing Authority](../core-concepts/identities-and-keys/signing-authorities.md) is a service that cryptographically signs credentials on your behalf, allowing you to issue official records without directly handling private keys in your application.
 
 {% hint style="info" %}
 **Do you need a signing authority?**
 If you sign credentials yourself and pass `signedCredential` to `send()` (like in the [Quickstart](../quick-start/your-first-integration.md)), you do **NOT** need a signing authority. You only need one when LearnCard signs on your behalf — for example, when using `templateUri`/`templateData` sends, generating claim links, or building Partner Connect apps.
 {% endhint %}
 
-We'll cover two paths: the simple, recommended approach of using a LearnCard-managed authority, and the advanced option of registering your own external service.
-
-This guide assumes you have a LearnCard Passport profile. If not, you can create one via the UI or CLI.
+This guide assumes you have a LearnCard Passport profile. If not, create one via the UI or CLI.
 
 ## 1. The Simple Path: Using a LearnCard-Managed Authority (Recommended)
 
-**Goal:** Create a secure signing mechanism in under a minute, without managing any keys or infrastructure.
-
-This is the fastest and most common path, perfect for getting your issuance workflow up and running immediately. We handle the complexity so you can focus on your product.
+Create a secure signing mechanism without managing keys or infrastructure.
 
 ### **Recipe 1a: Using the UI (The Quickest Start)**
 
@@ -28,11 +24,11 @@ This is the fastest and most common path, perfect for getting your issuance work
 3. Click **"Create New Authority"**.
 4. Give it a memorable name (e.g., `default-issuer`) and click **"Create"**.
 
-That's it. If this is your first authority, we automatically set it as your primary. You can now issue credentials using the Universal Inbox, and we'll handle the signing automatically.
+If this is your first authority, it is automatically set as your primary. You can now issue credentials using the Universal Inbox, and LearnCard handles the signing.
 
 ### **Recipe 1b: Using the CLI**
 
-For developers who prefer to script their setup, the CLI provides a fast and repeatable way to achieve the same result.
+The CLI provides a repeatable way to achieve the same result.
 
 {% hint style="info" %}
 To launch the CLI:
@@ -76,19 +72,17 @@ await learnCard.invoke.setPrimaryRegisteredSigningAuthority(
 console.log('Successfully created and registered primary signing authority!');
 ```
 
-**Result:** You now have a default Signing Authority. When you call the [`/inbox/issue` endpoint](send-credentials.md) with an unsigned credential, our system will automatically use this authority to sign it. You don't need to specify any `signingAuthority` details in your API call `configuration` object.
+**Result:** You have a default Signing Authority. When you call the [`/inbox/issue` endpoint](send-credentials.md) with an unsigned credential, the system uses this authority to sign it. You do not need to specify `signingAuthority` details in your API call `configuration` object.
 
 ## 2. The Advanced Path: Using Your Own External Authority
 
-**Goal:** Delegate credential signing to your own, self-hosted VC-API compliant service for maximum control over your keys and infrastructure.
-
-This path is for organizations with specific security, compliance, or existing identity infrastructure needs.
+Delegate credential signing to your own, self-hosted VC-API compliant service.
 
 **Prerequisites:** You must have a running, publicly accessible VC-API compliant issuer endpoint.
 
 ### **Recipe: Registering an External Authority**
 
-You don't create an external authority through our system; you simply tell our network about it and authorize it to act on your behalf.
+Register your external authority with the network to authorize it to act on your behalf.
 
 ```javascript
 // This script assumes you have an authenticated `learnCard` client instance.
@@ -116,7 +110,7 @@ console.log(`Successfully registered "${myExternalAuthority.name}".`);
 // );
 ```
 
-**Result:** Your external service is now an authorized signer for your profile. When you want to use it, you must explicitly specify it in your `/inbox/issue` API call.
+**Result:** Your external service is an authorized signer for your profile. Specify it in your `/inbox/issue` API call.
 
 **Example `/inbox/issue` call using your external authority:**
 

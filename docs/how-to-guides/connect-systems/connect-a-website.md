@@ -4,13 +4,13 @@ description: 'How-To Guide: Connect your website or game to LearnCard via Consen
 
 # Connect Your Website or Game
 
-This guide shows you how to connect your website, game, or platform to LearnCard. You will build a flow where users link their LearnCard wallet to their account on your platform, granting you permission to issue credentials directly to them.
+Connect your website, game, or platform to LearnCard. Users link their LearnCard wallet to their account on your platform, granting you permission to issue credentials directly to them.
 
 ## Do you need this, or just send()?
 
 If you just want to award a badge when something happens and you know the user's email address, use [`learnCard.invoke.send(...)`](../send-credentials.md). It's simpler and requires no setup on the user's part.
 
-Use the connected-account pattern in this guide when you want an ongoing relationship: the user links their LearnCard once, consents to what you may write or read, and you then issue automatically (every lesson, every level) without emails or claim links. For games and platforms serving minors, this pattern (using GameFlow) also builds in guardian consent automatically.
+Use the connected-account pattern when you want an ongoing relationship: the user links their LearnCard once, consents to what you may write or read, and you issue automatically (every lesson, every level) without emails or claim links. For games and platforms serving minors, this pattern (using GameFlow) builds in guardian consent automatically.
 
 ## Part 1: Initialize Your Platform
 
@@ -97,13 +97,13 @@ Add a button to your platform that sends users to LearnCard to approve the contr
 </script>
 ```
 
-When users click this, they will be taken to the LearnCard app, where they will see exactly what permissions your platform is requesting. Once they approve, LearnCard redirects them back to your Redirect URL.
+When users click this, they are taken to the LearnCard app to see what permissions your platform requests. Once they approve, LearnCard redirects them back to your Redirect URL.
 
 ## Part 4: Handle the Callback
 
 When LearnCard redirects the user back to your platform, it includes their DID (Decentralized Identifier) and a Verifiable Presentation (VP) proving their consent in the URL parameters.
 
-Your server needs to handle this callback, verify the VP, and store the DID.
+Your server handles this callback, verifies the VP, and stores the DID.
 
 ```typescript
 // backend/routes.ts
@@ -140,7 +140,7 @@ app.get('/auth/learncard/callback', async (req, res) => {
 
 ### What you should see
 
-When this works correctly:
+When this works:
 
 1. The user clicks Connect and approves in LearnCard
 2. They are redirected back to your site
@@ -196,7 +196,7 @@ export async function getOrCreateBadgeBoost() {
 
 ## Part 6: Issue Credentials Automatically
 
-Now that you have the user's DID and their consent, you can issue credentials directly to their wallet whenever they achieve something on your platform.
+With the user's DID and consent, you can issue credentials directly to their wallet whenever they achieve something on your platform.
 
 ```typescript
 // backend/achievement-handler.ts
@@ -245,7 +245,7 @@ async function awardLevelUpBadge(userId) {
 
 ## Summary & Next Steps
 
-You have now built a fully connected platform that can request permission and automatically issue credentials to users.
+You have built a connected platform that requests permission and automatically issues credentials to users.
 
 - For a hands-on version of this guide, see the [Create a Connected Website](../../tutorials/create-a-connected-website.md) tutorial.
 - Learn more about [Auto-Boosts](../../core-concepts/credentials-and-data/boost-credentials.md).

@@ -1,14 +1,14 @@
 ---
-description: How embedded apps authenticate users and send xAPI statements — identity tokens, X-VP, and common 401s.
+description: Embedded app authentication and xAPI with identity tokens, X-VP, and common 401 errors.
 ---
 
 # Embedded App Auth & xAPI
 
-The most-asked integration questions in one place: how your embedded app gets the user's identity, and how it records learning activity (xAPI) for that user.
+Embedded apps use separate credentials for user identity and xAPI requests.
 
 ## Getting the user's identity
 
-Inside LearnCard, use the Partner Connect SDK — the host handles all authentication:
+Inside LearnCard, the Partner Connect SDK asks the host for the user's identity:
 
 ```typescript
 const { token, user } = await learnCard.requestIdentity();
@@ -16,7 +16,7 @@ const { token, user } = await learnCard.requestIdentity();
 // token   → a JWT signed by LearnCard, for verifying the user on YOUR backend
 ```
 
-Use `token` to authenticate the user against **your own** backend (verify the JWT, then trust `user.did` as the user's stable identifier).
+Verify `token` on **your own** backend, then use `user.did` as the user's stable identifier.
 
 ## Sending xAPI statements
 
@@ -37,7 +37,7 @@ For the statement format and endpoints, see the [xAPI Reference](../../sdks/lear
 
 ## Required network endpoints
 
-If your app runs inside schools or districts with network filtering, ask IT to allow outbound traffic to these domains. (This is separate from the SDK's `hostOrigin` setting, which controls which LearnCard hosts your app will accept messages from.)
+For schools or districts with network filtering, allow outbound traffic to these domains. The SDK's separate `hostOrigin` setting controls which LearnCard hosts can send messages to your app.
 
 | Domain                  | Purpose                        |
 | ----------------------- | ------------------------------ |
@@ -45,17 +45,10 @@ If your app runs inside schools or districts with network filtering, ask IT to a
 | `network.learncard.com` | LearnCloud Network API         |
 | `cloud.learncard.com`   | LearnCloud Storage / xAPI      |
 
-(Self-hosted or staging environments use their own domains — check your tenant configuration.)
+Self-hosted and staging environments use the domains in their tenant configuration.
 
 ## End-to-end shape
 
-```
-User opens your app in LearnCard
-  → requestIdentity() → { user.did, token }
-  → your backend verifies token, links user.did to your account
-  → learning activity happens
-  → xAPI statement (actor = user.did) sent with X-VP presentation JWT
-  → LearnCloud verifies VP, stores the statement
-```
+Your app calls `requestIdentity()`, and your backend verifies the returned token and links `user.did` to an account. After learning activity occurs, send an xAPI statement whose actor is `user.did` with an `X-VP` presentation JWT. LearnCloud verifies the presentation and stores the statement.
 
-Questions this page doesn't answer? [Open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) or email [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).
+For other questions, [open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) or email [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).

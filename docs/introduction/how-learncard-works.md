@@ -4,15 +4,15 @@ description: The two-minute mental model — three verbs, three layers, one cred
 
 # How LearnCard Works
 
-You just sent a badge (or you're about to). Here's what happened, and the model everything else in these docs hangs off.
+LearnCard organizes credential activity around three verbs and three platform layers.
 
 ## Three verbs
 
 Everything a person does with their record is one of three things:
 
-- **Collect** — gather credentials from every source: school, work, courses, games, certifications. They accumulate over a lifetime, across institutions.
+- **Collect** — gather credentials from schools, work, courses, games, and certifications across institutions.
 - **Understand** — make sense of what's inside: skills, gaps against a goal, insights grounded in the real record.
-- **Navigate** — turn the record into opportunity: pathways, jobs, scholarships, and AI agents that act on the person's behalf — with their consent.
+- **Navigate** — use the record for pathways, jobs, scholarships, and consented AI agents.
 
 Every part of the platform exists to make those three verbs **portable, open, and learner-controlled**.
 
@@ -37,9 +37,9 @@ flowchart LR
   CL -.- STD
 ```
 
-- **LearnCard** is the wallet: the app people carry, plus the SDK you used in the Quickstart. Signing and verification run in a Rust core that compiles to native and WebAssembly, so it behaves identically on web, iOS, Android, and Node.
-- **LearnCloud** is the set of open APIs behind it — sending credentials across the network, encrypted storage the user controls, and AI that understands the record. Each is independently usable and fully documented.
-- **Open standards** are the floor. A credential issued through LearnCard is a W3C Verifiable Credential (usually an Open Badge 3.0). It verifies in any conformant wallet or verifier, not just ours — and credentials from elsewhere land in LearnCard just as well.
+- **LearnCard** is the wallet app and SDK. Signing and verification use a Rust core compiled to native and WebAssembly for web, iOS, Android, and Node.
+- **LearnCloud** provides APIs for network delivery, user-controlled encrypted storage, and AI analysis. Each API can be used independently.
+- **Open standards** support interoperability. LearnCard issues W3C Verifiable Credentials, usually Open Badges 3.0, that work with conformant wallets and verifiers. LearnCard also accepts credentials from other systems.
 
 ## One credential's journey
 
@@ -48,7 +48,7 @@ flowchart LR
 3. **They hold it.** After claiming, the credential is stored encrypted in the person's own storage, under a **DID** they control. You can't revoke their copy of the _data_ — only mark the credential's _status_.
 4. **They share it.** With a verifier, an employer, another app — through **consent** the person grants and can withdraw. Verifiers check the signature and status; they don't need to call you.
 
-That's the whole loop: **issue → send → hold → share**, with the person in the middle holding the keys.
+The holder controls the keys throughout issuance, delivery, storage, and sharing.
 
 ## Where to go deeper
 

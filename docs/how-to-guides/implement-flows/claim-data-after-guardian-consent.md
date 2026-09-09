@@ -6,7 +6,7 @@ description: How to implement the Consentful "Claim Later" Flow
 
 ### Overview
 
-The Consentful "Claim Later" Flow enables applications to save an ephemeral user's session data as a "Save Game" state, which can be restored after obtaining guardian consent. This pattern is ideal for applications that need to:
+The "Claim Later" flow saves an ephemeral user's session data as a "Save Game" state, restored after obtaining guardian consent. Use this to:
 
 - Create low-PII profiles quickly (using nicknames)
 - Allow users to start using the application immediately
@@ -15,12 +15,12 @@ The Consentful "Claim Later" Flow enables applications to save an ephemeral user
 
 ### Use Case: MyLittleTabbyCat
 
-To illustrate this flow, we'll use a fictional application called "MyLittleTabbyCat" where a child creates a personalized tabby cat and receives daily inspirational quotes. The child initially creates their cat in an ephemeral session, then takes a QR code home for their guardian to scan and provide consent.
+In this example, a child creates a personalized tabby cat in an ephemeral session, then takes a QR code home for their guardian to scan and provide consent.
 
 ### Implementation Steps
 
 {% hint style="warning" %}
-Before you begin, make sure you've [setup a Service Profile ](../../core-concepts/identities-and-keys/network-profiles.md)in the network for your LearnCard.&#x20;
+Make sure you've [setup a Service Profile](../../core-concepts/identities-and-keys/network-profiles.md) in the network for your LearnCard.&#x20;
 
 ```javascript
 const serviceProfile = {
@@ -36,10 +36,10 @@ await learnCard.invoke.createServiceProfile(serviceProfile);
 
 #### 1. Create a "Save Game" Boost
 
-After the user creates their content in your application, store this data as a Boost on the LearnCard network:
+Store the user's content as a Boost on the LearnCard network:
 
 {% hint style="info" %}
-This example shows how to extend a regular "BoostCredential" with a "TabbyCat" schema in JSON-LD. Check it out on the JSON-LD playground [here](https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/yM1TQS4JsC2o2UyqGfWZ/). You can verify it's a valid credential by "issuing it" in the CLI:
+This example extends a "BoostCredential" with a "TabbyCat" schema in JSON-LD. Verify it's a valid credential by issuing it in the CLI:
 
 ```javascript
 await learnCard.invoke.issueCredential(credential);
@@ -146,10 +146,10 @@ const metadata = {
 
 #### 2. Create a Guardian ConsentFlow
 
-After creating the boost, set up a ConsentFlow that requires guardian consent:
+Set up a ConsentFlow that requires guardian consent:
 
 {% hint style="warning" %}
-To attach autoboosts to your ConsentFlow, you need to setup a "Signing Authority". You can do this once for your LearnCard service profile like so:<br>
+To attach autoboosts to your ConsentFlow, set up a "Signing Authority" once for your LearnCard service profile:<br>
 
 ```javascript
 // Make sure to bun add @learncard/lca-api-plugin
@@ -229,7 +229,7 @@ const consentLink = `https://learncard.app/consent-flow?uri=${contractUri}`;
 
 #### 3. Generate QR Code for User
 
-Display a QR code linking to the ConsentFlow for the user:
+Display a QR code linking to the ConsentFlow:
 
 ```javascript
 // Generate QR code (example using a hypothetical QR library)
@@ -241,7 +241,7 @@ displayQRCode(qrCode, 'Have your guardian scan this code to save your cat!');
 
 #### 4. Handle Redirect After Guardian Consent
 
-After the guardian provides consent, LearnCard redirects to your application's callback URL with the user's DID:
+After the guardian provides consent, LearnCard redirects to your callback URL with the user's DID:
 
 ```javascript
 // Example callback handler (server-side route)
@@ -262,7 +262,7 @@ app.get('/callback', async (req, res) => {
 
 #### 5. Retrieve "Save Game" Data
 
-After receiving the user's DID, retrieve their boost data to restore their session:
+Retrieve their boost data to restore their session:
 
 ```javascript
 // Client-side restoration code
@@ -373,14 +373,14 @@ async function lookupByCatName(catName) {
 
 ### Complete Flow Diagram
 
-1. User creates content in your application (ephemeral session)
-2. Application creates a Boost with the user's data
-3. Application creates a ConsentFlow with guardian consent requirement, linking the Boost
-4. User receives a QR code to take home
-5. Guardian scans QR code and provides consent
-6. User is redirected back to your application with their LearnCard DID
-7. Application retrieves "Save Game" data using the DID
-8. Application restores the user's session
+1. User creates content in an ephemeral session.
+2. Application creates a Boost with the user's data.
+3. Application creates a ConsentFlow requiring guardian consent, linking the Boost.
+4. User receives a QR code.
+5. Guardian scans QR code and provides consent.
+6. User redirects to your application with their LearnCard DID.
+7. Application retrieves "Save Game" data using the DID.
+8. Application restores the user's session.
 
 ### Best Practices
 
@@ -392,4 +392,4 @@ async function lookupByCatName(catName) {
 
 ### Related Documentation
 
-For more information on GameFlow (the framework this flow is built on), see the [GameFlow ](../../core-concepts/consent-and-permissions/gameflow-overview.md)documentation.
+See the [GameFlow](../../core-concepts/consent-and-permissions/gameflow-overview.md) documentation.

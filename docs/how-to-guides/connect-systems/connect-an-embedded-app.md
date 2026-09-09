@@ -4,7 +4,7 @@ description: 'How-To Guide: Issue Credentials from Embedded Apps in the LearnCar
 
 # Build an Embedded App
 
-Build apps that run inside LearnCard and issue credentials directly to users. This guide covers the App Store integration for embedded applications that want to award badges, certificates, or other verifiable credentials.
+Build apps that run inside LearnCard and issue credentials directly to users. This guide covers the App Store integration for embedded applications.
 
 ## Overview
 
@@ -15,7 +15,7 @@ The LearnCard App Store allows third-party applications to be embedded within th
 - **Request credentials** for verification or gating
 - **Request consent** for data sharing agreements and terms acceptance
 
-This is ideal for:
+Use this for:
 
 - Learning platforms awarding course completion badges
 - Games issuing achievement credentials
@@ -105,7 +105,7 @@ async function awardBadge() {
 }
 ```
 
-That's it! The user will see a claim modal and can accept the credential into their wallet.
+The user sees a claim modal and can accept the credential into their wallet.
 
 ## Setting Up Your App Store Listing
 
@@ -160,7 +160,7 @@ The Template Alias is what you'll reference when issuing credentials from your a
 
 ### 3. Configure Signing Authority
 
-When you add a template to your listing, LearnCard automatically configures a signing authority. This allows credentials to be issued on behalf of your app with proper cryptographic signatures.
+When you add a template to your listing, LearnCard configures a signing authority. This allows credentials to be issued on behalf of your app.
 
 ### 4. App Issuer Identity
 
@@ -278,7 +278,7 @@ Here's a full example of a simple embedded app:
 
 ### Local Development
 
-For local development, use the Developer Portal's **Preview App** feature which provides a test iframe environment. Your app will be loaded within LearnCard and credentials will be issued to your test wallet.
+For local development, use the Developer Portal's **Preview App** feature. Your app loads within LearnCard and credentials issue to your test wallet.
 
 ## Next Steps
 
