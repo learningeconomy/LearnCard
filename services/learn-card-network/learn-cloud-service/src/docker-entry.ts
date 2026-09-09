@@ -41,25 +41,11 @@ server.register(fastifyTRPCOpenApiPlugin, {
 
 server.get('/docs/openapi.json', () => openApiDocument);
 
-// Serve swagger-ui assets (JS bundles, CSS) from npm package
+// Serve all swagger-ui assets from local dir (copied at build time from swagger-ui-dist)
+// This ensures assets are available in Lambda/Docker without runtime require.resolve
 server.register(fastifyStatic, {
-    root: path.dirname(require.resolve('swagger-ui-dist/package.json')),
+    root: path.join(__dirname, '../src/swagger-ui'),
     prefix: '/docs/',
-});
-
-// Serve custom config files from local dir (override npm defaults)
-const customSwaggerDir = path.join(__dirname, '../src/swagger-ui');
-server.get('/docs/', async (_req, reply) => {
-    return reply.sendFile('index.html', customSwaggerDir);
-});
-server.get('/docs/index.html', async (_req, reply) => {
-    return reply.sendFile('index.html', customSwaggerDir);
-});
-server.get('/docs/swagger-initializer.js', async (_req, reply) => {
-    return reply.sendFile('swagger-initializer.js', customSwaggerDir);
-});
-server.get('/docs/index.css', async (_req, reply) => {
-    return reply.sendFile('index.css', customSwaggerDir);
 });
 
 server.register(didFastifyPlugin);

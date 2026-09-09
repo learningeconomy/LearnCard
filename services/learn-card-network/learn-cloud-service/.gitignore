@@ -30,3 +30,9 @@ yarn-error.log*
 
 /.serverless
 /.esbuild
+
+# Generated swagger-ui assets (copied from swagger-ui-dist at build time)
+/src/swagger-ui/swagger-ui-bundle.js
+/src/swagger-ui/swagger-ui-standalone-preset.js
+/src/swagger-ui/swagger-ui.css
+/src/swagger-ui/favicon-*.png
