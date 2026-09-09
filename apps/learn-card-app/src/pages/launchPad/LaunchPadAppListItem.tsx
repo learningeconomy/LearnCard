@@ -1,36 +1,17 @@
 import React from 'react';
+import { IonItem } from '@ionic/react';
 
 import {
     useModal,
     ModalTypes,
     LaunchPadAppListItem as LaunchPadAppListItemType,
 } from 'learn-card-base';
-
-/**
- * Sanitizes a URL to prevent XSS via javascript: or other malicious URL schemes.
- * Only allows http: and https: protocols.
- */
-const sanitizeUrl = (url: string | undefined): string | undefined => {
-    if (!url) return undefined;
-    try {
-        const parsed = new URL(url);
-        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
-            return parsed.href;
-        }
-        return undefined;
-    } catch {
-        return undefined;
-    }
-};
+import { sanitizeImageUrl } from '@learncard/helpers';
 
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
-
-import { IonItem } from '@ionic/react';
 import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
-
 import { LaunchPadFilterOptionsEnum } from './LaunchPadSearch/launchpad-search.helpers';
 import * as m from '../../paraglide/messages.js';
-
 import useTheme from '../../theme/hooks/useTheme';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { ColorSetEnum } from '../../theme/colors';
@@ -63,8 +44,8 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
     const isLoading = app.contractUri ? consentedContractLoading : app.isConnected === null;
 
     // Sanitize URLs to prevent XSS - returns reconstructed URL or undefined
-    const safeImgUrl = sanitizeUrl(app?.img);
-    const safeEmbedUrl = sanitizeUrl(app?.embedUrl);
+    const safeImgUrl = sanitizeImageUrl(app?.img);
+    const safeEmbedUrl = sanitizeImageUrl(app?.embedUrl);
 
     const handleConnect = (appItem: LaunchPadAppListItemType) => {
         if (appItem.contractUri && !isConnected) {

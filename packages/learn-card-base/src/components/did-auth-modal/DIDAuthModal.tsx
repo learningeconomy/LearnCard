@@ -16,6 +16,7 @@ import {
 } from '@ionic/react';
 
 import { CopyToClipboard } from 'react-copy-to-clipboard';
+import { sanitizeImageUrl } from '@learncard/helpers';
 import VCDisplayCardWrapper from '../vcmodal/VCDisplayCardWrapper';
 
 import useWallet from 'learn-card-base/hooks/useWallet';
@@ -50,16 +51,18 @@ export const DIDAuthModal = () => {
         setVerificationCode(streamId);
     };
 
-    const handleCreateVP = async () => {
-        const vp = await issueDIDAuthPresentation(challenge, domain);
-        setVP(vp);
-    };
-
     useEffect(() => {
         if (challenge && !vp) {
-            handleCreateVP();
+            let cancelled = false;
+            (async () => {
+                const newVp = await issueDIDAuthPresentation(challenge, domain);
+                if (!cancelled) setVP(newVp);
+            })();
+            return () => {
+                cancelled = true;
+            };
         }
-    }, [challenge, vp]);
+    }, [challenge, vp, issueDIDAuthPresentation, domain]);
 
     const dismiss = async ({ historyPush }) => {
         history.push(historyPush ?? '/wallet');
@@ -205,24 +208,6 @@ export const DIDAuthModal = () => {
             </div>
         </IonPage>
     );
-};
-
-/**
- * Sanitizes a URL for use in img src to prevent XSS.
- * Only allows http: and https: protocols.
- * Returns reconstructed URL to break taint chain.
- */
-const sanitizeImageUrl = (url: string | undefined): string | undefined => {
-    if (!url) return undefined;
-    try {
-        const parsed = new URL(url);
-        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
-            return parsed.href;
-        }
-        return undefined;
-    } catch {
-        return undefined;
-    }
 };
 
 export const DIDAuthMessage = ({ title, subtitle, text, color, image }) => {

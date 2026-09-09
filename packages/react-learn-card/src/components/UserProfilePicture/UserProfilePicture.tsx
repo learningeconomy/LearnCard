@@ -1,23 +1,5 @@
 import React from 'react';
-
-/**
- * Validates an image URL and only allows http and https URLs to prevent XSS via javascript: or malicious data: URIs.
- */
-const sanitizeImageUrl = (url: string | undefined): string | undefined => {
-    if (!url) return undefined;
-
-    try {
-        const parsed = new URL(url);
-
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-            return undefined;
-        }
-
-        return parsed.href;
-    } catch {
-        return undefined;
-    }
-};
+import { sanitizeImageUrl } from '@learncard/helpers';
 
 const PersonSilhouette: React.FC<{ className?: string }> = ({ className = '' }) => (
     <svg
