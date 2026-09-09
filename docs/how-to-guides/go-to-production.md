@@ -11,10 +11,10 @@ Staging and production are separate networks — nothing carries over automatica
 - [ ] **1. Point the SDK/CLI at production** — pass `network: true` (or drop `--network` on the CLI's `send` command, which defaults to production). If you also set a `cloud: { url: '...staging...' }` override for staging testing, remove it too — `cloud.url` doesn't follow `network`, so it stays pointed at staging until you change it.
 - [ ] **2. Create your production profile** — the same seed produces the same `did:key` on every network, so `createProfile`/`createServiceProfile` with that seed and (if it's free) the same `profileId` keeps your identity consistent — [Network Profiles](../core-concepts/identities-and-keys/network-profiles.md).
 - [ ] **3. Create production API tokens** with the same scopes you used on staging — [Generate API Tokens](deploy-infrastructure/generate-api-tokens.md).
-- [ ] **4. Register your production signing authority**, if you send from templates or issue claim links — [Set Up a Signing Authority](create-signing-authority.md).
+- [ ] **4. Register your production signing authority**, if you send from templates or issue claim links — [Who Signs Your Credentials?](create-signing-authority.md).
 - [ ] **5. Recreate your credential templates** with `createBoost()` and record the new `lc:network:network.learncard.com/trpc:boost:…` URIs in your config — the staging URIs won't resolve — [Issue at scale with templates](send-credentials.md#issue-at-scale-with-templates).
 - [ ] **6. Recreate consent contracts**, if you use ConsentFlow — [Create a ConsentFlow](../tutorials/create-a-consentflow.md).
-- [ ] **7. Set your production webhook URL(s)** — the profile-level `notificationsWebhook` and/or any per-`send()` `options.webhookUrl` — [Listen to Webhooks](../tutorials/listen-to-webhooks.md).
+- [ ] **7. Set your production webhook URL(s)** — the profile-level `notificationsWebhook` and/or any per-`send()` `options.webhookUrl` — [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md).
 - [ ] **8. Send one credential to your own address and claim it**, end to end, before sending to anyone else.
 
 ### Staging → Production mapping
@@ -48,12 +48,12 @@ Store `inbox.issuanceId` (and `activityId`) keyed by your own record ID at send 
 
 - [ ] **Seed in a secrets manager**, never in code or git; rotating it means a new issuer DID — [How Should I Manage Keys?](deploy-infrastructure/choose-key-management.md)
 - [ ] **API tokens scoped to what you use** (`boosts:write` for sending), with an expiry and a rotation owner — [Generate API Tokens](deploy-infrastructure/generate-api-tokens.md)
-- [ ] **Signing authority registered** if you send from templates or claim links — [Set Up a Signing Authority](create-signing-authority.md)
+- [ ] **Signing authority registered** if you send from templates or claim links — [Who Signs Your Credentials?](create-signing-authority.md)
 
 ## Reliability
 
 - [ ] **Full flow run on staging** with your own email as recipient — [Test Safely](deploy-infrastructure/test-safely.md)
-- [ ] **`PENDING` vs `ISSUED` handled**, and a webhook records claims — [Listen to Webhooks](../tutorials/listen-to-webhooks.md)
+- [ ] **`PENDING` vs `ISSUED` handled**, and a webhook records claims — [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md)
 - [ ] **You know how to undo a mistake** — [Revoke or Update a Credential](revoke-or-update-a-credential.md)
 - [ ] **Retries on `TOO_MANY_REQUESTS` are safe; ambiguous failures are handled deliberately** — [Errors & Limits](../sdks/learncard-network/errors-and-limits.md) · [When a Send Fails Ambiguously](#when-a-send-fails-ambiguously)
 

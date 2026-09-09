@@ -127,7 +127,7 @@ await learnCard.invoke.updateProfile(updatedProfile);
 ```
 
 {% hint style="info" %}
-This profile-level webhook does not receive `ISSUANCE_DELIVERED`, `ISSUANCE_CLAIMED`, or `ISSUANCE_ERROR` — those three are only delivered to the `options.webhookUrl` you pass on the specific `send()` call that issued the credential. See [Listen to Webhooks](../../tutorials/listen-to-webhooks.md) for the per-issuance flow.
+This profile-level webhook does not receive `ISSUANCE_DELIVERED`, `ISSUANCE_CLAIMED`, or `ISSUANCE_ERROR` — those three are only delivered to the `options.webhookUrl` you pass on the specific `send()` call that issued the credential. See [Know When a Credential Is Claimed](../../tutorials/listen-to-webhooks.md) for the per-issuance flow.
 {% endhint %}
 
 ## Payload Reference&#x20;

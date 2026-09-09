@@ -1,176 +1,123 @@
 ---
-description: 'How-To Guide: Configuring a Signing Authority'
+description: 'Every credential is signed by a key. Decide whether you hold it or LearnCard holds one for you.'
 ---
 
-# Create Signing Authority
+# Who Signs Your Credentials?
 
-A [Signing Authority](../core-concepts/identities-and-keys/signing-authorities.md) is a service that cryptographically signs credentials on your behalf, allowing you to issue official records without directly handling private keys in your application.
+Every credential is signed by a private key. You have two choices: **you sign** with your own seed, or **LearnCard signs for you** with a key it hosts on your behalf — a _signing authority_. Pick one; you can change later.
 
-**~5 minutes · Needs:** a LearnCard Passport profile
+**~5 minutes · Needs:** a LearnCard profile (the Quickstart creates one)
+
+## Pick a path
+
+|                         | **You sign**                                                             | **LearnCard signs for you**                                                            | **Your own signing service**                                        |
+| :---------------------- | :----------------------------------------------------------------------- | :------------------------------------------------------------------------------------- | :------------------------------------------------------------------ |
+| **Choose when**         | You run a server and are happy to keep a seed in an environment variable | You don't want to hold keys, or you use API tokens, templates, or the Developer Portal | You already run a VC-API issuer and it must be the signer of record |
+| **What you set up**     | Nothing — `initLearnCard({ seed })`                                      | A hosted signing authority, **once** ([below](#learncard-signs-for-you))               | Register your endpoint ([below](#your-own-signing-service))         |
+| **What `send()` takes** | `signedCredential`                                                       | `templateUri` or `template`                                                            | `templateUri` or `template`                                         |
+| **Where the key lives** | Your server                                                              | LearnCard, tied to your profile                                                        | Your service                                                        |
+| **Also unlocks**        | —                                                                        | Claim links, Developer Portal templates, Partner Connect apps                          | Same as hosted                                                      |
 
 {% hint style="info" %}
-**Do you need a signing authority?**
-If you sign credentials yourself and pass `signedCredential` to `send()` (like in the [Quickstart](../quick-start/your-first-integration.md)), you do **NOT** need a signing authority. You only need one when LearnCard signs on your behalf — for example, when using `templateUri`/`templateData` sends, generating claim links, or building Partner Connect apps.
+If you saw `You must register a signing authority before using send without a pre-signed credential`, you are on the **LearnCard signs for you** path without having done the one-time setup. Either finish it below, or switch to signing yourself and pass `signedCredential`.
 {% endhint %}
 
-This guide assumes you have a LearnCard Passport profile. If not, create one via the UI or CLI.
+## You sign
 
-## 1. The Simple Path: Using a LearnCard-Managed Authority (Recommended)
+Nothing to set up. The [Quickstart](../quick-start/your-first-integration.md) does this: `initLearnCard({ seed, network: true })` → `issueCredential(...)` → `send({ signedCredential })`. Keep the seed in an environment variable and [back it up](deploy-infrastructure/choose-key-management.md).
 
-Create a secure signing mechanism without managing keys or infrastructure.
+## LearnCard signs for you
 
-### **Recipe 1a: Using the UI (The Quickest Start)**
+Do this once per profile per network (staging and production are [separate](deploy-infrastructure/test-safely.md)). Afterwards `send({ templateUri })` and `send({ template })` work with no signing details.
 
-1. Navigate to your **Profile** in the LearnCard App.
-2. Go to **Developer Tools > Signing Authorities**.
-3. Click **"Create New Authority"**.
-4. Give it a memorable name (e.g., `default-issuer`) and click **"Create"**.
+{% tabs %}
+{% tab title="Developer Portal (no code)" %}
 
-If this is your first authority, it is automatically set as your primary. You can now issue credentials using the Universal Inbox, and LearnCard handles the signing.
+1. Sign in at [learncard.app/app-store/developer](https://learncard.app/app-store/developer).
+2. Open **Guides → Issue Credentials → Signing Authority** and click **Create**. (It's also under **Admin Tools → Signing Authorities** at [learncard.app/admin-tools/signing-authorities](https://learncard.app/admin-tools/signing-authorities).)
 
-### **Recipe 1b: Using the CLI**
+The first authority you create becomes your primary. Done.
 
-The CLI provides a repeatable way to achieve the same result.
+{% endtab %}
+{% tab title="Script" %}
 
-{% hint style="info" %}
-To launch the CLI:
+Creating a hosted authority needs the LearnCard App API plugin in addition to the network plugin:
 
 ```bash
-npx @learncard/cli
-# Optionally specify a deterministic seed to instantiate the wallet with
-# npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2h
+npm install @learncard/init @learncard/lca-api-plugin
 ```
 
-{% endhint %}
+```javascript
+import { initLCALearnCard } from '@learncard/lca-api-plugin';
+
+const learnCard = await initLCALearnCard({ seed: process.env.SECURE_SEED });
+
+// 1. LearnCard generates and stores a key for you.
+const authority = await learnCard.invoke.createSigningAuthority('default-issuer');
+if (!authority) throw new Error('Could not create signing authority');
+
+// 2. Authorize it to sign for your profile.
+await learnCard.invoke.registerSigningAuthority(authority.endpoint, authority.name, authority.did);
+
+// 3. Make it the one send() uses.
+await learnCard.invoke.setPrimaryRegisteredSigningAuthority(authority.endpoint, authority.name);
+
+console.log('Primary signing authority:', authority.name);
+```
+
+`send()` always uses your **primary** authority. To switch, call `setPrimaryRegisteredSigningAuthority` with another registered one.
+
+{% endtab %}
+{% endtabs %}
+
+## Your own signing service
+
+If you run a [VC-API](https://w3c-ccg.github.io/vc-api/) compliant issuer and it must be the signer, register it instead of a hosted authority. It needs a public HTTPS `/issue` endpoint and a DID.
 
 ```javascript
-// This script assumes you have an authenticated `learnCard` client instance.
+import { initLearnCard } from '@learncard/init';
 
-// First, ensure you have a profile. This only needs to be done once.
-// await learnCard.invoke.createProfile({ profileId: 'my-org', isServiceProfile: true });
+const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
 
-// 1. Create a new signing authority managed by the LearnCard App.
-//    We generate and securely store the keys for you.
-const managedAuthority = await learnCard.invoke.createSigningAuthority('default-issuer');
-
-if (!managedAuthority) throw new Error('Could not create signing authority.');
-// returns -> { name: 'default-issuer', did: 'did:key:z...', endpoint: 'https://...' }
-
-// 2. Register this new authority with the LearnCard Network.
-//    This authorizes it to issue credentials on your profile's behalf.
 await learnCard.invoke.registerSigningAuthority(
-    managedAuthority.endpoint,
-    managedAuthority.name,
-    managedAuthority.did
+    'https://issuer.my-org.com/issue',
+    'my-issuer',
+    'did:web:issuer.my-org.com'
 );
-
-// 3. (Optional but Recommended) Set it as your primary authority.
-//    This allows you to omit signing details from your API calls.
 await learnCard.invoke.setPrimaryRegisteredSigningAuthority(
-    managedAuthority.endpoint,
-    managedAuthority.name
+    'https://issuer.my-org.com/issue',
+    'my-issuer'
 );
-
-console.log('Successfully created and registered primary signing authority!');
 ```
 
-**Result:** You have a default Signing Authority. When you call the [`/inbox/issue` endpoint](send-credentials.md) with an unsigned credential, the system uses this authority to sign it. You do not need to specify `signingAuthority` details in your API call `configuration` object.
-
-## 2. The Advanced Path: Using Your Own External Authority
-
-Delegate credential signing to your own, self-hosted VC-API compliant service.
-
-**Prerequisites:** You must have a running, publicly accessible VC-API compliant issuer endpoint.
-
-### **Recipe: Registering an External Authority**
-
-Register your external authority with the network to authorize it to act on your behalf.
-
-```javascript
-// This script assumes you have an authenticated `learnCard` client instance.
-
-// The details of YOUR external signing service.
-const myExternalAuthority = {
-    name: 'my-custom-signer',
-    endpoint: 'https://my-vc-api.my-org.com/issue',
-    did: 'did:web:my-org.com', // The DID of your external service
-};
-
-// 1. Register your external authority with the LearnCard Network.
-await learnCard.invoke.registerSigningAuthority(
-    myExternalAuthority.endpoint,
-    myExternalAuthority.name,
-    myExternalAuthority.did
-);
-
-console.log(`Successfully registered "${myExternalAuthority.name}".`);
-
-// You can also set this as your primary authority if desired.
-// await learnCard.invoke.setPrimaryRegisteredSigningAuthority(
-//   myExternalAuthority.endpoint,
-//   myExternalAuthority.name
-// );
-```
-
-**Result:** Your external service is an authorized signer for your profile. Specify it in your `/inbox/issue` API call.
-
-**Example `/inbox/issue` call using your external authority:**
-
-```javascript
-// Note the explicit `signingAuthority` object in the configuration.
-await learncardApiClient.post('/inbox/issue', {
-    recipient: {/* ... */},
-    credential: {/* ...unsigned credential data... */},
-    configuration: {
-        signingAuthority: {
-            name: 'my-custom-signer',
-            endpoint: 'https://my-vc-api.my-org.com/issue',
-        },
-    },
-});
-```
-
-## Generate a Signing Authority in LearnCardApp
-
-### Steps to Create a Signing Authority
-
-1. **Navigate to Your Profile:**
-    - Go to **Developer Tools** > **Signing Authority**.
-2. **Create:**
-    - **Click**: **Create Signing Authority**
-    - **Provide the Following Information:**
-        - **Name** (required)
-        - **Endpoint** (optional)
-        - DID (Endpoint required)
-    - **Click**: Create
-3. Already Signed In? Deep link below 👇
-
-- [LearnCardApp Signing Authority DevTools](https://learncard.app/passport?showSigningAuthorityDevTools=true)
-
-{% embed url="https://www.loom.com/share/080838131d82428289073699d19a2aa8" %}
+`send()` will now call your endpoint to sign. If you register several authorities and need to choose per issuance, use the lower-level [Universal Inbox API](../sdks/learncard-network/universal-inbox-api.md) and pass `configuration.signingAuthority: { name, endpoint }`.
 
 ## What you should see
 
-When you successfully create and register a signing authority, the CLI or API returns the authority details:
+After setup, `send()` with a template returns normally — no signing details in the call:
 
-```json
-{
-    "name": "default-issuer",
-    "did": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
-    "endpoint": "https://network.learncard.com/api/signing-authority/..."
-}
+```javascript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'you@example.com',
+    templateUri: 'lc:network:network.learncard.com/trpc:boost:…',
+});
+console.log(result.inbox?.status); // 'PENDING' or 'ISSUED'
 ```
+
+In the Developer Portal, **Signing Authority** shows the authority name with a **Primary** badge.
 
 ## Troubleshooting
 
-| If…                                  | Then                                                                                         |
-| :----------------------------------- | :------------------------------------------------------------------------------------------- |
-| `Could not create signing authority` | Ensure your `learnCard` instance is initialized with a valid seed and network access.        |
-| `Profile not found`                  | You must create a profile (`createServiceProfile`) before registering a signing authority.   |
-| `Unauthorized`                       | Check that your API token or seed has the correct permissions to manage signing authorities. |
+| If…                                                                                       | Then                                                                                                                                           |
+| :---------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
+| `You must register a signing authority before using send without a pre-signed credential` | You're sending a template without a primary authority. Finish [LearnCard signs for you](#learncard-signs-for-you), or pass `signedCredential`. |
+| `learnCard.invoke.createSigningAuthority is not a function`                               | You used `initLearnCard`. Hosted authorities need `initLCALearnCard` from `@learncard/lca-api-plugin`.                                         |
+| `Profile not found`                                                                       | Create a profile first (`createServiceProfile`) — the Quickstart's `setup.mjs` does this.                                                      |
+| It works on staging but not production                                                    | Authorities are per network. Register again on production — see [Go to Production](go-to-production.md#switch-from-staging-to-production).     |
 
 ## Next steps
 
-- Send your first credential → [Send & Issue Credentials](send-credentials.md)
-- Issue at scale → [Issue at scale with templates](send-credentials.md#issue-at-scale-with-templates)
-- Track claims → [Listen to Webhooks](../tutorials/listen-to-webhooks.md)
+- Send from a template → [Issue at scale with templates](send-credentials.md#issue-at-scale-with-templates)
+- Know when it's claimed → [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md)
+- Understand what a signing authority is under the hood → [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md)

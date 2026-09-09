@@ -12,8 +12,8 @@
 
 - [Send & Issue Credentials](how-to-guides/send-credentials.md)
     - [Revoke or Update a Credential](how-to-guides/revoke-or-update-a-credential.md)
-    - [Set Up a Signing Authority](how-to-guides/create-signing-authority.md)
-    - [Listen to Webhooks](tutorials/listen-to-webhooks.md)
+    - [Who Signs Your Credentials?](how-to-guides/create-signing-authority.md)
+    - [Know When a Credential Is Claimed](tutorials/listen-to-webhooks.md)
 - [Verify Credentials](tutorials/verify-credentials.md)
 - [Publish Your App in LearnCard](how-to-guides/publish-your-app.md)
     - [Build an Embedded App](how-to-guides/connect-systems/connect-an-embedded-app.md)

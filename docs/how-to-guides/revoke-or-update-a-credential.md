@@ -74,5 +74,5 @@ Verifiers that check `credentialStatus` see the revocation through the credentia
 
 ## Next steps
 
-- [Listen to Webhooks](../tutorials/listen-to-webhooks.md)
+- [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md)
 - [Credential Status and Bitstring Status Lists](../core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md)

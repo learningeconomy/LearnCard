@@ -40,7 +40,7 @@ LearnCard signs the credential; this option requires no installation or key mana
 1. Sign in at [learncard.app](https://learncard.app) and open **[learncard.app/app-store/developer](https://learncard.app/app-store/developer)**. Create an Integration if you don't have one.
 2. Open **Guides → Issue Credentials** and work down the steps:
     - **API Token** — create one and copy it. It's shown once.
-    - **Signing Authority** — create one hosted by LearnCard.
+    - **Signing Authority** — create one. This is the key LearnCard signs with for you ([who signs?](../how-to-guides/create-signing-authority.md)).
     - **Create Templates** — make a badge (any name). The **template URI** shown under the template selector — copy it exactly.
 3. Send it:
 
@@ -219,21 +219,21 @@ Every `send` saves the badge as a **template** (a Boost). To send the same badge
 
 ## If something goes wrong
 
-| You see                                                                                             | Why                                                                                | Fix                                                                                               |
-| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `Cannot use import statement outside a module`                                                      | File is named `.js`                                                                | Name it `send.mjs`                                                                                |
-| `Key must be a hexadecimal string!`                                                                 | `SECURE_SEED` isn't 64 hex characters                                              | Generate it with the command in step 1                                                            |
-| `A LearnCard has been initialized with a seed that is less than 32 bytes`                           | Seed is too short                                                                  | Same — generate a full 64-character seed                                                          |
-| `Profile already exists!`                                                                           | Someone else already took your `PROFILE_ID`                                        | Pick a more specific one                                                                          |
-| `Usage: node --env-file=.env send.mjs you@example.com`                                              | No recipient given                                                                 | Add the email address as the last argument                                                        |
-| `Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry` | You passed a phone number as the recipient                                         | Email works for everyone; phone needs [issuer verification](../how-to-guides/verify-my-issuer.md) |
-| `Failed to send email via Postmark: … marked as inactive`                                           | The address is a placeholder (`example.com`) or has bounced before                 | Use a real address you can open                                                                   |
-| `You must register a signing authority before using send without a pre-signed credential`           | You passed `template` or `templateUri` (server-signed) without a signing authority | Sign locally (`signedCredential`) or [set one up](../how-to-guides/create-signing-authority.md)   |
+| You see                                                                                             | Why                                                                                | Fix                                                                                                             |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `Cannot use import statement outside a module`                                                      | File is named `.js`                                                                | Name it `send.mjs`                                                                                              |
+| `Key must be a hexadecimal string!`                                                                 | `SECURE_SEED` isn't 64 hex characters                                              | Generate it with the command in step 1                                                                          |
+| `A LearnCard has been initialized with a seed that is less than 32 bytes`                           | Seed is too short                                                                  | Same — generate a full 64-character seed                                                                        |
+| `Profile already exists!`                                                                           | Someone else already took your `PROFILE_ID`                                        | Pick a more specific one                                                                                        |
+| `Usage: node --env-file=.env send.mjs you@example.com`                                              | No recipient given                                                                 | Add the email address as the last argument                                                                      |
+| `Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry` | You passed a phone number as the recipient                                         | Email works for everyone; phone needs [issuer verification](../how-to-guides/verify-my-issuer.md)               |
+| `Failed to send email via Postmark: … marked as inactive`                                           | The address is a placeholder (`example.com`) or has bounced before                 | Use a real address you can open                                                                                 |
+| `You must register a signing authority before using send without a pre-signed credential`           | You passed `template` or `templateUri` (server-signed) without a signing authority | Sign locally (`signedCredential`) or [pick who signs](../how-to-guides/create-signing-authority.md#pick-a-path) |
 
 ## Next steps
 
 - [Sign locally, send over HTTP](../how-to-guides/send-credentials.md#sign-locally-send-over-http) — sign credentials yourself and deliver them from any language via the REST API.
 - [The fields that make a credential yours](../core-concepts/credentials-and-data/building-verifiable-credentials.md#fields-that-make-a-credential-yours) — add an image, criteria, and skills.
 - [Issue at scale with templates](../how-to-guides/send-credentials.md#issue-at-scale-with-templates) — issue the same badge to many people.
-- [Listen to Webhooks](../tutorials/listen-to-webhooks.md) — detect when credentials are claimed.
+- [Know when a credential is claimed](../tutorials/listen-to-webhooks.md) — get a webhook when it's delivered and when it's claimed.
 - [What Do You Want to Build?](../introduction/what-do-you-want-to-build.md) — choose an integration path.

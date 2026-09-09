@@ -22,7 +22,7 @@ The `send` method detects your recipient type:
 ### Prerequisites
 
 - LearnCard SDK initialized with `network: true`
-- A [signing authority](create-signing-authority.md) configured (for server-side signing) **OR** local key material available (for client-side signing) **OR** a pre-signed credential (no signing authority needed)
+- A decision on [who signs](create-signing-authority.md): you (a seed, pass `signedCredential`) **or** LearnCard (a hosted signing authority, pass `templateUri`/`template`)
 
 {% hint style="info" %}
 **Issuer Profiles**: Before sending, you need a profile on the network. Use `createProfile` for a person, or `createServiceProfile` for an organization, app, or bot issuer. See [Network Profiles](../core-concepts/identities-and-keys/network-profiles.md).
@@ -580,6 +580,6 @@ For lower-level control over the inbox issuance process (custom delivery suppres
 
 - Design a custom credential → [Building Verifiable Credentials](../core-concepts/credentials-and-data/building-verifiable-credentials.md)
 - Issue at scale with credential templates → [Issue at scale with templates](#issue-at-scale-with-templates)
-- Know when it's claimed → [Listen to Webhooks](../tutorials/listen-to-webhooks.md)
+- Know when it's claimed → [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md)
 - Verify credentials → [Verify Credentials](../tutorials/verify-credentials.md)
 - Guardian approval for minors → [Guardian-Gated Credentials](implement-flows/guardian-gated-credentials.md)

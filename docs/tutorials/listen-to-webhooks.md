@@ -1,10 +1,10 @@
 ---
-description: 'Tutorial: Get notified the moment a credential is delivered and claimed'
+description: 'Get a webhook the moment a credential you sent is delivered, and again when it is claimed.'
 ---
 
-# Listen to Webhooks
+# Know When a Credential Is Claimed
 
-Sending a credential doesn't tell you what happened to it. Webhooks push a notification to your own server the moment it's delivered, and again the moment it's claimed, so you don't have to poll.
+Sending a credential doesn't tell you what happened to it. Pass a webhook URL with the send and LearnCard `POST`s to your server the moment it's delivered, and again the moment it's claimed — no polling.
 
 **~15 minutes · Needs:** Node.js 20+, a public URL (e.g., ngrok)
 
@@ -15,7 +15,7 @@ Sending a credential doesn't tell you what happened to it. Webhooks push a notif
 
 ---
 
-## Know When Your Credential Was Claimed
+## Send with a webhook URL
 
 Pass `options.webhookUrl` when you send a credential to an email or phone number. LearnCard `POST`s a notification to that URL twice: once when the credential is delivered (`ISSUANCE_DELIVERED`), and again when the recipient claims it (`ISSUANCE_CLAIMED`).
 
@@ -281,19 +281,9 @@ There's no server-side de-duplication, so always key idempotency on `${type}:${i
 
 ---
 
-## Part 2: Profile Notifications
+## Other events: profile webhooks
 
-Everything above is **per-issuance** — scoped to one `send()` call. For everything else that happens to your profile — connection requests, someone accepting a boost, consent-flow activity — set a standing webhook on the profile itself:
-
-```javascript
-await learnCard.invoke.updateProfile({
-    notificationsWebhook: 'https://your-server.example.com/webhooks/learncard',
-});
-```
-
-This delivers every notification type _except_ `ISSUANCE_DELIVERED`, `ISSUANCE_CLAIMED`, and `ISSUANCE_ERROR` — those three only ever go to the per-issuance `options.webhookUrl` from Part 1, even if you also have `notificationsWebhook` set. Types you'll see here include `CONNECTION_REQUEST`, `CONNECTION_ACCEPTED`, `CREDENTIAL_RECEIVED`, `BOOST_RECEIVED`, `BOOST_ACCEPTED`, `PRESENTATION_RECEIVED`, `CONSENT_FLOW_TRANSACTION`, `GUARDIAN_APPROVAL_PENDING`, `GUARDIAN_APPROVED`, `GUARDIAN_REJECTED`, `APP_NOTIFICATION`, `CREDENTIAL_REVOKED`, and more.
-
-Same authentication, same retry behavior as above. Full payload shape for every type: [Notifications & Webhooks](../sdks/learncard-network/notifications.md).
+Everything above is scoped to one `send()`. For events about your **profile** — connection requests, boosts accepted, consent-flow activity, guardian approvals — set a standing webhook with `updateProfile({ notificationsWebhook })`. It uses the same authentication and retries, but it **never** receives `ISSUANCE_DELIVERED`, `ISSUANCE_CLAIMED`, or `ISSUANCE_ERROR`; those only go to the per-send `options.webhookUrl`. Setup and every payload shape: [Notifications & Webhooks](../sdks/learncard-network/notifications.md#configuration).
 
 ---
 
@@ -331,5 +321,5 @@ ISSUANCE_CLAIMED { issuanceId: '2f1a9c3e-6b8d-4e2f-9a71-58c6d1b4a9f0', status: '
 ## Next Steps
 
 - [Send & Issue Credentials](../how-to-guides/send-credentials.md) — the full `send()` reference, including `suppressDelivery` and `guardianEmail`.
-- [Notifications & Webhooks](../sdks/learncard-network/notifications.md) — payload reference for every profile-level notification type.
+- [Notifications & Webhooks](../sdks/learncard-network/notifications.md) — profile-level webhooks and the payload for every notification type.
 - [Go to Production](../how-to-guides/go-to-production.md) — checklist before you rely on this for real traffic.

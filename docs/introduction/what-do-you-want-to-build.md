@@ -49,7 +49,7 @@ Examples include parent-approved school apps and scouting organizations issuing 
 
 ## 🔬 Keys, tokens & infrastructure
 
-A server integration uses either a seed (you sign; the SDK authenticates with your DID) or an API token (LearnCard signs via a hosted signing authority; create the token once in the Developer Portal or with `addAuthGrant`). Verification-only code needs neither.
+First decide [who signs](../how-to-guides/create-signing-authority.md): **you** (keep a seed on your server; the SDK authenticates with your DID) or **LearnCard** (a hosted signing authority plus an API token from the Developer Portal or `addAuthGrant`). Verification-only code needs neither.
 
 - Start here: [How should I manage keys?](../how-to-guides/deploy-infrastructure/choose-key-management.md)
 - [Build a plugin](../how-to-guides/deploy-infrastructure/the-simplest-plugin.md)
