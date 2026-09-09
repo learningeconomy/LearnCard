@@ -9,7 +9,7 @@ Add a "Claim Credential" button to any webpage. When a user clicks it, a modal w
 **~15 minutes · Needs:** a publishable key from the Developer Portal and a credential template.
 
 {% hint style="info" %}
-This is for **external websites** that want to award credentials to visitors. If you're building an app that runs _inside_ the LearnCard App Store, see [Connect an Embedded App](connect-an-embedded-app.md) instead.
+This is for **external websites** that want to award credentials to visitors. If you're building an app that runs _inside_ the LearnCard App Store, see [Build an App Inside LearnCard](../publish-your-app.md) instead.
 {% endhint %}
 
 ## Prerequisites
@@ -215,4 +215,4 @@ In local dev, check your brain-service logs — OTP codes are printed there when
 
 - [Embed SDK Reference](../../sdks/embed-sdk.md)
 - [Embed Code Tab (Dashboard)](../../how-to-guides/connect-systems/connect-a-website.md)
-- [Connect an Embedded App](connect-an-embedded-app.md) — for apps inside LearnCard
+- [Build an App Inside LearnCard](../publish-your-app.md) — for apps inside LearnCard

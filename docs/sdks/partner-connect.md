@@ -10,13 +10,13 @@ The Partner Connect SDK transforms complex `postMessage` communication into clea
 
 ## Features
 
--   **🔒 Secure**: Multi-layered origin validation prevents unauthorized access
--   **🎯 Type-safe**: Full TypeScript support with comprehensive type definitions
--   **⚡ Promise-based**: Modern async/await API eliminates callback complexity
--   **🧹 Clean**: Abstracts away all postMessage implementation details
--   **📦 Lightweight**: Zero runtime dependencies, ~8KB minified
--   **🛡️ Robust**: Built-in timeout handling and structured error management
--   **🧪 Standalone-ready**: Runs and demos on its own via automatic mock mode — no host required
+- **🔒 Secure**: Multi-layered origin validation prevents unauthorized access
+- **🎯 Type-safe**: Full TypeScript support with comprehensive type definitions
+- **⚡ Promise-based**: Modern async/await API eliminates callback complexity
+- **🧹 Clean**: Abstracts away all postMessage implementation details
+- **📦 Lightweight**: Zero runtime dependencies, ~8KB minified
+- **🛡️ Robust**: Built-in timeout handling and structured error management
+- **🧪 Standalone-ready**: Runs and demos on its own via automatic mock mode — no host required
 
 ## Installation
 
@@ -78,7 +78,7 @@ Creates a new Partner Connect SDK instance.
 
 **Parameters:**
 
--   `options` (`PartnerConnectOptions`, optional): Configuration options. Defaults to `{ hostOrigin: 'https://learncard.app' }`.
+- `options` (`PartnerConnectOptions`, optional): Configuration options. Defaults to `{ hostOrigin: 'https://learncard.app' }`.
 
 **Returns:** `PartnerConnect` instance
 
@@ -177,8 +177,23 @@ console.log('JWT Token:', identity.token);
 // Send token to your backend for validation
 await fetch('/api/auth', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${identity.token}` },
+    headers: { Authorization: `Bearer ${identity.token}` },
 });
+```
+
+**Verifying the token:**
+
+The `token` is a DID-Auth Verifiable Presentation JWT signed by the user's key and bound to your app's origin. Never trust `user.did` from the browser without verifying `token` on your backend:
+
+```typescript
+import { initLearnCard } from '@learncard/init';
+
+const lc = await initLearnCard();
+const result = await lc.invoke.verifyPresentation(token, { proofFormat: 'jwt' });
+if (result.errors.length > 0) throw new Error('Invalid token');
+
+const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url'));
+if (payload.iss !== user.did) throw new Error('Token issuer does not match user DID');
 ```
 
 **Response Type:**
@@ -203,7 +218,7 @@ Issue a credential using a pre-configured boost template attached to your App St
 
 **Parameters:**
 
--   `input` (`TemplateCredentialInput`): Template alias and optional data
+- `input` (`TemplateCredentialInput`): Template alias and optional data
 
 **Returns:** `Promise<TemplateCredentialResponse>`
 
@@ -224,7 +239,7 @@ Send a pre-signed verifiable credential directly. Your backend must issue and si
 
 **Parameters:**
 
--   `input` (`unknown`): A signed verifiable credential object
+- `input` (`unknown`): A signed verifiable credential object
 
 **Returns:** `Promise<SendCredentialResponse>`
 
@@ -238,7 +253,7 @@ console.log('Credential ID:', response.credentialId);
 ```
 
 {% hint style="info" %}
-For App Store embedded apps, template-based issuance is strongly recommended. See [Connect an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md) for a complete walkthrough.
+For App Store embedded apps, template-based issuance is strongly recommended. See [Build an App Inside LearnCard](../how-to-guides/publish-your-app.md) for a complete walkthrough.
 {% endhint %}
 
 #### `launchFeature(featurePath, initialPrompt?)`
@@ -251,8 +266,8 @@ Navigate the **LearnCard host wallet** to one of its built-in features. Use this
 
 **Parameters:**
 
--   `featurePath` (`string`): Wallet route to navigate to (e.g., `/ai/topics`, `/wallet/share`, `/profile`)
--   `initialPrompt` (`string`, optional): Initial prompt or data to pass to the feature
+- `featurePath` (`string`): Wallet route to navigate to (e.g., `/ai/topics`, `/wallet/share`, `/profile`)
+- `initialPrompt` (`string`, optional): Initial prompt or data to pass to the feature
 
 **Returns:** `Promise<void>`
 
@@ -305,7 +320,7 @@ Request credentials from the user's wallet using query criteria.
 
 **Parameters:**
 
--   `verifiablePresentationRequest` (`VerifiablePresentationRequest`): Query specification
+- `verifiablePresentationRequest` (`VerifiablePresentationRequest`): Query specification
 
 **Returns:** `Promise<CredentialSearchResponse>`
 
@@ -339,7 +354,7 @@ Request a specific credential by ID.
 
 **Parameters:**
 
--   `credentialId` (`string`): The ID of the credential to request
+- `credentialId` (`string`): The ID of the credential to request
 
 **Returns:** `Promise<CredentialSpecificResponse>`
 
@@ -362,8 +377,8 @@ Request user consent for data access permissions.
 
 **Parameters:**
 
--   `contractUri` (`string`, optional): URI of the consent contract. Can be omitted for App Store apps with configured contracts.
--   `options` (`RequestConsentOptions`, optional): Additional options for the consent flow
+- `contractUri` (`string`, optional): URI of the consent contract. Can be omitted for App Store apps with configured contracts.
+- `options` (`RequestConsentOptions`, optional): Additional options for the consent flow
 
 | Option     | Type      | Default | Description                                                                 |
 | ---------- | --------- | ------- | --------------------------------------------------------------------------- |
@@ -403,8 +418,8 @@ Initiate a template-based credential issuance flow.
 
 **Parameters:**
 
--   `templateId` (`string`): ID of the template/boost to issue
--   `draftRecipients` (`string[]`, optional): Array of recipient DIDs
+- `templateId` (`string`): ID of the template/boost to issue
+- `draftRecipients` (`string[]`, optional): Array of recipient DIDs
 
 **Returns:** `Promise<TemplateIssueResponse>`
 
@@ -431,14 +446,14 @@ This method retrieves the user's credentials and personal data (with their conse
 
 **Use Cases:**
 
--   AI tutors that adapt to learner's existing skills and credentials
--   Personalized learning pathway recommendations
--   Smart content that adjusts based on learner history
--   Intelligent assessment systems
+- AI tutors that adapt to learner's existing skills and credentials
+- Personalized learning pathway recommendations
+- Smart content that adjusts based on learner history
+- Intelligent assessment systems
 
 **Parameters:**
 
--   `options` (`RequestLearnerContextOptions`, optional): Configuration for what data to include and how to format it
+- `options` (`RequestLearnerContextOptions`, optional): Configuration for what data to include and how to format it
 
 | Option                | Type                       | Default     | Description                                          |
 | --------------------- | -------------------------- | ----------- | ---------------------------------------------------- |
@@ -565,14 +580,14 @@ Send an AI Session credential to record a learning interaction. AI Sessions are 
 
 **Use Cases:**
 
--   **AI Tutoring Apps** - Record what was learned during a tutoring session
--   **Learning Assistants** - Track learning progress and outcomes
--   **Skill Assessment** - Document demonstrated competencies
--   **Learning Pathways** - Build a history of learning interactions
+- **AI Tutoring Apps** - Record what was learned during a tutoring session
+- **Learning Assistants** - Track learning progress and outcomes
+- **Skill Assessment** - Document demonstrated competencies
+- **Learning Pathways** - Build a history of learning interactions
 
 **Parameters:**
 
--   `input` (`SendAiSessionCredentialInput`): Session details
+- `input` (`SendAiSessionCredentialInput`): Session details
 
 | Property       | Type                      | Required | Description                            |
 | -------------- | ------------------------- | -------- | -------------------------------------- |
@@ -744,9 +759,7 @@ The AI Topic is automatically created on the first session and reused for all su
 try {
     const session = await learnCard.sendAiSessionCredential({
         sessionTitle: 'Learning Session',
-        summaryData: {
-            /* ... */
-        },
+        summaryData: {/* ... */},
     });
 } catch (error) {
     switch (error.code) {
@@ -827,10 +840,10 @@ Lightweight per-user-app counters for tracking app-defined integer state (e.g. "
 
 **Limits (load-bearing — design around these):**
 
--   **Maximum 50 distinct keys** per `(user, app)` pair
--   **Maximum 100 writes per minute** per `(user, app)` pair
--   **Integer values only** (use `Math.floor` or pre-aggregate if you need fractional state)
--   **Key format:** `^[a-zA-Z0-9_-]+$`, 1–64 characters
+- **Maximum 50 distinct keys** per `(user, app)` pair
+- **Maximum 100 writes per minute** per `(user, app)` pair
+- **Integer values only** (use `Math.floor` or pre-aggregate if you need fractional state)
+- **Key format:** `^[a-zA-Z0-9_-]+$`, 1–64 characters
 
 If you need to track more than 50 things, consolidate (e.g. one `lessons_completed` counter rather than one counter per lesson).
 
@@ -894,11 +907,11 @@ The SDK only does real work when it's embedded inside LearnCard — that's what 
 
 Mock mode fixes this automatically in local development. Whenever no LearnCard host is present and your app runs on a local dev host (`localhost`, `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`), the SDK stands in for LearnCard so your app stays fully usable:
 
--   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here"_, `incrementCounter` → _"Counter **coins** → **10**"_, `launchFeature` → _"Would open **/wallet**"_. Strong, visible feedback for every call.
--   `requestConsent(...)` grants automatically and shows a "mock consent" toast; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
--   Identical or polled calls coalesce into one toast with a ×N counter, so nothing spams the screen.
--   `requestIdentity`, notifications, learner context, and sync status return sensible placeholder data.
--   Everything is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
+- **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here"_, `incrementCounter` → _"Counter **coins** → **10**"_, `launchFeature` → _"Would open **/wallet**"_. Strong, visible feedback for every call.
+- `requestConsent(...)` grants automatically and shows a "mock consent" toast; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
+- Identical or polled calls coalesce into one toast with a ×N counter, so nothing spams the screen.
+- `requestIdentity`, notifications, learner context, and sync status return sensible placeholder data.
+- Everything is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
 
 No flags, no separate build in local dev. Your app is demo-able locally and behaves exactly the same against the real host once embedded.
 
@@ -961,9 +974,9 @@ The Partner Connect SDK implements comprehensive security measures:
 
 **Strict Enforcement:**
 
--   Incoming messages must exactly match the configured host origin
--   No wildcard (`*`) origins are ever used
--   Query parameter overrides are validated against whitelist
+- Incoming messages must exactly match the configured host origin
+- No wildcard (`*`) origins are ever used
+- Query parameter overrides are validated against whitelist
 
 **Configuration Hierarchy:**
 
@@ -992,10 +1005,10 @@ const learnCard = createPartnerConnect({
 
 ### Message Security
 
--   **Protocol Verification**: Messages must match expected protocol version
--   **Request ID Tracking**: Only tracked requests are processed
--   **Timeout Protection**: Requests automatically timeout to prevent hanging
--   **Cleanup on Destroy**: Pending requests are properly rejected
+- **Protocol Verification**: Messages must match expected protocol version
+- **Request ID Tracking**: Only tracked requests are processed
+- **Timeout Protection**: Requests automatically timeout to prevent hanging
+- **Cleanup on Destroy**: Pending requests are properly rejected
 
 ## Error Handling
 
@@ -1122,17 +1135,17 @@ const learnCard = createPartnerConnect({
 
 ## Browser Support
 
--   **Chrome/Edge**: 90+
--   **Firefox**: 88+
--   **Safari**: 14+
--   **Mobile**: iOS Safari 14+, Android Chrome 90+
+- **Chrome/Edge**: 90+
+- **Firefox**: 88+
+- **Safari**: 14+
+- **Mobile**: iOS Safari 14+, Android Chrome 90+
 
 **Required APIs:**
 
--   `postMessage`
--   `Promise`
--   `URLSearchParams`
--   `addEventListener`
+- `postMessage`
+- `Promise`
+- `URLSearchParams`
+- `addEventListener`
 
 ## Migration Guide
 
@@ -1202,11 +1215,11 @@ const identity = await learnCard.requestIdentity();
 
 **Benefits:**
 
--   **85% code reduction** in typical integrations
--   **Type safety** with full TypeScript support
--   **Better error handling** with structured error codes
--   **Security improvements** with origin validation
--   **No manual cleanup** required
+- **85% code reduction** in typical integrations
+- **Type safety** with full TypeScript support
+- **Better error handling** with structured error codes
+- **Security improvements** with origin validation
+- **No manual cleanup** required
 
 ## Examples
 
@@ -1484,8 +1497,8 @@ interface LearnCardError {
 
 ## Related Documentation
 
--   [Connect an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md) - Step-by-step guide for App Store credential issuance
--   [LearnCard Core SDK](/sdks/learncard-core/) - Backend credential operations
--   [LearnCard Network](/sdks/learncard-network/) - Network integration
--   [Creating Connected Websites](/how-to-guides/connect-systems/connect-a-website) - Integration guide
--   [App Store Development](/apps/learn-card-app/) - LearnCard app ecosystem
+- [Build an App Inside LearnCard](../how-to-guides/publish-your-app.md) - Step-by-step guide for App Store credential issuance
+- [LearnCard Core SDK](/sdks/learncard-core/) - Backend credential operations
+- [LearnCard Network](/sdks/learncard-network/) - Network integration
+- [Creating Connected Websites](/how-to-guides/connect-systems/connect-a-website) - Integration guide
+- [App Store Development](/apps/learn-card-app/) - LearnCard app ecosystem

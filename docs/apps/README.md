@@ -24,4 +24,4 @@ You don't need to build an app to use LearnCard. Most integrations issue credent
 
 - [What Do You Want to Build?](../introduction/what-do-you-want-to-build.md) — pick a path
 - [Quickstart: Send a Credential](../quick-start/your-first-integration.md) — a credential in someone's wallet in ~15 lines
-- [Publish Your App in LearnCard](../how-to-guides/publish-your-app.md) — ship inside the wallet
+- [Build an App Inside LearnCard](../how-to-guides/publish-your-app.md) — ship inside the wallet

@@ -240,6 +240,17 @@ const response = await fetch(`${endpoint}/statements?${params}`, {
 });
 ```
 
+### Common causes of 401
+
+{% hint style="warning" %}
+**`requestIdentity().token` from the Partner Connect SDK is NOT an `X-VP` value.** The identity token proves who the user is _to your app_. The `X-VP` header is a VP JWT signed by the DID that appears as the xAPI statement's actor. LearnCloud verifies the VP's signature and requires the VP holder's DID to match the statement's actor DID — a mismatch is the most common cause of `401 Unauthorized`.
+{% endhint %}
+
+1. **Actor/holder mismatch** — the DID in the statement's `actor` doesn't match the VP holder's DID
+2. **Wrong token in `X-VP`** — an identity JWT or API token instead of a VP JWT
+3. **Expired or malformed VP JWT** — regenerate the presentation
+4. **Delegate credential without the right scope** — delegated read/write requires a valid delegate credential inside the VP
+
 ### Important Security Notes
 
 1. Users can only read statements about themselves

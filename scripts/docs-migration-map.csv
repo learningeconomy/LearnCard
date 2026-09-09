@@ -56,7 +56,7 @@ how-to-guides/connect-systems,build/connect-systems,moved,redirected
 how-to-guides/connect-systems/connect-a-game,build/connect-systems/connect-a-website,merge,redirected
 how-to-guides/connect-systems/connect-a-website,build/connect-systems/connect-a-website,moved,redirected
 how-to-guides/connect-systems/connect-ai-agent,products/learn-card-app/connect-ai-agent,moved,redirected
-how-to-guides/connect-systems/connect-an-embedded-app,build/publish-your-app/connect-an-embedded-app,moved,redirected
+how-to-guides/connect-systems/connect-an-embedded-app,build/publish-your-app,merge,redirected
 how-to-guides/connect-systems/embed-a-claim-button,build/connect-systems/embed-a-claim-button,moved,redirected
 how-to-guides/create-signing-authority,build/send-credentials/create-signing-authority,moved,redirected
 how-to-guides/deploy-infrastructure,build/deploy-infrastructure,moved,redirected

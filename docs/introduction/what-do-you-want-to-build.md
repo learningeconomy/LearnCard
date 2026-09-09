@@ -24,8 +24,7 @@ Put your product inside the LearnCard app store, where users can install and lau
 
 Examples include AI tutors using consented learner history, games issuing portable badges, and career tools building skills profiles.
 
-- Start here: [Publish Your App in LearnCard](../how-to-guides/publish-your-app.md) — local mock mode to published listing
-- Build it: [Build an Embedded App](../how-to-guides/connect-systems/connect-an-embedded-app.md)
+- Start here: [Build an App Inside LearnCard](../how-to-guides/publish-your-app.md) — local mock mode to published listing
 - Full API surface: [Partner Connect SDK](../sdks/partner-connect.md)
 
 ## 🌐 Add LearnCard to your site

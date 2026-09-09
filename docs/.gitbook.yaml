@@ -95,7 +95,7 @@ redirects:
     how-to-guides/connect-systems/connect-a-game: how-to-guides/connect-systems/connect-a-website.md
     how-to-guides/connect-systems/connect-a-website: how-to-guides/connect-systems/connect-a-website.md
     how-to-guides/connect-systems/connect-ai-agent: how-to-guides/connect-systems/connect-ai-agent.md
-    how-to-guides/connect-systems/connect-an-embedded-app: how-to-guides/connect-systems/connect-an-embedded-app.md
+    how-to-guides/connect-systems/connect-an-embedded-app: how-to-guides/publish-your-app.md
     how-to-guides/connect-systems/embed-a-claim-button: how-to-guides/connect-systems/embed-a-claim-button.md
     how-to-guides/create-signing-authority: how-to-guides/create-signing-authority.md
     how-to-guides/deploy-infrastructure: how-to-guides/deploy-infrastructure/README.md

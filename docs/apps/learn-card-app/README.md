@@ -115,6 +115,6 @@ For how this works under the hood, see [Key Management (SSS)](../../core-concept
 
 - [Export & Import Your Data](../../how-to-guides/export-and-import-your-data.md) — Take your data with you
 - [Send & Issue Credentials](../../how-to-guides/send-credentials.md) — For organizations issuing into the app
-- [Publish Your App in LearnCard](../../how-to-guides/publish-your-app.md) — Build an experience inside the app
+- [Build an App Inside LearnCard](../../how-to-guides/publish-your-app.md) — Build an experience inside the app
 - [Verify Credentials](../../tutorials/verify-credentials.md) — For verifiers
 - [ConsentFlow Overview](../../core-concepts/consent-and-permissions/consentflow-overview.md) — How users control what they share
