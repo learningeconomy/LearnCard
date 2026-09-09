@@ -1618,6 +1618,7 @@
         "@learncard/email-templates": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/init": "workspace:*",
+        "@learncard/sss-key-manager": "workspace:*",
         "@learncard/types": "workspace:*",
         "@sentry/serverless": "^7.61.0",
         "@trpc/server": "11.8.0",

@@ -29,7 +29,7 @@ export const EncryptedShareValidator = z.object({
 });
 
 export const RecoveryMethodValidator = z.object({
-    type: z.enum(['passkey', 'backup', 'phrase', 'email']),
+    type: z.enum(['passkey', 'backup', 'phrase', 'email', 'escrow']),
     createdAt: z.date(),
     confirmationStatus: z.enum(['pending', 'confirmed']).optional(),
     confirmedAt: z.date().optional(),
@@ -48,7 +48,36 @@ export const PreviousAuthShareValidator = z.object({
     createdAt: z.date(),
 });
 
+export const EscrowEnvelopeValidator = z
+    .object({
+        version: z.literal(1),
+        algorithm: z.literal('P-256-HKDF-SHA256-AES-256-GCM'),
+        keyId: z.string().regex(/^[A-Za-z0-9._-]{1,128}$/),
+        ephemeralPublicKey: z.string().min(1).max(256),
+        salt: z.string().min(1).max(128),
+        iv: z.string().min(1).max(64),
+        ciphertext: z.string().min(1).max(16_384),
+    })
+    .strict();
+
+export const EscrowBlobValidator = z.object({
+    envelope: EscrowEnvelopeValidator,
+    enclaveKeyId: z.string().regex(/^[A-Za-z0-9._-]{1,128}$/),
+    enclaveMode: z.enum(['software', 'nitro']),
+    measurements: z.object({
+        imageSha384: z.string().optional(),
+        pcr0: z.string().optional(),
+        pcr1: z.string().optional(),
+        pcr2: z.string().optional(),
+    }),
+    shareVersion: z.number().int().positive(),
+    createdAt: z.date(),
+});
+export type EscrowBlob = z.infer<typeof EscrowBlobValidator>;
+
 const MongoUserKeyBaseValidator = z.object({
+    escrowBlob: EscrowBlobValidator.optional(),
+    escrowOptedOutAt: z.date().optional(),
     _id: z.string().optional(),
 
     contactMethod: ContactMethodValidator,
@@ -393,6 +422,10 @@ export const upsertUserKey = async (
             );
 
             (updateOps.$set as Record<string, unknown>).recoveryMethods = prunedMethods;
+            if (!prunedMethods.some(method => method.type === 'escrow')) {
+                delete (updateOps.$set as Record<string, unknown>).escrowBlob;
+                updateOps.$unset = { escrowBlob: '' };
+            }
         } else if (data.authShare) {
             // First auth share — no history to push
             updateOps.$inc = { shareVersion: 1 };
@@ -484,12 +517,16 @@ export const upsertUserKeyByAuthProvider = async (
 
             const newCurrentVersion = (existing.shareVersion ?? 1) + 1;
             const survivingVersions = trimmedHistory.map(previous => previous.shareVersion);
-            (updateOps.$set as Record<string, unknown>).recoveryMethods =
-                pruneOrphanedRecoveryMethods(
-                    existing.recoveryMethods ?? [],
-                    newCurrentVersion,
-                    survivingVersions
-                );
+            const prunedMethods = pruneOrphanedRecoveryMethods(
+                existing.recoveryMethods ?? [],
+                newCurrentVersion,
+                survivingVersions
+            );
+            (updateOps.$set as Record<string, unknown>).recoveryMethods = prunedMethods;
+            if (!prunedMethods.some(method => method.type === 'escrow')) {
+                delete (updateOps.$set as Record<string, unknown>).escrowBlob;
+                updateOps.$unset = { escrowBlob: '' };
+            }
         } else if (data.authShare) {
             updateOps.$inc = { shareVersion: 1 };
             (updateOps.$set as Record<string, unknown>).shareUpdatedAt = now;
@@ -570,6 +607,85 @@ const getAuthProviderFilter = (authProvider: AuthProviderMapping): Filter<MongoU
     authProviders: { $elemMatch: authProvider },
 });
 
+/** Persist verified escrow and its confirmed descriptor atomically. */
+export const setEscrowBlobByAuthProvider = async (
+    authProvider: AuthProviderMapping,
+    blob: EscrowBlob,
+    expectedShareVersion: number
+): Promise<MongoUserKeyType | null> => {
+    const now = new Date();
+    const parsed = EscrowBlobValidator.safeParse(blob);
+    if (!parsed.success) throw new Error('Invalid escrow payload');
+    const validated = parsed.data;
+    if (
+        validated.shareVersion !== expectedShareVersion ||
+        validated.enclaveKeyId !== validated.envelope.keyId
+    ) {
+        return null;
+    }
+    return getUserKeysCollection().findOneAndUpdate(
+        {
+            ...getAuthProviderFilter(authProvider),
+            shareVersion: expectedShareVersion,
+            escrowOptedOutAt: { $exists: false },
+        },
+        [
+            {
+                $set: {
+                    escrowBlob: { $literal: validated },
+                    updatedAt: now,
+                    recoveryMethods: {
+                        $concatArrays: [
+                            {
+                                $filter: {
+                                    input: { $ifNull: ['$recoveryMethods', []] },
+                                    as: 'm',
+                                    cond: { $ne: ['$$m.type', 'escrow'] },
+                                },
+                            },
+                            [
+                                {
+                                    type: 'escrow',
+                                    createdAt: now,
+                                    confirmationStatus: 'confirmed',
+                                    confirmedAt: now,
+                                    shareVersion: expectedShareVersion,
+                                },
+                            ],
+                        ],
+                    },
+                },
+            },
+        ],
+        { returnDocument: 'after' }
+    );
+};
+
+export const clearEscrowByAuthProvider = async (
+    authProvider: AuthProviderMapping,
+    { optOut }: { optOut: boolean }
+): Promise<MongoUserKeyType | null> => {
+    const now = new Date();
+    return getUserKeysCollection().findOneAndUpdate(
+        getAuthProviderFilter(authProvider),
+        {
+            $unset: { escrowBlob: '' },
+            $pull: { recoveryMethods: { type: 'escrow' } },
+            $set: { updatedAt: now, ...(optOut ? { escrowOptedOutAt: now } : {}) },
+        },
+        { returnDocument: 'after' }
+    );
+};
+
+export const setEscrowOptInByAuthProvider = async (
+    authProvider: AuthProviderMapping
+): Promise<MongoUserKeyType | null> =>
+    getUserKeysCollection().findOneAndUpdate(
+        getAuthProviderFilter(authProvider),
+        { $unset: { escrowOptedOutAt: '' }, $set: { updatedAt: new Date() } },
+        { returnDocument: 'after' }
+    );
+
 const addRecoveryMethodWithFilter = async (
     filter: Filter<MongoUserKeyType>,
     recoveryMethod: RecoveryMethod
@@ -634,6 +750,7 @@ export const removeRecoveryMethodFromUserKeyByAuthProvider = async (
 
     await getUserKeysCollection().updateOne(getAuthProviderFilter(authProvider), {
         $pull: { recoveryMethods: pullFilter },
+        ...(type === 'escrow' ? { $unset: { escrowBlob: '' as const } } : {}),
         $set: { updatedAt: new Date() },
     });
 };
@@ -810,6 +927,7 @@ export const purgeExpiredProvisionalMigrationByAuthProvider = async (
             },
             $unset: {
                 authShare: '',
+                escrowBlob: '',
                 shareUpdatedAt: '',
                 sssActivationState: '',
                 provisionalCreatedAt: '',
@@ -995,7 +1113,7 @@ export const completeIdentityRebind = async (
                 sssActivationState: 'active',
                 updatedAt: now,
             },
-            $unset: { provisionalCreatedAt: '' },
+            $unset: { provisionalCreatedAt: '', escrowBlob: '' },
         },
         { returnDocument: 'after' }
     );

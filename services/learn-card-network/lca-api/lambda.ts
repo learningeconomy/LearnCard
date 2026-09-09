@@ -15,11 +15,12 @@ import {
 } from './src/helpers/sentry.helpers';
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
-import { ensureUserKeysIndexes } from './src/models';
+import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './src/models';
 
 const startupPromise = Promise.all([
     getEmptyLearnCard(), // Load WASM in for better cold starts
     ensureUserKeysIndexes(),
+    createEscrowHoldsIndexes(),
 ]);
 
 const isWarmupEvent = (event: APIGatewayProxyEventV2): boolean =>

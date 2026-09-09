@@ -13,6 +13,7 @@ import { resolveTenantFromRequest, type ResolvedTenant } from '@learncard/email-
 
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { consumeChallengeForDid } from '@cache/challenges';
+import { isEscrowEnabled } from '../services/escrow-enclave';
 
 export type DidAuthVP = {
     iss: string;
@@ -165,7 +166,7 @@ export const createContext = async (
 // another integration attaches a raw payload to an event for a /keys/*
 // request, this strips anything secret-shaped before it can leave the
 // process.
-const SECRET_FIELD_RE = /share|token|seed|recoverykey|blob/i;
+const SECRET_FIELD_RE = /share|token|seed|recoverykey|blob|envelope|sealed|ephemeral|resumetoken/i;
 
 /**
  * Recursively replaces values whose key matches SECRET_FIELD_RE with
@@ -211,7 +212,7 @@ export const openRoute = t.procedure
         Sentry.configureScope(scope => {
             scope.setTransactionName(`trpc-${path}`);
 
-            if (path.startsWith('keys.')) {
+            if (path.startsWith('keys.') || path.startsWith('escrow.')) {
                 scope.addEventProcessor(event => {
                     if (event.contexts) {
                         event.contexts = redactSecretFields(
@@ -228,6 +229,13 @@ export const openRoute = t.procedure
                 });
             }
         });
+        // Gate escrow before input parsing and DID authorization, including when disabled.
+        if (path.startsWith('escrow.') && !isEscrowEnabled()) {
+            throw new TRPCError({
+                code: 'PRECONDITION_FAILED',
+                message: 'Escrow recovery is not available.',
+            });
+        }
         return next({ ctx });
     });
 

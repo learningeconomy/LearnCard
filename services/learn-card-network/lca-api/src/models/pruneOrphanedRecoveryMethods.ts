@@ -15,11 +15,13 @@ interface RecoveryMethodLike {
  * - Methods whose shareVersion matches `currentShareVersion` are kept.
  * - Methods whose shareVersion matches any entry in `previousVersions` are kept.
  * - Everything else is pruned — the auth share it depends on has been evicted.
+ * This pure helper cannot update blobs. Both persistence callers in UserKey.ts
+ * unset escrowBlob in the same write whenever no escrow method survives.
  */
 export const pruneOrphanedRecoveryMethods = <T extends RecoveryMethodLike>(
     recoveryMethods: T[],
     currentShareVersion: number,
-    previousVersions: number[],
+    previousVersions: number[]
 ): T[] => {
     const validVersions = new Set([currentShareVersion, ...previousVersions]);
 
