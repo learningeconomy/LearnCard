@@ -17,10 +17,13 @@ import { isWebAuthnSupported } from '@learncard/sss-key-manager';
 import { QrLoginRequester, getSSSConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { EscrowRecoveryPanel } from './EscrowRecoveryPanel';
+import type { EscrowRecoveryPanelProps } from './EscrowRecoveryPanel';
 
 export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
 
 interface RecoveryFlowModalProps {
+    escrowRecovery?: Omit<EscrowRecoveryPanelProps, 'available'>;
     availableMethods: { type: string; credentialId?: string; createdAt: string }[];
     recoveryReason?: RecoveryReason;
     maskedRecoveryEmail?: string | null;
@@ -82,6 +85,7 @@ const getDefaultCopy = () => ({
 });
 
 export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
+    escrowRecovery,
     availableMethods,
     recoveryReason,
     maskedRecoveryEmail,
@@ -447,6 +451,13 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                     </p>
                 </div>
 
+                {escrowRecovery && (
+                    <EscrowRecoveryPanel
+                        key={escrowRecovery.scope}
+                        {...escrowRecovery}
+                        available={hasMethod('escrow')}
+                    />
+                )}
                 <div className="space-y-2">
                     {methods.map(method => (
                         <button

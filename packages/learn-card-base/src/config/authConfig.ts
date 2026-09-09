@@ -1,10 +1,11 @@
 /**
  * Auth configuration is resolved from validated TenantConfig during application bootstrap.
- * Consumers never read deployment environment variables directly.
+ * Explicit tenant values take precedence over legacy enclave environment fallbacks.
  */
 
 import type { AuthProviderType } from '../auth-coordinator/types';
 import type { TenantConfig } from './tenantConfig';
+import type { SSSStrategyConfig } from '@learncard/sss-key-manager';
 
 export interface AuthConfig {
     /** Which auth provider to use (open string matching providerRegistry factories) */
@@ -34,6 +35,9 @@ export interface SSSConfig {
     serverUrl: string;
     escrowRelayPublicKey: string;
     escrowRelayKeyId: string;
+    escrowEnclaveMode: 'off' | 'software' | 'nitro';
+    escrowEnclavePublicKeys: string[];
+    escrowEnclaveMeasurements: { imageSha384: string }[];
     enableEmailBackupShare: boolean;
     requireEmailForPhoneUsers: boolean;
 }
@@ -111,12 +115,24 @@ export const getAuthConfig = (): AuthConfig => {
         ? { ..._authConfigOverrides.providerConfig }
         : {};
     const sss = providerConfig.sss ?? {};
+    const env = import.meta.env;
+    const enclaveMode = env?.VITE_ESCROW_ENCLAVE_MODE;
 
     providerConfig.sss = {
         ...sss,
         serverUrl: (sss.serverUrl as string | undefined) ?? 'http://localhost:5100/api',
         escrowRelayPublicKey: (sss.escrowRelayPublicKey as string | undefined) ?? '',
         escrowRelayKeyId: (sss.escrowRelayKeyId as string | undefined) ?? '',
+        escrowEnclaveMode:
+            sss.escrowEnclaveMode ??
+            (enclaveMode === 'software' || enclaveMode === 'nitro' ? enclaveMode : 'off'),
+        escrowEnclavePublicKeys:
+            sss.escrowEnclavePublicKeys ??
+            env?.VITE_ESCROW_ENCLAVE_PUBLIC_KEYS?.split(',')
+                .map((key: string) => key.trim())
+                .filter(Boolean) ??
+            [],
+        escrowEnclaveMeasurements: sss.escrowEnclaveMeasurements ?? [],
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean | undefined) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean | undefined) ?? true,
     };
@@ -142,6 +158,10 @@ export const getSSSConfig = (): SSSConfig => {
         serverUrl: (sss.serverUrl as string) ?? 'http://localhost:5100/api',
         escrowRelayPublicKey: (sss.escrowRelayPublicKey as string) ?? '',
         escrowRelayKeyId: (sss.escrowRelayKeyId as string) ?? '',
+        escrowEnclaveMode: (sss.escrowEnclaveMode as SSSConfig['escrowEnclaveMode']) ?? 'off',
+        escrowEnclavePublicKeys: (sss.escrowEnclavePublicKeys as string[]) ?? [],
+        escrowEnclaveMeasurements:
+            (sss.escrowEnclaveMeasurements as SSSConfig['escrowEnclaveMeasurements']) ?? [],
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean) ?? true,
     };
@@ -152,6 +172,18 @@ export const getSSSConfig = (): SSSConfig => {
  */
 export const shouldUseSSS = (): boolean => {
     return getAuthConfig().keyDerivation === 'sss';
+};
+
+/** Map the tenant's explicit trust policy to the escrow strategy configuration. */
+export const getEscrowStrategyConfig = (sss: SSSConfig): SSSStrategyConfig['escrow'] => {
+    if (sss.escrowEnclaveMode === 'off') return undefined;
+    return {
+        enabled: true,
+        attestation:
+            sss.escrowEnclaveMode === 'software'
+                ? { mode: 'software', pinnedPublicKeys: sss.escrowEnclavePublicKeys }
+                : { mode: 'nitro', pinnedMeasurements: sss.escrowEnclaveMeasurements },
+    };
 };
 
 /**
