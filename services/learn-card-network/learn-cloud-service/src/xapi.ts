@@ -13,12 +13,16 @@ import type { XAPIRequest } from 'types/xapi';
 import { verifyDelegateCredential } from '@helpers/credential.helpers';
 import { injectContractUriIntoStatement, verifyVoidStatement } from '@helpers/xapi.helpers';
 import { generateToken } from '@helpers/auth.helpers';
+import cache from '@cache';
 
 export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
     // Register rate limiter inside the plugin so it applies to all entry points (standalone + Docker)
+    // Uses Redis when available for shared state across Lambda containers; falls back to in-memory
     await fastify.register(fastifyRateLimit, {
         max: 100,
         timeWindow: '1 minute',
+        // Use Redis for shared rate limiting across Lambda containers when available
+        ...(cache.redis ? { redis: cache.redis } : {}),
         errorResponseBuilder: () => ({
             statusCode: 429,
             error: 'Too Many Requests',
