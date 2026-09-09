@@ -43,7 +43,8 @@ const setField = (
         if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
             return clone;
         }
-        if (!Object.prototype.hasOwnProperty.call(obj, key)) {
+        const existing = obj[key];
+        if (typeof existing !== 'object' || existing === null || Array.isArray(existing)) {
             obj[key] = {};
         }
         obj = obj[key];
