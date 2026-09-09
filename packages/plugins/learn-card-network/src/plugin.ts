@@ -35,29 +35,38 @@ import {
 } from './types';
 
 /**
- * Allowlist of trusted federation hosts with their complete endpoint configurations.
- * Federation requests will ONLY be sent to these hosts using the fixed path.
- * This prevents SSRF by ensuring BOTH host AND path come from server-controlled data.
+ * Default trusted federation hosts for LearnCard network.
+ * Third parties can provide their own hosts via the `trustedFederationHosts` plugin option.
  */
-const TRUSTED_FEDERATION_ENDPOINTS: Record<string, { protocol: 'http' | 'https'; path: string }> = {
-    'network.learncard.com': { protocol: 'https', path: '/api/inbox/receive' },
-    'cloud.learncard.com': { protocol: 'https', path: '/api/inbox/receive' },
-    'api.learncard.app': { protocol: 'https', path: '/api/inbox/receive' },
-    // Development hosts
-    'localhost': { protocol: 'http', path: '/api/inbox/receive' },
-    '127.0.0.1': { protocol: 'http', path: '/api/inbox/receive' },
-};
+const DEFAULT_TRUSTED_FEDERATION_HOSTS = [
+    'network.learncard.com',
+    'cloud.learncard.com',
+    'api.learncard.app',
+];
 
 /**
- * Constructs a safe federation URL entirely from server-controlled data.
- * User input is ONLY used to SELECT which trusted endpoint to use.
- * The actual URL (protocol, host, path) comes entirely from the allowlist.
- *
- * @param userProvidedUrl - The URL hint from the DID document (user-influenced)
- * @returns A URL constructed entirely from server-controlled allowlist data
- * @throws Error if the host is not in the allowlist
+ * Configuration for federation URL validation.
  */
-const buildSafeFederationUrl = (userProvidedUrl: string): string => {
+export interface FederationConfig {
+    /** Additional trusted hosts beyond the defaults. Pass '*' to allow any host (not recommended for production). */
+    trustedFederationHosts?: string[];
+    /** Allow localhost/127.0.0.1 for development. Defaults to false. */
+    allowLocalhostFederation?: boolean;
+}
+
+/**
+ * Validates and normalizes a federation URL from a DID document.
+ *
+ * This runs in the CLIENT plugin where SSRF risk is lower (the browser's same-origin
+ * policy provides protection). The actual server-side federation endpoints in
+ * brain-service have their own validation.
+ *
+ * @param userProvidedUrl - The serviceEndpoint URL from the DID document
+ * @param config - Federation configuration with trusted hosts
+ * @returns The validated URL (preserving the original path from the DID document)
+ * @throws Error if the URL is invalid or host is not trusted
+ */
+const validateFederationUrl = (userProvidedUrl: string, config: FederationConfig): string => {
     let parsed: URL;
     try {
         parsed = new URL(userProvidedUrl);
@@ -65,33 +74,39 @@ const buildSafeFederationUrl = (userProvidedUrl: string): string => {
         throw new Error(`Invalid federation endpoint URL: ${userProvidedUrl}`);
     }
 
-    const userHost = parsed.hostname.toLowerCase();
-    const userPort = parsed.port;
+    const host = parsed.hostname.toLowerCase();
+    const isLocalhost = host === 'localhost' || host === '127.0.0.1';
 
-    // User input SELECTS which trusted endpoint to use - it doesn't become part of the URL
-    // Find the matching key from the allowlist (server-controlled string)
-    const trustedHostKey = Object.keys(TRUSTED_FEDERATION_ENDPOINTS).find(key => key === userHost);
-
-    if (!trustedHostKey) {
+    // Check if localhost is allowed
+    if (isLocalhost && !config.allowLocalhostFederation) {
         throw new Error(
-            `Federation host '${userHost}' is not in the trusted allowlist. ` +
-                `Allowed hosts: ${Object.keys(TRUSTED_FEDERATION_ENDPOINTS).join(', ')}`
+            `Localhost federation is disabled. Set allowLocalhostFederation: true for development.`
         );
     }
 
-    // All values now come from SERVER-CONTROLLED constants
-    // Protocol is automatically http for localhost/127.0.0.1, https for production
-    // This replaces the old `receiveUrl.replace('https://', 'http://')` logic for dev
-    const { protocol, path } = TRUSTED_FEDERATION_ENDPOINTS[trustedHostKey]!;
+    // Build the set of allowed hosts
+    const trustedHosts = new Set([
+        ...DEFAULT_TRUSTED_FEDERATION_HOSTS,
+        ...(config.trustedFederationHosts ?? []),
+    ]);
 
-    // For localhost/dev, preserve port (e.g., :3000); for production, use standard ports
-    const isDevHost = trustedHostKey === 'localhost' || trustedHostKey === '127.0.0.1';
-    const portSuffix = isDevHost && userPort ? `:${userPort}` : '';
+    // Allow any host if '*' is in the list (use with caution)
+    const allowAnyHost = trustedHosts.has('*');
 
-    // Return a URL built entirely from server-controlled strings
-    // Example: localhost:3000 → http://localhost:3000/api/inbox/receive
-    // Example: network.learncard.com → https://network.learncard.com/api/inbox/receive
-    return `${protocol}://${trustedHostKey}${portSuffix}${path}`;
+    if (!allowAnyHost && !isLocalhost && !trustedHosts.has(host)) {
+        throw new Error(
+            `Federation host '${host}' is not trusted. ` +
+                `Add it to trustedFederationHosts or use '*' to allow any host.`
+        );
+    }
+
+    // Validate protocol
+    if (parsed.protocol !== 'https:' && !isLocalhost) {
+        throw new Error(`Federation requires HTTPS for non-localhost hosts: ${userProvidedUrl}`);
+    }
+
+    // Return the original URL - honor the path from the DID document
+    return userProvidedUrl;
 };
 
 const uint8ArrayToBase64Url = (bytes: Uint8Array): string => {
@@ -379,46 +394,45 @@ export type GuardianApprovalGetter = () => string | undefined | Promise<string |
 /**
  * @group Plugins
  */
+/** Options for the LearnCard Network Plugin */
+export interface LearnCardNetworkPluginOptions extends FederationConfig {
+    guardianApprovalGetter?: GuardianApprovalGetter;
+    extraHeaders?: Record<string, string>;
+}
+
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiTokenOrOptions?: {
-        guardianApprovalGetter?: GuardianApprovalGetter;
-        extraHeaders?: Record<string, string>;
-    }
+    apiTokenOrOptions?: LearnCardNetworkPluginOptions
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
     apiToken: string,
-    options?: {
-        guardianApprovalGetter?: GuardianApprovalGetter;
-        extraHeaders?: Record<string, string>;
-    }
+    options?: LearnCardNetworkPluginOptions
 ): Promise<LearnCardNetworkPlugin>;
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
     url: string,
-    apiTokenOrOptions?:
-        | string
-        | {
-              guardianApprovalGetter?: GuardianApprovalGetter;
-              extraHeaders?: Record<string, string>;
-          },
-    options?: {
-        guardianApprovalGetter?: GuardianApprovalGetter;
-        extraHeaders?: Record<string, string>;
-    }
+    apiTokenOrOptions?: string | LearnCardNetworkPluginOptions,
+    options?: LearnCardNetworkPluginOptions
 ): Promise<LearnCardNetworkPlugin> {
     const apiToken = typeof apiTokenOrOptions === 'string' ? apiTokenOrOptions : undefined;
-    const guardianApprovalGetter =
-        (typeof apiTokenOrOptions === 'object'
-            ? apiTokenOrOptions?.guardianApprovalGetter
-            : undefined) ?? options?.guardianApprovalGetter;
+    const resolvedOptions: LearnCardNetworkPluginOptions =
+        (typeof apiTokenOrOptions === 'object' ? apiTokenOrOptions : options) ?? {};
 
-    const extraHeaders =
-        (typeof apiTokenOrOptions === 'object' ? apiTokenOrOptions?.extraHeaders : undefined) ??
-        options?.extraHeaders;
+    const {
+        guardianApprovalGetter,
+        extraHeaders,
+        trustedFederationHosts,
+        allowLocalhostFederation,
+    } = resolvedOptions;
+
+    // Federation config for URL validation
+    const federationConfig: FederationConfig = {
+        trustedFederationHosts,
+        allowLocalhostFederation,
+    };
     // Initialize DID safely: in API-key mode there may be no local ID plane provider
     let did = '';
     try {
@@ -970,9 +984,9 @@ export async function getLearnCardNetworkPlugin(
                         challenge: `inbox-federation-${crypto.randomUUID()}`,
                     });
 
-                    // Build a safe URL using server-controlled hostname from allowlist.
-                    // This prevents SSRF by ensuring the host comes from trusted data.
-                    const receiveUrl = buildSafeFederationUrl(inboxEndpoint);
+                    // Validate the federation URL from the DID document.
+                    // This runs client-side where SSRF risk is lower; honors the DID doc path.
+                    const receiveUrl = validateFederationUrl(inboxEndpoint, federationConfig);
 
                     const response = await fetch(receiveUrl, {
                         method: 'POST',
