@@ -11,7 +11,7 @@ export * from './pkg/didkit_wasm';
  * how Prettier wraps the `init` signature. Do not inline it back into the parameter list.
  */
 export const DEFAULT_DIDKIT_WASM_URL =
-    'https://assets.learncard.ai/didkit/sha256-60efb6027699fda135db0d817f7a541bbd660ae88bec9cbec9796feeb3740b96/didkit_wasm_bg.wasm';
+    'https://assets.learncard.ai/didkit/sha256-a058bcc6f5e9f037c26e1b29d81dfc8ac94c8e4593ce39fa78f3c2f810796c2e/didkit_wasm_bg.wasm';
 
 let initialized = false;
 let generating = false; // Mutex flag to allow first init call to acquire a lock
