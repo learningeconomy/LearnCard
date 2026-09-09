@@ -1,6 +1,16 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+
+// Stub URL methods that don't exist in happy-dom/jsdom
+beforeAll(() => {
+    if (!URL.createObjectURL) {
+        URL.createObjectURL = vi.fn();
+    }
+    if (!URL.revokeObjectURL) {
+        URL.revokeObjectURL = vi.fn();
+    }
+});
 
 vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
