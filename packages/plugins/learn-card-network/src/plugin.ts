@@ -57,8 +57,16 @@ export interface FederationConfig {
      * Server-side code should provide an explicit allowlist.
      */
     trustedFederationHosts?: string[];
-    /** Allow localhost/127.0.0.1 for development. Defaults to false. */
+    /**
+     * Allow localhost/127.0.0.1 for development.
+     * Auto-detected: defaults to true when serviceUrl is localhost, false otherwise.
+     */
     allowLocalhostFederation?: boolean;
+    /**
+     * The origin of this plugin's service URL. When set, endpoints matching this origin
+     * skip validation (they're self-generated, not from external DID documents).
+     */
+    serviceOrigin?: string;
 }
 
 /**
@@ -68,6 +76,14 @@ const isLearnCardDomain = (host: string): boolean => {
     return LEARNCARD_DOMAIN_SUFFIXES.some(
         suffix => host === suffix.replace(/^\./, '') || host.endsWith(suffix)
     );
+};
+
+/**
+ * Checks if a hostname is localhost or loopback.
+ */
+const isLocalhostHost = (host: string): boolean => {
+    const lower = host.toLowerCase();
+    return lower === 'localhost' || lower === '127.0.0.1';
 };
 
 /**
@@ -90,8 +106,19 @@ const validateFederationUrl = (userProvidedUrl: string, config: FederationConfig
         throw new Error(`Invalid federation endpoint URL: ${userProvidedUrl}`);
     }
 
+    // If this endpoint matches our own service origin, skip validation entirely.
+    // These URLs are self-generated (e.g., from getInboxEndpointForDid when the recipient
+    // resolves to our local service), not from external DID documents.
+    if (config.serviceOrigin) {
+        const endpointOrigin = parsed.origin;
+        if (endpointOrigin === config.serviceOrigin) {
+            // Self-referential URL - return parsed.href so CodeQL sees URL sanitization
+            return parsed.href;
+        }
+    }
+
     const host = parsed.hostname.toLowerCase();
-    const isLocalhost = host === 'localhost' || host === '127.0.0.1';
+    const isLocalhost = isLocalhostHost(host);
 
     // Handle localhost: check allowLocalhostFederation and convert https->http
     if (isLocalhost) {
@@ -103,9 +130,9 @@ const validateFederationUrl = (userProvidedUrl: string, config: FederationConfig
         // Local dev typically doesn't have TLS - convert https to http
         if (parsed.protocol === 'https:') {
             parsed.protocol = 'http:';
-            return parsed.href;
         }
-        return userProvidedUrl;
+        // Return the validated/normalized URL
+        return parsed.href;
     }
 
     // Validate protocol - require HTTPS for non-localhost
@@ -129,8 +156,10 @@ const validateFederationUrl = (userProvidedUrl: string, config: FederationConfig
     // If trustedFederationHosts is not provided, allow any HTTPS host (client-side default)
     // This enables third-party did:web federation without requiring explicit opt-in
 
-    // Return the original URL - honor the path from the DID document
-    return userProvidedUrl;
+    // Return the validated URL - CodeQL: at this point the URL has been validated
+    // as either matching our service origin, being localhost with permission, or
+    // being HTTPS with a trusted/allowed host
+    return parsed.href;
 };
 
 const uint8ArrayToBase64Url = (bytes: Uint8Array): string => {
@@ -452,10 +481,17 @@ export async function getLearnCardNetworkPlugin(
         allowLocalhostFederation,
     } = resolvedOptions;
 
+    // Parse service URL to determine origin and auto-detect localhost
+    const serviceUrl = new URL(url);
+    const serviceIsLocalhost = isLocalhostHost(serviceUrl.hostname);
+
     // Federation config for URL validation
+    // - serviceOrigin: skip validation for self-referential URLs
+    // - allowLocalhostFederation: auto-detect from service URL if not explicitly set
     const federationConfig: FederationConfig = {
         trustedFederationHosts,
-        allowLocalhostFederation,
+        allowLocalhostFederation: allowLocalhostFederation ?? serviceIsLocalhost,
+        serviceOrigin: serviceUrl.origin,
     };
     // Initialize DID safely: in API-key mode there may be no local ID plane provider
     let did = '';
