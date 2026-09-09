@@ -145,6 +145,11 @@ const startInput = z
         { message: 'Provide exactly one identity proof.' }
     );
 
+// P0-4: this is a GET route, so neither the resume token nor the provider
+// token may travel in the query string (proxy/ALB access logs). Raw-fetch
+// callers send whichever secret applies as the X-Auth-Token header
+// (ctx.providerToken); the optional input fields exist only for native tRPC
+// callers whose batch link always POSTs.
 const statusInput = z
     .object({
         holdId: z.string().uuid().optional(),
@@ -156,9 +161,7 @@ const statusInput = z
     .refine(
         input =>
             input.holdId !== undefined
-                ? input.resumeToken !== undefined &&
-                  input.authToken === undefined &&
-                  input.providerType === undefined
+                ? input.authToken === undefined && input.providerType === undefined
                 : input.resumeToken === undefined && input.providerType !== undefined,
         { message: 'Provide exactly one identity proof.' }
     );
@@ -392,8 +395,9 @@ export const escrowRouter = t.router({
             await expireStaleEscrowHolds(new Date());
             let hold: EscrowHold | null;
             if (input.holdId !== undefined) {
-                hold = await findEscrowHoldById(input.holdId);
-                if (hold && !resumeTokenMatches(hold, input.resumeToken!)) hold = null;
+                const resumeToken = input.resumeToken || ctx.providerToken || '';
+                hold = resumeToken ? await findEscrowHoldById(input.holdId) : null;
+                if (hold && !resumeTokenMatches(hold, resumeToken)) hold = null;
             } else {
                 const { authProvider } = await verifyAndGetContactMethod({
                     authToken: input.authToken || ctx.providerToken || '',
