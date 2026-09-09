@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import type { AddressInfo } from 'node:net';
 import { initLearnCard } from '@learncard/init';
 import type { ProofOptions } from '@learncard/didkit-plugin';
-import type { JWKWithPrivateKey, VP } from '@learncard/types';
+import type { IssueInboxCredentialResponseType, JWKWithPrivateKey, VP } from '@learncard/types';
 
 import type { LearnCard } from './learncard.helpers';
 
@@ -13,8 +13,8 @@ export const sendCredentialsViaInbox = async (
     token: string,
     recipientEmail: string,
     credentialNames: string[]
-): Promise<any[]> => {
-    const responses: any[] = [];
+): Promise<IssueInboxCredentialResponseType[]> => {
+    const responses: IssueInboxCredentialResponseType[] = [];
     for (const name of credentialNames) {
         const cred = await learnCard.invoke.newCredential({
             type: 'achievement',

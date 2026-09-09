@@ -4,9 +4,15 @@ import { getLearnCardForUser, getLearnCard, LearnCard } from './helpers/learncar
 import { sendCredentialsViaInbox, startP256DidAuthFixture } from './helpers/inbox.helpers';
 import type { P256DidAuthFixture } from './helpers/inbox.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
-import type { LCNIntegration, VP } from '@learncard/types';
+import type { LCNIntegration, VC, VP } from '@learncard/types';
 
-type ExchangeResponse = { status: number; data: Record<string, any> };
+type ExchangeResponse = {
+    status: number;
+    data: {
+        verifiablePresentationRequest?: { challenge: string; domain: string };
+        verifiablePresentation?: { verifiableCredential: VC[] };
+    };
+};
 
 let a: LearnCard;
 let b_anonymous: LearnCard;
@@ -75,7 +81,7 @@ describe('Inbox', () => {
                 challenge: expect.any(String),
                 domain: expect.any(String),
             });
-            const { challenge, domain } = response.data.verifiablePresentationRequest;
+            const { challenge, domain } = response.data.verifiablePresentationRequest!;
             return { challenge, domain };
         };
 
@@ -135,8 +141,8 @@ describe('Inbox', () => {
 
         const expectIssued = (response: ExchangeResponse, expectedCredential: object) => {
             expect(response.status, JSON.stringify(response.data)).toBe(200);
-            expect(response.data.verifiablePresentation.verifiableCredential).toHaveLength(1);
-            expect(response.data.verifiablePresentation.verifiableCredential[0]).toMatchObject(
+            expect(response.data.verifiablePresentation!.verifiableCredential).toHaveLength(1);
+            expect(response.data.verifiablePresentation!.verifiableCredential[0]).toMatchObject(
                 expectedCredential
             );
         };
