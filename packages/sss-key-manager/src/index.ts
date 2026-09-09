@@ -76,6 +76,8 @@ export {
 } from './escrow-crypto';
 
 export type { EscrowEnvelope, EscrowBlobPlaintext, EscrowReleasePlaintext } from './escrow-crypto';
+export { verifyEnclaveAttestation } from './escrow-attestation';
+export type { EscrowAttestationPolicy, EscrowHoldStatus, EscrowRecoveryStart } from './types';
 
 export {
     createPasskeyCredential,

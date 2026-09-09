@@ -27,7 +27,12 @@ import type {
     IdentityRecoverySession,
     BackupFile,
     DidAuthVpSigner,
+    EscrowAttestationPolicy,
+    EscrowHoldStatus,
+    EscrowRecoveryStart,
 } from './types';
+import { encryptEscrowBlob, generateEscrowKeyPair, openEscrowRelease } from './escrow-crypto';
+import { verifyEnclaveAttestation } from './escrow-attestation';
 import type { EmailRelayBranding } from './email-relay-crypto';
 
 import {
@@ -74,6 +79,12 @@ export interface SSSStorageFunctions {
 }
 
 export interface SSSStrategyConfig {
+    /** Enable automatic enrollment under an explicit enclave trust policy. */
+    escrow?: { enabled: boolean; attestation: EscrowAttestationPolicy };
+
+    /** Report enrollment failures without logging recovery material. */
+    onEscrowError?: (err: unknown) => void;
+
     /** Server URL for key share operations */
     serverUrl: string;
 
@@ -634,6 +645,72 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         primaryDid: string | null;
     } | null = null;
 
+    const escrowRequest = async <T>(path: string, init: RequestInit): Promise<T> => {
+        const response = await fetch(`${serverUrl}/keys/escrow${path}`, init);
+        // Never propagate response bodies or status text that could contain secrets.
+        if (!response.ok) throw new Error('Escrow request failed');
+        return response.json();
+    };
+
+    const enrollEscrow = async (
+        token: string,
+        providerType: AuthProviderType,
+        privateKey: string,
+        primaryDid: string,
+        shares: SSSShares,
+        shareVersion: number,
+        signDidAuthVp?: DidAuthVpSigner
+    ): Promise<void> => {
+        if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
+        if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
+        const { attestation } = await escrowRequest<{ attestation: unknown }>('/attestation', {
+            method: 'GET',
+            headers: buildHeaders('', undefined, tenantId),
+        });
+        const { publicKey, keyId } = await verifyEnclaveAttestation(
+            attestation,
+            config.escrow.attestation
+        );
+        const envelope = await encryptEscrowBlob(
+            { recoveryShare: shares.recoveryShare, did: primaryDid, shareVersion },
+            publicKey,
+            keyId
+        );
+        const vp = await requestFreshDidAuthVp(
+            serverUrl,
+            privateKey,
+            primaryDid,
+            signDidAuthVp,
+            tenantId
+        );
+        await escrowRequest('', {
+            method: 'POST',
+            headers: buildHeaders(token, vp, tenantId),
+            body: JSON.stringify({
+                authToken: token,
+                providerType,
+                envelope,
+                shareVersion,
+                enclaveKeyId: keyId,
+            }),
+        });
+    };
+
+    const tryEnrollEscrow = async (...args: Parameters<typeof enrollEscrow>): Promise<void> => {
+        if (!config.escrow?.enabled) return;
+        try {
+            await enrollEscrow(...args);
+        } catch (err) {
+            // A reporting callback must not turn a successful rotation into a failure.
+            try {
+                if (config.onEscrowError) config.onEscrowError(err);
+                else console.warn('SSS: escrow enrollment failed');
+            } catch {
+                console.warn('SSS: escrow error reporting failed');
+            }
+        }
+    };
+
     return {
         name: 'sss',
 
@@ -1003,6 +1080,130 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         // --- Recovery execution ---
 
+        /** Enroll missing/stale escrow material using the standard atomic rotation. */
+        async ensureEscrowEnrollment(
+            params
+        ): Promise<
+            | { enrolled: false; reason: 'disabled' }
+            | { enrolled: true; changed: false }
+            | { enrolled: true; changed: true; shareVersion: number }
+        > {
+            if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
+            const status = await this.fetchServerKeyStatus(params.token, params.providerType);
+            if (
+                status.shareVersion !== null &&
+                status.recoveryMethods.some(
+                    method =>
+                        method.type === 'escrow' &&
+                        method.shareVersion === status.shareVersion &&
+                        (Boolean(method.confirmedAt) ||
+                            ('confirmationStatus' in method &&
+                                method.confirmationStatus === 'confirmed'))
+                )
+            )
+                return { enrolled: true, changed: false };
+            if (!status.primaryDid) throw new Error('Cannot enroll escrow without a primary DID');
+            const { shares, shareVersion } = await persistSharesAtomically(
+                params.privateKey,
+                serverUrl,
+                params.token,
+                params.providerType,
+                status.primaryDid,
+                storage,
+                activeStorageId,
+                undefined,
+                params.signDidAuthVp,
+                tenantId
+            );
+            lastEmailShare = shares.emailShare;
+            lastShareVersion = shareVersion;
+            lastServerSnapshot = {
+                currentVersion: shareVersion,
+                resolvedVersion: shareVersion,
+                authShare: shares.authShare,
+                primaryDid: status.primaryDid,
+            };
+            await enrollEscrow(
+                params.token,
+                params.providerType,
+                params.privateKey,
+                status.primaryDid,
+                shares,
+                shareVersion,
+                params.signDidAuthVp
+            );
+            return { enrolled: true, changed: true, shareVersion };
+        },
+
+        /** Start a hold without replacing any previously returned resume secrets. */
+        async startEscrowRecovery(params): Promise<EscrowRecoveryStart> {
+            const sessionProof = params.recoverySessionToken !== undefined;
+            if (
+                sessionProof
+                    ? params.token !== undefined || params.providerType !== undefined
+                    : !params.token || !params.providerType
+            ) {
+                throw new Error('Provide exactly one identity proof');
+            }
+            const pair = await generateEscrowKeyPair();
+            const result = await escrowRequest<
+                Omit<EscrowRecoveryStart, 'clientEphemeralPrivateKey'>
+            >('/recover', {
+                method: 'POST',
+                headers: buildHeaders('', undefined, params.tenantId ?? tenantId),
+                body: JSON.stringify({
+                    clientEphemeralPublicKey: pair.publicKey,
+                    ...(sessionProof
+                        ? { recoverySessionToken: params.recoverySessionToken }
+                        : { authToken: params.token, providerType: params.providerType }),
+                }),
+            });
+            return { ...result, clientEphemeralPrivateKey: pair.privateKey };
+        },
+
+        /** Read hold status; secrets (auth or resume token) never travel in a URL. */
+        async getEscrowRecoveryStatus(params): Promise<EscrowHoldStatus | null> {
+            const query = new URLSearchParams(
+                'holdId' in params
+                    ? { holdId: params.holdId }
+                    : { providerType: params.providerType }
+            );
+            const secret = 'holdId' in params ? params.resumeToken : params.token;
+            const result = await escrowRequest<{ hold: EscrowHoldStatus | null }>(
+                `/status?${query}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        ...buildHeaders('', undefined, tenantId),
+                        'X-Auth-Token': secret,
+                    },
+                }
+            );
+            return result.hold;
+        },
+
+        /** Cancel a pending hold with a fresh DID-owner proof. */
+        async cancelEscrowRecovery(params): Promise<{ cancelled: boolean }> {
+            const status = await this.fetchServerKeyStatus(params.token, params.providerType);
+            if (!status.primaryDid) throw new Error('Cannot cancel escrow without a primary DID');
+            const vp = await requestFreshDidAuthVp(
+                serverUrl,
+                params.privateKey,
+                status.primaryDid,
+                params.signDidAuthVp,
+                tenantId
+            );
+            const result = await escrowRequest<{ cancelled: boolean }>('/cancel', {
+                method: 'POST',
+                headers: buildHeaders(params.token, vp, tenantId),
+                body: JSON.stringify({
+                    authToken: params.token,
+                    providerType: params.providerType,
+                }),
+            });
+            return { cancelled: result.cancelled };
+        },
+
         async executeRecovery(params: {
             token: string;
             providerType: AuthProviderType;
@@ -1011,6 +1212,53 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             signDidAuthVp?: DidAuthVpSigner;
         }): Promise<RecoveryResult> {
             const { token, providerType, input, didFromPrivateKey, signDidAuthVp } = params;
+
+            if (input.method === 'escrow') {
+                if (!didFromPrivateKey)
+                    throw new Error('DID verification is required for escrow recovery');
+                const material = await escrowRequest<
+                    IdentityRecoveryMaterialResponse & { sealedShare: unknown }
+                >('/complete', {
+                    method: 'POST',
+                    headers: buildHeaders('', undefined, tenantId),
+                    body: JSON.stringify({ holdId: input.holdId, resumeToken: input.resumeToken }),
+                });
+                const plaintext = await openEscrowRelease(
+                    material.sealedShare,
+                    input.clientEphemeralPrivateKey
+                );
+                if (
+                    plaintext.holdId !== input.holdId ||
+                    plaintext.did !== material.primaryDid ||
+                    plaintext.shareVersion !== material.shareVersion
+                ) {
+                    throw new Error('Escrow recovery material does not match the request');
+                }
+                const authShare = material.authShare.encryptedData;
+                const privateKey = await reconstructFromShares([
+                    plaintext.recoveryShare,
+                    authShare,
+                ]);
+                if (
+                    !material.primaryDid ||
+                    (await didFromPrivateKey(privateKey)) !== material.primaryDid
+                ) {
+                    throw new Error(
+                        'Recovery produced an incorrect key. Try another recovery method.'
+                    );
+                }
+                pendingIdentityRecovery = {
+                    privateKey,
+                    primaryDid: material.primaryDid,
+                    recoveryShare: plaintext.recoveryShare,
+                    authShare,
+                    rebindSessionToken: material.rebindSessionToken,
+                };
+                // The OTP path uses exactly this pending state and atomic rebind operation.
+                // Without a provider session the caller completes it after signing in.
+                if (!token) return { privateKey, did: material.primaryDid };
+                return this.completeIdentityRecovery!({ token, providerType, signDidAuthVp });
+            }
 
             let recoveryShare: string;
             let recoveryShareVersion: number | undefined;
@@ -1197,6 +1445,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 primaryDid,
             };
 
+            await tryEnrollEscrow(
+                token,
+                providerType,
+                privateKey,
+                primaryDid,
+                recoveryResult.newShares,
+                shareVersion,
+                signDidAuthVp
+            );
             return { privateKey: recoveryResult.privateKey, did: primaryDid };
         },
 
@@ -1211,6 +1468,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             signDidAuthVp?: DidAuthVpSigner;
         }): Promise<RecoverySetupResult> {
             const { token, providerType, privateKey, input, authUser, signDidAuthVp } = params;
+
+            if (input.method === 'escrow' && !config.escrow?.enabled) {
+                throw new Error('Escrow enrollment is disabled');
+            }
 
             // Passkey pre-flight: create the credential and verify PRF support
             // BEFORE any split/store/email work. If PRF isn't available, fail
@@ -1265,6 +1526,17 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             };
 
             switch (input.method) {
+                case 'escrow':
+                    await enrollEscrow(
+                        token,
+                        providerType,
+                        privateKey,
+                        primaryDid,
+                        shares,
+                        shareVersion,
+                        signDidAuthVp
+                    );
+                    return { method: 'escrow', shareVersion };
                 case 'passkey': {
                     // passkeyCredential was created in the pre-flight block above
                     // (before any split/store work) so PRF is already validated.
@@ -1317,6 +1589,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         tenantId
                     );
 
+                    await tryEnrollEscrow(
+                        token,
+                        providerType,
+                        privateKey,
+                        primaryDid,
+                        shares,
+                        shareVersion,
+                        signDidAuthVp
+                    );
                     return { method: 'passkey', credentialId: credential.credentialId };
                 }
 
@@ -1351,6 +1632,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     );
                     pendingPhraseConfirmation = { phrase, challengeWordIndices };
 
+                    await tryEnrollEscrow(
+                        token,
+                        providerType,
+                        privateKey,
+                        primaryDid,
+                        shares,
+                        shareVersion,
+                        signDidAuthVp
+                    );
                     return { method: 'phrase', phrase, challengeWordIndices };
                 }
 
@@ -1401,6 +1691,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         recoveryShare: shares.recoveryShare,
                     };
 
+                    await tryEnrollEscrow(
+                        token,
+                        providerType,
+                        privateKey,
+                        primaryDid,
+                        shares,
+                        shareVersion,
+                        signDidAuthVp
+                    );
                     return { method: 'backup', backupFile };
                 }
 
@@ -1429,6 +1728,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         tenantId
                     );
 
+                    await tryEnrollEscrow(
+                        token,
+                        providerType,
+                        privateKey,
+                        primaryDid,
+                        shares,
+                        shareVersion,
+                        signDidAuthVp
+                    );
                     return { method: 'email' };
                 }
             }
@@ -1583,6 +1891,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
         async prepareIdentityRecovery(params): Promise<RecoveryResult> {
             const { input } = params;
+            if (input.method === 'escrow') {
+                throw new Error('Use executeRecovery to complete an escrow hold');
+            }
             let recoveryShare: string | undefined;
 
             switch (input.method) {
@@ -1739,6 +2050,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             };
             pendingIdentityRecovery = undefined;
 
+            await tryEnrollEscrow(
+                params.token,
+                params.providerType,
+                result.privateKey,
+                pending.primaryDid,
+                result.newShares,
+                shareVersion,
+                signDidAuthVp
+            );
             return { privateKey: result.privateKey, did: pending.primaryDid };
         },
 
