@@ -92,6 +92,7 @@ export type UnifiedAuthState =
     | { status: 'deriving_key' }
     | {
           status: 'ready';
+          pendingEscrowHold?: { holdId: string; requestedAt: string; releaseAfter: string };
           authUser?: AuthUser;
           did: string;
           privateKey: string;
