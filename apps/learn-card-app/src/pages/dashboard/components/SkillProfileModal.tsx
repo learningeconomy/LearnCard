@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { useBrandingConfig } from 'learn-card-base';
 
-import X from 'src/components/svgs/X';
+import X from '../../../components/svgs/X';
 
 import * as m from '../../../paraglide/messages.js';
 

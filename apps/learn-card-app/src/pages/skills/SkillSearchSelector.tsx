@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Swiper integration exposes a dynamic instance shape. */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
@@ -16,8 +17,8 @@ const log = getLogger('skill-search-selector');
 import X from 'learn-card-base/svgs/X';
 import Search from 'learn-card-base/svgs/Search';
 import VerifiedBadgeIcon from 'learn-card-base/svgs/VerifiedBadgeIcon';
-import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
-import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
+import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
+import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkillTag from './SkillTag';
 import { IonInput, IonSpinner } from '@ionic/react';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
@@ -88,7 +89,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
     );
 
     const isControlledSearch = searchQuery !== undefined;
-    const searchInput = (isControlledSearch ? searchQuery : internalSearchInput ?? '').slice(
+    const searchInput = (isControlledSearch ? searchQuery : (internalSearchInput ?? '')).slice(
         0,
         MAX_SEARCH_LENGTH
     );

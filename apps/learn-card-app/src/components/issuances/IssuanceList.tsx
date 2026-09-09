@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- activity payloads are provided by legacy API responses. */
 import React, { useState } from 'react';
 import {
     Send,
@@ -17,7 +18,7 @@ import type { AppStoreListing } from '@learncard/types';
 import { useModal, ModalTypes } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 
-import type { CredentialTemplate } from 'src/pages/appStoreDeveloper/dashboards/types';
+import type { CredentialTemplate } from '../../pages/appStoreDeveloper/dashboards/types';
 import {
     useIntegrationActivity,
     formatRelativeTime,
@@ -29,9 +30,9 @@ import {
     getRecipientDisplayName,
     getActivityName,
     getEventTypeFilterOptions,
-} from 'src/pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
-import { ExportDialog } from 'src/pages/appStoreDeveloper/dashboards/components/ExportDialog';
-import { IssuanceDetailModal } from 'src/components/issuances/IssuanceDetailModal';
+} from '../../pages/appStoreDeveloper/dashboards/hooks/useIntegrationActivity';
+import { ExportDialog } from '../../pages/appStoreDeveloper/dashboards/components/ExportDialog';
+import { IssuanceDetailModal } from '../../components/issuances/IssuanceDetailModal';
 
 export interface IssuanceListProps {
     // scoping (pass what you have; all optional)

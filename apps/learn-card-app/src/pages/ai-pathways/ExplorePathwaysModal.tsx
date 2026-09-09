@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Swiper and legacy API payloads are dynamically shaped. */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('explore-pathways-modal');
@@ -19,10 +20,10 @@ import {
 } from 'learn-card-base';
 
 import { Plus, X } from 'lucide-react';
-import PuzzlePiece from 'src/components/svgs/PuzzlePiece';
-import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
-import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
-import Pencil from 'src/components/svgs/Pencil';
+import PuzzlePiece from '../../components/svgs/PuzzlePiece';
+import SlimCaretLeft from '../../components/svgs/SlimCaretLeft';
+import SlimCaretRight from '../../components/svgs/SlimCaretRight';
+import Pencil from '../../components/svgs/Pencil';
 import SkillTag from '../skills/SkillTag';
 import SkillSearchSelector from '../skills/SkillSearchSelector';
 import {
