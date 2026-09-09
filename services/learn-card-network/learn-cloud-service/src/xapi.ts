@@ -15,6 +15,17 @@ import { injectContractUriIntoStatement, verifyVoidStatement } from '@helpers/xa
 import { generateToken } from '@helpers/auth.helpers';
 
 export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
+    // Register rate limiter inside the plugin so it applies to all entry points (standalone + Docker)
+    await fastify.register(fastifyRateLimit, {
+        max: 100,
+        timeWindow: '1 minute',
+        errorResponseBuilder: () => ({
+            statusCode: 429,
+            error: 'Too Many Requests',
+            message: 'Too many requests, please try again later.',
+        }),
+    });
+
     fastify.all<XAPIRequest>('/xapi/*', async (request, reply) => {
         try {
             if (!XAPI_ENDPOINT || XAPI_ENDPOINT === 'false')
@@ -150,15 +161,6 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
 export const app = Fastify();
 
 app.register(fastifyCors);
-app.register(fastifyRateLimit, {
-    max: 100,
-    timeWindow: '1 minute',
-    errorResponseBuilder: () => ({
-        statusCode: 429,
-        error: 'Too Many Requests',
-        message: 'Too many requests, please try again later.',
-    }),
-});
 app.register(xapiFastifyPlugin);
 
 export default app;
