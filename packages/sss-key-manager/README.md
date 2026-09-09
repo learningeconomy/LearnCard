@@ -15,6 +15,7 @@ This package provides a secure, self-hosted alternative to Web3Auth Single Facto
     - Password-based (Argon2id KDF)
     - Passkey/WebAuthn PRF (coming soon)
     - Backup file export/import
+    - Enclave escrow recovery with a seven-day waiting period (explicit attestation policy required)
 - **Migration**: Seamless migration from Web3Auth SFA
 
 ## Installation
