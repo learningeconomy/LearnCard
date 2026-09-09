@@ -12,6 +12,7 @@
         "claimedType": "Credential claimed"
     },
     "common": {
+        "tryAgain": "Try Again",
         "share": "Share",
         "open": "Open",
         "accept": "Accept",
@@ -2798,6 +2799,7 @@
             "deleteCredentialError": "Error deleting credential: unable to locate record ID.",
             "shareLinkCopied": "Share link copied to clipboard",
             "shareLinkCopyFailed": "Unable to copy share link to clipboard",
+            "shareLinkGenerationFailed": "We couldn’t create a share link. Please try again.",
             "templateIdCopied": "Template ID copied to clipboard",
             "templateIdCopyFailed": "Unable to copy template ID to clipboard",
             "boostLinkCopied": "Boost link copied to clipboard",
