@@ -49,6 +49,11 @@ const setField = (
             if (existing.length === 0) {
                 existing.push({});
             }
+            const firstElement = existing[0];
+            // If first element is a primitive (e.g., ["did:example:123"]), replace with object
+            if (typeof firstElement !== 'object' || firstElement === null) {
+                existing[0] = {};
+            }
             obj = existing[0];
         } else if (typeof existing !== 'object' || existing === null) {
             // Replace null/primitive with object to allow deeper property assignment

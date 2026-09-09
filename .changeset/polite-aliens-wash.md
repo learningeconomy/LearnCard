@@ -12,3 +12,7 @@
 ---
 
 chore: [LC-2175] & [LC-2176] Fixing CodeQL alerts
+
+**Breaking change in @learncard/openid4vc-plugin**: `defaultMakeId` now throws if
+`crypto.getRandomValues` is unavailable (no `Math.random()` fallback). This affects
+legacy environments without Web Crypto API — modern browsers and Node.js are unaffected.

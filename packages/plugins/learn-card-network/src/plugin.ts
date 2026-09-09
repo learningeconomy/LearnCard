@@ -82,15 +82,19 @@ const isLocalhostHost = (host: string): boolean => {
 };
 
 /**
- * Validates and normalizes a federation URL from a DID document.
+ * Validates and normalizes a federation URL.
  *
  * This runs in the CLIENT plugin where SSRF risk is lower (the browser's same-origin
  * policy provides protection). By default, federation is open to any HTTPS host.
  * Server-side code should provide an explicit trustedFederationHosts list.
  *
- * @param userProvidedUrl - The serviceEndpoint URL from the DID document
+ * Note: For local-service recipients, getInboxEndpointForDid returns a fixed
+ * `/api/inbox/receive` path. Only external DID doc serviceEndpoints preserve
+ * their original path.
+ *
+ * @param userProvidedUrl - The inbox endpoint URL (from DID doc or local service)
  * @param config - Federation configuration with trusted hosts
- * @returns The validated URL (preserving the original path from the DID document)
+ * @returns The validated URL
  * @throws Error if the URL is invalid or host is not trusted
  */
 const validateFederationUrl = (userProvidedUrl: string, config: FederationConfig): string => {
@@ -1041,8 +1045,9 @@ export async function getLearnCardNetworkPlugin(
                         challenge: `inbox-federation-${crypto.randomUUID()}`,
                     });
 
-                    // Validate the federation URL. For federated DIDs, inboxEndpoint comes
-                    // directly from the DID doc's serviceEndpoint (preserving path).
+                    // Validate the federation URL. For external DIDs, inboxEndpoint comes
+                    // from the DID doc's serviceEndpoint; for local-service DIDs, it's
+                    // a fixed /api/inbox/receive path from getInboxEndpointForDid.
                     const receiveUrl = validateFederationUrl(inboxEndpoint, federationConfig);
 
                     const response = await fetch(receiveUrl, {
