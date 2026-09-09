@@ -98,11 +98,11 @@ redirects:
     how-to-guides/connect-systems/connect-an-embedded-app: how-to-guides/publish-your-app.md
     how-to-guides/connect-systems/embed-a-claim-button: how-to-guides/connect-systems/embed-a-claim-button.md
     how-to-guides/create-signing-authority: how-to-guides/create-signing-authority.md
-    how-to-guides/deploy-infrastructure: how-to-guides/deploy-infrastructure/README.md
+    how-to-guides/deploy-infrastructure: how-to-guides/go-to-production.md
     how-to-guides/deploy-infrastructure/connect-to-independent-network: how-to-guides/deploy-infrastructure/connect-to-independent-network.md
     how-to-guides/deploy-infrastructure/deploy-your-own-network: how-to-guides/deploy-infrastructure/connect-to-independent-network.md
     how-to-guides/deploy-infrastructure/generate-api-tokens: how-to-guides/deploy-infrastructure/generate-api-tokens.md
-    how-to-guides/deploy-infrastructure/managing-seed-phrases: how-to-guides/deploy-infrastructure/choose-key-management.md
+    how-to-guides/deploy-infrastructure/managing-seed-phrases: how-to-guides/go-to-production.md
     how-to-guides/deploy-infrastructure/sss-key-management-config: sdks/sss-key-manager.md
     how-to-guides/deploy-infrastructure/the-simplest-plugin: how-to-guides/deploy-infrastructure/the-simplest-plugin.md
     how-to-guides/export-and-import-your-data: how-to-guides/export-and-import-your-data.md

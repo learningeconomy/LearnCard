@@ -24,7 +24,7 @@ If you saw `You must register a signing authority before using send without a pr
 
 ## You sign
 
-Nothing to set up. The [Quickstart](../quick-start/your-first-integration.md) does this: `initLearnCard({ seed, network: true })` → `issueCredential(...)` → `send({ signedCredential })`. Keep the seed in an environment variable and [back it up](deploy-infrastructure/choose-key-management.md).
+Nothing to set up. The [Quickstart](../quick-start/your-first-integration.md) does this: `initLearnCard({ seed, network: true })` → `issueCredential(...)` → `send({ signedCredential })`. Keep the seed in an environment variable and [back it up](go-to-production.md#security).
 
 ## LearnCard signs for you
 

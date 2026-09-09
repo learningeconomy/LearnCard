@@ -46,7 +46,9 @@ Store `inbox.issuanceId` (and `activityId`) keyed by your own record ID at send 
 
 ## Security
 
-- [ ] **Seed in a secrets manager**, never in code or git; rotating it means a new issuer DID — [How Should I Manage Keys?](deploy-infrastructure/choose-key-management.md)
+- [ ] **Seed read from a secrets manager/env at boot**, never in code or git.
+- [ ] **Never in client-side code** (browsers/mobile call your backend).
+- [ ] **Rotating a seed = a new issuer DID**, so pick the issuer identity before launch. See [Seed Phrases](../core-concepts/identities-and-keys/seed-phrases.md).
 - [ ] **API tokens scoped to what you use** (`boosts:write` for sending), with an expiry and a rotation owner — [Generate API Tokens](deploy-infrastructure/generate-api-tokens.md)
 - [ ] **Signing authority registered** if you send from templates or claim links — [Who Signs Your Credentials?](create-signing-authority.md)
 

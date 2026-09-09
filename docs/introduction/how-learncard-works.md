@@ -54,5 +54,5 @@ The issuer's key signs the credential. Before claiming, an email recipient has n
 - Full architecture, including how a credential moves through every component → [Ecosystem Architecture](ecosystem-architecture.md)
 - Why open standards are the point, not a feature → [Interoperability](interoperability.md)
 - The credential formats themselves → [Verifiable Credentials](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md), [Boosts](../core-concepts/credentials-and-data/boost-credentials.md)
-- Identity and keys → [DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md), [How Should I Manage Keys?](../how-to-guides/deploy-infrastructure/choose-key-management.md)
+- Identity and keys → [DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md), [Storing your issuer seed](../how-to-guides/go-to-production.md#security)
 - Consent → [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)

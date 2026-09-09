@@ -46,16 +46,15 @@ Examples include parent-approved school apps and scouting organizations issuing 
 - Start here: [Create a ConsentFlow](../tutorials/create-a-consentflow.md)
 - Concepts: [ConsentFlow overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
 
-## 🔬 Keys, tokens & infrastructure
+## 🔬 Going deeper
 
 First decide [who signs](../how-to-guides/create-signing-authority.md): **you** (keep a seed on your server; the SDK authenticates with your DID) or **LearnCard** (a hosted signing authority plus an API token from the Developer Portal or `addAuthGrant`). Verification-only code needs neither.
 
-- Start here: [How should I manage keys?](../how-to-guides/deploy-infrastructure/choose-key-management.md)
+- [Generate API tokens](../how-to-guides/deploy-infrastructure/generate-api-tokens.md)
+- [Test safely on staging](../how-to-guides/deploy-infrastructure/test-safely.md)
+- [Go to Production](../how-to-guides/go-to-production.md)
 - [Build a plugin](../how-to-guides/deploy-infrastructure/the-simplest-plugin.md)
-- [Generate API tokens](../how-to-guides/deploy-infrastructure/generate-api-tokens.md) · [Test safely on staging](../how-to-guides/deploy-infrastructure/test-safely.md)
 - [Run your own network](../how-to-guides/deploy-infrastructure/connect-to-independent-network.md)
-- Ready to ship? [Go to Production](../how-to-guides/go-to-production.md) checklist
-- Full API: [LearnCard Wallet SDK](../sdks/learncard-core/README.md)
 
 ## ✅ Verify credentials
 
