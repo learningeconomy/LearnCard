@@ -29,5 +29,9 @@ const tampered = structuredClone(credential);
 tampered.credentialSubject.achievement.name = 'An achievement I did not earn';
 const verifier = await initLearnCard();
 const result = await verifier.invoke.verifyCredential(tampered);
-console.log(result.errors.length ? `Invalid: ${result.errors.join('; ')}` : `Valid: ${result.checks.join(', ')}`);
+console.log(
+    result.errors.length
+        ? `Invalid: ${result.errors.join('; ')}`
+        : `Valid: ${result.checks.join(', ')}`
+);
 console.log(JSON.stringify(result, null, 2));

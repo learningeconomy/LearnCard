@@ -28,5 +28,9 @@ const credential = await issuer.invoke.issueCredential({
 
 const verifier = await initLearnCard();
 const result = await verifier.invoke.verifyCredential(credential);
-console.log(result.errors.length ? `Invalid: ${result.errors.join('; ')}` : `Valid: ${result.checks.join(', ')}`);
+console.log(
+    result.errors.length
+        ? `Invalid: ${result.errors.join('; ')}`
+        : `Valid: ${result.checks.join(', ')}`
+);
 console.log(JSON.stringify(result, null, 2));
