@@ -14,6 +14,7 @@ import ActivityCard from './components/ActivityCard';
 import LearningProfileCard from './components/LearningProfileCard';
 import AppsCard from './components/AppsCard';
 import DataTrustCard from './components/DataTrustCard';
+import RecoveryBanner from '../../components/recovery/RecoveryBanner';
 import type { DashboardViewModel } from './DashboardView.types';
 
 type DashboardViewProps = {
@@ -34,6 +35,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
         onReviewGoal,
         primaryButtonClass,
         slots,
+        recoveryPrompt,
         dataTrust,
         activity,
         learningProfile,
@@ -71,6 +73,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
 
                 <GenericErrorBoundary>
                     <QuickActionsRow slots={slots} />
+                </GenericErrorBoundary>
+
+                <GenericErrorBoundary>
+                    <RecoveryBanner {...recoveryPrompt} />
                 </GenericErrorBoundary>
 
                 <div className="grid grid-cols-1 desktop:grid-cols-12 gap-5">

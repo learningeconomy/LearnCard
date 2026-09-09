@@ -439,7 +439,8 @@ jobs:
             - name: Deploy Brain Service Lambda
               run: bunx nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
-                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
+                  # serverless-esbuild invokes pnpm despite the Bun packageManager; remove once that boundary is gone.
+                  COREPACK_ENABLE_STRICT: '0'
                   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
                   AWS_DEFAULT_REGION: us-east-1
@@ -560,7 +561,8 @@ jobs:
             - name: Deploy LearnCloud Lambda
               run: bunx nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
-                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
+                  # serverless-esbuild invokes pnpm despite the Bun packageManager; remove once that boundary is gone.
+                  COREPACK_ENABLE_STRICT: '0'
                   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
                   AWS_DEFAULT_REGION: us-east-1
@@ -661,7 +663,8 @@ jobs:
             - name: Deploy LCA API Service Lambda
               run: bunx nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
               env:
-                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
+                  # serverless-esbuild invokes pnpm despite the Bun packageManager; remove once that boundary is gone.
+                  COREPACK_ENABLE_STRICT: '0'
                   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
                   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
                   AWS_DEFAULT_REGION: us-east-1

@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-ruby - "$REPO_ROOT/.github/workflows/test.yml" "$REPO_ROOT/.github/workflows/lint.yml" "$REPO_ROOT/scripts/lint-workspace.ts" <<'RUBY'
+ruby - "$REPO_ROOT/.github/workflows/test.yml" "$REPO_ROOT/.github/workflows/lint.yml" "$REPO_ROOT/scripts/lint-workspace.ts" "$REPO_ROOT/.github/workflows/deploy.yml" <<'RUBY'
 require 'yaml'
 
 workflow = YAML.load_file(ARGV.fetch(0), aliases: true)
@@ -59,6 +59,28 @@ abort 'CI must discover every shell contract' unless contract_script.include?(
 abort 'CI must execute each shell contract with Bash' unless contract_script.include?(
     'bash "$contract"'
 )
+
+deploy_workflow = YAML.load_file(ARGV.fetch(3), aliases: true)
+deploy_jobs = deploy_workflow.fetch('jobs')
+
+{
+    'deploy-brain-service' => 'Deploy Brain Service Lambda',
+    'deploy-learn-cloud' => 'Deploy LearnCloud Lambda',
+    'deploy-lca-api' => 'Deploy LCA API Service Lambda',
+}.each do |job_name, step_name|
+    deploy_step = deploy_jobs.fetch(job_name).fetch('steps').find do |step|
+        step['name'] == step_name
+    end
+    abort "#{step_name} step missing" unless deploy_step
+
+    deploy_env = deploy_step.fetch('env')
+    abort "#{step_name} must disable pnpm package-manager strictness" unless deploy_env[
+        'COREPACK_ENABLE_STRICT'
+    ] == '0'
+    abort "#{step_name} uses an unsupported pnpm config environment variable" if deploy_env.key?(
+        'PNPM_CONFIG_PACKAGE_MANAGER_STRICT'
+    )
+end
 RUBY
 
 echo 'LearnCard E2E workflow contract passed'
