@@ -691,7 +691,11 @@ async function handleInboxClaimPresentation(
                 }
             }
 
-            // Create claimed relationship if holder has a profile
+            const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id);
+            if (!finalized) throw new Error('Inbox credential is no longer pending');
+
+            // Record the claim only after finalization succeeds so failed compare-and-swap
+            // attempts cannot leave a misleading audit relationship behind.
             if (holderProfile) {
                 await createClaimedRelationship(
                     holderProfile.profileId,
@@ -699,9 +703,6 @@ async function handleInboxClaimPresentation(
                     claimToken
                 );
             }
-
-            const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id);
-            if (!finalized) throw new Error('Inbox credential is no longer pending');
 
             // Log CLAIMED activity - chain to original activityId/integrationId if available
             // activityId and integrationId are stored on the inbox credential

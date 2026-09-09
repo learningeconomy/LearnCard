@@ -32,7 +32,9 @@ export const finalizeAndWipeInboxCredential = async (
     )
         .match({ model: InboxCredential, identifier: 'inboxCredential' })
         .where('inboxCredential.id = $id')
-        // Acquire the write lock before checking eligibility, including against migration.
+        // The write acquires a Neo4j node lock that is held until this transaction commits,
+        // even though the temporary property is removed before persisting the final state.
+        // Rechecking eligibility after the lock guarantees that only one finalizer succeeds.
         .set('inboxCredential._escrowLock = true')
         .remove('inboxCredential._escrowLock')
         .with('inboxCredential')
@@ -58,6 +60,8 @@ export const expireInboxCredentials = async (): Promise<number> => {
         .where(
             'inboxCredential.currentStatus = "PENDING" AND datetime(inboxCredential.expiresAt) <= datetime()'
         )
+        // As with claim finalization, serialize state changes on the inbox node before
+        // re-evaluating expiry eligibility.
         .set('inboxCredential._escrowLock = true')
         .remove('inboxCredential._escrowLock')
         .with('inboxCredential')

@@ -134,10 +134,11 @@ export async function finalizeInboxCredentialsForProfile(
                     finalCredential = JSON.parse(credentialPayload) as VC;
                 }
 
-                await createClaimedRelationship(profile.profileId, inboxCredential.id, 'finalize');
-
                 const finalized = await finalizeAndWipeInboxCredential(inboxCredential.id);
                 if (!finalized) throw new Error('Inbox credential is no longer pending');
+
+                // Only write a claim audit edge once the record is actually finalized.
+                await createClaimedRelationship(profile.profileId, inboxCredential.id, 'finalize');
 
                 if (
                     senderProfile &&

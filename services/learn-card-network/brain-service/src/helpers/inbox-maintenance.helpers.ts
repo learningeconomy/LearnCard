@@ -60,11 +60,13 @@ export const migrateLegacyInboxCredentials = async (
         )
             .match({ model: InboxCredential, identifier: 'inboxCredential' })
             .where('inboxCredential.id = $id')
-            // Serialize with finalization, then recheck the value read before encryption.
-            // A completed claim must never have its payload restored by migration.
+            // Lock the node before the compare-and-swap. Neo4j holds this write lock until
+            // commit even though the temporary property is removed in this transaction.
             .set('inboxCredential._escrowLock = true')
             .remove('inboxCredential._escrowLock')
             .with('inboxCredential')
+            // Compare-and-swap against the payload read before encryption. A completed claim
+            // changes status and clears the payload, so migration cannot restore escrow data.
             .where(
                 'inboxCredential.currentStatus = "PENDING" AND inboxCredential.credential = $previousCredential'
             )
@@ -96,7 +98,12 @@ export const runInboxMaintenance = async (): Promise<{
         const migration = await migrateLegacyInboxCredentials();
         migrated += migration.encrypted;
         wiped += migration.wiped;
-        if (migration.scanned < MIGRATION_BATCH_SIZE) break;
+        if (
+            migration.scanned < MIGRATION_BATCH_SIZE ||
+            (migration.encrypted === 0 && migration.wiped === 0)
+        ) {
+            break;
+        }
     }
 
     return { migrated, wiped, expired, deleted };
