@@ -6,6 +6,8 @@ description: 'How-To Guide: Sending credentials that require guardian approval b
 
 Issue credentials that require guardian approval before the recipient can claim them. This is for organizations issuing credentials to minors or managed accounts.
 
+**~5 minutes · Needs:** LearnCard SDK, a credential template
+
 ## Overview
 
 When you send a credential with a `guardianEmail`:
@@ -108,6 +110,18 @@ console.log(finalizeResult.guardianPending); // Number of credentials awaiting g
 | `AWAITING_GUARDIAN` | Credential sent, waiting for guardian to approve or reject |
 | `GUARDIAN_APPROVED` | Guardian approved, student can claim                       |
 | `GUARDIAN_REJECTED` | Guardian rejected, student cannot claim                    |
+
+## What you should see
+
+When you send the credential, the API returns a tracking ID and a status of `AWAITING_GUARDIAN`. The guardian receives an email, and the student sees a pending notice.
+
+## Troubleshooting
+
+| If…                                              | Then                                                                                                            |
+| :----------------------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
+| `guardianEmail must be different from recipient` | Ensure you are not sending the approval request to the student's own email address.                             |
+| `Credential stuck in AWAITING_GUARDIAN`          | The guardian has not yet approved or rejected the credential. You can resend the approval email if necessary.   |
+| `Student cannot claim credential`                | Verify the credential status is `GUARDIAN_APPROVED`. If it is `GUARDIAN_REJECTED`, the student cannot claim it. |
 
 ## Related
 

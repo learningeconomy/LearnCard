@@ -6,9 +6,11 @@ description: Give every credential your app issues a link to its public Credenti
 
 If your credential is listed in the [Credential Engine Registry](https://credentialengine.org/), add its CTID during the credential template step of [publishing your app](publish-your-app.md). Each issued credential then links to its public registry entry.
 
+**~5 minutes · Needs:** a CTID or Credential Finder URL
+
 ## Overview
 
-A CTID (Credential Transparency Identifier) adds an OBv3 alignment from a Boost template to its public [Credential Finder](https://credentialfinder.org/) description.
+A CTID (Credential Transparency Identifier) adds an OBv3 alignment from a credential template to its public [Credential Finder](https://credentialfinder.org/) description.
 
 ## What is CTID?
 
@@ -91,3 +93,15 @@ This preserves the registry link when a template is edited and saved again.
 3. Open the credential detail page
 4. The CTID is in the URL: `credentialfinder.org/credential/{ctid}`
 5. Or look for "CTID" in the credential metadata
+
+## What you should see
+
+When you issue a credential using this template, the resulting JSON will include the alignment entry pointing to the Credential Engine Registry.
+
+## Troubleshooting
+
+| If…                       | Then                                                                                                                          |
+| :------------------------ | :---------------------------------------------------------------------------------------------------------------------------- |
+| `Invalid CTID format`     | Ensure the CTID starts with `ce-` and is followed by a valid UUID (e.g., `ce-12345678-1234-5678-9abc-def012345678`).          |
+| `Alignment not appearing` | Verify that the template was saved successfully and that you are issuing from the updated template.                           |
+| `Duplicate alignments`    | The system automatically filters duplicates when loading, but ensure you aren't manually adding the same alignment elsewhere. |

@@ -2,54 +2,13 @@
 description: 'Tutorial: Create reusable credential templates and issue them at scale.'
 ---
 
-# Issue at Scale with Boosts
+# Issue at Scale with Credential Templates
 
-Boosts are credential templates for issuing similar credentials to multiple people.
+**~15 minutes · Needs:** Node.js, a LearnCard seed, a Signing Authority
 
-## What is a Boost, and Why Use It?
+A credential template (a _Boost_ in the API) is a signed-on-demand OBv3 credential that the network stores once and issues many times, tracking every recipient. For more details, see [Getting Started with Boosts](../core-concepts/credentials-and-data/getting-started-with-boosts.md).
 
-Use a Boost to:
-
-- Issue the same type of credential to multiple people.
-- Track recipients centrally.
-- Manage a credential type.
-- Delegate issuance.
-
-**Diagram 1: Sending Individual VCs** _(Covered in the previous tutorial)_
-
-```mermaid
-graph LR
-    subgraph Issuer Ops
-        Urmila["Urmila (Issuer Profile)"]
-    end
-
-    subgraph Credentials
-        VC1["Book Club ID<br/>for Ted<br/>(Credential)"]
-        VC2["Course Completion<br/>for Juniper<br/>(Credential)"]
-    end
-
-    subgraph Recipients
-        Ted["Ted (Recipient Profile)"]
-        Juniper["Juniper (Recipient Profile)"]
-    end
-
-    Urmila -- "Issues & Sends VC1" --> VC1
-    VC1 -- "CREDENTIAL_RECEIVED" --> Ted
-
-    Urmila -- "Issues & Sends VC2" --> VC2
-    VC2 -. "Sent, maybe not claimed" .-> Juniper
-
-    linkStyle 0 stroke-width:2px,fill:none,stroke:green;
-    linkStyle 1 stroke-width:2px,fill:none,stroke:blue;
-    linkStyle 2 stroke-width:2px,fill:none,stroke:green;
-    linkStyle 3 stroke-width:2px,fill:none,stroke:blue,stroke-dasharray: 5 5;
-```
-
-{% hint style="info" %}
-Each credential is a distinct, standalone item.
-{% endhint %}
-
-**Diagram 2: Sending Credentials via a Boost** _(Covered in this tutorial)_
+**Diagram: Sending Credentials via a Boost**
 
 ```mermaid
 graph LR
@@ -92,17 +51,11 @@ graph LR
     linkStyle 6 stroke-width:2px,fill:none,stroke:blue,stroke-dasharray: 5 5;
 ```
 
-{% hint style="success" %}
-Urmila creates one "Book Club ID" Boost. Ted and Juniper receive credentials that are instances of that Boost.
-{% endhint %}
-
 ## Prerequisites
 
 1. **Node.js 20+** installed.
 2. **A basic LearnCard project** set up (from the [Quickstart](../quick-start/your-first-integration.md)).
-3. **A Signing Authority:** this tutorial sends templates to email addresses, which LearnCard signs on your behalf — so register one first: [Set Up a Signing Authority](../how-to-guides/create-signing-authority.md). (Sending a credential you signed yourself, as in the Quickstart, doesn't need this.)
-
----
+3. **A Signing Authority:** this tutorial sends templates to email addresses, which LearnCard signs on your behalf — so register one first: [Set Up a Signing Authority](../how-to-guides/create-signing-authority.md).
 
 ## Part 1: Setting Up Your Issuer Environment
 
@@ -129,12 +82,6 @@ if (!profile) {
     });
 }
 ```
-
-{% hint style="info" %}
-**Profiles:** `createProfile` creates a standard user profile (a person). `createServiceProfile` creates an organization or app issuer. Learn more about [Network Profiles](../core-concepts/identities-and-keys/network-profiles.md).
-{% endhint %}
-
----
 
 ## Part 2: Defining the Credential Template
 
@@ -167,8 +114,6 @@ const meetupAttendeeTemplate = {
 };
 ```
 
----
-
 ## Part 3: Creating the Boost
 
 Create the Boost on the LearnCard Network using the template content.
@@ -187,8 +132,6 @@ console.log('Boost Created! URI:', boostUri);
 
 The `boostUri` is the identifier for your Boost template.
 
----
-
 ## Part 4: Sending the Boost to Multiple Recipients
 
 The `send` method populates the recipient, signs the credential using your signing authority, and delivers it.
@@ -200,7 +143,7 @@ for (const email of attendees) {
     console.log(`Sending Boost to ${email}...`);
     const result = await learnCard.invoke.send({
         type: 'boost',
-        recipient: email, // email, phone, profile ID, or DID — auto-detected
+        recipient: email,
         templateUri: boostUri,
     });
 
@@ -211,12 +154,6 @@ for (const email of attendees) {
     }
 }
 ```
-
-{% hint style="info" %}
-**Lower-level alternative:** You can also use `learnCard.invoke.sendBoost(profileId, boostUri)` if you only have a LearnCard Profile ID and don't need the unified `send` method's email/phone delivery features.
-{% endhint %}
-
----
 
 ## Dynamic Templates with Mustache Variables
 
@@ -268,23 +205,59 @@ const result = await learnCard.invoke.send({
 });
 ```
 
-The resulting credential will have all placeholders replaced:
+The resulting credential will have all placeholders replaced.
 
-- `{{courseName}}` → `Web Development 101`
-- `{{studentName}}` → `Alice Smith`
-- `{{grade}}` → `A`
+## Issue from a spreadsheet
 
-{% hint style="info" %}
-**Missing Variables**: If you don't provide a value for a variable, it's rendered as an empty string. This is useful for optional fields.
-{% endhint %}
+You can issue credentials in bulk by reading a CSV file.
 
-For more details on dynamic templates, see [Dynamic Templates with Mustache](../core-concepts/credentials-and-data/boost-credentials.md#dynamic-templates-with-mustache).
+```javascript
+import fs from 'node:fs';
 
----
+// Assuming a CSV with header: name,email,cohort
+const csvData = fs.readFileSync('students.csv', 'utf-8');
+const rows = csvData
+    .split('\n')
+    .slice(1)
+    .filter(row => row.trim());
 
-## Summary & What's Next
+let pending = 0;
+let issued = 0;
 
-Next steps:
+for (const row of rows) {
+    const [name, email, cohort] = row.split(',');
+
+    const result = await learnCard.invoke.send({
+        type: 'boost',
+        recipient: email.trim(),
+        templateUri: dynamicBoostUri,
+        templateData: { name: name.trim(), cohort: cohort.trim() },
+    });
+
+    if (result.inbox?.status === 'PENDING') pending++;
+    else issued++;
+}
+
+console.log(`Issued: ${issued}, Pending: ${pending}`);
+```
+
+Note that re-running `send` for the same recipient and template will re-send the credential (it is not idempotent). To avoid duplicates, use `learnCard.invoke.getPaginatedBoostRecipients(boostUri)` to reconcile who has already received it before sending.
+
+### What you should see
+
+1. The script creates the Boost and outputs a URI.
+2. It loops through the recipients and sends the credential.
+3. The console logs the claim links or delivery status.
+
+## Troubleshooting
+
+| If…                           | Then                                                                   |
+| :---------------------------- | :--------------------------------------------------------------------- |
+| `Missing SECURE_SEED`         | Ensure your `.env` file has the `SECURE_SEED` variable set             |
+| `Signing Authority not found` | Register a signing authority for your profile first                    |
+| Variables not replaced        | Ensure the keys in `templateData` match the `{{variableName}}` exactly |
+
+## Next steps
 
 - **Retrieving Boost Recipients:** Use `learnCard.invoke.getPaginatedBoostRecipients(boostUri)` to see who has been issued a credential from this Boost.
 - **Boost Permissions:** Control who can edit, issue, or manage your Boosts.

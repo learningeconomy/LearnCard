@@ -6,6 +6,8 @@ description: 'How-To Guide: Add a credential claim button to any website using t
 
 Add a "Claim Credential" button to any webpage. When a user clicks it, a modal walks them through email verification and deposits the credential into their LearnCard wallet.
 
+**~15 minutes · Needs:** a publishable key from the Developer Portal and a credential template.
+
 {% hint style="info" %}
 This is for **external websites** that want to award credentials to visitors. If you're building an app that runs _inside_ the LearnCard App Store, see [Connect an Embedded App](connect-an-embedded-app.md) instead.
 {% endhint %}

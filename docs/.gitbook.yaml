@@ -102,11 +102,11 @@ redirects:
     how-to-guides/deploy-infrastructure/connect-to-independent-network: how-to-guides/deploy-infrastructure/connect-to-independent-network.md
     how-to-guides/deploy-infrastructure/deploy-your-own-network: how-to-guides/deploy-infrastructure/connect-to-independent-network.md
     how-to-guides/deploy-infrastructure/generate-api-tokens: how-to-guides/deploy-infrastructure/generate-api-tokens.md
-    how-to-guides/deploy-infrastructure/managing-seed-phrases: how-to-guides/deploy-infrastructure/managing-seed-phrases.md
-    how-to-guides/deploy-infrastructure/sss-key-management-config: how-to-guides/deploy-infrastructure/sss-key-management-config.md
+    how-to-guides/deploy-infrastructure/managing-seed-phrases: how-to-guides/deploy-infrastructure/choose-key-management.md
+    how-to-guides/deploy-infrastructure/sss-key-management-config: sdks/sss-key-manager.md
     how-to-guides/deploy-infrastructure/the-simplest-plugin: how-to-guides/deploy-infrastructure/the-simplest-plugin.md
     how-to-guides/export-and-import-your-data: how-to-guides/export-and-import-your-data.md
-    how-to-guides/implement-flows/claim-data-after-guardian-consent: how-to-guides/implement-flows/claim-data-after-guardian-consent.md
+    how-to-guides/implement-flows/claim-data-after-guardian-consent: how-to-guides/implement-flows/guardian-gated-credentials.md
     how-to-guides/implement-flows/guardian-gated-credentials: how-to-guides/implement-flows/guardian-gated-credentials.md
     how-to-guides/interoperate-with-learncard: how-to-guides/interoperate-with-learncard.md
     how-to-guides/send-credentials: how-to-guides/send-credentials.md
@@ -144,7 +144,7 @@ redirects:
     sdks/partner-connect: sdks/partner-connect.md
     sdks/sss-key-manager: sdks/sss-key-manager.md
     tutorials/create-a-boost: tutorials/create-a-boost.md
-    tutorials/create-a-connected-website: tutorials/create-a-connected-website.md
+    tutorials/create-a-connected-website: how-to-guides/connect-systems/connect-a-website.md
     tutorials/create-a-consentflow: tutorials/create-a-consentflow.md
     tutorials/create-a-credential: tutorials/create-a-credential.md
     tutorials/listen-to-webhooks: tutorials/listen-to-webhooks.md

@@ -6,6 +6,8 @@ description: 'Tutorial: create a ConsentFlow — the starting point for consent 
 
 A [ConsentFlow](../core-concepts/consent-and-permissions/consentflow-overview.md) lets your application request permission to read user data or write credentials to their profile.
 
+**~15 minutes · Needs:** LearnCard SDK initialized, a service profile
+
 ## Consent or guardianship — which do you need?
 
 Decide if you need a standard ConsentFlow or a guardian-gated flow:
@@ -13,7 +15,7 @@ Decide if you need a standard ConsentFlow or a guardian-gated flow:
 - **Standard ConsentFlow**: For independent learners. You request read/write access, they accept, and you can set up ongoing auto-issuance.
 - **Guardianship**: For managed accounts. A guardian must approve via email and OTP before the learner can claim the credential. Trigger this by calling `send()` with `options.guardianEmail`, or by creating a contract with `needsGuardianConsent: true`.
 
-For guardianship, see [Guardian-gated credentials](../how-to-guides/implement-flows/guardian-gated-credentials.md) and [Claim data after guardian consent](../how-to-guides/implement-flows/claim-data-after-guardian-consent.md). For standard consent, see the [ConsentFlow overview](../core-concepts/consent-and-permissions/consentflow-overview.md).
+For guardianship, see [Guardian-gated credentials](../how-to-guides/implement-flows/guardian-gated-credentials.md). For standard consent, see the [ConsentFlow overview](../core-concepts/consent-and-permissions/consentflow-overview.md).
 
 ## In this tutorial:
 
@@ -318,24 +320,24 @@ _Note on reading specific user data:_ `getConsentFlowData` retrieves all consent
 
 ```typescript
 // (Assuming networkLearnCard, contractUri, userDidFromRedirect are defined)
-// You'll also need a boostUri that acts as a template/category for the credential you're writing.
-// Creating boosts is covered in other docs/tutorials. For here, assume you have one.
-const relevantBoostUri = 'uri:boost:YOUR_RELEVANT_BOOST_URI'; // Replace!
+// You'll also need a templateUri that acts as a template/category for the credential you're writing.
+// Creating credential templates is covered in other docs/tutorials. For here, assume you have one.
+const relevantTemplateUri = 'uri:boost:YOUR_RELEVANT_TEMPLATE_URI'; // Replace!
 
 // Define the credential you want to issue to this user
-const boostTemplate = networkLearnCard.invoke.newCredential({
+const credentialBase = networkLearnCard.invoke.newCredential({
     type: 'boost',
 });
 
 const credentialTemplate = {
-    ...boostTemplate,
+    ...credentialBase,
     issuer: networkLearnCard.id.did(),
     name: 'Completed ConsentFlow CodePen Tutorial Step',
     credentialSubject: {
-        ...boostTemplate.credentialSubject,
+        ...credentialBase.credentialSubject,
         id: consentedUserDidGlobal,
         achievement: {
-            ...boostTemplate.credentialSubject.achievement,
+            ...credentialBase.credentialSubject.achievement,
             name: 'Completed ConsentFlow Tutorial Step',
             description: 'LearnCard Docs tutorial on ConsentFlow.',
             achievementType: 'LearnCard Docs',
@@ -343,31 +345,31 @@ const credentialTemplate = {
     },
 };
 
-const boostMetadata = {
+const templateMetadata = {
     name: 'Completed ConsentFlow Tutorial Step',
     description: 'LearnCard Docs tutorial on ConsentFlow.',
     category: 'Achievement',
 };
 
-const boostUri = await networkLearnCard.invoke.createBoost(credentialTemplate, boostMetadata);
+const templateUri = await networkLearnCard.invoke.createBoost(credentialTemplate, templateMetadata);
 
 const newCredentialToIssue = await networkLearnCard.invoke.issueCredential({
     ...credentialTemplate,
-    boostId: boostUri,
+    boostId: templateUri,
 });
 
 async function sendCredentialViaContract(
     consenterDid: string,
     contract: string,
     credential: any,
-    boost: string
+    template: string
 ) {
     try {
         const issuedCredentialUri = await networkLearnCard.invoke.writeCredentialToContract(
             consenterDid,
             contract,
             credential,
-            boost
+            template
         );
         console.log(
             'Credential successfully sent via contract! Issued Credential URI:',
@@ -382,31 +384,37 @@ async function sendCredentialViaContract(
 }
 
 // Example usage:
-// sendCredentialViaContract(userDidFromRedirect, contractUri, newCredentialToIssue, relevantBoostUri);
+// sendCredentialViaContract(userDidFromRedirect, contractUri, newCredentialToIssue, relevantTemplateUri);
 ```
 
 {% hint style="warning" %}
 **Important:**
 
 - The `credential.type` and its category must match what your ConsentFlow contract allows for `write` permissions.
-- The `boostUri` parameter in `writeCredentialToContract` links the issued credential to a "Boost," which can act as a template or define its category and display properties. Ensure this Boost exists and your service profile has permission to use it.
+- The `templateUri` parameter in `writeCredentialToContract` links the issued credential to a credential template (a _Boost_ in the API), which defines its category and display properties. Ensure this template exists and your service profile has permission to use it.
 
 {% endhint %}
 
 ---
 
+## What you should see
+
+When the user completes the flow, they are redirected back to your `redirectUrl` with their DID in the query string. You can then use this DID to read their consented data or issue credentials to them.
+
 ## Troubleshooting
 
-- **"Invalid Terms for Contract"**: You might be trying to consent to a contract twice, or the terms you're accepting don't match the contract's requirements.
-- **"Could not find contract"**: Double-check your `contractUri`. It must be exact.
-- **Redirect fails**: Ensure your `redirectUrl` is a valid `http://` or `https://` URL.
+| If…                          | Then                                                                                                                       |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
+| `Invalid Terms for Contract` | You might be trying to consent to a contract twice, or the terms you're accepting don't match the contract's requirements. |
+| `Could not find contract`    | Double-check your `contractUri`. It must be exact.                                                                         |
+| `Redirect fails`             | Ensure your `redirectUrl` is a valid `http://` or `https://` URL.                                                          |
 
 ## Next Steps
 
 Explore more advanced ConsentFlow features:
 
 - [Updating and withdrawing consent.](../sdks/learncard-core/construction.md#retrieving-profiles-5)
-- Using [Auto-Boosts](../core-concepts/consent-and-permissions/auto-boosts.md) to automatically issue credentials upon consent.
+- Using [Auto-Issuance](../core-concepts/consent-and-permissions/auto-boosts.md) to automatically issue credentials upon consent.
 - Using an existing contract as a template in **Admin Tools → Manage ConsentFlow Contracts** by selecting **"Use as template"** from the contract detail view.
 - More complex data queries.
 

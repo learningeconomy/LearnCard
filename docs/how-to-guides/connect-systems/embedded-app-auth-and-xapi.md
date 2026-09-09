@@ -6,6 +6,8 @@ description: Embedded app authentication and xAPI with identity tokens, X-VP, an
 
 Embedded apps use separate credentials for user identity and xAPI requests.
 
+**~10 minutes · Needs:** Partner Connect SDK, a backend to verify tokens
+
 ## Getting the user's identity
 
 Inside LearnCard, the Partner Connect SDK asks the host for the user's identity:
@@ -50,5 +52,17 @@ Self-hosted and staging environments use the domains in their tenant configurati
 ## End-to-end shape
 
 Your app calls `requestIdentity()`, and your backend verifies the returned token and links `user.did` to an account. After learning activity occurs, send an xAPI statement whose actor is `user.did` with an `X-VP` presentation JWT. LearnCloud verifies the presentation and stores the statement.
+
+## What you should see
+
+When you successfully authenticate and send an xAPI statement, LearnCloud returns a `200 OK` or `204 No Content` response, and the statement is stored in the user's learning record store.
+
+## Troubleshooting
+
+| If…                       | Then                                                                                                                         |
+| :------------------------ | :--------------------------------------------------------------------------------------------------------------------------- |
+| `401 Unauthorized`        | Verify that the `X-VP` header contains a valid Verifiable Presentation JWT, not the identity token from `requestIdentity()`. |
+| `Actor/holder mismatch`   | Ensure the DID in the statement's `actor` matches the DID of the VP holder.                                                  |
+| `Invalid token signature` | Check that the VP JWT is correctly signed and hasn't expired.                                                                |
 
 For other questions, [open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) or email [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).

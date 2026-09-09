@@ -6,6 +6,8 @@ description: Add your organization to the LEF Trusted Issuer Registry.
 
 Submit a pull request (PR) to add your organization's DID and details to the LEF Member Trusted Issuer Registry.
 
+**~10 minutes · Needs:** a GitHub account, your organization's DID
+
 **Goal:** Add your organization's DID and information to `registry.json`.
 
 **Who is this for?** Organizations that issue or plan to issue Verifiable Credentials and want to join the LEF registry.
@@ -161,6 +163,18 @@ GitHub usually opens the pull request page after you create the branch. Otherwis
 2. **Discussion:** Monitor the PR and respond to feedback.
 3. **Approval & Merge:** Approved submissions are merged into the LEF Member Trusted Issuer Registry.
 4. **Propagation:** Applications and services update after they fetch the latest registry version.
+
+## What you should see
+
+Once your PR is merged, your organization's DID and details will be publicly available in the `registry.json` file on the `main` branch. Applications that consume this registry will recognize your DID as a trusted issuer.
+
+## Troubleshooting
+
+| If…              | Then                                                                                                                   |
+| :--------------- | :--------------------------------------------------------------------------------------------------------------------- |
+| `Invalid JSON`   | Use a JSON validator to ensure you haven't missed any commas or quotes.                                                |
+| `Merge conflict` | Another organization may have added an entry at the same time. Pull the latest `main` branch and resolve the conflict. |
+| `PR checks fail` | Ensure your entry follows the exact schema required (DID as key, object with `name`, `location`, `url`).               |
 
 ### **Important Considerations:**
 

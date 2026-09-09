@@ -2,9 +2,32 @@
 description: Point the LearnCard SDK or REST API at your own independent network infrastructure.
 ---
 
-# Connect to an Independent Network
+# Run Your Own Network
 
 If you run your own instance of the LearnCard Network, point the LearnCard SDK or REST API to your infrastructure instead of the public network.
+
+**~15 minutes · Needs:** Docker, LearnCard SDK
+
+## What you're running
+
+The LearnCard Network consists of three main services located in `services/learn-card-network/`:
+
+- **Brain Service** (`brain-service`): The core network API and graph database.
+- **LearnCloud** (`learn-cloud-service`): The storage layer for credentials.
+- **LCA API** (`lca-api`): The backend for the LearnCard App.
+
+## Run locally
+
+To run the network locally for development, use the provided Docker Compose file:
+
+```bash
+cd services/learn-card-network
+docker compose up
+```
+
+This will start all necessary services, databases (Neo4j, MongoDB), and queues.
+
+## Point the SDK and REST at it
 
 ### Option A: Using the LearnCard SDK
 
@@ -92,12 +115,6 @@ curl -X POST https://network.independent.example.org/api/send \
 | Recipient never gets an email                | Your network's email provider isn't configured — check the Brain Service delivery settings          |
 | `Profile not found` when creating the issuer | Profiles live per-network: create your issuer profile on the independent network first              |
 
-### Full OpenAPI Surface
+## Production Deployment
 
-Your independent network exposes the full OpenAPI surface for advanced operations, such as `/api/boost/create` and `/api/profile`.
-
-## Next steps
-
-- [Generate API Tokens](generate-api-tokens.md) — create scoped tokens on your network for REST calls.
-- [How Should I Manage Keys?](choose-key-management.md) — where the issuer seed should live.
-- Running the services yourself? Start from the [Brain Service README](https://github.com/learningeconomy/LearnCard/tree/main/services/learn-card-network/brain-service).
+The services are designed to be deployed via serverless architecture (you can find the `serverless.yml` files in each service directory). Because production deployments require careful configuration of databases, queues, and email providers, please email sdk@learningeconomy.io before a production deployment and we'll help you get set up.

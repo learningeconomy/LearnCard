@@ -6,6 +6,8 @@ description: 'How-To Guide: Configuring a Signing Authority'
 
 A [Signing Authority](../core-concepts/identities-and-keys/signing-authorities.md) is a service that cryptographically signs credentials on your behalf, allowing you to issue official records without directly handling private keys in your application.
 
+**~5 minutes · Needs:** a LearnCard Passport profile
+
 {% hint style="info" %}
 **Do you need a signing authority?**
 If you sign credentials yourself and pass `signedCredential` to `send()` (like in the [Quickstart](../quick-start/your-first-integration.md)), you do **NOT** need a signing authority. You only need one when LearnCard signs on your behalf — for example, when using `templateUri`/`templateData` sends, generating claim links, or building Partner Connect apps.
@@ -147,8 +149,28 @@ await learncardApiClient.post('/inbox/issue', {
 
 {% embed url="https://www.loom.com/share/080838131d82428289073699d19a2aa8" %}
 
+## What you should see
+
+When you successfully create and register a signing authority, the CLI or API returns the authority details:
+
+```json
+{
+    "name": "default-issuer",
+    "did": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+    "endpoint": "https://network.learncard.com/api/signing-authority/..."
+}
+```
+
+## Troubleshooting
+
+| If…                                  | Then                                                                                         |
+| :----------------------------------- | :------------------------------------------------------------------------------------------- |
+| `Could not create signing authority` | Ensure your `learnCard` instance is initialized with a valid seed and network access.        |
+| `Profile not found`                  | You must create a profile (`createServiceProfile`) before registering a signing authority.   |
+| `Unauthorized`                       | Check that your API token or seed has the correct permissions to manage signing authorities. |
+
 ## Next steps
 
 - Send your first credential → [Send & Issue Credentials](send-credentials.md)
-- Issue at scale → [Create a Boost](../tutorials/create-a-boost.md)
+- Issue at scale → [Create a Credential Template](../tutorials/create-a-boost.md)
 - Track claims → [Listen to Webhooks](../tutorials/listen-to-webhooks.md)

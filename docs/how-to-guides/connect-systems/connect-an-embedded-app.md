@@ -6,6 +6,8 @@ description: 'How-To Guide: Issue Credentials from Embedded Apps in the LearnCar
 
 Build apps that run inside LearnCard and issue credentials directly to users. This guide covers the App Store integration for embedded applications.
 
+**~2 hours · Needs:** an app listing in the [Developer Portal](https://learncard.app/developer-portal) (or mock mode), a credential template, a signing authority.
+
 ## Overview
 
 The LearnCard App Store allows third-party applications to be embedded within the LearnCard app. These embedded apps can:
@@ -45,7 +47,7 @@ If you need to authenticate users or send xAPI statements, see [Identity and xAP
 ## Prerequisites
 
 1. **App Store Listing** - Your app must be registered in the LearnCard App Store
-2. **Boost Templates** - Pre-configured credential templates attached to your listing
+2. **Credential Templates** - Pre-configured credential templates attached to your listing
 3. **Partner Connect SDK** - For communication with the LearnCard host
 
 ## Quick Start
@@ -287,5 +289,5 @@ For local development, use the Developer Portal's **Preview App** feature. Your 
 ## Related Documentation
 
 - [Partner Connect SDK](../../sdks/partner-connect.md) - Full SDK reference
-- [Boost Credentials](../../core-concepts/credentials-and-data/boost-credentials.md) - Understanding boosts
+- [Credential Templates](../../core-concepts/credentials-and-data/boost-credentials.md) - Understanding credential templates
 - [Connect a Website](./connect-a-website.md) - Alternative: server-side issuance via ConsentFlow

@@ -4,10 +4,10 @@ This tutorial will walk you through the essential steps to send an xAPI statemen
 
 ## **What you'll accomplish:**
 
--   Construct a basic xAPI statement.
--   Send the statement to the LearnCloud xAPI endpoint.
--   Retrieve and verify the statement you sent.
--   View xAPI statements in the LearnCard app's Activity Feed.
+- Construct a basic xAPI statement.
+- Send the statement to the LearnCloud xAPI endpoint.
+- Retrieve and verify the statement you sent.
+- View xAPI statements in the LearnCard app's Activity Feed.
 
 {% embed url="https://codepen.io/Jacks-n-Smith/pen/xbbBmBV" fullWidth="false" %}
 
@@ -18,7 +18,7 @@ This tutorial will walk you through the essential steps to send an xAPI statemen
     - **What is a DID?** A DID (Decentralized Identifier) is a unique identifier for your user. Think of it as a secure, private digital ID. More details can be found on our [Understanding DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) core concept page.
 2. **Your Environment:**
     - You have the [LearnCard SDK ](../sdks/learncard-core/)initialized in your project.
-    - You have obtained a **JSON Web Token (JWT)** for authentication. This JWT represents the authenticated user (the "actor"). As an example of how to create this JWT, check out the[ "Create a Connected Website Tutorial."](create-a-connected-website.md)
+    - You have obtained a **JSON Web Token (JWT)** for authentication. This JWT represents the authenticated user (the "actor"). As an example of how to create this JWT, check out the[ "Create a Connected Website Tutorial."](../how-to-guides/connect-systems/connect-a-website.md)
     - You have the **DID** of the authenticated user.
     - The default LearnCloud xAPI endpoint is `https://cloud.learncard.com/xapi/statements`.
 
@@ -91,10 +91,10 @@ interface XAPIStatement {
 
 ✨ **Good to know:**
 
--   **DID Usage:** For LearnCloud, ensure the `userDid` is used in both `actor.name` and `actor.account.name`.
--   **Verb Selection:** Use standard xAPI verb URIs when possible. You can find lists of common verbs online (e.g., on the ADLNet website).
--   **Activity IDs:** Make your `object.id` URIs unique for each distinct activity. They don't need to be real, live URLs.
-    {% endstep %}
+- **DID Usage:** For LearnCloud, ensure the `userDid` is used in both `actor.name` and `actor.account.name`.
+- **Verb Selection:** Use standard xAPI verb URIs when possible. You can find lists of common verbs online (e.g., on the ADLNet website).
+- **Activity IDs:** Make your `object.id` URIs unique for each distinct activity. They don't need to be real, live URLs.
+  {% endstep %}
 
 {% step %}
 **Prepare and Send the Statement**
@@ -316,11 +316,11 @@ In the contract detail view, look for the **"xAPI Data Feed"** button. Tap it to
 
 The Activity Feed displays all xAPI statements associated with that specific contract, including:
 
--   **Verb badges** (e.g., "completed", "attempted", "mastered") with color-coded styling
--   **Activity name and description**
--   **Timestamps** showing when each activity occurred
--   **Result data** (scores, completion status, success/failure)
--   **Raw JSON view** for developers who want to inspect the full statement
+- **Verb badges** (e.g., "completed", "attempted", "mastered") with color-coded styling
+- **Activity name and description**
+- **Timestamps** showing when each activity occurred
+- **Result data** (scores, completion status, success/failure)
+- **Raw JSON view** for developers who want to inspect the full statement
 
 The feed supports infinite scrolling, so you can browse through all your historical activity data.
 
@@ -335,14 +335,14 @@ The feed supports infinite scrolling, so you can browse through all your histori
 
 ## Important Considerations (Recap)
 
--   **Authentication (`X-VP` Header):** All requests to the LearnCloud xAPI endpoint must include a valid JWT in the `X-VP` header.
--   **Permissions:**
-    -   Users can only send statements where they are the actor (or have delegated authority).
-    -   Users can typically only read statements where they are the actor. The DID in your JWT (`X-VP` header) must match the actor's DID you are querying for. A `401 Unauthorized` error often means a DID mismatch or an invalid/expired JWT.
--   **Error Handling:** Always check response statuses and handle potential errors from the API or network issues.
--   **Delegated Access:** For scenarios where another party needs to read or write statements on behalf of a user, LearnCloud supports a delegated access mechanism using Verifiable Credentials. (See [Delegated Access](../sdks/learncloud-storage-api/xapi-reference.md#delegated-access) for more info).
--   **Contract-Scoped Statements:** When using ConsentFlow, xAPI statements can be automatically tagged with the contract URI, enabling queries by contract. (See [Contract-Scoped xAPI Statements](../sdks/learncloud-storage-api/xapi-reference.md#contract-scoped-xapi-statements) for details).
--   **Voiding Statements:** You can invalidate previously sent statements. (See [Advanced Topics: Voiding Statements](../sdks/learncloud-storage-api/xapi-reference.md#voiding-statements) for how).
+- **Authentication (`X-VP` Header):** All requests to the LearnCloud xAPI endpoint must include a valid JWT in the `X-VP` header.
+- **Permissions:**
+    - Users can only send statements where they are the actor (or have delegated authority).
+    - Users can typically only read statements where they are the actor. The DID in your JWT (`X-VP` header) must match the actor's DID you are querying for. A `401 Unauthorized` error often means a DID mismatch or an invalid/expired JWT.
+- **Error Handling:** Always check response statuses and handle potential errors from the API or network issues.
+- **Delegated Access:** For scenarios where another party needs to read or write statements on behalf of a user, LearnCloud supports a delegated access mechanism using Verifiable Credentials. (See [Delegated Access](../sdks/learncloud-storage-api/xapi-reference.md#delegated-access) for more info).
+- **Contract-Scoped Statements:** When using ConsentFlow, xAPI statements can be automatically tagged with the contract URI, enabling queries by contract. (See [Contract-Scoped xAPI Statements](../sdks/learncloud-storage-api/xapi-reference.md#contract-scoped-xapi-statements) for details).
+- **Voiding Statements:** You can invalidate previously sent statements. (See [Advanced Topics: Voiding Statements](../sdks/learncloud-storage-api/xapi-reference.md#voiding-statements) for how).
 
 ---
 
@@ -352,10 +352,10 @@ Congratulations! You've now seen how to send, read, and view xAPI statements wit
 
 From here, you can explore:
 
--   Sending different types of xAPI statements (e.g., `completed`, `mastered`, with `result` objects).
--   Using the other examples provided in our [xAPI Concepts Guide](../core-concepts/credentials-and-data/xapi-data.md).
--   Implementing more advanced queries to filter and retrieve statements. (See [Advanced xAPI Statement Queries](../sdks/learncloud-storage-api/xapi-reference.md#advanced-xapi-statement-queries)).
--   Using [Contract-Scoped xAPI Statements](../sdks/learncloud-storage-api/xapi-reference.md#contract-scoped-xapi-statements) to associate activity data with specific apps.
--   Connecting these xAPI statements as evidence for Verifiable Credentials.
+- Sending different types of xAPI statements (e.g., `completed`, `mastered`, with `result` objects).
+- Using the other examples provided in our [xAPI Concepts Guide](../core-concepts/credentials-and-data/xapi-data.md).
+- Implementing more advanced queries to filter and retrieve statements. (See [Advanced xAPI Statement Queries](../sdks/learncloud-storage-api/xapi-reference.md#advanced-xapi-statement-queries)).
+- Using [Contract-Scoped xAPI Statements](../sdks/learncloud-storage-api/xapi-reference.md#contract-scoped-xapi-statements) to associate activity data with specific apps.
+- Connecting these xAPI statements as evidence for Verifiable Credentials.
 
 Happy tracking!

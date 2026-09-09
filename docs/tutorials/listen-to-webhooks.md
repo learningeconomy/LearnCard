@@ -2,16 +2,13 @@
 
 The LearnCloud Network sends your application a direct message (a "notification") as soon as an event occurs on a user's LearnCard profile. This direct message is sent to a specific web address (URL) that you provide, called a **webhook**.
 
-## **Prerequisites:**
+**~15 minutes · Needs:** Node.js (v18+), a public URL (e.g., ngrok)
 
-1. **LearnCard SDK Initialized:** An active `learnCard` instance connected to the network (we'll call it `yourLearnCardInstance`).
-2. **A Publicly Accessible URL:** Your application needs an endpoint (a URL) that the LearnCloud Network can reach over the internet to send `POST` requests.
-    - **For local development:** Tools like **ngrok** are perfect for this! Ngrok can create a secure, public URL that tunnels to your local machine. We'll cover this.
-    - **For production:** This would be a route on your deployed web server or a serverless function (e.g., AWS Lambda + API Gateway, Google Cloud Function).
-3. **Basic understanding of:**
-    - How webhooks work (HTTP `POST` requests).
-    - Node.js and a simple web framework like Express (for our example listener). You can adapt the principles to any backend technology.
-4. **Familiarity with LearnCard Profiles:** You'll be updating a profile to set its webhook URL.
+## Prerequisites
+
+- [Your First Integration](../quick-start/your-first-integration.md) completed (LearnCard SDK initialized)
+- A publicly accessible URL (e.g., via ngrok for local development)
+- Basic understanding of HTTP POST requests and Express.js
 
 ---
 
@@ -241,6 +238,31 @@ Message: Profile A DisplayName has sent you a connection request!
 - **Payload Reference:** This tutorial focused on `CONNECTION_REQUEST`. Refer to the [LearnCloud Network API Notifications Documentation](../sdks/learncard-network/notifications.md) for the structure of all other notification types (`CREDENTIAL_RECEIVED`, `CONSENT_FLOW_TRANSACTION`, etc.) and expand your listener to handle them as needed.
 
 ---
+
+## What you should see
+
+When you trigger a webhook, your listener's console should output the payload:
+
+```json
+{
+    "type": "CONNECTION_REQUEST",
+    "to": { "did": "did:key:z6M..." },
+    "from": { "did": "did:key:z6M...", "displayName": "Profile A" },
+    "message": {
+        "title": "New Connection Request",
+        "body": "Profile A has sent you a connection request!"
+    },
+    "data": {}
+}
+```
+
+## Troubleshooting
+
+| If…                                              | Then                                                                                            |
+| :----------------------------------------------- | :---------------------------------------------------------------------------------------------- |
+| Webhook never arrives                            | Verify your ngrok URL matches the `notificationsWebhook` field exactly.                         |
+| `Notification webhook transport failed with 404` | Your server is running, but the route path (e.g., `/learncard-notifications`) is incorrect.     |
+| Duplicate webhooks                               | Your server is not returning a `200 OK` fast enough. Acknowledge the request before processing. |
 
 ## Next Steps
 

@@ -47,15 +47,15 @@ Examples include parent-approved school apps and scouting organizations issuing 
 - Start here: [Create a ConsentFlow](../tutorials/create-a-consentflow.md)
 - Concepts: [ConsentFlow overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
 
-## 🔬 Go deep: build on the SDK
+## 🔬 Keys, tokens & infrastructure
 
-For products where LearnCard is core infrastructure: run your own wallet instances, write plugins, manage keys, or deploy your own network.
-
-Examples include a state agency running a credential network and a wallet vendor adding a LearnCard plugin.
+Every server integration needs a key and a token; some need more — plugins, a staging environment, or a network of their own.
 
 - Start here: [How should I manage keys?](../how-to-guides/deploy-infrastructure/choose-key-management.md)
 - [Build a plugin](../how-to-guides/deploy-infrastructure/the-simplest-plugin.md)
-- [Connect to an independent network](../how-to-guides/deploy-infrastructure/connect-to-independent-network.md)
+- [Generate API tokens](../how-to-guides/deploy-infrastructure/generate-api-tokens.md) · [Test safely on staging](../how-to-guides/deploy-infrastructure/test-safely.md)
+- [Run your own network](../how-to-guides/deploy-infrastructure/connect-to-independent-network.md)
+- Ready to ship? [Go to Production](../how-to-guides/go-to-production.md) checklist
 - Full API: [LearnCard Wallet SDK](../sdks/learncard-core/README.md)
 
 ---

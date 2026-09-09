@@ -1,5 +1,7 @@
 # Generate API Tokens
 
+**~5 minutes · Needs:** a LearnCard Passport profile
+
 {% hint style="info" %}
 See [Auth Grants and Scopes](../../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md).
 {% endhint %}
@@ -11,8 +13,8 @@ To generate and use an API token:
 ```javascript
 // Step 1: Create an AuthGrant with specific permissions
 const grantId = await learnCard.invoke.addAuthGrant({
-    name: 'Boost Sender Auth',
-    description: 'Permission to send boosts',
+    name: 'Credential Sender Auth',
+    description: 'Permission to send credentials',
     scope: 'boosts:write',
 });
 
@@ -21,29 +23,30 @@ const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
 
 // Step 3: Prepare the payload for your API request
 const payload = {
-    boostUri: 'uri-of-the-boost-to-send',
+    templateUri: 'uri-of-the-template-to-send',
     signingAuthority: 'your-signing-authority',
 };
 
 // Step 4: Make an authenticated HTTP request using the token
-const response = await fetch(
-    `https://network.learncard.com/api/boost/send/via-signing-authority/RECIPIENT_PROFILE_ID`,
-    {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-    }
-);
+const response = await fetch(`https://network.learncard.com/api/send`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+        type: 'boost',
+        recipient: 'RECIPIENT_PROFILE_ID',
+        ...payload,
+    }),
+});
 
 // Step 5: Process the response
 if (response.status === 200) {
-    const sentBoostUri = await response.json();
-    console.log(`Boost sent successfully: ${sentBoostUri}`);
+    const result = await response.json();
+    console.log(`Credential sent successfully:`, result);
 } else {
-    console.error(`Error sending boost: ${response.status}`);
+    console.error(`Error sending credential: ${response.status}`);
     const errorDetails = await response.json();
     console.error(errorDetails);
 }
@@ -73,18 +76,30 @@ if (response.status === 200) {
 
 {% embed url="https://www.loom.com/share/fe1901f8e3344f26b9dffdc7cd4bfff7" %}
 
+## What you should see
+
+When you successfully generate an API token, you receive a JWT string that you can use in the `Authorization` header of your HTTP requests. When you use it to send a credential, you should receive a `200 OK` response with the issuance details.
+
+## Troubleshooting
+
+| If…                | Then                                                                                                  |
+| :----------------- | :---------------------------------------------------------------------------------------------------- |
+| `401 Unauthorized` | Ensure your API token is included in the `Authorization: Bearer <token>` header and hasn't expired.   |
+| `403 Forbidden`    | Check that your token has the correct scope (e.g., `boosts:write` for sending credentials).           |
+| `Invalid grant ID` | Verify that the `grantId` you passed to `getAPITokenForAuthGrant` exists and belongs to your profile. |
+
 ## Scopes
 
 Scopes define the permissions granted to a client via an API token. Each scope follows the pattern `{resource}:{action}`. You can combine multiple scopes with a space (e.g., `boosts:write inbox:read`).
 
-| Scope          | What it allows                                         |
-| :------------- | :----------------------------------------------------- |
-| `*:*`          | Full access to all resources                           |
-| `*:read`       | Read-only access to all resources                      |
-| `boosts:write` | Create and send boosts (required for `POST /api/send`) |
-| `inbox:write`  | Send credentials to a user's inbox                     |
-| `contracts:*`  | Manage ConsentFlow contracts                           |
-| `profiles:*`   | Manage the user's profile                              |
+| Scope          | What it allows                                                       |
+| :------------- | :------------------------------------------------------------------- |
+| `*:*`          | Full access to all resources                                         |
+| `*:read`       | Read-only access to all resources                                    |
+| `boosts:write` | Create and send credential templates (required for `POST /api/send`) |
+| `inbox:write`  | Send credentials to a user's inbox                                   |
+| `contracts:*`  | Manage ConsentFlow contracts                                         |
+| `profiles:*`   | Manage the user's profile                                            |
 
 ## Next steps
 

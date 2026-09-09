@@ -6,6 +6,8 @@ description: 'Tutorial: Design and Send a Custom Digital Credential'
 
 Design a credential with an image, description, criteria, and custom fields, then sign and send it.
 
+**~20 minutes · Needs:** the `.env` from the [Quickstart](../quick-start/your-first-integration.md).
+
 {% embed url="https://www.figma.com/board/DPGBfPLlss2K6KmDLCN3ul/LearnCard-Docs?node-id=131-661&p=f&t=fk1wywzjUFmakXJE-0" %}
 
 ## Prerequisites
@@ -165,5 +167,5 @@ node --env-file=.env issueCredential.mjs
 
 Next steps:
 
-- [Issue at Scale with Boosts](create-a-boost.md)
+- [Issue at Scale with Credential Templates](create-a-boost.md)
 - [Listen to Webhooks](listen-to-webhooks.md)

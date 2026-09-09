@@ -2,13 +2,15 @@
 description: 'Tutorial: Verify a Verifiable Credential'
 ---
 
-# Verify Credentials
+# Verify & Request Credentials
 
 Verification checks that:
 
 1. The credential's cryptographic proof is valid.
 2. The credential hasn't been tampered with.
 3. The credential hasn't expired.
+
+**~10 minutes · Needs:** Node.js (v18+), basic familiarity with Verifiable Credentials
 
 ## Prerequisites
 
@@ -99,6 +101,61 @@ console.log(result);
 // }
 ```
 
+## Check status, not just the signature
+
+A valid signature does not mean the credential is still valid. The issuer may have revoked it. LearnCard automatically checks the `credentialStatus` field (often using [Bitstring Status Lists](../core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md)) during verification.
+
+If a credential has been revoked, `verifyCredential` returns an error:
+
+```typescript
+const result = await learnCard.invoke.verifyCredential(revokedCredential);
+
+console.log(result);
+// {
+//   checks: ['proof'],
+//   warnings: [],
+//   errors: ['credentialStatus error: Credential has been revoked']
+// }
+```
+
+To learn how to revoke credentials you've issued, see [Revoke or Update a Credential](../how-to-guides/revoke-or-update-a-credential.md).
+
+## Request a credential from a LearnCard user
+
+There are two main ways to request credentials from a user's wallet:
+
+### 1. Using ConsentFlow (Recommended)
+
+ConsentFlow is LearnCard's native way to request data. You create a contract asking for specific credentials, the user approves it, and you read the data.
+
+```typescript
+// 1. Create a contract requesting read access
+const contract = await learnCard.invoke.createConsentContract({
+    title: 'Job Application',
+    description: 'We need to verify your degree',
+    permissions: [{ type: 'read', uri: 'credential-uri-here' }],
+});
+
+// 2. Send it to the user
+await learnCard.invoke.send({
+    type: 'consentFlow',
+    recipient: 'user@example.com',
+    contract,
+});
+
+// 3. After they accept, read the data
+const data = await learnCard.invoke.getConsentFlowData(contract.id);
+const credentials = await learnCard.invoke.getCredentialsForContract(contract.id);
+```
+
+See [Create a ConsentFlow](../tutorials/create-a-consentflow.md) for a complete guide.
+
+### 2. Using Open Standards
+
+If you are building a non-LearnCard application that needs to request credentials from a LearnCard wallet, you can use standard protocols like OID4VP or VC-API QueryByExample.
+
+See [Requesting credentials from a LearnCard user](../how-to-guides/interoperate-with-learncard.md#requesting-credentials-from-a-learncard-user) for details on standard interoperability.
+
 ## Complete Example
 
 ```typescript
@@ -132,6 +189,18 @@ async function verifyCredentialFromIssuer(credential: any) {
 const credential = /* ... received from issuer ... */;
 await verifyCredentialFromIssuer(credential);
 ```
+
+## What you should see
+
+When you run the verification code, you will see the result object indicating whether the credential passed all checks. A valid credential returns an empty `errors` array.
+
+## Troubleshooting
+
+| If…                                                        | Then                                                                          |
+| :--------------------------------------------------------- | :---------------------------------------------------------------------------- |
+| `signature error: Verification equation was not satisfied` | The credential was modified after it was signed, or the signature is invalid. |
+| `credentialStatus error: Credential has been revoked`      | The issuer revoked the credential. It is no longer valid.                     |
+| `Cannot get default verification method`                   | The issuer DID could not be resolved, or the network is unreachable.          |
 
 ## Next Steps
 

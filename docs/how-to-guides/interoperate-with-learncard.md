@@ -6,6 +6,8 @@ description: Already issue credentials? Make LearnCard a place your users can cl
 
 If you already issue credentials, you don't need to change how. LearnCard accepts credentials over OID4VCI and VC-API, imports credential files, and answers verifiers over OID4VP and VC-API. Find how you issue today and follow that path.
 
+**~15 minutes · Needs:** an existing credential issuance system
+
 ## Pick your path
 
 | How you issue today                              | What to do                                                                                                                                                       | Effort     |

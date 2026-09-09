@@ -6,6 +6,8 @@ description: 'How-To Guide: Sending and issuing credentials with LearnCard'
 
 ---
 
+**~10 minutes · Needs:** a seed or API token from the [Quickstart](../quick-start/your-first-integration.md).
+
 ## Quick Start: The `send` Method (Recommended)
 
 The `send` method handles credential issuance, signing, and delivery in a single call.
@@ -40,7 +42,7 @@ const result = await learnCard.invoke.send({
 });
 
 console.log(result.credentialUri); // URI of the sent credential
-console.log(result.uri); // URI of the boost template used
+console.log(result.uri); // URI of the credential template used
 ```
 
 {% endtab %}
@@ -87,10 +89,10 @@ const result = await learnCard.invoke.send({
 
 {% endtab %}
 
-{% tab title="Creating a New Boost On-the-Fly" %}
+{% tab title="Creating a New Credential Template On-the-Fly" %}
 
 ```typescript
-// Send by creating a new boost from an unsigned credential
+// Send by creating a new credential template from an unsigned credential
 const result = await learnCard.invoke.send({
     type: 'boost',
     recipient: 'recipient-profile-id',
@@ -298,7 +300,7 @@ The guardian receives an approval email with an OTP challenge. The student canno
 interface SendResponse {
     type: 'boost';
     credentialUri: string; // URI of the issued credential
-    uri: string; // URI of the boost template
+    uri: string; // URI of the credential template
     activityId: string; // Links to the activity lifecycle for this issuance
 
     // Only present when sent to email/phone recipients
@@ -346,7 +348,7 @@ options: {
 
 - Checks if the recipient has consented to the contract
 - Routes the credential through the consent flow if terms exist
-- Creates a `RELATED_TO` relationship between new boosts and the contract
+- Creates a `RELATED_TO` relationship between new credential templates and the contract
 
 {% endhint %}
 
@@ -361,12 +363,12 @@ options: {
 
 ---
 
-## Tracking Boost Recipients
+## Tracking Credential Template Recipients
 
-Track which users have received credentials from a specific boost template using `getPaginatedBoostRecipients`:
+Track which users have received credentials from a specific credential template using `getPaginatedBoostRecipients`:
 
 ```typescript
-// Get all recipients of a boost
+// Get all recipients of a credential template
 const { records } = await learnCard.invoke.getPaginatedBoostRecipients(boostUri);
 
 console.log(records);
@@ -395,7 +397,7 @@ For lower-level control over the inbox issuance process (custom delivery suppres
 ## Next steps
 
 - Design a custom credential → [Create a Credential](../tutorials/create-a-credential.md)
-- Issue at scale with Boosts → [Create a Boost](../tutorials/create-a-boost.md)
+- Issue at scale with credential templates → [Issue at Scale with Credential Templates](../tutorials/create-a-boost.md)
 - Know when it's claimed → [Listen to Webhooks](../tutorials/listen-to-webhooks.md)
 - Verify credentials → [Verify Credentials](../tutorials/verify-credentials.md)
 - Guardian approval for minors → [Guardian-Gated Credentials](implement-flows/guardian-gated-credentials.md)
