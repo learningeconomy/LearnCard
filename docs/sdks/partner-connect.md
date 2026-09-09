@@ -1500,5 +1500,5 @@ interface LearnCardError {
 - [Build an App Inside LearnCard](../how-to-guides/publish-your-app.md) - Step-by-step guide for App Store credential issuance
 - [LearnCard Core SDK](/sdks/learncard-core/) - Backend credential operations
 - [LearnCard Network](/sdks/learncard-network/) - Network integration
-- [Creating Connected Websites](/how-to-guides/connect-systems/connect-a-website) - Integration guide
+- [Connect a User's LearnCard to Your Platform](../tutorials/create-a-consentflow.md) - Integration guide
 - [App Store Development](/apps/learn-card-app/) - LearnCard app ecosystem

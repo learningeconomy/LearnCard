@@ -230,6 +230,6 @@ curl "https://learncard.app/interactions/inbox-claim/<token>?iuv=1" -H "Accept: 
 ## Next steps
 
 - [The fields that make a credential yours](../core-concepts/credentials-and-data/building-verifiable-credentials.md#fields-that-make-a-credential-yours) — achievement types, images, and display hints so it looks right in the wallet.
-- [Connect Your Website or Game](connect-systems/connect-a-website.md) — ongoing, automatic issuance instead of one-off claims.
+- [Connect a User's LearnCard to Your Platform](../tutorials/create-a-consentflow.md) — ongoing, automatic issuance instead of one-off claims.
 - [Network API](../sdks/learncard-network/README.md) and [Wallet SDK](../sdks/learncard-core/README.md) — if you're building a wallet or verifier.
 - Questions: [open an issue](https://github.com/learningeconomy/LearnCard/issues/new/choose) or email [sdk@learningeconomy.io](mailto:sdk@learningeconomy.io).

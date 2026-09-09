@@ -18,7 +18,7 @@ This tutorial will walk you through the essential steps to send an xAPI statemen
     - **What is a DID?** A DID (Decentralized Identifier) is a unique identifier for your user. Think of it as a secure, private digital ID. More details can be found on our [Understanding DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) core concept page.
 2. **Your Environment:**
     - You have the [LearnCard SDK ](../sdks/learncard-core/)initialized in your project.
-    - You have obtained a **JSON Web Token (JWT)** for authentication. This JWT represents the authenticated user (the "actor"). As an example of how to create this JWT, check out the[ "Create a Connected Website Tutorial."](../how-to-guides/connect-systems/connect-a-website.md)
+    - You have obtained a **JSON Web Token (JWT)** for authentication. This JWT represents the authenticated user (the "actor"). As an example of how to create this JWT, check out the[ "Connect a User's LearnCard to Your Platform Tutorial."](../tutorials/create-a-consentflow.md)
     - You have the **DID** of the authenticated user.
     - The default LearnCloud xAPI endpoint is `https://cloud.learncard.com/xapi/statements`.
 

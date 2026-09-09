@@ -319,4 +319,4 @@ await learncardApiClient.post('/inbox/issue', {
 
 ### Want an ongoing relationship instead of one-off sends?
 
-If you'll issue to the same people repeatedly, have them connect once through a [ConsentFlow](../../tutorials/create-a-consentflow.md) — after that, credentials land directly in their LearnCard with no email or claim link. See [Connect Your Website or Game](../../how-to-guides/connect-systems/connect-a-website.md).
+If you'll issue to the same people repeatedly, have them connect once through a [ConsentFlow](../../tutorials/create-a-consentflow.md) — after that, credentials land directly in their LearnCard with no email or claim link. See [Connect a User's LearnCard to Your Platform](../../tutorials/create-a-consentflow.md).

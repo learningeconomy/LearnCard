@@ -224,7 +224,7 @@ Authentication shows up in two places, deliberately decoupled:
 
 **Guardian gating** is supported via approval tokens and a `guardianStatus` field on inbox credentials, used when the holder is a minor or when the issuer requires guardian co-signature before a credential can be claimed.
 
-→ Deep dives: [Auth Coordinator](../core-concepts/architecture-and-principles/auth-coordinator.md) · [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md) · [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) · [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) · [Guardian-Gated Credentials](../how-to-guides/implement-flows/guardian-gated-credentials.md) · [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
+→ Deep dives: [Auth Coordinator](../core-concepts/architecture-and-principles/auth-coordinator.md) · [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md) · [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) · [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) · [Guardian-Gated Credentials](../how-to-guides/send-credentials.md#guardian-gated-credentials) · [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
 
 ---
 

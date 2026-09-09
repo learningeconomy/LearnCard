@@ -34,8 +34,8 @@ Let users claim credentials from your website or app — from a one-script claim
 Examples include an LMS awarding course completions and a conference site offering an attendance badge.
 
 - **One script tag**: [embed a claim button](../how-to-guides/connect-systems/embed-a-claim-button.md)
-- **Connected accounts**: [connect your website or game](../how-to-guides/connect-systems/connect-a-website.md) — users link once, you issue automatically
-- **All options**: [Add LearnCard to Your Product](../how-to-guides/connect-systems/README.md)
+- **Connected accounts**: [Connect a User's LearnCard to Your Platform](../tutorials/create-a-consentflow.md) — users link once, you issue automatically
+- **All options**: [Connect a User's LearnCard to Your Platform](../tutorials/create-a-consentflow.md)
 
 ## 🤝 Manage consent & guardianship
 

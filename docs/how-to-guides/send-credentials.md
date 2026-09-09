@@ -370,7 +370,7 @@ The token has one permission (`boosts:write`). Store it like a password. [Revoke
 
 ### Guardian-Gated Credentials
 
-To require guardian (parent) approval before a minor can claim a credential, add `guardianEmail` to `options`:
+To require guardian (parent) approval before a minor can claim a credential, add `guardianEmail` to `options` (must not equal the recipient email):
 
 ```typescript
 const result = await learnCard.invoke.send({
@@ -385,7 +385,24 @@ const result = await learnCard.invoke.send({
 console.log(result.inbox?.guardianStatus); // 'AWAITING_GUARDIAN'
 ```
 
-The guardian receives an approval email with an OTP challenge. The student cannot claim the credential until the guardian approves. See [Guardian-Gated Credentials](implement-flows/guardian-gated-credentials.md) for the full guide.
+**What each person sees:**
+
+- **Guardian:** Receives an approval email with a 6-digit code.
+- **Learner:** Sees a pending notice in their wallet, then a normal claim button once approved.
+- **You:** `guardianStatus` moves from `AWAITING_GUARDIAN` to `GUARDIAN_APPROVED` or `GUARDIAN_REJECTED`.
+
+**After approval / rejection:**
+
+- **Approved:** The credential becomes claimable. If the guardian then creates a LearnCard account, a MANAGES relationship is created. **All future inbox credentials to that learner are guardian-gated automatically** (no `guardianEmail` needed), and the guardian approves in-app without a code.
+- **Rejected:** The learner is notified and cannot claim the credential.
+
+#### Troubleshooting
+
+| If…                                                                    | Then                                                                                                                             |
+| :--------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| `guardianEmail must differ from recipient (self-approval not allowed)` | Use a different address for the guardian.                                                                                        |
+| Stuck at `AWAITING_GUARDIAN`                                           | The guardian hasn't acted. They can reopen the approval link from their email; the learner can't claim until then.               |
+| Learner can't claim after approval                                     | Check `guardianStatus` — if it's `GUARDIAN_REJECTED`, the credential is not claimable. Send again if the decision was a mistake. |
 
 ### Response
 
@@ -582,4 +599,3 @@ For lower-level control over the inbox issuance process (custom delivery suppres
 - Issue at scale with credential templates → [Issue at scale with templates](#issue-at-scale-with-templates)
 - Know when it's claimed → [Know When a Credential Is Claimed](../tutorials/listen-to-webhooks.md)
 - Verify credentials → [Verify Credentials](../tutorials/verify-credentials.md)
-- Guardian approval for minors → [Guardian-Gated Credentials](implement-flows/guardian-gated-credentials.md)

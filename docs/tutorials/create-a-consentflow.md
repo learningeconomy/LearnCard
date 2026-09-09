@@ -1,15 +1,21 @@
 ---
-description: Create a consent contract, verify the redirect, and read and issue only with active permission.
+description: Link a learner's LearnCard once, then read their data and issue to them automatically — with their permission.
 ---
 
-# Consent & Guardianship: Create a ConsentFlow
+# Connect a User's LearnCard to Your Platform
 
-A [ConsentFlow](../core-concepts/consent-and-permissions/consentflow-overview.md) asks a learner for permission to read data or send credentials. This tutorial requests an optional name and permission to send an achievement.
+A learner links their LearnCard to your platform once and chooses what you may read and write. LearnCard calls this a [ConsentFlow](../core-concepts/consent-and-permissions/consentflow-overview.md). This tutorial asks for an optional name and permission to send achievements.
 
-## Consent or guardianship — which do you need?
+## Do you need this, or just send()?
 
-- **Standard consent:** The learner reviews and accepts your permissions. Follow this tutorial.
-- **Guardianship:** A managed account needs guardian approval. See [Guardian-gated credentials](../how-to-guides/implement-flows/guardian-gated-credentials.md).
+- **Just awarding a badge?** If you know the user's email, use [`send()`](../how-to-guides/send-credentials.md) — it's simpler and requires no setup for the user.
+- **Ongoing relationship?** Use this pattern. The user links their LearnCard once and consents to what you may read/write. You then issue automatically (every lesson, every level) with no emails or claim links — this is what AI tutors, LMSs, and games need.
+
+{% hint style="info" %}
+**For games and platforms serving minors:** add `needsGuardianConsent: true` to the contract. This makes it a [GameFlow](../core-concepts/consent-and-permissions/gameflow-overview.md) contract, and LearnCard requires guardian approval for users under the age of digital consent before they can link.
+{% endhint %}
+
+Guardian approval for a _single_ sent credential is a different, simpler thing: use `options.guardianEmail` on `send()`. See [Guardian-gated credentials](../how-to-guides/send-credentials.md#guardian-gated-credentials).
 
 ## Prerequisites
 
@@ -324,6 +330,7 @@ The shared read function uses `getProfile(userDid)` to resolve the identifier to
 
 ## Next steps
 
+- See a runnable game example: [Gashapon Game Corner](https://github.com/learningeconomy/LearnCard/tree/main/examples/app-store-apps/4-gashapon-game-corner)
 - [Auto-issuance](../core-concepts/consent-and-permissions/auto-boosts.md) sends credentials when consent is accepted, using a registered signing authority.
 - [User consent and terms](../core-concepts/consent-and-permissions/user-consent-and-terms.md) covers permission updates and withdrawal.
 - [Accessing consented data](../core-concepts/consent-and-permissions/accessing-consented-data.md) explains data access beyond this example.
