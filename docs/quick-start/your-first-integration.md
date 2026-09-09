@@ -232,8 +232,8 @@ Every `send` saves the badge as a **template** (a Boost). To send the same badge
 
 ## Next steps
 
-- [Send Signed Credentials over HTTP](../how-to-guides/send-signed-credentials-over-http.md) — sign credentials yourself and deliver them from any language via the REST API.
-- [Create a Credential](../tutorials/create-a-credential.md) — add an image, criteria, and skills.
-- [Create a Boost](../tutorials/create-a-boost.md) — issue the same badge to many people.
+- [Sign locally, send over HTTP](../how-to-guides/send-credentials.md#sign-locally-send-over-http) — sign credentials yourself and deliver them from any language via the REST API.
+- [The fields that make a credential yours](../core-concepts/credentials-and-data/building-verifiable-credentials.md#fields-that-make-a-credential-yours) — add an image, criteria, and skills.
+- [Issue at scale with templates](../how-to-guides/send-credentials.md#issue-at-scale-with-templates) — issue the same badge to many people.
 - [Listen to Webhooks](../tutorials/listen-to-webhooks.md) — detect when credentials are claimed.
 - [What Do You Want to Build?](../introduction/what-do-you-want-to-build.md) — choose an integration path.

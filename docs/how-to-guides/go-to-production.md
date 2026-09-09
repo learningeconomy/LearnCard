@@ -12,7 +12,7 @@ Staging and production are separate networks — nothing carries over automatica
 - [ ] **2. Create your production profile** — the same seed produces the same `did:key` on every network, so `createProfile`/`createServiceProfile` with that seed and (if it's free) the same `profileId` keeps your identity consistent — [Network Profiles](../core-concepts/identities-and-keys/network-profiles.md).
 - [ ] **3. Create production API tokens** with the same scopes you used on staging — [Generate API Tokens](deploy-infrastructure/generate-api-tokens.md).
 - [ ] **4. Register your production signing authority**, if you send from templates or issue claim links — [Set Up a Signing Authority](create-signing-authority.md).
-- [ ] **5. Recreate your credential templates** with `createBoost()` and record the new `lc:network:network.learncard.com/trpc:boost:…` URIs in your config — the staging URIs won't resolve — [Issue at Scale with Credential Templates](../tutorials/create-a-boost.md).
+- [ ] **5. Recreate your credential templates** with `createBoost()` and record the new `lc:network:network.learncard.com/trpc:boost:…` URIs in your config — the staging URIs won't resolve — [Issue at scale with templates](send-credentials.md#issue-at-scale-with-templates).
 - [ ] **6. Recreate consent contracts**, if you use ConsentFlow — [Create a ConsentFlow](../tutorials/create-a-consentflow.md).
 - [ ] **7. Set your production webhook URL(s)** — the profile-level `notificationsWebhook` and/or any per-`send()` `options.webhookUrl` — [Listen to Webhooks](../tutorials/listen-to-webhooks.md).
 - [ ] **8. Send one credential to your own address and claim it**, end to end, before sending to anyone else.

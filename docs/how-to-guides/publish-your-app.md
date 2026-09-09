@@ -41,7 +41,7 @@ In the LearnCard app, open **App Store → Developer Portal** (`/app-store/devel
 1. Project setup (creates your Integration — the entity that owns your listings and templates)
 2. Signing authority (for server-side credential issuance)
 3. Branding — name, tagline, icon, description
-4. Credential template builder (defines the `templateAlias` values your app issues; optionally [link each template to its Credential Engine Registry entry](publish-your-app-ctid.md))
+4. Credential template builder (defines the `templateAlias` values your app issues; optionally [link each template to its Credential Engine Registry entry](../core-concepts/credentials-and-data/building-verifiable-credentials.md#ctid))
 5. Integration method — `EMBEDDED_IFRAME` with your app's URL
 6. Data mapping, sandbox test, and production checks
 

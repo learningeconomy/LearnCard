@@ -14,7 +14,7 @@ Examples include universities issuing diplomas, bootcamps certifying skills, and
 
 - **No code**: issue directly from the [LearnCard app](https://learncard.app)
 - **One API call**: [send a credential to an email](../quick-start/your-first-integration.md) (~15 lines)
-- **At scale**: [issue at scale with Boosts](../tutorials/create-a-boost.md)
+- **At scale**: [issue at scale with templates](../how-to-guides/send-credentials.md#issue-at-scale-with-templates)
 - **Templates, webhooks, and guardian consent**: [all sending patterns](../how-to-guides/send-credentials.md)
 - **OID4VCI, VC-API, or signed JSON**: [bring existing credentials into LearnCard](../how-to-guides/interoperate-with-learncard.md)
 

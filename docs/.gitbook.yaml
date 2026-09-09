@@ -143,10 +143,10 @@ redirects:
     sdks/official-plugins: sdks/official-plugins/README.md
     sdks/partner-connect: sdks/partner-connect.md
     sdks/sss-key-manager: sdks/sss-key-manager.md
-    tutorials/create-a-boost: tutorials/create-a-boost.md
+    tutorials/create-a-boost: how-to-guides/send-credentials.md
     tutorials/create-a-connected-website: how-to-guides/connect-systems/connect-a-website.md
     tutorials/create-a-consentflow: tutorials/create-a-consentflow.md
-    tutorials/create-a-credential: tutorials/create-a-credential.md
+    tutorials/create-a-credential: core-concepts/credentials-and-data/building-verifiable-credentials.md
     tutorials/listen-to-webhooks: tutorials/listen-to-webhooks.md
     tutorials/sending-xapi-statements: tutorials/sending-xapi-statements.md
     tutorials/verify-credentials: tutorials/verify-credentials.md

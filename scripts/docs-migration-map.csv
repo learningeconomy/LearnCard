@@ -131,10 +131,10 @@ sdks/learncloud-storage-api/xapi-reference,reference/learncloud-storage-api/xapi
 sdks/official-plugins,reference/official-plugins,moved,redirected
 sdks/partner-connect,reference/partner-connect,moved,redirected
 sdks/sss-key-manager,reference/sss-key-manager,moved,redirected
-tutorials/create-a-boost,build/send-credentials/create-a-boost,moved,redirected
+tutorials/create-a-boost,build/send-credentials,merge,redirected
 tutorials/create-a-connected-website,build/connect-systems/connect-a-website,merge,redirected
 tutorials/create-a-consentflow,build/create-a-consentflow,moved,redirected
-tutorials/create-a-credential,build/send-credentials/create-a-credential,moved,redirected
+tutorials/create-a-credential,understand/credentials-and-data/building-verifiable-credentials,merge,redirected
 tutorials/listen-to-webhooks,build/send-credentials/listen-to-webhooks,moved,redirected
 tutorials/sending-xapi-statements,reference/learncloud-storage-api/sending-xapi-statements,moved,redirected
 tutorials/verify-credentials,build/verify-credentials,moved,redirected

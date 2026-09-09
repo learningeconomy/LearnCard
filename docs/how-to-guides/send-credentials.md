@@ -266,6 +266,95 @@ console.log(result);
 **All SDK parameters work in the REST API too** — `templateUri`, `template`, `signedCredential`, `templateData`, `options`, and `contractUri` are all supported in the JSON body.
 {% endhint %}
 
+### Sign locally, send over HTTP
+
+If you sign credentials yourself but want to deliver them from any language, create an API token and POST the signed credential to `/api/send`. This script creates the token (scope `boosts:write`) and writes the request body to `request.json`:
+
+<!-- snippet: quickstart/api-token.mjs -->
+
+```javascript
+import { writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { initLearnCard } from '@learncard/init';
+
+const recipientEmail = process.argv[2];
+if (!recipientEmail) throw new Error('Usage: node --env-file=.env api-token.mjs you@example.com');
+
+const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
+
+// 1. A token that can only send boosts. Create once, store like a password.
+const grantId = await learnCard.invoke.addAuthGrant({ name: 'sender', scope: 'boosts:write' });
+const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
+
+// 2. A signed credential to send — same shape as send.mjs.
+const credential = await learnCard.invoke.issueCredential({
+    '@context': [
+        'https://www.w3.org/ns/credentials/v2',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: learnCard.id.did(),
+    validFrom: new Date().toISOString(),
+    name: 'Quickstart Complete',
+    credentialSubject: {
+        type: ['AchievementSubject'],
+        achievement: {
+            id: `urn:uuid:${randomUUID()}`,
+            type: ['Achievement'],
+            name: 'Quickstart Complete',
+            description: 'Sent a verifiable credential with LearnCard.',
+            criteria: { narrative: 'Ran the LearnCard quickstart.' },
+        },
+    },
+});
+
+// 3. The exact request body the HTTP API expects.
+writeFileSync(
+    'request.json',
+    JSON.stringify(
+        { type: 'boost', recipient: recipientEmail, signedCredential: credential },
+        null,
+        2
+    )
+);
+
+console.log(`export TOKEN=${token}`);
+console.log('Wrote request.json');
+```
+
+<!-- /snippet -->
+
+```bash
+node --env-file=.env api-token.mjs you@example.com
+# prints:  export TOKEN=...   ← run that line, then:
+```
+
+<!-- snippet: quickstart/send.sh -->
+
+```bash
+curl -X POST https://network.learncard.com/api/send \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d @request.json
+```
+
+<!-- /snippet -->
+
+#### What you should see
+
+The response is JSON:
+
+```json
+{
+    "uri": "lc:network:network.learncard.com/trpc:boost:...",
+    "inbox": { "status": "PENDING", "claimUrl": "https://learncard.app/..." }
+}
+```
+
+`inbox.status` is `PENDING` for a new recipient (`inbox.claimUrl` is where they claim it) or `ISSUED` if they already use LearnCard (auto-delivered, no `claimUrl`).
+
+The token has one permission (`boosts:write`). Store it like a password. [Revoke it](../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md) any time.
+
 ### How It Works
 
 1. **Detects recipient type**: email, phone, DID, or profile ID.
@@ -393,9 +482,91 @@ Use this for auditing, preventing duplicates, and tracking issuance metrics.
 
 ---
 
-## Dynamic Templates with `templateData`
+## Issue at scale with templates
 
-Use Mustache-style templates to personalize credentials with unique data for each recipient. See [Dynamic Templates with Mustache Variables](../tutorials/create-a-boost.md#dynamic-templates-with-mustache-variables).
+Boosts support **Mustache-style templating** to inject dynamic values at issuance time.
+
+### Personalize with `{{variables}}`
+
+Use `{{variableName}}` syntax in your credential template:
+
+```javascript
+const templatedCredential = {
+    '@context': [
+        'https://www.w3.org/ns/credentials/v2',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    name: 'Certificate for {{courseName}}',
+    credentialSubject: {
+        type: ['AchievementSubject'],
+        achievement: {
+            type: ['Achievement'],
+            name: '{{courseName}} Completion',
+            description:
+                'Awarded to {{studentName}} for completing {{courseName}} with grade {{grade}}',
+            criteria: { narrative: 'Successfully complete the course' },
+        },
+    },
+};
+
+const dynamicBoostUri = await learnCard.invoke.createBoost(templatedCredential, {
+    name: 'Course Completion Template',
+});
+```
+
+Provide `templateData` when sending to fill in the variables:
+
+```javascript
+const result = await learnCard.invoke.send({
+    type: 'boost',
+    recipient: 'student@example.com',
+    templateUri: dynamicBoostUri,
+    templateData: {
+        courseName: 'Web Development 101',
+        studentName: 'Alice Smith',
+        grade: 'A',
+    },
+});
+```
+
+The resulting credential will have all placeholders replaced.
+
+### Issue from a spreadsheet
+
+You can issue credentials in bulk by reading a CSV file.
+
+```javascript
+import fs from 'node:fs';
+
+// Assuming a CSV with header: name,email,cohort
+const csvData = fs.readFileSync('students.csv', 'utf-8');
+const rows = csvData
+    .split('\n')
+    .slice(1)
+    .filter(row => row.trim());
+
+let pending = 0;
+let issued = 0;
+
+for (const row of rows) {
+    const [name, email, cohort] = row.split(',');
+
+    const result = await learnCard.invoke.send({
+        type: 'boost',
+        recipient: email.trim(),
+        templateUri: dynamicBoostUri,
+        templateData: { name: name.trim(), cohort: cohort.trim() },
+    });
+
+    if (result.inbox?.status === 'PENDING') pending++;
+    else issued++;
+}
+
+console.log(`Issued: ${issued}, Pending: ${pending}`);
+```
+
+Note that re-running `send` for the same recipient and template will re-send the credential (it is not idempotent). To avoid duplicates, use `learnCard.invoke.getPaginatedBoostRecipients(boostUri)` to reconcile who has already received it before sending.
 
 ---
 
@@ -407,8 +578,8 @@ For lower-level control over the inbox issuance process (custom delivery suppres
 
 ## Next steps
 
-- Design a custom credential → [Create a Credential](../tutorials/create-a-credential.md)
-- Issue at scale with credential templates → [Issue at Scale with Credential Templates](../tutorials/create-a-boost.md)
+- Design a custom credential → [Building Verifiable Credentials](../core-concepts/credentials-and-data/building-verifiable-credentials.md)
+- Issue at scale with credential templates → [Issue at scale with templates](#issue-at-scale-with-templates)
 - Know when it's claimed → [Listen to Webhooks](../tutorials/listen-to-webhooks.md)
 - Verify credentials → [Verify Credentials](../tutorials/verify-credentials.md)
 - Guardian approval for minors → [Guardian-Gated Credentials](implement-flows/guardian-gated-credentials.md)

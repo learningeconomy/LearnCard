@@ -172,5 +172,5 @@ When you successfully create and register a signing authority, the CLI or API re
 ## Next steps
 
 - Send your first credential → [Send & Issue Credentials](send-credentials.md)
-- Issue at scale → [Create a Credential Template](../tutorials/create-a-boost.md)
+- Issue at scale → [Issue at scale with templates](send-credentials.md#issue-at-scale-with-templates)
 - Track claims → [Listen to Webhooks](../tutorials/listen-to-webhooks.md)

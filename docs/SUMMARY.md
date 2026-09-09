@@ -11,12 +11,8 @@
 ## 🛠️ Build
 
 - [Send & Issue Credentials](how-to-guides/send-credentials.md)
-    - [Design a Custom Credential](tutorials/create-a-credential.md)
-        - [Link Credentials to the Credential Engine Registry (CTID)](how-to-guides/publish-your-app-ctid.md)
-    - [Issue at Scale with Credential Templates](tutorials/create-a-boost.md)
     - [Revoke or Update a Credential](how-to-guides/revoke-or-update-a-credential.md)
     - [Set Up a Signing Authority](how-to-guides/create-signing-authority.md)
-    - [Send Signed Credentials over HTTP](how-to-guides/send-signed-credentials-over-http.md)
     - [Listen to Webhooks](tutorials/listen-to-webhooks.md)
 - [Verify Credentials](tutorials/verify-credentials.md)
 - [Publish Your App in LearnCard](how-to-guides/publish-your-app.md)
