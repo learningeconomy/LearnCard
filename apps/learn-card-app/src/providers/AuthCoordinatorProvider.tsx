@@ -53,6 +53,7 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
+    getEscrowStrategyConfig,
     getLogger,
     type AuthCoordinatorContextValue,
     type AuthProvider,
@@ -136,6 +137,7 @@ import {
 import { Overlay, ErrorOverlay, StalledMigrationOverlay, EmailLinkOverlay } from 'learn-card-base';
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
+import { EscrowRecoveryHoldBanner } from '../components/recovery/EscrowRecoveryHoldBanner';
 import {
     RecoverySetupModal,
     type RecoverySetupType,
@@ -278,6 +280,10 @@ registerKeyDerivationFactory('sss', () => {
 
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
+        escrowRelayPublicKey: sss.escrowRelayPublicKey,
+        escrowRelayKeyId: sss.escrowRelayKeyId,
+        escrow: getEscrowStrategyConfig(sss),
+        onEscrowError: err => log.warn('escrow.enrollment.failed', err),
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
         // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
         // On web, use adaptive storage that routes to sessionStorage when the
@@ -1364,11 +1370,35 @@ const AuthSessionManager: React.FC<{
     return (
         <AppAuthContext.Provider value={enrichedValue}>
             {children}
+            {coordinator.state.status === 'ready' && coordinator.state.pendingEscrowHold && (
+                <div className="fixed top-6 inset-x-4 z-[10000] max-w-md mx-auto">
+                    <EscrowRecoveryHoldBanner
+                        key={coordinator.state.pendingEscrowHold.holdId}
+                        requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
+                        onCancel={coordinator.cancelEscrowRecovery}
+                    />
+                </div>
+            )}
 
             {/* ── Recovery overlay ─────────────────────────────── */}
             {showRecovery && (
                 <Overlay>
                     <RecoveryFlowModal
+                        escrowRecovery={{
+                            scope: JSON.stringify([
+                                getSSSConfig().serverUrl,
+                                coordinator.state.status === 'needs_recovery'
+                                    ? coordinator.state.authUser.id
+                                    : coordinator.state.status === 'identity_recovery'
+                                      ? coordinator.state.email
+                                      : undefined,
+                            ]),
+                            onStart: coordinator.startEscrowRecovery,
+                            onStatus: coordinator.getEscrowRecoveryStatus,
+                            onRecover: coordinator.recover,
+                            canResumeCompleted: () =>
+                                coordinator.keyDerivation.hasPendingIdentityRecovery?.() ?? false,
+                        }}
                         availableMethods={availableMethods}
                         recoveryReason={
                             coordinator.state.status === 'needs_recovery'

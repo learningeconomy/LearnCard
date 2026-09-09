@@ -51,6 +51,7 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
+    getEscrowStrategyConfig,
     getLogger,
     type AuthCoordinatorContextValue,
     type AuthProvider,
@@ -274,6 +275,8 @@ registerKeyDerivationFactory('sss', () => {
         tenantId,
         escrowRelayPublicKey: sss.escrowRelayPublicKey,
         escrowRelayKeyId: sss.escrowRelayKeyId,
+        escrow: getEscrowStrategyConfig(sss),
+        onEscrowError: err => log.warn('escrow.enrollment.failed', err),
         emailBranding,
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
         // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.

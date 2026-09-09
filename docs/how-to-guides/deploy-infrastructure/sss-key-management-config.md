@@ -8,6 +8,51 @@ This guide covers the environment variables and infrastructure needed to deploy 
 
 ## Prerequisites
 
+### Local development: automatic recovery
+
+The LearnCard local tenant overlay pins a software-enclave public key generated with
+`generateEscrowKeyPair()` from `@learncard/sss-key-manager`. Set the matching values
+on your local lca-api process:
+
+```dotenv
+ESCROW_ENCLAVE_MODE=software
+ESCROW_ENCLAVE_ACTIVE_KEY_ID=local-dev
+ESCROW_ENCLAVE_SOFTWARE_PRIVATE_KEYS_JSON={"local-dev":"MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgv1vJWrZWg8ydq4ibGe6/IqEw/BEIcgI+Y3c6hnoeF2ehRANCAAQ08rGhw2reTThF/ecfafLzjphjmqvySHJZwqKfqSn8YPK/1GMWODPWounlJ2MZb/iS/D69K0k9durGsGjaSb0I"}
+# Local QA only: shorten the default seven-day wait to one minute.
+ESCROW_HOLD_DURATION_MS=60000
+```
+
+**This published key is a disposable development fixture, not a secret. Never use it
+outside local development or with real accounts.** Production and staging remain
+disabled. Software mode does not provide hardware isolation, and notification fan-out
+is not implemented in this phase; notification hooks only log events.
+
+To exercise the flow, sign in on a second browser profile, start recovery, then cancel
+it from the original signed-in device after reloading. Repeat without cancellation,
+wait one minute, and finish recovery on the second device. Keep its browser storage:
+the pending request's resume proof is stored in IndexedDB, not sent to application logs.
+Use an up-to-date browser on a personal device. Starting a seven-day request is
+disabled in public-computer mode and when cross-tab storage locking is unavailable.
+
+Tenant `auth.sss.escrowEnclaveMode` and `escrowEnclavePublicKeys` are authoritative.
+For isolated consumers without explicit tenant values, `VITE_ESCROW_ENCLAVE_MODE`
+and comma-separated `VITE_ESCROW_ENCLAVE_PUBLIC_KEYS` provide legacy fallbacks.
+Nitro mode remains fail-closed until attestation verification is implemented.
+
+To replace this disposable pair, run from `apps/learn-card-app` and update both the
+local tenant public key and the server's private-key value together:
+
+```bash
+bun -e 'import { generateEscrowKeyPair } from "@learncard/sss-key-manager"; console.log(JSON.stringify(await generateEscrowKeyPair()));'
+```
+
+The waiting screen's **Cancel request** button explains how to cancel from a
+signed-in device. It does not delete the local recovery proof or claim to cancel
+the server request: cancellation requires proof of account ownership.
+Use **Check request status** to discover a cancellation before the waiting period ends.
+
+### Required services
+
 - A running **lca-api** server instance
 - **Redis** (for OTP codes, QR login sessions, and caching)
 - **MongoDB** (for UserKey records)
