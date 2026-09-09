@@ -947,7 +947,6 @@ const AuthSessionManager: React.FC<{
         generatePrivateKey: generateEd25519PrivateKey,
         didFromPrivateKey,
         autoSetupNeedsSetup: false,
-        autoMigrate: authConfig.sssCohortEnabled,
 
         onReady: (_privateKey, did) => {
             emitAuthSuccess(

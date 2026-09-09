@@ -13,9 +13,6 @@ export interface AuthConfig {
     /** Which key derivation strategy to use (open string matching providerRegistry factories) */
     keyDerivation: string;
 
-    /** Whether this tenant/cohort may migrate legacy users to provisional SSS. */
-    sssCohortEnabled: boolean;
-
     /**
      * Provider- and strategy-specific config blocks from the tenant config.
      *
@@ -73,14 +70,7 @@ export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
     }
 
     // Forward any other provider blocks that arrived via .passthrough()
-    const knownKeys = new Set([
-        'provider',
-        'keyDerivation',
-        'sssCohortEnabled',
-        'firebase',
-        'sss',
-        'web3Auth',
-    ]);
+    const knownKeys = new Set(['provider', 'keyDerivation', 'firebase', 'sss', 'web3Auth']);
 
     for (const [key, value] of Object.entries(tenant.auth)) {
         if (!knownKeys.has(key) && value && typeof value === 'object' && !Array.isArray(value)) {
@@ -91,7 +81,6 @@ export const setAuthConfigFromTenant = (tenant: TenantConfig): void => {
     _authConfigOverrides = {
         authProvider: tenant.auth.provider as AuthProviderType,
         keyDerivation: tenant.auth.keyDerivation,
-        sssCohortEnabled: tenant.auth.sssCohortEnabled,
         providerConfig,
     };
 };
@@ -135,7 +124,6 @@ export const getAuthConfig = (): AuthConfig => {
     return {
         authProvider: _authConfigOverrides?.authProvider ?? 'firebase',
         keyDerivation: _authConfigOverrides?.keyDerivation ?? 'sss',
-        sssCohortEnabled: _authConfigOverrides?.sssCohortEnabled ?? false,
         providerConfig,
     };
 };
