@@ -44,10 +44,19 @@ const setField = (
             return clone;
         }
         const existing = obj[key];
-        if (typeof existing !== 'object' || existing === null || Array.isArray(existing)) {
+        if (Array.isArray(existing)) {
+            // VC 1.1 permits credentialSubject as an array - traverse into first element
+            if (existing.length === 0) {
+                existing.push({});
+            }
+            obj = existing[0];
+        } else if (typeof existing !== 'object' || existing === null) {
+            // Replace null/primitive with object to allow deeper property assignment
             obj[key] = {};
+            obj = obj[key];
+        } else {
+            obj = existing;
         }
-        obj = obj[key];
     }
     const lastKey = keys[keys.length - 1];
     // Guard against prototype pollution - inline check for CodeQL recognition
