@@ -324,7 +324,7 @@ async function handlePresentationForClaim(
 
     // Use the generator's profile for SA lookup if available, fall back to boost owner
     const saOwner = generatorProfileId
-        ? (await getProfileByProfileId(generatorProfileId)) ?? boostOwner
+        ? ((await getProfileByProfileId(generatorProfileId)) ?? boostOwner)
         : boostOwner;
 
     const saOwnerProfile = 'profileId' in saOwner ? saOwner : getBoostOwnerProfile(saOwner);
@@ -347,6 +347,7 @@ async function handlePresentationForClaim(
     const verificationResult = await learnCard.invoke.verifyPresentation(verifiablePresentation, {
         challenge,
         domain,
+        proofPurpose: 'authentication',
     });
 
     if (verificationResult.errors.length > 0 || !verificationResult.checks.includes('proof')) {
@@ -543,6 +544,7 @@ async function handleInboxClaimPresentation(
     const verificationResult = await learnCard.invoke.verifyPresentation(verifiablePresentation, {
         challenge,
         domain: ctx.domain,
+        proofPurpose: 'authentication',
     });
 
     if (verificationResult.errors.length > 0 || !verificationResult.checks.includes('proof')) {

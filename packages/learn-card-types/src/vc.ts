@@ -185,7 +185,7 @@ export const UnsignedVCValidator = z
     .catchall(z.any());
 export type UnsignedVC = z.infer<typeof UnsignedVCValidator>;
 
-export const ProofValidator = z
+const ProofFieldsValidator = z
     .object({
         type: z.string(),
         created: z.string(),
@@ -197,6 +197,14 @@ export const ProofValidator = z
         jws: z.string().optional(),
     })
     .catchall(z.any());
+
+export const ProofValidator = ProofFieldsValidator.or(
+    ProofFieldsValidator.extend({
+        type: z.literal('DataIntegrityProof'),
+        cryptosuite: z.literal('ecdsa-rdfc-2019'),
+        created: z.string().optional(),
+    })
+);
 export type Proof = z.infer<typeof ProofValidator>;
 
 export const VCValidator = UnsignedVCValidator.extend({
