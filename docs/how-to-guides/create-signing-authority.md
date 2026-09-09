@@ -34,7 +34,7 @@ Do this once per profile per network (staging and production are [separate](depl
 {% tab title="Developer Portal (no code)" %}
 
 1. Sign in at [learncard.app/app-store/developer](https://learncard.app/app-store/developer).
-2. Open **Guides → Issue Credentials → Signing Authority** and click **Create**. (It's also under **Admin Tools → Signing Authorities** at [learncard.app/admin-tools/signing-authorities](https://learncard.app/admin-tools/signing-authorities).)
+2. Open **Guides → Issue Credentials → Signing Authority** and click **Create**.
 
 The first authority you create becomes your primary. Done.
 
