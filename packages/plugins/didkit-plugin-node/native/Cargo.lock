@@ -796,12 +796,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "combination"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "337cdbf3f1a0e643b4a7d1a2ffa39d22342fb6ee25739b5cfb997c28b3586422"
-
-[[package]]
 name = "combine"
 version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4716,7 +4710,6 @@ name = "ssi-json-ld"
 version = "0.2.2"
 dependencies = [
  "async-std",
- "combination",
  "futures",
  "grdf",
  "iref 2.2.3",
