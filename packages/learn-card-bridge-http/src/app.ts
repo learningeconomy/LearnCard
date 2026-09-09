@@ -32,9 +32,14 @@ const app = express();
 const W3C_V1_CREDENTIALS_CONTEXT = 'https://www.w3.org/2018/credentials/v1';
 const W3C_ALT_V1_CREDENTIALS_CONTEXT = 'https://w3.org/2018/credentials/v1';
 
-// Trust proxy for correct IP detection behind load balancers
-// Required for rate limiting to work correctly in production
-app.set('trust proxy', 1);
+// Trust proxy for correct IP detection behind load balancers.
+// Only enable when running behind a reverse proxy (nginx, AWS ALB, etc.)
+// Without a real proxy, this allows clients to spoof X-Forwarded-For and bypass rate limits.
+// Set TRUST_PROXY=1 (or number of proxy hops) when behind a load balancer.
+if (process.env.TRUST_PROXY) {
+    const trustProxy = parseInt(process.env.TRUST_PROXY, 10);
+    app.set('trust proxy', isNaN(trustProxy) ? process.env.TRUST_PROXY : trustProxy);
+}
 
 app.use(cors());
 app.use(express.json());
