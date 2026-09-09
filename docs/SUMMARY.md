@@ -25,7 +25,7 @@
     - [Embed a Claim Button](how-to-guides/connect-systems/embed-a-claim-button.md)
     - [Connect Your Website or Game](how-to-guides/connect-systems/connect-a-website.md)
         - [Tutorial: Build a Connected Website](tutorials/create-a-connected-website.md)
-    - [Interoperate with Any Wallet (VC-API)](how-to-guides/interoperate-with-learncard.md)
+- [Bring Your Credentials into LearnCard](how-to-guides/interoperate-with-learncard.md)
 - [Consent & Guardianship](tutorials/create-a-consentflow.md)
     - [Guardian-Gated Credentials](how-to-guides/implement-flows/guardian-gated-credentials.md)
     - [Claim Data after Guardian Consent](how-to-guides/implement-flows/claim-data-after-guardian-consent.md)

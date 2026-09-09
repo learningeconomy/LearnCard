@@ -16,6 +16,7 @@ _In the wild:_ universities issuing diplomas and micro-credentials, bootcamps ce
 - **One API call**: [send a credential to an email](../quick-start/your-first-integration.md) (~15 lines)
 - **At scale**: [issue at scale with Boosts](../tutorials/create-a-boost.md)
 - **Everything else**: [all sending patterns](../how-to-guides/send-credentials.md) — templates, webhooks, guardian consent
+- **Already issue credentials elsewhere?** [Bring them into LearnCard](../how-to-guides/interoperate-with-learncard.md) — OID4VCI, VC-API, or signed JSON; nothing to re-platform
 
 ## 📱 Publish your app in LearnCard
 

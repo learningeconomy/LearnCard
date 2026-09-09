@@ -78,7 +78,7 @@ how-to-guides/implement-flows/chapi/translating-to-chapi-documentation,understan
 how-to-guides/implement-flows/chapi/using-learncard-to-interact-with-a-chapi-wallet,understand/architecture-and-principles/interoperability,archive,redirected
 how-to-guides/implement-flows/claim-data-after-guardian-consent,build/create-a-consentflow/claim-data-after-guardian-consent,moved,redirected
 how-to-guides/implement-flows/guardian-gated-credentials,build/create-a-consentflow/guardian-gated-credentials,moved,redirected
-how-to-guides/interoperate-with-learncard,build/connect-systems/interoperate-with-learncard,moved,redirected
+how-to-guides/interoperate-with-learncard,build/interoperate-with-learncard,moved,redirected
 how-to-guides/send-credentials,build/send-credentials,moved,redirected
 how-to-guides/verify-my-issuer,build/send-credentials/verify-my-issuer,moved,redirected
 introduction/ecosystem-architecture,understand/architecture-and-principles/ecosystem-architecture,moved,redirected
