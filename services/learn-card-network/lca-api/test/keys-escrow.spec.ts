@@ -273,6 +273,17 @@ describe('A6 escrow recovery', () => {
             releaseAfter: started.releaseAfter,
         });
         await expect(getClient().escrow.getStatus(resume(started))).resolves.toEqual(status);
+        const viaHeader = appRouter.createCaller({
+            domain: 'example.com',
+            providerToken: resume(started).resumeToken,
+            tenant: { id: 'learncard', emailBranding: {}, resolvedVia: 'default' },
+        });
+        await expect(viaHeader.escrow.getStatus({ holdId: started.holdId })).resolves.toEqual(
+            status
+        );
+        await expect(getClient().escrow.getStatus({ holdId: started.holdId })).resolves.toEqual({
+            hold: null,
+        });
         await expect(
             getClient().escrow.getStatus({ holdId: started.holdId, resumeToken: 'wrong' })
         ).resolves.toEqual({ hold: null });
