@@ -183,6 +183,19 @@ provider:
             allowedMethods: '*'
 
 functions:
+    inboxMaintenance:
+        handler: lambda.inboxMaintenanceHandler
+        timeout: 300
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - schedule:
+                  rate: rate(1 day)
+                  enabled: true
+
     trpc:
         handler: lambda.trpcHandler
         vpc:

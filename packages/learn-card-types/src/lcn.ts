@@ -1186,12 +1186,16 @@ export type CreateContactMethodSessionResponseType = z.infer<
 // Inbox Credentials
 export const InboxCredentialValidator = z.object({
     id: z.string(),
-    credential: z.string(),
+    credential: z.string().optional(),
     isSigned: z.boolean(),
     currentStatus: LCNInboxStatusEnumValidator,
     isAccepted: z.boolean().optional(),
     expiresAt: z.string(),
     createdAt: z.string(),
+    finalizedAt: z.string().optional(),
+    expiredAt: z.string().optional(),
+    credentialName: z.string().optional(),
+    achievementType: z.string().optional(),
     issuerDid: z.string(),
     webhookUrl: z.string().optional(),
     boostUri: z.string().optional(),
@@ -1278,10 +1282,13 @@ export const IssueInboxCredentialValidator = z
                     .describe('The webhook URL to receive credential issuance events.'),
                 expiresInDays: z
                     .number()
+                    .int()
                     .min(1)
                     .max(365)
                     .optional()
-                    .describe('The number of days the credential will be valid for.'),
+                    .describe(
+                        'How many days the encrypted inbox payload remains claimable. This does not change the credential validity period.'
+                    ),
                 templateData: z
                     .record(z.string(), z.unknown())
                     .optional()
@@ -1401,6 +1408,15 @@ export const ClaimInboxCredentialValidator = z.object({
     configuration: z
         .object({
             publishableKey: z.string(),
+            expiresInDays: z
+                .number()
+                .int()
+                .min(1)
+                .max(720)
+                .optional()
+                .describe(
+                    'Inbox claim window in days. Defaults to 720; use a shorter window for sensitive records.'
+                ),
             signingAuthorityName: z.string().optional(),
             listingId: z.string().optional(),
             listingSlug: z.string().optional(),

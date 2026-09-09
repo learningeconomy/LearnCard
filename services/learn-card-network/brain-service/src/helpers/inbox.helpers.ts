@@ -13,7 +13,7 @@ import {
 
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
-import { markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
+import { finalizeAndWipeInboxCredential } from '@accesslayer/inbox-credential/update';
 import { Context } from '@routes';
 import { getAppDidWeb } from '@helpers/did.helpers';
 import {
@@ -128,10 +128,26 @@ export const claimIntoInbox = async (
             activityId,
             expiresInDays,
         });
+        // Embed claims for an existing profile must deliver before removing escrow.
+        const learnCard = await getLearnCard();
+        const encryptedDelivery = await learnCard.invoke.createDagJwe(finalCredential, [
+            existingProfile.did,
+        ]);
+        await sendCredential(
+            issuerProfile,
+            existingProfile,
+            encryptedDelivery,
+            ctx.domain,
+            undefined,
+            activityId,
+            integrationId
+        );
+        const finalizedInboxCredential = await finalizeAndWipeInboxCredential(inboxCredential.id);
+        if (!finalizedInboxCredential) throw new Error('Inbox credential is no longer pending');
 
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
-            inboxCredential,
+            inboxCredential: finalizedInboxCredential,
             recipientDid: existingProfile.did,
         };
     } else {
@@ -282,7 +298,7 @@ export const issueToInbox = async (
         // Create inbox record for tracking
         const inboxCredential = await createInboxCredential({
             credential: JSON.stringify(finalCredential),
-            isSigned,
+            isSigned: true,
             recipient,
             issuerProfile,
             webhookUrl,
@@ -294,6 +310,10 @@ export const issueToInbox = async (
 
         // Send credential using appropriate helper (sendBoost handles boost tracking)
         // Pass activityId and integrationId so they're stored on the relationship for CLAIMED chaining
+        const learnCard = await getLearnCard();
+        const encryptedDelivery = await learnCard.invoke.createDagJwe(finalCredential, [
+            existingProfile.did,
+        ]);
         if (boostUri) {
             const boost = await getBoostByUri(boostUri);
             if (boost) {
@@ -301,7 +321,7 @@ export const issueToInbox = async (
                     from: { type: 'profile', profile: issuerProfile },
                     to: existingProfile,
                     boost,
-                    credential: finalCredential,
+                    credential: encryptedDelivery,
                     domain: ctx.domain,
                     skipCertification: true,
                     activityId,
@@ -312,7 +332,7 @@ export const issueToInbox = async (
                 await sendCredential(
                     issuerProfile,
                     existingProfile,
-                    finalCredential,
+                    encryptedDelivery,
                     ctx.domain,
                     undefined,
                     activityId,
@@ -323,7 +343,7 @@ export const issueToInbox = async (
             await sendCredential(
                 issuerProfile,
                 existingProfile,
-                finalCredential,
+                encryptedDelivery,
                 ctx.domain,
                 undefined,
                 activityId,
@@ -332,7 +352,10 @@ export const issueToInbox = async (
         }
 
         // Mark as issued and create relationship
-        await markInboxCredentialAsIssued(inboxCredential.id);
+        const finalizedInboxCredential = await finalizeAndWipeInboxCredential(inboxCredential.id, {
+            isAccepted: false,
+        });
+        if (!finalizedInboxCredential) throw new Error('Inbox credential is no longer pending');
 
         // Log credential activity for auto-delivery
         if (activityId) {
@@ -389,7 +412,7 @@ export const issueToInbox = async (
 
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
-            inboxCredential,
+            inboxCredential: finalizedInboxCredential,
             recipientDid: existingProfile.did,
         };
     } else {
