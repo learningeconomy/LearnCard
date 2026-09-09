@@ -11,7 +11,15 @@ import { fileURLToPath } from 'url';
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const swaggerUiDistDir = path.dirname(require.resolve('swagger-ui-dist/package.json'));
+// Gracefully handle missing swagger-ui-dist (e.g., production install without devDeps)
+let swaggerUiDistDir;
+try {
+    swaggerUiDistDir = path.dirname(require.resolve('swagger-ui-dist/package.json'));
+} catch {
+    console.warn('swagger-ui-dist not installed; skipping swagger asset copy');
+    process.exit(0);
+}
+
 const targetDir = path.join(__dirname, '../src/swagger-ui');
 
 const assetsToCopy = [

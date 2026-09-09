@@ -36,16 +36,11 @@ import {
 
 /**
  * Trusted LearnCard domain suffixes for federation.
- * These use suffix matching to cover production, staging, and preview environments.
+ * Only dotted suffixes - the isLearnCardDomain check handles apex domains via
+ * `host === suffix.replace(/^\./, '')`. Bare entries would allow bypass
+ * (e.g., 'evillearncard.com'.endsWith('learncard.com') === true).
  */
-const LEARNCARD_DOMAIN_SUFFIXES = [
-    '.learncard.com',
-    '.learncard.app',
-    '.learncard.ai',
-    'learncard.com',
-    'learncard.app',
-    'learncard.ai',
-];
+const LEARNCARD_DOMAIN_SUFFIXES = ['.learncard.com', '.learncard.app', '.learncard.ai'];
 
 /**
  * Configuration for federation URL validation.
@@ -145,7 +140,9 @@ const validateFederationUrl = (userProvidedUrl: string, config: FederationConfig
         const trustedHosts = new Set(config.trustedFederationHosts);
         const allowAnyHost = trustedHosts.has('*');
 
-        // Check explicit list, LearnCard domains, or wildcard
+        // Check explicit list, LearnCard domains, or wildcard.
+        // Note: LearnCard domains are always trusted even with an explicit allowlist -
+        // this is intentional to ensure core federation always works.
         if (!allowAnyHost && !isLearnCardDomain(host) && !trustedHosts.has(host)) {
             throw new Error(
                 `Federation host '${host}' is not trusted. ` +
