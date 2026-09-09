@@ -784,7 +784,6 @@ const AuthSessionManager: React.FC<{
     useAuthCoordinatorAutoSetup(coordinator, {
         generatePrivateKey: generateEd25519PrivateKey,
         didFromPrivateKey,
-        autoMigrate: getAuthConfig().sssCohortEnabled,
 
         onReady: (_privateKey, did) => {
             emitAuthSuccess(

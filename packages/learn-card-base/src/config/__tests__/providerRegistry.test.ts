@@ -30,7 +30,6 @@ import type { AuthProvider, KeyDerivationStrategy } from '../../auth-coordinator
 const baseConfig: AuthConfig = {
     authProvider: 'firebase',
     keyDerivation: 'sss',
-    sssCohortEnabled: false,
     providerConfig: {},
 };
 

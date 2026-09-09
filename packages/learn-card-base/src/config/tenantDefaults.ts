@@ -42,7 +42,6 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
     auth: {
         provider: 'firebase' as const,
         keyDerivation: 'sss',
-        sssCohortEnabled: false,
 
         firebase: {
             apiKey: 'AIzaSyDQJcEDxhxdxRAVdIDBzcE1x6D-KOj6N4o',
