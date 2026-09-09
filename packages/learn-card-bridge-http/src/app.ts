@@ -5,10 +5,10 @@ import { VCValidator, VPValidator, type UnsignedVC, type VP } from '@learncard/t
 
 import { TypedRequest } from './types.helpers';
 
-// Rate limiter for routes that perform expensive authorization operations
+// Rate limiter for routes that perform expensive signing/verification operations
 const authRateLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute window
-    max: 100, // limit each IP to 100 requests per windowMs
+    limit: 100, // limit each IP to 100 requests per windowMs
     message: 'Too many requests, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
@@ -31,6 +31,10 @@ const app = express();
 
 const W3C_V1_CREDENTIALS_CONTEXT = 'https://www.w3.org/2018/credentials/v1';
 const W3C_ALT_V1_CREDENTIALS_CONTEXT = 'https://w3.org/2018/credentials/v1';
+
+// Trust proxy for correct IP detection behind load balancers
+// Required for rate limiting to work correctly in production
+app.set('trust proxy', 1);
 
 app.use(cors());
 app.use(express.json());
@@ -59,7 +63,7 @@ app.delete('/credentials/:id', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => {
+app.post('/credentials/issue', authRateLimiter, async (req: TypedRequest<IssueEndpoint>, res) => {
     try {
         const validationResult = await IssueEndpointValidator.spa(req.body);
 
@@ -158,7 +162,7 @@ app.post('/credentials/derive', async (_req: TypedRequest<{}>, res) => {
 });
 
 // This is non-standard! But very helpful for the VC-API plugin
-app.post('/presentations/issue', async (req: TypedRequest<IssueEndpoint>, res) => {
+app.post('/presentations/issue', authRateLimiter, async (req: TypedRequest<IssueEndpoint>, res) => {
     try {
         const validationResult = await IssuePresentationEndpointValidator.spa(req.body);
 
