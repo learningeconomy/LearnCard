@@ -12,9 +12,9 @@ This is for **external websites** that want to award credentials to visitors. If
 
 ## Prerequisites
 
--   A LearnCard developer account with an **Embed** integration created in the [Developer Dashboard](https://learncard.app)
--   At least one **credential template** attached to that integration
--   Your integration's **publishable key** (`pk_...`)
+- A LearnCard developer account with an **Embed** integration created in the [Developer Dashboard](https://learncard.app)
+- At least one **credential template** attached to that integration
+- Your integration's **publishable key** (`pk_...`)
 
 ## Step 1: Create Your Integration & Template
 
@@ -206,11 +206,15 @@ Your `publishableKey` doesn't match any active integration on the network. Doubl
 **Credential not appearing after claim**
 The credential lands in the user's inbox and is finalized when they next open their wallet. If you need to verify immediately, check the dashboard's activity tab.
 
+{% hint style="warning" %}
+Embedded claims default to a 720-day claim window. For transcripts, CLRs, or other sensitive learner records, set `configuration.expiresInDays` on the `/inbox/claim` request to a shorter integer from 1 through 720 (for example, `configuration: { publishableKey, expiresInDays: 7 }`). This controls escrow retention, not the credential's validity dates.
+{% endhint %}
+
 **OTP not arriving**
 In local dev, check your brain-service logs — OTP codes are printed there when no email provider is configured.
 
 ## See Also
 
--   [Embed SDK Reference](../../sdks/embed-sdk.md)
--   [Embed Code Tab (Dashboard)](../../how-to-guides/connect-systems/connect-a-website.md)
--   [Connect an Embedded App](connect-an-embedded-app.md) — for apps inside LearnCard
+- [Embed SDK Reference](../../sdks/embed-sdk.md)
+- [Embed Code Tab (Dashboard)](../../how-to-guides/connect-systems/connect-a-website.md)
+- [Connect an Embedded App](connect-an-embedded-app.md) — for apps inside LearnCard
