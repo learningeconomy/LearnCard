@@ -15,7 +15,10 @@ export const getProvider = (url?: string): keyof typeof Providers | null => {
     if (!url) return null;
 
     try {
-        const { hostname } = new URL(url);
+        // Handle protocol-relative URLs (e.g., //cdn.filestackcontent.com/...)
+        // by prepending https: so URL parsing succeeds
+        const normalizedUrl = url.startsWith('//') ? `https:${url}` : url;
+        const { hostname } = new URL(normalizedUrl);
 
         // Check exact hostname or proper subdomain to prevent bypass via attacker-controlled domains
         if (isHostnameMatch(hostname, 'cdn.filestackcontent.com')) return 'filestack';

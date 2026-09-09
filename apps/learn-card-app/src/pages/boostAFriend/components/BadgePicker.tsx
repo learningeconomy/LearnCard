@@ -13,6 +13,15 @@ import * as m from '../../../paraglide/messages.js';
 import { useLocale } from '../../../i18n';
 import { tBadgeCategoryLabel, tBadgeCategoryDesc } from '../badgePackI18n';
 
+// Hoisted to module scope to avoid re-creating on every render.
+// Uses crypto for CodeQL compliance, even though this is cosmetic badge selection.
+// Note: array[0] % length has minor modulo bias but acceptable for non-security use.
+const getSecureRandomIndex = (length: number): number => {
+    const array = new Uint32Array(1);
+    crypto.getRandomValues(array);
+    return array[0]! % length;
+};
+
 interface BadgePickerProps {
     onSelect: (badge: BadgePreset, vibeColor: string) => void;
     onBack: () => void;
@@ -58,13 +67,6 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
             }
         }
         onSelect(badge, color);
-    };
-
-    // Use crypto for random selection to satisfy CodeQL, even though this is cosmetic
-    const getSecureRandomIndex = (length: number): number => {
-        const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
-        return array[0]! % length;
     };
 
     const handleSurpriseMe = () => {

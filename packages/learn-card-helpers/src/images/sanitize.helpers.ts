@@ -7,12 +7,19 @@ export type SanitizeImageUrlOptions = {
      * Default: false
      */
     allowBlobUrls?: boolean;
+    /**
+     * Allow data: URLs (e.g., data:image/png;base64,... for inline images).
+     * Only data:image/* URLs are allowed when enabled.
+     * Default: false
+     */
+    allowDataUrls?: boolean;
 };
 
 /**
  * Sanitizes an image URL to prevent XSS via javascript: or other malicious URL schemes.
  * Only allows http: and https: protocols by default.
  * Optionally allows blob: URLs for local file preview scenarios.
+ * Optionally allows data:image/* URLs for inline base64 images.
  *
  * @param url - The URL to sanitize
  * @param options - Optional configuration
@@ -24,7 +31,7 @@ export const sanitizeImageUrl = (
 ): string | undefined => {
     if (!url) return undefined;
 
-    const { allowBlobUrls = false } = options;
+    const { allowBlobUrls = false, allowDataUrls = false } = options;
 
     try {
         const parsed = new URL(url);
@@ -35,6 +42,14 @@ export const sanitizeImageUrl = (
 
         if (allowBlobUrls && parsed.protocol === 'blob:') {
             return parsed.href;
+        }
+
+        if (allowDataUrls && parsed.protocol === 'data:') {
+            // Only allow image/* MIME types for security
+            if (url.startsWith('data:image/')) {
+                return url;
+            }
+            return undefined;
         }
 
         return undefined;

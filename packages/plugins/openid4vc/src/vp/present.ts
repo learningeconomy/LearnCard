@@ -506,8 +506,9 @@ const defaultMakeId = (): string => {
 /**
  * Build a v4 UUID string using the caller-supplied random generator
  * (so tests can inject deterministic output). Pads non-hex input to
- * 32 hex chars — the presentation id only needs to be unique per
- * submission, not cryptographically strong.
+ * 32 hex chars. Note: defaultMakeId requires crypto.getRandomValues
+ * and will throw in legacy environments without it (no Math.random
+ * fallback to avoid CodeQL security warnings).
  */
 const makeUuidV4 = (makeId: () => string): string => {
     const hex = makeId().replace(/[^0-9a-f]/gi, '');
