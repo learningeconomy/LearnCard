@@ -164,10 +164,7 @@ export interface PreparedPresentation {
 /* -------------------------------------------------------------------------- */
 
 export type BuildPresentationErrorCode =
-    | 'no_selections'
-    | 'unknown_descriptor'
-    | 'unknown_credential_format'
-    | 'invalid_jwt_vc';
+    'no_selections' | 'unknown_descriptor' | 'unknown_credential_format' | 'invalid_jwt_vc';
 
 export class BuildPresentationError extends Error {
     readonly code: BuildPresentationErrorCode;
@@ -266,13 +263,11 @@ export const buildPresentation = (options: BuildPresentationOptions): PreparedPr
     const submission: PresentationSubmission = {
         id: options.submissionId ?? makeId(),
         definition_id: pd.id,
-        descriptor_map: normalized.map(
-            (n, index): PresentationSubmissionDescriptor => ({
-                id: n.descriptorId,
-                format: n.format,
-                path: pathForIndex(index, vpFormat),
-            })
-        ),
+        descriptor_map: normalized.map((n, index): PresentationSubmissionDescriptor => ({
+            id: n.descriptorId,
+            format: n.format,
+            path: pathForIndex(index, vpFormat),
+        })),
     };
 
     return {
