@@ -32,7 +32,7 @@ export const brainServiceEnvironmentShape = {
     AWS_REGION: optionalEnvironmentString,
     NOTIFICATIONS_QUEUE_URL: optionalEnvironmentUrl,
     NOTIFICATIONS_QUEUE_POLL_URL: optionalEnvironmentUrl,
-    NOTIFICATIONS_SERVICE_WEBHOOK_URL: optionalEnvironmentUrl,
+    NOTIFICATIONS_SERVICE_WEBHOOK_URL: optionalEnvironmentUrl.or(z.literal('false')),
     NOTIFICATIONS_SERVICE_PORT: optionalEnvironmentPort,
     BRAIN_SERVICE_REGISTRY_URL: optionalEnvironmentUrl,
     DCC_KNOWN_REGISTRIES_URL: optionalEnvironmentUrl,

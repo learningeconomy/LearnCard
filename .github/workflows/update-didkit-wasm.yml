@@ -398,6 +398,7 @@ jobs:
               if: steps.changes.outputs.has_changes == 'true'
               env:
                   WASM_URL: ${{ steps.wasm.outputs.url }}
+                  WASM_SHA256: ${{ steps.wasm.outputs.sha256 }}
               run: |
                   set -euo pipefail
 
@@ -408,6 +409,7 @@ jobs:
                   downloaded_bytes="$(
                       curl --fail --location --retry 20 --retry-all-errors --retry-delay 3 \
                           --retry-max-time 300 \
+                          --compressed \
                           --header 'Accept-Encoding: br' \
                           --dump-header "${headers}" \
                           --output "${body}" \
@@ -418,6 +420,10 @@ jobs:
 
                   grep -Eiq '^content-type:[[:space:]]*application/wasm([[:space:]]*;|[[:space:]]*$)' "${headers}"
                   grep -Eiq '^content-encoding:[[:space:]]*br[[:space:]]*$' "${headers}"
+
+                  # curl decodes Brotli before writing the body; verify the bytes
+                  # clients execute, not just the response's compression headers.
+                  printf '%s  %s\n' "${WASM_SHA256}" "${body}" | sha256sum --check
 
                   {
                       echo 'CloudFront served the generated WASM with Brotli compression.'
