@@ -652,6 +652,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         return response.json();
     };
 
+    const fetchVerifiedEnclaveKey = async (): Promise<{ publicKey: string; keyId: string }> => {
+        if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
+        const { attestation } = await escrowRequest<{ attestation: unknown }>('/attestation', {
+            method: 'GET',
+            headers: buildHeaders('', undefined, tenantId),
+        });
+        return verifyEnclaveAttestation(attestation, config.escrow.attestation);
+    };
+
     const enrollEscrow = async (
         token: string,
         providerType: AuthProviderType,
@@ -659,18 +668,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         primaryDid: string,
         shares: SSSShares,
         shareVersion: number,
-        signDidAuthVp?: DidAuthVpSigner
+        signDidAuthVp?: DidAuthVpSigner,
+        verifiedKey?: { publicKey: string; keyId: string }
     ): Promise<void> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
-        const { attestation } = await escrowRequest<{ attestation: unknown }>('/attestation', {
-            method: 'GET',
-            headers: buildHeaders('', undefined, tenantId),
-        });
-        const { publicKey, keyId } = await verifyEnclaveAttestation(
-            attestation,
-            config.escrow.attestation
-        );
+        const { publicKey, keyId } = verifiedKey ?? (await fetchVerifiedEnclaveKey());
         const envelope = await encryptEscrowBlob(
             { recoveryShare: shares.recoveryShare, did: primaryDid, shareVersion },
             publicKey,
@@ -1103,6 +1106,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             )
                 return { enrolled: true, changed: false };
             if (!status.primaryDid) throw new Error('Cannot enroll escrow without a primary DID');
+            if (!params.signDidAuthVp) {
+                throw new Error('DID proof signing is required for escrow enrollment');
+            }
+            // Verify the enclave before rotating: a bad attestation must not burn
+            // a share version (and, repeated, the retained auth-share history).
+            const verifiedKey = await fetchVerifiedEnclaveKey();
             const { shares, shareVersion } = await persistSharesAtomically(
                 params.privateKey,
                 serverUrl,
@@ -1130,7 +1139,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 status.primaryDid,
                 shares,
                 shareVersion,
-                params.signDidAuthVp
+                params.signDidAuthVp,
+                verifiedKey
             );
             return { enrolled: true, changed: true, shareVersion };
         },
@@ -1473,6 +1483,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 throw new Error('Escrow enrollment is disabled');
             }
 
+            // Escrow pre-flight: attest the enclave BEFORE rotating so a bad
+            // attestation has no side effects (no version bump).
+            const escrowKey =
+                input.method === 'escrow' ? await fetchVerifiedEnclaveKey() : undefined;
+
             // Passkey pre-flight: create the credential and verify PRF support
             // BEFORE any split/store/email work. If PRF isn't available, fail
             // cleanly without side effects (no version bump, no email re-send).
@@ -1534,7 +1549,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         primaryDid,
                         shares,
                         shareVersion,
-                        signDidAuthVp
+                        signDidAuthVp,
+                        escrowKey
                     );
                     return { method: 'escrow', shareVersion };
                 case 'passkey': {
