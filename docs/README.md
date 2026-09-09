@@ -1,6 +1,6 @@
 # What is LearnCard?
 
-[**LearnCard**](https://www.learncard.com) lets you issue digital credentials — badges, certificates, and achievements — that people own and share. Send one to any email address with [one API call](quick-start/your-first-integration.md); recipients claim it through any system that supports the same open standards.
+[**LearnCard**](https://www.learncard.com) lets you issue digital credentials — badges, certificates, and achievements — that people own and share. Send one to any email address with [one API call](quick-start/your-first-integration.md); recipients claim it in the LearnCard app (or via a claim link). The resulting credential is a standard W3C Verifiable Credential (Open Badges 3.0) that other conformant wallets and verifiers can import and verify (see the [interoperability guide](how-to-guides/interoperate-with-learncard.md)).
 
 LearnCard is an open-source wallet, SDK, and network built on [W3C Verifiable Credentials](core-concepts/credentials-and-data/verifiable-credentials-vcs.md) and [Decentralized Identifiers (DIDs)](core-concepts/identities-and-keys/decentralized-identifiers-dids.md). The [Glossary](introduction/glossary.md) defines these terms.
 
@@ -37,11 +37,11 @@ LearnCard is used to:
 
 ### Where to Go Next
 
-- **Start:** [Quickstart](quick-start/your-first-integration.md), [What Do You Want to Build?](introduction/what-do-you-want-to-build.md), and [How LearnCard Works](introduction/how-learncard-works.md).
-- **Build:** [send and issue credentials](how-to-guides/send-credentials.md), [publish your app](how-to-guides/publish-your-app.md), [add LearnCard to your product](how-to-guides/connect-systems/README.md), [bring existing credentials into LearnCard](how-to-guides/interoperate-with-learncard.md), [manage consent and guardianship](tutorials/create-a-consentflow.md), [manage keys, tokens & infrastructure](how-to-guides/deploy-infrastructure/README.md), and [go to production](how-to-guides/go-to-production.md).
-- **Understand:** [credentials](core-concepts/credentials-and-data/README.md), [identities and keys](core-concepts/identities-and-keys/README.md), [consent](core-concepts/consent-and-permissions/README.md), [the network](core-concepts/network-and-interactions/README.md), and [architecture](core-concepts/architecture-and-principles/README.md).
-- **Reference:** [SDK selection](sdks/which-sdk.md), [Wallet SDK](sdks/learncard-core/README.md), [Network API](sdks/learncard-network/README.md), [Storage API](sdks/learncloud-storage-api/README.md), [Partner Connect](sdks/partner-connect.md), [Embed SDK](sdks/embed-sdk.md), and [plugins](sdks/official-plugins/README.md).
-- **Products:** [LearnCard apps](apps/README.md), [LearnCard App](apps/learn-card-app/README.md), [ScoutPass](apps/scouts/README.md), and [contributing](development/contributing.md).
+- **Send your first credential** → [Quickstart](quick-start/your-first-integration.md)
+- **Choose what to build** → [What Do You Want to Build?](introduction/what-do-you-want-to-build.md)
+- **How LearnCard works** → [How LearnCard Works](introduction/how-learncard-works.md)
+
+The sidebar has the full directory.
 
 ---
 

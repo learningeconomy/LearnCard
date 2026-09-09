@@ -30,6 +30,10 @@ The `send` method detects your recipient type:
 
 ### Basic Usage
 
+{% hint style="info" %}
+Template URIs look like `lc:network:<host>/trpc:boost:<id>`. Always use the value returned by `createBoost` or `send` (`result.uri`) — don't construct them.
+{% endhint %}
+
 {% tabs %}
 {% tab title="Send to Profile ID or DID" %}
 
@@ -38,7 +42,7 @@ The `send` method detects your recipient type:
 const result = await learnCard.invoke.send({
     type: 'boost',
     recipient: 'recipient-profile-id', // or 'did:key:z6Mk...'
-    templateUri: 'urn:lc:boost:abc123',
+    templateUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
 });
 
 console.log(result.credentialUri); // URI of the sent credential
@@ -54,7 +58,7 @@ console.log(result.uri); // URI of the credential template used
 const result = await learnCard.invoke.send({
     type: 'boost',
     recipient: 'student@example.com', // Auto-detected as email
-    templateUri: 'urn:lc:boost:abc123',
+    templateUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
     options: {
         branding: {
             issuerName: 'My Organization',
@@ -65,7 +69,7 @@ const result = await learnCard.invoke.send({
     },
 });
 
-console.log(result.inbox?.claimUrl); // Claim URL (if suppressDelivery=true)
+console.log(result.inbox?.claimUrl); // Present when inbox.status is 'PENDING' (new recipient)
 console.log(result.inbox?.issuanceId); // Issuance tracking ID
 ```
 
@@ -78,9 +82,9 @@ console.log(result.inbox?.issuanceId); // Issuance tracking ID
 const result = await learnCard.invoke.send({
     type: 'boost',
     recipient: '+15551234567', // Auto-detected as phone
-    templateUri: 'urn:lc:boost:abc123',
+    templateUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
     options: {
-        suppressDelivery: true, // Don't send SMS, just get claimUrl
+        suppressDelivery: true, // Skip the SMS — inbox.claimUrl is still returned; deliver it yourself
     },
 });
 
@@ -165,8 +169,8 @@ const result = await learnCard.invoke.send({
 const result = await learnCard.invoke.send({
     type: 'boost',
     recipient: 'recipient-profile-id',
-    templateUri: 'urn:lc:boost:abc123',
-    contractUri: 'urn:lc:contract:xyz789', // Optional: link to consent contract
+    templateUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
+    contractUri: 'lc:network:network.learncard.com/trpc:contract:abc123', // Optional: link to consent contract
 });
 ```
 
@@ -175,7 +179,7 @@ const result = await learnCard.invoke.send({
 
 ### REST API (`POST /api/send`)
 
-The `send` method is available as a REST endpoint. Use an API key or bearer token for authentication.
+The `send` method is available as a REST endpoint. Authenticate with `Authorization: Bearer <API token>`, using a token from an auth grant with `boosts:write` scope (create one in the Developer Portal, or via `addAuthGrant` + `getAPITokenForAuthGrant`).
 
 {% tabs %}
 {% tab title="cURL: Send with Template" %}
@@ -187,7 +191,7 @@ curl -X POST https://network.learncard.com/api/send \
   -d '{
     "type": "boost",
     "recipient": "student@example.com",
-    "templateUri": "urn:lc:boost:abc123"
+    "templateUri": "lc:network:network.learncard.com/trpc:boost:abc123"
   }'
 ```
 
@@ -252,7 +256,7 @@ const response = await fetch('https://network.learncard.com/api/send', {
 
 const result = await response.json();
 console.log(result);
-// { type: 'boost', uri: 'urn:lc:boost:...', inbox: { issuanceId: '...', status: 'PENDING' } }
+// { type: 'boost', uri: 'lc:network:network.learncard.com/trpc:boost:...', inbox: { issuanceId: '...', status: 'PENDING' } }
 ```
 
 {% endtab %}
@@ -283,7 +287,7 @@ To require guardian (parent) approval before a minor can claim a credential, add
 const result = await learnCard.invoke.send({
     type: 'boost',
     recipient: 'student@school.edu',
-    templateUri: 'urn:lc:boost:abc123',
+    templateUri: 'lc:network:network.learncard.com/trpc:boost:abc123',
     options: {
         guardianEmail: 'parent@example.com',
     },
@@ -312,7 +316,7 @@ interface SendResponse {
             | 'EXPIRED' // Claim link expired
             | 'DELIVERED' // Delivered to inbox
             | 'CLAIMED'; // Claimed via claim link
-        claimUrl?: string; // Present when suppressDelivery=true
+        claimUrl?: string; // Present when status is 'PENDING'; not tied to suppressDelivery
         guardianStatus?:
             // Present when guardianEmail was specified
             | 'AWAITING_GUARDIAN' // Waiting for guardian approval
@@ -326,14 +330,21 @@ interface SendResponse {
 **Auto-Delivery**: When `status` is `ISSUED`, the credential was automatically delivered to the recipient's wallet because their email/phone was already verified. No claim link was needed!
 {% endhint %}
 
+**Response conditions**
+
+| `inbox.status` | `claimUrl` present? | What was delivered                                                                                                                        |
+| :------------- | :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------- |
+| `PENDING`      | Yes                 | New recipient — a claim email/SMS was sent, unless `options.suppressDelivery: true` (then nothing was sent; deliver `claimUrl` yourself). |
+| `ISSUED`       | No                  | Recipient already had a verified email/phone linked to a LearnCard profile — the credential was auto-delivered directly to their wallet.  |
+
 ### Options (for Email/Phone Recipients)
 
 When sending to email or phone recipients, you can provide additional options:
 
 ```typescript
 options: {
-    webhookUrl?: string;       // URL to receive claim notifications
-    suppressDelivery?: boolean; // If true, returns claimUrl without sending email/SMS
+    webhookUrl?: string;       // Receives ISSUANCE_DELIVERED and ISSUANCE_CLAIMED events — see Listen to Webhooks
+    suppressDelivery?: boolean; // Skips the email/SMS only — the inbox record and claimUrl are created either way
     branding?: {
         issuerName?: string;    // Your organization name
         issuerLogoUrl?: string; // Your logo URL

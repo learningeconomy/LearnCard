@@ -1,10 +1,10 @@
 ---
-description: Pick your path — every integration starts with one of these five jobs.
+description: Pick your path — every integration starts with one of these six jobs.
 ---
 
 # What Do You Want to Build?
 
-Most LearnCard integrations fit one of five paths. Each starts with the lowest-effort method.
+Most LearnCard integrations fit one of six paths. Each starts with the lowest-effort method.
 
 ## 🎖️ Send & issue credentials
 
@@ -49,7 +49,7 @@ Examples include parent-approved school apps and scouting organizations issuing 
 
 ## 🔬 Keys, tokens & infrastructure
 
-Every server integration needs a key and a token; some need more — plugins, a staging environment, or a network of their own.
+A server integration uses either a seed (you sign; the SDK authenticates with your DID) or an API token (LearnCard signs via a hosted signing authority; create the token once in the Developer Portal or with `addAuthGrant`). Verification-only code needs neither.
 
 - Start here: [How should I manage keys?](../how-to-guides/deploy-infrastructure/choose-key-management.md)
 - [Build a plugin](../how-to-guides/deploy-infrastructure/the-simplest-plugin.md)
@@ -57,6 +57,13 @@ Every server integration needs a key and a token; some need more — plugins, a 
 - [Run your own network](../how-to-guides/deploy-infrastructure/connect-to-independent-network.md)
 - Ready to ship? [Go to Production](../how-to-guides/go-to-production.md) checklist
 - Full API: [LearnCard Wallet SDK](../sdks/learncard-core/README.md)
+
+## ✅ Verify credentials
+
+Check badges, degrees, and certificates presented to your hiring or verification service.
+
+- Start here: [Verify Credentials](../tutorials/verify-credentials.md) — sign locally, then test valid, tampered, expired, and revoked outcomes
+- Decide which issuers to accept with [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md); a valid signature alone is not issuer trust.
 
 ---
 

@@ -1,20 +1,19 @@
 ---
-description: The two-minute mental model — three verbs, three layers, one credential's journey.
+description: The two-minute mental model — the integration flow, three layers, and one credential's journey.
 ---
 
 # How LearnCard Works
 
-LearnCard organizes credential activity around three verbs and three platform layers.
+LearnCard's mission is to help people collect, understand, and navigate their learning records, but the developer model is built around a simple flow: **Issuer → Credential → Holder → Verifier**.
 
-## Three verbs
+## The Integration Flow
 
-Everything a person does with their record is one of three things:
-
-- **Collect** — gather credentials from schools, work, courses, games, and certifications across institutions.
-- **Understand** — make sense of what's inside: skills, gaps against a goal, insights grounded in the real record.
-- **Navigate** — use the record for pathways, jobs, scholarships, and consented AI agents.
-
-Every part of the platform exists to make those three verbs **portable, open, and learner-controlled**.
+| Role         | What runs where      | Which API/SDK you call  |
+| :----------- | :------------------- | :---------------------- |
+| **Issuer**   | Your server (or CLI) | `send()` or `/api/send` |
+| **Delivery** | LearnCard hosts      | Universal Inbox         |
+| **Holder**   | Recipient's device   | Wallet app or SDK       |
+| **Verifier** | Your server or app   | `verifyCredential()`    |
 
 ## Three layers
 
@@ -43,12 +42,12 @@ flowchart LR
 
 ## One credential's journey
 
-1. **You issue it.** Your seed (or a hosted signing authority) signs a credential naming you as issuer. It's now tamper-evident: anyone can check the signature without asking you.
+1. **You issue it.** Your seed (or a hosted signing authority you registered) signs a credential naming you as issuer. It's now tamper-evident: anyone can check the signature without asking you.
 2. **You send it.** To a profile, a DID, or — for someone with no account — an email or phone via the **Universal Inbox**. They get a claim link.
 3. **They hold it.** After claiming, the credential is stored encrypted in the person's own storage, under a **DID** they control. You can't revoke their copy of the _data_ — only mark the credential's _status_.
 4. **They share it.** With a verifier, an employer, another app — through **consent** the person grants and can withdraw. Verifiers check the signature and status; they don't need to call you.
 
-The holder controls the keys throughout issuance, delivery, storage, and sharing.
+The issuer's key signs the credential. Before claiming, an email recipient has no key and the credential waits in the inbox. After claiming, the holder's key controls storage and sharing. Verifiers need neither key.
 
 ## Where to go deeper
 

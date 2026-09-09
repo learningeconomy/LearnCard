@@ -69,6 +69,8 @@ There is currently no automatic notification when your listing is approved — c
 - Counters: up to 50 keys per app per user
 - Never bypass origin validation, and handle every SDK call's rejection path — users can decline any request
 
+See [Errors & Limits](../sdks/learncard-network/errors-and-limits.md) for the authoritative rate-limit reference (including the counter write-rate limit).
+
 ## Full API reference
 
 [Partner Connect SDK](../sdks/partner-connect.md) documents every method, type, error code, and mock-mode option.

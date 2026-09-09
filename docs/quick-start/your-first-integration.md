@@ -1,5 +1,5 @@
 ---
-description: Send a verifiable credential to any email address with one command, curl, or about 15 lines of code.
+description: Send a verifiable credential to any email address with one command, curl, or one short script.
 ---
 
 # Quickstart: Send a Credential
@@ -41,12 +41,12 @@ LearnCard signs the credential; this option requires no installation or key mana
 2. Open **Guides → Issue Credentials** and work down the steps:
     - **API Token** — create one and copy it. It's shown once.
     - **Signing Authority** — create one hosted by LearnCard.
-    - **Create Templates** — make a badge (any name). Its **template URI** (`boost:…`) appears under the template selector.
+    - **Create Templates** — make a badge (any name). The **template URI** shown under the template selector — copy it exactly.
 3. Send it:
 
 ```bash
-export TOKEN=...            # from the API Token step
-export TEMPLATE_URI=boost:… # from the Create Templates step
+export TOKEN=...                   # from the API Token step
+export TEMPLATE_URI=lc:network:... # paste the template URI shown under the template selector
 export RECIPIENT_EMAIL=you@example.com
 ```
 
@@ -69,7 +69,7 @@ The response is JSON. `inbox.status` is `PENDING` (new person — they get an em
 
 {% endtab %}
 
-{% tab title="Own your keys: ~15 lines of code" %}
+{% tab title="Own your keys: one script" %}
 
 **Set up.**
 You need **Node.js 20 or newer**. In an empty folder:
@@ -171,6 +171,9 @@ node --env-file=.env send.mjs you@example.com
 
 <figure><img src="../.gitbook/assets/quickstart-complete-badge.png" alt="The Quickstart Complete badge as it appears in the recipient's LearnCard wallet: a certificate reading Quickstart Complete, awarded on today's date, certified by My Organization." width="420"><figcaption>What the recipient sees after claiming.</figcaption></figure>
 
+{% tabs %}
+{% tab title="CLI / script" %}
+
 Your terminal shows one of two results:
 
 ```
@@ -189,12 +192,30 @@ The recipient already has a verified account, so the credential is in their wall
 Both are followed by:
 
 ```
-Reusable template for this badge: boost:…
+Reusable template for this badge: lc:network:network.learncard.com/trpc:boost:…
 ```
 
-Every `send` saves the badge as a **template** (a Boost). To send the same badge to more people, pass `templateUri: result.uri` instead of `signedCredential`. LearnCard fills in and signs each one server-side once you set up a [signing authority](../how-to-guides/create-signing-authority.md).
-
 You can rerun the script; it creates the profile only once.
+
+{% endtab %}
+
+{% tab title="curl" %}
+
+The response is JSON:
+
+```json
+{
+    "uri": "lc:network:network.learncard.com/trpc:boost:...",
+    "inbox": { "status": "PENDING", "claimUrl": "https://learncard.app/..." }
+}
+```
+
+`inbox.status` is `PENDING` for a new recipient — email them `inbox.claimUrl` to claim it — or `ISSUED` if they already use LearnCard, meaning it was auto-delivered with no `claimUrl`.
+
+{% endtab %}
+{% endtabs %}
+
+Every `send` saves the badge as a **template** (a Boost). To send the same badge to more people, pass `templateUri: result.uri` instead of `signedCredential`. LearnCard fills in and signs each one server-side once you set up a [signing authority](../how-to-guides/create-signing-authority.md).
 
 ## If something goes wrong
 
@@ -205,88 +226,13 @@ You can rerun the script; it creates the profile only once.
 | `A LearnCard has been initialized with a seed that is less than 32 bytes`                           | Seed is too short                                                                  | Same — generate a full 64-character seed                                                          |
 | `Profile already exists!`                                                                           | Someone else already took your `PROFILE_ID`                                        | Pick a more specific one                                                                          |
 | `Usage: node --env-file=.env send.mjs you@example.com`                                              | No recipient given                                                                 | Add the email address as the last argument                                                        |
-| `Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry` | You switched `type` to `phone`                                                     | Email works for everyone; phone needs [issuer verification](../how-to-guides/verify-my-issuer.md) |
+| `Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry` | You passed a phone number as the recipient                                         | Email works for everyone; phone needs [issuer verification](../how-to-guides/verify-my-issuer.md) |
 | `Failed to send email via Postmark: … marked as inactive`                                           | The address is a placeholder (`example.com`) or has bounced before                 | Use a real address you can open                                                                   |
 | `You must register a signing authority before using send without a pre-signed credential`           | You passed `template` or `templateUri` (server-signed) without a signing authority | Sign locally (`signedCredential`) or [set one up](../how-to-guides/create-signing-authority.md)   |
 
-## Send your own signed credential over HTTP
-
-If you sign credentials yourself but want to deliver them from any language, create an API token and POST the signed credential to `/api/send`. This script creates the token (scope `boosts:write`) and writes the request body to `request.json`:
-
-<!-- snippet: quickstart/api-token.mjs -->
-
-```javascript
-import { writeFileSync } from 'node:fs';
-import { randomUUID } from 'node:crypto';
-import { initLearnCard } from '@learncard/init';
-
-const recipientEmail = process.argv[2];
-if (!recipientEmail) throw new Error('Usage: node --env-file=.env api-token.mjs you@example.com');
-
-const learnCard = await initLearnCard({ seed: process.env.SECURE_SEED, network: true });
-
-// 1. A token that can only send boosts. Create once, store like a password.
-const grantId = await learnCard.invoke.addAuthGrant({ name: 'sender', scope: 'boosts:write' });
-const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
-
-// 2. A signed credential to send — same shape as send.mjs.
-const credential = await learnCard.invoke.issueCredential({
-    '@context': [
-        'https://www.w3.org/ns/credentials/v2',
-        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-    ],
-    type: ['VerifiableCredential', 'OpenBadgeCredential'],
-    issuer: learnCard.id.did(),
-    validFrom: new Date().toISOString(),
-    name: 'Quickstart Complete',
-    credentialSubject: {
-        type: ['AchievementSubject'],
-        achievement: {
-            id: `urn:uuid:${randomUUID()}`,
-            type: ['Achievement'],
-            name: 'Quickstart Complete',
-            description: 'Sent a verifiable credential with LearnCard.',
-            criteria: { narrative: 'Ran the LearnCard quickstart.' },
-        },
-    },
-});
-
-// 3. The exact request body the HTTP API expects.
-writeFileSync(
-    'request.json',
-    JSON.stringify(
-        { type: 'boost', recipient: recipientEmail, signedCredential: credential },
-        null,
-        2
-    )
-);
-
-console.log(`export TOKEN=${token}`);
-console.log('Wrote request.json');
-```
-
-<!-- /snippet -->
-
-```bash
-node --env-file=.env api-token.mjs you@example.com
-# prints:  export TOKEN=...   ← run that line, then:
-```
-
-<!-- snippet: quickstart/send.sh -->
-
-```bash
-curl -X POST https://network.learncard.com/api/send \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d @request.json
-```
-
-<!-- /snippet -->
-
-The token has one permission (`boosts:write`). Store it like a password. [Revoke it](../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md) any time. Full API reference, phone delivery, templates, and webhooks: [Send & Issue Credentials](../how-to-guides/send-credentials.md).
-
 ## Next steps
 
+- [Send Signed Credentials over HTTP](../how-to-guides/send-signed-credentials-over-http.md) — sign credentials yourself and deliver them from any language via the REST API.
 - [Create a Credential](../tutorials/create-a-credential.md) — add an image, criteria, and skills.
 - [Create a Boost](../tutorials/create-a-boost.md) — issue the same badge to many people.
 - [Listen to Webhooks](../tutorials/listen-to-webhooks.md) — detect when credentials are claimed.

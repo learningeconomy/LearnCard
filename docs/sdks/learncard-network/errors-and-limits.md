@@ -6,12 +6,14 @@ This reference details the errors, rate limits, and validation rules enforced by
 
 The LearnCard Network enforces fixed-window rate limits to prevent abuse. When a limit is exceeded, the API returns a `TOO_MANY_REQUESTS` (HTTP 429) error.
 
-| Limit            | Window     | Description                                             |
-| :--------------- | :--------- | :------------------------------------------------------ |
-| **100 requests** | Per minute | App counter increments (`app-counter-rate`)             |
-| **80 requests**  | Per minute | Semantic skill searches (`skill-semantic-search-rate`)  |
-| **1 request**    | Per hour   | App notifications per user (`app-notif-rate`)           |
-| **1 request**    | Per hour   | Server-wide app notifications (`app-notif-server-rate`) |
+| Limit            | Window     | Description                                                                               |
+| :--------------- | :--------- | :---------------------------------------------------------------------------------------- |
+| **100 requests** | Per minute | App counter writes, per user per app (`app-counter-rate`)                                 |
+| **80 requests**  | Per minute | Semantic skill searches (`skill-semantic-search-rate`)                                    |
+| **10 requests**  | Per hour   | App notifications, per user per app, sent via the SDK (`app-notif-rate`)                  |
+| **60 requests**  | Per hour   | App notifications, per app, sent via the server-to-server route (`app-notif-server-rate`) |
+
+App counters are also capped at **50 keys** per user per app (`MAX_COUNTER_KEYS_PER_USER_PER_APP`).
 
 ## Recipient Auto-Detection
 

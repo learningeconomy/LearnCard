@@ -1,208 +1,290 @@
 ---
-description: 'Tutorial: Verify a Verifiable Credential'
+description: Sign a credential locally, verify it, and understand tampered, expired, and revoked results.
 ---
 
-# Verify & Request Credentials
+# Verify Credentials
 
-Verification checks that:
+Verification checks the signature, detects changes to signed data, checks expiry, and checks revocation or suspension when the credential carries a supported `credentialStatus`. You will generate a real signed Open Badges 3.0 credential locally, then try two failing cases. No account or API token is needed for these three examples.
 
-1. The credential's cryptographic proof is valid.
-2. The credential hasn't been tampered with.
-3. The credential hasn't expired.
+**~10 minutes · Needs:** Node.js (v20+), a terminal; a network-issued credential for the optional revocation step
 
-**~10 minutes · Needs:** Node.js (v18+), basic familiarity with Verifiable Credentials
+## Install
 
-## Prerequisites
-
-- Node.js (v18+)
-- Basic familiarity with [Verifiable Credentials](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md)
-
-## Installation
+In a new project folder, install the SDK:
 
 ```bash
+npm init -y
 npm install @learncard/init
 ```
 
-## Basic Verification
+## Verify your first credential
 
-```typescript
+Save this as `issue-and-verify.mjs`. It generates a disposable issuer key, signs a badge awarded to that same identity, and verifies it with a separate, seedless SDK instance. Nothing is sent or stored on the LearnCard Network.
+
+<!-- snippet: verify/issue-and-verify.mjs -->
+
+```javascript
+import { randomBytes, randomUUID } from 'node:crypto';
 import { initLearnCard } from '@learncard/init';
 
-// Initialize LearnCard (no seed needed for verification-only)
-const learnCard = await initLearnCard();
-
-// Example signed credential (you'd receive this from an issuer)
-const signedCredential = {
-    '@context': ['https://www.w3.org/2018/credentials/v1'],
-    'type': ['VerifiableCredential'],
-    'issuer': 'did:key:z6MkjZ...',
-    'issuanceDate': '2024-01-01T00:00:00Z',
-    'credentialSubject': {
-        'id': 'did:key:z6Mkp...',
-        'achievement': 'Completed Tutorial',
+// A fresh, disposable issuer for this tutorial; never print its seed.
+const issuer = await initLearnCard({ seed: randomBytes(32).toString('hex') });
+const credential = await issuer.invoke.issueCredential({
+    '@context': [
+        'https://www.w3.org/ns/credentials/v2',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: issuer.id.did(),
+    validFrom: new Date().toISOString(),
+    name: 'Verification Complete',
+    credentialSubject: {
+        id: issuer.id.did(),
+        type: ['AchievementSubject'],
+        achievement: {
+            id: `urn:uuid:${randomUUID()}`,
+            type: ['Achievement'],
+            name: 'Verification Complete',
+            description: 'Verified a signed credential with LearnCard.',
+            criteria: { narrative: 'Ran the verification tutorial.' },
+        },
     },
-    'proof': {
-        'type': 'Ed25519Signature2020',
-        // ... proof details
-    },
-};
+});
 
-// Verify the credential
-const result = await learnCard.invoke.verifyCredential(signedCredential);
-
-console.log(result);
-// { checks: ['proof', 'expiration'], warnings: [], errors: [] }
+// Verification needs neither the issuer's seed nor a network profile.
+const verifier = await initLearnCard();
+const result = await verifier.invoke.verifyCredential(credential);
+console.log(
+    result.errors.length
+        ? `Invalid: ${result.errors.join('; ')}`
+        : `Valid: ${result.checks.join(', ')}`
+);
+console.log(JSON.stringify(result, null, 2));
 ```
 
-## Understanding Results
+<!-- /snippet -->
 
-### Valid Credential
+Run it:
 
-```typescript
-const result = await learnCard.invoke.verifyCredential(validCredential);
+```bash
+node issue-and-verify.mjs
+```
 
-if (result.errors.length === 0) {
-    console.log('✅ Credential is valid!');
-    console.log('Checks passed:', result.checks);
-} else {
-    console.log('❌ Credential is invalid');
-    console.log('Errors:', result.errors);
+### What you should see
+
+Captured output:
+
+```text
+Valid: proof, expiration
+{
+  "checks": [
+    "proof",
+    "expiration"
+  ],
+  "warnings": [],
+  "errors": []
 }
 ```
 
-### Human-Readable Output
+`checks` lists successful checks; it is not an overall verdict. Reject verification failures in `errors`, and review `warnings` before accepting a credential. This badge has no expiry and no status entry: `expiration` succeeds, but there is no revocation check to report. If present, `credentialSchema` also adds a schema check.
 
-Pass `true` as the third argument for a human-readable result:
+The default `verifyCredential(credential, options?)` result is an object with `checks`, `warnings`, `errors`, and optional `status`. For display, `verifyCredential(credential, {}, true)` returns a prettified array instead: success entries use `message`, failures use `details`, and warnings have status `Error`. Use the default object for application decisions.
 
-```typescript
-const result = await learnCard.invoke.verifyCredential(signedCredential, {}, true);
+## Tampered
 
-console.log(result);
-// [
-//   { status: "Success", check: "proof", message: "Valid" },
-//   { status: "Success", check: "expiration", message: "Valid • Does Not Expire" }
-// ]
+Save this independent example as `tampered.mjs`. It changes an achievement name **after signing**, retaining the original proof.
+
+<!-- snippet: verify/tampered.mjs -->
+
+```javascript
+import { randomBytes, randomUUID } from 'node:crypto';
+import { initLearnCard } from '@learncard/init';
+
+const issuer = await initLearnCard({ seed: randomBytes(32).toString('hex') });
+const credential = await issuer.invoke.issueCredential({
+    '@context': [
+        'https://www.w3.org/ns/credentials/v2',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: issuer.id.did(),
+    validFrom: new Date().toISOString(),
+    name: 'Verification Complete',
+    credentialSubject: {
+        id: issuer.id.did(),
+        type: ['AchievementSubject'],
+        achievement: {
+            id: `urn:uuid:${randomUUID()}`,
+            type: ['Achievement'],
+            name: 'Verification Complete',
+            description: 'Verified a signed credential with LearnCard.',
+            criteria: { narrative: 'Ran the verification tutorial.' },
+        },
+    },
+});
+
+// Change signed data without replacing the original proof.
+const tampered = structuredClone(credential);
+tampered.credentialSubject.achievement.name = 'An achievement I did not earn';
+const verifier = await initLearnCard();
+const result = await verifier.invoke.verifyCredential(tampered);
+console.log(
+    result.errors.length
+        ? `Invalid: ${result.errors.join('; ')}`
+        : `Valid: ${result.checks.join(', ')}`
+);
+console.log(JSON.stringify(result, null, 2));
 ```
 
-### Handling Invalid Credentials
+<!-- /snippet -->
 
-```typescript
-// Tampered credential (modified after signing)
-const tamperedCredential = { ...signedCredential };
-tamperedCredential.credentialSubject.achievement = 'Fake Achievement';
-
-const result = await learnCard.invoke.verifyCredential(tamperedCredential);
-
-console.log(result);
-// {
-//   checks: [],
-//   warnings: [],
-//   errors: ['signature error: Verification equation was not satisfied']
-// }
+```bash
+node tampered.mjs
 ```
 
-## Check status, not just the signature
+### What you should see
 
-A valid signature does not mean the credential is still valid. The issuer may have revoked it. LearnCard automatically checks the `credentialStatus` field (often using [Bitstring Status Lists](../core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md)) during verification.
+Captured output:
 
-If a credential has been revoked, `verifyCredential` returns an error:
-
-```typescript
-const result = await learnCard.invoke.verifyCredential(revokedCredential);
-
-console.log(result);
-// {
-//   checks: ['proof'],
-//   warnings: [],
-//   errors: ['credentialStatus error: Credential has been revoked']
-// }
+```text
+Invalid: signature error: Verification equation was not satisfied
+{
+  "checks": [
+    "expiration"
+  ],
+  "warnings": [],
+  "errors": [
+    "signature error: Verification equation was not satisfied"
+  ]
+}
 ```
 
-To learn how to revoke credentials you've issued, see [Revoke or Update a Credential](../how-to-guides/revoke-or-update-a-credential.md).
+Passing the expiration check cannot rescue a broken signature. Do not edit a signed credential; ask its issuer for a replacement.
+
+## Expired
+
+Save this as `expired.mjs`. The issuer signs `validUntil` in the past, so this tests expiry rather than tampering.
+
+<!-- snippet: verify/expired.mjs -->
+
+```javascript
+import { randomBytes, randomUUID } from 'node:crypto';
+import { initLearnCard } from '@learncard/init';
+
+const issuer = await initLearnCard({ seed: randomBytes(32).toString('hex') });
+// Sign with past dates; editing validUntil after signing would also break the proof.
+const credential = await issuer.invoke.issueCredential({
+    '@context': [
+        'https://www.w3.org/ns/credentials/v2',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: issuer.id.did(),
+    validFrom: '2020-01-01T00:00:00Z',
+    validUntil: '2020-01-02T00:00:00Z',
+    name: 'Verification Complete',
+    credentialSubject: {
+        id: issuer.id.did(),
+        type: ['AchievementSubject'],
+        achievement: {
+            id: `urn:uuid:${randomUUID()}`,
+            type: ['Achievement'],
+            name: 'Verification Complete',
+            description: 'Verified a signed credential with LearnCard.',
+            criteria: { narrative: 'Ran the verification tutorial.' },
+        },
+    },
+});
+
+const verifier = await initLearnCard();
+const result = await verifier.invoke.verifyCredential(credential);
+console.log(
+    result.errors.length
+        ? `Invalid: ${result.errors.join('; ')}`
+        : `Valid: ${result.checks.join(', ')}`
+);
+console.log(JSON.stringify(result, null, 2));
+```
+
+<!-- /snippet -->
+
+```bash
+node expired.mjs
+```
+
+### What you should see
+
+Captured output:
+
+```text
+Invalid: expiration error: Credential is no longer valid
+{
+  "checks": [
+    "proof"
+  ],
+  "warnings": [],
+  "errors": [
+    "expiration error: Credential is no longer valid"
+  ]
+}
+```
+
+The signature still passes. For these VC 2.0 credentials, use `validFrom` / `validUntil`; VC 1.1 credentials use `issuanceDate` / `expirationDate`.
+
+<a id="check-status-not-just-the-signature"></a>
+
+## Revoked (status list)
+
+**This step requires a network-issued credential with a `credentialStatus` entry**, not one of the local badges above. A status list lets the issuer revoke a credential without changing its signed contents.
+
+1. Issue and deliver a VC 2.0 badge through the network's Boost issuance flow, which allocates a `BitstringStatusListEntry` before signing. Keep the delivered credential, template URI, and recipient profile ID. A pre-signed credential without a status entry does not gain one just by being sent.
+2. Follow [Revoke or Update a Credential](../how-to-guides/revoke-or-update-a-credential.md): the issuer calls `revokeBoostRecipient(templateUri, recipientProfileId)` (or passes a specific credential URI as the third argument). This flips the associated revocation bit.
+3. Verify the **same delivered credential** again with default options. Verification fetches the status list referenced by `credentialStatus`; do not override `checks` to request only `proof`.
+
+The following is a **shape excerpt from `VerificationCheck.status`, not captured output**. The local examples do not create or revoke a network credential:
+
+```json
+{
+    "status": [
+        {
+            "entryType": "BitstringStatusListEntry",
+            "statusPurpose": "revocation",
+            "isSet": true
+        }
+    ]
+}
+```
+
+Entries can also include `statusListCredential` and `statusListIndex`. A set revocation bit means revoked; a set suspension bit means suspended. Check `errors` and the structured `status` entries, not a guessed error string. Missing status data is **not** evidence that a credential is unrevoked, and an unreachable status list is not a successful check. See [Credential Status and Bitstring Status Lists](../core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md).
+
+## Who verifies what
+
+- **Signature:** `verifyCredential` checks the proof and signed data; review warnings about whether the named issuer authorized the signing key.
+- **Issuer trust:** your application decides which issuers to accept, using a separate [Trust Registry](../core-concepts/identities-and-keys/trust-registries.md) lookup or allowlist. `verifyCredential` does not automatically check trusted issuers.
+- **Presenter binding:** request a signed Verifiable Presentation, use `verifyPresentation` with your fresh challenge and expected domain, verify the enclosed credentials, and check `holder === credentialSubject.id`. This establishes control of that subject identity, not a person's real-world identity; receiving credential JSON alone does not.
 
 ## Request a credential from a LearnCard user
 
-There are two main ways to request credentials from a user's wallet:
+Use [Create a ConsentFlow](../tutorials/create-a-consentflow.md) for the full, runnable flow. The requester calls `createContract` with read access to the required credential categories (for example, `Achievement`), then sends the user to `https://learncard.app/consent-flow` with URL-encoded `uri` (the returned contract URI) and `returnTo` parameters.
 
-### 1. Using ConsentFlow (Recommended)
+After consent, the requester calls `getConsentFlowDataForDid(userDid)` and filters the paginated results by `contractUri`. Retrieve and verify the shared credentials before using their claims. Consent grants access; it does not establish signature validity, issuer trust, or presenter binding.
 
-ConsentFlow is LearnCard's native way to request data. You create a contract asking for specific credentials, the user approves it, and you read the data.
-
-```typescript
-// 1. Create a contract requesting read access
-const contract = await learnCard.invoke.createConsentContract({
-    title: 'Job Application',
-    description: 'We need to verify your degree',
-    permissions: [{ type: 'read', uri: 'credential-uri-here' }],
-});
-
-// 2. Send it to the user
-await learnCard.invoke.send({
-    type: 'consentFlow',
-    recipient: 'user@example.com',
-    contract,
-});
-
-// 3. After they accept, read the data
-const data = await learnCard.invoke.getConsentFlowData(contract.id);
-const credentials = await learnCard.invoke.getCredentialsForContract(contract.id);
-```
-
-See [Create a ConsentFlow](../tutorials/create-a-consentflow.md) for a complete guide.
-
-### 2. Using Open Standards
-
-If you are building a non-LearnCard application that needs to request credentials from a LearnCard wallet, you can use standard protocols like OID4VP or VC-API QueryByExample.
-
-See [Requesting credentials from a LearnCard user](../how-to-guides/interoperate-with-learncard.md#requesting-credentials-from-a-learncard-user) for details on standard interoperability.
-
-## Complete Example
-
-```typescript
-import { initLearnCard } from '@learncard/init';
-
-async function verifyCredentialFromIssuer(credential: any) {
-  const learnCard = await initLearnCard();
-
-  const result = await learnCard.invoke.verifyCredential(credential, {}, true);
-
-  const isValid = result.every(check => check.status === 'Success');
-
-  if (isValid) {
-    console.log('✅ Credential verified successfully!');
-    result.forEach(check => {
-      console.log(`  ${check.check}: ${check.message}`);
-    });
-  } else {
-    console.log('❌ Credential verification failed:');
-    result.forEach(check => {
-      if (check.status === 'Failed') {
-        console.log(`  ${check.check}: ${check.details}`);
-      }
-    });
-  }
-
-  return isValid;
-}
-
-// Usage
-const credential = /* ... received from issuer ... */;
-await verifyCredentialFromIssuer(credential);
-```
-
-## What you should see
-
-When you run the verification code, you will see the result object indicating whether the credential passed all checks. A valid credential returns an empty `errors` array.
+For other wallets and protocols, see [Interoperate with LearnCard](../how-to-guides/interoperate-with-learncard.md#requesting-credentials-from-a-learncard-user).
 
 ## Troubleshooting
 
-| If…                                                        | Then                                                                          |
-| :--------------------------------------------------------- | :---------------------------------------------------------------------------- |
-| `signature error: Verification equation was not satisfied` | The credential was modified after it was signed, or the signature is invalid. |
-| `credentialStatus error: Credential has been revoked`      | The issuer revoked the credential. It is no longer valid.                     |
-| `Cannot get default verification method`                   | The issuer DID could not be resolved, or the network is unreachable.          |
+| If you see…                                                                       | What to do                                                                                                                                            |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `signature error: Verification equation was not satisfied`                        | Reject the credential: signed data or its proof changed. Request the original or a newly issued copy.                                                 |
+| `expiration error: Credential is no longer valid`                                 | The VC 2.0 `validUntil` is past. Request a current credential.                                                                                        |
+| `expiration error: Credential is expired`                                         | The VC 1.1 `expirationDate` is past. Request a current credential.                                                                                    |
+| `expiration error: Credential is not valid yet`                                   | Check `validFrom` and your system clock. Wait until the validity period begins.                                                                       |
+| `Issuer authorization was not checked because the credential issuer is not a DID` | A valid signature did not establish authorization by the named URL issuer. Resolve that authorization separately; do not silently accept the warning. |
 
-## Next Steps
+The first two errors above were captured from these examples; the remaining messages are defined by the SDK. Resolver or status-list failures may vary by environment. Treat them as unresolved verification, not permission to skip a check.
 
-- Learn about [Verifiable Presentations](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) for sharing credentials
-- Explore [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) for validating issuers
+## Next steps
+
+- [Create a ConsentFlow](../tutorials/create-a-consentflow.md) to request credentials with consent.
+- [Revoke or Update a Credential](../how-to-guides/revoke-or-update-a-credential.md) to try the network status-list flow.
+- [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) to define which issuers your service accepts.
