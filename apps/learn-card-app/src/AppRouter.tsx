@@ -509,9 +509,9 @@ const AppRouter: React.FC = () => {
                                     {isLoggedIn && !hideSideMenu && (
                                         <SideMenu branding={BrandingEnum.learncard} />
                                     )}
-                                    <main id="main" tabIndex={-1} className="w-full">
+                                    <div id="main" tabIndex={-1} className="w-full">
                                         <MobileNavBar />
-                                    </main>
+                                    </div>
                                 </GenericErrorBoundary>
                             </IonSplitPane>
                         </>
