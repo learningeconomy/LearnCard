@@ -2,12 +2,13 @@ name: 'LearnCard CodeQL Configuration'
 
 # Exclude vendored/minified code from CodeQL analysis
 paths-ignore:
-    # Vendored swagger-ui bundles (minified third-party code)
-    - 'services/learn-card-network/learn-cloud-service/src/swagger-ui/*.js'
-    - 'services/learn-card-network/learn-cloud-service/src/swagger-ui/*.css'
-    - 'services/learn-card-network/learn-cloud-service/src/swagger-ui/*.map'
-    # Exclude build outputs
+    # Vendored swagger-ui bundles (copied from swagger-ui-dist at build time)
+    - 'services/learn-card-network/learn-cloud-service/src/swagger-ui/swagger-ui-bundle.js'
+    - 'services/learn-card-network/learn-cloud-service/src/swagger-ui/swagger-ui-standalone-preset.js'
+    - 'services/learn-card-network/learn-cloud-service/src/swagger-ui/swagger-ui.css'
+    # Exclude build outputs (specific paths to avoid excluding source dirs named "build")
     - '**/dist/**'
-    - '**/build/**'
+    - 'apps/learn-card-app/build/**'
+    - 'apps/scouts/build/**'
     # Exclude node_modules (usually already excluded)
     - '**/node_modules/**'
