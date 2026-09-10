@@ -1,6 +1,12 @@
 /**
  * Auth configuration is resolved from validated TenantConfig during application bootstrap.
- * Explicit tenant values take precedence over legacy enclave environment fallbacks.
+ *
+ * One exception: the escrow enclave trust policy (`VITE_ESCROW_ENCLAVE_MODE`,
+ * `VITE_ESCROW_ENCLAVE_PUBLIC_KEYS`) may be supplied through `import.meta.env`
+ * so local / preview builds can pin a software enclave without editing tenant
+ * JSON. Explicit tenant values always take precedence over these fallbacks, and
+ * this is the only place in `learn-card-base` that reads `import.meta.env`, so
+ * the package stays buildable outside Vite as long as the reference is optional.
  */
 
 import type { AuthProviderType } from '../auth-coordinator/types';
