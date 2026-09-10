@@ -7,10 +7,14 @@ on:
         paths:
             - 'packages/plugins/didkit-plugin-node/**'
             - '.github/workflows/didkit-plugin-node-prebuilds.yml'
+            - 'lib/ssi'
+            - 'lib/didkit'
     pull_request:
         paths:
             - 'packages/plugins/didkit-plugin-node/**'
             - '.github/workflows/didkit-plugin-node-prebuilds.yml'
+            - 'lib/ssi'
+            - 'lib/didkit'
     workflow_dispatch:
 
 env:
