@@ -25,7 +25,7 @@ Put your product inside the LearnCard app store, where users can install and lau
 Examples include AI tutors using consented learner history, games issuing portable badges, and career tools building skills profiles.
 
 - Start here: [Build an App Inside LearnCard](../how-to-guides/publish-your-app.md) — local mock mode to published listing
-- Full API surface: [Partner Connect SDK](../sdks/partner-connect.md)
+- Full API surface: [Partner Connect SDK](../sdks/partner-connect/README.md)
 
 ## 🌐 Add LearnCard to your site
 
@@ -53,8 +53,7 @@ First decide [who signs](../how-to-guides/create-signing-authority.md): **you** 
 - [Generate API tokens](../how-to-guides/deploy-infrastructure/generate-api-tokens.md)
 - [Test safely on staging](../how-to-guides/deploy-infrastructure/test-safely.md)
 - [Go to Production](../how-to-guides/go-to-production.md)
-- [Build a plugin](../how-to-guides/deploy-infrastructure/the-simplest-plugin.md)
-- [Run your own network](../how-to-guides/deploy-infrastructure/connect-to-independent-network.md)
+- [Build a Plugin (GitHub)](https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-core/PLUGINS.md)
 
 ## ✅ Verify credentials
 

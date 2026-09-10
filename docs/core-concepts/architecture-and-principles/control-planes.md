@@ -86,8 +86,8 @@ The `keypair` method (optionally) takes in a cryptographic algorithm (e.g. ed255
 
 ### Example plugins that implement the ID Plane
 
-{% content-ref url="../../sdks/official-plugins/did-key.md" %}
-[did-key.md](../../sdks/official-plugins/did-key.md)
+{% content-ref url="../../sdks/official-plugins/README.md#included-by-default" %}
+[README.md](../../sdks/official-plugins/README.md#included-by-default)
 {% endcontent-ref %}
 
 ##
@@ -343,8 +343,8 @@ The optional `removeAll` method flushes all `CredentialRecord`s from the holder'
 
 ### Example plugins that implement the Index Plane
 
-{% content-ref url="../../sdks/official-plugins/idx.md" %}
-[idx.md](../../sdks/official-plugins/idx.md)
+{% content-ref url="../../sdks/official-plugins/README.md#install-separately" %}
+[README.md](../../sdks/official-plugins/README.md#install-separately)
 {% endcontent-ref %}
 
 {% content-ref url="../../sdks/official-plugins/learncloud.md" %}
@@ -432,10 +432,6 @@ Resolving JSON-LD contexts dynamically comes with some serious security implicat
 
 ## Example Plugins that implement the Context Plane
 
-{% content-ref url="../../sdks/official-plugins/didkit.md" %}
-[didkit.md](../../sdks/official-plugins/didkit.md)
-{% endcontent-ref %}
-
-{% content-ref url="../../sdks/official-plugins/dynamic-loader.md" %}
-[dynamic-loader.md](../../sdks/official-plugins/dynamic-loader.md)
+{% content-ref url="../../sdks/official-plugins/README.md#included-by-default" %}
+[README.md](../../sdks/official-plugins/README.md#included-by-default)
 {% endcontent-ref %}

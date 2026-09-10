@@ -232,4 +232,4 @@ Zero runtime dependencies. The claim modal UI is bundled inline as a minified st
 
 - [How-To: Add an Embed Claim Button to Your Website](../how-to-guides/connect-systems/embed-a-claim-button.md)
 - [Connect a User's LearnCard to Your Platform](../tutorials/create-a-consentflow.md)
-- [Partner Connect SDK](partner-connect.md) — for apps embedded _inside_ LearnCard
+- [Partner Connect SDK](partner-connect/README.md) — for apps embedded _inside_ LearnCard

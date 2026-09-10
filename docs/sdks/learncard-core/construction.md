@@ -76,7 +76,7 @@ const customLearnCard = await initLearnCard({ custom: true });
 
 The examples above are not exhaustive of possible ways to instantiate a LearnCard:
 
--   For more on initialization with a VC-API, check out the [VC-API Plugin](../official-plugins/vc-api.md).&#x20;
+- For more on initialization with a VC-API, check out the [VC-API Plugin](../official-plugins/README.md#network).&#x20;
 
 #### The learnCardFromSeed function
 
@@ -164,7 +164,7 @@ const learnCard = await initLearnCard({ seed: 'abc123', didkit });
 {% endtab %}
 {% endtabs %}
 
-If you're curious about what the above code is doing, read more[ here](../official-plugins/didkit.md).
+If you're curious about what the above code is doing, read more[ here](../official-plugins/README.md#included-by-default).
 
 ## Create Credentials
 
@@ -453,9 +453,8 @@ try {
     console.log('Managed Profile DID:', managedProfileDid);
 
     // Create a managed service profile
-    const managedServiceProfileDid = await learnCard.invoke.createManagedServiceProfile(
-        profileDetails
-    );
+    const managedServiceProfileDid =
+        await learnCard.invoke.createManagedServiceProfile(profileDetails);
     console.log('Managed Service Profile DID:', managedServiceProfileDid);
 
     // Create a profile manager
@@ -478,9 +477,9 @@ try {
 
 To search for profiles, use the `searchProfiles` method. This method accepts an optional `profileId` parameter and an `options` object. The `options` object can contain the following properties:
 
--   `limit`: Maximum number of profiles to return.
--   `includeSelf`: Whether to include the current user's profile in the results.
--   `includeConnectionStatus`: Whether to include connection status in the results.
+- `limit`: Maximum number of profiles to return.
+- `includeSelf`: Whether to include the current user's profile in the results.
+- `includeConnectionStatus`: Whether to include connection status in the results.
 
 ```javascript
 const profileId = 'johnsmith';
@@ -670,14 +669,12 @@ try {
     const connections = await learnCard.invoke.getPaginatedConnections(paginationOptions);
     console.log('My Connections:', connections.records);
 
-    const pendingRequests = await learnCard.invoke.getPaginatedPendingConnections(
-        paginationOptions
-    );
+    const pendingRequests =
+        await learnCard.invoke.getPaginatedPendingConnections(paginationOptions);
     console.log('My Pending Outgoing Requests:', pendingRequests.records);
 
-    const incomingRequests = await learnCard.invoke.getPaginatedConnectionRequests(
-        paginationOptions
-    );
+    const incomingRequests =
+        await learnCard.invoke.getPaginatedConnectionRequests(paginationOptions);
     console.log('My Incoming Connection Requests:', incomingRequests.records);
 
     // --- Blocking Profiles ---
@@ -789,9 +786,8 @@ try {
     console.log('Incoming Credentials (pending acceptance):', incomingCredentials);
 
     // Similar retrieval for presentations
-    const receivedPresentations = await learnCard.invoke.getReceivedPresentations(
-        'did:example:sender'
-    );
+    const receivedPresentations =
+        await learnCard.invoke.getReceivedPresentations('did:example:sender');
     console.log('Received Presentations:', receivedPresentations);
 
     // --- Deleting ---
@@ -1331,14 +1327,14 @@ const authGrantID = await learnCard.invoke.addAuthGrant({
 
 #### AuthGrant Properties
 
--   `id`: Unique identifier (auto-generated if not provided)
--   `name`: Name of the AuthGrant
--   `description`: (Optional) Description of the purpose or use case
--   `challenge`: Security challenge string (must start with AuthGrant prefix)
--   `status`: Either 'active' or 'revoked'
--   `scope`: Permission scope string
--   `createdAt`: ISO 8601 datetime string of creation (auto-generated if not provided)
--   `expiresAt`: (Optional) ISO 8601 datetime string for expiration
+- `id`: Unique identifier (auto-generated if not provided)
+- `name`: Name of the AuthGrant
+- `description`: (Optional) Description of the purpose or use case
+- `challenge`: Security challenge string (must start with AuthGrant prefix)
+- `status`: Either 'active' or 'revoked'
+- `scope`: Permission scope string
+- `createdAt`: ISO 8601 datetime string of creation (auto-generated if not provided)
+- `expiresAt`: (Optional) ISO 8601 datetime string for expiration
 
 #### Generating an API Token
 

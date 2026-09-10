@@ -1,57 +1,47 @@
 # Plugins
 
-LearnCard uses a modular plugin system to extend functionality. Plugins are self-contained modules that add specific capabilities through **Control Planes** (standard interfaces like read, store, index) and **Methods** (custom functions via `invoke`).
+Plugins compose the LearnCard SDK — each one adds functionality through Control Planes (standard interfaces like `read`, `store`, and `index`) or methods exposed via `invoke`. [`initLearnCard`](../../core-concepts/architecture-and-principles/plugins.md) loads the standard stack automatically, so most integrations never add a plugin by hand.
 
-## Quick Start
+## Included by default
 
-Most users don't need to install plugins individually—`@learncard/init` bundles the essential plugins automatically:
+Loaded automatically by `initLearnCard({ seed })` — no separate install, no manual `addPlugin` call.
 
-```typescript
-import { initLearnCard } from '@learncard/init';
+| Plugin                          | Package                            | What it adds                                                                                                                                                                               |
+| ------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| LearnCard (Universal Wallet)    | `@learncard/learn-card-plugin`     | Wraps `verifyCredential` with a friendlier, more opinionated output.                                                                                                                       |
+| Crypto                          | `@learncard/crypto-plugin`         | Isomorphic WebCrypto object usable in both the browser and Node.                                                                                                                           |
+| DIDKit                          | `@learncard/didkit-plugin`         | DID/VC/VP primitives (key generation, signing, verification, DID resolution) via Spruce's DIDKit, compiled to WASM. See [DIDKit (Node)](didkit-node.md) for the native, server-side build. |
+| [DIDKit (Node)](didkit-node.md) | `@learncard/didkit-plugin-node`    | Native N-API build of DIDKit — ~18x faster cold start than WASM. Optional dependency of `@learncard/init`; opt in with `didkit: 'node'`.                                                   |
+| DID Key                         | `@learncard/didkey-plugin`         | Derives `did:key` DIDs and keypairs from a 32-byte seed; implements the ID Control Plane.                                                                                                  |
+| VC                              | `@learncard/vc-plugin`             | Signs/verifies credentials and presentations; exposes the `VerifyExtension` type so sub-plugins can add their own verification checks.                                                     |
+| Expiration                      | `@learncard/expiration-plugin`     | VC sub-plugin (built on `VerifyExtension`) that adds an expiration check to `verifyCredential`.                                                                                            |
+| [VC-Templates](vc-templates.md) | `@learncard/vc-templates-plugin`   | Pre-built templates (`basic`, `achievement`, boosts, ...) for `newCredential()`.                                                                                                           |
+| [LearnCloud](learncloud.md)     | `@learncard/learn-cloud-plugin`    | Encrypted cloud storage for credentials via the LearnCloud API (`read`/`store`/`index` planes).                                                                                            |
+| [Ethereum](ethereum.md)         | `@learncard/ethereum-plugin`       | Balance and transfer operations for the wallet's Ethereum address.                                                                                                                         |
+| [VPQR](vpqr.md)                 | `@learncard/vpqr-plugin`           | Compresses Verifiable Presentations into QR codes (CBOR-LD) and back.                                                                                                                      |
+| CHAPI                           | `@learncard/chapi-plugin`          | Send/receive credentials and presentations via the Credential Handler API.                                                                                                                 |
+| Dynamic Loader                  | `@learncard/dynamic-loader-plugin` | Resolves unrecognized JSON-LD contexts over HTTP at runtime. Discouraged outside test/playground use (security risk) — enable with `allowRemoteContexts: true`.                            |
 
-// Full wallet with all standard plugins
-const learnCard = await initLearnCard({ seed: 'your-seed', network: true });
+## Network
 
-// Add additional plugins as needed
-const enhancedLearnCard = await learnCard.addPlugin(await getMyPlugin());
-```
+Loaded automatically when you pass `network: true` (in addition to the default stack above).
 
-## Official Plugins
+| Plugin                                    | Package                     | What it adds                                                                                                                                                                                                                        |
+| ----------------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [LearnCard Network](learncard-network.md) | `@learncard/network-plugin` | Profiles, connections, credentials, presentations, boosts, and skill search via LearnCloud Network.                                                                                                                                 |
+| VC-API                                    | `@learncard/vc-api-plugin`  | Signs/verifies against a VC-API endpoint (e.g. LearnCard Bridge), with automatic Issuer DID discovery. Bundled with `@learncard/init`, but loads via the separate `initLearnCard({ vcApi: ... })` entry point, not `network: true`. |
 
-### Core Plugins (included in @learncard/init)
+## Install separately
 
-| Plugin                                       | Description                                                      |
-| -------------------------------------------- | ---------------------------------------------------------------- |
-| [LearnCard (Universal Wallet)](learncard.md) | Opinionated wrappers (e.g. friendlier `verifyCredential` output) |
-| [Crypto](crypto.md)                          | Core cryptographic operations                                    |
-| [DIDKit](didkit.md)                          | DID operations using DIDKit WASM                                 |
-| [DIDKit Node](didkit-node.md)                | High-performance native Node.js DIDKit (server-side)             |
-| [DID Key](did-key.md)                        | Key management for `did:key` method                              |
-| [VC](vc/README.md)                           | Verifiable Credential signing & verification                     |
-| [VC-Templates](vc-templates.md)              | Pre-built credential templates                                   |
-| [LearnCloud](learncloud.md)                  | Encrypted cloud storage                                          |
-| [Expiration](vc/expiration-sub-plugin.md)    | Credential expiration handling                                   |
-| [Dynamic Loader](dynamic-loader.md)          | Resolves unknown JSON-LD contexts at runtime (discouraged)       |
+Not bundled with `@learncard/init` — `bun add` the package and `addPlugin` it yourself.
 
-### Network Plugins
+| Plugin                                  | Package                              | What it adds                                                                                                                                                                     |
+| --------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Claimable Boosts](claimable-boosts.md) | `@learncard/claimable-boosts-plugin` | Generates claimable links/QR codes so credentials can be issued before the recipient's DID is known. Pairs with the LCA API plugin.                                              |
+| LCA API                                 | `@learncard/lca-api-plugin`          | LearnCard-managed Signing Authorities and other LearnCard App services. `initLCALearnCard()` (same package) builds a full network wallet with this plugin pre-added in one call. |
+| [Ceramic](ceramic.md)                   | `@learncard/ceramic-plugin`          | Stores/reads credentials on Ceramic, with optional JWE encryption.                                                                                                               |
+| IDX                                     | `@learncard/idx-plugin`              | Manages a `CredentialRecord` list on IDX/Ceramic; implements the Index Control Plane.                                                                                            |
 
-| Plugin                                    | Description                                          |
-| ----------------------------------------- | ---------------------------------------------------- |
-| [LearnCard Network](learncard-network.md) | Profiles, connections, boosts via LearnCloud Network |
-| [VC-API](vc-api.md)                       | VC-API protocol support                              |
+## Write your own
 
-### Extension Plugins (install separately)
-
-| Plugin                                  | Package                              | Description                            |
-| --------------------------------------- | ------------------------------------ | -------------------------------------- |
-| [Claimable Boosts](claimable-boosts.md) | `@learncard/claimable-boosts-plugin` | Generate claimable credential links    |
-| [LCA API](lca-api.md)                   | `@learncard/lca-api-plugin`          | LearnCard-managed service support      |
-| [CHAPI](chapi.md)                       | `@learncard/chapi-plugin`            | Credential Handler API integration     |
-| [Ceramic](ceramic.md)                   | `@learncard/ceramic-plugin`          | Ceramic Network storage                |
-| [IDX](idx.md)                           | `@learncard/idx-plugin`              | Credential record index on IDX/Ceramic |
-| [Ethereum](ethereum.md)                 | `@learncard/ethereum-plugin`         | Ethereum blockchain integration        |
-| [VPQR](vpqr.md)                         | `@learncard/vpqr-plugin`             | QR code generation for presentations   |
-
-## Building Your Own Plugin
-
-Want to extend LearnCard? See [Build a Plugin](../../how-to-guides/deploy-infrastructure/the-simplest-plugin.md) for a step-by-step guide.
+See [Build a Plugin](https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-core/PLUGINS.md) for a step-by-step guide to writing your own plugin.

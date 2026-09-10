@@ -242,11 +242,13 @@ const response = await fetch(`${endpoint}/statements?${params}`, {
 
 ### Common causes of 401
 
+In a consent-based integration the `vp` you receive on the consent redirect already contains a delegate credential for that user; use it as `X-VP` directly. See [Record Learning Activity](../../tutorials/sending-xapi-statements.md).
+
 {% hint style="warning" %}
-**`requestIdentity().token` from the Partner Connect SDK is NOT an `X-VP` value.** The identity token proves who the user is _to your app_. The `X-VP` header is a VP JWT signed by the DID that appears as the xAPI statement's actor. LearnCloud verifies the VP's signature and requires the VP holder's DID to match the statement's actor DID — a mismatch is the most common cause of `401 Unauthorized`.
+**`requestIdentity().token` from the Partner Connect SDK is NOT an `X-VP` value.** The identity token proves who the user is _to your app_. The `X-VP` header contains a signed VP JWT. Without a delegate credential, its holder must match the actor DID. With a delegate credential, its issuer must match the actor DID, its permissions must allow the operation, and the VP holder must match either the delegate issuer or subject.
 {% endhint %}
 
-1. **Actor/holder mismatch** — the DID in the statement's `actor` doesn't match the VP holder's DID
+1. **DID mismatch** — without delegation, `actor.account.name` must match the VP holder; with delegation, it must match the delegate issuer, and the holder must match the delegate issuer or subject
 2. **Wrong token in `X-VP`** — an identity JWT or API token instead of a VP JWT
 3. **Expired or malformed VP JWT** — regenerate the presentation
 4. **Delegate credential without the right scope** — delegated read/write requires a valid delegate credential inside the VP

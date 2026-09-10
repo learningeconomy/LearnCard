@@ -294,7 +294,7 @@ All method signatures and return types are identical.
 
 ## Related Documentation
 
-- [DIDKit (WASM)](didkit.md) - The browser-compatible WASM version
+- [DIDKit (WASM)](README.md#included-by-default) - The browser-compatible WASM version
 - [Plugin System](../../core-concepts/architecture-and-principles/plugins.md) - How plugins work
 - [Verifiable Credentials](../../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) - VC concepts
 - [DIDs](../../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) - DID concepts

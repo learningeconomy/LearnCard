@@ -178,7 +178,7 @@ This is the same model that makes any conformant wallet — DCC, MATTR, Procivis
 **Plug in via standards, not custom code.** A partner that publishes a conformant Verifiable Credential is already interoperable with LearnCard — no special integration required.
 {% endhint %}
 
-→ Deep dives: [Verifiable Credentials](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) · [DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) · [Skill Frameworks & OpenSALT](../sdks/learncard-network/skills-and-opensalt.md) · [Partner Connect SDK](../sdks/partner-connect.md) · [Interoperability](interoperability.md)
+→ Deep dives: [Verifiable Credentials](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) · [DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) · [Skill Frameworks & OpenSALT](../sdks/learncard-network/skills-and-opensalt.md) · [Partner Connect SDK](../sdks/partner-connect/README.md) · [Interoperability](interoperability.md)
 
 ---
 

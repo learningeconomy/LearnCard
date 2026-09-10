@@ -4,7 +4,7 @@ description: Build, test, and publish an app that runs inside LearnCard and issu
 
 # Build an App Inside LearnCard
 
-Users install your app from the LearnCard app store. The [Partner Connect SDK](../sdks/partner-connect.md) provides single sign-on, credential issuance, notifications, and learner context.
+Users install your app from the LearnCard app store. The [Partner Connect SDK](../sdks/partner-connect/README.md) provides single sign-on, credential issuance, notifications, and learner context.
 
 **~20 minutes to a working local app · Needs:** Node.js 18+, a LearnCard account for step 2.
 
@@ -125,12 +125,12 @@ if (payload.iss !== user.did) {
 
 The Partner Connect SDK provides several advanced capabilities for apps:
 
-| Capability                 | What it's for                                                       | Reference                                                                                                        |
-| :------------------------- | :------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------- |
-| **Request consent**        | Ask users to accept terms or data sharing agreements                | [`requestConsent`](../sdks/partner-connect.md#requestconsentcontracturi-options)                                 |
-| **Learner context for AI** | Retrieve a user's credentials and profile data to personalize AI    | [`requestLearnerContext`](../sdks/partner-connect.md#requestlearnercontextoptions)                               |
-| **Record AI sessions**     | Save structured summaries of AI tutoring or interactions            | [`sendAiSessionCredential`](../sdks/partner-connect.md#sendaisessioncredentialinput)                             |
-| **Counters**               | Track progress, streaks, or thresholds (up to 50 keys per app/user) | [`incrementCounter` / `getCounter`](../sdks/partner-connect.md#counters-incrementcounter-getcounter-getcounters) |
+| Capability                 | What it's for                                                       | Reference                                                                                                                |
+| :------------------------- | :------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------- |
+| **Request consent**        | Ask users to accept terms or data sharing agreements                | [`requestConsent`](../sdks/partner-connect/methods.md#requestconsent-contracturi-options)                                |
+| **Learner context for AI** | Retrieve a user's credentials and profile data to personalize AI    | [`requestLearnerContext`](../sdks/partner-connect/methods.md#requestlearnercontext-options)                              |
+| **Record AI sessions**     | Save structured summaries of AI tutoring or interactions            | [`sendAiSessionCredential`](../sdks/partner-connect/methods.md#sendaisessioncredential-input)                            |
+| **Counters**               | Track progress, streaks, or thresholds (up to 50 keys per app/user) | [`incrementCounter` / `getCounter`](../sdks/partner-connect/methods.md#counters-incrementcounter-getcounter-getcounters) |
 
 ## For schools and districts
 
@@ -154,4 +154,4 @@ See [Errors & Limits](../sdks/learncard-network/errors-and-limits.md) for the au
 
 ## Full API reference
 
-[Partner Connect SDK](../sdks/partner-connect.md) documents every method, type, error code, and mock-mode option.
+[Partner Connect SDK](../sdks/partner-connect/README.md) documents every method, type, error code, and mock-mode option — see also [Methods](../sdks/partner-connect/methods.md) and [Errors, Types & Migration](../sdks/partner-connect/errors-and-types.md).

@@ -4,6 +4,9 @@ description: Common issues and solutions when working with LearnCard SDK
 
 # Troubleshooting
 
+{% hint style="info" %}
+Archived — historical examples, not current guidance; see the [Wallet SDK reference](../../sdks/learncard-core/README.md).{% endhint %}
+
 This guide addresses common issues encountered when developing with LearnCard SDK and provides practical solutions and workarounds.
 
 ## Installation and Setup Issues

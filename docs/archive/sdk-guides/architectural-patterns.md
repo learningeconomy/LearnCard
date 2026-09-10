@@ -4,6 +4,9 @@ description: Common architectural patterns for LearnCard SDK integration
 
 # Integration Strategies
 
+{% hint style="info" %}
+Archived — historical examples, not current guidance; see the [Wallet SDK reference](../../sdks/learncard-core/README.md).{% endhint %}
+
 This guide describes common architectural patterns for integrating LearnCard SDK into your applications, with real-world examples and implementation recommendations.
 
 ## Choosing the Right Architecture
@@ -37,30 +40,28 @@ import { deriveSeed } from '@learncard/crypto-plugin';
 
 // User authentication flow using standard web auth
 async function authenticateUser() {
-  // ...login flow...
-  
-  // Derive a deterministic seed from user credentials
-  const userKey = await deriveSeed(userId, userSecret);
-  
-  // Initialize LearnCard with the derived key
-  const learnCard = await initLearnCard({ seed: userKey });
-  
-  // Store the LearnCard instance in application state
-  setLearnCardInstance(learnCard);
+    // ...login flow...
+
+    // Derive a deterministic seed from user credentials
+    const userKey = await deriveSeed(userId, userSecret);
+
+    // Initialize LearnCard with the derived key
+    const learnCard = await initLearnCard({ seed: userKey });
+
+    // Store the LearnCard instance in application state
+    setLearnCardInstance(learnCard);
 }
 
 // Credential management functions
 async function storeCredential(credential) {
-  const uri = await learnCard.store.LearnCloud.upload(credential);
-  await learnCard.index.LearnCloud.add({ uri, id: credential.id });
-  return uri;
+    const uri = await learnCard.store.LearnCloud.upload(credential);
+    await learnCard.index.LearnCloud.add({ uri, id: credential.id });
+    return uri;
 }
 
 async function getCredentials() {
-  const records = await learnCard.index.LearnCloud.get();
-  return Promise.all(records.map(async record => 
-    learnCard.read.get(record.uri)
-  ));
+    const records = await learnCard.index.LearnCloud.get();
+    return Promise.all(records.map(async record => learnCard.read.get(record.uri)));
 }
 ```
 
@@ -94,44 +95,44 @@ app.use(express.json());
 // Initialize LearnCard during service startup
 let learnCard;
 async function initializeService() {
-  const seed = await getSecureKey();
-  learnCard = await initLearnCard({ seed });
-  console.log('Issuer DID:', await learnCard.invoke.getDid());
+    const seed = await getSecureKey();
+    learnCard = await initLearnCard({ seed });
+    console.log('Issuer DID:', await learnCard.invoke.getDid());
 }
 
 initializeService();
 
 // API endpoint for credential issuance
 app.post('/issue', async (req, res) => {
-  try {
-    const { type, subject, claims } = req.body;
-    
-    // Create unsigned credential
-    const unsignedCredential = {
-      "@context": ["https://www.w3.org/2018/credentials/v1"],
-      type: ["VerifiableCredential", ...type],
-      issuer: await learnCard.invoke.getDid(),
-      issuanceDate: new Date().toISOString(),
-      credentialSubject: {
-        id: subject,
-        ...claims
-      }
-    };
-    
-    // Issue the credential
-    const credential = await learnCard.invoke.issueCredential(unsignedCredential);
-    
-    // Optionally store in LearnCloud
-    const uri = await learnCard.store.LearnCloud.upload(credential);
-    
-    // Return both credential and URI
-    res.json({ 
-      credential,
-      uri
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    try {
+        const { type, subject, claims } = req.body;
+
+        // Create unsigned credential
+        const unsignedCredential = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            type: ['VerifiableCredential', ...type],
+            issuer: await learnCard.invoke.getDid(),
+            issuanceDate: new Date().toISOString(),
+            credentialSubject: {
+                id: subject,
+                ...claims,
+            },
+        };
+
+        // Issue the credential
+        const credential = await learnCard.invoke.issueCredential(unsignedCredential);
+
+        // Optionally store in LearnCloud
+        const uri = await learnCard.store.LearnCloud.upload(credential);
+
+        // Return both credential and URI
+        res.json({
+            credential,
+            uri,
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.listen(3000, () => console.log('Issuer service running on port 3000'));
@@ -163,55 +164,53 @@ import * as LocalAuthentication from 'expo-local-authentication';
 
 // Key management functions
 async function getOrCreateKey() {
-  // Try to retrieve existing key
-  let key = await SecureStore.getItemAsync('learncard_key');
-  
-  if (!key) {
-    // Generate a new key if none exists
-    key = Array.from(
-      crypto.getRandomValues(new Uint8Array(32))
-    ).map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    // Require biometric authentication to store the key
-    const authResult = await LocalAuthentication.authenticateAsync();
-    if (authResult.success) {
-      await SecureStore.setItemAsync('learncard_key', key);
-    } else {
-      throw new Error('Authentication required to create wallet');
+    // Try to retrieve existing key
+    let key = await SecureStore.getItemAsync('learncard_key');
+
+    if (!key) {
+        // Generate a new key if none exists
+        key = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+
+        // Require biometric authentication to store the key
+        const authResult = await LocalAuthentication.authenticateAsync();
+        if (authResult.success) {
+            await SecureStore.setItemAsync('learncard_key', key);
+        } else {
+            throw new Error('Authentication required to create wallet');
+        }
     }
-  }
-  
-  return key;
+
+    return key;
 }
 
 // Initialize LearnCard with secure key
 export async function getLearnCard() {
-  const key = await getOrCreateKey();
-  return initLearnCard({ seed: key });
+    const key = await getOrCreateKey();
+    return initLearnCard({ seed: key });
 }
 
 // Example usage in a React component
 function WalletScreen() {
-  const [credentials, setCredentials] = useState([]);
-  const [learnCard, setLearnCard] = useState(null);
-  
-  useEffect(() => {
-    async function initialize() {
-      const lc = await getLearnCard();
-      setLearnCard(lc);
-      
-      // Load credentials
-      const records = await lc.index.all.get();
-      const creds = await Promise.all(
-        records.map(record => lc.read.get(record.uri))
-      );
-      setCredentials(creds);
-    }
-    
-    initialize();
-  }, []);
-  
-  // Render credential list, etc.
+    const [credentials, setCredentials] = useState([]);
+    const [learnCard, setLearnCard] = useState(null);
+
+    useEffect(() => {
+        async function initialize() {
+            const lc = await getLearnCard();
+            setLearnCard(lc);
+
+            // Load credentials
+            const records = await lc.index.all.get();
+            const creds = await Promise.all(records.map(record => lc.read.get(record.uri)));
+            setCredentials(creds);
+        }
+
+        initialize();
+    }, []);
+
+    // Render credential list, etc.
 }
 ```
 
@@ -249,39 +248,39 @@ redis.connect();
 // Initialize LearnCard with minimal configuration
 let learnCard;
 async function initializeService() {
-  // For verification only, we don't need a specific seed
-  learnCard = await initLearnCard();
-  console.log('Verification service initialized');
+    // For verification only, we don't need a specific seed
+    learnCard = await initLearnCard();
+    console.log('Verification service initialized');
 }
 
 initializeService();
 
 // Verification endpoint
 app.post('/verify', async (req, res) => {
-  try {
-    const { credential, options } = req.body;
-    
-    // Generate cache key based on credential
-    const cacheKey = `verify:${JSON.stringify(credential)}`;
-    
-    // Check cache first
-    const cachedResult = await redis.get(cacheKey);
-    if (cachedResult) {
-      return res.json(JSON.parse(cachedResult));
+    try {
+        const { credential, options } = req.body;
+
+        // Generate cache key based on credential
+        const cacheKey = `verify:${JSON.stringify(credential)}`;
+
+        // Check cache first
+        const cachedResult = await redis.get(cacheKey);
+        if (cachedResult) {
+            return res.json(JSON.parse(cachedResult));
+        }
+
+        // Verify the credential
+        const result = await learnCard.invoke.verifyCredential(credential, options);
+
+        // Cache the result (only if valid, with short TTL)
+        if (result.errors.length === 0) {
+            await redis.set(cacheKey, JSON.stringify(result), { EX: 300 }); // 5 minutes
+        }
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-    
-    // Verify the credential
-    const result = await learnCard.invoke.verifyCredential(credential, options);
-    
-    // Cache the result (only if valid, with short TTL)
-    if (result.errors.length === 0) {
-      await redis.set(cacheKey, JSON.stringify(result), { EX: 300 }); // 5 minutes
-    }
-    
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
 });
 
 app.listen(4000, () => console.log('Verification service running on port 4000'));
@@ -315,25 +314,25 @@ import express from 'express';
 const issuerLearnCard = await initLearnCard({ seed: process.env.ISSUER_SEED });
 
 app.post('/prepare-credential', async (req, res) => {
-  const { subjectDid, claims } = req.body;
-  
-  // Create the credential for the subject
-  const unsignedVC = {
-    '@context': ['https://www.w3.org/2018/credentials/v1'],
-    type: ['VerifiableCredential', 'Achievement'],
-    credentialSubject: {
-      id: subjectDid,
-      ...claims
-    }
-  };
-  
-  // Issue the credential
-  const vc = await issuerLearnCard.invoke.issueCredential(unsignedVC);
-  
-  // Generate CHAPI exchange request
-  const chapiRequest = await issuerLearnCard.invoke.prepareChapiRequest(vc);
-  
-  res.json({ chapiRequest });
+    const { subjectDid, claims } = req.body;
+
+    // Create the credential for the subject
+    const unsignedVC = {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        type: ['VerifiableCredential', 'Achievement'],
+        credentialSubject: {
+            id: subjectDid,
+            ...claims,
+        },
+    };
+
+    // Issue the credential
+    const vc = await issuerLearnCard.invoke.issueCredential(unsignedVC);
+
+    // Generate CHAPI exchange request
+    const chapiRequest = await issuerLearnCard.invoke.prepareChapiRequest(vc);
+
+    res.json({ chapiRequest });
 });
 
 // Client-side Wallet Component
@@ -341,26 +340,26 @@ import { initLearnCard } from '@learncard/init';
 import { installChapiHandler } from '@learncard/chapi-plugin';
 
 async function setupChapiWallet() {
-  // Initialize client-side LearnCard with secure user key
-  const userLearnCard = await initLearnCard({ seed: userSeed });
-  
-  // Install CHAPI handler
-  await installChapiHandler(userLearnCard);
-  
-  // Register for credential receipt
-  userLearnCard.on('credentialReceived', async (credential) => {
-    // Verify the credential
-    const result = await userLearnCard.invoke.verifyCredential(credential);
-    
-    if (result.errors.length === 0) {
-      // Store valid credential
-      const uri = await userLearnCard.store.LearnCloud.upload(credential);
-      await userLearnCard.index.LearnCloud.add({ uri, id: generateId() });
-      
-      // Update UI
-      updateCredentialList();
-    }
-  });
+    // Initialize client-side LearnCard with secure user key
+    const userLearnCard = await initLearnCard({ seed: userSeed });
+
+    // Install CHAPI handler
+    await installChapiHandler(userLearnCard);
+
+    // Register for credential receipt
+    userLearnCard.on('credentialReceived', async credential => {
+        // Verify the credential
+        const result = await userLearnCard.invoke.verifyCredential(credential);
+
+        if (result.errors.length === 0) {
+            // Store valid credential
+            const uri = await userLearnCard.store.LearnCloud.upload(credential);
+            await userLearnCard.index.LearnCloud.add({ uri, id: generateId() });
+
+            // Update UI
+            updateCredentialList();
+        }
+    });
 }
 ```
 
@@ -386,76 +385,76 @@ This pattern creates a central hub for enterprise credential issuance and verifi
 ```typescript
 // Key Management Service
 class EnterpriseKeyManager {
-  async getIssuerKey(departmentId) {
-    // Retrieve department-specific key from secure storage
-    return secureStorage.getDepartmentKey(departmentId);
-  }
-  
-  async getWalletForDepartment(departmentId) {
-    const seed = await this.getIssuerKey(departmentId);
-    return initLearnCard({ seed });
-  }
+    async getIssuerKey(departmentId) {
+        // Retrieve department-specific key from secure storage
+        return secureStorage.getDepartmentKey(departmentId);
+    }
+
+    async getWalletForDepartment(departmentId) {
+        const seed = await this.getIssuerKey(departmentId);
+        return initLearnCard({ seed });
+    }
 }
 
 // Credential Issuance API
 app.post('/departments/:deptId/issue', async (req, res) => {
-  const { deptId } = req.params;
-  const { recipient, credential } = req.body;
-  
-  // Get department-specific LearnCard
-  const keyManager = new EnterpriseKeyManager();
-  const learnCard = await keyManager.getWalletForDepartment(deptId);
-  
-  // Prepare credential with department as issuer
-  const deptDid = await learnCard.invoke.getDid();
-  const unsignedVC = {
-    ...credential,
-    issuer: deptDid,
-    issuanceDate: new Date().toISOString()
-  };
-  
-  // Issue credential
-  const signedVC = await learnCard.invoke.issueCredential(unsignedVC);
-  
-  // Store in enterprise credential registry
-  await credentialRegistry.store(signedVC, deptId, recipient);
-  
-  // Return the signed credential
-  res.json({ credential: signedVC });
+    const { deptId } = req.params;
+    const { recipient, credential } = req.body;
+
+    // Get department-specific LearnCard
+    const keyManager = new EnterpriseKeyManager();
+    const learnCard = await keyManager.getWalletForDepartment(deptId);
+
+    // Prepare credential with department as issuer
+    const deptDid = await learnCard.invoke.getDid();
+    const unsignedVC = {
+        ...credential,
+        issuer: deptDid,
+        issuanceDate: new Date().toISOString(),
+    };
+
+    // Issue credential
+    const signedVC = await learnCard.invoke.issueCredential(unsignedVC);
+
+    // Store in enterprise credential registry
+    await credentialRegistry.store(signedVC, deptId, recipient);
+
+    // Return the signed credential
+    res.json({ credential: signedVC });
 });
 
 // Integration with HR System (example adapter)
 class HRSystemAdapter {
-  async syncEmployeeCredentials() {
-    // Get new employees/achievements from HR system
-    const achievements = await hrApi.getNewAchievements();
-    
-    // Issue credentials for each achievement
-    for (const achievement of achievements) {
-      const { employeeId, departmentId, type, metadata } = achievement;
-      
-      // Get employee DID
-      const employeeDid = await employeeDirectory.getEmployeeDid(employeeId);
-      
-      // Prepare credential data
-      const credentialData = {
-        type: ['VerifiableCredential', type],
-        credentialSubject: {
-          id: employeeDid,
-          ...metadata
+    async syncEmployeeCredentials() {
+        // Get new employees/achievements from HR system
+        const achievements = await hrApi.getNewAchievements();
+
+        // Issue credentials for each achievement
+        for (const achievement of achievements) {
+            const { employeeId, departmentId, type, metadata } = achievement;
+
+            // Get employee DID
+            const employeeDid = await employeeDirectory.getEmployeeDid(employeeId);
+
+            // Prepare credential data
+            const credentialData = {
+                type: ['VerifiableCredential', type],
+                credentialSubject: {
+                    id: employeeDid,
+                    ...metadata,
+                },
+            };
+
+            // Issue through the credential API
+            await fetch(`/departments/${departmentId}/issue`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    recipient: employeeId,
+                    credential: credentialData,
+                }),
+            });
         }
-      };
-      
-      // Issue through the credential API
-      await fetch(`/departments/${departmentId}/issue`, {
-        method: 'POST',
-        body: JSON.stringify({
-          recipient: employeeId,
-          credential: credentialData
-        })
-      });
     }
-  }
 }
 ```
 

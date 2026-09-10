@@ -10,7 +10,7 @@ That matters to you in three ways:
 
 - **You only carry what you use.** A server that just verifies credentials needs three plugins; a full network client needs a dozen. `initLearnCard` picks the right stack from the options you pass (`seed`, `network`, `didWeb`…), so you rarely assemble it by hand.
 - **Plugins can be swapped.** Anything that implements the same interface can stand in — a different storage backend, a different DID method, a test double. Plugins that implement a [control plane](control-planes.md) stack: three storage plugins all answer `store.upload`, and you pick which by name.
-- **You can add your own.** A plugin is a plain object with a name and some methods; it can depend on the methods of plugins loaded before it. See [Build a Plugin](../../how-to-guides/deploy-infrastructure/the-simplest-plugin.md) for a 10-minute walkthrough.
+- **You can add your own.** A plugin is a plain object with a name and some methods; it can depend on the methods of plugins loaded before it. See [Build a Plugin (GitHub)](https://github.com/learningeconomy/LearnCard/blob/main/packages/learn-card-core/PLUGINS.md) for a 10-minute walkthrough.
 
 The rest of this page is how that works underneath.
 

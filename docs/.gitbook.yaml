@@ -99,12 +99,12 @@ redirects:
     how-to-guides/connect-systems/embed-a-claim-button: how-to-guides/connect-systems/embed-a-claim-button.md
     how-to-guides/create-signing-authority: how-to-guides/create-signing-authority.md
     how-to-guides/deploy-infrastructure: how-to-guides/go-to-production.md
-    how-to-guides/deploy-infrastructure/connect-to-independent-network: how-to-guides/deploy-infrastructure/connect-to-independent-network.md
-    how-to-guides/deploy-infrastructure/deploy-your-own-network: how-to-guides/deploy-infrastructure/connect-to-independent-network.md
+    how-to-guides/deploy-infrastructure/connect-to-independent-network: how-to-guides/go-to-production.md
+    how-to-guides/deploy-infrastructure/deploy-your-own-network: how-to-guides/go-to-production.md
     how-to-guides/deploy-infrastructure/generate-api-tokens: how-to-guides/deploy-infrastructure/generate-api-tokens.md
     how-to-guides/deploy-infrastructure/managing-seed-phrases: how-to-guides/go-to-production.md
     how-to-guides/deploy-infrastructure/sss-key-management-config: sdks/sss-key-manager.md
-    how-to-guides/deploy-infrastructure/the-simplest-plugin: how-to-guides/deploy-infrastructure/the-simplest-plugin.md
+    how-to-guides/deploy-infrastructure/the-simplest-plugin: sdks/learncard-core/writing-plugins.md
     how-to-guides/export-and-import-your-data: how-to-guides/export-and-import-your-data.md
     how-to-guides/implement-flows/claim-data-after-guardian-consent: how-to-guides/send-credentials.md
     how-to-guides/implement-flows/guardian-gated-credentials: how-to-guides/send-credentials.md
@@ -116,19 +116,19 @@ redirects:
     introduction/use-cases-and-possibilities: introduction/what-do-you-want-to-build.md
     quick-start/setup-and-prerequisites: quick-start/your-first-integration.md
     quick-start/your-first-integration: quick-start/your-first-integration.md
-    sdks/auth-types: sdks/auth-types.md
+    sdks/auth-types: sdks/sss-key-manager.md
     sdks/embed-sdk: sdks/embed-sdk.md
     sdks/learncard-cli: sdks/learncard-cli.md
     sdks/learncard-core: sdks/learncard-core/README.md
-    sdks/learncard-core/architectural-patterns: sdks/learncard-core/architectural-patterns.md
+    sdks/learncard-core/architectural-patterns: sdks/which-sdk.md
     sdks/learncard-core/authentication: sdks/learncard-core/authentication.md
     sdks/learncard-core/construction: sdks/learncard-core/construction.md
     sdks/learncard-core/migration-guide: sdks/learncard-core/migration-guide.md
-    sdks/learncard-core/production-deployment-guide: sdks/learncard-core/production-deployment-guide.md
-    sdks/learncard-core/troubleshooting-guide: sdks/learncard-core/troubleshooting-guide.md
+    sdks/learncard-core/production-deployment-guide: how-to-guides/go-to-production.md
+    sdks/learncard-core/troubleshooting-guide: sdks/learncard-core/README.md
     sdks/learncard-core/writing-plugins: sdks/learncard-core/writing-plugins.md
     sdks/learncard-network: sdks/learncard-network/README.md
-    sdks/learncard-network/architecture: sdks/learncard-network/architecture.md
+    sdks/learncard-network/architecture: introduction/ecosystem-architecture.md
     sdks/learncard-network/authentication: sdks/learncard-network/authentication.md
     sdks/learncard-network/bitstring-status-lists: sdks/learncard-network/bitstring-status-lists.md
     sdks/learncard-network/lca-api-key-management: sdks/learncard-network/lca-api-key-management.md
@@ -136,12 +136,12 @@ redirects:
     sdks/learncard-network/skills-and-opensalt: sdks/learncard-network/skills-and-opensalt.md
     sdks/learncard-network/usage-examples: sdks/learncard-network/usage-examples.md
     sdks/learncloud-storage-api: sdks/learncloud-storage-api/README.md
-    sdks/learncloud-storage-api/architecture: sdks/learncloud-storage-api/architecture.md
+    sdks/learncloud-storage-api/architecture: introduction/ecosystem-architecture.md
     sdks/learncloud-storage-api/authentication: sdks/learncloud-storage-api/authentication.md
     sdks/learncloud-storage-api/usage-examples: sdks/learncloud-storage-api/usage-examples.md
     sdks/learncloud-storage-api/xapi-reference: sdks/learncloud-storage-api/xapi-reference.md
     sdks/official-plugins: sdks/official-plugins/README.md
-    sdks/partner-connect: sdks/partner-connect.md
+    sdks/partner-connect: sdks/partner-connect/README.md
     sdks/sss-key-manager: sdks/sss-key-manager.md
     tutorials/create-a-boost: how-to-guides/send-credentials.md
     tutorials/create-a-connected-website: tutorials/create-a-consentflow.md
@@ -170,3 +170,16 @@ redirects:
     sdks/learncloud-storage-api/storage: sdks/learncloud-storage-api/README.md
     sdks/learncloud-storage-api/user: sdks/learncloud-storage-api/README.md
     sdks/learncloud-storage-api/utilities: sdks/learncloud-storage-api/README.md
+    sdks/official-plugins/learncard: sdks/official-plugins/README.md
+    sdks/official-plugins/crypto: sdks/official-plugins/README.md
+    sdks/official-plugins/didkit: sdks/official-plugins/README.md
+    sdks/official-plugins/did-key: sdks/official-plugins/README.md
+    sdks/official-plugins/vc: sdks/official-plugins/README.md
+    sdks/official-plugins/vc/expiration-sub-plugin: sdks/official-plugins/README.md
+    sdks/official-plugins/dynamic-loader: sdks/official-plugins/README.md
+    sdks/official-plugins/vc-api: sdks/official-plugins/README.md
+    sdks/official-plugins/chapi: sdks/official-plugins/README.md
+    sdks/official-plugins/lca-api: sdks/official-plugins/README.md
+    sdks/official-plugins/idx: sdks/official-plugins/README.md
+    sdks/learncloud-ai-api: introduction/ecosystem-architecture.md
+    sdks/learncloud-ai-api/usage-examples: introduction/ecosystem-architecture.md

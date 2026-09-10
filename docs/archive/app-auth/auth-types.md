@@ -2,6 +2,11 @@
 description: Provider-agnostic interfaces for authentication and key derivation
 ---
 
+{% hint style="info" %}
+Archived — describes the LearnCard app's internal auth/key-derivation interfaces.
+For the library, see [SSS Key Manager](../../sdks/sss-key-manager.md).
+{% endhint %}
+
 # Auth Types
 
 The auth types are defined in `@learncard/types` (in `src/auth.ts`) and provide the abstract interfaces used by the `AuthCoordinator`, auth providers, and key derivation strategies.
