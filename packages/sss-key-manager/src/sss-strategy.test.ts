@@ -501,6 +501,20 @@ describe('escrow strategy', () => {
         });
         expect(calls).toHaveLength(0);
     });
+    it('rejects PIN recovery before making requests or changing storage', async () => {
+        await expect(
+            strategy.executeRecovery({
+                token,
+                providerType,
+                input: { method: 'escrow-pin', pin: '135790' },
+            })
+        ).rejects.toThrow('PIN recovery is not available yet');
+        expect(calls).toHaveLength(0);
+        expect(storage.storeDeviceShare).not.toHaveBeenCalled();
+        expect(storage.storeShareVersion).not.toHaveBeenCalled();
+        expect(storage.clearAllShares).not.toHaveBeenCalled();
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
+    });
     it('round trips real crypto, rebinds and persists a new device share', async () => {
         await strategy.ensureEscrowEnrollment!(params);
         const previous = await storage.getDeviceShare();
