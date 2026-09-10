@@ -14,9 +14,8 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
 });
 
 export const app: Express = express();
-// Serve all swagger-ui assets from local dir (copied at build time from swagger-ui-dist)
-// This ensures assets are available in Lambda/Docker without runtime require.resolve
-app.use('/', express.static('src/swagger-ui'));
+// Serve generated assets outside the bind-mounted source tree.
+app.use('/', express.static('generated/swagger-ui'));
 app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
 
 export default app;

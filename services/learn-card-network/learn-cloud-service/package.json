@@ -17,13 +17,24 @@
         "build": "node scripts/copy-swagger-assets.mjs && shx rm -rf dist && node bundle.mjs && tsc --p tsconfig.build.json && tsc --showConfig --p tsconfig.build.json > tsconfig.temp.json && tsc-alias --replacer ./tsc-alias-replacer.cjs -p tsconfig.temp.json && shx rm tsconfig.temp.json",
         "typecheck": "tsc --noEmit -p tsconfig.build.json && tsc --noEmit -p tsconfig.entrypoints.json",
         "build:docker": "node scripts/copy-swagger-assets.mjs && shx rm -rf dist && node esbuild-docker.mjs",
+        "test:swagger": "node --test scripts/copy-swagger-assets.test.mjs",
         "copy-swagger": "node scripts/copy-swagger-assets.mjs",
-        "start": "PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003 --config serverless-local.yml",
-        "start-p-4000": "PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003 --config serverless-local.yml",
-        "start-p-5000": "PORT=5000 serverless offline --httpPort 5000 --websocketPort 5001 --lambdaPort 5002 --albPort 5003 --config serverless-local.yml",
+        "start": "node scripts/copy-swagger-assets.mjs && PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003 --config serverless-local.yml",
+        "start-p-4000": "node scripts/copy-swagger-assets.mjs && PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003 --config serverless-local.yml",
+        "start-p-5000": "node scripts/copy-swagger-assets.mjs && PORT=5000 serverless offline --httpPort 5000 --websocketPort 5001 --lambdaPort 5002 --albPort 5003 --config serverless-local.yml",
         "dev": "node scripts/copy-swagger-assets.mjs && bun --conditions=development --watch src/docker-entry.ts",
         "start:docker": "node scripts/copy-swagger-assets.mjs && bun --conditions=development src/docker-entry.ts",
         "serverless-deploy": "node scripts/copy-swagger-assets.mjs && node ../../../scripts/prepare-didkit-native-layer.cjs && serverless deploy"
+    },
+    "nx": {
+        "targets": {
+            "build": {
+                "outputs": [
+                    "{projectRoot}/dist",
+                    "{projectRoot}/generated/swagger-ui"
+                ]
+            }
+        }
     },
     "keywords": [],
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
