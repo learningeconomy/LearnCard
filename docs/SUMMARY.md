@@ -42,7 +42,7 @@
     - [Auth Grants and API Tokens](core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md)
 - [Consent & Permissions](core-concepts/consent-and-permissions/consentflow-overview.md)
     - [Reading & Writing Consented Data](core-concepts/consent-and-permissions/writing-consented-data.md)
-    - [Auto-Boosts](core-concepts/consent-and-permissions/auto-boosts.md)
+    - [Issue on Consent](core-concepts/consent-and-permissions/auto-boosts.md)
     - [GameFlow](core-concepts/consent-and-permissions/gameflow-overview.md)
     - [Verifiable Data in ConsentFlow](core-concepts/consent-and-permissions/verifiable-data-in-consentflow.md)
 - [How LearnCard Is Built](introduction/ecosystem-architecture.md)

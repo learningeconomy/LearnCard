@@ -1,6 +1,10 @@
-# Auto-Boosts
+---
+description: Give every user a credential the moment they connect — no call from your server.
+---
 
-An auto-boost is a credential the network issues **the moment a user consents** to your contract — no call from your server. Use it for the thing every user should get on joining: a membership card, a "connected to Acme" badge, a starter achievement.
+# Issue on Consent
+
+When a user consents to your contract, the network can issue them a credential **immediately** — no call from your server. Use it for the thing every user should get on joining: a membership card, a "connected to Acme" badge, a starter achievement.
 
 ## How it works
 
@@ -11,16 +15,18 @@ sequenceDiagram
     participant User
     You->>Net: createContract({ …, autoboosts: [{ boostUri, signingAuthority }] })
     User->>Net: consentToContract(contractUri, { terms })
-    loop each auto-boost
+    loop each configured template
         Net->>Net: sign the template for this user via your signing authority
         Net->>User: deliver the credential
         Net->>Net: log a "write" transaction
     end
 ```
 
-Auto-boosts run on first consent and again whenever the user updates their terms.
+This runs on first consent and again whenever the user updates their terms.
 
-## Configuring one
+## Configuring it
+
+This is the `autoboosts` option on `createContract`:
 
 ```typescript
 const contractUri = await learnCard.invoke.createContract({
@@ -40,7 +46,7 @@ Each entry names a **template** and the **signing authority** that will sign it.
 Requirements:
 
 - The template must be `LIVE` (not a draft) and you must have permission to issue from it.
-- The signing authority must be registered to your profile. If it isn't, that auto-boost is **skipped silently** — the consent still succeeds.
+- The signing authority must be registered to your profile. If it isn't, that template is **skipped silently** — the consent still succeeds.
 - The user's terms must grant `write` permission for the template's category, or nothing is delivered.
 
 ## What the user sees

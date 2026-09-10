@@ -65,7 +65,7 @@ classDiagram
 - **Contract** — what you're asking for. One per integration, owned by your profile.
 - **Terms** — one user's answer. Lives as long as their consent does.
 - **Transaction** — an audit entry every time terms are created, changed, synced, withdrawn, or used to issue.
-- **Auto-boosts** — credentials the network issues the moment someone consents. See [Auto-Boosts](auto-boosts.md).
+- **Issue on consent** — credentials the network issues the moment someone consents. See [Issue on Consent](auto-boosts.md).
 
 ## What happens when a user consents
 
@@ -82,7 +82,7 @@ sequenceDiagram
     Network-->>User: contract details and requested permissions
 
     User->>Network: consentToContract(contractUri, { terms })
-    Network->>Network: Process configured auto-boosts
+    Network->>Network: Issue any configured credentials
     Network-->>User: { termsUri, redirectUrl? }
 
     Organization->>Network: verifyConsent(contractUri, profileId)
@@ -94,7 +94,7 @@ sequenceDiagram
     Network->>User: credential issued to consented user
 ```
 
-On consent the network checks the terms satisfy the contract's required permissions, records them, logs a `consent` transaction, issues any auto-boosts, and notifies you. The user can set `expiresAt` on their consent, or `oneTime: true` to share once and immediately mark the terms stale.
+On consent the network checks the terms satisfy the contract's required permissions, records them, logs a `consent` transaction, issues any credentials you configured to issue on consent, and notifies you. The user can set `expiresAt` on their consent, or `oneTime: true` to share once and immediately mark the terms stale.
 
 In practice the user does this in the LearnCard app: you send them to `https://learncard.app/consent-flow?uri=<contractUri>&returnTo=<yourUrl>`, they review and accept, and LearnCard redirects back to you with a signed proof of who consented. That redirect, and how to verify it, is the heart of the [tutorial](../../tutorials/create-a-consentflow.md).
 
