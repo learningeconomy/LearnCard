@@ -189,6 +189,7 @@ describe('A6 escrow recovery', () => {
             { 'authProviders.id': authProvider.id },
             { $set: { escrowOptedOutAt: new Date() } }
         );
+        expect((await owner().keys.getAuthShare(auth))?.escrowOptedOut).toBe(true);
         await expect(enroll()).rejects.toMatchObject({
             code: 'CONFLICT',
             message: 'Automatic recovery is turned off for this account.',
