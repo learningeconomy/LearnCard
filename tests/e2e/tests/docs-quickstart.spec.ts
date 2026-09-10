@@ -63,6 +63,16 @@ const freshEmail = (tag: string) => `quickstart-${tag}-${randomBytes(4).toString
 
 const lastDelivery = async () => (await fetch(`${LOCAL_API}/api/test/last-delivery`)).json();
 
+/** Other spec files send email concurrently; wait until the last delivery is ours. */
+const deliveryTo = async (email: string, attempts = 20) => {
+    for (let i = 0; i < attempts; i++) {
+        const delivery = await lastDelivery();
+        if (delivery?.contactMethod?.value === email) return delivery;
+        await new Promise(r => setTimeout(r, 250));
+    }
+    throw new Error(`No delivery to ${email} observed`);
+};
+
 describe('Docs: Quickstart — Send a Credential', () => {
     let sendMjs: string;
     let apiTokenMjs: string;
@@ -78,18 +88,24 @@ describe('Docs: Quickstart — Send a Credential', () => {
 
     afterAll(() => rmSync(RUN_DIR, { recursive: true, force: true }));
 
-    test('send.mjs: a new recipient gets "Sent." plus the same claim link that went out by email', async () => {
+    test('send.mjs: a new recipient gets "Sent.", a claim link, and a claim email', async () => {
         const env = freshEnv();
         const recipient = freshEmail('new');
 
         const output = run(sendMjs, [recipient], env);
         expect(output).toMatch(
-            new RegExp(`^Sent\\. ${recipient} will get an email with this claim link:\\n\\S+`, 'm')
+            new RegExp(
+                `^Sent\\. ${recipient} will get a claim email\\. You can also share this link directly:\\n\\S+`,
+                'm'
+            )
         );
 
+        // The API response and the email each carry their own valid claim link.
+        const claimPath = '/interactions/inbox-claim/';
         const printedUrl = output.split('\n')[1];
-        const delivery = await lastDelivery();
-        expect(delivery?.templateModel?.claimUrl).toBe(printedUrl);
+        expect(printedUrl).toContain(claimPath);
+        const delivery = await deliveryTo(recipient);
+        expect(delivery.templateModel?.claimUrl).toContain(claimPath);
     });
 
     test('send.mjs: running it a second time is safe (profile only created once)', async () => {
@@ -104,7 +120,7 @@ describe('Docs: Quickstart — Send a Credential', () => {
         const c = await getLearnCardForUser('c');
         const email = freshEmail('verified');
         await c.invoke.addContactMethod({ type: 'email', value: email });
-        const verificationToken = (await lastDelivery())?.templateModel?.verificationToken;
+        const verificationToken = (await deliveryTo(email)).templateModel?.verificationToken;
         await c.invoke.verifyContactMethod(verificationToken);
 
         const output = run(sendMjs, [email], freshEnv());

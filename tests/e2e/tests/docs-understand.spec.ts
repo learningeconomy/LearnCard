@@ -89,7 +89,11 @@ describe('Understand: issue-on-consent.mjs', () => {
             terms: {
                 read: {
                     personal: {},
-                    credentials: { shareAll: false, sharing: false, categories: {} },
+                    credentials: {
+                        shareAll: false,
+                        sharing: true,
+                        categories: { Achievement: { sharing: true, shared: [] } },
+                    },
                 },
                 write: { personal: {}, credentials: { categories: { Achievement: true } } },
             },

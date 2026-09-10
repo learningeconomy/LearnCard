@@ -34,9 +34,10 @@ Here is an Open Badges v3 (OBv3) credential template, before recipient assignmen
 {
     "@context": [
         "https://www.w3.org/ns/credentials/v2",
-        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json"
+        "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+        "https://ctx.learncard.com/boosts/1.0.1.json"
     ],
-    "type": ["VerifiableCredential", "OpenBadgeCredential"],
+    "type": ["VerifiableCredential", "OpenBadgeCredential", "BoostCredential"],
     "name": "Course Completion",
     "credentialSubject": {
         "type": ["AchievementSubject"],
@@ -51,6 +52,10 @@ Here is an Open Badges v3 (OBv3) credential template, before recipient assignmen
     }
 }
 ```
+
+{% hint style="warning" %}
+Include the LearnCard Boost context and the `BoostCredential` type. When the network signs from a template — a `send()` with `templateUri`, or [issuing on consent](../consent-and-permissions/auto-boosts.md) — it stamps `boostId` on the credential, and signing fails with `undefined JSON-LD term` if nothing defines it.
+{% endhint %}
 
 The metadata argument describes the template in the network, not the claims in the credential:
 

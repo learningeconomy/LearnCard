@@ -146,7 +146,7 @@ const result = await learnCard.invoke.send({
 
 if (result.inbox?.status === 'PENDING') {
     console.log(
-        `Sent. ${recipientEmail} will get an email with this claim link:\n${result.inbox.claimUrl}`
+        `Sent. ${recipientEmail} will get a claim email. You can also share this link directly:\n${result.inbox.claimUrl}`
     );
 } else {
     console.log(
@@ -177,7 +177,7 @@ node --env-file=.env send.mjs you@example.com
 Your terminal shows one of two results:
 
 ```
-Sent. you@example.com will get an email with this claim link:
+Sent. you@example.com will get a claim email. You can also share this link directly:
 https://learncard.app/...
 ```
 

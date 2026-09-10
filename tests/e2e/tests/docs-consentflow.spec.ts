@@ -58,10 +58,16 @@ describe('Docs: ConsentFlow', () => {
         const learnCard = await getLearnCard(env.SECURE_SEED);
         const b = await getLearnCardForUser('b');
         const c = await getLearnCardForUser('c');
+        // A consenter shares at least one read category; terms with only empty
+        // objects are not round-tripped by the network's graph storage.
         const terms = {
             read: {
                 personal: {},
-                credentials: { shareAll: false, sharing: false, categories: {} },
+                credentials: {
+                    shareAll: false,
+                    sharing: true,
+                    categories: { Achievement: { sharing: true, shared: [] } },
+                },
             },
             write: { personal: {}, credentials: { categories: { Achievement: true } } },
         };

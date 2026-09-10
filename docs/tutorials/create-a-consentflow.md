@@ -60,7 +60,7 @@ const contractUri = await learnCard.invoke.createContract({
     contract: {
         read: {
             personal: { name: { required: false } },
-            credentials: { categories: {} },
+            credentials: { categories: { Achievement: { required: false } } },
         },
         write: {
             personal: {},

@@ -49,8 +49,9 @@ const boostUri = await learnCard.invoke.createBoost(
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+            'https://ctx.learncard.com/boosts/1.0.1.json', // defines boostId, which the network adds when it signs
         ],
-        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
         issuer: learnCard.id.did(),
         name: 'Connected to Acme',
         credentialSubject: {
@@ -74,8 +75,8 @@ await learnCard.invoke.clearDidWebCache();
 const contractUri = await learnCard.invoke.createContract({
     name: 'Acme Learning',
     contract: {
-        read: { personal: {}, credentials: { categories: {} } },
-        write: { personal: {}, credentials: { categories: { Achievement: {} } } },
+        read: { personal: {}, credentials: { categories: { Achievement: { required: false } } } },
+        write: { personal: {}, credentials: { categories: { Achievement: { required: false } } } },
     },
     autoboosts: [
         {
