@@ -57,6 +57,30 @@ describe('EscrowRecoveryPanel', () => {
         });
     });
 
+    it('keeps the PIN step visible after a temporary throttle without auto-retrying', async () => {
+        const error = new Error('Throttled');
+        error.name = 'EscrowPinThrottledError';
+        mockOnRecover.mockRejectedValueOnce(error);
+        render(
+            <EscrowRecoveryPanel
+                available
+                onStart={mockOnStart}
+                onStatus={mockOnStatus}
+                onRecover={mockOnRecover}
+            />
+        );
+        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+            clipboardData: { getData: () => '135790' },
+        });
+        expect(
+            await screen.findByText('Too many tries right now. Wait a minute and try again.')
+        ).toBeInTheDocument();
+        expect(screen.getByText('Do you have a recovery PIN?')).toBeInTheDocument();
+        expect(screen.getAllByLabelText(/PIN digit/)).toHaveLength(6);
+        expect(mockOnRecover).toHaveBeenCalledTimes(1);
+        expect(mockOnStart).not.toHaveBeenCalled();
+    });
+
     it('handles PIN locked error and falls back to hold flow', async () => {
         const error = new Error('Locked');
         error.name = 'EscrowPinLockedError';
