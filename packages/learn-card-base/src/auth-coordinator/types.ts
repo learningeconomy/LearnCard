@@ -27,6 +27,9 @@ export type {
     SssActivationState,
     SignInAdapter,
     PhoneVerificationHandle,
+    EscrowEnrollmentState,
+    EscrowEnrollmentOptions,
+    EscrowPinStatus,
 } from '@learncard/types';
 
 // --- SSS-specific (canonical source: @learncard/sss-key-manager) ---
@@ -43,6 +46,7 @@ export type {
 import type {
     AuthProvider,
     AuthUser,
+    EscrowPinStatus,
     KeyDerivationStrategy,
     RecoveryMethodInfo,
     SssActivationState,
@@ -93,6 +97,8 @@ export type UnifiedAuthState =
     | {
           status: 'ready';
           pendingEscrowHold?: { holdId: string; requestedAt: string; releaseAfter: string };
+          /** Whether a recovery PIN is set on the escrow release policy, and attempts remaining. */
+          escrowPin?: EscrowPinStatus;
           authUser?: AuthUser;
           did: string;
           privateKey: string;
