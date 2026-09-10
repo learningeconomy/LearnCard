@@ -135,6 +135,44 @@ describe('AuthCoordinator', () => {
             expect(keyDerivation.cancelIdentityRecovery).toHaveBeenCalledTimes(1);
         });
 
+        it('does not block logout forever when an enrollment write never settles', async () => {
+            vi.useFakeTimers();
+            try {
+                const ensureEscrowEnrollment = vi.fn().mockReturnValue(new Promise(() => {}));
+                const { coordinator, authProvider } = setup({
+                    keyDerivation: { ensureEscrowEnrollment },
+                    config: { signDidAuthVp: vi.fn() },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1));
+
+                let loggedOut = false;
+                const logout = coordinator.logout().then(() => {
+                    loggedOut = true;
+                });
+                await vi.advanceTimersByTimeAsync(AuthCoordinator.ESCROW_DRAIN_TIMEOUT_MS - 1);
+                expect(loggedOut).toBe(false);
+                expect(authProvider.signOut).not.toHaveBeenCalled();
+
+                await vi.advanceTimersByTimeAsync(1);
+                await logout;
+                expect(authProvider.signOut).toHaveBeenCalledTimes(1);
+                expect(coordinator.getState()).toEqual({ status: 'idle' });
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
+        it('uses the configured pending-recovery cleanup when forgetting the device', async () => {
+            const clearPendingEscrowRecovery = vi.fn().mockResolvedValue(undefined);
+            const { coordinator, keyDerivation } = setup({
+                config: { clearPendingEscrowRecovery },
+            });
+            await coordinator.forgetDevice();
+            expect(keyDerivation.clearLocalKeys).toHaveBeenCalledTimes(1);
+            expect(clearPendingEscrowRecovery).toHaveBeenCalledTimes(1);
+        });
+
         it('clears pending rebind authority on logout', async () => {
             const cancelIdentityRecovery = vi.fn();
             const { coordinator } = setup({ keyDerivation: { cancelIdentityRecovery } });
