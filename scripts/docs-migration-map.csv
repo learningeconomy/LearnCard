@@ -9,7 +9,7 @@ apps/scouts/credential-revocation,understand/verifiable-credentials-vcs/credenti
 core-concepts/architecture-and-principles,understand/ecosystem-architecture,merge,redirected
 core-concepts/architecture-and-principles/auth-coordinator,reference/sss-key-manager,archive,redirected
 core-concepts/architecture-and-principles/auth-grants-and-api-tokens,understand/decentralized-identifiers-dids/auth-grants-and-api-tokens,moved,redirected
-core-concepts/architecture-and-principles/control-planes,understand/ecosystem-architecture/control-planes,moved,redirected
+core-concepts/architecture-and-principles/control-planes,reference/learncard-core/control-planes,moved,redirected
 core-concepts/architecture-and-principles/plugins,understand/ecosystem-architecture/plugins,moved,redirected
 core-concepts/architecture-and-principles/u.s.-state-api,reference/learncard-network,delete,redirected
 core-concepts/consent-and-permissions,understand/consentflow-overview,merge,redirected

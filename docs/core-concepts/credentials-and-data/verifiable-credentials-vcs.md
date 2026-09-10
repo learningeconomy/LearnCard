@@ -2,21 +2,16 @@
 
 A Verifiable Credential is a digital certificate or badge — like a diploma, a skill badge, or a license — that proves something about a person. It's cryptographically signed, so anyone can check it's real without calling the issuer, and the person who earned it owns it and can share it anywhere.
 
-Technically, Verifiable Credentials are a W3C standard for expressing credentials in a way that is cryptographically secure, privacy-respecting, and machine-verifiable.
+Formally, a Verifiable Credential is a [W3C standard](https://www.w3.org/TR/vc-data-model-2.0/) JSON document: a set of claims about a subject, signed by an issuer. LearnCard issues and verifies two profiles of it:
 
-LearnCard's interoperability ecosystem includes these open standards and data models:
+- **Open Badges v3 (OBv3)** — badges, certificates, and achievements. This is what `send()` produces by default and what the examples in these docs use.
+- **Comprehensive Learner Record v2 (CLR)** — a signed bundle of many achievements from one or more issuers, for transcripts and records.
 
-- **Open Badges v3 (OBv3)**
-- **Comprehensive Learner Record (CLR)**
-- **Learning Tools Interoperability (LTI)**
-- **Learning and Employment Records (LER)**
-- **Learner Information Framework (LIF)**
+Both are plain W3C credentials underneath, so any conformant wallet or verifier can read them. See [Interoperability](../../introduction/interoperability.md) for the full list of standards LearnCard speaks.
 
-### Verifiable Credential Data Model <a href="#credential-data-model" id="credential-data-model"></a>
+## What's inside a credential <a href="#credential-data-model" id="credential-data-model"></a>
 
-LearnCard implements the W3C Verifiable Credentials Data Model, with support for both VC 1.0 and VC 2.0 formats. The core data types are defined using Zod validators.
-
-#### Credential Structure <a href="#credential-structure" id="credential-structure"></a>
+LearnCard supports both VC 1.0 and VC 2.0. The shapes are defined as Zod validators in `@learncard/types`, so what you get back from the SDK is already type-checked.
 
 ```mermaid
 graph
@@ -50,10 +45,7 @@ graph
 | `credentialSubject` | Entity the credential is about           | Yes      |
 | `proof`             | Cryptographic proof of authenticity      | Yes      |
 
-Version differences:
-
-- VC 1.0 uses `issuanceDate` and `expirationDate`
-- VC 2.0 uses `validFrom` and `validUntil`
+The one difference you'll notice between versions: VC 1.0 uses `issuanceDate` / `expirationDate`; VC 2.0 uses `validFrom` / `validUntil`. New credentials should use 2.0.
 
 {% @github-files/github-code-block url="https://github.com/learningeconomy/LearnCard/blob/942bb5f7/packages/learn-card-types/src/vc.ts#L129-L177" %}
 
@@ -61,11 +53,11 @@ Version differences:
 
 ## Lifecycle
 
-1. **Issue:** Prepare the claims and sign the credential. Template-based `send()` can use a signing authority; a pre-signed credential retains its proof.
-2. **Deliver:** `send()` routes to a profile or DID directly, or through Universal Inbox for an email or phone recipient, with a claim link when needed.
-3. **Store:** After acceptance, the holder keeps the credential in their account, using storage such as LearnCloud and an index for retrieval.
-4. **Present:** The holder chooses which credentials to share, individually or in a Verifiable Presentation.
-5. **Verify:** The verifier checks the signature, applicable dates, structure, and [credential status](credential-status-and-bitstring-status-lists.md), then decides whether to trust the issuer and claims.
+1. **Issue.** The issuer builds the claims and signs them — with its own key, or through a [signing authority](../identities-and-keys/signing-authorities.md) LearnCard hosts for it.
+2. **Deliver.** `send()` delivers to a LearnCard profile directly, or to an email or phone number through the [Universal Inbox](../network-and-interactions/universal-inbox.md), which holds the credential until the recipient claims it.
+3. **Store.** Once claimed, the credential lives in the holder's account, encrypted, under the holder's key.
+4. **Present.** The holder chooses what to share — one credential, or several bundled in a Verifiable Presentation.
+5. **Verify.** The verifier checks the signature, the dates, and the [status list](credential-status-and-bitstring-status-lists.md). It never needs to contact the issuer.
 
 ```mermaid
 sequenceDiagram
@@ -81,11 +73,13 @@ sequenceDiagram
     Verifier->>Verifier: Check proof, dates, structure, and status
 ```
 
-Direct issuance and transfer by file or QR are also possible without network delivery; see [Send & Issue Credentials](../../how-to-guides/send-credentials.md).
+To do this yourself: [Send & Issue Credentials](../../how-to-guides/send-credentials.md) and [Verify Credentials](../../tutorials/verify-credentials.md).
 
 ## Verifiable Presentations (VPs) <a href="#verifiable-presentations-vps" id="verifiable-presentations-vps"></a>
 
-Verifiable Presentations allow holders to bundle and selectively disclose credentials:
+A Verifiable Presentation is how a holder _shares_ credentials. It wraps one or more credentials and is signed by the holder, which proves two things at once: the credentials are genuine (their issuer signatures still verify) and the person presenting them is the person they were issued to (the `holder` matches `credentialSubject.id`). A verifier can add a `challenge` and `domain` so a presentation can't be replayed elsewhere.
+
+LearnCard also uses a presentation with no credentials in it — a **DID-Auth** presentation — as a login proof: signing it shows you control the DID.
 
 ```mermaid
 graph

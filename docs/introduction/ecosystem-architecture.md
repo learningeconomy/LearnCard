@@ -2,7 +2,7 @@
 description: How LearnCard and LearnCloud fit together, and how they interoperate with the world.
 ---
 
-# Ecosystem Architecture
+# How LearnCard Is Built
 
 **LearnCard** is the lifelong-learning passport — the wallet, app, CLI, and SDK a learner (or any app acting on their behalf) uses to **collect, understand, and navigate** their learning and employment record. **LearnCloud** is the open API platform behind it: a network for sending and receiving credentials, encrypted personal storage, and an AI layer that turns the passport into something useful.
 

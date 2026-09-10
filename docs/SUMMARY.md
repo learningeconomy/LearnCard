@@ -49,7 +49,6 @@
     - [Interoperability](introduction/interoperability.md)
     - [Universal Inbox](core-concepts/network-and-interactions/universal-inbox.md)
     - [Plugin System](core-concepts/architecture-and-principles/plugins.md)
-    - [Control Planes](core-concepts/architecture-and-principles/control-planes.md)
     - [Holder Continuity & Portability](core-concepts/architecture-and-principles/holder-continuity.md)
 
 ## 📖 Reference
@@ -59,6 +58,7 @@
     - [Authentication](sdks/learncard-core/authentication.md)
     - [Usage Examples](sdks/learncard-core/construction.md)
     - [Achievement Types & Categories](core-concepts/credentials-and-data/achievement-types-and-categories.md)
+    - [Control Planes](core-concepts/architecture-and-principles/control-planes.md)
     - [Plugin API Reference](sdks/learncard-core/writing-plugins.md)
     - [Build a Plugin](how-to-guides/deploy-infrastructure/the-simplest-plugin.md)
     - [Integration Strategies](sdks/learncard-core/architectural-patterns.md)

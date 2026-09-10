@@ -1,23 +1,32 @@
 ---
-description: Store and Retrieve Credentials however you like!
+description: The `lc:` URIs that point at credentials, templates, and contracts — and how to resolve them.
 ---
 
 # Credential URIs
 
-## What are LearnCard URIs?
+Most things the LearnCard Network gives you back are **URIs**, not raw JSON. A URI is a stable pointer to something stored somewhere; you pass it around, and resolve it when you need the content.
 
-The LearnCard URI is a [URI](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier) that allows a Universal Wallet to resolve a credential. It is freely extensible and any plugin can add to it in any way. However standard plugins will adhere to a format of `lc:${method}:${location}`. For example, the Ceramic plugin adds `lc:ceramic:${streamID}` URI support.
+They all start with `lc:` and follow `lc:<where>:<location>`:
 
-## Why use LearnCard URIs?
+| You'll see                                              | It points at                                          | You got it from                |
+| ------------------------------------------------------- | ----------------------------------------------------- | ------------------------------ |
+| `lc:network:network.learncard.com/trpc:boost:<id>`      | A credential template ([Boost](boost-credentials.md)) | `createBoost()`, `send().uri`  |
+| `lc:network:network.learncard.com/trpc:credential:<id>` | A credential stored on the network                    | `send().credentialUri`         |
+| `lc:network:network.learncard.com/trpc:contract:<id>`   | A consent contract                                    | `createContract()`             |
+| `lc:network:network.learncard.com/trpc:terms:<id>`      | One user's consent to a contract                      | `consentToContract().termsUri` |
+| `lc:cloud:<encoded host>:cred:<id>`                     | A credential in a user's encrypted LearnCloud storage | `store.LearnCloud.upload()`    |
 
-Verifiable Credentials need to be stored somewhere. LearnCard does not dictate _where_ they can be stored. So, _LearnCard URIs_ (often referred to as just URIs) were devised to be able to seamlessly retrieve credentials that can be stored anywhere a plugin allows
+The host in the URI is the network it lives on — a staging URI won't resolve on production.
 
-## When would I use a LearnCard URI?
+## Resolving a URI
 
-For the most part, URIs get used by Read, Store, and Index Control Planes. Basically, Verifiable Credentials are converted into a URI by the Store Plane, saved in the holder's list with the Index Plane, then later read from the holder's list and resolved back into a Credential with the Read Plane.
+```typescript
+const credential = await learnCard.read.get(uri);
+```
 
-However, URIs can also be very useful whenever you need to transport a credential and you know that LearnCard is being used, such as between your own networked systems.&#x20;
+`read.get` looks at the URI's method (`network`, `cloud`, …) and asks the right plugin to fetch it. `store.upload(credential)` does the reverse: saves a credential and hands you a URI.
 
-## How can I use URIs?
+## Two rules
 
-Simply use `lc.store.upload` to convert a Verifiable Credential into a URI that you can then do things with, such as store and send. To get the Verifiable Credential back, use `lc.read.get` on the URI.
+- **Never build a URI by hand.** Always use the value a method returned. The format is stable, but the IDs aren't guessable and the host matters.
+- **Keep the returned URI.** It's your only handle on the thing. If you send a credential and want to revoke it later, you'll need `credentialUri`.

@@ -4,55 +4,43 @@ description: What is a plugin?
 
 # Plugin System
 
-The LearnCard Plugin System is the modular foundation that enables extensibility of the LearnCard Core through encapsulated units of functionality. This document explains how plugins are structured, loaded, and used within the LearnCard ecosystem.&#x20;
+`initLearnCard()` gives you an object with methods like `issueCredential`, `send`, and `read.get`. None of those live in the core. Each comes from a **plugin**, and the core's only job is to load plugins in order and merge what they expose.
 
-### Plugins Are:
+That matters to you in three ways:
 
-* Core bundles of execution.
-* Have no hard requirements they must conform to.
-* Atomic.
-* Not categorical.
-* Typically fall into larger execution workflows. _See_ [_Control Planes_](control-planes.md)_._
+- **You only carry what you use.** A server that just verifies credentials needs three plugins; a full network client needs a dozen. `initLearnCard` picks the right stack from the options you pass (`seed`, `network`, `didWeb`…), so you rarely assemble it by hand.
+- **Plugins can be swapped.** Anything that implements the same interface can stand in — a different storage backend, a different DID method, a test double. Plugins that implement a [control plane](control-planes.md) stack: three storage plugins all answer `store.upload`, and you pick which by name.
+- **You can add your own.** A plugin is a plain object with a name and some methods; it can depend on the methods of plugins loaded before it. See [Build a Plugin](../../how-to-guides/deploy-infrastructure/the-simplest-plugin.md) for a 10-minute walkthrough.
 
-Plugins can implement arbitrary functionality, or optionally choose to implement any number of Control Planes. Via a common instantiation pattern, it is also easily possible for plugins to depend on other plugins via their exposed interfaces, as well as to happily hold private and public fields.
-
-The LearnCard Core is designed with minimal base functionality, which is extended through plugins that provide specific capabilities. The plugin system enables developers to include only the features they need, resulting in more lightweight and focused implementations.
-
-{% hint style="info" %}
-Plugins are at the heart of LearnCard. The base LearnCard wallet without _any_ plugins attached to it can do, well... nothing!&#x20;
-{% endhint %}
-
-Additionally, because plugins and plugin hierarchies work entirely through interfaces rather than explicit dependencies, any plugin can be easily hotswapped by another plugin that implements the same interface, and plugins implementing Control Planes can easily be stacked on top of each other to further enhance the functionality of that Control Plane for the wallet.
-
-
+The rest of this page is how that works underneath.
 
 ```mermaid
 graph TD
     subgraph "LearnCard Instance"
         Core["LearnCard Wallet SDK"]
-        
+
         subgraph "Plugin Registry"
             P1["Plugin A"]
             P2["Plugin B"]
             P3["Plugin C"]
         end
-        
+
         Core --- P1
         Core --- P2
         Core --- P3
     end
-    
+
     App["Application"] --> Core
 ```
 
-### Plugin Interface&#x20;
+### Plugin Interface
 
 A LearnCard plugin follows a standard interface structure which includes:
 
-* **name**: A unique identifier string
-* **displayName**: A human-readable name for UI display
-* **description**: A description of the plugin's functionality
-* **methods**: An object containing the functions provided by the plugin
+- **name**: A unique identifier string
+- **displayName**: A human-readable name for UI display
+- **description**: A description of the plugin's functionality
+- **methods**: An object containing the functions provided by the plugin
 
 The type system uses generics to track which plugins are added to a LearnCard instance, ensuring type safety when accessing plugin methods.
 
@@ -69,7 +57,9 @@ In code, constructing a LearnCard completely from scratch looks like this:
 ```typescript
 const baseLearnCard = await initLearnCard({ custom: true });
 const didkitLearnCard = await baseLearnCard.addPlugin(await getDidKitPlugin());
-const didkeyLearnCard = await didkitLearnCard.addPlugin(await getDidKeyPlugin(didkitLearnCard, 'a', 'key'));
+const didkeyLearnCard = await didkitLearnCard.addPlugin(
+    await getDidKeyPlugin(didkitLearnCard, 'a', 'key')
+);
 // repeat for any more plugins you'd like to add
 ```
 
@@ -115,18 +105,18 @@ graph TD
     Core["LearnCard Core"]
     VCPlugin["VC Plugin"]
     ExpirationPlugin["Expiration Plugin"]
-    
+
     Core --- VCPlugin
     Core --- ExpirationPlugin
-    
+
     ExpirationPlugin -..-> VCPlugin["Uses VC Plugin's verifyCredential"]
-    
+
     subgraph "Expiration Plugin Methods"
         VerifyMethod["verifyCredential()"]
     end
-    
+
     ExpirationPlugin --- VerifyMethod
-    
+
     VerifyMethod --> CheckExpiration["Check expirationDate validFrom/validUntil"]
 ```
 
@@ -150,7 +140,7 @@ sequenceDiagram
     participant App as "Application"
     participant LC as "LearnCard Instance"
     participant Plugin as "Plugin"
-    
+
     App->>LC: learnCard.invoke.methodName(args)
     LC->>Plugin: Find plugin with methodName
     Plugin->>Plugin: Execute method with args
@@ -234,4 +224,3 @@ graph LR
 
     init["@learncard/init"] -->|"orchestrates"| core
 ```
-

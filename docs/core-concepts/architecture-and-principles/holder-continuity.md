@@ -4,11 +4,11 @@ description: How holders can export, verify, and move LearnCard wallet data
 
 # Holder Continuity
 
-LearnCard is designed so a holder can keep control of the artifacts that define their identity: private key material, DIDs, Verifiable Credentials, Verifiable Presentations, consent records, and status snapshots.
+"Your credentials are yours" is only true if you can leave. This page is the specific guarantee: what a LearnCard user can take with them, how, and what happens to it afterwards — with no cooperation from LearnCard required.
 
-## Current custody model
+## Where the key lives today
 
-LearnCard's AuthCoordinator uses Shamir Secret Sharing with a **2-of-4 threshold**. The private key is split into four shares:
+A LearnCard app user's private key is split with Shamir Secret Sharing, **2-of-4**:
 
 | Share          | Where it lives                                            | Purpose                           |
 | -------------- | --------------------------------------------------------- | --------------------------------- |
