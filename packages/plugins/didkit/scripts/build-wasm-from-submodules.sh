@@ -18,6 +18,10 @@ if ! command -v wasm-opt >/dev/null 2>&1; then
     echo "wasm-opt is required to optimize DIDKit WASM" >&2
     exit 1
 fi
+if ! command -v bun >/dev/null 2>&1; then
+    echo "bun is required to update the bridge DIDKit WASM integrity pin" >&2
+    exit 1
+fi
 
 
 if [ ! -d "${DIDKIT_WEB_DIR}" ]; then
@@ -76,3 +80,6 @@ for file in didkit_wasm.d.ts didkit_wasm.js didkit_wasm_bg.wasm didkit_wasm_bg.w
     cp "${SOURCE_PKG_DIR}/${file}" "${TARGET_PKG_DIR}/${file}"
 done
 
+# Intentional generation updates the bridge guard alongside the canonical artifact.
+# Ordinary bridge builds use the same script without this flag and remain fail-closed.
+bun "${ROOT_DIR}/packages/learn-card-bridge-http/scripts/sync-didkit.ts" --update-integrity
