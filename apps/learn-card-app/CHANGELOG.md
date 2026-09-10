@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.98.6
+
+### Patch Changes
+
+- [#1560](https://github.com/learningeconomy/LearnCard/pull/1560) [`ee6a8ec1693fbfc08818f6d71456734318aaafcc`](https://github.com/learningeconomy/LearnCard/commit/ee6a8ec1693fbfc08818f6d71456734318aaafcc) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Restore CapGo OTA releases by running the uploader from the app directory with correctly resolved bundle and dependency paths. Pin the CapGo CLI version for production, staging, and preview uploads.
+
 ## 1.98.5
 
 ### Patch Changes
