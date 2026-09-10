@@ -1,0 +1,32 @@
+name: CodeQL PR 1549 full audit
+on:
+    push:
+        branches: ['codex/pr1549-codeql-audit']
+permissions:
+    contents: read
+    actions: read
+jobs:
+    audit:
+        runs-on: ubuntu-latest
+        env:
+            CODEQL_ACTION_DIFF_INFORMED_QUERIES: 'false'
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: 669494b2cb7a2c073653753b070d1d9648fc265c
+            - run: git rev-parse HEAD
+            - uses: github/codeql-action/init@v2
+              with:
+                  languages: javascript
+                  config-file: ./.github/codeql-config.yml
+            - uses: github/codeql-action/autobuild@v2
+            - uses: github/codeql-action/analyze@v2
+              with:
+                  output: audit-results
+                  upload: never
+                  upload-database: false
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: codeql-full-pr1549-669494b2c
+                  path: audit-results
+                  retention-days: 7
