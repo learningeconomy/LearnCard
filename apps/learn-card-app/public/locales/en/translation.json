@@ -1955,6 +1955,28 @@
             "tooManyAttempts": "Too many incorrect attempts. Try again later.",
             "invalidCode": "That code is incorrect or expired. Request a new code and try again.",
             "invalidRecoveryMethod": "That recovery method could not verify your account. Try another method."
+        },
+        "pin": {
+            "setPin": "Set a recovery PIN",
+            "setPinDesc": "Set a 6-digit PIN for instant recovery.",
+            "confirmPin": "Confirm your PIN",
+            "confirmPinDesc": "Enter your PIN again to confirm.",
+            "saving": "Saving PIN...",
+            "success": "PIN set successfully",
+            "trivial": "Choose a PIN that's harder to guess.",
+            "mismatch": "PINs don't match.",
+            "saveFailed": "Failed to save PIN. Please try again.",
+            "enterPin": "Enter a 6-digit PIN",
+            "removeConfirm": "Are you sure you want to remove your recovery PIN? You will only be able to recover your account by waiting 7 days.",
+            "removing": "Removing...",
+            "remove": "Remove PIN",
+            "resetBanner": "Your recovery PIN was reset — ",
+            "setAgain": "set it again",
+            "doYouHave": "Do you have a recovery PIN?",
+            "enterForInstant": "Enter your 6-digit PIN for instant recovery.",
+            "dontHave": "I don't have a PIN",
+            "incorrect": "Incorrect PIN. {{attempts}} attempts left.",
+            "locked": "Too many attempts. You can still recover by waiting 7 days."
         }
     },
     "alerts": {

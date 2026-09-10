@@ -137,6 +137,7 @@ import { Overlay, ErrorOverlay, StalledMigrationOverlay, EmailLinkOverlay } from
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
 import { EscrowRecoveryHoldBanner } from '../components/recovery/EscrowRecoveryHoldBanner';
+import { RecoveryPinResetBanner } from '../components/recovery/RecoveryPinResetBanner';
 import { clearAllPendingEscrowRecovery } from '../components/recovery/escrowRecoveryStorage';
 import {
     RecoverySetupModal,
@@ -637,12 +638,30 @@ const AuthSessionManager: React.FC<{
         }
     }, [coordinator.state.status]);
 
+    const [showRecoveryPinSetup, setShowRecoveryPinSetup] = useState(false);
+    const [showRecoveryPinReset, setShowRecoveryPinReset] = useState(false);
+
     // Track whether the user went through needs_setup (new user flow)
     useEffect(() => {
         if (coordinator.state.status === 'needs_setup') {
             wasNewUserRef.current = true;
         }
     }, [coordinator.state.status]);
+
+    useEffect(() => {
+        if (coordinator.state.status === 'ready') {
+            const did = coordinator.state.did;
+            const flag = localStorage.getItem(`lc:recovery-pin-prompt:${did}`);
+
+            if (wasNewUserRef.current && !flag) {
+                setShowRecoveryPinSetup(true);
+            }
+
+            if (flag === 'set' && coordinator.state.escrowPin?.enabled === false) {
+                setShowRecoveryPinReset(true);
+            }
+        }
+    }, [coordinator.state.status, coordinator.state.escrowPin?.enabled]);
 
     // --- QR login device share pickup from sessionStorage ---
     // When Device B completes Firebase auth after a QR login, the coordinator
@@ -1366,13 +1385,26 @@ const AuthSessionManager: React.FC<{
     return (
         <AppAuthContext.Provider value={enrichedValue}>
             {children}
-            {coordinator.state.status === 'ready' && coordinator.state.pendingEscrowHold && (
-                <div className="fixed top-6 inset-x-4 z-[10000] max-w-md mx-auto">
-                    <EscrowRecoveryHoldBanner
-                        key={coordinator.state.pendingEscrowHold.holdId}
-                        requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
-                        onCancel={coordinator.cancelEscrowRecovery}
-                    />
+            {coordinator.state.status === 'ready' && (
+                <div className="fixed top-6 inset-x-4 z-[10000] max-w-md mx-auto space-y-2">
+                    {coordinator.state.pendingEscrowHold && (
+                        <EscrowRecoveryHoldBanner
+                            key={coordinator.state.pendingEscrowHold.holdId}
+                            requestedAt={coordinator.state.pendingEscrowHold.requestedAt}
+                            onCancel={coordinator.cancelEscrowRecovery}
+                        />
+                    )}
+                    {showRecoveryPinReset && (
+                        <RecoveryPinResetBanner
+                            onDismiss={() => {
+                                localStorage.setItem(
+                                    `lc:recovery-pin-prompt:${coordinator.state.did}`,
+                                    'skipped'
+                                );
+                                setShowRecoveryPinReset(false);
+                            }}
+                        />
+                    )}
                 </div>
             )}
 
@@ -1663,6 +1695,25 @@ const AuthSessionManager: React.FC<{
                 />
             )}
 
+            {showRecoveryPinSetup && coordinator.state.status === 'ready' && (
+                <RecoveryPinSetupOverlay
+                    onComplete={() => {
+                        localStorage.setItem(
+                            `lc:recovery-pin-prompt:${coordinator.state.did}`,
+                            'set'
+                        );
+                        setShowRecoveryPinSetup(false);
+                    }}
+                    onSkip={() => {
+                        localStorage.setItem(
+                            `lc:recovery-pin-prompt:${coordinator.state.did}`,
+                            'skipped'
+                        );
+                        setShowRecoveryPinSetup(false);
+                    }}
+                />
+            )}
+
             {/* ── Migration in-progress overlay ──────────────────── */}
             {showMigrationLoading && (
                 <Overlay>
@@ -1943,6 +1994,8 @@ const AuthSessionManager: React.FC<{
         </AppAuthContext.Provider>
     );
 };
+
+import { RecoveryPinSetupOverlay } from '../components/recovery/RecoveryPinSetupOverlay';
 
 // --- Cached private key retrieval for private-key-first init ---
 // In public computer mode, skip the persistent cache so the coordinator
