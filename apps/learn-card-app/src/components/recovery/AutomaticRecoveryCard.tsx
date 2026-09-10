@@ -21,7 +21,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
     onEnableEscrowRecovery,
 }) => {
     const [state, setState] = useState<EnrollmentState | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState<'enabling' | 'disabling' | null>(null);
     const [confirmOff, setConfirmOff] = useState(false);
     const [error, setError] = useState<'precondition' | 'generic' | null>(null);
     const busy = useRef(false);
@@ -44,7 +44,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
     const update = async (enabled: boolean): Promise<void> => {
         if (busy.current) return;
         busy.current = true;
-        setLoading(true);
+        setLoading(enabled ? 'enabling' : 'disabling');
         setError(null);
         try {
             if (enabled) await onEnableEscrowRecovery();
@@ -65,7 +65,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
             );
         } finally {
             setConfirmOff(false);
-            setLoading(false);
+            setLoading(null);
             busy.current = false;
         }
     };
@@ -81,15 +81,17 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                 {m['recovery.automatic.title']()}
             </h3>
             <p role="status" className="text-sm text-grayscale-600 leading-relaxed">
-                {loading
-                    ? m['recovery.automatic.settingUp']()
-                    : state === 'enrolled'
-                      ? m['recovery.automatic.on']()
-                      : state === 'not-enrolled'
-                        ? m['recovery.automatic.settingUp']()
-                        : state === 'opted-out'
-                          ? m['recovery.automatic.off']()
-                          : null}
+                {loading === 'enabling'
+                    ? m['recovery.automatic.turningOn']()
+                    : loading === 'disabling'
+                      ? m['recovery.automatic.turningOff']()
+                      : state === 'enrolled'
+                        ? m['recovery.automatic.on']()
+                        : state === 'not-enrolled'
+                          ? m['recovery.automatic.notOn']()
+                          : state === 'opted-out'
+                            ? m['recovery.automatic.off']()
+                            : null}
             </p>
             {state !== null && (
                 <label className="flex items-center justify-between gap-3 text-sm text-grayscale-900">
