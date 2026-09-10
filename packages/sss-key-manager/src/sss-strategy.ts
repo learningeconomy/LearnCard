@@ -139,6 +139,19 @@ const buildHeaders = (
     ...(tenantId ? { 'X-Tenant-Id': tenantId } : {}),
 });
 
+export const SERVER_REQUEST_TIMEOUT_MS = 30_000;
+
+/** Abort signal for server writes so a stalled socket cannot block logout or key rotation forever. */
+const requestTimeoutSignal = (ms = SERVER_REQUEST_TIMEOUT_MS): AbortSignal | undefined =>
+    typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+        ? AbortSignal.timeout(ms)
+        : undefined;
+
+type EscrowEnrollmentResult =
+    | { enrolled: false; reason: 'disabled' | 'opted-out' }
+    | { enrolled: true; changed: false }
+    | { enrolled: true; changed: true; shareVersion: number };
+
 /** HTTP failure metadata without potentially sensitive server response text. */
 export class EscrowRequestError extends Error {
     constructor(public readonly status: number) {
@@ -185,6 +198,7 @@ const putAuthShare = async (
     const response = await fetch(`${serverUrl}/keys/auth-share`, {
         method: 'PUT',
         headers: buildHeaders(token, didAuthVp, tenantId),
+        signal: requestTimeoutSignal(),
         body: JSON.stringify({
             authToken: token,
             providerType,
@@ -235,6 +249,7 @@ const requestFreshDidAuthVp = async (
     const response = await fetch(`${serverUrl}/keys/challenge`, {
         method: 'POST',
         headers: buildHeaders('', bootstrapVp, tenantId),
+        signal: requestTimeoutSignal(),
         body: JSON.stringify({ did }),
     });
 
@@ -499,7 +514,47 @@ interface PersistedShareUpdate {
     shareVersion: number;
 }
 
-const persistSharesAtomically = async (
+let rotationChain: Promise<unknown> = Promise.resolve();
+
+/**
+ * Serialize every share rotation (device + server write pair). Two rotations
+ * interleaving would leave the device share and the server auth share on
+ * different polynomials, which locks the account out on the next reconstruct.
+ */
+export const withRotationLock = <T>(operation: () => Promise<T>): Promise<T> => {
+    const run = rotationChain.then(operation, operation);
+    rotationChain = run.catch(() => undefined);
+    return run;
+};
+
+const persistSharesAtomically = (
+    privateKey: string,
+    serverUrl: string,
+    token: string,
+    providerType: AuthProviderType,
+    primaryDid: string,
+    storage: SSSStorageFunctions,
+    storageId?: string,
+    didFromPrivateKey?: (pk: string) => Promise<string>,
+    signDidAuthVp?: DidAuthVpSigner,
+    tenantId?: string
+): Promise<PersistedShareUpdate> =>
+    withRotationLock(() =>
+        persistSharesAtomicallyUnlocked(
+            privateKey,
+            serverUrl,
+            token,
+            providerType,
+            primaryDid,
+            storage,
+            storageId,
+            didFromPrivateKey,
+            signDidAuthVp,
+            tenantId
+        )
+    );
+
+const persistSharesAtomicallyUnlocked = async (
     privateKey: string,
     serverUrl: string,
     token: string,
@@ -653,8 +708,20 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         primaryDid: string | null;
     } | null = null;
 
+    let escrowEnrollmentInFlight: Promise<EscrowEnrollmentResult> | undefined;
+
+    // Material from a rotation whose escrow POST failed. Retained in memory so a
+    // retry within this session re-posts instead of burning another share version.
+    // TODO(escrow): this cannot survive a reload; a cross-login guard needs the
+    // server to expose a pending (unconfirmed) escrow record for the current version.
+    let unenrolledRotation:
+        { shares: SSSShares; shareVersion: number; primaryDid: string } | undefined;
+
     const escrowRequest = async <T>(path: string, init: RequestInit): Promise<T> => {
-        const response = await fetch(`${serverUrl}/keys/escrow${path}`, init);
+        const response = await fetch(`${serverUrl}/keys/escrow${path}`, {
+            signal: requestTimeoutSignal(),
+            ...init,
+        });
         // Never propagate response bodies or status text that could contain secrets.
         if (!response.ok) throw new EscrowRequestError(response.status);
         try {
@@ -724,6 +791,85 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 console.warn('SSS: escrow error reporting failed');
             }
         }
+    };
+
+    const ensureEscrowEnrollmentUnguarded = async (
+        self: SSSKeyDerivationStrategy,
+        params: Parameters<NonNullable<SSSKeyDerivationStrategy['ensureEscrowEnrollment']>>[0]
+    ): Promise<EscrowEnrollmentResult> => {
+        if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
+        const status = await self.fetchServerKeyStatus(params.token, params.providerType);
+        if (status.escrowOptedOut) return { enrolled: false, reason: 'opted-out' };
+        if (
+            status.shareVersion !== null &&
+            status.recoveryMethods.some(
+                method =>
+                    method.type === 'escrow' &&
+                    method.shareVersion === status.shareVersion &&
+                    (Boolean(method.confirmedAt) ||
+                        ('confirmationStatus' in method &&
+                            method.confirmationStatus === 'confirmed'))
+            )
+        )
+            return { enrolled: true, changed: false };
+        if (!status.primaryDid) throw new Error('Cannot enroll escrow without a primary DID');
+        if (!params.signDidAuthVp) {
+            throw new Error('DID proof signing is required for escrow enrollment');
+        }
+        if (
+            unenrolledRotation &&
+            unenrolledRotation.shareVersion === status.shareVersion &&
+            unenrolledRotation.primaryDid === status.primaryDid
+        ) {
+            const retry = unenrolledRotation;
+            await enrollEscrow(
+                params.token,
+                params.providerType,
+                params.privateKey,
+                retry.primaryDid,
+                retry.shares,
+                retry.shareVersion,
+                params.signDidAuthVp
+            );
+            unenrolledRotation = undefined;
+            return { enrolled: true, changed: true, shareVersion: retry.shareVersion };
+        }
+        // Verify the enclave before rotating: a bad attestation must not burn
+        // a share version (and, repeated, the retained auth-share history).
+        const verifiedKey = await fetchVerifiedEnclaveKey();
+        const { shares, shareVersion } = await persistSharesAtomically(
+            params.privateKey,
+            serverUrl,
+            params.token,
+            params.providerType,
+            status.primaryDid,
+            storage,
+            activeStorageId,
+            undefined,
+            params.signDidAuthVp,
+            tenantId
+        );
+        lastEmailShare = shares.emailShare;
+        lastShareVersion = shareVersion;
+        lastServerSnapshot = {
+            currentVersion: shareVersion,
+            resolvedVersion: shareVersion,
+            authShare: shares.authShare,
+            primaryDid: status.primaryDid,
+        };
+        unenrolledRotation = { shares, shareVersion, primaryDid: status.primaryDid };
+        await enrollEscrow(
+            params.token,
+            params.providerType,
+            params.privateKey,
+            status.primaryDid,
+            shares,
+            shareVersion,
+            params.signDidAuthVp,
+            verifiedKey
+        );
+        unenrolledRotation = undefined;
+        return { enrolled: true, changed: true, shareVersion };
     };
 
     return {
@@ -1044,14 +1190,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             primaryDid: string,
             didAuthVp?: string
         ): Promise<void> {
-            const { shareVersion } = await putAuthShare(
-                serverUrl,
-                token,
-                providerType,
-                authShare,
-                primaryDid,
-                didAuthVp,
-                tenantId
+            const { shareVersion } = await withRotationLock(() =>
+                putAuthShare(
+                    serverUrl,
+                    token,
+                    providerType,
+                    authShare,
+                    primaryDid,
+                    didAuthVp,
+                    tenantId
+                )
             );
 
             // Persist the version alongside the device share so we can request
@@ -1158,66 +1306,14 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         /** Enroll missing/stale escrow material using the standard atomic rotation. */
-        async ensureEscrowEnrollment(
-            params
-        ): Promise<
-            | { enrolled: false; reason: 'disabled' | 'opted-out' }
-            | { enrolled: true; changed: false }
-            | { enrolled: true; changed: true; shareVersion: number }
-        > {
-            if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
-            const status = await this.fetchServerKeyStatus(params.token, params.providerType);
-            if (status.escrowOptedOut) return { enrolled: false, reason: 'opted-out' };
-            if (
-                status.shareVersion !== null &&
-                status.recoveryMethods.some(
-                    method =>
-                        method.type === 'escrow' &&
-                        method.shareVersion === status.shareVersion &&
-                        (Boolean(method.confirmedAt) ||
-                            ('confirmationStatus' in method &&
-                                method.confirmationStatus === 'confirmed'))
-                )
-            )
-                return { enrolled: true, changed: false };
-            if (!status.primaryDid) throw new Error('Cannot enroll escrow without a primary DID');
-            if (!params.signDidAuthVp) {
-                throw new Error('DID proof signing is required for escrow enrollment');
+        async ensureEscrowEnrollment(params): Promise<EscrowEnrollmentResult> {
+            if (escrowEnrollmentInFlight) return escrowEnrollmentInFlight;
+            escrowEnrollmentInFlight = ensureEscrowEnrollmentUnguarded(this, params);
+            try {
+                return await escrowEnrollmentInFlight;
+            } finally {
+                escrowEnrollmentInFlight = undefined;
             }
-            // Verify the enclave before rotating: a bad attestation must not burn
-            // a share version (and, repeated, the retained auth-share history).
-            const verifiedKey = await fetchVerifiedEnclaveKey();
-            const { shares, shareVersion } = await persistSharesAtomically(
-                params.privateKey,
-                serverUrl,
-                params.token,
-                params.providerType,
-                status.primaryDid,
-                storage,
-                activeStorageId,
-                undefined,
-                params.signDidAuthVp,
-                tenantId
-            );
-            lastEmailShare = shares.emailShare;
-            lastShareVersion = shareVersion;
-            lastServerSnapshot = {
-                currentVersion: shareVersion,
-                resolvedVersion: shareVersion,
-                authShare: shares.authShare,
-                primaryDid: status.primaryDid,
-            };
-            await enrollEscrow(
-                params.token,
-                params.providerType,
-                params.privateKey,
-                status.primaryDid,
-                shares,
-                shareVersion,
-                params.signDidAuthVp,
-                verifiedKey
-            );
-            return { enrolled: true, changed: true, shareVersion };
         },
 
         /** Start a hold without replacing any previously returned resume secrets. */
@@ -1484,36 +1580,38 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // methods continue to work while this device advances to a fresh pair.
             const previousDeviceShare = await storage.getDeviceShare(activeStorageId);
             let shareVersion: number | undefined;
-            const recoveryResult = await atomicRecovery(
-                recoveryShare,
-                authShareStr,
-                {
-                    storeDevice: share => storage.storeDeviceShare(share, activeStorageId),
-                    clearDevice: () => storage.clearAllShares(activeStorageId),
-                    storeAuth: async share => {
-                        const didAuthVp = signDidAuthVp
-                            ? await requestFreshDidAuthVp(
-                                  serverUrl,
-                                  privateKey,
-                                  primaryDid,
-                                  signDidAuthVp,
-                                  tenantId
-                              )
-                            : undefined;
-                        const result = await putAuthShare(
-                            serverUrl,
-                            token,
-                            providerType,
-                            share,
-                            primaryDid,
-                            didAuthVp,
-                            tenantId
-                        );
+            const recoveryResult = await withRotationLock(() =>
+                atomicRecovery(
+                    recoveryShare,
+                    authShareStr,
+                    {
+                        storeDevice: share => storage.storeDeviceShare(share, activeStorageId),
+                        clearDevice: () => storage.clearAllShares(activeStorageId),
+                        storeAuth: async share => {
+                            const didAuthVp = signDidAuthVp
+                                ? await requestFreshDidAuthVp(
+                                      serverUrl,
+                                      privateKey,
+                                      primaryDid,
+                                      signDidAuthVp,
+                                      tenantId
+                                  )
+                                : undefined;
+                            const result = await putAuthShare(
+                                serverUrl,
+                                token,
+                                providerType,
+                                share,
+                                primaryDid,
+                                didAuthVp,
+                                tenantId
+                            );
 
-                        shareVersion = result.shareVersion;
+                            shareVersion = result.shareVersion;
+                        },
                     },
-                },
-                { previousDeviceShare: previousDeviceShare ?? undefined }
+                    { previousDeviceShare: previousDeviceShare ?? undefined }
+                )
             );
 
             if (shareVersion === undefined) {
@@ -2091,41 +2189,43 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
 
             const previousDeviceShare = await storage.getDeviceShare(activeStorageId);
             let shareVersion: number | undefined;
-            const result = await atomicRecovery(
-                pending.recoveryShare,
-                pending.authShare,
-                {
-                    storeDevice: share => storage.storeDeviceShare(share, activeStorageId),
-                    clearDevice: () => storage.clearAllShares(activeStorageId),
-                    storeAuth: async share => {
-                        const didAuthVp = await requestFreshDidAuthVp(
-                            serverUrl,
-                            pending.privateKey,
-                            pending.primaryDid,
-                            signDidAuthVp,
-                            tenantId
-                        );
-                        const response = await postJson<{
-                            shareVersion: number;
-                            recoveryMethodsRequireConfirmation: string[];
-                        }>(
-                            `${serverUrl}/keys/recovery-session/rebind`,
-                            {
-                                recoverySessionToken: pending.rebindSessionToken,
-                                providerType: params.providerType,
-                                primaryDid: pending.primaryDid,
-                                authShare: { encryptedData: share, encryptedDek: '', iv: '' },
-                            },
-                            {
-                                ...buildHeaders('', didAuthVp, tenantId),
-                                'X-Auth-Token': params.token,
-                            }
-                        );
+            const result = await withRotationLock(() =>
+                atomicRecovery(
+                    pending.recoveryShare,
+                    pending.authShare,
+                    {
+                        storeDevice: share => storage.storeDeviceShare(share, activeStorageId),
+                        clearDevice: () => storage.clearAllShares(activeStorageId),
+                        storeAuth: async share => {
+                            const didAuthVp = await requestFreshDidAuthVp(
+                                serverUrl,
+                                pending.privateKey,
+                                pending.primaryDid,
+                                signDidAuthVp,
+                                tenantId
+                            );
+                            const response = await postJson<{
+                                shareVersion: number;
+                                recoveryMethodsRequireConfirmation: string[];
+                            }>(
+                                `${serverUrl}/keys/recovery-session/rebind`,
+                                {
+                                    recoverySessionToken: pending.rebindSessionToken,
+                                    providerType: params.providerType,
+                                    primaryDid: pending.primaryDid,
+                                    authShare: { encryptedData: share, encryptedDek: '', iv: '' },
+                                },
+                                {
+                                    ...buildHeaders('', didAuthVp, tenantId),
+                                    'X-Auth-Token': params.token,
+                                }
+                            );
 
-                        shareVersion = response.shareVersion;
+                            shareVersion = response.shareVersion;
+                        },
                     },
-                },
-                { previousDeviceShare: previousDeviceShare ?? undefined }
+                    { previousDeviceShare: previousDeviceShare ?? undefined }
+                )
             );
 
             if (shareVersion === undefined) throw new Error('Server did not confirm the new share');

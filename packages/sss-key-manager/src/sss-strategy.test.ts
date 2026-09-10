@@ -23,6 +23,7 @@ import {
     IdentityRecoverySessionConsumedError,
     parseVersionedEmailShare,
     selectRecoveryPhraseChallengeIndices,
+    withRotationLock,
 } from './sss-strategy';
 import { reconstructFromShares } from './sss';
 import { AtomicUpdateError, splitAndVerify, verifyStoredShares } from './atomic-operations';
@@ -289,6 +290,71 @@ describe('escrow strategy', () => {
         });
     });
     afterEach(() => vi.restoreAllMocks());
+
+    it('serializes concurrent rotations so device and server shares stay paired', async () => {
+        const order: string[] = [];
+        let releaseFirst!: () => void;
+        const gate = new Promise<void>(resolve => {
+            releaseFirst = resolve;
+        });
+        const first = withRotationLock(async () => {
+            order.push('first:start');
+            await gate;
+            order.push('first:end');
+        });
+        const second = withRotationLock(async () => {
+            order.push('second:start');
+            order.push('second:end');
+        });
+        await Promise.resolve();
+        expect(order).toEqual(['first:start']);
+        releaseFirst();
+        await Promise.all([first, second]);
+        expect(order).toEqual(['first:start', 'first:end', 'second:start', 'second:end']);
+    });
+
+    it('keeps the lock usable after a rotation rejects', async () => {
+        await expect(withRotationLock(() => Promise.reject(new Error('boom')))).rejects.toThrow(
+            'boom'
+        );
+        await expect(withRotationLock(async () => 'ok')).resolves.toBe('ok');
+    });
+
+    it('concurrent enrollment repairs share one rotation', async () => {
+        const results = await Promise.all([
+            strategy.ensureEscrowEnrollment!(params),
+            strategy.ensureEscrowEnrollment!(params),
+            strategy.ensureEscrowEnrollment!(params),
+        ]);
+        expect(results).toEqual(Array(3).fill({ enrolled: true, changed: true, shareVersion: 2 }));
+        expect(version).toBe(2);
+        expect(calls.filter(call => call.path === '/keys/escrow').length).toBe(1);
+    });
+
+    it('retries a failed escrow post with the same shares instead of rotating again', async () => {
+        const original = vi.mocked(globalThis.fetch).getMockImplementation()!;
+        let failPost = true;
+        vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
+            const path = new URL(String(url)).pathname.replace('/api', '');
+            if (failPost && path === '/keys/escrow' && init?.method === 'POST') {
+                return Promise.resolve(new Response(null, { status: 503 }));
+            }
+            return original(url, init);
+        });
+        await expect(strategy.ensureEscrowEnrollment!(params)).rejects.toMatchObject({
+            status: 503,
+        });
+        expect(version).toBe(2);
+        expect(blob).toBeUndefined();
+        failPost = false;
+        await expect(strategy.ensureEscrowEnrollment!(params)).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: 2,
+        });
+        expect(version).toBe(2);
+        expect(blob?.shareVersion).toBe(2);
+    });
 
     it('opts out with a fresh owner proof', async () => {
         await strategy.disableEscrowRecovery!(params);
