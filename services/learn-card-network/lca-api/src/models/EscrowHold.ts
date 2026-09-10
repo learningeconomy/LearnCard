@@ -14,6 +14,8 @@ export const EscrowHoldValidator = z.object({
     identityProofType: z.enum(['auth-token', 'recovery-session']),
     requestedAt: z.date(),
     releaseAfter: z.date(),
+    releasePolicy: z.enum(['hold', 'pin']).default('hold'),
+    cancelReason: z.enum(['pin-mismatch', 'pin-locked', 'superseded']).optional(),
     cancelledAt: z.date().optional(),
     cancelledBy: z.enum(['did', 'system']).optional(),
     completedAt: z.date().optional(),
@@ -33,7 +35,7 @@ export const EscrowHoldValidator = z.object({
 });
 export type EscrowHold = z.infer<typeof EscrowHoldValidator>;
 export type CreateEscrowHoldInput = Omit<
-    EscrowHold,
+    z.input<typeof EscrowHoldValidator>,
     | '_id'
     | 'status'
     | 'createdAt'
@@ -42,6 +44,7 @@ export type CreateEscrowHoldInput = Omit<
     | 'cancelledAt'
     | 'cancelledBy'
     | 'completedAt'
+    | 'cancelReason'
 >;
 
 export const getEscrowHoldsCollection = (): Collection<EscrowHold> =>
@@ -118,13 +121,20 @@ export const findEscrowHoldById = async (id: string): Promise<EscrowHold | null>
     getEscrowHoldsCollection().findOne({ _id: id });
 export const cancelEscrowHold = async (
     id: string,
-    cancelledBy: 'did' | 'system'
+    cancelledBy: 'did' | 'system',
+    cancelReason?: EscrowHold['cancelReason']
 ): Promise<EscrowHold | null> => {
     const now = new Date();
     return getEscrowHoldsCollection().findOneAndUpdate(
         { _id: id, status: 'pending' },
         {
-            $set: { status: 'cancelled', cancelledBy, cancelledAt: now, updatedAt: now },
+            $set: {
+                status: 'cancelled',
+                cancelledBy,
+                cancelledAt: now,
+                updatedAt: now,
+                ...(cancelReason ? { cancelReason } : {}),
+            },
         },
         { returnDocument: 'after' }
     );
@@ -148,6 +158,27 @@ export const expireStaleEscrowHolds = async (now: Date): Promise<number> => {
         { $set: { status: 'expired', updatedAt: now } }
     );
     return result.modifiedCount;
+};
+
+/** Only rewrite the completed row claimed by this request; never reopen a burned hold. */
+export const markClaimedEscrowHoldFailed = async (
+    id: string,
+    reason: 'pin-mismatch' | 'pin-locked',
+    completedAt: Date
+): Promise<void> => {
+    const now = new Date();
+    await getEscrowHoldsCollection().updateOne(
+        { _id: id, status: 'completed', completedAt },
+        {
+            $set: {
+                status: 'cancelled',
+                cancelledBy: 'system',
+                cancelReason: reason,
+                cancelledAt: now,
+                updatedAt: now,
+            },
+        }
+    );
 };
 export const hashEscrowResumeToken = (token: string): string =>
     createHash('sha256').update(token).digest('hex');
