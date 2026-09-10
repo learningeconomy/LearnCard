@@ -62,6 +62,9 @@ export interface AuthCoordinatorContextValue {
     startEscrowRecovery: AuthCoordinator['startEscrowRecovery'];
     getEscrowRecoveryStatus: AuthCoordinator['getEscrowRecoveryStatus'];
     cancelEscrowRecovery: AuthCoordinator['cancelEscrowRecovery'];
+    disableEscrowRecovery: AuthCoordinator['disableEscrowRecovery'];
+    enableEscrowRecovery: AuthCoordinator['enableEscrowRecovery'];
+    getEscrowEnrollmentState: AuthCoordinator['getEscrowEnrollmentState'];
     beginIdentityRecovery: () => void;
     sendIdentityRecoveryCode: (email: string) => Promise<void>;
     verifyIdentityRecoveryCode: (code: string) => Promise<void>;
@@ -382,6 +385,19 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         return coordinatorRef.current.cancelEscrowRecovery();
     }, []);
 
+    const disableEscrowRecovery = useCallback(async () => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.disableEscrowRecovery();
+    }, []);
+    const enableEscrowRecovery = useCallback(async () => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.enableEscrowRecovery();
+    }, []);
+    const getEscrowEnrollmentState = useCallback(async () => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.getEscrowEnrollmentState();
+    }, []);
+
     const sendIdentityRecoveryCode = useCallback(async (email: string) => {
         if (!coordinatorRef.current) throw new Error('Coordinator not initialized');
         await coordinatorRef.current.sendIdentityRecoveryCode(email);
@@ -491,6 +507,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             startEscrowRecovery,
             getEscrowRecoveryStatus,
             cancelEscrowRecovery,
+            disableEscrowRecovery,
+            enableEscrowRecovery,
+            getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
             verifyIdentityRecoveryCode,
@@ -527,6 +546,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             startEscrowRecovery,
             getEscrowRecoveryStatus,
             cancelEscrowRecovery,
+            disableEscrowRecovery,
+            enableEscrowRecovery,
+            getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
             verifyIdentityRecoveryCode,

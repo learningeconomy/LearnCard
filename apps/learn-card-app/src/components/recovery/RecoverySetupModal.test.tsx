@@ -24,15 +24,19 @@ vi.mock('@ionic/react', () => ({
     IonIcon: ({ className }: { className?: string }) => <span className={className} />,
 }));
 
-vi.mock('learn-card-base', () => ({
+vi.mock('learn-card-base', async () => ({
     getLogger: () => ({ error: vi.fn() }),
+    Toggle: (
+        await import('../../../../../packages/learn-card-base/src/components/form-inputs/Toggle')
+    ).default,
 }));
 
 import RecoverySetupModal from './RecoverySetupModal';
 
 const renderModal = (
     initialMethod: 'passkey' | 'phrase' | 'backup' | 'email',
-    onCompleted = vi.fn()
+    onCompleted = vi.fn(),
+    overrides: Partial<React.ComponentProps<typeof RecoverySetupModal>> = {}
 ) => {
     const props: React.ComponentProps<typeof RecoverySetupModal> = {
         initialMethod,
@@ -52,6 +56,7 @@ const renderModal = (
         onSetupEmailRecovery: vi.fn().mockResolvedValue(undefined),
         onConfirmEmailRecovery: vi.fn().mockResolvedValue(undefined),
         onClose: vi.fn(),
+        ...overrides,
     };
 
     render(<RecoverySetupModal {...props} />);
@@ -59,6 +64,87 @@ const renderModal = (
 };
 
 describe('RecoverySetupModal prompt integration', () => {
+    it.each(['enrolled', 'opted-out'] as const)('renders automatic recovery %s', async state => {
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi.fn().mockResolvedValue(state),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+        });
+        expect(await screen.findByRole('switch')).toHaveAttribute(
+            'aria-checked',
+            String(state === 'enrolled')
+        );
+        expect(
+            screen.getByText(
+                state === 'enrolled'
+                    ? 'On — your account can be restored after a 7-day waiting period.'
+                    : 'Off'
+            )
+        ).toBeInTheDocument();
+    });
+
+    it('confirms before disabling automatic recovery', async () => {
+        const onDisableEscrowRecovery = vi.fn().mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi
+                .fn()
+                .mockResolvedValueOnce('enrolled')
+                .mockResolvedValue('opted-out'),
+            onDisableEscrowRecovery,
+            onEnableEscrowRecovery: vi.fn(),
+        });
+        fireEvent.click(await screen.findByRole('switch'));
+        expect(onDisableEscrowRecovery).not.toHaveBeenCalled();
+        expect(
+            screen.getByText(
+                'Without automatic recovery, losing every device and every recovery method means losing your account.'
+            )
+        ).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Turn off' }));
+        await waitFor(() =>
+            expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
+        );
+        expect(onDisableEscrowRecovery).toHaveBeenCalledOnce();
+    });
+
+    it('keeps automatic recovery on after a precondition failure', async () => {
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi.fn().mockResolvedValue('enrolled'),
+            onDisableEscrowRecovery: vi
+                .fn()
+                .mockRejectedValue(Object.assign(new Error('private details'), { status: 412 })),
+            onEnableEscrowRecovery: vi.fn(),
+        });
+        fireEvent.click(await screen.findByRole('switch'));
+        fireEvent.click(screen.getByRole('button', { name: 'Turn off' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            'Set up another recovery method first.'
+        );
+        expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+        expect(screen.getByRole('switch')).not.toBeDisabled();
+        expect(screen.queryByText('private details')).not.toBeInTheDocument();
+    });
+
+    it.each(['opted-out', 'not-enrolled'] as const)(
+        'enables automatic recovery from %s',
+        async state => {
+            const onEnableEscrowRecovery = vi.fn().mockResolvedValue({ enrolled: true });
+            renderModal('email', vi.fn(), {
+                onGetEscrowEnrollmentState: vi
+                    .fn()
+                    .mockResolvedValueOnce(state)
+                    .mockResolvedValue('enrolled'),
+                onDisableEscrowRecovery: vi.fn(),
+                onEnableEscrowRecovery,
+            });
+            const toggle = await screen.findByRole('switch');
+            fireEvent.click(
+                state === 'not-enrolled' ? screen.getByRole('button', { name: 'Turn on' }) : toggle
+            );
+            await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'));
+            expect(onEnableEscrowRecovery).toHaveBeenCalledOnce();
+        }
+    );
     it('opens on the requested passkey method and reports terminal completion', async () => {
         const { onCompleted, props } = renderModal('passkey');
 

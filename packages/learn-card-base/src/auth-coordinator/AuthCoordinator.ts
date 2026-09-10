@@ -211,6 +211,62 @@ export class AuthCoordinator {
         return this.state;
     }
 
+    /** Read automatic recovery status from a signed-in device. */
+    async getEscrowEnrollmentState() {
+        if (this.state.status !== 'ready') throw new Error('Sign in to manage recovery');
+        return (
+            this.keyDerivation.getEscrowEnrollmentState?.(await this.getAuthCredentials()) ??
+            ('disabled' as const)
+        );
+    }
+
+    /** Disable automatic recovery and clear any cancelled pending hold. */
+    async disableEscrowRecovery(): Promise<void> {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.disableEscrowRecovery ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to manage recovery');
+        }
+        const generation = ++this.escrowStatusGeneration;
+        await this.runEscrowOperation(async () =>
+            this.keyDerivation.disableEscrowRecovery!({
+                ...(await this.getAuthCredentials()),
+                privateKey: ready.privateKey,
+                signDidAuthVp: this.config.signDidAuthVp!,
+            })
+        );
+        if (
+            generation === this.escrowStatusGeneration &&
+            this.state.status === 'ready' &&
+            this.state.privateKey === ready.privateKey &&
+            this.state.authUser?.id === ready.authUser?.id
+        ) {
+            this.setState({ ...this.state, pendingEscrowHold: undefined });
+        }
+    }
+
+    /** Opt in and enroll automatic recovery from a trusted device. */
+    async enableEscrowRecovery() {
+        const ready = this.state;
+        if (
+            ready.status !== 'ready' ||
+            !this.keyDerivation.enableEscrowRecovery ||
+            !this.config.signDidAuthVp
+        ) {
+            throw new Error('Sign in on a trusted device to manage recovery');
+        }
+        return this.runEscrowOperation(async () =>
+            this.keyDerivation.enableEscrowRecovery!({
+                ...(await this.getAuthCredentials()),
+                privateKey: ready.privateKey,
+                signDidAuthVp: this.config.signDidAuthVp!,
+            })
+        );
+    }
+
     /** Helper: get token + providerType from the auth provider.
      *  Always force-refreshes the token so downstream consumers (e.g. Web3Auth)
      *  receive a recently-issued JWT. Web3Auth's server rejects signed params

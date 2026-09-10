@@ -1713,6 +1713,17 @@
         }
     },
     "recovery": {
+        "automatic": {
+            "title": "Automatic recovery",
+            "on": "On — your account can be restored after a 7-day waiting period.",
+            "off": "Off",
+            "settingUp": "Setting up...",
+            "updating": "Updating...",
+            "turnOn": "Turn on",
+            "turnOff": "Turn off",
+            "warning": "Without automatic recovery, losing every device and every recovery method means losing your account.",
+            "precondition": "Set up another recovery method first."
+        },
         "error.invalidPhrase": "Those words don't match your recovery phrase. Check them and try again.",
         "error.invalidPassword": "Incorrect password or the file couldn't be read. Please try again.",
         "error.invalidCode": "That code is incorrect or has expired. Request a new one and try again.",
