@@ -8,11 +8,30 @@ Sending a credential doesn't tell you what happened to it. Pass a webhook URL wi
 
 **~15 minutes · Needs:** Node.js 20+, a public URL (e.g., ngrok)
 
-## Or let the CLI do it
+## The one-line version
 
-Run `npx @learncard/cli webhook you@example.com -y`, expose port 8787 with ngrok/cloudflared, then re-run with `--url https://your-public-url`. The CLI writes this receiver and runs it for the demo. It verifies signatures; set `EXPECTED_NETWORK_DID` to a trusted network DID to also restrict the signer. In-memory deduplication is only for the demo.
+```bash
+npx @learncard/cli webhook you@example.com --url https://<your-tunnel>
+```
 
-Each invocation with `--url` sends a new demo credential, reusing `TEMPLATE_URI`. A hosted signer is configured for template claims without adding signing-authority keys to `.env`.
+Starts a receiver on port 8787, sends a demo credential with `webhookUrl` set, and prints each event as it arrives. Expose the port first (`ngrok http 8787`) and pass the tunnel URL. It writes the receiver as `webhook.mjs` — the same code Step 1 below walks through.
+
+The rest of this page is the same flow in your own code.
+
+## Prerequisites
+
+- The [Quickstart](../quick-start/your-first-integration.md), **"Own your keys"** path — this tutorial extends `send.mjs` and reuses its `.env` (`SECURE_SEED`, `PROFILE_ID`)
+- [ngrok](https://ngrok.com/download) (or another tunnel) to expose your local server
+
+---
+
+## Send with a webhook URL
+
+Pass `options.webhookUrl` when you send a credential to an email or phone number. LearnCard `POST`s a notification to that URL twice: once when the credential is delivered (`ISSUANCE_DELIVERED`), and again when the recipient claims it (`ISSUANCE_CLAIMED`).
+
+### Step 1: Start a receiver
+
+Save this next to `send.mjs` as `webhook.mjs`. It verifies that each request really came from the LearnCard Network (a DID-signed bearer token), acknowledges fast, logs the fields you care about, and de-duplicates by `${type}:${issuanceId}` — LearnCard retries on failure, so you will occasionally see the same event twice.
 
 <!-- snippet: cli/webhook.mjs -->
 
@@ -105,72 +124,16 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 
 <!-- /snippet -->
 
-## Prerequisites
-
-- The [Quickstart](../quick-start/your-first-integration.md), **"Own your keys"** path — this tutorial extends `send.mjs` and reuses its `.env` (`SECURE_SEED`, `PROFILE_ID`)
-- [ngrok](https://ngrok.com/download) (or another tunnel) to expose your local server
-
----
-
-## Send with a webhook URL
-
-Pass `options.webhookUrl` when you send a credential to an email or phone number. LearnCard `POST`s a notification to that URL twice: once when the credential is delivered (`ISSUANCE_DELIVERED`), and again when the recipient claims it (`ISSUANCE_CLAIMED`).
-
-### Step 1: Start a receiver
-
-Save this next to `send.mjs` as `webhook-listener.mjs`. It acknowledges fast, logs the fields you care about, and de-duplicates by `issuanceId` (LearnCard's delivery is at-least-once — more on that below):
-
-```javascript
-import { createServer } from 'node:http';
-
-const port = 3000;
-const seenDeliveries = new Set(); // `${type}:${issuanceId}` — resets on restart; use a database in production
-
-const server = createServer((req, res) => {
-    if (req.method !== 'POST') {
-        res.writeHead(404).end();
-        return;
-    }
-
-    const chunks = [];
-    req.on('data', chunk => chunks.push(chunk));
-    req.on('end', () => {
-        // Acknowledge immediately. LearnCard waits 6 seconds for a response, then
-        // treats it as a failed delivery and retries.
-        res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"received":true}');
-
-        const notification = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-        const { type, data } = notification;
-        const issuanceId = data?.inbox?.issuanceId;
-        const dedupeKey = `${type}:${issuanceId}`;
-
-        if (issuanceId && seenDeliveries.has(dedupeKey)) {
-            console.log(`Duplicate delivery, already processed: ${dedupeKey}`);
-            return;
-        }
-        if (issuanceId) seenDeliveries.add(dedupeKey);
-
-        console.log(type, {
-            issuanceId,
-            status: data?.inbox?.status,
-            claimedBy: data?.inbox?.recipient?.learnCardId,
-        });
-    });
-});
-
-server.listen(port, () => {
-    console.log(`Listening on http://localhost:${port} — point ngrok at this port.`);
-});
-```
-
 ```bash
-node webhook-listener.mjs
+node webhook.mjs
 ```
+
+It listens on port 8787 (set `PORT` to change).
 
 ### Step 2: Expose it with ngrok
 
 ```bash
-ngrok http 3000
+ngrok http 8787
 ```
 
 Copy the `https://` forwarding URL ngrok prints. That's your `webhookUrl` for the next step.
@@ -374,7 +337,7 @@ The production LearnCard Network signs as `did:web:network.learncard.com` — no
 - Anything else that fails (5xx, timeout, network error) is retried through a queue, up to 3 attempts total, before it's dropped into a dead-letter queue.
 - Delivery is **at-least-once**, not exactly-once. You can receive the same notification more than once even when nothing went wrong on your end.
 
-There's no server-side de-duplication, so always key idempotency on `${type}:${issuanceId}` — the pattern `webhook-listener.mjs` uses above. Responding quickly reduces duplicates; it doesn't eliminate them.
+There's no server-side de-duplication, so always key idempotency on `${type}:${issuanceId}` — the pattern `webhook.mjs` uses above. Responding quickly reduces duplicates; it doesn't eliminate them.
 
 ---
 
@@ -393,7 +356,7 @@ Issuance ID: 2f1a9c3e-6b8d-4e2f-9a71-58c6d1b4a9f0
 Sent. you@example.com will get a claim email. Watch your listener for ISSUANCE_DELIVERED.
 ```
 
-Terminal running `webhook-listener.mjs`, immediately after:
+Terminal running `webhook.mjs`, immediately after:
 
 ```
 ISSUANCE_DELIVERED { issuanceId: '2f1a9c3e-6b8d-4e2f-9a71-58c6d1b4a9f0', status: 'PENDING', claimedBy: undefined }
@@ -410,7 +373,7 @@ ISSUANCE_CLAIMED { issuanceId: '2f1a9c3e-6b8d-4e2f-9a71-58c6d1b4a9f0', status: '
 | If…                                              | Then                                                                                                                                                                                          |
 | :----------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Webhook never arrives                            | Confirm the ngrok URL you passed as `options.webhookUrl` is still running — ngrok URLs change every restart on the free tier.                                                                 |
-| `Notification webhook transport failed with 404` | Your server is reachable, but nothing is listening on the path ngrok is forwarding to. Match `webhookUrl` to where `webhook-listener.mjs` actually listens.                                   |
+| `Notification webhook transport failed with 404` | Your server is reachable, but nothing is listening on the path ngrok is forwarding to. Match `webhookUrl` to where `webhook.mjs` actually listens.                                            |
 | No `ISSUANCE_CLAIMED` after claiming             | The recipient already had a LearnCard account, so the credential was auto-delivered as `ISSUED` at send time — there's nothing left to claim. Check for that in `ISSUANCE_DELIVERED` instead. |
 | Duplicate webhooks                               | Expected — delivery is at-least-once, not a sign your server responded too slowly. De-duplicate on `${type}:${issuanceId}` as shown above.                                                    |
 | 401s in your own logs                            | `verifyLearnCardRequest` rejected the token. Check you're reading the `Authorization` header — there's no separate signature header to fall back to.                                          |

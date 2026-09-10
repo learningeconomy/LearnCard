@@ -7,7 +7,8 @@ export const extractBearer = header =>
 export const webhookDedupeKey = payload => {
     const id = payload?.data?.inbox?.issuanceId;
     return ['ISSUANCE_DELIVERED', 'ISSUANCE_CLAIMED', 'ISSUANCE_ERROR'].includes(payload?.type) &&
-        typeof id === 'string' && id.length > 0
+        typeof id === 'string' &&
+        id.length > 0
         ? `${payload.type}:${id}`
         : undefined;
 };
@@ -44,9 +45,22 @@ export const createWebhookReceiver = (verifier, expectedDid = process.env.EXPECT
             if (seen.size >= 10000) seen.delete(seen.values().next().value);
             seen.add(key);
             const inbox = payload.data.inbox;
-            const fields = [payload.type, inbox.status, inbox.issuanceId, inbox.recipient?.learnCardId];
-            console.log(fields.map(value => typeof value === 'string'
-                ? value.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, '?') : '').join(' ').trim());
+            const fields = [
+                payload.type,
+                inbox.status,
+                inbox.issuanceId,
+                inbox.recipient?.learnCardId,
+            ];
+            console.log(
+                fields
+                    .map(value =>
+                        typeof value === 'string'
+                            ? value.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, '?')
+                            : ''
+                    )
+                    .join(' ')
+                    .trim()
+            );
         } catch {
             if (!res.headersSent) res.writeHead(400).end();
         }
@@ -56,10 +70,13 @@ export const createWebhookReceiver = (verifier, expectedDid = process.env.EXPECT
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
     const { initLearnCard } = await import('@learncard/init');
     const port = Number(process.env.PORT || 8787);
-    if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be 1–65535');
+    if (!Number.isInteger(port) || port < 1 || port > 65535)
+        throw new Error('PORT must be 1–65535');
     const verifier = await initLearnCard();
     if (!process.env.EXPECTED_NETWORK_DID) {
-        console.log('Demo: signatures are verified, but any DID is accepted. Set EXPECTED_NETWORK_DID to your trusted network DID before production.');
+        console.log(
+            'Demo: signatures are verified, but any DID is accepted. Set EXPECTED_NETWORK_DID to your trusted network DID before production.'
+        );
     }
     const server = createWebhookReceiver(verifier);
     server.requestTimeout = 5000;

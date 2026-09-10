@@ -4,6 +4,14 @@ A signed credential can't be edited. To correct one, revoke it and issue a repla
 
 **~5 minutes · Needs:** the template URI you sent from (returned by `send()` as `uri`, or from `createBoost`) and the recipient's profile ID.
 
+## The one-line version
+
+```bash
+npx @learncard/cli revoke lc:network:network.learncard.com/trpc:credential:…
+```
+
+Takes the `credentialUri` from the `send()` response (or a recipient list), finds the template and recipient, and revokes. `--suspend` pauses instead. Then `npx @learncard/cli verify` on the credential shows `✗ status: Status: Revoked`.
+
 ## Revoke a credential
 
 Revoking marks the recipient's copy as revoked on the network and, for credentials that carry a `credentialStatus`, flips the bit in the status list.

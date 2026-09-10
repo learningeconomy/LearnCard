@@ -6,6 +6,14 @@ description: Create a scoped token so your server can call the LearnCard API wit
 
 **~5 minutes · Needs:** a LearnCard profile (the Quickstart creates one)
 
+## The one-line version
+
+```bash
+npx @learncard/cli token --scope boosts:write
+```
+
+Creates the auth grant, shows the token once, saves it to `.env` (`chmod 600`), and writes `send.sh` — a ready-to-run `curl` that reads the token from `.env`. `--revoke <grantId>` revokes.
+
 An API token is a bearer credential tied to an **auth grant** (a named set of scopes on your profile). Use it for `POST /api/send` and other REST calls from any language; the SDK with a seed doesn't need one. See [Auth Grants and API Tokens](../../core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md).
 
 {% tabs %}

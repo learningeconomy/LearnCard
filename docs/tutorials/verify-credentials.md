@@ -8,6 +8,14 @@ Verification checks the signature, detects changes to signed data, checks expiry
 
 **~10 minutes · Needs:** Node.js (v20+), a terminal; a network-issued credential for the optional revocation step
 
+## The one-line version
+
+```bash
+npx @learncard/cli verify credential.json
+```
+
+Prints one line per check (`✓ proof`, `✓ expiration`, `✗ status: Status: Revoked`) and exits non-zero if any fail. Pipe JSON on stdin with `-`; `--json` for the raw result. No account or seed needed.
+
 ## Install
 
 In a new project folder, install the SDK:

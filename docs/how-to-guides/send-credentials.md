@@ -8,6 +8,15 @@ description: 'How-To Guide: Sending and issuing credentials with LearnCard'
 
 **~10 minutes · Needs:** a seed or API token from the [Quickstart](../quick-start/your-first-integration.md).
 
+## The one-line version
+
+```bash
+npx @learncard/cli send you@example.com            # you sign; writes send.mjs
+npx @learncard/cli send you@example.com --template # LearnCard signs from a reusable template; writes send-from-template.mjs
+```
+
+Both reuse the `.env` the Quickstart created. Everything below is what those scripts do, and the options `send()` takes beyond them.
+
 ## Quick Start: The `send` Method (Recommended)
 
 The `send` method handles credential issuance, signing, and delivery in a single call.

@@ -8,6 +8,14 @@ Every credential is signed by a private key. You have two choices: **you sign** 
 
 **~5 minutes · Needs:** a LearnCard profile (the Quickstart creates one)
 
+## The one-line version
+
+```bash
+npx @learncard/cli setup-signing
+```
+
+Creates a hosted signing authority, registers it, and makes it your primary — the "LearnCard signs for you" path below, done. Idempotent: run it again and it tells you it's already set. Then `npx @learncard/cli send you@example.com --template` sends from a template with no signing details in the call.
+
 ## Pick a path
 
 |                         | **You sign**                                                             | **LearnCard signs for you**                                                            | **Your own signing service**                                        |
