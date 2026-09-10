@@ -1055,6 +1055,8 @@ export async function getLearnCardNetworkPlugin(
                     const receiveUrl = validateFederationUrl(inboxEndpoint, federationConfig);
 
                     const response = await fetch(receiveUrl, {
+                        // A redirect must not bypass endpoint validation or forward credentials.
+                        redirect: 'error',
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
