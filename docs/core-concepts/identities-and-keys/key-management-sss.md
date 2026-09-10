@@ -23,5 +23,5 @@ signing presentations, without a seed-management user experience.
 
 ## Choose your approach
 
-- [SSS Key Manager reference](../../sdks/sss-key-manager.md) — the library, share storage, and recovery APIs.
+- [`@learncard/sss-key-manager` README](https://github.com/learningeconomy/LearnCard/tree/main/packages/sss-key-manager) — the library, share storage, and recovery APIs.
 - [Seed Phrases](seed-phrases.md) — the developer-held-seed alternative for SDK integrations.

@@ -11,7 +11,6 @@ description: A 60-second guide to picking the right LearnCard SDK or API.
 | Add a credential claim button to a webpage                  | [Embed SDK](embed-sdk.md)                                                                                                  | Any webpage (script tag) |
 | Create/verify credentials, manage a wallet programmatically | [LearnCard Wallet SDK](learncard-core/README.md)                                                                           | Server or browser        |
 | Store/query encrypted user data or xAPI learning records    | [LearnCloud Storage API](learncloud-storage-api/README.md)                                                                 | Your server              |
-| Passwordless key management for your own app                | [SSS Key Manager](sss-key-manager.md)                                                                                      | Your web app             |
 | Script against LearnCard from a terminal                    | [LearnCard CLI](learncard-cli.md)                                                                                          | Your machine             |
 
 **Rules of thumb:**

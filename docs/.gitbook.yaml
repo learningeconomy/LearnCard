@@ -53,7 +53,7 @@ redirects:
     apps/scouts: apps/scouts/README.md
     apps/scouts/credential-revocation: core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md
     core-concepts/architecture-and-principles: introduction/ecosystem-architecture.md
-    core-concepts/architecture-and-principles/auth-coordinator: sdks/sss-key-manager.md
+    core-concepts/architecture-and-principles/auth-coordinator: core-concepts/identities-and-keys/key-management-sss.md
     core-concepts/architecture-and-principles/auth-grants-and-api-tokens: core-concepts/architecture-and-principles/auth-grants-and-api-tokens.md
     core-concepts/architecture-and-principles/control-planes: core-concepts/architecture-and-principles/control-planes.md
     core-concepts/architecture-and-principles/plugins: core-concepts/architecture-and-principles/plugins.md
@@ -80,8 +80,8 @@ redirects:
     core-concepts/credentials-and-data/xapi-data: core-concepts/credentials-and-data/xapi-data.md
     core-concepts/holder-continuity: core-concepts/architecture-and-principles/holder-continuity.md
     core-concepts/identities-and-keys: core-concepts/identities-and-keys/decentralized-identifiers-dids.md
-    core-concepts/identities-and-keys/account-recovery: sdks/sss-key-manager.md
-    core-concepts/identities-and-keys/cross-device-login: sdks/sss-key-manager.md
+    core-concepts/identities-and-keys/account-recovery: core-concepts/identities-and-keys/key-management-sss.md
+    core-concepts/identities-and-keys/cross-device-login: core-concepts/identities-and-keys/key-management-sss.md
     core-concepts/identities-and-keys/decentralized-identifiers-dids: core-concepts/identities-and-keys/decentralized-identifiers-dids.md
     core-concepts/identities-and-keys/key-management-sss: core-concepts/identities-and-keys/key-management-sss.md
     core-concepts/identities-and-keys/network-profiles: core-concepts/identities-and-keys/network-profiles.md
@@ -103,7 +103,7 @@ redirects:
     how-to-guides/deploy-infrastructure/deploy-your-own-network: how-to-guides/go-to-production.md
     how-to-guides/deploy-infrastructure/generate-api-tokens: how-to-guides/deploy-infrastructure/generate-api-tokens.md
     how-to-guides/deploy-infrastructure/managing-seed-phrases: how-to-guides/go-to-production.md
-    how-to-guides/deploy-infrastructure/sss-key-management-config: sdks/sss-key-manager.md
+    how-to-guides/deploy-infrastructure/sss-key-management-config: core-concepts/identities-and-keys/key-management-sss.md
     how-to-guides/deploy-infrastructure/the-simplest-plugin: sdks/learncard-core/writing-plugins.md
     how-to-guides/export-and-import-your-data: how-to-guides/export-and-import-your-data.md
     how-to-guides/implement-flows/claim-data-after-guardian-consent: how-to-guides/send-credentials.md
@@ -116,7 +116,7 @@ redirects:
     introduction/use-cases-and-possibilities: introduction/what-do-you-want-to-build.md
     quick-start/setup-and-prerequisites: quick-start/your-first-integration.md
     quick-start/your-first-integration: quick-start/your-first-integration.md
-    sdks/auth-types: sdks/sss-key-manager.md
+    sdks/auth-types: core-concepts/identities-and-keys/key-management-sss.md
     sdks/embed-sdk: sdks/embed-sdk.md
     sdks/learncard-cli: sdks/learncard-cli.md
     sdks/learncard-core: sdks/learncard-core/README.md
@@ -142,7 +142,7 @@ redirects:
     sdks/learncloud-storage-api/xapi-reference: sdks/learncloud-storage-api/xapi-reference.md
     sdks/official-plugins: sdks/official-plugins/README.md
     sdks/partner-connect: sdks/partner-connect/README.md
-    sdks/sss-key-manager: sdks/sss-key-manager.md
+    sdks/sss-key-manager: core-concepts/identities-and-keys/key-management-sss.md
     tutorials/create-a-boost: how-to-guides/send-credentials.md
     tutorials/create-a-connected-website: tutorials/create-a-consentflow.md
     tutorials/create-a-consentflow: tutorials/create-a-consentflow.md

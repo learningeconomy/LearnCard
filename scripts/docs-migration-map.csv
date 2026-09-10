@@ -7,7 +7,7 @@ apps/learn-card-app/resume-builder-ler-rs-mapping,products/learn-card-app,intern
 apps/scouts,products/scouts,moved,redirected
 apps/scouts/credential-revocation,understand/verifiable-credentials-vcs/credential-status-and-bitstring-status-lists,internal,redirected
 core-concepts/architecture-and-principles,understand/ecosystem-architecture,merge,redirected
-core-concepts/architecture-and-principles/auth-coordinator,reference/sss-key-manager,archive,redirected
+core-concepts/architecture-and-principles/auth-coordinator,understand/decentralized-identifiers-dids/key-management-sss,archive,redirected
 core-concepts/architecture-and-principles/auth-grants-and-api-tokens,understand/decentralized-identifiers-dids/auth-grants-and-api-tokens,moved,redirected
 core-concepts/architecture-and-principles/control-planes,reference/learncard-core/control-planes,moved,redirected
 core-concepts/architecture-and-principles/plugins,understand/ecosystem-architecture/plugins,moved,redirected
@@ -36,8 +36,8 @@ core-concepts/credentials-and-data/verifiable-credentials-vcs,understand/verifia
 core-concepts/credentials-and-data/xapi-data,understand/verifiable-credentials-vcs/xapi-data,moved,redirected
 core-concepts/holder-continuity,understand/ecosystem-architecture/holder-continuity,moved,redirected
 core-concepts/identities-and-keys,understand/decentralized-identifiers-dids,merge,redirected
-core-concepts/identities-and-keys/account-recovery,reference/sss-key-manager,archive,redirected
-core-concepts/identities-and-keys/cross-device-login,reference/sss-key-manager,archive,redirected
+core-concepts/identities-and-keys/account-recovery,understand/decentralized-identifiers-dids/key-management-sss,archive,redirected
+core-concepts/identities-and-keys/cross-device-login,understand/decentralized-identifiers-dids/key-management-sss,archive,redirected
 core-concepts/identities-and-keys/decentralized-identifiers-dids,understand/decentralized-identifiers-dids,moved,redirected
 core-concepts/identities-and-keys/key-management-sss,understand/decentralized-identifiers-dids/key-management-sss,moved,redirected
 core-concepts/identities-and-keys/network-profiles,understand/decentralized-identifiers-dids/network-profiles,moved,redirected
@@ -64,7 +64,7 @@ how-to-guides/deploy-infrastructure/connect-to-independent-network,build/go-to-p
 how-to-guides/deploy-infrastructure/deploy-your-own-network,build/go-to-production,delete,redirected
 how-to-guides/deploy-infrastructure/generate-api-tokens,build/go-to-production/generate-api-tokens,moved,redirected
 how-to-guides/deploy-infrastructure/managing-seed-phrases,build/go-to-production,merge,redirected
-how-to-guides/deploy-infrastructure/sss-key-management-config,reference/sss-key-manager,merge,redirected
+how-to-guides/deploy-infrastructure/sss-key-management-config,understand/decentralized-identifiers-dids/key-management-sss,merge,redirected
 how-to-guides/deploy-infrastructure/the-simplest-plugin,reference/learncard-core/writing-plugins,delete,redirected
 how-to-guides/export-and-import-your-data,products/learn-card-app/export-and-import-your-data,moved,redirected
 how-to-guides/implement-flows,build/create-a-consentflow,moved,redirected
@@ -86,7 +86,7 @@ introduction/interoperability,understand/ecosystem-architecture/interoperability
 introduction/use-cases-and-possibilities,start-here/what-do-you-want-to-build,merge,redirected
 quick-start/setup-and-prerequisites,start-here/your-first-integration,merge,redirected
 quick-start/your-first-integration,start-here/your-first-integration,moved,redirected
-sdks/auth-types,reference/sss-key-manager,archive,redirected
+sdks/auth-types,understand/decentralized-identifiers-dids/key-management-sss,archive,redirected
 sdks/embed-sdk,reference/embed-sdk,moved,redirected
 sdks/learncard-cli,reference/learncard-cli,moved,redirected
 sdks/learncard-core,reference/learncard-core,moved,redirected
@@ -130,7 +130,7 @@ sdks/learncloud-storage-api/utilities,reference/learncloud-storage-api,openapi-g
 sdks/learncloud-storage-api/xapi-reference,reference/learncloud-storage-api/xapi-reference,moved,redirected
 sdks/official-plugins,reference/official-plugins,moved,redirected
 sdks/partner-connect,reference/partner-connect,moved,redirected
-sdks/sss-key-manager,reference/sss-key-manager,moved,redirected
+sdks/sss-key-manager,understand/decentralized-identifiers-dids/key-management-sss,archive,redirected
 tutorials/create-a-boost,build/send-credentials,merge,redirected
 tutorials/create-a-connected-website,build/create-a-consentflow,merge,redirected
 tutorials/create-a-consentflow,build/create-a-consentflow,moved,redirected

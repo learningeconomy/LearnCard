@@ -63,6 +63,15 @@
     - [Achievement Types & Categories](core-concepts/credentials-and-data/achievement-types-and-categories.md)
     - [Changelog](sdks/learncard-core/migration-guide.md)
 - [Network API](sdks/learncard-network/README.md)
+    - [Authentication](sdks/learncard-network/authentication.md)
+    - [Usage Examples](sdks/learncard-network/usage-examples.md)
+    - [Universal Inbox API](sdks/learncard-network/universal-inbox-api.md)
+    - [Notifications & Webhooks](sdks/learncard-network/notifications.md)
+    - [Status Lists](sdks/learncard-network/bitstring-status-lists.md)
+    - [Skill Frameworks & OpenSALT](sdks/learncard-network/skills-and-opensalt.md)
+    - [Key Management & QR Login API](sdks/learncard-network/lca-api-key-management.md)
+    - [Errors & Limits](sdks/learncard-network/errors-and-limits.md)
+    - [OpenAPI (interactive)](https://network.learncard.com/docs#/)
     - ```yaml
       props:
           models: true
@@ -73,15 +82,10 @@
                   kind: openapi
                   spec: learn-card-network-api
       ```
-    - [Authentication](sdks/learncard-network/authentication.md)
-    - [Usage Examples](sdks/learncard-network/usage-examples.md)
-    - [Universal Inbox API](sdks/learncard-network/universal-inbox-api.md)
-    - [Notifications & Webhooks](sdks/learncard-network/notifications.md)
-    - [Status Lists](sdks/learncard-network/bitstring-status-lists.md)
-    - [Skill Frameworks & OpenSALT](sdks/learncard-network/skills-and-opensalt.md)
-    - [Key Management & QR Login API](sdks/learncard-network/lca-api-key-management.md)
-    - [Errors & Limits](sdks/learncard-network/errors-and-limits.md)
 - [Storage API](sdks/learncloud-storage-api/README.md)
+    - [Authentication](sdks/learncloud-storage-api/authentication.md)
+    - [Usage Examples](sdks/learncloud-storage-api/usage-examples.md)
+    - [xAPI Reference](sdks/learncloud-storage-api/xapi-reference.md)
     - ```yaml
       props:
           models: true
@@ -92,14 +96,10 @@
                   kind: openapi
                   spec: learn-cloud-storage-openapi
       ```
-    - [Authentication](sdks/learncloud-storage-api/authentication.md)
-    - [Usage Examples](sdks/learncloud-storage-api/usage-examples.md)
-    - [xAPI Reference](sdks/learncloud-storage-api/xapi-reference.md)
 - [Partner Connect SDK](sdks/partner-connect/README.md)
     - [Methods](sdks/partner-connect/methods.md)
     - [Errors, Types & Migration](sdks/partner-connect/errors-and-types.md)
 - [Embed SDK](sdks/embed-sdk.md)
-- [SSS Key Manager](sdks/sss-key-manager.md)
 - [Plugins](sdks/official-plugins/README.md)
     - [DIDKit (Node)](sdks/official-plugins/didkit-node.md)
     - [VC Templates](sdks/official-plugins/vc-templates.md)

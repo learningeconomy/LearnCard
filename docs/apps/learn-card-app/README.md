@@ -107,7 +107,7 @@ After signing up, users are prompted to set up at least one recovery method:
 
 Signing in on a new device works either by scanning a QR code from a device that's already signed in, or by using one of the recovery methods. Recovery settings live under **Account Recovery** in the profile.
 
-For how this works under the hood, see [Key Management (SSS)](../../core-concepts/identities-and-keys/key-management-sss.md) and the [SSS Key Manager reference](../../sdks/sss-key-manager.md).
+For how this works under the hood, see [Key Management (SSS)](../../core-concepts/identities-and-keys/key-management-sss.md).
 
 ---
 

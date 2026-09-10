@@ -224,7 +224,7 @@ Authentication shows up in two places, deliberately decoupled:
 
 **Guardian gating** is supported via approval tokens and a `guardianStatus` field on inbox credentials, used when the holder is a minor or when the issuer requires guardian co-signature before a credential can be claimed.
 
-→ Deep dives: [SSS Key Manager](../sdks/sss-key-manager.md) · [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md) · [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) · [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) · [Guardian-Gated Credentials](../how-to-guides/send-credentials.md#guardian-gated-credentials) · [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
+→ Deep dives: [SSS Key Manager](https://github.com/learningeconomy/LearnCard/tree/main/packages/sss-key-manager) · [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md) · [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) · [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) · [Guardian-Gated Credentials](../how-to-guides/send-credentials.md#guardian-gated-credentials) · [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
 
 ## How the network handles a credential
 
